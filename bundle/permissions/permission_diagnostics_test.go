@@ -53,10 +53,9 @@ func TestPermissionDiagnosticsApplyFail(t *testing.T) {
 	require.Contains(t, diags[0].Summary, expectedMsg)
 }
 
-// groupCalls counts the group requests the workspace serves.
-type groupCalls struct {
-	list atomic.Int32 // GET /api/2.0/identity/groups
-	get  atomic.Int32 // GET /api/2.0/identity/groups/{group_id}
+// parentGroupCalls counts the reads of the current user's parent groups.
+type parentGroupCalls struct {
+	parents atomic.Int32 // GET /api/2.0/identity/me/transitive-parent-groups
 }
 
 // mockBundle returns a bundle whose workspace has one group, testgroup, that the
@@ -69,20 +68,16 @@ func mockBundle(t *testing.T, permissions []resources.Permission) *bundle.Bundle
 // mockBundleWithGroups returns a bundle whose workspace creates the groups in member,
 // which the current user belongs to, and the groups in nonMember, which it does not.
 // The bundle's current user carries the groups resolved from the membership, as the
-// populate mutator would set them. The returned counts cover only the group requests
-// the bundle makes after this call returns.
-func mockBundleWithGroups(t *testing.T, permissions []resources.Permission, member, nonMember []string) (*bundle.Bundle, *groupCalls) {
+// populate mutator would set them. The returned counts cover only the parent-group
+// reads the bundle makes after this call returns.
+func mockBundleWithGroups(t *testing.T, permissions []resources.Permission, member, nonMember []string) (*bundle.Bundle, *parentGroupCalls) {
 	server := testserver.New(t)
-	calls := &groupCalls{}
-	// Handlers registered before AddDefaultHandlers take precedence, so they count and
-	// then delegate to the fake.
-	server.Handle("GET", "/api/2.0/identity/groups", func(req testserver.Request) any {
-		calls.list.Add(1)
-		return req.Workspace.IdentityGroups(0, req.URL.Query().Get("page_token"))
-	})
-	server.Handle("GET", "/api/2.0/identity/groups/{group_id}", func(req testserver.Request) any {
-		calls.get.Add(1)
-		return req.Workspace.IdentityGroup(req.Vars["group_id"])
+	calls := &parentGroupCalls{}
+	// Handlers registered before AddDefaultHandlers take precedence, so this one counts
+	// and then delegates to the fake.
+	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(req testserver.Request) any {
+		calls.parents.Add(1)
+		return req.Workspace.IdentityMeTransitiveParentGroups()
 	})
 	testserver.AddDefaultHandlers(server)
 	server.AddGroups("test-token", member, nonMember)
@@ -90,8 +85,7 @@ func mockBundleWithGroups(t *testing.T, permissions []resources.Permission, memb
 	require.NoError(t, err)
 	groups, err := iamutil.CurrentUserGroups(t.Context(), w)
 	require.NoError(t, err)
-	calls.list.Store(0)
-	calls.get.Store(0)
+	calls.parents.Store(0)
 
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -155,7 +149,8 @@ func TestPermissionDiagnosticsGroupMember(t *testing.T) {
 }
 
 // Matching a configured group is a comparison with the groups already on the current
-// user, so a report makes no group request, whatever the number of configured groups.
+// user, so a report reads no group from the workspace, whatever the number of
+// configured groups.
 func TestPermissionDiagnosticsMembershipMakesNoGroupRequests(t *testing.T) {
 	b, calls := mockBundleWithGroups(t, []resources.Permission{
 		{Level: "CAN_MANAGE", GroupName: "testgroup"},
@@ -164,8 +159,23 @@ func TestPermissionDiagnosticsMembershipMakesNoGroupRequests(t *testing.T) {
 	}, []string{"testgroup", "joined"}, []string{"otherteam"})
 
 	permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
-	assert.Equal(t, int32(0), calls.list.Load())
-	assert.Equal(t, int32(0), calls.get.Load())
+	assert.Equal(t, int32(0), calls.parents.Load())
+}
+
+// Workspace-local groups are matched by name like account groups: a CAN_MANAGE grant
+// to admins or users that the current user belongs to counts as manageable.
+func TestPermissionDiagnosticsWorkspaceLocalGroupGrantsCanManage(t *testing.T) {
+	for _, name := range []string{"admins", "users"} {
+		t.Run(name, func(t *testing.T) {
+			b, _ := mockBundleWithGroups(t, []resources.Permission{
+				{Level: "CAN_MANAGE", GroupName: name},
+			}, []string{name}, nil)
+
+			require.Empty(t, bundle.Apply(t.Context(), b, permissions.PermissionDiagnostics()))
+			diags := permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
+			require.Equal(t, diag.CannotChangePathPermissions, diags[0].ID)
+		})
+	}
 }
 
 // A user whose groups were not read, for example because the groups list failed, has

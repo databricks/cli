@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle validate -o json
+[
+  "admins",
+  "users"
+]
+
+>>> [CLI] bundle validate
+Name: workspace-local-groups
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/workspace-local-groups/default
+
+Validation OK!

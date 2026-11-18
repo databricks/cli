@@ -138,7 +138,7 @@ func TestGetCurrentUserDoesNotRetryOn403(t *testing.T) {
 	assert.Equal(t, int32(1), calls.Load())
 }
 
-func TestListCurrentUserParentGroupIDsFollowsPages(t *testing.T) {
+func TestListCurrentUserParentGroupsFollowsPages(t *testing.T) {
 	var pages []string
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -148,20 +148,24 @@ func TestListCurrentUserParentGroupIDsFollowsPages(t *testing.T) {
 		// The fixture bodies use the proto keys; a wrong key decodes to no groups.
 		if token == "" {
 			return map[string]any{
-				"me_transitive_parent_groups": []map[string]any{{"group_id": "11"}, {"group_id": "12"}},
+				"me_transitive_parent_groups": []map[string]any{{"group_id": "11", "group_name": "eng"}, {"group_id": "12", "group_name": "ops"}},
 				"next_page_token":             "page2",
 			}
 		}
 		return map[string]any{
-			"me_transitive_parent_groups": []map[string]any{{"group_id": "13"}},
+			"me_transitive_parent_groups": []map[string]any{{"group_id": "13", "group_name": "users"}},
 		}
 	})
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
-	ids, err := listCurrentUserParentGroupIDs(t.Context(), w)
+	groups, err := listCurrentUserParentGroups(t.Context(), w)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"11", "12", "13"}, ids)
+	assert.Equal(t, []parentGroup{
+		{GroupId: "11", GroupName: "eng"},
+		{GroupId: "12", GroupName: "ops"},
+		{GroupId: "13", GroupName: "users"},
+	}, groups)
 	assert.Equal(t, []string{"", "page2"}, pages)
 }
 
@@ -180,42 +184,17 @@ func TestCurrentUserGroupsResolvesNamesSorted(t *testing.T) {
 	assert.NotEmpty(t, groups[0].Value)
 }
 
-// A parent ID that is missing from the account group list is skipped, not reported as
-// an error: the other memberships are still known.
-func TestCurrentUserGroupsSkipsParentIDMissingFromAccountList(t *testing.T) {
-	server := testserver.New(t)
-	testserver.AddDefaultHandlers(server)
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
-	require.NoError(t, err)
-	server.AddGroups("test-token", []string{"testgroup"}, nil)
-	server.JoinGroup("test-token", "missing-group")
-
-	groups, err := CurrentUserGroups(t.Context(), w)
-	require.NoError(t, err)
-	require.Len(t, groups, 1)
-	assert.Equal(t, "testgroup", groups[0].Display)
-	assert.Equal(t, "testgroup", groups[0].Display)
-}
-
-// The account group list is paged; every page is read, and names are matched by ID
-// across pages.
-func TestCurrentUserGroupsReadsEveryPageOfGroupList(t *testing.T) {
-	var pages []string
+// Workspace-local groups such as admins and users are named by the parent-groups
+// response itself, so they resolve without any account group read.
+func TestCurrentUserGroupsIncludesWorkspaceLocalGroups(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(testserver.Request) any {
-		return map[string]any{"me_transitive_parent_groups": []map[string]any{{"group_id": "11"}, {"group_id": "12"}, {"group_id": "13"}}}
-	})
-	server.Handle("GET", "/api/2.0/identity/groups", func(req testserver.Request) any {
-		token := req.URL.Query().Get("page_token")
-		pages = append(pages, token)
-		if token == "" {
-			return map[string]any{
-				"groups":          []map[string]any{{"group_id": "11", "group_name": "b"}, {"group_id": "99", "group_name": "unrelated"}},
-				"next_page_token": "page2",
-			}
-		}
-		return map[string]any{"groups": []map[string]any{{"group_id": "12", "group_name": "a"}, {"group_id": "13", "group_name": "c"}}}
+		return map[string]any{"me_transitive_parent_groups": []map[string]any{
+			{"group_id": "86546749069356", "group_name": "users"},
+			{"group_id": "79621542766305", "group_name": "account users"},
+			{"group_id": "90000000000001", "group_name": "admins"},
+		}}
 	})
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -223,22 +202,18 @@ func TestCurrentUserGroupsReadsEveryPageOfGroupList(t *testing.T) {
 	groups, err := CurrentUserGroups(t.Context(), w)
 	require.NoError(t, err)
 	assert.Equal(t, []iam.ComplexValue{
-		{Value: "12", Display: "a"},
-		{Value: "11", Display: "b"},
-		{Value: "13", Display: "c"},
+		{Value: "79621542766305", Display: "account users"},
+		{Value: "90000000000001", Display: "admins"},
+		{Value: "86546749069356", Display: "users"},
 	}, groups)
-	assert.Equal(t, []string{"", "page2"}, pages)
 }
 
-// A failed account group list fails the lookup, so no partial list is returned as the
+// A failed parent-groups read fails the lookup, so no partial list is returned as the
 // complete membership.
-func TestCurrentUserGroupsFailsWhenGroupListFails(t *testing.T) {
+func TestCurrentUserGroupsFailsWhenParentGroupsFail(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(testserver.Request) any {
-		return map[string]any{"me_transitive_parent_groups": []map[string]any{{"group_id": "11"}}}
-	})
-	server.Handle("GET", "/api/2.0/identity/groups", func(testserver.Request) any {
 		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "denied"}}
 	})
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -247,4 +222,29 @@ func TestCurrentUserGroupsFailsWhenGroupListFails(t *testing.T) {
 	groups, err := CurrentUserGroups(t.Context(), w)
 	require.ErrorContains(t, err, "denied")
 	assert.Nil(t, groups)
+}
+
+func TestGetUserPrincipalRejectsAssumedGroup(t *testing.T) {
+	w := newIdentityMeWorkspace(t, func(testserver.Request) testserver.Response {
+		return testserver.Response{Body: map[string]any{"group": map[string]any{"group_id": "3000033333", "group_name": "data-engineers"}}}
+	})
+
+	user, err := GetUserPrincipal(t.Context(), w)
+	require.ErrorIs(t, err, ErrGroupPrincipal)
+	assert.Nil(t, user)
+
+	// Commands that only identify the caller still get the group.
+	group, err := GetCurrentUser(t.Context(), w)
+	require.NoError(t, err)
+	assert.Equal(t, "data-engineers", group.UserName)
+}
+
+func TestGetUserPrincipalReturnsUser(t *testing.T) {
+	w := newIdentityMeWorkspace(t, func(testserver.Request) testserver.Response {
+		return testserver.Response{Body: map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user"}}}
+	})
+
+	user, err := GetUserPrincipal(t.Context(), w)
+	require.NoError(t, err)
+	assert.Equal(t, "test-user", user.UserName)
 }

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	databricksclient "github.com/databricks/databricks-sdk-go/client"
@@ -26,12 +25,22 @@ const (
 	identityMeTransitiveParentGroupsPath = "/api/2.0/identity/me/transitive-parent-groups"
 )
 
+// ErrGroupPrincipal is returned by GetUserPrincipal when the current request is
+// authorized by an assumed group, which has no user identity to deploy as.
+var ErrGroupPrincipal = errors.New("the current identity is an assumed group, but this command needs a user or service principal")
+
 // identityMe is the principal returned by GET /api/2.0/identity/me. Exactly one
 // of the three fields is set. Groups and parent groups are not returned inline.
 type identityMe struct {
 	User             *iamv2.User             `json:"user,omitempty"`
 	Group            *iamv2.Group            `json:"group,omitempty"`
 	ServicePrincipal *iamv2.ServicePrincipal `json:"service_principal,omitempty"`
+}
+
+// currentPrincipal is identity/me as an iam.User, with group set for an assumed group.
+type currentPrincipal struct {
+	user  *iam.User
+	group bool
 }
 
 // GetCurrentUser returns the authorizing principal of the current request as an
@@ -41,22 +50,49 @@ type identityMe struct {
 // The call retries HTTP 500 responses for up to meRetryTimeout. It runs at the
 // start of most CLI commands, and an unretried 500 would fail the whole command.
 func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	return retries.Poll(ctx, meRetryTimeout, func() (*iam.User, *retries.Err) {
-		user, err := getIdentityMe(ctx, w)
+	p, err := pollIdentityMe(ctx, w)
+	if err != nil {
+		return nil, err
+	}
+	return p.user, nil
+}
+
+// GetCurrentUserOnce is GetCurrentUser with a single attempt, for probes that should
+// fail fast rather than wait out transient 500s.
+func GetCurrentUserOnce(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
+	p, err := getIdentityMe(ctx, w)
+	if err != nil {
+		return nil, err
+	}
+	return p.user, nil
+}
+
+// GetUserPrincipal is GetCurrentUser for commands that act as the current user, such
+// as bundle deployments and paths under /Workspace/Users. It returns ErrGroupPrincipal
+// when the caller is an assumed group.
+func GetUserPrincipal(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
+	p, err := pollIdentityMe(ctx, w)
+	if err != nil {
+		return nil, err
+	}
+	if p.group {
+		return nil, ErrGroupPrincipal
+	}
+	return p.user, nil
+}
+
+// pollIdentityMe is getIdentityMe that retries HTTP 500 responses for meRetryTimeout.
+func pollIdentityMe(ctx context.Context, w *databricks.WorkspaceClient) (*currentPrincipal, error) {
+	return retries.Poll(ctx, meRetryTimeout, func() (*currentPrincipal, *retries.Err) {
+		p, err := getIdentityMe(ctx, w)
 		if err == nil {
-			return user, nil
+			return p, nil
 		}
 		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusInternalServerError {
 			return nil, retries.Continue(err)
 		}
 		return nil, retries.Halt(err)
 	})
-}
-
-// GetCurrentUserOnce is GetCurrentUser with a single attempt, for probes that should
-// fail fast rather than wait out transient 500s.
-func GetCurrentUserOnce(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	return getIdentityMe(ctx, w)
 }
 
 // identityGet sends a GET to path with the workspace's auth headers and decodes the
@@ -69,12 +105,16 @@ func identityGet(ctx context.Context, w *databricks.WorkspaceClient, path string
 	return c.Do(ctx, http.MethodGet, path, auth.WorkspaceIDHeaders(w.Config), query, nil, out)
 }
 
-func getIdentityMe(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
+func getIdentityMe(ctx context.Context, w *databricks.WorkspaceClient) (*currentPrincipal, error) {
 	var me identityMe
 	if err := identityGet(ctx, w, identityMePath, nil, &me); err != nil {
 		return nil, err
 	}
-	return meToUser(&me)
+	user, err := meToUser(&me)
+	if err != nil {
+		return nil, err
+	}
+	return &currentPrincipal{user: user, group: me.Group != nil}, nil
 }
 
 // meToUser maps a principal from identity/me onto an iam.User, setting Id, UserName,
@@ -113,12 +153,18 @@ func meToUser(me *identityMe) (*iam.User, error) {
 	}
 }
 
-// listCurrentUserParentGroupIDs returns the IDs of the groups the current principal
-// belongs to, directly or through parent groups, following every page. The keys follow
-// ListMeTransitiveParentGroupsResponse in the IAM v2 proto, not the generic SDK response,
-// which decodes a different key.
-func listCurrentUserParentGroupIDs(ctx context.Context, w *databricks.WorkspaceClient) ([]string, error) {
-	var ids []string
+// parentGroup is one entry of ListMeTransitiveParentGroupsResponse. The keys follow the
+// IAM v2 proto, not the generic SDK response, which decodes a different key.
+type parentGroup struct {
+	GroupId   string `json:"group_id"`
+	GroupName string `json:"group_name"`
+}
+
+// listCurrentUserParentGroups returns the groups the current principal belongs to,
+// directly or through parent groups, following every page. The response also names
+// workspace-local groups such as admins and users, which the account group list lacks.
+func listCurrentUserParentGroups(ctx context.Context, w *databricks.WorkspaceClient) ([]parentGroup, error) {
+	var groups []parentGroup
 	pageToken := ""
 	for {
 		query := map[string]any{}
@@ -126,19 +172,15 @@ func listCurrentUserParentGroupIDs(ctx context.Context, w *databricks.WorkspaceC
 			query["page_token"] = pageToken
 		}
 		var page struct {
-			Groups []struct {
-				GroupId string `json:"group_id"`
-			} `json:"me_transitive_parent_groups"`
-			NextPageToken string `json:"next_page_token,omitempty"`
+			Groups        []parentGroup `json:"me_transitive_parent_groups"`
+			NextPageToken string        `json:"next_page_token,omitempty"`
 		}
 		if err := identityGet(ctx, w, identityMeTransitiveParentGroupsPath, query, &page); err != nil {
 			return nil, err
 		}
-		for _, g := range page.Groups {
-			ids = append(ids, g.GroupId)
-		}
+		groups = append(groups, page.Groups...)
 		if page.NextPageToken == "" {
-			return ids, nil
+			return groups, nil
 		}
 		pageToken = page.NextPageToken
 	}
@@ -146,30 +188,16 @@ func listCurrentUserParentGroupIDs(ctx context.Context, w *databricks.WorkspaceC
 
 // CurrentUserGroups returns the groups the current principal belongs to, directly or
 // through parent groups, as iam.ComplexValue entries with the group ID as Value and the
-// group name as Display, sorted by Display. Names come from one list of all account
-// groups, so the cost is one list call per 1000 groups rather than one lookup per group.
-// It fails when either call fails, so a caller never sees a partial list as complete.
+// group name as Display, sorted by Display. It is one paged call and never reads the
+// account group list.
 func CurrentUserGroups(ctx context.Context, w *databricks.WorkspaceClient) ([]iam.ComplexValue, error) {
-	ids, err := listCurrentUserParentGroupIDs(ctx, w)
+	parents, err := listCurrentUserParentGroups(ctx, w)
 	if err != nil {
 		return nil, err
-	}
-	all, err := w.WorkspaceIamV2.ListGroupsProxyAll(ctx, iamv2.ListGroupsProxyRequest{})
-	if err != nil {
-		return nil, err
-	}
-	names := make(map[string]string, len(all))
-	for _, g := range all {
-		names[g.GroupId] = g.GroupName
 	}
 	var groups []iam.ComplexValue
-	for _, id := range ids {
-		name, ok := names[id]
-		if !ok {
-			log.Debugf(ctx, "Group %s of the current user is not in the account group list; skipping it", id)
-			continue
-		}
-		groups = append(groups, iam.ComplexValue{Value: id, Display: name})
+	for _, g := range parents {
+		groups = append(groups, iam.ComplexValue{Value: g.GroupId, Display: g.GroupName})
 	}
 	slices.SortFunc(groups, func(a, b iam.ComplexValue) int {
 		return strings.Compare(a.Display, b.Display)

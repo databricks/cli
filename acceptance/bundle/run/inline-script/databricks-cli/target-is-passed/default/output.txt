@@ -32,15 +32,6 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/identity/groups"
-}
-{
-  "headers": {
-    "Authorization": [
-      "Bearer [DATABRICKS_TOKEN]"
-    ]
-  },
-  "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/pat/files"

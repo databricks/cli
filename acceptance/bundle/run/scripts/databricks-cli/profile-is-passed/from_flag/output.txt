@@ -43,15 +43,6 @@
   "path": "/api/2.0/identity/me/transitive-parent-groups"
 }
 {
-  "headers": {
-    "Authorization": [
-      "Bearer oauth-token"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/identity/groups"
-}
-{
   "method": "GET",
   "path": "/.well-known/databricks-config"
 }

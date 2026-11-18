@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json | jq '.workspace.current_user.groups | map(.display)'
+trace $CLI bundle validate

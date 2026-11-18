@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-	"net/http"
 	"slices"
 	"strconv"
 
@@ -42,14 +41,14 @@ func (s *FakeWorkspace) GroupsCreate(req Request) Response {
 }
 
 // IdentityMeTransitiveParentGroups answers GET /api/2.0/identity/me/transitive-parent-groups
-// with the groups the caller belongs to.
+// with the groups the caller belongs to, named as the server names them.
 func (s *FakeWorkspace) IdentityMeTransitiveParentGroups() any {
 	defer s.LockUnlock()()
 
 	ids := slices.Sorted(maps.Keys(s.groupMembers))
 	parents := make([]map[string]any, 0, len(ids))
 	for _, id := range ids {
-		parents = append(parents, map[string]any{"group_id": id})
+		parents = append(parents, map[string]any{"group_id": id, "group_name": s.Groups[id].DisplayName})
 	}
 	return map[string]any{"me_transitive_parent_groups": parents}
 }
@@ -78,45 +77,4 @@ func (s *Server) JoinGroup(token, groupID string) {
 	ws := s.getWorkspaceForToken(token)
 	defer ws.LockUnlock()()
 	ws.groupMembers[groupID] = true
-}
-
-// IdentityGroup answers GET /api/2.0/identity/groups/{group_id}.
-func (s *FakeWorkspace) IdentityGroup(groupID string) any {
-	defer s.LockUnlock()()
-
-	group, ok := s.Groups[groupID]
-	if !ok {
-		return Response{
-			StatusCode: http.StatusNotFound,
-			Body:       map[string]any{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": "Group " + groupID + " does not exist."},
-		}
-	}
-	return map[string]any{
-		"name":       "groups/" + groupID,
-		"group_id":   group.Id,
-		"group_name": group.DisplayName,
-	}
-}
-
-// IdentityGroups answers GET /api/2.0/identity/groups, one page of all groups in
-// the account. page_token is the offset of the next page, as the server's opaque token.
-func (s *FakeWorkspace) IdentityGroups(pageSize int, pageToken string) any {
-	defer s.LockUnlock()()
-
-	if pageSize <= 0 {
-		pageSize = 1000
-	}
-	ids := slices.Sorted(maps.Keys(s.Groups))
-	start, _ := strconv.Atoi(pageToken)
-	end := min(start+pageSize, len(ids))
-	groups := make([]map[string]any, 0, end-start)
-	for _, id := range ids[start:end] {
-		group := s.Groups[id]
-		groups = append(groups, map[string]any{"group_id": group.Id, "group_name": group.DisplayName})
-	}
-	resp := map[string]any{"groups": groups}
-	if end < len(ids) {
-		resp["next_page_token"] = strconv.Itoa(end)
-	}
-	return resp
 }

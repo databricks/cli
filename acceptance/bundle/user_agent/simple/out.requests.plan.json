@@ -58,15 +58,6 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none sdk-feature/pagination auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/identity/groups"
-}
-{
-  "headers": {
-    "User-Agent": [
       "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
     ]
   },

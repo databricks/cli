@@ -1,11 +1,7 @@
-# Runs on a real workspace too: the groups of the caller are read from the account group
-# list there. The stubs below give the local run a membership to read; cloud runs ignore them.
+# Runs on a real workspace too: the groups of the caller are read from the parent-groups
+# list there. The stub below gives the local run a membership to read; cloud runs ignore it.
 Cloud = true
 
 [[Server]]
 Pattern = "GET /api/2.0/identity/me/transitive-parent-groups"
-Response.Body = '{"me_transitive_parent_groups": [{"group_id": "42"}]}'
-
-[[Server]]
-Pattern = "GET /api/2.0/identity/groups"
-Response.Body = '{"groups": [{"group_id": "42", "group_name": "data-engineers"}]}'
+Response.Body = '{"me_transitive_parent_groups": [{"group_id": "42", "group_name": "data-engineers"}]}'

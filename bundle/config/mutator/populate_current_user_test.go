@@ -40,10 +40,24 @@ func TestPopulateCurrentUserSetsGroups(t *testing.T) {
 	assert.Equal(t, "zeta", b.Config.Workspace.CurrentUser.Groups[1].Display)
 }
 
-// A failed group list leaves the groups empty and warns, and the current user is still set.
-func TestPopulateCurrentUserWarnsWhenGroupListFails(t *testing.T) {
+// Workspace-local groups are named by the parent-groups response, so admins and users
+// resolve like account groups.
+func TestPopulateCurrentUserSetsWorkspaceLocalGroups(t *testing.T) {
+	b := newPopulateBundle(t, testserver.New(t), "admins", "users")
+
+	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
+	require.NoError(t, diags.Error())
+	var names []string
+	for _, g := range b.Config.Workspace.CurrentUser.Groups {
+		names = append(names, g.Display)
+	}
+	assert.Equal(t, []string{"admins", "users"}, names)
+}
+
+// A failed parent-groups read leaves the groups empty and warns, and the current user is still set.
+func TestPopulateCurrentUserWarnsWhenGroupsFail(t *testing.T) {
 	server := testserver.New(t)
-	server.Handle("GET", "/api/2.0/identity/groups", func(testserver.Request) any {
+	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(testserver.Request) any {
 		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "denied"}}
 	})
 	b := newPopulateBundle(t, server, "testgroup")

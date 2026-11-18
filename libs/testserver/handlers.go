@@ -259,15 +259,6 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.IdentityMeTransitiveParentGroups()
 	})
 
-	server.Handle("GET", "/api/2.0/identity/groups", func(req Request) any {
-		pageSize, _ := strconv.Atoi(req.URL.Query().Get("page_size"))
-		return req.Workspace.IdentityGroups(pageSize, req.URL.Query().Get("page_token"))
-	})
-
-	server.Handle("GET", "/api/2.0/identity/groups/{group_id}", func(req Request) any {
-		return req.Workspace.IdentityGroup(req.Vars["group_id"])
-	})
-
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
 		returnGitInfo := req.URL.Query().Get("return_git_info") == "true"
