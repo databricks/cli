@@ -116,6 +116,11 @@ func addUndeployedPermissionsChanges(changes Changes, b *bundle.Bundle, resource
 		return fmt.Errorf("no config state for %s", permissionsKey)
 	}
 	local := sv.Value.(*dresources.PermissionsState)
+	// Without an entry for the current user, their default grants would be imported as new principals.
+	currentUser := currentUserName(b)
+	if !slices.ContainsFunc(local.EmbeddedSlice, func(p dresources.StatePermission) bool { return isCurrentUserPermission(p, currentUser) }) {
+		remote = withoutCurrentUserDefaults(remote, currentUser, config.GetResourceTypeFromKey(resourceKey))
+	}
 	remoteState := &dresources.PermissionsState{ObjectID: local.ObjectID, EmbeddedSlice: remote}
 	adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]
 	diff, err := structdiff.GetStructDiff(remoteState, local, adapter.KeyedSlices())
