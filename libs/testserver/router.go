@@ -35,6 +35,11 @@ type HandlerFunc func(req Request) any
 //     test.toml stubs in reverse so leaf-directory configs register first
 //     and win over inherited parent stubs.
 //
+//   - First wins only works when the default is registered after the
+//     stubs, as AddDefaultHandlers is. A default registered when the server
+//     is created, before any stub, uses HandleFallback instead: it loses to
+//     any exact or wildcard route, whatever the registration order.
+//
 // Router also clears req.URL.RawPath before dispatch so percent-encoded
 // slashes (%2F) match literal slashes in patterns; workspace file paths
 // in tests routinely contain encoded slashes.
