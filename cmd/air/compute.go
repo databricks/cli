@@ -37,12 +37,11 @@ type priorityClass string
 const (
 	priorityClassBestEffort priorityClass = "BEST_EFFORT"
 	priorityClassNormal     priorityClass = "NORMAL"
-	priorityClassHigh       priorityClass = "HIGH"
 )
 
-// priorityClasses lists the advertised priorities, low to high. BEST_EFFORT
-// remains accepted for compatibility with existing configurations.
-var priorityClasses = []priorityClass{priorityClassNormal, priorityClassHigh}
+// priorityClasses lists every valid value, low to high. Used for validation
+// error messages.
+var priorityClasses = []priorityClass{priorityClassBestEffort, priorityClassNormal}
 
 func validPriorityClassesHint() string {
 	names := make([]string, len(priorityClasses))
@@ -57,7 +56,7 @@ func validPriorityClassesHint() string {
 // trimmed and upper-cased, so `normal` and `NORMAL` both resolve.
 func parsePriorityClass(value string) (priorityClass, error) {
 	switch p := priorityClass(strings.ToUpper(strings.TrimSpace(value))); p {
-	case priorityClassBestEffort, priorityClassNormal, priorityClassHigh:
+	case priorityClassBestEffort, priorityClassNormal:
 		return p, nil
 	}
 	return "", fmt.Errorf("invalid priority_class %q: %s", value, validPriorityClassesHint())
@@ -83,8 +82,8 @@ func gpusPerNode(g gpuType) (int, error) {
 type computeConfig struct {
 	NumAccelerators   int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See Docs below for GPUs per node." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
 	AcceleratorType   string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
-	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'. An invalid or inaccessible pool is rejected. When omitted, workspace capacity selection applies." group:"GPU Pools (optional)"`
-	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id." group:"GPU Pools (optional)"`
+	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'." group:"GPU Pools (optional)"`
+	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the GPU Pool. Requires accelerator_pool_id." group:"GPU Pools (optional)"`
 }
 
 // validate checks the compute block against the backend's constraints.
@@ -125,7 +124,7 @@ func (c *computeConfig) validate() error {
 		// A priority class only ranks pending work within a pool, so it requires
 		// one.
 		if c.AcceleratorPoolID == nil {
-			return errors.New("compute.priority_class requires compute.accelerator_pool_id — priority applies only within a GPU pool")
+			return errors.New("compute.priority_class requires compute.accelerator_pool_id — priority applies only within a GPU Pool")
 		}
 		*c.PriorityClass = string(p)
 	}

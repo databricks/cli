@@ -118,7 +118,7 @@ config.compute
 
   GPU Pools (optional):
     accelerator_pool_id  GPU Pool to run on, by ID.
-    priority_class       Scheduling priority within the pool: NORMAL or HIGH.
+    priority_class       Scheduling priority within the GPU Pool.
 
 For details on a field, run "databricks air run -h config.compute.<field>".
 
@@ -133,14 +133,14 @@ config.mlflow_artifact_location
 
 >>> [CLI] air run -h config.compute.accelerator_pool_id
 config.compute.accelerator_pool_id
-  GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'. An invalid or inaccessible pool is rejected. When omitted, workspace capacity selection applies.
+  GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'.
 
   Type:     string
   Required: no
 
 >>> [CLI] air run -h config.compute.priority_class
 config.compute.priority_class
-  Scheduling priority within the pool: NORMAL or HIGH. Requires accelerator_pool_id.
+  Scheduling priority within the GPU Pool. Requires accelerator_pool_id.
 
   Type:     string
   Required: no
@@ -237,3 +237,10 @@ fields under "config.compute" are: accelerator_pool_id, accelerator_type, num_ac
 
 >>> [CLI] air run -h config.parameters.learning_rate
 Error: "config.parameters" holds user-defined keys, so "learning_rate" is not part of the schema; see "config.parameters" instead
+
+=== removed pool field is not in the schema
+
+>>> [CLI] air run -h config.compute.pool_id
+Error: unknown config field "config.compute.pool_id"
+
+fields under "config.compute" are: accelerator_pool_id, accelerator_type, num_accelerators, priority_class

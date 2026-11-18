@@ -25,7 +25,7 @@ Package and deploy:
   images          Push container images for custom environments
 
 Provisioned capacity:
-  pools           View provisioned GPU pools, if any (not required to run)
+  pools           View provisioned GPU Pools, if any (not required to run)
 
 Flags:
   -h, --help[=true|false]   help for air
@@ -107,9 +107,9 @@ Global Flags:
 === pools help
 
 >>> [CLI] air pools --help
-View GPU pools provisioned for your workspace.
+View GPU Pools provisioned for your workspace.
 
-A GPU pool is dedicated accelerator capacity that your Databricks account team
+A GPU Pool is dedicated accelerator capacity that your Databricks account team
 provisions. Pools are optional: a run uses one only when its YAML sets
 compute.accelerator_pool_id.
 
@@ -118,8 +118,8 @@ Usage:
   databricks air pools [command]
 
 Available Commands:
-  get         Show a GPU pool and its accelerator usage
-  list        List the GPU pools available to the current workspace
+  get         Show a GPU Pool and its accelerator usage
+  list        List the GPU Pools available to the current workspace
 
 Flags:
   -h, --help[=true|false]   help for pools

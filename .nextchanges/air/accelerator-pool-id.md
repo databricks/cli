@@ -1,1 +1,1 @@
-* Rename `compute.pool_id` to `compute.accelerator_pool_id` for GPU Pool selection in AIR workload YAML. ([#7698](https://github.com/databricks/cli/pull/7698))
+* Breaking: `compute.pool_id` is no longer accepted in AIR workload YAML; use `compute.accelerator_pool_id`. ([#7698](https://github.com/databricks/cli/pull/7698))
