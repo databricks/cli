@@ -28,11 +28,12 @@ const skillUserAgentKey = "skill"
 const (
 	maxSkillLength = 64
 
-	// maxSkillsUserAgentLength bounds all " skill/<name>" pairs together. The
-	// usage logs that feed skill analytics cap the user agent at 512 characters,
-	// and the SDK appends auth/, agent/ and other pairs after these, so the
-	// skills must leave room for them.
-	maxSkillsUserAgentLength = 128
+	// maxSkillsUserAgentLength bounds all " skill/<name>" pairs together. It
+	// fits five of the longest current skill names (45-byte pairs). The usage
+	// logs that feed skill analytics cap the user agent at 512 characters, and
+	// the rest of the CLI's user agent (auth/, agent/ and other pairs, some
+	// appended after these) takes about 200, so the skills must leave room for it.
+	maxSkillsUserAgentLength = 225
 )
 
 // skillNamePattern is a subset of what the SDK accepts in a user agent value,

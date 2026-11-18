@@ -31,12 +31,13 @@ func pairsSize(names []string) int {
 }
 
 func TestParseSkills(t *testing.T) {
-	// 22-byte names make 29-byte pairs: four fill 116 bytes, a fifth would make 145.
-	fourFit := skillNames(4, 22)
-	fiveTooMany := skillNames(5, 22)
-	// 57- and 49-byte names make 64- and 56-byte pairs (120 bytes), so " skill/c"
-	// lands exactly on 128 and nothing more fits.
-	exact := []string{strings.Repeat("a", 57), strings.Repeat("b", 49), "c"}
+	// 38-byte names (the longest current skill) make 45-byte pairs: five fill
+	// 225 bytes exactly and a sixth doesn't fit.
+	fiveFit := skillNames(5, 38)
+	sixTooMany := skillNames(6, 38)
+	// 64-, 64-, 64- and 22-byte pairs make 214 bytes, so " skill/abcd" (11)
+	// lands exactly on 225 and nothing more fits.
+	exact := []string{strings.Repeat("a", 57), strings.Repeat("b", 57), strings.Repeat("c", 57), "databricks-core", "abcd"}
 
 	tests := []struct {
 		name string
@@ -55,8 +56,8 @@ func TestParseSkills(t *testing.T) {
 		{"dedupes after normalization", "Core,core, CORE", []string{"core"}},
 		{"drops entry longer than 64 bytes", strings.Repeat("a", 65) + ",ok", []string{"ok"}},
 		{"keeps entry of exactly 64 bytes", strings.Repeat("a", 64), []string{strings.Repeat("a", 64)}},
-		{"keeps pairs within the budget", strings.Join(fourFit, ","), fourFit},
-		{"drops pairs over the budget", strings.Join(fiveTooMany, ","), fiveTooMany[:4]},
+		{"keeps five of the longest skill names", strings.Join(fiveFit, ","), fiveFit},
+		{"drops pairs over the budget", strings.Join(sixTooMany, ","), sixTooMany[:5]},
 		{"fills the budget exactly", strings.Join(exact, ",") + ",d", exact},
 	}
 	for _, tt := range tests {
