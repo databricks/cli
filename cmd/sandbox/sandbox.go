@@ -50,4 +50,5 @@ Common workflows:
 	cmd.AddCommand(newStartCommand())
 	cmd.AddCommand(newStatusCommand())
 	cmd.AddCommand(newConfigCommand())
+	cmd.AddCommand(newFsCommand())
 }
