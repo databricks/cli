@@ -34,8 +34,9 @@ const maxListedFailures = 10
 const stallTimeout = 5 * time.Minute
 
 // probeBackoffMin and probeBackoffMax bound the pause before each attempt made
-// while the circuit breaker is open. A Retry-After hint from the server is
-// honored, capped at probeBackoffMax.
+// while the circuit breaker is open, and before each retry of a directory
+// listing or Mkdir. A Retry-After hint from the server is honored, capped at
+// probeBackoffMax.
 const (
 	probeBackoffMin = 2 * time.Second
 	probeBackoffMax = 30 * time.Second
@@ -156,6 +157,8 @@ type copyJob struct {
 //     failures never stalls.
 //   - When a fatal error or a cancellation stops the copy, in-flight files are
 //     cancelled and reported as failed.
+//   - A retryable error listing a source directory or creating a target one is
+//     retried in place, for up to the stall timeout.
 //   - Once the copy stops, the walk goes on only to count the files left, which
 //     are reported as not attempted.
 type recursiveCopy struct {
@@ -245,7 +248,7 @@ func (r *recursiveCopy) run(ctx context.Context, sourceDir, targetDir string) er
 	r.lastSuccess = r.now()
 	r.slots = make(chan struct{}, r.c.concurrency)
 
-	sourceFs := filer.NewFS(ctx, r.c.sourceFiler)
+	sourceFs := filer.NewFS(ctx, &walkRetryFiler{Filer: r.c.sourceFiler, r: r})
 	walkErr := fs.WalkDir(sourceFs, sourceDir, func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -265,7 +268,9 @@ func (r *recursiveCopy) run(ctx context.Context, sourceDir, targetDir string) er
 		}
 		// Create the directory before the files in it. WalkDir visits a
 		// directory before its contents.
-		if err := r.c.targetFiler.Mkdir(ctx, targetPath); err != nil {
+		if err := r.retryWalk(ctx, "create directory "+targetPath, func() error {
+			return r.c.targetFiler.Mkdir(ctx, targetPath)
+		}); err != nil {
 			return err
 		}
 		// A created directory is progress too, so a tree of slow directories
@@ -556,6 +561,72 @@ func (r *recursiveCopy) checkExistingTarget(ctx context.Context, job copyJob) er
 		return errPartialTarget
 	}
 	return nil
+}
+
+// retryWalk runs op, a directory listing or Mkdir, retrying a retryable error
+// in place with the probe backoff for up to the stall timeout from the first
+// attempt. The walk is sequential, so this makes one call at a time.
+func (r *recursiveCopy) retryWalk(ctx context.Context, what string, op func() error) error {
+	start := r.now()
+	backoff := r.probeBackoffMin
+	for retried := false; ; retried = true {
+		err := op()
+		if err == nil {
+			// A recovered call is progress, so its retries do not use up the
+			// stall timeout of the files that follow.
+			if retried {
+				r.progress()
+			}
+			return nil
+		}
+		// No retries while a stalled copy only counts the files left.
+		if classifyError(ctx, err) != classRetryable || r.isStalled() {
+			return err
+		}
+		remaining := r.stallTimeout - r.now().Sub(start)
+		if remaining <= 0 {
+			return err
+		}
+		delay := min(max(backoff, retryAfter(err)), r.probeBackoffMax, remaining)
+		backoff = min(backoff*2, r.probeBackoffMax)
+		log.Debugf(ctx, "fs cp: retrying %s in %s after: %s", what, delay, describeError(err))
+		if r.sleep(ctx, delay) != nil {
+			return err
+		}
+	}
+}
+
+func (r *recursiveCopy) isStalled() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.stalled
+}
+
+// walkRetryFiler retries the calls the walk makes on the source: a Stat of
+// the root and a ReadDir of every directory.
+type walkRetryFiler struct {
+	filer.Filer
+	r *recursiveCopy
+}
+
+func (w *walkRetryFiler) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
+	var entries []fs.DirEntry
+	err := w.r.retryWalk(ctx, "list "+name, func() error {
+		var err error
+		entries, err = w.Filer.ReadDir(ctx, name)
+		return err
+	})
+	return entries, err
+}
+
+func (w *walkRetryFiler) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+	var info fs.FileInfo
+	err := w.r.retryWalk(ctx, "stat "+name, func() error {
+		var err error
+		info, err = w.Filer.Stat(ctx, name)
+		return err
+	})
+	return info, err
 }
 
 // finish prints the end-of-run summary to stderr and returns the command's

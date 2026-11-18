@@ -1,0 +1,13 @@
+
+>>> cp_r localdir dbfs:/Volumes/main/default/keep-going/dst --concurrency 2
+Copied 3 files.
+localdir/f1.txt -> dbfs:/Volumes/main/default/keep-going/dst/f1.txt
+localdir/f2.txt -> dbfs:/Volumes/main/default/keep-going/dst/f2.txt
+localdir/sub/f.txt -> dbfs:/Volumes/main/default/keep-going/dst/sub/f.txt
+
+=== The PUT of dst/sub is sent twice
+
+>>> print_requests.py --summary --sort //api/2.0/fs/directories/
+PUT /api/2.0/fs/directories/Volumes/main/default/keep-going/dst
+PUT /api/2.0/fs/directories/Volumes/main/default/keep-going/dst/sub
+PUT /api/2.0/fs/directories/Volumes/main/default/keep-going/dst/sub
