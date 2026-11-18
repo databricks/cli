@@ -9,6 +9,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
+>>> jq -r .plan["resources.clusters.test_cluster"].action plan.json
+resize
+
 === Terminate the cluster before applying the saved plan
 
 >>> [CLI] clusters get [CLUSTER_ID]
