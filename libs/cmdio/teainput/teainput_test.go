@@ -31,10 +31,9 @@ func TestDecode(t *testing.T) {
 		{"shift+tab", tea.KeyMsg{Type: tea.KeyShiftTab}, Event{Key: "shift+tab"}},
 		{"delete", tea.KeyMsg{Type: tea.KeyDelete}, Event{Key: "delete"}},
 		{"up", tea.KeyMsg{Type: tea.KeyUp}, Event{Key: "up"}},
-		// Alt on keys the models always treated as plain keys is dropped.
-		{"alt enter", tea.KeyMsg{Type: tea.KeyEnter, Alt: true}, Event{Key: "enter"}},
-		{"alt ctrl+c", tea.KeyMsg{Type: tea.KeyCtrlC, Alt: true}, Event{Key: "ctrl+c"}},
-		{"alt left", tea.KeyMsg{Type: tea.KeyLeft, Alt: true}, Event{Key: "left"}},
+		{"alt enter", tea.KeyMsg{Type: tea.KeyEnter, Alt: true}, Event{Key: "alt+enter"}},
+		{"alt ctrl+c", tea.KeyMsg{Type: tea.KeyCtrlC, Alt: true}, Event{Key: "alt+ctrl+c"}},
+		{"alt left", tea.KeyMsg{Type: tea.KeyLeft, Alt: true}, Event{Key: "alt+left"}},
 		// Several runes in one read are text. They carry no key name, so a burst
 		// that spells a key name is typed, not pressed.
 		{"burst", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("jk")}, Event{Text: "jk"}},
@@ -59,7 +58,7 @@ func TestDecode(t *testing.T) {
 
 func TestPressRoundTrips(t *testing.T) {
 	for _, key := range []string{
-		"enter", "ctrl+c", "ctrl+j", "ctrl+h", "backspace", "alt+backspace",
+		"enter", "alt+enter", "ctrl+c", "alt+ctrl+c", "ctrl+j", "ctrl+h", "backspace", "alt+backspace",
 		"esc", "tab", "alt+tab", "shift+tab", "delete", "up", "down", "left", "right",
 		"space", "alt+space", "q", "Q", "alt+f", "ctrl+n", "ctrl+p",
 	} {
