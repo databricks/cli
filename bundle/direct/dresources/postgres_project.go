@@ -144,7 +144,8 @@ func (r *ResourcePostgresProject) waitCreated(ctx context.Context, waiter postgr
 
 // recoverFailedCreate handles a create request that failed; see recoverPostgresCreate. Repeating
 // the request without looking first fails with "already exists" when the failed request did create
-// the project, so look for it before repeating.
+// the project, so look for it before repeating. Without a project_id there is no name to look up;
+// the API rejects such a request with 400 anyway.
 func (r *ResourcePostgresProject) recoverFailedCreate(ctx context.Context, req postgres.CreateProjectRequest, start time.Time, createErr error) (string, *PostgresProjectRemote, error) {
 	if ctx.Err() != nil || !retry.IsTransient(ctx, createErr) || req.ProjectId == "" {
 		return "", nil, createErr
@@ -167,12 +168,37 @@ func (r *ResourcePostgresProject) recoverFailedCreate(ctx context.Context, req p
 			if !createdByRequestAt(project.CreateTime, start) {
 				return "", nil, fmt.Errorf("%w; project %s exists but was not created by this deployment", createErr, project.Name)
 			}
+			if err := r.waitDefaultBranchReady(ctx, project); err != nil {
+				return "", nil, err
+			}
 			// Info, not Warn: the deploy got the project it asked for, so there is nothing to act on.
 			log.Infof(ctx, "using project %s, created despite the failed create request: %s", project.Name, createErr)
 			remote := makePostgresProjectRemote(project)
 			return remote.Name, remote, nil
 		},
 	}, createErr)
+}
+
+// waitDefaultBranchReady stands in for the create operation that a recovered project's failed
+// request would have waited for: dependent resources are created on the default branch, so wait
+// for it to leave INIT. The project is ours either way, so a wait that ends early, or a default
+// branch that cannot be read, only warns: state still records the project, and the next deploy
+// does not fail with "already exists".
+func (r *ResourcePostgresProject) waitDefaultBranchReady(ctx context.Context, project *postgres.Project) error {
+	if project.Status == nil || project.Status.DefaultBranch == "" {
+		return nil
+	}
+	name := project.Status.DefaultBranch
+	branch, err := readBranch(ctx, r.client, name)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		log.Warnf(ctx, "waiting for branch %s to become ready: %s", name, err)
+		return nil
+	}
+	_, err = waitBranchReady(ctx, r.client, branch)
+	return err
 }
 
 // The default endpoint settings carry the same suspension oneof as an endpoint does;

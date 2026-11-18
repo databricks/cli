@@ -146,7 +146,7 @@ func (r *ResourcePostgresBranch) waitCreated(ctx context.Context, waiter postgre
 	return remote.Name, remote, nil
 }
 
-// Tuning for useRecoveredBranch, variables so that tests can shorten them.
+// Tuning for waitBranchReady, variables so that tests can shorten them.
 var (
 	// branchReadyTimeout bounds the wait for a recovered branch that is still in INIT.
 	branchReadyTimeout = 10 * time.Minute
@@ -183,9 +183,9 @@ func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, req po
 	}, createErr)
 }
 
-func (r *ResourcePostgresBranch) readBranch(ctx context.Context, name string) (*postgres.Branch, error) {
+func readBranch(ctx context.Context, client *databricks.WorkspaceClient, name string) (*postgres.Branch, error) {
 	return retry.With(ctx, retry.IsTransientRead, func() (*postgres.Branch, error) {
-		return r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
+		return client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
 	})
 }
 
@@ -200,26 +200,9 @@ func (r *ResourcePostgresBranch) useRecoveredBranch(ctx context.Context, branch 
 		return "", nil, fmt.Errorf("%w; branch %s exists but was not created by this deployment", createErr, branch.Name)
 	}
 
-	deadline := time.Now().Add(branchReadyTimeout)
-	for branchState(branch) == postgres.BranchStatusStateInit {
-		if !time.Now().Before(deadline) {
-			log.Warnf(ctx, "branch %s is still initializing after %s", branch.Name, branchReadyTimeout)
-			break
-		}
-		select {
-		case <-ctx.Done():
-			return "", nil, ctx.Err()
-		case <-time.After(branchReadyPollInterval):
-		}
-		next, err := r.readBranch(ctx, branch.Name)
-		if err != nil {
-			if ctx.Err() != nil {
-				return "", nil, ctx.Err()
-			}
-			log.Warnf(ctx, "waiting for branch %s to become ready: %s", branch.Name, err)
-			break
-		}
-		branch = next
+	branch, err := waitBranchReady(ctx, r.client, branch)
+	if err != nil {
+		return "", nil, err
 	}
 
 	// Other states, such as DELETED or ARCHIVED, will not become READY.
@@ -230,6 +213,34 @@ func (r *ResourcePostgresBranch) useRecoveredBranch(ctx context.Context, branch 
 	log.Infof(ctx, "using branch %s, created despite the failed create request: %s", branch.Name, createErr)
 	remote := makePostgresBranchRemote(branch)
 	return remote.Name, remote, nil
+}
+
+// waitBranchReady polls branch while it is in INIT, up to branchReadyTimeout, and returns the last
+// branch it read. A timeout or a failed read ends the wait early with a warning; only a done
+// context is returned as an error.
+func waitBranchReady(ctx context.Context, client *databricks.WorkspaceClient, branch *postgres.Branch) (*postgres.Branch, error) {
+	deadline := time.Now().Add(branchReadyTimeout)
+	for branchState(branch) == postgres.BranchStatusStateInit {
+		if !time.Now().Before(deadline) {
+			log.Warnf(ctx, "branch %s is still initializing after %s", branch.Name, branchReadyTimeout)
+			break
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(branchReadyPollInterval):
+		}
+		next, err := readBranch(ctx, client, branch.Name)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			log.Warnf(ctx, "waiting for branch %s to become ready: %s", branch.Name, err)
+			break
+		}
+		branch = next
+	}
+	return branch, nil
 }
 
 func branchState(branch *postgres.Branch) postgres.BranchStatusState {

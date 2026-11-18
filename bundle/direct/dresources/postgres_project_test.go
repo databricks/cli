@@ -25,10 +25,13 @@ type projectCreateScript struct {
 	t       *testing.T
 	creates []any
 	gets    []any
+	// branchGets are the responses to reads of the default branch.
+	branchGets []any
 
-	createCount int
-	getCount    int
-	operation   *postgres.Operation
+	createCount    int
+	getCount       int
+	branchGetCount int
+	operation      *postgres.Operation
 }
 
 func (s *projectCreateScript) client() *databricks.WorkspaceClient {
@@ -55,11 +58,29 @@ func (s *projectCreateScript) client() *databricks.WorkspaceClient {
 		require.LessOrEqual(s.t, s.getCount, len(s.gets), "unexpected get request")
 		return s.gets[s.getCount-1]
 	})
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req testserver.Request) any {
+		s.branchGetCount++
+		require.LessOrEqual(s.t, s.branchGetCount, len(s.branchGets), "unexpected branch get request")
+		return s.branchGets[s.branchGetCount-1]
+	})
 	testserver.AddDefaultHandlers(server)
 
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
 	require.NoError(s.t, err)
 	return client
+}
+
+const testDefaultBranchName = testProjectName + "/branches/production"
+
+// testProjectWithDefaultBranch is a project whose status names its default branch.
+func testProjectWithDefaultBranch(created time.Time) postgres.Project {
+	project := testProject(created)
+	project.Status = &postgres.ProjectStatus{DefaultBranch: testDefaultBranchName}
+	return project
+}
+
+func testDefaultBranch(state postgres.BranchStatusState) postgres.Branch {
+	return postgres.Branch{Name: testDefaultBranchName, Status: &postgres.BranchStatus{CurrentState: state}}
 }
 
 var (
@@ -76,6 +97,7 @@ func testProject(created time.Time) postgres.Project {
 func createTestProject(t *testing.T, s *projectCreateScript, projectID string) (string, *PostgresProjectRemote, error) {
 	t.Helper()
 	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	setForTest(t, &branchReadyPollInterval, time.Millisecond)
 	r := (&ResourcePostgresProject{}).New(s.client())
 	return r.DoCreate(ctx, &PostgresProjectState{ProjectId: projectID})
 }
@@ -165,7 +187,7 @@ func TestPostgresProjectCreateDoesNotRecoverFromNonTransientError(t *testing.T) 
 }
 
 func TestPostgresProjectCreateWithoutProjectIdIsNotRepeated(t *testing.T) {
-	// Without a caller-chosen id, a repeated request could create a second project.
+	// Without a project_id there is no name to look up.
 	s := &projectCreateScript{t: t, creates: []any{branchTimeout}}
 
 	_, _, err := createTestProject(t, s, "")
@@ -173,4 +195,36 @@ func TestPostgresProjectCreateWithoutProjectIdIsNotRepeated(t *testing.T) {
 	require.ErrorContains(t, err, testBranchTimeoutMessage)
 	assert.Equal(t, 1, s.createCount)
 	assert.Equal(t, 0, s.getCount)
+}
+
+func TestPostgresProjectCreateWaitsForDefaultBranchOfRecoveredProject(t *testing.T) {
+	s := &projectCreateScript{
+		t:          t,
+		creates:    []any{branchTimeout},
+		gets:       []any{testProjectWithDefaultBranch(time.Now())},
+		branchGets: []any{testDefaultBranch(postgres.BranchStatusStateInit), testDefaultBranch(postgres.BranchStatusStateReady)},
+	}
+
+	id, _, err := createTestProject(t, s, "p")
+
+	require.NoError(t, err)
+	assert.Equal(t, testProjectName, id)
+	assert.Equal(t, 1, s.createCount)
+	assert.Equal(t, 2, s.branchGetCount)
+}
+
+func TestPostgresProjectCreateReturnsRecoveredProjectWhenDefaultBranchReadFails(t *testing.T) {
+	// The project is ours: return it so that state records it, even though the wait ended early.
+	s := &projectCreateScript{
+		t:          t,
+		creates:    []any{branchTimeout},
+		gets:       []any{testProjectWithDefaultBranch(time.Now())},
+		branchGets: []any{branchError(403, "PERMISSION_DENIED", "no access")},
+	}
+
+	id, _, err := createTestProject(t, s, "p")
+
+	require.NoError(t, err)
+	assert.Equal(t, testProjectName, id)
+	assert.Equal(t, 1, s.branchGetCount)
 }

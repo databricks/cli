@@ -15,8 +15,7 @@ import (
 
 // postgresCreateTimeSkew is how much earlier than our first create request a found resource's
 // create_time may be, to allow for clock skew, and still count as created by that request.
-// A variable so that tests can change it.
-var postgresCreateTimeSkew = time.Minute
+const postgresCreateTimeSkew = time.Minute
 
 // postgresCreateRecovery describes a Lakebase resource whose create request failed with a
 // transient error. T is the SDK type of the resource and R the remote type DoCreate returns.
