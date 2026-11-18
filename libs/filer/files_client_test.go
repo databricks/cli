@@ -383,6 +383,7 @@ func TestHeadersTransportReturnsHookError(t *testing.T) {
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://example.test/api", nil)
 	require.NoError(t, err)
 
-	_, err = headersTransport{base: base, headers: func(*http.Request) error { return errors.New("boom") }}.RoundTrip(req)
+	resp, err := headersTransport{base: base, headers: func(*http.Request) error { return errors.New("boom") }}.RoundTrip(req) //nolint:bodyclose // no response on error
+	assert.Nil(t, resp)
 	assert.EqualError(t, err, "boom")
 }
