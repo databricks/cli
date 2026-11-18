@@ -417,11 +417,12 @@ func TestText(t *testing.T) {
 		want []string
 	}{
 		{"nothing set", nil, nil},
-		{"field", []string{"bundle", "bundle.name"}, []string{"1 bundle", "1 bundle.name"}},
-		{"bool true", []string{"flag", "flag=true"}, []string{"T flag"}},
-		{"bool false", []string{"flag", "flag=false"}, []string{"F flag"}},
-		{"both values under a wildcard", []string{"jobs.*.enabled", "jobs.*.enabled=true", "jobs.*.enabled=false"}, []string{"T jobs.*.enabled", "F jobs.*.enabled"}},
-		{"unresolved reference", []string{"ref"}, []string{"1 ref"}},
+		{"field", []string{"bundle", "bundle.name"}, []string{"P   bundle", "P   bundle.name"}},
+		{"bool true", []string{"flag", "flag=true"}, []string{"PT  flag"}},
+		{"bool false", []string{"flag", "flag=false"}, []string{"P F flag"}},
+		{"both values under a wildcard", []string{"jobs.*.enabled", "jobs.*.enabled=true", "jobs.*.enabled=false"}, []string{"PTF jobs.*.enabled"}},
+		{"unresolved reference", []string{"ref"}, []string{"P   ref"}},
+		{"value without presence", []string{"flag=true"}, []string{" T  flag"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			want := append([]string{"size=12 context=0"}, tc.want...)
@@ -430,7 +431,7 @@ func TestText(t *testing.T) {
 	}
 
 	// A bitmap from an older CLI has fewer bits; the rest of the schema is unset.
-	assert.Equal(t, []string{"size=1 context=7", "1 bundle"}, Text(schema, []bool{true}, 7))
+	assert.Equal(t, []string{"size=1 context=7", "P   bundle"}, Text(schema, []bool{true}, 7))
 }
 
 func TestToJSON(t *testing.T) {

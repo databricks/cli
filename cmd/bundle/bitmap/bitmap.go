@@ -103,9 +103,9 @@ func (f *outputFormat) Type() string {
 
 const outputHelp = `output format:
   compressed: base64 of the DEFLATE-compressed wire format
-  text:       a "size=N context=C" header, then one "<value> <field>" line per
-              set field: "T" or "F" for a boolean field holding that value, "1"
-              for any other field; unset fields are omitted
+  text:       a "size=N context=C" header, then one "PTF <field>" line per set
+              field: "P" if present, "T" and "F" if a boolean field held true
+              and false, a space for each that is not; unset fields are omitted
   json:       size, context, and trees of the fields present ("presence") and of
               the boolean fields seen holding "true" and "false"`
 

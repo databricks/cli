@@ -2,7 +2,8 @@
 # stable while still asserting that the bitmap covers the whole schema (../full records it).
 add_repl "$($CLI bundle bitmap schema | wc -l | tr -d ' ')" SCHEMA_SIZE
 
-# One line per set field ("1", or "T"/"F" for a bool) after a size/context header.
+# One "PTF <field>" line per set field (P present, T/F the values a bool held) after a
+# size/context header.
 trace $CLI bundle bitmap bitmap -o text > out.bitmap.txt
 trace $CLI bundle bitmap bitmap -o json > out.bitmap.json
 
