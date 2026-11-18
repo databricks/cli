@@ -213,17 +213,12 @@ func aiRuntimeEnvironment(ctx context.Context, w *databricks.WorkspaceClient, ru
 }
 
 // taskEnvironmentKey returns the environment key of the run's lead task (the
-// selected AI runtime task once the run is narrowed, see taskRun), unwrapping a
-// foreach sweep to its iterated task. It falls back to aiRuntimeEnvironmentKey,
-// the key `air run` submits, when the task names none.
+// selected AI runtime task once the run is narrowed, see taskRun; a sweep's
+// iterated task, see firstTask). It falls back to aiRuntimeEnvironmentKey, the
+// key `air run` submits, when the task names none.
 func taskEnvironmentKey(run *jobs.Run) string {
-	if t := leadTask(run); t != nil {
-		if t.ForEachTask != nil && t.ForEachTask.Task.EnvironmentKey != "" {
-			return t.ForEachTask.Task.EnvironmentKey
-		}
-		if t.EnvironmentKey != "" {
-			return t.EnvironmentKey
-		}
+	if t := firstTask(run); t != nil && t.EnvironmentKey != "" {
+		return t.EnvironmentKey
 	}
 	return aiRuntimeEnvironmentKey
 }

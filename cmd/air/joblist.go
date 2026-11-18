@@ -61,7 +61,7 @@ func isAirRun(r *jobs.Run) bool {
 // other tasks too, the copy also takes that task's state (see taskState) and
 // drops the run's own start and end times, so a task that hasn't started (or
 // was skipped) reports no timing rather than the whole run's. A run whose only
-// task is this one keeps its run-level state and timing, as before.
+// task is this one keeps its run-level state and timing.
 func taskRun(r *jobs.Run, key string) *jobs.Run {
 	narrowed := *r
 	narrowed.Tasks = nil
@@ -139,10 +139,15 @@ func firstTask(r *jobs.Run) *jobs.RunTask {
 	if t == nil || t.ForEachTask == nil {
 		return t
 	}
-	// The foreach inner task is a jobs.Task; expose the AI fields via a
-	// synthetic RunTask so callers can treat both shapes uniformly.
+	// The foreach inner task is a jobs.Task; expose the fields callers read via
+	// a synthetic RunTask so they can treat both shapes uniformly.
 	ai, genAI := taskSpec(t)
-	return &jobs.RunTask{TaskKey: t.TaskKey, AiRuntimeTask: ai, GenAiComputeTask: genAI}
+	return &jobs.RunTask{
+		TaskKey:          t.TaskKey,
+		AiRuntimeTask:    ai,
+		GenAiComputeTask: genAI,
+		EnvironmentKey:   t.ForEachTask.Task.EnvironmentKey,
+	}
 }
 
 // airTaskKey returns the key of the AI runtime task a narrowed run shows, or ""

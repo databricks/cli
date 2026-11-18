@@ -48,23 +48,23 @@ func TestResolveNodeCount(t *testing.T) {
 		{"GPU_8xB300", 16, 2},
 	}
 	for _, tt := range tests {
-		n, err := resolveNodeCount(airRunWithCompute(tt.accelType, tt.count), -1)
+		n, err := resolveNodeCount(airRunWithCompute(tt.accelType, tt.count))
 		require.NoError(t, err)
 		assert.Equal(t, tt.want, n)
 	}
 
 	// A run with no AI runtime compute errors.
-	_, err := resolveNodeCount(&jobs.Run{RunId: 1}, -1)
+	_, err := resolveNodeCount(&jobs.Run{RunId: 1})
 	require.Error(t, err)
 
 	// A count that isn't a whole number of nodes can't be mapped to node indices,
 	// so it errors rather than truncating to 0.
-	_, err = resolveNodeCount(airRunWithCompute("GPU_8xH100", 4), -1)
+	_, err = resolveNodeCount(airRunWithCompute("GPU_8xH100", 4))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not a multiple of 8")
 
 	// A zero count is reported as such, not as a missing config.
-	_, err = resolveNodeCount(airRunWithCompute("GPU_1xA10", 0), -1)
+	_, err = resolveNodeCount(airRunWithCompute("GPU_1xA10", 0))
 	require.Error(t, err)
 }
 
@@ -522,7 +522,7 @@ func TestResolveNodeCountReadsTheTaskTheLogsComeFrom(t *testing.T) {
 		aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1),
 		aiRuntimeTask("eval", 12, "e", "GPU_1xA10", 2),
 	}}
-	n, err := resolveNodeCount(run, -1)
+	n, err := nodeCountForRetry(run, -1)
 	require.NoError(t, err)
 	assert.Equal(t, 2, n)
 	assert.NoError(t, validateNodeIndex(1, n), "--node 1 is a valid eval node")

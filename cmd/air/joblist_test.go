@@ -436,7 +436,7 @@ func TestRunLevelWaitingStatesAreReportedAsSuch(t *testing.T) {
 			run := &jobs.Run{RunId: 1, State: &jobs.RunState{LifeCycleState: life}, Tasks: []jobs.RunTask{aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1)}}
 			assert.False(t, runWaitingForCompute(run))
 			assert.Equal(t, string(life), displayRunStatus(run))
-			assert.NotEqual(t, waitingForComputeStatus, detailedDisplayRunStatus(run, ""))
+			assert.Equal(t, string(life), detailedDisplayRunStatus(run, ""))
 		})
 	}
 
