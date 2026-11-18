@@ -60,10 +60,11 @@ func shellSafe(r rune) bool {
 
 // TestKeyringStore_Put_OSSecretSizeCaps pins how the CLI's keyring envelope
 // fares against go-keyring's per-OS secret caps. The caps are modeled in
-// fakeBackend so the test is keychain-agnostic and runs on every OS; the real
-// backends gave the same results on the macOS and Windows CI cells of the
-// first revision of https://github.com/databricks/cli/pull/7727. A fix for
-// #7707 that changes what Put stores must update this test on purpose.
+// fakeBackend so the test is keychain-agnostic and runs on every OS;
+// TestKeyringStore_Put_RealBackendRejectsLargeToken in
+// keyring_size_limit_os_test.go checks the real library on CI and fails when
+// the modeled caps go stale. A fix for #7707 that changes what Put stores
+// must update this test on purpose.
 func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
 	cases := []struct {
 		name          string
