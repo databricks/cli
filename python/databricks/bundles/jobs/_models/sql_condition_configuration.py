@@ -19,18 +19,19 @@ if TYPE_CHECKING:
 class SqlConditionConfiguration:
     """"""
 
-    sql_query_id: VariableOr[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The ID of the SQL query to evaluate as the trigger condition.
-    """
-
     warehouse_id: VariableOr[str]
     """
     :meta private: [EXPERIMENTAL]
     
     [Beta] The canonical identifier of the SQL warehouse to run the condition query against.
+    """
+
+    sql_query_id: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] The ID of the SQL query to evaluate as the trigger condition.
+    Exactly one of `sql_query_id` or `file` must be set.
     """
 
     trigger_mode: VariableOrOptional[SqlConditionTriggerMode] = None
@@ -55,18 +56,19 @@ class SqlConditionConfiguration:
 class SqlConditionConfigurationDict(TypedDict, total=False):
     """"""
 
-    sql_query_id: VariableOr[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] The ID of the SQL query to evaluate as the trigger condition.
-    """
-
     warehouse_id: VariableOr[str]
     """
     :meta private: [EXPERIMENTAL]
     
     [Beta] The canonical identifier of the SQL warehouse to run the condition query against.
+    """
+
+    sql_query_id: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] The ID of the SQL query to evaluate as the trigger condition.
+    Exactly one of `sql_query_id` or `file` must be set.
     """
 
     trigger_mode: VariableOrOptional[SqlConditionTriggerModeParam]

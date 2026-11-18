@@ -389,17 +389,9 @@ func newUpdateTagAssignment() *cobra.Command {
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
-      commas (no spaces). The field path is relative to the resource object,
-      using a dot (.) to navigate sub-fields (e.g., author.given_name).
-      Specification of elements in sequence or map fields is not allowed, as
-      only the entire collection field can be specified. Field names must
-      exactly match the resource field names.
-
-      A field mask of * indicates full replacement. It’s recommended to
-      always explicitly list the fields being updated and avoid using *
-      wildcards, as it can lead to unintended results if the API changes in the
-      future.`
+    UPDATE_MASK: The comma-separated list of fields to update. Only tag_value can be
+      updated, because the entity type, entity ID and tag key identify the tag
+      assignment.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

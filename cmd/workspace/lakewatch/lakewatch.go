@@ -45,16 +45,28 @@ Manage Lakewatch: security-analytics data sources, detection rules, and
 
 	// Add methods
 	cmd.AddCommand(newCreateDatasource())
+	cmd.AddCommand(newCreateParser())
+	cmd.AddCommand(newCreateParserVersion())
 	cmd.AddCommand(newCreateRule())
 	cmd.AddCommand(newDeleteDatasource())
+	cmd.AddCommand(newDeleteParser())
+	cmd.AddCommand(newDeleteParserVersion())
 	cmd.AddCommand(newDeleteRule())
 	cmd.AddCommand(newGetAlertConfig())
+	cmd.AddCommand(newGetBuiltinParser())
+	cmd.AddCommand(newGetBuiltinParserVersion())
 	cmd.AddCommand(newGetCommonConfig())
 	cmd.AddCommand(newGetDatasource())
 	cmd.AddCommand(newGetDatasourceConfig())
+	cmd.AddCommand(newGetParser())
+	cmd.AddCommand(newGetParserVersion())
 	cmd.AddCommand(newGetRule())
 	cmd.AddCommand(newGetRuleConfig())
+	cmd.AddCommand(newListBuiltinParserVersions())
+	cmd.AddCommand(newListBuiltinParsers())
 	cmd.AddCommand(newListDatasources())
+	cmd.AddCommand(newListParserVersions())
+	cmd.AddCommand(newListParsers())
 	cmd.AddCommand(newListRules())
 	cmd.AddCommand(newUpdateAlertConfig())
 	cmd.AddCommand(newUpdateCommonConfig())
@@ -193,6 +205,211 @@ Create a datasource.
 	// Apply optional overrides to this command.
 	for _, fn := range createDatasourceOverrides {
 		fn(cmd, &createDatasourceReq)
+	}
+
+	return cmd
+}
+
+// start create-parser command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createParserOverrides []func(
+	*cobra.Command,
+	*lakewatch.CreateParserRequest,
+)
+
+func newCreateParser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createParserReq lakewatch.CreateParserRequest
+	createParserReq.Parser = lakewatch.Parser{}
+	var createParserJson flags.JsonFlag
+
+	cmd.Flags().Var(&createParserJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: created_by
+	cmd.Flags().StringVar(&createParserReq.Parser.Description, "description", createParserReq.Parser.Description, `Description of version 1.`)
+	cmd.Flags().StringVar(&createParserReq.Parser.Name, "name", createParserReq.Parser.Name, `Resource name.`)
+	// TODO: complex arg: owner
+
+	cmd.Use = "create-parser CATALOG_NAME SCHEMA_NAME PARSER_NAME SPEC"
+	cmd.Short = `*Beta* Create a parser.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a parser.
+
+  Creates a parser and its first version in one call.
+
+  Arguments:
+    CATALOG_NAME: Name of the parent UC catalog, set on create. Reads return the value as
+      supplied; the current UC catalog name is reported in
+      effective_catalog_name.
+    SCHEMA_NAME: Name of the parent UC schema, set on create. Reads return the value as
+      supplied; the current UC schema name is reported in
+      effective_schema_name.
+    PARSER_NAME: Client-supplied parser name, stored as supplied and fixed at create time.
+      Must be a valid UC identifier. A custom parser is not currently a UC
+      securable and this field has no rename path.
+    SPEC: Spec of version 1, as a YAML document. Accepted only by CreateParser;
+      read a version's spec with GetParserVersion.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'catalog_name', 'schema_name', 'parser_name', 'spec' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createParserJson.Unmarshal(&createParserReq.Parser)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createParserReq.Parser.CatalogName = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createParserReq.Parser.SchemaName = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			createParserReq.Parser.ParserName = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			createParserReq.Parser.Spec = args[3]
+		}
+
+		response, err := w.Lakewatch.CreateParser(ctx, createParserReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createParserOverrides {
+		fn(cmd, &createParserReq)
+	}
+
+	return cmd
+}
+
+// start create-parser-version command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createParserVersionOverrides []func(
+	*cobra.Command,
+	*lakewatch.CreateParserVersionRequest,
+)
+
+func newCreateParserVersion() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createParserVersionReq lakewatch.CreateParserVersionRequest
+	createParserVersionReq.ParserVersion = lakewatch.ParserVersion{}
+	var createParserVersionJson flags.JsonFlag
+
+	cmd.Flags().Var(&createParserVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: created_by
+	cmd.Flags().StringVar(&createParserVersionReq.ParserVersion.Description, "description", createParserVersionReq.ParserVersion.Description, `Free-form description of this version, set when the version is created.`)
+	cmd.Flags().StringVar(&createParserVersionReq.ParserVersion.Name, "name", createParserVersionReq.ParserVersion.Name, `Resource name.`)
+
+	cmd.Use = "create-parser-version PARENT SPEC"
+	cmd.Short = `*Beta* Create a parser version.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a parser version.
+
+  Appends a new immutable version, advancing the parser's latest-version
+  pointer. This is how a parser is edited; versions are never changed in place.
+
+  Arguments:
+    PARENT: Resource name of the parser to append a version to. Format:
+      parsers/{parser_id}.
+    SPEC: The field definitions for this log source, as a YAML document. Validated
+      on write, so an invalid spec is never stored.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'spec' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createParserVersionJson.Unmarshal(&createParserVersionReq.ParserVersion)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createParserVersionReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			createParserVersionReq.ParserVersion.Spec = args[1]
+		}
+
+		response, err := w.Lakewatch.CreateParserVersion(ctx, createParserVersionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createParserVersionOverrides {
+		fn(cmd, &createParserVersionReq)
 	}
 
 	return cmd
@@ -418,6 +635,134 @@ Delete a datasource.
 	return cmd
 }
 
+// start delete-parser command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteParserOverrides []func(
+	*cobra.Command,
+	*lakewatch.DeleteParserRequest,
+)
+
+func newDeleteParser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteParserReq lakewatch.DeleteParserRequest
+
+	cmd.Use = "delete-parser NAME"
+	cmd.Short = `*Beta* Delete a parser.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a parser.
+
+  Deletes a parser and all of its versions. Refused while any data source
+  references it.
+
+  Arguments:
+    NAME: Resource name of the parser. Format: parsers/{parser_id}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteParserReq.Name = args[0]
+
+		err = w.Lakewatch.DeleteParser(ctx, deleteParserReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteParserOverrides {
+		fn(cmd, &deleteParserReq)
+	}
+
+	return cmd
+}
+
+// start delete-parser-version command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteParserVersionOverrides []func(
+	*cobra.Command,
+	*lakewatch.DeleteParserVersionRequest,
+)
+
+func newDeleteParserVersion() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteParserVersionReq lakewatch.DeleteParserVersionRequest
+
+	cmd.Use = "delete-parser-version NAME"
+	cmd.Short = `*Beta* Delete a parser version.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a parser version.
+
+  Deletes one version of a parser. Returns NOT_FOUND when the parser or the
+  version does not exist, and a conflict (HTTP 409) only while a data source
+  references the version. Deleting the last version leaves the parser in place
+  with no versions.
+
+  Arguments:
+    NAME: Resource name of the version. Format:
+      parsers/{parser_id}/versions/{version}, where {version} is a version
+      number written without sign or leading zeros, such as 3. Unlike
+      GetParserVersion, the alias latest and forms such as 007 or +3 are
+      rejected, so a delete always names one fixed version.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteParserVersionReq.Name = args[0]
+
+		err = w.Lakewatch.DeleteParserVersion(ctx, deleteParserVersionReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteParserVersionOverrides {
+		fn(cmd, &deleteParserVersionReq)
+	}
+
+	return cmd
+}
+
 // start delete-rule command
 
 // Slice with functions to override default command behavior.
@@ -531,6 +876,131 @@ Get the alert config for a catalog.
 	// Apply optional overrides to this command.
 	for _, fn := range getAlertConfigOverrides {
 		fn(cmd, &getAlertConfigReq)
+	}
+
+	return cmd
+}
+
+// start get-builtin-parser command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getBuiltinParserOverrides []func(
+	*cobra.Command,
+	*lakewatch.GetBuiltinParserRequest,
+)
+
+func newGetBuiltinParser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getBuiltinParserReq lakewatch.GetBuiltinParserRequest
+
+	cmd.Use = "get-builtin-parser NAME"
+	cmd.Short = `*Beta* Get a built-in parser.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a built-in parser.
+
+  Returns a built-in parser's identity and latest-version pointer. Does not
+  return the spec.
+
+  Arguments:
+    NAME: Resource name. Format: builtin-parsers/{parser_id}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getBuiltinParserReq.Name = args[0]
+
+		response, err := w.Lakewatch.GetBuiltinParser(ctx, getBuiltinParserReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getBuiltinParserOverrides {
+		fn(cmd, &getBuiltinParserReq)
+	}
+
+	return cmd
+}
+
+// start get-builtin-parser-version command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getBuiltinParserVersionOverrides []func(
+	*cobra.Command,
+	*lakewatch.GetBuiltinParserVersionRequest,
+)
+
+func newGetBuiltinParserVersion() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getBuiltinParserVersionReq lakewatch.GetBuiltinParserVersionRequest
+
+	cmd.Use = "get-builtin-parser-version NAME"
+	cmd.Short = `*Beta* Get a built-in parser version.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a built-in parser version.
+
+  Returns one version of a built-in parser, including its spec.
+
+  Arguments:
+    NAME: Resource name of the version. Format:
+      builtin-parsers/{parser_id}/versions/{version}, where {version} is
+      either a version number or the alias latest.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getBuiltinParserVersionReq.Name = args[0]
+
+		response, err := w.Lakewatch.GetBuiltinParserVersion(ctx, getBuiltinParserVersionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getBuiltinParserVersionOverrides {
+		fn(cmd, &getBuiltinParserVersionReq)
 	}
 
 	return cmd
@@ -710,6 +1180,132 @@ Get the datasource config for a catalog.
 	return cmd
 }
 
+// start get-parser command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getParserOverrides []func(
+	*cobra.Command,
+	*lakewatch.GetParserRequest,
+)
+
+func newGetParser() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getParserReq lakewatch.GetParserRequest
+
+	cmd.Use = "get-parser NAME"
+	cmd.Short = `*Beta* Get a parser.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a parser.
+
+  Returns a parser's identity and latest-version pointer. Does not return the
+  spec; read a spec with GetParserVersion.
+
+  Arguments:
+    NAME: Resource name of the parser. Format: parsers/{parser_id}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getParserReq.Name = args[0]
+
+		response, err := w.Lakewatch.GetParser(ctx, getParserReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getParserOverrides {
+		fn(cmd, &getParserReq)
+	}
+
+	return cmd
+}
+
+// start get-parser-version command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getParserVersionOverrides []func(
+	*cobra.Command,
+	*lakewatch.GetParserVersionRequest,
+)
+
+func newGetParserVersion() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getParserVersionReq lakewatch.GetParserVersionRequest
+
+	cmd.Use = "get-parser-version NAME"
+	cmd.Short = `*Beta* Get a parser version.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a parser version.
+
+  Returns one version of a parser, including its spec.
+
+  Arguments:
+    NAME: Resource name of the version. Format:
+      parsers/{parser_id}/versions/{version}, where {version} is either a
+      version number or the alias latest. latest is NOT_FOUND when every
+      version of the parser has been deleted.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getParserVersionReq.Name = args[0]
+
+		response, err := w.Lakewatch.GetParserVersion(ctx, getParserVersionReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getParserVersionOverrides {
+		fn(cmd, &getParserVersionReq)
+	}
+
+	return cmd
+}
+
 // start get-rule command
 
 // Slice with functions to override default command behavior.
@@ -829,6 +1425,158 @@ Get the rule config for a catalog.
 	return cmd
 }
 
+// start list-builtin-parser-versions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listBuiltinParserVersionsOverrides []func(
+	*cobra.Command,
+	*lakewatch.ListBuiltinParserVersionsRequest,
+)
+
+func newListBuiltinParserVersions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listBuiltinParserVersionsReq lakewatch.ListBuiltinParserVersionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listBuiltinParserVersionsLimit int
+
+	cmd.Flags().IntVar(&listBuiltinParserVersionsReq.PageSize, "page-size", listBuiltinParserVersionsReq.PageSize, `Maximum number of results to return in one page.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listBuiltinParserVersionsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listBuiltinParserVersionsReq.PageToken, "page-token", listBuiltinParserVersionsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-builtin-parser-versions PARENT"
+	cmd.Short = `*Beta* List built-in parser versions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List built-in parser versions.
+
+  Lists a built-in parser's published versions, oldest first (ascending
+  1..resource_revision), without their specs.
+
+  Arguments:
+    PARENT: Resource name of the built-in parser whose versions are listed. Format:
+      builtin-parsers/{parser_id}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listBuiltinParserVersionsReq.Parent = args[0]
+
+		response := w.Lakewatch.ListBuiltinParserVersions(ctx, listBuiltinParserVersionsReq)
+		if listBuiltinParserVersionsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listBuiltinParserVersionsLimit)
+		}
+		if listBuiltinParserVersionsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listBuiltinParserVersionsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listBuiltinParserVersionsOverrides {
+		fn(cmd, &listBuiltinParserVersionsReq)
+	}
+
+	return cmd
+}
+
+// start list-builtin-parsers command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listBuiltinParsersOverrides []func(
+	*cobra.Command,
+	*lakewatch.ListBuiltinParsersRequest,
+)
+
+func newListBuiltinParsers() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listBuiltinParsersReq lakewatch.ListBuiltinParsersRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listBuiltinParsersLimit int
+
+	cmd.Flags().StringVar(&listBuiltinParsersReq.Filter, "filter", listBuiltinParsersReq.Filter, `AIP-160 filter expression.`)
+	cmd.Flags().IntVar(&listBuiltinParsersReq.PageSize, "page-size", listBuiltinParsersReq.PageSize, `Maximum number of results to return in one page.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listBuiltinParsersLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listBuiltinParsersReq.PageToken, "page-token", listBuiltinParsersReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-builtin-parsers"
+	cmd.Short = `*Beta* List built-in parsers.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List built-in parsers.
+
+  Lists the built-in parsers Databricks publishes, without their specs.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.Lakewatch.ListBuiltinParsers(ctx, listBuiltinParsersReq)
+		if listBuiltinParsersLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listBuiltinParsersLimit)
+		}
+		if listBuiltinParsersLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listBuiltinParsersLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listBuiltinParsersOverrides {
+		fn(cmd, &listBuiltinParsersReq)
+	}
+
+	return cmd
+}
+
 // start list-datasources command
 
 // Slice with functions to override default command behavior.
@@ -907,6 +1655,166 @@ List datasources.
 	// Apply optional overrides to this command.
 	for _, fn := range listDatasourcesOverrides {
 		fn(cmd, &listDatasourcesReq)
+	}
+
+	return cmd
+}
+
+// start list-parser-versions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listParserVersionsOverrides []func(
+	*cobra.Command,
+	*lakewatch.ListParserVersionsRequest,
+)
+
+func newListParserVersions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listParserVersionsReq lakewatch.ListParserVersionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listParserVersionsLimit int
+
+	cmd.Flags().IntVar(&listParserVersionsReq.PageSize, "page-size", listParserVersionsReq.PageSize, `Maximum number of results to return in one page.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listParserVersionsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listParserVersionsReq.PageToken, "page-token", listParserVersionsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-parser-versions PARENT"
+	cmd.Short = `*Beta* List parser versions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List parser versions.
+
+  Lists a parser's versions, oldest first, without their specs.
+
+  Arguments:
+    PARENT: Resource name of the parser whose versions are listed. Format:
+      parsers/{parser_id}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listParserVersionsReq.Parent = args[0]
+
+		response := w.Lakewatch.ListParserVersions(ctx, listParserVersionsReq)
+		if listParserVersionsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listParserVersionsLimit)
+		}
+		if listParserVersionsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listParserVersionsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listParserVersionsOverrides {
+		fn(cmd, &listParserVersionsReq)
+	}
+
+	return cmd
+}
+
+// start list-parsers command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listParsersOverrides []func(
+	*cobra.Command,
+	*lakewatch.ListParsersRequest,
+)
+
+func newListParsers() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listParsersReq lakewatch.ListParsersRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listParsersLimit int
+
+	cmd.Flags().StringVar(&listParsersReq.Filter, "filter", listParsersReq.Filter, `AIP-160 filter expression.`)
+	cmd.Flags().IntVar(&listParsersReq.PageSize, "page-size", listParsersReq.PageSize, `Maximum number of results to return in one page.`)
+	cmd.Flags().StringVar(&listParsersReq.SchemaName, "schema-name", listParsersReq.SchemaName, `Name of the parent UC schema.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listParsersLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listParsersReq.PageToken, "page-token", listParsersReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-parsers CATALOG_NAME"
+	cmd.Short = `*Beta* List parsers.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List parsers.
+
+  Lists parsers in a catalog, without their specs.
+
+  Arguments:
+    CATALOG_NAME: Name of the parent UC catalog to list parsers from. Required: List is
+      scoped to a single catalog, mirroring the Unity Catalog tables/functions
+      APIs, which take catalog_name as a request field (bound to a query
+      parameter) rather than a catalog path segment.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listParsersReq.CatalogName = args[0]
+
+		response := w.Lakewatch.ListParsers(ctx, listParsersReq)
+		if listParsersLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listParsersLimit)
+		}
+		if listParsersLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listParsersLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listParsersOverrides {
+		fn(cmd, &listParsersReq)
 	}
 
 	return cmd

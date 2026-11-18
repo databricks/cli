@@ -203,7 +203,7 @@ func newCreateGroup() *cobra.Command {
 	cmd.Flags().Var(&createGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createGroupReq.Group.ExternalId, "external-id", createGroupReq.Group.ExternalId, `The ID of the group in your identity provider (IdP).`)
-	cmd.Flags().StringVar(&createGroupReq.Group.GroupName, "group-name", createGroupReq.Group.GroupName, `The name of the group.`)
+	cmd.Flags().StringVar(&createGroupReq.Group.GroupName, "group-name", createGroupReq.Group.GroupName, `The display name of the group.`)
 	cmd.Flags().StringVar(&createGroupReq.Group.Name, "name", createGroupReq.Group.Name, `The resource name of the group, in one of these formats: - Account APIs: accounts/{account_id}/groups/{group_id} - Workspace APIs: groups/{group_id}.`)
 
 	cmd.Use = "create-group PARENT"
@@ -2829,7 +2829,7 @@ func newUpdateGroup() *cobra.Command {
 	cmd.Flags().Var(&updateGroupJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateGroupReq.Group.ExternalId, "external-id", updateGroupReq.Group.ExternalId, `The ID of the group in your identity provider (IdP).`)
-	cmd.Flags().StringVar(&updateGroupReq.Group.GroupName, "group-name", updateGroupReq.Group.GroupName, `The name of the group.`)
+	cmd.Flags().StringVar(&updateGroupReq.Group.GroupName, "group-name", updateGroupReq.Group.GroupName, `The display name of the group.`)
 	cmd.Flags().StringVar(&updateGroupReq.Group.Name, "name", updateGroupReq.Group.Name, `The resource name of the group, in one of these formats: - Account APIs: accounts/{account_id}/groups/{group_id} - Workspace APIs: groups/{group_id}.`)
 
 	cmd.Use = "update-group NAME UPDATE_MASK"

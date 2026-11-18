@@ -27,21 +27,25 @@ class DirectAccessVectorIndexSpec:
         default_factory=list
     )
     """
-    The columns that contain the embedding source. The format should be array[double].
+    Embedding source configuration used to embed `query_text` when the index is queried with text,
+    naming the embedding model endpoint to use. The index stores the vectors you supply through
+    upsert; this setting never computes embeddings for them.
     """
 
     embedding_vector_columns: VariableOrList[EmbeddingVectorColumn] = field(
         default_factory=list
     )
     """
-    The columns that contain the embedding vectors. The format should be array[double].
+    The column that holds the embedding vectors you write to the index. Exactly one column must be
+    specified, and `schema_json` must declare it as `array<float>` or `array<double>`.
     """
 
     schema_json: VariableOrOptional[str] = None
     """
-    The schema of the index in JSON format.
+    JSON object that maps each column name of the index to its type, serialized to a string. The
+    primary key and the embedding vector column must be present.
     Supported types are `integer`, `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.
-    Supported types for vector column: `array<float>`, `array<double>`,`.
+    Supported types for vector column: `array<float>`, `array<double>`.
     """
 
     @classmethod
@@ -57,19 +61,23 @@ class DirectAccessVectorIndexSpecDict(TypedDict, total=False):
 
     embedding_source_columns: VariableOrList[EmbeddingSourceColumnParam]
     """
-    The columns that contain the embedding source. The format should be array[double].
+    Embedding source configuration used to embed `query_text` when the index is queried with text,
+    naming the embedding model endpoint to use. The index stores the vectors you supply through
+    upsert; this setting never computes embeddings for them.
     """
 
     embedding_vector_columns: VariableOrList[EmbeddingVectorColumnParam]
     """
-    The columns that contain the embedding vectors. The format should be array[double].
+    The column that holds the embedding vectors you write to the index. Exactly one column must be
+    specified, and `schema_json` must declare it as `array<float>` or `array<double>`.
     """
 
     schema_json: VariableOrOptional[str]
     """
-    The schema of the index in JSON format.
+    JSON object that maps each column name of the index to its type, serialized to a string. The
+    primary key and the embedding vector column must be present.
     Supported types are `integer`, `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.
-    Supported types for vector column: `array<float>`, `array<double>`,`.
+    Supported types for vector column: `array<float>`, `array<double>`.
     """
 
 
