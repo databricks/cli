@@ -20,6 +20,9 @@ const Header = "X-Databricks-Skills-Invoked"
 const (
 	maxSkills      = 20
 	maxSkillLength = 64
+	// The HTTP access log truncates the header at 1024 bytes, so stop before
+	// that rather than log a partial name.
+	maxHeaderLength = 1024
 )
 
 // skillNamePattern also allows plugin-scoped names such as "databricks:databricks-core".
@@ -31,21 +34,28 @@ type skillsKey struct{}
 
 // Parse normalizes a comma-separated list of skill names: entries are trimmed,
 // lowercased and deduplicated, invalid ones are dropped, and at most maxSkills
-// are kept. Invalid input is only logged at debug level because this is
-// telemetry and must never fail or warn a command.
+// are kept, joining to at most maxHeaderLength bytes. Invalid input is only
+// logged at debug level because this is telemetry and must never fail or warn
+// a command.
 func Parse(ctx context.Context, raw string) []string {
 	var skills []string
+	size := 0
 	for entry := range strings.SplitSeq(raw, ",") {
 		name := strings.ToLower(strings.TrimSpace(entry))
+		added := len(name)
+		if len(skills) > 0 {
+			added++ // comma separator
+		}
 		switch {
 		case name == "":
 		case len(name) > maxSkillLength || !skillNamePattern().MatchString(name):
 			log.Debugf(ctx, "dropping invalid skills-invoked entry %q", entry)
 		case slices.Contains(skills, name):
-		case len(skills) == maxSkills:
-			log.Debugf(ctx, "dropping skills-invoked entry %q: more than %d skills", name, maxSkills)
+		case len(skills) == maxSkills || size+added > maxHeaderLength:
+			log.Debugf(ctx, "dropping skills-invoked entry %q: over %d skills or %d bytes", name, maxSkills, maxHeaderLength)
 		default:
 			skills = append(skills, name)
+			size += added
 		}
 	}
 	return skills

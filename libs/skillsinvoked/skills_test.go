@@ -1,6 +1,7 @@
 package skillsinvoked
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -30,6 +31,7 @@ func TestParse(t *testing.T) {
 		{"drops entry longer than 64 bytes", strings.Repeat("a", 65) + ",ok", []string{"ok"}},
 		{"keeps entry of exactly 64 bytes", strings.Repeat("a", 64), []string{strings.Repeat("a", 64)}},
 		{"caps at 20 entries", strings.Join(skillNames(25), ","), skillNames(20)},
+		{"caps joined length at 1024 bytes", strings.Join(longNames(20), ","), longNames(15)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -43,6 +45,16 @@ func skillNames(n int) []string {
 	names := make([]string, 0, n)
 	for i := range n {
 		names = append(names, "skill"+strings.Repeat("x", i))
+	}
+	return names
+}
+
+// longNames returns n distinct 64-byte skill names; 15 of them join to 974
+// bytes and a 16th would make 1039.
+func longNames(n int) []string {
+	names := make([]string, 0, n)
+	for i := range n {
+		names = append(names, fmt.Sprintf("%02d", i)+strings.Repeat("x", maxSkillLength-2))
 	}
 	return names
 }
