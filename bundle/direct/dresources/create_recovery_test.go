@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -190,4 +191,26 @@ func TestCreateRecoveryStopsOnCancelledContext(t *testing.T) {
 	_, _, err := createTestFeature(t, s, ctx)
 	require.ErrorIs(t, err, context.Canceled)
 	assert.Equal(t, 1, s.createCount)
+}
+
+func TestIsUncertainCreateError(t *testing.T) {
+	ctx := t.Context()
+	for _, tc := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"504", &apierr.APIError{StatusCode: 504, ErrorCode: "DEADLINE_EXCEEDED", Message: "Storage timeout"}, true},
+		{"499", &apierr.APIError{StatusCode: 499, ErrorCode: "CANCELLED"}, true},
+		{"stream reset", fmt.Errorf("response body: %w", errors.New("stream error: stream ID 5; INTERNAL_ERROR; received from peer")), true},
+		{"499 with mapped code", &apierr.APIError{StatusCode: 499, ErrorCode: "UNKNOWN"}, true},
+		{"API error quoting a stream error", &apierr.APIError{StatusCode: 400, ErrorCode: "INVALID_PARAMETER_VALUE", Message: "upstream: stream error: stream ID 1; PROTOCOL_ERROR"}, false},
+		{"400", &apierr.APIError{StatusCode: 400, ErrorCode: "INVALID_PARAMETER_VALUE"}, false},
+		{"409", &apierr.APIError{StatusCode: 409, ErrorCode: "ALREADY_EXISTS"}, false},
+		{"other", errors.New("boom"), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, isUncertainCreateError(ctx, tc.err))
+		})
+	}
 }
