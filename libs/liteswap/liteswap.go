@@ -2,7 +2,6 @@ package liteswap
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -17,17 +16,7 @@ func Apply(ctx context.Context, cfg *config.Config) {
 	if target == "" {
 		return
 	}
-	traffic := config.StaticHeaders(map[string]string{
+	cfg.Headers = config.StaticHeaders(map[string]string{
 		"x-databricks-traffic-id": "testenv://liteswap/" + target,
 	})
-	// Keep any header hook already set on cfg, such as the skills-invoked one.
-	prev := cfg.Headers
-	cfg.Headers = func(r *http.Request) error {
-		if prev != nil {
-			if err := prev(r); err != nil {
-				return err
-			}
-		}
-		return traffic(r)
-	}
 }
