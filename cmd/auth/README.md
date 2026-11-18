@@ -151,7 +151,7 @@ of the profile, and the one of its host when it deletes the host's token. A
 pending login for a profile that was never saved, or for a host that no profile
 uses, stays until a new login for it replaces it.
 
-The second step also checks the host, client ID and scopes that the pending
-login stores: the device code only works with the same host and client, and the
-token gets the scopes of the device authorization, so a profile saved with
-other settings would not match its token.
+The second step also checks the host, account ID, client ID and scopes that the
+pending login stores: the device code only works with the same host, account
+and client, and the token gets the scopes of the device authorization, so a
+profile saved with other settings would not match its token.
