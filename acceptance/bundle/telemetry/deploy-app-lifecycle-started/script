@@ -1,3 +1,7 @@
+# The bitmap records lifecycle.started with both values, without the size header so the golden does
+# not change as the schema grows.
+trace $CLI bundle bitmap bitmap -o text | tail -n +2
+
 trace $CLI bundle deploy
 
 trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental | {bool_values}'

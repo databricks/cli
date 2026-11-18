@@ -1,4 +1,18 @@
 
+>>> [CLI] bundle bitmap bitmap -o text
+P   bundle
+P   bundle.name
+P   resources
+P   resources.apps
+P   resources.apps.*
+P   resources.apps.*.lifecycle
+P   resources.apps.*.name
+P   resources.apps.*.source_code_path
+PTF resources.apps.*.lifecycle.started
+P F telemetry.PresetsNamePrefixIsSet
+P F telemetry.UseLegacyRunAs
+P F telemetry.RunAsSet
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created apps.myapp
@@ -102,7 +116,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "value": true
     },
     {
-      "key": "local.cache.miss",
+      "key": "local.cache.hit",
       "value": true
     }
   ]
