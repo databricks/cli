@@ -11,14 +11,12 @@ trace $CLI bundle deploy
 CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.test_cluster.id')
 add_repl "$CLUSTER_ID" CLUSTER_ID
 
-# The planner picks resize only for a RUNNING cluster. Deploy returns once the cluster
-# first reaches RUNNING, but on cloud it is sometimes not RUNNING by the time we plan,
-# and the plan then says update instead of resize. Wait so the resize path is tested.
-RETRY_MAX_ATTEMPTS=120 RETRY_INTERVAL_MS=5000 retry.py --until '"state": "RUNNING"' $CLI clusters get "$CLUSTER_ID" > /dev/null
-
 title "Create a plan while cluster is running: should show resize"
 update_file.py databricks.yml "num_workers: 2" "num_workers: 3"
-trace $CLI bundle plan -o json > plan.json
+# The planner picks resize only for a RUNNING cluster. Deploy returns at the first RUNNING,
+# but on cloud the cluster can be out of RUNNING when the plan reads it, which plans an
+# update instead. Re-plan until it says resize; once saved, the plan no longer depends on state.
+RETRY_MAX_ATTEMPTS=60 RETRY_INTERVAL_MS=10000 retry --until '"action": "resize"' $CLI bundle plan -o json > plan.json
 trace jq -r '.plan["resources.clusters.test_cluster"].action' plan.json
 
 title "Terminate the cluster before applying the saved plan"
