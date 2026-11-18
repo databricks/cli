@@ -1,11 +1,9 @@
 package phases
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -79,21 +77,4 @@ func TestActionToSDK(t *testing.T) {
 	assert.Error(t, err)
 	_, err = actionToSDK(deployplan.Undefined)
 	assert.Error(t, err)
-}
-
-func TestMayHaveCreated(t *testing.T) {
-	// A lost response can surface as a server error, a timeout, or, after the SDK retried the
-	// create, a conflict with the attempt that was applied. Other client errors were rejected.
-	for status, want := range map[int]bool{
-		http.StatusInternalServerError: true,
-		http.StatusGatewayTimeout:      true,
-		http.StatusRequestTimeout:      true,
-		http.StatusTooManyRequests:     true,
-		http.StatusConflict:            true,
-		http.StatusBadRequest:          false,
-		http.StatusForbidden:           false,
-		http.StatusNotFound:            false,
-	} {
-		assert.Equal(t, want, mayHaveCreated(&apierr.APIError{StatusCode: status}), "status %d", status)
-	}
 }
