@@ -608,7 +608,7 @@ func notPipelineKeyError(cmd *cobra.Command, b *bundle.Bundle, key string, args 
 func testCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "test [flags] [KEY] [TEST_SELECTION...]",
-		Short: "Run the tests of a pipeline",
+		Short: "*Beta* Run the tests of a pipeline",
 		Long: `Run the tests of a pipeline in a test-only update.
 
 KEY is the unique name of the pipeline, as defined in its YAML file.
