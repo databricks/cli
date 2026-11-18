@@ -11,17 +11,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestClient(t *testing.T, state sdkapps.AppDeploymentState) *databricks.WorkspaceClient {
+func newTestClient(t *testing.T, handler testserver.HandlerFunc) *databricks.WorkspaceClient {
 	server := testserver.New(t)
-	server.Handle("GET", "/api/2.0/apps/{name}/deployments/{deployment_id}", func(req testserver.Request) any {
+	server.Handle("GET", "/api/2.0/apps/{name}/deployments/{deployment_id}", handler)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+	require.NoError(t, err)
+	return w
+}
+
+func deploymentIn(state sdkapps.AppDeploymentState) testserver.HandlerFunc {
+	return func(req testserver.Request) any {
 		return sdkapps.AppDeployment{
 			DeploymentId: req.Vars["deployment_id"],
 			Status:       &sdkapps.AppDeploymentStatus{State: state, Message: "app exited unexpectedly"},
 		}
-	})
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
-	require.NoError(t, err)
-	return w
+	}
 }
 
 func inProgressApp() *sdkapps.App {
@@ -35,11 +39,22 @@ func inProgressApp() *sdkapps.App {
 }
 
 func TestWaitForDeploymentToCompleteIgnoresFailedDeployment(t *testing.T) {
-	w := newTestClient(t, sdkapps.AppDeploymentStateFailed)
+	w := newTestClient(t, deploymentIn(sdkapps.AppDeploymentStateFailed))
 	assert.NoError(t, WaitForDeploymentToComplete(cmdio.MockDiscard(t.Context()), w, inProgressApp()))
 }
 
 func TestWaitForDeploymentToCompleteSucceeded(t *testing.T) {
-	w := newTestClient(t, sdkapps.AppDeploymentStateSucceeded)
+	w := newTestClient(t, deploymentIn(sdkapps.AppDeploymentStateSucceeded))
 	assert.NoError(t, WaitForDeploymentToComplete(cmdio.MockDiscard(t.Context()), w, inProgressApp()))
+}
+
+func TestWaitForDeploymentToCompleteReturnsGetError(t *testing.T) {
+	w := newTestClient(t, func(req testserver.Request) any {
+		return testserver.Response{
+			StatusCode: 404,
+			Body:       map[string]string{"error_code": "NOT_FOUND", "message": "deployment not found"},
+		}
+	})
+	err := WaitForDeploymentToComplete(cmdio.MockDiscard(t.Context()), w, inProgressApp())
+	assert.ErrorContains(t, err, "deployment not found")
 }

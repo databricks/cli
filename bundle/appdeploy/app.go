@@ -58,18 +58,24 @@ func BuildDeployment(sourcePath string, config *resources.AppConfig, gitSource *
 func WaitForDeploymentToComplete(ctx context.Context, w *databricks.WorkspaceClient, app *sdkapps.App) error {
 	if isInProgress(app.ActiveDeployment) {
 		logProgress(ctx, "Waiting for the active deployment to complete...")
-		if err := waitForDeployment(ctx, w, app.Name, app.ActiveDeployment.DeploymentId); err != nil {
+		succeeded, err := waitForDeployment(ctx, w, app.Name, app.ActiveDeployment.DeploymentId)
+		if err != nil {
 			return err
 		}
-		logProgress(ctx, "Active deployment is completed!")
+		if succeeded {
+			logProgress(ctx, "Active deployment is completed!")
+		}
 	}
 
 	if isInProgress(app.PendingDeployment) {
 		logProgress(ctx, "Waiting for the pending deployment to complete...")
-		if err := waitForDeployment(ctx, w, app.Name, app.PendingDeployment.DeploymentId); err != nil {
+		succeeded, err := waitForDeployment(ctx, w, app.Name, app.PendingDeployment.DeploymentId)
+		if err != nil {
 			return err
 		}
-		logProgress(ctx, "Pending deployment is completed!")
+		if succeeded {
+			logProgress(ctx, "Pending deployment is completed!")
+		}
 	}
 
 	return nil
@@ -79,16 +85,18 @@ func isInProgress(d *sdkapps.AppDeployment) bool {
 	return d != nil && d.Status != nil && d.Status.State == sdkapps.AppDeploymentStateInProgress
 }
 
-func waitForDeployment(ctx context.Context, w *databricks.WorkspaceClient, appName, deploymentID string) error {
+// waitForDeployment reports whether the deployment succeeded. A FAILED deployment is
+// not an error, see WaitForDeploymentToComplete.
+func waitForDeployment(ctx context.Context, w *databricks.WorkspaceClient, appName, deploymentID string) (bool, error) {
 	var last *sdkapps.AppDeployment
 	_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, appName, deploymentID, 20*time.Minute, func(d *sdkapps.AppDeployment) {
 		last = d
 	})
 	if err != nil && last != nil && last.Status != nil && last.Status.State == sdkapps.AppDeploymentStateFailed {
-		logProgress(ctx, fmt.Sprintf("Deployment %s failed (%s), deploying again", deploymentID, last.Status.Message))
-		return nil
+		cmdio.LogString(ctx, fmt.Sprintf("Deployment %s failed (%s), deploying again", deploymentID, last.Status.Message))
+		return false, nil
 	}
-	return err
+	return err == nil, err
 }
 
 // Deploy deploys the app using the provided deployment request.
