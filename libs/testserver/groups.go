@@ -70,11 +70,3 @@ func (s *Server) AddGroups(token string, member, nonMember []string) {
 		}
 	}
 }
-
-// JoinGroup makes the identity behind token a member of the group with groupID.
-// The ID need not name an existing group, which lets tests make a group lookup fail.
-func (s *Server) JoinGroup(token, groupID string) {
-	ws := s.getWorkspaceForToken(token)
-	defer ws.LockUnlock()()
-	ws.groupMembers[groupID] = true
-}
