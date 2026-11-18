@@ -381,6 +381,26 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 			want: "UPSTREAM_FAILED",
 		},
 		{
+			name:     "a cancelled task keeps its state while another task still runs",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+			tasks: []jobs.RunTask{
+				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateCanceled),
+				finished(notebookTask("report", 12), jobs.RunLifeCycleStateRunning, ""),
+			},
+			key:  "train",
+			want: "CANCELED",
+		},
+		{
+			name:     "a timed-out attempt in an active run may be retried, so the run's state stands",
+			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+			tasks: []jobs.RunTask{
+				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateTimedout),
+				finished(notebookTask("report", 12), jobs.RunLifeCycleStateRunning, ""),
+			},
+			key:  "train",
+			want: "RUNNING",
+		},
+		{
 			name:     "the run's only task keeps the run's state",
 			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateTimedout},
 			tasks: []jobs.RunTask{

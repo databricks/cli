@@ -97,9 +97,11 @@ func defaultTaskRun(r *jobs.Run) *jobs.Run {
 // latest: that attempt's state, so one task's result doesn't stand for another
 // (a successful train next to a failed eval, or an AI runtime task skipped
 // because its prep task failed). It keeps the run's state when the task has
-// none, and while the run is still active after a failed attempt, since the
-// task may be waiting to retry and runs/get doesn't reliably report how many
-// retries are left. A skipped task never retries, so it keeps its own state.
+// none, and while the run is still active after an attempt that may be
+// retried (one that failed, timed out or hit an internal error), since the task
+// may be waiting to retry and runs/get doesn't reliably report how many retries
+// are left. A cancelled or skipped task is never retried, so it keeps its own
+// state.
 // A task waiting to start (pending, queued or waiting to retry, but not blocked
 // on an upstream task) reports PENDING, as a single-task run whose task waits
 // does (see runWaitingForCompute).
@@ -111,20 +113,22 @@ func taskState(r *jobs.Run, latest *jobs.RunTask) *jobs.RunState {
 	if s.LifeCycleState != jobs.RunLifeCycleStateBlocked && isWaitingState(s.LifeCycleState) {
 		return &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending, StateMessage: s.StateMessage}
 	}
-	failed := isTerminalState(s) && s.ResultState != jobs.RunResultStateSuccess && !isSkippedState(s)
-	if failed && !isTerminal(r) {
+	if mayRetry(s) && !isTerminal(r) {
 		return r.State
 	}
 	return s
 }
 
-// isSkippedState reports whether a task was skipped without running: an
-// upstream task failed or was cancelled, or a condition excluded it.
-func isSkippedState(s *jobs.RunState) bool {
-	skipped := s.ResultState == jobs.RunResultStateUpstreamFailed ||
-		s.ResultState == jobs.RunResultStateUpstreamCanceled ||
-		s.ResultState == jobs.RunResultStateExcluded
-	return skipped || s.LifeCycleState == jobs.RunLifeCycleStateSkipped
+// mayRetry reports whether a finished task attempt is one Jobs may retry: it
+// failed, timed out (with retry_on_timeout) or hit an internal error. A
+// successful, cancelled or skipped attempt is final.
+func mayRetry(s *jobs.RunState) bool {
+	if !isTerminalState(s) {
+		return false
+	}
+	return s.ResultState == jobs.RunResultStateFailed ||
+		s.ResultState == jobs.RunResultStateTimedout ||
+		s.LifeCycleState == jobs.RunLifeCycleStateInternalError
 }
 
 // leadTask returns the task run a run reports: Tasks[0], which is the AI
