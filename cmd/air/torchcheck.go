@@ -140,6 +140,12 @@ func findTorchImportAtCommit(ctx context.Context, g gitRepo, plan snapshotPlan) 
 	for _, b := range bases {
 		args = append(args, ":(top,glob)"+path.Join(b, "**", "*.py"))
 	}
+	for _, p := range plan.includePaths {
+		if strings.HasSuffix(p, ".py") {
+			file := path.Join(plan.subtreePrefix, filepath.ToSlash(p))
+			args = append(args, ":(top,literal)"+file)
+		}
+	}
 	out, err := g.run(ctx, args...)
 	if err != nil {
 		// git grep exits 1 when nothing matches.
