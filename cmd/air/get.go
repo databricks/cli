@@ -178,7 +178,9 @@ JOB_RUN_ID is the job run ID returned by "databricks air run".
 A job may run other tasks around its AI Runtime task (for example a notebook
 that prepares data first); the view shows the first AI Runtime task in task
 order. When a job has several AI Runtime tasks, pass --task-key to show another
-one.`,
+one. The status is that task's own, except that a task whose latest attempt
+failed shows RUNNING while another task of the run is still active, since it
+may yet be retried.`,
 		Annotations: map[string]string{
 			"template": getTemplate,
 		},

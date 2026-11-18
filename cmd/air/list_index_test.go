@@ -408,3 +408,34 @@ func TestIndexStrategyKeepsARunsRowsTogether(t *testing.T) {
 	}
 	assert.Equal(t, [][]string{{"8/"}, {"7/train", "7/eval"}}, got)
 }
+
+func TestIndexStrategyKeepsIndexOrderForARunWithNoStartedTask(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	// Run 9, the newest submission, failed in prep, so its AI Runtime task was
+	// skipped and has no start time. It must still list first, both on the first
+	// fetch and once it is served from the cache.
+	skipped := indexRun(9, 0)
+	skipped.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed}
+	train := skipped.Tasks[0]
+	train.TaskKey, train.RunId, train.StartTime, train.EndTime = "train", 91, 0, 0
+	train.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateSkipped, ResultState: jobs.RunResultStateUpstreamFailed}
+	prep := notebookTask("prep", 90)
+	prep.StartTime, prep.EndTime = 3000_000, 3001_000
+	prep.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed}
+	skipped.Tasks = []jobs.RunTask{prep, train}
+	refs := []workflowRef{{jobRunID: 8, submitTimeMs: 2000_000}, {jobRunID: 9, submitTimeMs: 3000_000}}
+	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.Run{9: skipped, 8: indexRun(8, 2000_000)}, nil, nil)
+
+	for _, pass := range []string{"fresh", "cached"} {
+		f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{currentUser: selfUser, limit: 10})
+		rows, err := f.next(10)
+		require.NoError(t, err)
+		ids := make([]string, len(rows))
+		for i, r := range rows {
+			ids[i] = r.RunID
+		}
+		assert.Equal(t, []string{"9", "8"}, ids, pass)
+		assert.Nil(t, rows[0].StartedAt, "%s: the skipped task reports no start", pass)
+	}
+}

@@ -318,6 +318,7 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 			name:     "latest attempt is the one reported",
 			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess},
 			tasks: []jobs.RunTask{
+				finished(notebookTask("prep", 10), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
 				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
 				func() jobs.RunTask {
 					t := finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess)
@@ -333,6 +334,7 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 			tasks: []jobs.RunTask{
 				finished(aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
+				finished(notebookTask("report", 12), jobs.RunLifeCycleStateRunning, ""),
 			},
 			key:  "train",
 			want: "RUNNING",
@@ -348,14 +350,14 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 			want: "PENDING",
 		},
 		{
-			name:     "a queued task is reported as queued",
+			name:     "a queued task in a running run is waiting for compute",
 			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 			tasks: []jobs.RunTask{
 				finished(notebookTask("prep", 11), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
 				finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateQueued, ""),
 			},
 			key:  "train",
-			want: "QUEUED",
+			want: "PENDING",
 		},
 		{
 			name:     "a task blocked on its upstream task is reported as blocked",
@@ -390,9 +392,12 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 		{
 			name:     "a task without a state falls back to the run",
 			runState: failedRun,
-			tasks:    []jobs.RunTask{aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1)},
-			key:      "train",
-			want:     "FAILED",
+			tasks: []jobs.RunTask{
+				finished(notebookTask("prep", 10), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateFailed),
+				aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1),
+			},
+			key:  "train",
+			want: "FAILED",
 		},
 	}
 	for _, tt := range tests {
@@ -453,4 +458,15 @@ func TestRunLevelWaitingStatesAreReportedAsSuch(t *testing.T) {
 		},
 	}
 	assert.Equal(t, "BLOCKED", detailedDisplayRunStatus(taskRun(blocked, "train"), ""))
+
+	// The same task queued for compute reads like a single-task run's wait.
+	queued := &jobs.Run{
+		RunId: 1,
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{
+			finished(notebookTask("prep", 11), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
+			finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateQueued, ""),
+		},
+	}
+	assert.Equal(t, waitingForComputeStatus, detailedDisplayRunStatus(taskRun(queued, "train"), ""))
 }

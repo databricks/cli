@@ -97,8 +97,8 @@ func (s *indexStrategy) truncated() bool { return false }
 
 // hydrate turns a batch of run ids into rows, serving cached terminal rows
 // without a network call and fetching the rest via runs/get. Freshly hydrated
-// terminal runs are cached. Results keep the input (newest-first) order, then
-// the batch is re-sorted by start time since concurrent hydration reorders it.
+// terminal runs are cached. Results keep the input order: the index's,
+// newest submission first.
 func (s *indexStrategy) hydrate(ids []int64) ([]runGroup, error) {
 	host := s.w.Config.Host
 
@@ -131,11 +131,16 @@ func (s *indexStrategy) hydrate(ids []int64) ([]runGroup, error) {
 		}
 	}
 
-	// Concurrent hydration reorders runs, so re-sort the batch newest-first,
-	// keeping a run's rows together. The ISO start timestamp sorts
-	// lexicographically; a missing time ("") sorts last.
+	// Cache hits come first and concurrent hydration reorders the rest, so put
+	// the batch back in the index's order, keeping a run's rows together. It is
+	// the order runs were submitted in, which a task that hasn't started or was
+	// skipped (and so has no start time, see taskRun) can't disturb.
+	pos := make(map[int64]int, len(ids))
+	for i, id := range ids {
+		pos[id] = i
+	}
 	slices.SortStableFunc(groups, func(a, b runGroup) int {
-		return cmp.Compare(groupStartKey(b), groupStartKey(a))
+		return cmp.Compare(pos[a.runID], pos[b.runID])
 	})
 	return groups, nil
 }
@@ -148,25 +153,4 @@ func (s *indexStrategy) cacheMLflowLinks(entries []listedRun) {
 			updateCachedRow(s.ctx, s.cache, s.host, entry.runID, entry.taskKey, entry.row)
 		}
 	}
-}
-
-// groupStartKey returns the start key of a run's first row that has started: a
-// task that hasn't started or was skipped has none (see taskRun), and shouldn't
-// sort its whole run last.
-func groupStartKey(g runGroup) string {
-	for _, e := range g.entries {
-		if k := rowStartKey(e.row); k != "" {
-			return k
-		}
-	}
-	return ""
-}
-
-// rowStartKey returns a row's ISO start timestamp for ordering, or "" when the
-// run hasn't started (which sorts last under descending comparison).
-func rowStartKey(r listRow) string {
-	if r.StartedAt == nil {
-		return ""
-	}
-	return *r.StartedAt
 }

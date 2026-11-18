@@ -44,7 +44,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 
-Failure reason: eval: loss is NaN
+Failure reason: eval: loss is NaN (step 120)
 
 Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
 MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
@@ -101,7 +101,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
     "mlflow_experiment_id": "exp1",
     "mlflow_run_id": "run1",
-    "termination_reason": "eval: loss is NaN",
+    "termination_reason": "eval: loss is NaN (step 120)",
     "est_remaining_seconds": null,
     "est_percent_complete": null,
     "user": "user@example.com",

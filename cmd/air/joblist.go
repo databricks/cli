@@ -100,10 +100,16 @@ func defaultTaskRun(r *jobs.Run) *jobs.Run {
 // none, and while the run is still active after a failed attempt, since the
 // task may be waiting to retry and runs/get doesn't reliably report how many
 // retries are left. A skipped task never retries, so it keeps its own state.
+// A task waiting to start (pending, queued or waiting to retry, but not blocked
+// on an upstream task) reports PENDING, as a single-task run whose task waits
+// does (see runWaitingForCompute).
 func taskState(r *jobs.Run, latest *jobs.RunTask) *jobs.RunState {
 	s := latest.State
 	if s == nil {
 		return r.State
+	}
+	if s.LifeCycleState != jobs.RunLifeCycleStateBlocked && isWaitingState(s.LifeCycleState) {
+		return &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending, StateMessage: s.StateMessage}
 	}
 	failed := isTerminalState(s) && s.ResultState != jobs.RunResultStateSuccess && !isSkippedState(s)
 	if failed && !isTerminal(r) {

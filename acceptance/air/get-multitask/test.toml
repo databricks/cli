@@ -21,6 +21,7 @@ Response.Body = '''
   "start_time": 1700000000000,
   "end_time": 1700000020000,
   "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "Task eval failed"},
+  "status": {"state": "TERMINATED", "termination_details": {"code": "RUN_EXECUTION_ERROR", "type": "CLIENT_ERROR", "message": "Task eval failed with message: eval: loss is NaN"}},
   "environments": [
     {"environment_key": "default", "spec": {"environment_version": "5"}},
     {"environment_key": "eval_env", "spec": {"environment_version": "6"}}
@@ -43,6 +44,7 @@ Response.Body = '''
       "start_time": 1700000002000,
       "end_time": 1700000012000,
       "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "status": {"state": "TERMINATED", "termination_details": {"code": "SUCCESS", "type": "SUCCESS", "message": ""}},
       "depends_on": [{"task_key": "prep"}],
       "environment_key": "default",
       "ai_runtime_task": {
@@ -60,6 +62,7 @@ Response.Body = '''
       "start_time": 1700000012000,
       "end_time": 1700000020000,
       "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "eval: loss is NaN"},
+      "status": {"state": "TERMINATED", "termination_details": {"code": "RUN_EXECUTION_ERROR", "type": "CLIENT_ERROR", "message": "eval: loss is NaN (step 120)"}},
       "depends_on": [{"task_key": "train"}],
       "environment_key": "eval_env",
       "ai_runtime_task": {
