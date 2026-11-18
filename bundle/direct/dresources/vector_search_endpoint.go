@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -11,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
@@ -97,7 +95,7 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vec
 		if err == nil {
 			return waiter.Response, nil
 		}
-		if afterTransient && isEndpointAlreadyExists(err) {
+		if afterTransient && isAlreadyExists(err) {
 			info, getErr := r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, config.Name)
 			if getErr != nil {
 				return nil, getErr
@@ -117,19 +115,10 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vec
 	return config.Name, newVectorSearchEndpointRemote(info), nil
 }
 
-// isEndpointAlreadyExists matches both codes: the cloud returns 409 ALREADY_EXISTS (observed on
-// AWS, 2026-11), while RESOURCE_ALREADY_EXISTS is the generic code for the same conflict.
-func isEndpointAlreadyExists(err error) bool {
-	return errors.Is(err, apierr.ErrAlreadyExists) || errors.Is(err, apierr.ErrResourceAlreadyExists)
-}
-
-// endpointClockSkew allows for the server's clock running behind the client's.
-const endpointClockSkew = time.Minute
-
 // createdSince reports whether the endpoint was created no earlier than start, the time of the
 // first create attempt, so that it can only have been created by that attempt.
 func createdSince(info *vectorsearch.EndpointInfo, start time.Time) bool {
-	return info.CreationTimestamp >= start.Add(-endpointClockSkew).UnixMilli()
+	return info.CreationTimestamp >= start.Add(-createTimeSkew).UnixMilli()
 }
 
 func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
