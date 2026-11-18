@@ -1,52 +1,101 @@
-//go:build darwin || windows
-
 package storage
 
 import (
+	"encoding/base64"
+	"fmt"
 	"strings"
 	"testing"
-	"time"
-	"uuid"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
 
-// issue7707AccessTokenBytes is the size of the U2M access tokens reported in
-// https://github.com/databricks/cli/issues/7707. Tokens of 800-950 bytes from
-// the same account store fine.
-const issue7707AccessTokenBytes = 3250
+// Access token sizes reported in https://github.com/databricks/cli/issues/7707:
+// U2M tokens of about 3250 bytes fail to store on macOS, while tokens of
+// 800-950 bytes from the same account store fine.
+const (
+	issue7707LargeAccessTokenBytes = 3250
+	issue7707SmallAccessTokenBytes = 950
+)
 
-// The OS backends behind zalando/go-keyring cap the secret size and return
-// ErrSetDataTooBig before touching the keyring, so this test does not need an
-// unlocked keychain or Credential Manager:
-//   - macOS: the base64-encoded `security -i add-generic-password` line must be
-//     at most 4096 bytes (https://github.com/zalando/go-keyring/blob/v0.2.8/keyring_darwin.go),
-//     which leaves ~3000 bytes for the JSON envelope.
-//   - Windows: the credential blob must be at most 2560 bytes
-//     (https://github.com/zalando/go-keyring/blob/v0.2.8/keyring_windows.go).
-//
-// Linux Secret Service has no such cap, hence the build constraint. This test
-// pins the current behavior so a fix for #7707 has to flip it on purpose.
-func TestKeyringStore_Put_RealBackendRejectsLargeToken(t *testing.T) {
-	store := NewKeyringStore()
-	account := keyringProbeAccountPrefix + uuid.New().String()
-	t.Cleanup(func() {
-		// Nothing is written when Put fails as expected; this only matters if
-		// the limit disappears and the token lands in the real keyring.
-		_ = store.Delete(account)
-	})
+// darwinSecurityCommandTooBig mirrors the size check in zalando/go-keyring
+// v0.2.8 keyring_darwin.go. The backend base64-encodes the secret, builds one
+// `add-generic-password` line for `security -i`, and rejects the write when
+// that line exceeds 4096 bytes: the tool reads at most 4095 bytes per line and
+// would otherwise store a truncated secret.
+func darwinSecurityCommandTooBig(service, account, secret string) bool {
+	password := "go-keyring-base64:" + base64.StdEncoding.EncodeToString([]byte(secret))
+	command := fmt.Sprintf("add-generic-password -U -s %s -a %s -w %s\n", shellQuote(service), shellQuote(account), shellQuote(password))
+	return len(command) > 4096
+}
 
-	// The access token alone already exceeds both caps once base64-encoded,
-	// so the exact refresh token size is irrelevant.
-	tok := &oauth2.Token{
-		AccessToken:  strings.Repeat("a", issue7707AccessTokenBytes),
-		TokenType:    "Bearer",
-		RefreshToken: strings.Repeat("r", 64),
-		Expiry:       time.Now().Add(time.Hour),
+// windowsCredentialBlobTooBig mirrors zalando/go-keyring v0.2.8
+// keyring_windows.go, which stores the raw secret and rejects blobs over 2560
+// bytes.
+func windowsCredentialBlobTooBig(_, _, secret string) bool {
+	return len(secret) > 2560
+}
+
+// shellQuote mirrors go-keyring's internal shellescape.Quote: a string made of
+// [A-Za-z0-9_@%+=:,./-] passes through unchanged, anything else is
+// single-quoted.
+func shellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	if strings.ContainsFunc(s, func(r rune) bool { return !shellSafe(r) }) {
+		return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
+	}
+	return s
+}
+
+func shellSafe(r rune) bool {
+	if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+		return true
+	}
+	return strings.ContainsRune("_@%+=:,./-", r)
+}
+
+// TestKeyringStore_Put_OSSecretSizeCaps pins how the CLI's keyring envelope
+// fares against go-keyring's per-OS secret caps. The caps are modeled in
+// fakeBackend so the test is keychain-agnostic and runs on every OS; the real
+// backends gave the same results on the macOS and Windows CI cells of the
+// first revision of https://github.com/databricks/cli/pull/7727. A fix for
+// #7707 that changes what Put stores must update this test on purpose.
+func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
+	cases := []struct {
+		name          string
+		secretTooBig  func(service, account, secret string) bool
+		largeRejected bool
+	}{
+		{name: "darwin security -i line", secretTooBig: darwinSecurityCommandTooBig, largeRejected: true},
+		{name: "windows credential blob", secretTooBig: windowsCredentialBlobTooBig, largeRejected: true},
+		{name: "linux secret service has no cap", secretTooBig: nil, largeRejected: false},
 	}
 
-	err := store.Put(account, Entry{Token: tok})
-	require.ErrorIs(t, err, keyring.ErrSetDataTooBig)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			backend := newFakeBackend()
+			backend.secretTooBig = tc.secretTooBig
+			store := newTestStore(backend)
+
+			small := &oauth2.Token{AccessToken: strings.Repeat("a", issue7707SmallAccessTokenBytes)}
+			require.NoError(t, store.Put("my-profile", Entry{Token: small}))
+			got, err := store.Lookup("my-profile")
+			require.NoError(t, err)
+			assert.Equal(t, small.AccessToken, got.Token.AccessToken)
+
+			// The access token alone exceeds both caps (macOS after base64,
+			// Windows raw), so no other token field is needed.
+			large := &oauth2.Token{AccessToken: strings.Repeat("a", issue7707LargeAccessTokenBytes)}
+			err = store.Put("my-profile", Entry{Token: large})
+			if tc.largeRejected {
+				require.ErrorIs(t, err, keyring.ErrSetDataTooBig)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
