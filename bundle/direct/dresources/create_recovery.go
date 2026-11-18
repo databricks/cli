@@ -38,15 +38,15 @@ type createRecovery[T any] struct {
 // repeat the request while it is missing. A repeat that fails because the resource exists means an
 // earlier request has landed in the meantime, so the next look finds it.
 //
-// Errors that are not transient, and a done context, are returned as is.
+// Errors that leave no doubt about the outcome, and a done context, are returned as is.
 func recoverCreate[T any](ctx context.Context, rc createRecovery[T], createErr error) (*T, error) {
-	if ctx.Err() != nil || !retry.IsTransient(ctx, createErr) {
+	if ctx.Err() != nil || !isUncertainCreateError(ctx, createErr) {
 		return nil, createErr
 	}
 
 	lastErr := createErr
 	for attempt := 1; ; attempt++ {
-		found, err := retry.With(ctx, retry.IsTransientRead, func() (*T, error) {
+		found, err := retry.With(ctx, isUncertainRead, func() (*T, error) {
 			return rc.get(ctx)
 		})
 		if ctx.Err() != nil {
@@ -80,11 +80,41 @@ func recoverCreate[T any](ctx context.Context, rc createRecovery[T], createErr e
 		if err == nil {
 			return created, nil
 		}
-		if !retry.IsTransient(ctx, err) && !isAlreadyExists(err) {
+		if !isUncertainCreateError(ctx, err) && !isAlreadyExists(err) {
 			return nil, err
 		}
 		lastErr = err
 	}
+}
+
+// isUncertainCreateError reports whether a create request failed in a way that leaves it unknown
+// whether the resource was created. Besides the transient errors retry.IsTransient covers, these are:
+//   - 499 CANCELLED: the backend cancelled its own handling of the request (observed on model
+//     provider service creates, 2026-11), possibly after the resource was written;
+//   - an HTTP/2 stream reset, e.g. "response body: stream error: stream ID N; INTERNAL_ERROR"
+//     (observed on AI Gateway creates, 2026-11). It may come before or after the request was
+//     handled.
+//
+// Recovery looks the resource up before repeating the request, so treating these as uncertain
+// cannot create a duplicate.
+func isUncertainCreateError(ctx context.Context, err error) bool {
+	if retry.IsTransient(ctx, err) {
+		return true
+	}
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
+		// Match the status, not apierr.ErrCancelled: a mapped error_code takes precedence over it.
+		return apiErr.StatusCode == statusCancelled
+	}
+	// net/http bundles its http2 types unexported, so match the message of http2StreamError.
+	return strings.Contains(err.Error(), "stream error: stream ID ")
+}
+
+// statusCancelled is the non-standard status the API uses for CANCELLED.
+const statusCancelled = 499
+
+// isUncertainRead reports whether the lookup after a failed create is worth repeating.
+func isUncertainRead(ctx context.Context, err error) bool {
+	return retry.IsTransientRead(ctx, err) || isUncertainCreateError(ctx, err)
 }
 
 // recoveryError says why a resource found after a failed create request is not used, and wraps
@@ -105,7 +135,8 @@ func (e *recoveryError) Error() string {
 func (e *recoveryError) Unwrap() error { return e.err }
 
 // isAlreadyExists reports whether a create request failed because the resource exists. Features,
-// dashboards and vector search endpoints answer with 409 ALREADY_EXISTS, serving endpoints with
+// dashboards, vector search endpoints and AI Gateway services (checked for model provider services)
+// answer with 409 ALREADY_EXISTS, serving endpoints with
 // 400 RESOURCE_ALREADY_EXISTS (observed on AWS, 2026-11).
 func isAlreadyExists(err error) bool {
 	return errors.Is(err, apierr.ErrAlreadyExists) || errors.Is(err, apierr.ErrResourceAlreadyExists)

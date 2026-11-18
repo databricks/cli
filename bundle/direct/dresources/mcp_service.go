@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -90,13 +91,35 @@ func (r *ResourceMcpService) DoRead(ctx context.Context, id string) (*resources.
 }
 
 func (r *ResourceMcpService) DoCreate(ctx context.Context, config *resources.McpServiceConfig) (string, *resources.McpServiceConfig, error) {
-	resp, err := r.client.AiGateway.CreateMcpService(ctx, catalog.CreateMcpServiceRequest{
-		Parent:       config.Parent,
-		McpServiceId: config.McpServiceId,
-		McpService:   mcpServiceBody(config),
-	})
+	create := func(ctx context.Context) (*catalog.McpService, error) {
+		return r.client.AiGateway.CreateMcpService(ctx, catalog.CreateMcpServiceRequest{
+			Parent:       config.Parent,
+			McpServiceId: config.McpServiceId,
+			McpService:   mcpServiceBody(config),
+		})
+	}
+	start := time.Now()
+	resp, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The bundle chooses the full name (parent and mcp_service_id), and it is unique in the metastore.
+		id := strings.TrimPrefix(config.Parent, "schemas/") + "." + config.McpServiceId
+		resp, err = recoverCreate(ctx, createRecovery[catalog.McpService]{
+			name:  "mcp service " + id,
+			start: start,
+			get: func(ctx context.Context) (*catalog.McpService, error) {
+				return r.client.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: mcpServiceNamePrefix + id})
+			},
+			createTime: func(found *catalog.McpService) (time.Time, bool) {
+				if found.CreateTime == nil {
+					return time.Time{}, false
+				}
+				return found.CreateTime.AsTime(), true
+			},
+			create: create,
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	state, err := responseToMcpServiceConfig(resp)
 	if err != nil {
