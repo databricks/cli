@@ -14,8 +14,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	sdkapierr "github.com/databricks/databricks-sdk-go/apierr"
@@ -25,6 +27,15 @@ import (
 
 // maxListedFailures is how many failed files the end-of-run summary lists.
 const maxListedFailures = 10
+
+// stallTimeout is how long a recursive copy keeps going while files fail and
+// none succeeds. After that it starts no new files and lets in-flight ones
+// finish. It is internal, not a flag.
+const stallTimeout = 5 * time.Minute
+
+// stallTimeoutEnvVar is an undocumented, test-only override of stallTimeout in
+// milliseconds.
+const stallTimeoutEnvVar = "DATABRICKS_FS_CP_STALL_TIMEOUT_MS"
 
 // errorClass says what a recursive copy does after an error.
 type errorClass int
@@ -124,11 +135,19 @@ type copyJob struct {
 //     gets one more full attempt, with its source reopened.
 //   - A failure that is not retryable fails only that file, except that 401,
 //     403, cancellation and a failure to print stop the copy.
-//   - Once the copy stops, in-flight files are cancelled and reported as
-//     failed. The walk goes on only to count the files left, which are
-//     reported as not attempted.
+//   - If files keep failing and none has been copied for the stall timeout,
+//     no new files are started and in-flight ones finish. A slow copy with no
+//     failures never stalls.
+//   - When a fatal error or a cancellation stops the copy, in-flight files are
+//     cancelled and reported as failed.
+//   - Once the copy stops, the walk goes on only to count the files left, which
+//     are reported as not attempted.
 type recursiveCopy struct {
 	c *copy
+
+	// now is the clock, injectable for tests.
+	now          func() time.Time
+	stallTimeout time.Duration
 
 	// cancel stops in-flight copies after a fatal error.
 	cancel context.CancelFunc
@@ -144,17 +163,45 @@ type recursiveCopy struct {
 	failures     []copyJob
 	deferred     []copyJob
 
+	lastSuccess time.Time
+	// failingSince is when a file first failed with a retryable error since
+	// the last file success, or zero if none has. Only a copy failing like
+	// that can stall, and the stall timeout runs from the later of this and
+	// lastSuccess. A permanent error such as a 404 is not a sign of an outage.
+	failingSince time.Time
+
 	// fatalErr is the error that stopped the copy, if any.
 	fatalErr error
+	// stalled is set once no file succeeded for the stall timeout.
+	stalled bool
 	// walkCutShort is set when the walk ended on an error, so notAttempted
 	// leaves out files it never reached.
 	walkCutShort bool
+}
+
+func newRecursiveCopy(ctx context.Context, c *copy) *recursiveCopy {
+	return &recursiveCopy{
+		c:            c,
+		now:          time.Now,
+		stallTimeout: durationFromEnv(ctx, stallTimeoutEnvVar, stallTimeout),
+	}
+}
+
+// durationFromEnv reads a duration in milliseconds from the environment
+// variable key, falling back to def if it is unset or invalid.
+func durationFromEnv(ctx context.Context, key string, def time.Duration) time.Duration {
+	ms, err := strconv.Atoi(env.Get(ctx, key))
+	if err != nil || ms <= 0 {
+		return def
+	}
+	return time.Duration(ms) * time.Millisecond
 }
 
 func (r *recursiveCopy) run(ctx context.Context, sourceDir, targetDir string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	r.cancel = cancel
+	r.lastSuccess = r.now()
 	r.slots = make(chan struct{}, r.c.concurrency)
 
 	sourceFs := filer.NewFS(ctx, r.c.sourceFiler)
@@ -177,7 +224,13 @@ func (r *recursiveCopy) run(ctx context.Context, sourceDir, targetDir string) er
 		}
 		// Create the directory before the files in it. WalkDir visits a
 		// directory before its contents.
-		return r.c.targetFiler.Mkdir(ctx, targetPath)
+		if err := r.c.targetFiler.Mkdir(ctx, targetPath); err != nil {
+			return err
+		}
+		// A created directory is progress too, so a tree of slow directories
+		// does not stall.
+		r.progress()
+		return nil
 	})
 	if walkErr != nil {
 		r.walkFailed(ctx, walkErr)
@@ -213,10 +266,27 @@ func (r *recursiveCopy) start(ctx context.Context, job copyJob) {
 	})
 }
 
-// stopping reports whether the copy should start no new files.
+// stopping reports whether the copy should start no new files: after a fatal
+// error, which cancels ctx, or a stall.
 func (r *recursiveCopy) stopping(ctx context.Context) bool {
-	// A fatal error cancels ctx.
-	return ctx.Err() != nil
+	if ctx.Err() != nil {
+		return true
+	}
+	r.mu.Lock()
+	since := r.failingSince
+	if r.lastSuccess.After(since) {
+		since = r.lastSuccess
+	}
+	stalledNow := !r.stalled && !r.failingSince.IsZero() && r.now().Sub(since) >= r.stallTimeout
+	if stalledNow {
+		r.stalled = true
+	}
+	stalled := r.stalled
+	r.mu.Unlock()
+	if stalledNow {
+		log.Infof(ctx, "fs cp: files kept failing and none was copied for %s; starting no new files", formatDuration(r.stallTimeout))
+	}
+	return stalled
 }
 
 // walkFailed records an error that ended the walk. It stops the copy, unless
@@ -225,10 +295,20 @@ func (r *recursiveCopy) walkFailed(ctx context.Context, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.walkCutShort = true
-	if ctx.Err() == nil && r.fatalErr == nil {
+	if ctx.Err() == nil && r.fatalErr == nil && !r.stalled {
 		r.fatalErr = err
 		r.cancel()
+		return
 	}
+	log.Debugf(ctx, "fs cp: the walk stopped counting files: %s", describeError(err))
+}
+
+// progress records that the copy created a directory, which resets the stall
+// timer. Only a file success clears failingSince.
+func (r *recursiveCopy) progress() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.lastSuccess = r.now()
 }
 
 func (r *recursiveCopy) popDeferred() (copyJob, bool) {
@@ -308,6 +388,13 @@ func (r *recursiveCopy) copyOne(ctx context.Context, job copyJob) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	switch {
+	case err == nil:
+		r.lastSuccess = r.now()
+		r.failingSince = time.Time{}
+	case class == classRetryable && r.failingSince.IsZero():
+		r.failingSince = r.now()
+	}
+	switch {
 	case err == nil && skipped:
 		r.skipped++
 	case err == nil:
@@ -358,7 +445,7 @@ func (r *recursiveCopy) finish(ctx context.Context) error {
 	// cancellation came from the caller.
 	cancelled := ctx.Err() != nil && r.fatalErr == nil
 	notCopied := len(r.failures) + r.notAttempted
-	if notCopied == 0 && r.fatalErr == nil && !cancelled {
+	if notCopied == 0 && r.fatalErr == nil && !cancelled && !r.stalled {
 		if !r.c.outputJSON {
 			line := "Copied " + plural(r.copied, "file")
 			if r.skipped > 0 {
@@ -376,11 +463,14 @@ func (r *recursiveCopy) finish(ctx context.Context) error {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Copy incomplete: %d copied, %d skipped (already existed), %d failed, %s not attempted.",
 		r.copied, r.skipped, len(r.failures), notAttempted)
+	// The same order as the returned error, so the reason matches it.
 	switch {
-	case cancelled:
-		b.WriteString("\nStopped: the copy was cancelled.")
 	case r.fatalErr != nil:
 		b.WriteString("\nStopped early because of the error shown below.")
+	case cancelled:
+		b.WriteString("\nStopped: the copy was cancelled.")
+	case r.stalled:
+		fmt.Fprintf(&b, "\nStopped: files kept failing and none was copied for %s, so no new files were started.", formatDuration(r.stallTimeout))
 	}
 	if len(r.failures) > 0 {
 		b.WriteString("\nFailed:")
@@ -399,11 +489,25 @@ func (r *recursiveCopy) finish(ctx context.Context) error {
 		return r.fatalErr
 	case cancelled:
 		return fmt.Errorf("copy cancelled: %w", ctx.Err())
+	case r.stalled:
+		return fmt.Errorf("copy stopped: files kept failing and none was copied for %s", formatDuration(r.stallTimeout))
 	}
 	if notCopied == 1 {
 		return errors.New("1 file was not copied")
 	}
 	return fmt.Errorf("%d files were not copied", notCopied)
+}
+
+// formatDuration writes d as "5 minutes" or "2 seconds" when it is a whole
+// number of them.
+func formatDuration(d time.Duration) string {
+	switch {
+	case d >= time.Minute && d%time.Minute == 0:
+		return plural(int(d/time.Minute), "minute")
+	case d >= time.Second && d%time.Second == 0:
+		return plural(int(d/time.Second), "second")
+	}
+	return d.String()
 }
 
 func plural(n int, unit string) string {
