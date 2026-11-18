@@ -126,8 +126,8 @@ workspace: { current_user: { userName: test }}`)
 	bits, err := b.Bitmap.Bits(struct{}{})
 	require.NoError(t, err)
 	text := bitmap.Text(bitmap.EmbeddedSchema(), bits, bitmap.ContextFullBundle)
-	assert.Contains(t, text, "1 resources.pipelines")
-	assert.Contains(t, text, "1 resources.pipelines.*.name")
+	assert.Contains(t, text, "P   resources.pipelines")
+	assert.Contains(t, text, "P   resources.pipelines.*.name")
 
 	// output of locations.json should be applied to underlying dyn.Value
 	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
