@@ -3,6 +3,7 @@ package cmdio
 import (
 	"bytes"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,14 +43,22 @@ func TestAcquireTeaProgramWaitsForRelease(t *testing.T) {
 }
 
 func TestIsInputTTY(t *testing.T) {
-	// Prompts are not supported without stderr as a terminal and with color,
+	// Prompts are not supported without stderr as a terminal,
 	// but a user can still type into stdin.
 	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stdinIsTTY: true}})
 	assert.True(t, IsInputTTY(ctx))
 	assert.False(t, IsPromptSupported(ctx))
 
-	ctx = InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true, color: true}})
+	ctx = InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true}})
 	assert.False(t, IsInputTTY(ctx))
+}
+
+func TestIsErrorTTY(t *testing.T) {
+	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true, dumb: true}})
+	assert.True(t, IsErrorTTY(ctx))
+
+	ctx = InContext(t.Context(), &cmdIO{capabilities: Capabilities{stdinIsTTY: true}})
+	assert.False(t, IsErrorTTY(ctx))
 }
 
 func TestHasTerminal(t *testing.T) {
@@ -76,4 +85,17 @@ func TestHasTerminal(t *testing.T) {
 			assert.Equal(t, tc.want, HasTerminal(ctx))
 		})
 	}
+}
+
+func TestIsLinePromptSupported(t *testing.T) {
+	ctx := t.Context()
+	terminal := InContext(ctx, NewIO(ctx, flags.OutputText, FakeTTYReader(strings.NewReader("")), FakeTTY(io.Discard), FakeTTY(io.Discard), "", ""))
+	assert.True(t, IsLinePromptSupported(terminal))
+
+	piped := InContext(ctx, NewIO(ctx, flags.OutputText, strings.NewReader(""), FakeTTY(io.Discard), FakeTTY(io.Discard), "", ""))
+	assert.False(t, IsLinePromptSupported(piped))
+
+	t.Cleanup(func() { stdinReadInBackground.Store(false) })
+	MarkStdinReadInBackground()
+	assert.False(t, IsLinePromptSupported(terminal), "another goroutine reads stdin")
 }

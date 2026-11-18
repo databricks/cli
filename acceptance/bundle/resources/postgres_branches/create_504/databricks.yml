@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj
+      display_name: "Test Postgres Project"
+      pg_version: 16
+
+  postgres_branches:
+    dev:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: dev
+      no_expiry: true

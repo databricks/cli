@@ -190,6 +190,7 @@ func (h debugOnlyHandler) WithGroup(name string) slog.Handler {
 type installOpts struct {
 	Scope        string
 	Experimental bool
+	Trigger      protos.AitoolsInstallTrigger
 }
 
 // logInstallEvent buffers an install event; cmd/root uploads it at exit.
@@ -205,6 +206,7 @@ func logInstallEvent(ctx context.Context, plan []agentPlanItem, opts installOpts
 			Experimental:  opts.Experimental,
 			ErrorCategory: errCategory,
 			AgentResults:  agentResultsField(outcomes),
+			Trigger:       opts.Trigger,
 		},
 	})
 }

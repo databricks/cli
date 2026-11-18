@@ -212,7 +212,11 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 		// Promote-to-interactive only when stdout is a prompt-capable TTY so
 		// a pipe falls back to the static table rather than launching a TUI
 		// into a dead writer.
-		sink := newSinkInteractive(format, out, stderr, stdoutTTY && cmdio.IsPromptSupported(ctx))
+		// The table viewer marks the cursor row and search matches with color
+		// only, so it needs color as well as a prompt-capable terminal (like
+		// the aitools query viewer and air list).
+		interactive := stdoutTTY && cmdio.IsPromptSupported(ctx) && cmdio.SupportsColor(ctx, out)
+		sink := newSinkInteractive(format, out, stderr, interactive)
 		stmtCtx, stmtCancel := withStatementTimeout(signalCtx, f.timeout)
 		err := executeOne(stmtCtx, conn, units[0].SQL, sink)
 		stmtCancel()

@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/cmd/completion"
 	"github.com/databricks/cli/cmd/configure"
 	"github.com/databricks/cli/cmd/experimental"
+	"github.com/databricks/cli/cmd/feedback"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/pipelines"
@@ -102,6 +103,7 @@ func topLevelSpecs() []root.CommandSpec {
 		bundle.Spec,
 		cache.Spec,
 		experimental.Spec,
+		feedback.Spec,
 		psql.Spec,
 		configure.Spec,
 		fs.Spec,
