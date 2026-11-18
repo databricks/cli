@@ -1,7 +1,7 @@
 
 === thumbnail_path: ./thumbnail.gif
 
->>> [CLI] bundle validate
+>>> musterr [CLI] bundle validate
 Error: app thumbnail thumbnail.gif must be a PNG or JPEG image, got image/gif
   in databricks.yml:9:23
 
@@ -13,11 +13,9 @@ Workspace:
 
 Found 1 error
 
-Exit code: 1
-
 === thumbnail_path: ./large.png
 
->>> [CLI] bundle validate
+>>> musterr [CLI] bundle validate
 Error: app thumbnail large.png is 250001 bytes, larger than the limit of 250000 bytes
   in databricks.yml:9:23
 
@@ -29,11 +27,9 @@ Workspace:
 
 Found 1 error
 
-Exit code: 1
-
 === thumbnail_path: ./missing.png
 
->>> [CLI] bundle validate
+>>> musterr [CLI] bundle validate
 Error: failed to read app thumbnail missing.png: open missing.png: no such file or directory
   in databricks.yml:9:23
 
@@ -44,5 +40,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Found 1 error
-
-Exit code: 1

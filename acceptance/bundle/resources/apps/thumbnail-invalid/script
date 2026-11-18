@@ -5,5 +5,5 @@ for THUMBNAIL_PATH in ./thumbnail.gif ./large.png ./missing.png; do
     title "thumbnail_path: $THUMBNAIL_PATH"
     export THUMBNAIL_PATH
     envsubst < databricks.yml.tmpl > databricks.yml
-    errcode trace $CLI bundle validate
+    trace musterr $CLI bundle validate
 done

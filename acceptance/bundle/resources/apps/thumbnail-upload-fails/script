@@ -9,4 +9,4 @@ trace jq '.state["resources.apps.mykey"].state.thumbnail' .databricks/bundle/def
 
 title "The next deploy retries the upload"
 trace $CLI bundle plan
-errcode trace $CLI bundle deploy
+trace musterr $CLI bundle deploy

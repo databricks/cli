@@ -1,1 +1,1 @@
-Ignore = [".databricks", "thumbnail.png", "databricks.yml.new", "tmp.plan.json"]
+Ignore = [".databricks", "thumbnail.png", "tmp.plan.json"]

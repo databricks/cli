@@ -224,8 +224,6 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 	return Response{Body: app}
 }
 
-// AppsGet returns the app, keeping DELETING resources visible so callers can
-// observe transient state (matches the cloud DELETE lifecycle).
 // AppsUpdateThumbnail sets thumbnail_url, the only trace of the image the real API returns.
 func (s *FakeWorkspace) AppsUpdateThumbnail(name string) Response {
 	defer s.LockUnlock()()
@@ -240,6 +238,7 @@ func (s *FakeWorkspace) AppsUpdateThumbnail(name string) Response {
 	return Response{Body: apps.AppThumbnail{}}
 }
 
+// AppsDeleteThumbnail clears thumbnail_url.
 func (s *FakeWorkspace) AppsDeleteThumbnail(name string) Response {
 	defer s.LockUnlock()()
 
@@ -253,6 +252,8 @@ func (s *FakeWorkspace) AppsDeleteThumbnail(name string) Response {
 	return Response{}
 }
 
+// AppsGet returns the app, keeping DELETING resources visible so callers can
+// observe transient state (matches the cloud DELETE lifecycle).
 func (s *FakeWorkspace) AppsGet(name string) Response {
 	defer s.LockUnlock()()
 

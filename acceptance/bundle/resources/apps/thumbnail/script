@@ -36,8 +36,7 @@ trace $CLI bundle deploy --plan tmp.plan.json
 trace print_requests.py //apps '^//api/2.0/bundle' | jq -r '.body.app_thumbnail.thumbnail | .[0:12]'
 
 title "Remove thumbnail_path: the thumbnail is deleted"
-grep -v thumbnail_path databricks.yml > databricks.yml.new
-mv databricks.yml.new databricks.yml
+update_file.py databricks.yml $'      thumbnail_path: ./thumbnail.png\n' ''
 trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests >> out.requests.json
