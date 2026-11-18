@@ -6,7 +6,7 @@ backend-computed fields (status, timestamps, sizes, UIDs) and every field the ba
 starts or stops returning. Recording it makes a golden fail on backend changes that
 leave the CLI's decision (action, new_state, changes) untouched, often on every cloud
 and test at once. This drops remote_state from every entry; changes[*].remote still
-records the remote value of each field the plan compares.
+records the remote value of each field with a change entry.
 
 Also removes the deployment stamp, as nostamp.py does, so it replaces
 `nostamp | jq '.plan["KEY"] | del(.remote_state)'`.

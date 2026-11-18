@@ -187,7 +187,7 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 
 **RULE: Prefer `gron.py | grep <field>` over inline `jq` paths for single-value lookups.** The gron output prints the JSON path inline, so the test log explains itself.
 
-**RULE: Record plans with `plan_filter.py` unless the test asserts on `remote_state` itself.** `remote_state` is the backend's GET payload as is (status, timestamps, sizes, fields the backend adds), so a golden that records it breaks on backend changes that leave the plan's action and changes untouched, on every cloud at once. `changes[*].remote` still records the remote value of each compared field.
+**RULE: Record whole plan entries with `plan_filter.py` unless the test asserts on `remote_state` itself.** A narrower projection such as `nostamp | jq '.plan[KEY] | {action, changes}'` is fine as is. `remote_state` is the backend's GET payload as is (status, timestamps, sizes, fields the backend adds), so a golden that records it breaks on backend changes that leave the plan's action and changes untouched, on every cloud at once. `changes[*].remote` still records the remote value of each field with a change entry.
 
 **RULE: Don't pass `--keep` to `print_requests.py` if a later `print_requests.py` call follows.** The buffer accumulates, so the second call double-prints the earlier requests.
 
