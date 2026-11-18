@@ -1,0 +1,1 @@
+* Retry app updates and deletes in the direct deployment engine when they fail with 400 BAD_REQUEST because the app compute is `UPDATING`, after waiting for the compute to settle. ([#7606](https://github.com/databricks/cli/pull/7606))
