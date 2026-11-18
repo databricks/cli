@@ -634,6 +634,22 @@ func AddDefaultHandlers(server *Server) {
 		return server.fakeOidc.OidcDeviceAuth(req)
 	})
 
+	server.Handle("GET", "/oidc/accounts/{account_id}/.well-known/oauth-authorization-server", func(req Request) any {
+		return server.fakeOidc.AccountOidcEndpoints(req.Vars["account_id"])
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+
 	server.Handle("POST", "/telemetry-ext", func(req Request) any {
 		var request struct {
 			ProtoLogs []string `json:"protoLogs"`
