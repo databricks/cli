@@ -4,7 +4,7 @@ from typing import Optional
 
 import pytest
 
-from databricks.bundles.core import Variable
+from databricks.bundles.core import Variable, VariableOrOptional
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 
 
@@ -33,7 +33,7 @@ class FakeMarker:
 
 @dataclass
 class FakeParent:
-    nested_field: Optional[FakeNested] = None
+    nested_field: VariableOrOptional[FakeNested] = None
     marker_field: Optional[FakeMarker] = None
 
 
@@ -65,6 +65,10 @@ class FakeParent:
         (
             FakeParent(),
             {},
+        ),
+        (
+            FakeParent(nested_field=Variable(path="var.my_var", type=FakeNested)),
+            {"nested_field": "${var.my_var}"},
         ),
         (
             [{"a": Fake(enum_field=Color.RED)}],

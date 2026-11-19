@@ -48,7 +48,7 @@ def _transform_to_json_object(value: Any) -> dict[str, Any]:
 
         # we implement omitempty semantics here skipping None, [], and {}, but keep an
         # empty dataclass, as Go keeps a non-nil pointer to an empty struct
-        if is_dataclass(python_value) or json_value not in [None, [], {}]:
+        if json_value not in [None, [], {}] or is_dataclass(python_value):
             out[field_name] = json_value
 
     return out
