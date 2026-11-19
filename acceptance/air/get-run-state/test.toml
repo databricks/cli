@@ -1,0 +1,51 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# A single-task `air run` submission whose run state differs from its only
+# task's: the run hit its timeout after the task had already succeeded. A run
+# whose only task is the AI Runtime task keeps its run-level state and
+# termination message (with its "Task <key> ..." prefix); only a task of a
+# multi-task run reports its own (see get-multitask).
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+  "creator_user_name": "user@example.com",
+  "start_time": 1700000000000,
+  "end_time": 1700003600000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "TIMEDOUT", "state_message": "Run timed out"},
+  "status": {"state": "TERMINATED", "termination_details": {"code": "RUN_EXECUTION_ERROR", "type": "CLIENT_ERROR", "message": "Task train timed out after 3600 seconds"}},
+  "tasks": [
+    {
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "max_retries": 0,
+      "start_time": 1700000000000,
+      "end_time": 1700003500000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "status": {"state": "TERMINATED", "termination_details": {"code": "SUCCESS", "type": "SUCCESS", "message": ""}},
+      "ai_runtime_task": {
+        "experiment": "my-exp",
+        "deployments": [
+          {
+            "command_path": "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/command.sh",
+            "compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}
+          }
+        ]
+      }
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{}
+'''

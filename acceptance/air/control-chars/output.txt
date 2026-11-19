@@ -38,6 +38,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
     "runs": [
       {
         "run_id": "123",
+        "task_key": "train",
         "run_name": "qwen\u001b[2J-train",
         "user": "user\u001b[31m@example.com",
         "status": "SUCCESS",

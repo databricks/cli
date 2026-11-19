@@ -753,9 +753,13 @@ func visibleConfigChildNames(parent configField) []string {
 	return names
 }
 
-// closestConfigField returns the nearest candidate by edit distance, if one is
-// close enough to be worth suggesting.
+// closestConfigField suggests a renamed field or the nearest candidate by edit
+// distance, if one is close enough to be worth suggesting.
 func closestConfigField(name string, candidates []string) (string, bool) {
+	// The renamed pool selector is too distant for the typo heuristic.
+	if name == "pool_id" && slices.Contains(candidates, "accelerator_pool_id") {
+		return "accelerator_pool_id", true
+	}
 	best, bestDist := "", 0
 	for _, c := range candidates {
 		d := configEditDistance(name, c)

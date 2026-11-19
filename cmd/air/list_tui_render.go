@@ -89,7 +89,7 @@ func computeListCols(rows []listRow) listCols {
 		accel:      len("Accelerators"),
 	}
 	for _, r := range rows {
-		c.runID = max(c.runID, lipgloss.Width(r.RunID))
+		c.runID = max(c.runID, lipgloss.Width(r.runIDLabel()))
 		c.experiment = min(columnCap, max(c.experiment, lipgloss.Width(r.Experiment)))
 		c.status = max(c.status, lipgloss.Width("● "+listRowStatus(r)))
 		c.started = max(c.started, lipgloss.Width(startedDisplay(r)))
@@ -283,7 +283,7 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 	cell := func(col listColumn) string {
 		switch col {
 		case columnRunID:
-			return s.cell(base, r.RunID, cols.runID, fg(colRunID), false, runIDLink != "", runIDLink)
+			return s.cell(base, r.runIDLabel(), cols.runID, fg(colRunID), false, runIDLink != "", runIDLink)
 		case columnExperiment:
 			return s.cell(base, r.Experiment, cols.experiment, fg(colN11), false, experimentLink != "", experimentLink)
 		case columnStatus:

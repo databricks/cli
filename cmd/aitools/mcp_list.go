@@ -392,7 +392,7 @@ func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agent
 	}
 	// The entry is this CLI's, so it is only changed when add would write it differently.
 	argv, _ := mcpconfig.Argv(loc.entry)
-	changed, err := agentconfig.Changed(a, loc.entry, argv[0], mcpconfig.ServeArgs(rec.Profile, rec.Service, a.Name), pinnedEnv(rec))
+	changed, err := agentconfig.Changed(a, loc.entry, argv[0], mcpconfig.ServeArgs(rec.Profile, rec.Service, a.Name), pinnedEnv(rec.ConfigFile))
 	if err != nil {
 		return statusUnknown, loc.path, "", err
 	}
@@ -401,14 +401,6 @@ func agentStatus(ctx context.Context, files *agentFiles, rec mcp.Entry, a *agent
 		return agentStatusChanged, loc.path, "re-running `" + mcp.AddServiceCommand(rec.Service, rec.Profile, a.Name, configFile) + "` repairs it", nil
 	}
 	return agentStatusInstalled, loc.path, "", nil
-}
-
-// pinnedEnv returns the environment that add gives the entry of rec: its config file, when the record pins one.
-func pinnedEnv(rec mcp.Entry) map[string]string {
-	if rec.ConfigFile == "" {
-		return nil
-	}
-	return map[string]string{mcpconfig.ConfigFileEnv: rec.ConfigFile}
 }
 
 // profileCheckTimeout bounds each --check request of a profile, so that a host that never answers ends the profile's

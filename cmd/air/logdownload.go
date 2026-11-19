@@ -29,7 +29,8 @@ func validateNodeIndex(node, numNodes int) error {
 	return fmt.Errorf("invalid --node %d: run has %d node(s), indexed 0 to %d", node, numNodes, numNodes-1)
 }
 
-// resolveNodeCount returns how many nodes a run used.
+// resolveNodeCount returns how many nodes a task run used: the task the logs
+// come from (see logTaskRun), so the node indices match the logs.
 func resolveNodeCount(run *jobs.Run) (int, error) {
 	accelType, count := jobCompute(run)
 	if accelType == "" {
@@ -54,12 +55,39 @@ func resolveNodeCount(run *jobs.Run) (int, error) {
 	return count / perNode, nil
 }
 
+// logTaskRun returns run narrowed to the AI runtime task whose task run is
+// taskRunID, the one resolveLogAttempt picked for the logs. It falls back to the
+// first AI runtime task (see defaultTaskRun) when that task run is not an AI
+// runtime task.
+func logTaskRun(run *jobs.Run, taskRunID int64) *jobs.Run {
+	for i := range run.Tasks {
+		if t := &run.Tasks[i]; t.RunId == taskRunID && isAirTask(t) {
+			return taskRun(run, t.TaskKey)
+		}
+	}
+	return defaultTaskRun(run)
+}
+
+// nodeCountForRetry returns how many nodes the task whose logs are read for the
+// requested retry used.
+func nodeCountForRetry(run *jobs.Run, requestedAttempt int) (int, error) {
+	_, taskRunID, err := resolveLogAttempt(run, requestedAttempt)
+	if err != nil {
+		return 0, err
+	}
+	return resolveNodeCount(logTaskRun(run, taskRunID))
+}
+
 // downloadLogs writes each node's logs to <downloadTo>/logs/node_<n>.log and
 // prints a summary. An explicit --node downloads only that node; otherwise all of
 // them. Logs come from MLflow artifacts, since Bricklens only streams. The
 // returned bool is the run's outcome, so the exit code matches the streaming path.
 func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus, run *jobs.Run) (bool, error) {
-	numNodes, err := resolveNodeCount(run)
+	attempt, taskRunID, err := resolveLogAttempt(run, req.attempt)
+	if err != nil {
+		return false, err
+	}
+	numNodes, err := resolveNodeCount(logTaskRun(run, taskRunID))
 	if err != nil {
 		return false, err
 	}
@@ -75,10 +103,6 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 
 	// A run with no logs is reported the same way as on the streaming path, so
 	// the message and exit code agree between them.
-	attempt, taskRunID, err := resolveLogAttempt(run, req.attempt)
-	if err != nil {
-		return false, err
-	}
 	ids := mlflowIDsForTask(ctx, w, taskRunID)
 	if ids == nil || ids.RunID == "" {
 		emitNoLogs(out, req, status)
