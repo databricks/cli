@@ -114,7 +114,7 @@ command: python train.py
 compute:
   accelerator_type: GPU_1xH100
   num_accelerators: 1
-  pool_id: capacity-1
+  accelerator_pool_id: capacity-1
 max_retries: 2
 timeout_minutes: 30
 mlflow_run_name: run-42
@@ -207,7 +207,7 @@ func TestConvertToDabsPreservesPoolPriorityAndUnityCatalogImage(t *testing.T) {
 			cfg := minimalConfig
 			var computeOptions string
 			if tc.poolID != "" {
-				computeOptions += "  pool_id: " + tc.poolID + "\n"
+				computeOptions += "  accelerator_pool_id: " + tc.poolID + "\n"
 			}
 			if tc.priorityClass != "" {
 				computeOptions += "  priority_class: " + tc.priorityClass + "\n"

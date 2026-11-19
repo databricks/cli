@@ -39,16 +39,9 @@ const (
 	priorityClassNormal     priorityClass = "NORMAL"
 )
 
-// priorityClasses lists every valid value, low to high. Used for validation
-// error messages.
-var priorityClasses = []priorityClass{priorityClassBestEffort, priorityClassNormal}
-
 func validPriorityClassesHint() string {
-	names := make([]string, len(priorityClasses))
-	for i, p := range priorityClasses {
-		names[i] = string(p)
-	}
-	return "valid values are: " + strings.Join(names, ", ")
+	// BEST_EFFORT remains accepted for compatibility with existing YAML.
+	return "valid values are: " + string(priorityClassNormal)
 }
 
 // parsePriorityClass normalizes a YAML priority_class to the enum's contract
@@ -80,10 +73,10 @@ func gpusPerNode(g gpuType) (int, error) {
 // computeConfig is the `compute` block of the run YAML: which accelerators to
 // use and how many.
 type computeConfig struct {
-	NumAccelerators int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See Docs below for GPUs per node." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
-	AcceleratorType string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
-	PoolID          *string `yaml:"pool_id" help:"GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'databricks air pools list'." group:"Provisioned capacity (optional)"`
-	PriorityClass   *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires pool_id." group:"Provisioned capacity (optional)"`
+	NumAccelerators   int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See Docs below for GPUs per node." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
+	AcceleratorType   string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
+	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'." group:"GPU Pools (optional)"`
+	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the GPU Pool: NORMAL. Requires accelerator_pool_id." group:"GPU Pools (optional)"`
 }
 
 // validate checks the compute block against the backend's constraints.
@@ -105,15 +98,15 @@ func (c *computeConfig) validate() error {
 		return fmt.Errorf("compute.num_accelerators for %s must be a multiple of %d, got %d", c.AcceleratorType, perNode, c.NumAccelerators)
 	}
 
-	if c.PoolID != nil {
-		v := strings.TrimSpace(*c.PoolID)
+	if c.AcceleratorPoolID != nil {
+		v := strings.TrimSpace(*c.AcceleratorPoolID)
 		if v == "" {
-			return errors.New("compute.pool_id cannot be empty")
+			return errors.New("compute.accelerator_pool_id cannot be empty")
 		}
 		if len(v) > 255 {
-			return fmt.Errorf("compute.pool_id must be 255 characters or less, got %d", len(v))
+			return fmt.Errorf("compute.accelerator_pool_id must be 255 characters or less, got %d", len(v))
 		}
-		*c.PoolID = v
+		*c.AcceleratorPoolID = v
 	}
 
 	if c.PriorityClass != nil {
@@ -123,8 +116,8 @@ func (c *computeConfig) validate() error {
 		}
 		// A priority class only ranks pending work within a pool, so it requires
 		// one.
-		if c.PoolID == nil {
-			return errors.New("compute.priority_class requires compute.pool_id — priority applies only within a GPU pool")
+		if c.AcceleratorPoolID == nil {
+			return errors.New("compute.priority_class requires compute.accelerator_pool_id — priority applies only within a GPU Pool")
 		}
 		*c.PriorityClass = string(p)
 	}
