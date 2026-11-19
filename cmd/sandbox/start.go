@@ -17,8 +17,9 @@ import (
 // reaches Running. 10 min covers the observed cold-start range
 // (5–13 min); stuck sandboxes surface as a timeout, not a hang.
 const (
-	startPollInterval = 2 * time.Second
-	startWaitTimeout  = 10 * time.Minute
+	startPollInterval    = 2 * time.Second
+	startWaitTimeout     = 10 * time.Minute
+	startRenudgeInterval = 15 * time.Second
 )
 
 func newStartCommand() *cobra.Command {
@@ -93,21 +94,27 @@ Example:
 	return cmd
 }
 
-func waitForRunning(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sandboxEntry, error) {
-	return waitForState(ctx, api, s, id, "Running", "Starting", "Stopped", "Terminated", "Failed")
+type runWaiter interface {
+	get(ctx context.Context, id string) (*sandboxEntry, error)
+	start(ctx context.Context, id string) (*sandboxEntry, error)
+}
+
+func waitForRunning(ctx context.Context, api runWaiter, s *spinner, id string) (*sandboxEntry, error) {
+	return waitForState(ctx, api, s, id, "Running", "Starting", "Terminated", "Failed")
 }
 
 // The API rejects start requests until teardown finishes, so STOPPING needs
 // its own polling phase.
-func waitForStopped(ctx context.Context, api *sandboxAPI, s *spinner, id string) (*sandboxEntry, error) {
+func waitForStopped(ctx context.Context, api runWaiter, s *spinner, id string) (*sandboxEntry, error) {
 	return waitForState(ctx, api, s, id, "Stopped", "Stopping", "Terminated", "Failed")
 }
 
 // Centralizing lifecycle polling keeps timeout, cancellation, and terminal
 // state handling consistent across start and SSH.
-func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetStatus, operation string, unexpectedStatuses ...string) (*sandboxEntry, error) {
+func waitForState(ctx context.Context, api runWaiter, s *spinner, id, targetStatus, operation string, unexpectedStatuses ...string) (*sandboxEntry, error) {
 	start := time.Now()
 	deadline := start.Add(startWaitTimeout)
+	lastStart := start
 	for {
 		sb, err := api.get(ctx, id)
 		if err != nil {
@@ -125,6 +132,10 @@ func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetSt
 		s.Update(fmt.Sprintf("%s %s… (%s)", operation, id, elapsed))
 		if time.Now().After(deadline) {
 			return nil, fmt.Errorf("sandbox %s did not reach %s within %s (last seen %s)", id, targetStatus, startWaitTimeout, sb.Status)
+		}
+		if targetStatus == "Running" && strings.EqualFold(sb.Status, "stopped") && time.Since(lastStart) >= startRenudgeInterval {
+			_, _ = api.start(ctx, id)
+			lastStart = time.Now()
 		}
 		select {
 		case <-ctx.Done():
