@@ -210,13 +210,15 @@ func TestSendWithoutConfirmation(t *testing.T) {
 
 			var stdout, stderr bytes.Buffer
 			var in io.Reader = strings.NewReader("")
+			var out io.Writer = &stdout
 			var errOut io.Writer = &stderr
 			if tt.terminal {
 				in = cmdio.FakeTTYReader(in)
+				out = cmdio.FakeTTY(out)
 				errOut = cmdio.FakeTTY(errOut)
 			}
 			ctx := t.Context()
-			ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, in, &stdout, errOut, "", ""))
+			ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, in, out, errOut, "", ""))
 			ctx = cmdctx.SetWorkspaceClient(ctx, w)
 			ctx = cmdctx.GenerateExecId(ctx)
 			err = send(ctx, submission{text: "exact feedback", component: defaultComponent, origin: "cli"})

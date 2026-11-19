@@ -29,6 +29,9 @@ const (
 
 	defaultComponent = "DeveloperEcosystem.DatabricksCLI"
 	runIDKey         = "run-id"
+
+	legacyConfirmationFlag        = "yes"
+	legacyConfirmationDeprecation = "confirmation is no longer required; omit this flag"
 )
 
 var productComponents = map[string]string{
@@ -48,6 +51,7 @@ type options struct {
 	command        string
 	runID          string
 	canBeContacted bool
+	yes            bool
 }
 
 // submission is the validated input, checked before authenticating so that a
@@ -93,8 +97,8 @@ the reference ID.`
 	cmd.Flags().StringVar(&opts.command, "command", "", `CLI command the feedback is about, for example "bundle deploy"`)
 	cmd.Flags().StringVar(&opts.runID, "run-id", "", "ID of the job run the feedback is about")
 	cmd.Flags().BoolVar(&opts.canBeContacted, "can-be-contacted", false, "Allow Databricks to contact you about this feedback")
-	cmd.Flags().BoolP("yes", "y", false, "Deprecated; feedback is sent without confirmation")
-	cmd.Flags().MarkDeprecated("yes", "feedback is sent without confirmation")
+	cmd.Flags().BoolVarP(&opts.yes, legacyConfirmationFlag, "y", false, "Deprecated; "+legacyConfirmationDeprecation)
+	cmd.Flags().MarkDeprecated(legacyConfirmationFlag, legacyConfirmationDeprecation)
 
 	cmd.Args = checkArgs
 
@@ -104,6 +108,9 @@ the reference ID.`
 		s, err = newSubmission(cmd, args[0], &opts)
 		if err != nil {
 			return err
+		}
+		if cmd.Flags().Changed(legacyConfirmationFlag) && !opts.yes && useragent.AgentProvider() != "" {
+			return errors.New("--yes=false declines sending feedback from an AI agent; omit --yes to send without confirmation")
 		}
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 		return root.MustWorkspaceClient(cmd, args)

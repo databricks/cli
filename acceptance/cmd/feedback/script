@@ -36,6 +36,7 @@ musterr trace $CLI feedback --target dev "hello"
 title "Input errors are reported before authenticating"
 musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI feedback "   "
 musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent $CLI feedback --run-id abc "hello"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent $CLI feedback --yes=false "hello"
 
 title "General CLI feedback"
 trace $CLI feedback "the CLI should support ..."
@@ -48,6 +49,11 @@ print_feedback
 title "An AI agent can receive a JSON receipt"
 trace AGENT=test-agent $CLI feedback "agent JSON feedback" -o json < /dev/null
 print_feedback
+
+title "An explicit rejection from an AI agent sends nothing"
+musterr trace AGENT=test-agent $CLI feedback --yes=false "hello"
+musterr trace AGENT=test-agent $CLI feedback -y=false "hello"
+trace find.py '^out\.requests\.txt$' --expect 0
 
 title "The deprecated --yes flag remains accepted"
 trace AGENT=test-agent $CLI feedback --yes "hello"

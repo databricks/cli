@@ -177,6 +177,10 @@ Error: feedback message must contain 1 to 10000 characters, including a visible 
 >>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent [CLI] feedback --run-id abc hello
 Error: --run-id must be a positive job run ID
 
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent [CLI] feedback --yes=false hello
+Flag --yes has been deprecated, confirmation is no longer required; omit this flag
+Error: --yes=false declines sending feedback from an AI agent; omit --yes to send without confirmation
+
 === General CLI feedback
 
 >>> [CLI] feedback the CLI should support ...
@@ -243,10 +247,22 @@ Thank you! Your feedback was sent. Reference: [UUID][10]
   }
 }
 
+=== An explicit rejection from an AI agent sends nothing
+
+>>> AGENT=test-agent [CLI] feedback --yes=false hello
+Flag --yes has been deprecated, confirmation is no longer required; omit this flag
+Error: --yes=false declines sending feedback from an AI agent; omit --yes to send without confirmation
+
+>>> AGENT=test-agent [CLI] feedback -y=false hello
+Flag --yes has been deprecated, confirmation is no longer required; omit this flag
+Error: --yes=false declines sending feedback from an AI agent; omit --yes to send without confirmation
+
+>>> find.py ^out\.requests\.txt$ --expect 0
+
 === The deprecated --yes flag remains accepted
 
 >>> AGENT=test-agent [CLI] feedback --yes hello
-Flag --yes has been deprecated, feedback is sent without confirmation
+Flag --yes has been deprecated, confirmation is no longer required; omit this flag
 Thank you! Your feedback was sent. Reference: [UUID][14]
 
 >>> print_requests.py //telemetry-ext
