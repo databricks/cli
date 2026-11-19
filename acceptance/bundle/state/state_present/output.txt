@@ -9,8 +9,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> print_requests.py --get //api/2.1/unity-catalog/schemas
 "replay_tfstate.py"
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID][0] interactive/none lineage/ARgQbIVroS5 auth/pat"
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID][0] interactive/none lineage/ARgQbIVroS5 engine/direct auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID][0] interactive/none engine/direct lineage/ARgQbIVroS5 auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID][0] interactive/none engine/direct lineage/ARgQbIVroS5 auth/pat"
 
 === A resources.json with a lower serial does not win: the terraform state still migrates
 
