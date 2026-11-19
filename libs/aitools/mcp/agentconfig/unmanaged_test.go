@@ -58,3 +58,11 @@ func TestIsUnmanaged(t *testing.T) {
 		})
 	}
 }
+
+// TestIsUGProxy checks that only a ug binary running mcp-proxy is the ug bridge: an mcp-proxy argument under another
+// command is not.
+func TestIsUGProxy(t *testing.T) {
+	assert.True(t, IsUGProxy(map[string]any{"command": "/usr/local/bin/ug", "args": []any{"mcp-proxy"}}))
+	assert.False(t, IsUGProxy(map[string]any{"command": "npx", "args": []any{"mcp-proxy"}}))
+	assert.False(t, IsUGProxy(map[string]any{"command": "npx", "args": []any{"mcp-proxy"}, "url": "https://adb-1.test/ai-gateway/mcp-services/x"}))
+}

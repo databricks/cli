@@ -1,0 +1,15 @@
+
+>>> errcode [CLI] lakeview create --display-name test
+Error: API request failed with 500 Internal Server Error (INTERNAL_ERROR) from POST /api/2.0/lakeview/dashboards
+
+Exit code: 1
+
+>>> errcode [CLI] lakeview get 1234
+Error: API request failed with 404 Not Found from GET /api/2.0/lakeview/dashboards/1234
+
+Exit code: 1
+
+>>> errcode [CLI] secrets list-scopes
+Error: no access
+
+Exit code: 1

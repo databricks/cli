@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
 )
 
 // mcpBinaryPath returns the command that agents run for MCP servers, and whether it is absolute.
@@ -36,7 +36,7 @@ func binaryPathFor(arg0 string, lookPath func(string) (string, error), executabl
 		if after, ok := strings.CutPrefix(rel, "."+string(filepath.Separator)); ok {
 			rel = strings.TrimLeft(after, string(filepath.Separator))
 		}
-		abs, err := mcp.AbsoluteAsWritten(rel)
+		abs, err := mcpconfig.AbsoluteAsWritten(rel)
 		if err != nil {
 			return arg0, false
 		}

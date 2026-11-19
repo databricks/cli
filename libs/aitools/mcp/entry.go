@@ -27,7 +27,25 @@ func EntryServes(ctx context.Context, entry map[string]any, service, profileName
 	if err != nil {
 		return false, fmt.Errorf("MCP server entry for %s on profile %s: %w", service, profileName, err)
 	}
-	return samePath(path, configFile), nil
+	return SamePath(path, configFile), nil
+}
+
+// AdoptCommand returns the command that adopts entry, an entry for agentName that runs `aitools mcp serve` with no
+// install record: an install of the service and profile that the entry names, bound to the config file the entry
+// serves, as EntryServes resolves it. It returns "" when the entry names no service or no profile, or when its config
+// file cannot be resolved, since then no install can adopt it.
+func AdoptCommand(ctx context.Context, entry map[string]any, agentName string) string {
+	argv, _ := mcpconfig.Argv(entry)
+	service, profileName := flagValue(argv, mcpconfig.ServiceFlag), flagValue(argv, mcpconfig.ProfileFlag)
+	if service == "" || profileName == "" {
+		return ""
+	}
+	pinned, _ := mcpconfig.EntryEnv(entry)[mcpconfig.ConfigFileEnv].(string)
+	configFile, err := ResolveConfigFile(ctx, pinned)
+	if err != nil {
+		return ""
+	}
+	return AddServiceCommand(service, profileName, agentName, InstallConfigFile(ctx, configFile, pinned != ""))
 }
 
 // valueFlags are the serve flags that take a value.
