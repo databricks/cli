@@ -18,6 +18,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -140,15 +141,25 @@ func TestServerReportsSSHDStartFailureAfterReadiness(t *testing.T) {
 	require.NoError(t, json.NewDecoder(reader).Decode(&ready))
 	// Force a real exec failure after the configuration check succeeded.
 	require.NoError(t, os.Remove(sshd))
-	conn, err := dialWebSocket(t.Context(), "ws://token:"+ready.Token+"@"+listener.Addr().String()+"/ssh?id=failed-start")
-	require.NoError(t, err)
-	defer conn.Close()
+	var clients sync.WaitGroup
+	for i := range 16 {
+		clients.Go(func() {
+			endpoint := fmt.Sprintf("ws://token:%s@%s/ssh?id=failed-start-%d", ready.Token, listener.Addr(), i)
+			conn, err := dialWebSocket(t.Context(), endpoint)
+			if err == nil {
+				_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+				_, _, _ = conn.ReadMessage()
+				conn.Close()
+			}
+		})
+	}
 	select {
 	case err := <-finished:
 		require.ErrorContains(t, err, "failed to start SSHD process")
 	case <-time.After(5 * time.Second):
 		t.Fatal("sshd startup failure did not stop the server")
 	}
+	clients.Wait()
 }
 
 func TestServerStopsAfterItsSessionEnds(t *testing.T) {

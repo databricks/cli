@@ -140,8 +140,8 @@ func (server *proxyServer) handleExistingConnection(ctx context.Context, w http.
 }
 
 func (server *proxyServer) handleNewConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, id string, req DialRequest) {
-	// Failed upgrades and process starts can retry; a started session consumes this server.
-	processStarted := false
+	// Failed upgrades can retry; invoking the process factory consumes this server.
+	var command *exec.Cmd
 	if server.singleSession {
 		server.sessionMu.Lock()
 		if server.sessionUsed {
@@ -152,7 +152,7 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 		server.sessionUsed = true
 		server.sessionMu.Unlock()
 		defer func() {
-			if !processStarted {
+			if command == nil {
 				server.sessionMu.Lock()
 				server.sessionUsed = false
 				server.sessionMu.Unlock()
@@ -174,13 +174,12 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 		http.Error(w, "Maximum clients reached", http.StatusServiceUnavailable)
 		return
 	}
-	var command *exec.Cmd
 	var err error
 	defer func() {
 		server.connections.Remove(id)
 		if command != nil && server.onSessionEnd != nil {
 			var startErr error
-			if !processStarted {
+			if command.Process == nil {
 				startErr = err
 			}
 			server.onSessionEnd(startErr)
@@ -192,7 +191,6 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 		command = server.createServerCommand(ctx)
 		return command
 	}, w, r)
-	processStarted = command != nil && command.Process != nil
 	if err != nil {
 		log.Errorf(ctx, "Proxy server error: %v", err)
 	} else {
