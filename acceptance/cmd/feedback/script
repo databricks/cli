@@ -5,6 +5,9 @@ print_feedback() {
       | .entry.fast_feedback_log.user_agent |= (split(" ") | map(select(test("^(cli|cmd|run-id|agent)/"))) | join(" "))'
 }
 
+title "Feedback help explains content guidance and agent submissions"
+trace $CLI feedback --help
+
 title "Feedback about a product command is routed to its team"
 trace $CLI feedback --command "air run" --run-id 123 --can-be-contacted "  logs omitted the failure reason  "
 print_feedback
@@ -32,16 +35,21 @@ musterr trace $CLI feedback --target dev "hello"
 
 title "Input errors are reported before authenticating"
 musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI feedback "   "
-musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent $CLI feedback "hello"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent $CLI feedback --run-id abc "hello"
 
 title "General CLI feedback"
 trace $CLI feedback "the CLI should support ..."
 print_feedback
 
-title "An AI agent needs the user's confirmation"
-musterr trace AGENT=test-agent $CLI feedback "hello"
+title "An AI agent can submit without confirmation"
+trace AGENT=test-agent $CLI feedback "hello" < /dev/null
+print_feedback
 
-title "An AI agent with --yes"
+title "An AI agent can receive a JSON receipt"
+trace AGENT=test-agent $CLI feedback "agent JSON feedback" -o json < /dev/null
+print_feedback
+
+title "The deprecated --yes flag remains accepted"
 trace AGENT=test-agent $CLI feedback --yes "hello"
 print_feedback
 
