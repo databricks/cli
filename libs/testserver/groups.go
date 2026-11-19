@@ -35,6 +35,14 @@ func (s *FakeWorkspace) GroupsCreate(req Request) Response {
 
 	s.Groups[groupId] = group
 
+	// A member that is the caller makes the caller a member of the new group, so acceptance
+	// tests can set group membership declaratively.
+	for _, member := range request.Members {
+		if member.Value == userForToken(req.Token).Id {
+			s.groupMembers[groupId] = true
+		}
+	}
+
 	return Response{
 		Body: group,
 	}
