@@ -389,6 +389,13 @@ func TestToTypedStringFromInt(t *testing.T) {
 	assert.Equal(t, "123", out)
 }
 
+func TestToTypedStringFromSourceText(t *testing.T) {
+	var out string
+	err := ToTyped(&out, dyn.V(1.1).WithSourceText("1.10"))
+	require.NoError(t, err)
+	assert.Equal(t, "1.10", out)
+}
+
 func TestToTypedStringFromFloat(t *testing.T) {
 	var out string
 	err := ToTyped(&out, dyn.V(1.2))

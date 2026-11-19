@@ -214,7 +214,7 @@ func (d *loader) loadScalar(node *yaml.Node, loc diag.Location) (dyn.Value, erro
 		return v, err
 	}
 	switch v.Kind() {
-	case dyn.KindBool, dyn.KindInt, dyn.KindFloat:
+	case dyn.KindInt, dyn.KindFloat:
 		// Keep the source text for string fields, e.g. a policy id "0012345678901234".
 		return v.WithSourceText(node.Value), nil
 	default:

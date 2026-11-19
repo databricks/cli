@@ -22,7 +22,7 @@ type Value struct {
 	// If this node doesn't map to a type, we don't need to warn about it.
 	anchor bool
 
-	// Source text of a scalar that the YAML loader resolved to a non-string type,
+	// Source text of a scalar that the YAML loader resolved to a number,
 	// e.g. "0042" for the int 42. A string field uses it verbatim instead of
 	// formatting the resolved value, which would drop leading zeros and similar.
 	src string
@@ -90,8 +90,11 @@ func (v Value) WithSourceText(text string) Value {
 	return v
 }
 
-// SourceText returns the text a scalar was parsed from, if it was recorded.
+// SourceText returns the text a number was parsed from, if it was recorded.
 func (v Value) SourceText() (string, bool) {
+	if v.k != KindInt && v.k != KindFloat {
+		return "", false
+	}
 	return v.src, v.src != ""
 }
 

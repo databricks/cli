@@ -580,12 +580,14 @@ func TestNormalizeStringFromSourceText(t *testing.T) {
 	assert.Equal(t, dyn.NewValue("1.10", vin.Locations()), vout)
 }
 
-func TestNormalizeIntKeepsSourceText(t *testing.T) {
+func TestNormalizeIntIgnoresSourceText(t *testing.T) {
 	var typ int
 	vin := dyn.V(42).WithSourceText("0042")
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, int64(42), vout.MustInt())
+	_, ok := vout.SourceText()
+	assert.False(t, ok)
 }
 
 func TestNormalizeStringFromTime(t *testing.T) {
