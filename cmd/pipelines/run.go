@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
@@ -181,10 +182,12 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceC
 	latestUpdate := *getUpdateResponse.Update
 
 	// The public events API rejects event_type filters.
-	events, err := w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
-		PipelineId: pipelineId,
-		Filter:     fmt.Sprintf("update_id='%s'", updateId),
-		OrderBy:    []string{"timestamp asc"},
+	events, err := retry.With(ctx, retry.IsTransientRead, func() ([]pipelines.PipelineEvent, error) {
+		return w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
+			PipelineId: pipelineId,
+			Filter:     fmt.Sprintf("update_id='%s'", updateId),
+			OrderBy:    []string{"timestamp asc"},
+		})
 	})
 	if err != nil {
 		return err

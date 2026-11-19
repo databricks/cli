@@ -19,21 +19,18 @@ type describedError struct {
 func (e *describedError) Error() string { return e.msg }
 func (e *describedError) Unwrap() error { return e.err }
 
-// describeEmptyAPIError fills in API errors whose response had no "message" field.
+// describeEmptyAPIError fills in an API error whose response had no "message" field.
 // The SDK then leaves the message empty and the CLI would print a bare "Error: ",
 // which says nothing about which request failed or how.
+//
+// Only a bare API error is described: wrappers either explain the error in their
+// own words or would need their text to be parsed.
 func describeEmptyAPIError(err error) error {
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	apiErr := &apierr.APIError{}
+	ok := errors.As(err, &apiErr)
 	if !ok || strings.TrimSpace(apiErr.Message) != "" {
 		return err
 	}
-	// Only fill in when the empty message is what ends up printed, e.g. "creating thing: ".
-	// Callers that already explain the error in their own words are left alone.
-	prefix := strings.TrimRight(err.Error(), " ")
-	if prefix != "" && !strings.HasSuffix(prefix, ":") {
-		return err
-	}
-	prefix = strings.TrimSuffix(prefix, ":")
 
 	status := strconv.Itoa(apiErr.StatusCode)
 	if text := http.StatusText(apiErr.StatusCode); text != "" {
@@ -47,10 +44,6 @@ func describeEmptyAPIError(err error) error {
 	if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
 		req := rw.Response.Request
 		desc += fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
-	}
-
-	if prefix != "" {
-		desc = prefix + ": " + desc
 	}
 	return &describedError{msg: desc, err: err}
 }

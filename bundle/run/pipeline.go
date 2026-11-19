@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -154,7 +155,9 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			log.Info(ctx, event.String())
 		}
 
-		update, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
+		update, err := retry.With(ctx, retry.IsTransientRead, func() (*pipelines.GetUpdateResponse, error) {
+			return w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
+		})
 		if err != nil {
 			return nil, err
 		}
