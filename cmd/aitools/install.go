@@ -196,6 +196,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			opts := installer.InstallOptions{
 				IncludeExperimental: includeExperimental,
 				SpecificSkills:      splitAndTrim(skillsFlag),
+				SkillsOnly:          skillsOnly,
 			}
 
 			// --skills cherry-picks individual skill files, which only applies to

@@ -7,6 +7,7 @@ import (
 	"maps"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -503,6 +504,10 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		state.Plugins = make(map[string]PluginRecord, len(records))
 	}
 	maps.Copy(state.Plugins, records)
+	state.SkillsOnlyAgents = slices.DeleteFunc(state.SkillsOnlyAgents, func(name string) bool {
+		_, ok := records[name]
+		return ok
+	})
 	// An unresolved release keeps the one recorded by earlier installs.
 	if ref != "" {
 		state.Release = ref

@@ -820,6 +820,28 @@ func TestRecordPluginInstallsUnresolvedRefKeepsRelease(t *testing.T) {
 	assert.Contains(t, st.Plugins, agents.NameCodex)
 }
 
+// Installing the plugin for an agent the user had put on raw skills ends that
+// choice; the other agents keep theirs.
+func TestRecordPluginInstallsForgetsSkillsOnlyChoice(t *testing.T) {
+	setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion:    CurrentSchemaVersion,
+		Skills:           map[string]string{"databricks": "0.1.0"},
+		SkillsOnlyAgents: []string{agents.NameClaudeCode, agents.NameCodex},
+	}))
+
+	require.NoError(t, RecordPluginInstalls(ctx, ScopeGlobal, map[string]PluginRecord{
+		agents.NameCodex: {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+	}, "v0.2.6"))
+
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{agents.NameClaudeCode}, st.SkillsOnlyAgents)
+}
+
 func TestRecordPluginInstallsThenSkillsInstallNoPanic(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())

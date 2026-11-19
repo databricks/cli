@@ -906,6 +906,7 @@ func TestInstallSkillsOnlyAllAgents(t *testing.T) {
 	require.Len(t, *calls, 1)
 	assert.Len(t, (*calls)[0].agents, 2)
 	assert.Nil(t, (*calls)[0].opts.SpecificSkills)
+	assert.True(t, (*calls)[0].opts.SkillsOnly)
 }
 
 func TestInstallSkillsOnlySpecificSkills(t *testing.T) {

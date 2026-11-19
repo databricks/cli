@@ -1,0 +1,1 @@
+* `databricks aitools update` no longer replaces the skill files that `databricks aitools install --skills-only` gave Claude Code, Codex or GitHub Copilot with the Databricks plugin. Run `databricks aitools install` without `--skills-only` to switch such an agent to the plugin.

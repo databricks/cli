@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"syscall"
 	"testing"
@@ -458,6 +459,49 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Using skills version")
 	assert.Contains(t, stderr.String(), "Fetching skills manifest...")
 	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
+}
+
+// --skills-only records the agents that could have had the plugin (their CLI
+// is on PATH), so update keeps them on raw skills. An agent whose CLI is
+// missing is not recorded: install suggests --skills-only for it, and update
+// migrates it once the CLI is there. A later install without --skills-only
+// keeps the record: it says nothing about the user's choice.
+func TestInstallSkillsForAgentsRecordsSkillsOnlyAgents(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	src := &mockManifestSource{manifest: testManifest()}
+
+	binDir := t.TempDir()
+	binName := "plugin-agent-cli"
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(binDir, binName), []byte("#!/bin/sh\n"), 0o755))
+	t.Setenv("PATH", binDir)
+
+	plain := testAgent(tmp)
+	withPlugin := testAgent(tmp)
+	withPlugin.Name = "plugin-agent"
+	withPlugin.Binary = "plugin-agent-cli"
+	withPlugin.Plugin = &agents.PluginSpec{}
+	cliMissing := testAgent(tmp)
+	cliMissing.Name = "cli-missing-agent"
+	cliMissing.Binary = "cli-missing-agent-cli"
+	cliMissing.Plugin = &agents.PluginSpec{}
+	targets := []*agents.Agent{withPlugin, cliMissing, plain}
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+
+	require.NoError(t, InstallSkillsForAgents(ctx, src, targets, InstallOptions{SkillsOnly: true}))
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"plugin-agent"}, state.SkillsOnlyAgents)
+
+	require.NoError(t, InstallSkillsForAgents(ctx, src, targets, InstallOptions{}))
+	state, err = LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"plugin-agent"}, state.SkillsOnlyAgents)
 }
 
 func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string) {
