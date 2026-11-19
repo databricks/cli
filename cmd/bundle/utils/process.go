@@ -130,6 +130,27 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		cmd.SetContext(ctx)
 	}
 
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
+
+	// needsState is narrower than shouldReadState: it drops the pull-only flags
+	// (ReadState, AlwaysPull) so read-only consumers like "bundle debug states" pull
+	// and display the state without triggering a migration, and adds PostStateFunc for
+	// commands that operate on the state (destroy, run). It gates migrating and opening
+	// the direct state.
+	needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
+
+	// A command that reads and operates on the state can only run on the direct engine: a
+	// Terraform state is migrated first, and a failed migration is fatal. Tag the user agent
+	// before the bundle is loaded, so every request of the command carries the engine,
+	// including those of runs that fail early (a bad --var, a rejected engine setting). A
+	// run that fails its migration is therefore tagged engine/direct while its deploy
+	// telemetry reports the terraform state it started from.
+	engineTaggedUpfront := shouldReadState && needsState
+	if engineTaggedUpfront {
+		ctx = useragent.InContext(ctx, "engine", string(engine.EngineDirect))
+		cmd.SetContext(ctx)
+	}
+
 	// Load bundle config and apply target
 	b = root.MustConfigureBundle(cmd)
 
@@ -187,26 +208,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if err := ValidateEngineSetting(ctx, b); err != nil {
 			return b, nil, err
 		}
-	}
-
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
-
-	// needsState is narrower than shouldReadState: it drops the pull-only flags
-	// (ReadState, AlwaysPull) so read-only consumers like "bundle debug states" pull
-	// and display the state without triggering a migration, and adds PostStateFunc for
-	// commands that operate on the state (destroy, run). It gates migrating and opening
-	// the direct state.
-	needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
-
-	// A command that reads and operates on the state can only run on the direct engine: a
-	// Terraform state is migrated first, and a failed migration is fatal. Tag the user agent
-	// before initialization so the requests made while initializing and pulling the state
-	// carry the engine too. A run that fails its migration is therefore tagged engine/direct
-	// while its deploy telemetry reports the terraform state it started from.
-	engineTaggedUpfront := shouldReadState && needsState
-	if engineTaggedUpfront {
-		ctx = useragent.InContext(ctx, "engine", string(engine.EngineDirect))
-		cmd.SetContext(ctx)
 	}
 
 	if !opts.SkipInitialize {
