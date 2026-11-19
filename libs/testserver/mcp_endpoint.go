@@ -37,9 +37,9 @@ type mcpRPC struct {
 
 // McpEndpoint fakes POST /ai-gateway/mcp-services/{name}, a streamable HTTP MCP server with one
 // tool, echo. A name the workspace has no service for is 404. A service stored with an OAuth source
-// connection is external: no credential is ever mapped to it here, so tools/list and tools/call
-// answer -32006 as the gateway does before sign-in. Notifications and client responses, which have
-// no method or no id, get 202 with no body.
+// connection is external: until a credential exists for it in McpUserCredentials, tools/list and
+// tools/call answer JSON-RPC -32006, as the gateway does before sign-in. Notifications and client
+// responses, which have no method or no id, get 202 with no body.
 func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	defer s.LockUnlock()()
 
@@ -56,6 +56,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 	}
 
 	external := mcpServiceIsExternal(service)
+	challenged := external && !s.mcpSignedIn(name)
 	switch msg.Method {
 	case "initialize":
 		return rpcResult(msg.ID, map[string]any{
@@ -65,7 +66,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 			"instructions":    fakeMcpInstructions,
 		})
 	case "tools/list":
-		if external {
+		if challenged {
 			return signInRequired(msg.ID)
 		}
 		return rpcResult(msg.ID, map[string]any{"tools": []any{
@@ -79,7 +80,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 			},
 		}})
 	case "tools/call":
-		if external {
+		if challenged {
 			return signInRequired(msg.ID)
 		}
 		if msg.Params.Name != fakeMcpEchoTool {
@@ -104,6 +105,16 @@ func (s *FakeWorkspace) mcpServiceNamed(name string) (catalog.McpService, bool) 
 		}
 	}
 	return catalog.McpService{}, false
+}
+
+// mcpSignedIn reports whether the caller has a credential for the service. Like mcpServiceNamed, the match ignores case.
+func (s *FakeWorkspace) mcpSignedIn(name string) bool {
+	for key := range s.McpUserCredentials {
+		if strings.EqualFold(key, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // mcpServiceIsExternal reports whether the service takes an OAuth source connection.

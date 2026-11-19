@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
@@ -1069,7 +1070,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 		var state string
 		url, err := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
 		if err == nil {
-			state, _, err = signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service)
+			state, _, _, err = signIn(ctx, errOut, w, req.pinned, url, plans[i].service, signInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
 		}
 		server.SignIn = &addSignInOutput{State: state}
 		if err != nil {

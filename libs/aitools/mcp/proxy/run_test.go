@@ -89,3 +89,18 @@ func TestRunNamesWorkspaceAndProfileInInstructions(t *testing.T) {
 		"Base.\n\nThis server is bound to Databricks workspace https://workspace.test (CLI profile \"logfood\"). Its tools act on that workspace only.",
 		reply.Result["instructions"])
 }
+
+func TestRunAdvertisesListChangedOnlyForSignInServices(t *testing.T) {
+	srv, _ := newFakeEndpoint(t, answerInitialize)
+	initialize := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}` + "\n"
+	cfg := &config.Config{Host: testHost}
+
+	opts, out, _ := runOptions(t, srv.URL, cfg, initialize)
+	require.NoError(t, Run(t.Context(), opts))
+	assert.Contains(t, out.String(), `"listChanged":false`)
+
+	opts, out, _ = runOptions(t, srv.URL, cfg, initialize)
+	opts.Challenge = &Challenge{Service: testService, Profile: "logfood", Host: testHost, Label: "GitHub"}
+	require.NoError(t, Run(t.Context(), opts))
+	assert.Contains(t, out.String(), `"listChanged":true`)
+}

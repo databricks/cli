@@ -1,5 +1,7 @@
 package mcp
 
+import "strings"
+
 // SystemAILocation is the schema that ships the Databricks managed MCP services.
 const SystemAILocation = "system.ai"
 
@@ -57,4 +59,23 @@ var knownSystemAI = map[string]KnownService{
 		Label: "Microsoft 365", Summary: "SharePoint, Outlook, Teams",
 		Note: "Scopes ending in .All usually need tenant admin consent.",
 	},
+}
+
+// KnownOf returns the CLI's description of a service, or nil when it is not a system.ai service in the table. The leaf
+// is compared without case, as Unity Catalog names are.
+func KnownOf(fullName string) *KnownService {
+	known, ok := knownSystemAI[strings.ToLower(LeafOf(fullName))]
+	if !ok || !inSystemAI(fullName) {
+		return nil
+	}
+	return &known
+}
+
+// ProviderLabel names the provider of a service in messages: the known label for a system.ai
+// service, else the full name.
+func ProviderLabel(fullName string) string {
+	if known := KnownOf(fullName); known != nil {
+		return known.Label
+	}
+	return fullName
 }
