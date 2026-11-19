@@ -1,8 +1,8 @@
 {
   "custom_tags": [
     {
-      "key": "team",
-      "value": "data"
+      "key": "env",
+      "value": "test"
     }
   ]
 }

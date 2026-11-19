@@ -24,25 +24,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Remove one of two custom_tags
 
 === Remove the last custom_tag, leaving no custom_tags in the config
-old='      custom_tags:\n        - key: team\n          value: data' not found in filename='databricks.yml'
-bundle:
-  name: remove-custom-tags-[UNIQUE_NAME]
-
-sync:
-  paths: []
-
-resources:
-  postgres_projects:
-    my_project:
-      project_id: test-pg-proj-[UNIQUE_NAME]
-      display_name: "Test Project for Custom Tags Removal"
-      pg_version: 16
-      history_retention_duration: 604800s
-      custom_tags:
-
-        - key: team
-          value: data
-
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -55,5 +36,3 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/remove-custom-tags-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
-
-Exit code: 1

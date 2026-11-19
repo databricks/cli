@@ -15,8 +15,8 @@
       ],
       "new": [
         {
-          "key": "team",
-          "value": "data"
+          "key": "env",
+          "value": "test"
         }
       ],
       "remote": [
