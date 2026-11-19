@@ -2,6 +2,7 @@
 >>> [CLI] bundle validate -o json --var from_flag=0012345678901234
 {
   "variables": {
+    "concurrency": 10,
     "exponent": 1.2345678901E+52,
     "from_env": "0012345678901234",
     "from_flag": "0012345678901234",
@@ -11,6 +12,7 @@
     "target_override": 12345678901234,
     "version": 3.1
   },
+  "max_concurrent_runs": 10,
   "policy_id": "12345678901234",
   "base_parameters": {
     "exponent": "12345678901000000000000000000000000000000000000000000",

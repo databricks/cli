@@ -15,6 +15,9 @@ variables:
     default: 3.10
   quoted:
     default: "0012345678901234"
+  # Used in an int field, which must get the parsed number.
+  concurrency:
+    default: 010
   # Overridden in the target below, see targets.dev.variables.
   target_override:
     default: "0012345678901234"
@@ -28,6 +31,7 @@ resources:
   jobs:
     job:
       name: job
+      max_concurrent_runs: ${var.concurrency}
       tasks:
         - task_key: t
           new_cluster:
