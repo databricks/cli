@@ -3,12 +3,17 @@ package agentconfig
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -926,4 +931,250 @@ func TestWriteRefusesReadOnlyFile(t *testing.T) {
 	_, status, err = Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
 	require.NoError(t, err)
 	assert.Equal(t, StatusUnchanged, status)
+}
+
+// lockedAgent is an agent whose config is locked the way Claude Code locks its own.
+func lockedAgent(path string) *agents.Agent {
+	a := testAgent(path, mcpconfig.FormatJSON, "mcpServers")
+	a.MCP.Lock = true
+	return a
+}
+
+func TestConfigLockPath(t *testing.T) {
+	dir := t.TempDir()
+	realDir, err := filepath.EvalSymlinks(dir)
+	require.NoError(t, err)
+
+	existing := filepath.Join(dir, ".claude.json")
+	writeFile(t, existing, []byte(`{}`), 0o600)
+	got, err := configLock(existing)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(realDir, ".claude.json.lock"), got)
+
+	missing := filepath.Join(dir, "missing", ".claude.json")
+	got, err = configLock(missing)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(dir, "missing", ".claude.json.lock"), got)
+}
+
+func TestConfigLockPathFollowsSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs privileges on Windows")
+	}
+	dir := t.TempDir()
+	realDir, err := filepath.EvalSymlinks(dir)
+	require.NoError(t, err)
+	target := filepath.Join(dir, "dotfiles", ".claude.json")
+	writeFile(t, target, []byte(`{}`), 0o600)
+	link := filepath.Join(dir, "linked.json")
+	require.NoError(t, os.Symlink(target, link))
+
+	got, err := configLock(link)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(realDir, "dotfiles", ".claude.json.lock"), got)
+}
+
+// TestLockedEditHoldsLockUntilReleased checks that the lock directory exists
+// while it is held and is gone once it is released. Upsert has no point between
+// the lock and the save where a test could look, so this checks the lock itself.
+func TestLockedEditHoldsLockUntilReleased(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".claude.json")
+	lock, err := configLock(path)
+	require.NoError(t, err)
+
+	release, err := lockConfig(path)
+	require.NoError(t, err)
+	info, err := os.Stat(lock)
+	require.NoError(t, err)
+	assert.True(t, info.IsDir())
+
+	release()
+	_, err = os.Stat(lock)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestUpsertAndRemoveReleaseLock(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".claude.json")
+	lock, err := configLock(path)
+	require.NoError(t, err)
+	a := lockedAgent(path)
+
+	_, status, err := Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+	_, err = os.Stat(lock)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	removed, err := Remove(t.Context(), a, testName)
+	require.NoError(t, err)
+	assert.True(t, removed)
+	_, err = os.Stat(lock)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestRemoveWithoutConfigDirCreatesNothing(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "claude-home")
+	a := lockedAgent(filepath.Join(dir, ".claude.json"))
+
+	removed, err := Remove(t.Context(), a, testName)
+	require.NoError(t, err)
+	assert.False(t, removed)
+	_, err = os.Stat(dir)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestUnlockedAgentIgnoresLock(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	lock, err := configLock(path)
+	require.NoError(t, err)
+	require.NoError(t, os.Mkdir(lock, 0o700))
+	t.Cleanup(func() { _ = os.Remove(lock) })
+
+	// A lock held by someone else does not stop an agent that does not take one.
+	_, status, err := Upsert(t.Context(), testAgent(path, mcpconfig.FormatJSON, "mcpServers"), testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+}
+
+// TestLockedEditTimesOutOnLiveLock checks that an edit waits for a lock that
+// another process holds, and fails naming the lock once the wait is over. The
+// lock is not ours, so it is left in place.
+func TestLockedEditTimesOutOnLiveLock(t *testing.T) {
+	defer func(prev time.Duration) { lockTimeout = prev }(lockTimeout)
+	lockTimeout = 200 * time.Millisecond
+
+	path := filepath.Join(t.TempDir(), ".claude.json")
+	writeFile(t, path, []byte(`{"mcpServers":{"other":{"command":"npx"}}}`), 0o600)
+	before := readFile(t, path)
+	lock, err := configLock(path)
+	require.NoError(t, err)
+	require.NoError(t, os.Mkdir(lock, 0o700))
+	a := lockedAgent(path)
+
+	start := time.Now()
+	_, _, err = Upsert(t.Context(), a, testName, testCmd, testArgs("test"), nil, false)
+	require.ErrorContains(t, err, filepath.ToSlash(lock)+" is locked by another process")
+	assert.GreaterOrEqual(t, time.Since(start), lockTimeout)
+
+	_, err = Remove(t.Context(), a, testName)
+	require.ErrorContains(t, err, filepath.ToSlash(lock)+" is locked by another process")
+
+	_, err = os.Stat(lock)
+	require.NoError(t, err, "the lock is not ours to remove")
+	assert.Equal(t, before, readFile(t, path))
+}
+
+// TestLockedEditWaitsForRelease checks that an edit goes ahead once the other
+// process lets go of the lock while the edit waits.
+func TestLockedEditWaitsForRelease(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".claude.json")
+	lock, err := configLock(path)
+	require.NoError(t, err)
+	require.NoError(t, os.Mkdir(lock, 0o700))
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		_ = os.Remove(lock)
+	}()
+
+	_, status, err := Upsert(t.Context(), lockedAgent(path), testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+}
+
+// TestLockedEditTakesOverStaleLock checks that a lock left by a process that died
+// is removed once its mtime is older than lockStaleAfter.
+func TestLockedEditTakesOverStaleLock(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".claude.json")
+	lock, err := configLock(path)
+	require.NoError(t, err)
+	require.NoError(t, os.Mkdir(lock, 0o700))
+	old := time.Now().Add(-(lockStaleAfter + time.Second))
+	require.NoError(t, os.Chtimes(lock, old, old))
+
+	_, status, err := Upsert(t.Context(), lockedAgent(path), testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, StatusAdded, status)
+	_, err = os.Stat(lock)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+// claudeLikeWriter saves the config the way Claude Code does: it takes the lock,
+// reads the file, adds one to numStartups, writes a temp file and renames it over
+// the config, then releases the lock. saves counts the renames that landed. It
+// runs until stop is closed.
+func claudeLikeWriter(path, lock string, stop <-chan struct{}, saves *atomic.Int64) {
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+		}
+		if os.Mkdir(lock, 0o700) != nil {
+			time.Sleep(100 * time.Microsecond)
+			continue
+		}
+		data, _ := os.ReadFile(path)
+		m := map[string]any{}
+		_ = json.Unmarshal(data, &m)
+		n, _ := m["numStartups"].(float64)
+		m["numStartups"] = n + 1
+		time.Sleep(2 * time.Millisecond)
+		out, _ := json.MarshalIndent(m, "", "  ")
+		if os.WriteFile(path+".tmp", out, 0o600) == nil && os.Rename(path+".tmp", path) == nil {
+			saves.Add(1)
+		}
+		_ = os.Remove(lock)
+		time.Sleep(time.Millisecond)
+	}
+}
+
+// TestLockedEditLosesNoUpdates runs edits against a config that Claude Code
+// writes at the same time. Neither side may lose the other's update: every save
+// by Claude Code is counted in the file, and every upsert is in the file when it
+// returns.
+func TestLockedEditLosesNoUpdates(t *testing.T) {
+	const iterations = 100
+	path := filepath.Join(t.TempDir(), ".claude.json")
+	// A large config makes each save slow enough for the race to show.
+	projects := map[string]any{}
+	for i := range 800 {
+		projects[fmt.Sprintf("/work/project-%03d", i)] = map[string]any{"history": strings.Repeat("x", 500)}
+	}
+	seed, err := json.MarshalIndent(map[string]any{"numStartups": 0, "projects": projects}, "", "  ")
+	require.NoError(t, err)
+	writeFile(t, path, seed, 0o600)
+
+	// Claude Code locks the real path of the config, as configLock does. The test
+	// resolves it on its own, so the lock under test is not checked against itself.
+	real, err := filepath.EvalSymlinks(path)
+	require.NoError(t, err)
+
+	var saves atomic.Int64
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		claudeLikeWriter(path, real+".lock", stop, &saves)
+	})
+	stopWriter := sync.OnceFunc(func() {
+		close(stop)
+		wg.Wait()
+	})
+	defer stopWriter()
+
+	a := lockedAgent(path)
+	for i := range iterations {
+		agent := strconv.Itoa(i)
+		_, _, err := Upsert(t.Context(), a, testName, testCmd, testArgs(agent), nil, false)
+		require.NoError(t, err)
+		entries, err := Read(t.Context(), a)
+		require.NoError(t, err)
+		require.Contains(t, entries, testName, "upsert %d", i)
+		assert.Equal(t, testArgs(agent), toStrings(t, entries[testName]["args"]), "upsert %d", i)
+	}
+
+	stopWriter()
+	var final map[string]any
+	require.NoError(t, json.Unmarshal(readFile(t, path), &final))
+	numStartups, _ := final["numStartups"].(float64)
+	assert.Equal(t, saves.Load(), int64(numStartups), "Claude Code saves that were lost")
 }

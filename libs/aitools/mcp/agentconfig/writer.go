@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
@@ -123,6 +124,13 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err != nil {
 		return "", "", err
 	}
+	if spec.Lock {
+		release, err := lockConfig(path)
+		if err != nil {
+			return path, "", err
+		}
+		defer release()
+	}
 	doc, err := load(spec, path)
 	if err != nil {
 		return path, "", err
@@ -185,6 +193,13 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	path, err := spec.Path(ctx)
 	if err != nil {
 		return false, err
+	}
+	if spec.Lock {
+		release, err := lockConfig(path)
+		if err != nil {
+			return false, err
+		}
+		defer release()
 	}
 	doc, err := load(spec, path)
 	if err != nil {
@@ -253,6 +268,80 @@ func specOf(a *agents.Agent) (*mcpconfig.Spec, error) {
 
 func rootPath(spec *mcpconfig.Spec) []string {
 	return strings.Split(spec.Root, ".")
+}
+
+// Claude Code takes a lock while it saves its config, so a write that reads and
+// then renames without the lock can lose Claude's update, or be lost to it. The
+// lock is the directory <real path>.lock: Claude Code makes it with mkdir and
+// removes it with rmdir, and treats a lock whose mtime is over 10 s old as left
+// behind by a process that died.
+const (
+	// lockStaleAfter is the age after which a lock is taken as abandoned.
+	lockStaleAfter = 10 * time.Second
+	// lockRetry is the pause between attempts to take a lock that is held.
+	lockRetry = time.Millisecond
+)
+
+// lockTimeout bounds the wait for a lock held by a live process. It is longer
+// than lockStaleAfter, so a lock left by a process that died is taken over on
+// the first attempt rather than failing it. A live holder keeps the lock for a
+// few milliseconds, since Claude Code only rereads and rewrites the file under it.
+var lockTimeout = 15 * time.Second
+
+// lockConfig takes the lock on the config file at path and returns the function
+// that releases it. The lock is held for a few milliseconds at most, so it is
+// not refreshed while held; a holder that dies leaves it to go stale.
+func lockConfig(path string) (func(), error) {
+	lock, err := configLock(path)
+	if err != nil {
+		return nil, err
+	}
+	// With no config directory, Claude Code has never saved this file, so there is no lock to share. The lock is not
+	// taken then, so that a remove does not create the directory.
+	if _, err := os.Stat(filepath.Dir(lock)); errors.Is(err, fs.ErrNotExist) {
+		return func() {}, nil
+	}
+	deadline := time.Now().Add(lockTimeout)
+	for {
+		err := os.Mkdir(lock, 0o700)
+		if err == nil {
+			return func() { _ = os.Remove(lock) }, nil
+		}
+		if !errors.Is(err, fs.ErrExist) {
+			return nil, fmt.Errorf("lock %s: %w", filepath.ToSlash(lock), err)
+		}
+		if info, statErr := os.Stat(lock); statErr == nil && time.Since(info.ModTime()) > lockStaleAfter {
+			if err := os.Remove(lock); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				return nil, fmt.Errorf("remove stale lock %s: %w", filepath.ToSlash(lock), err)
+			}
+			continue
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("%s is locked by another process, most likely Claude Code saving its config; try again", filepath.ToSlash(lock))
+		}
+		time.Sleep(lockRetry)
+	}
+}
+
+// configLock returns the lock path for the config file at path. Like
+// proper-lockfile, it names the lock after the file's real path, so a symlinked
+// config is locked where its target is. A file that does not exist yet has no
+// real path, and its absolute path is used.
+func configLock(path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	resolved, err := filepath.EvalSymlinks(abs)
+	switch {
+	case err == nil:
+		abs = resolved
+	case errors.Is(err, fs.ErrNotExist):
+		// A missing file, or a link to one; save refuses the latter.
+	default:
+		return "", fmt.Errorf("resolve %s: %w", filepath.ToSlash(path), err)
+	}
+	return abs + ".lock", nil
 }
 
 // load reads and parses the config at path. A missing file is an empty document.

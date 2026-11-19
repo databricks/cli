@@ -34,6 +34,10 @@ type Spec struct {
 	// Entry builds the entry for a stdio server that runs cmd with args and env.
 	// env is empty when there are no variables to pin.
 	Entry func(cmd string, args []string, env map[string]string) map[string]any
+	// Lock is set when the agent takes a lock on its config file while it saves
+	// it, and writers must take the same lock. The lock is the directory named
+	// after the file's real path with a .lock suffix.
+	Lock bool
 }
 
 // Argv returns the command line of a stdio entry as argv[0] and its arguments.

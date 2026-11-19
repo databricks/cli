@@ -204,6 +204,7 @@ var Registry = []*Agent{
 			Format: mcpconfig.FormatJSON,
 			Root:   mcpServersKey,
 			Entry:  claudeMCPEntry,
+			Lock:   true,
 		},
 	},
 	{
