@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle deployment bind spec1 main.fspec_[UNIQUE_NAME].boundspec --auto-approve
+Warn: Failed to record deployment history for bind: failed to create deployment version: operations.resource_key must have a known resource type prefix (e.g. 'jobs.', 'pipelines.'): feature_specs.spec1
+Successfully bound feature_spec with an id 'main.fspec_[UNIQUE_NAME].boundspec'
+Run 'bundle deploy' to deploy changes to your workspace
