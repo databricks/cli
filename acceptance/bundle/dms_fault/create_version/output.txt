@@ -50,6 +50,7 @@
 
 >>> bundle generate job --existing-job-id [FOO_ID] --key foo --config-dir resources --source-dir src --force --bind
   Job configuration successfully saved to resources/foo.job.yml
+  Warn: Failed to record deployment history for bind: failed to create deployment version: Fault injected by test.
   Successfully bound job with an id '[FOO_ID]'
 
 >>> bundle generate pipeline --existing-pipeline-id [BAR_ID] --key bar --config-dir exported --source-dir exported-src --force
@@ -69,6 +70,7 @@
 >>> bundle generate pipeline --existing-pipeline-id [BAR_ID] --key bar --config-dir resources --source-dir src --force --bind
   File successfully saved to src/pipeline.sql
   Pipeline configuration successfully saved to resources/bar.pipeline.yml
+  Warn: Failed to record deployment history for bind: failed to create deployment version: Fault injected by test.
   Successfully bound pipeline with an id '[BAR_ID]'
 
 >>> bundle validate
