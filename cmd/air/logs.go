@@ -50,7 +50,7 @@ prints the logs available now: the last 10000 lines, or --tail N lines. With
 	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
 	cmd.Flags().BoolVarP(&follow, "follow", "f", false, "Stream new lines until the run completes")
-	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing; not combinable with --tail or --minutes")
+	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing; not combinable with --tail, --minutes, or --follow")
 	cmd.Flags().BoolVar(&review, "review", false, "Download logs from all nodes and filter for error signatures")
 	cmd.Flags().MarkHidden("review")
 
@@ -80,13 +80,13 @@ prints the logs available now: the last 10000 lines, or --tail N lines. With
 				errors.New("--download-to writes complete logs, so it cannot be combined with --tail or --minutes"))
 		}
 
-		// --tail (line tail) and --minutes (time window) answer the same question
-		// two ways, so reject both together rather than silently honoring one.
 		if downloadTo != "" && follow {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				errors.New("--download-to writes the logs available now, so it cannot be combined with --follow"))
 		}
 
+		// --tail (line tail) and --minutes (time window) answer the same question
+		// two ways, so reject both together rather than silently honoring one.
 		if tail > 0 && minutes > 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				errors.New("cannot combine --tail with --minutes: --tail selects by line count, --minutes by time window"))

@@ -106,9 +106,7 @@ type logRequest struct {
 	tailLines int
 	// downloadTo, when set, writes logs to that directory instead of stdout.
 	downloadTo string
-	// staticView renders a one-shot tail instead of following the run. Set for a
-	// past retry of an active run: that attempt's logs are immutable, so streaming
-	// would poll forever waiting for the run (not the attempt) to finish.
+	// staticView renders snapshots and immutable past retries without following an active run.
 	staticView bool
 	// printOnce prints an active run's available logs and exits instead of
 	// following it (air logs without --follow).
@@ -460,8 +458,6 @@ func (st *bricklensStreamer) run() (bool, error) {
 	st.fromSec = st.req.fromSeconds(st.status, now)
 	st.streamStartSec = st.fromSec
 
-	// A past retry's logs are immutable: render a one-shot tail rather than
-	// following the still-active run, which would poll forever.
 	if st.req.staticView {
 		return st.drainStatic(st.req.toSeconds(st.status))
 	}
@@ -523,8 +519,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)
 
-		// `air logs` starts an active attachment with a bounded tail; subsequent
-		// polls follow live with dedup so the overlap does not re-print it.
+		// Remember an active attachment's initial tail so overlapping polls do not reprint records.
 		var emitted int
 		var err error
 		if firstIteration && (terminal || st.req.boundInitialLogs) {
