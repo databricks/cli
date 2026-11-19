@@ -497,11 +497,14 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 	}
 }
 
-// waitReadError returns the cause of ctx, such as errTestWaitTimeout, for a read that failed after
-// ctx was canceled: the interrupted read fails with the bare context error, which hides it.
+// waitReadError adds the cause of ctx, such as errTestWaitTimeout, to a read error that ctx's
+// cancellation caused. The SDK rate limiter fails a request on a canceled ctx before sending it,
+// with the bare context error that hides the cause.
 func waitReadError(ctx context.Context, err error) error {
-	if ctx.Err() != nil {
-		return context.Cause(ctx)
+	if errors.Is(err, context.Canceled) {
+		if cause := context.Cause(ctx); cause != nil && !errors.Is(err, cause) {
+			return fmt.Errorf("%w: %w", cause, err)
+		}
 	}
 	return err
 }
@@ -765,7 +768,7 @@ of the deployed snapshot, which changes with each deployment.`,
 		defer stopReads()
 		state, err := waitForTestUpdate(readCtx, target.w, target.pipelineID, updateID, run, printer)
 		if err != nil {
-			isTimeout := errors.Is(err, errTestWaitTimeout)
+			isTimeout := errors.Is(err, errTestWaitTimeout) || errors.Is(context.Cause(readCtx), errTestWaitTimeout)
 			resumeCmd := target.resumeCommand(cmd, updateID)
 			if !isTimeout && waitCtx.Err() == nil {
 				// The SDK client already retries transient errors, so the read failed for good.

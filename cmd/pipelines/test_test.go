@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -352,6 +353,21 @@ func TestWaitForTestUpdateTimeoutBeforeRead(t *testing.T) {
 	printer := &testProgressPrinter{out: &bytes.Buffer{}, shortID: func(id string) string { return id }}
 	_, err = waitForTestUpdate(ctx, w, "p1", "u1", newTestRun(), printer)
 	assert.ErrorIs(t, err, errTestWaitTimeout)
+}
+
+func TestWaitReadError(t *testing.T) {
+	ctx, cancel := context.WithCancelCause(t.Context())
+	readErr := errors.New("403 forbidden")
+	// A real error is kept even if ctx is canceled by now.
+	cancel(errTestWaitTimeout)
+	assert.Equal(t, readErr, waitReadError(ctx, readErr))
+
+	// A context error gets the cause, and keeps the read's own message.
+	canceled := fmt.Errorf("failed to fetch pipeline events: failed in rate limiter: %w", context.Canceled)
+	err := waitReadError(ctx, canceled)
+	assert.ErrorIs(t, err, errTestWaitTimeout)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.Contains(t, err.Error(), "failed to fetch pipeline events")
 }
 
 // The timeout also interrupts a read in flight, so an update that ends after it is not reported.
