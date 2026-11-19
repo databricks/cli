@@ -341,6 +341,19 @@ func TestWaitForTestUpdateTimeout(t *testing.T) {
 	assert.ErrorIs(t, err, errTestWaitTimeout)
 }
 
+// A timeout that passes between reads fails the next read in the SDK rate limiter, with a bare
+// context error; the wait still reports the timeout.
+func TestWaitForTestUpdateTimeoutBeforeRead(t *testing.T) {
+	server := testserver.New(t)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cancel(errTestWaitTimeout)
+	printer := &testProgressPrinter{out: &bytes.Buffer{}, shortID: func(id string) string { return id }}
+	_, err = waitForTestUpdate(ctx, w, "p1", "u1", newTestRun(), printer)
+	assert.ErrorIs(t, err, errTestWaitTimeout)
+}
+
 // The timeout also interrupts a read in flight, so an update that ends after it is not reported.
 func TestWaitForTestUpdateTimeoutInterruptsRead(t *testing.T) {
 	server := testserver.New(t)

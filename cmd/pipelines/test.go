@@ -459,7 +459,7 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 	for {
 		response, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
 		if err != nil {
-			return "", err
+			return "", waitReadError(ctx, err)
 		}
 		if response.Update == nil {
 			return "", fmt.Errorf("no update found with id %s for pipeline %s", updateID, pipelineID)
@@ -470,7 +470,7 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 		// Reading from the last timestamp returns its events again; the run ignores duplicates.
 		events, err := readTestEvents(ctx, w, pipelineID, updateID, lastTimestamp)
 		if err != nil {
-			return "", err
+			return "", waitReadError(ctx, err)
 		}
 		if len(events) > 0 {
 			lastTimestamp = events[len(events)-1].Timestamp
@@ -482,7 +482,7 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 			// Events can become readable after later ones, so read all of them once more.
 			events, err := readTestEvents(ctx, w, pipelineID, updateID, "")
 			if err != nil {
-				return "", err
+				return "", waitReadError(ctx, err)
 			}
 			addTestEvents(run, printer, events)
 			return state, nil
@@ -495,6 +495,15 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 		case <-time.After(testPollInterval):
 		}
 	}
+}
+
+// waitReadError returns the cause of ctx, such as errTestWaitTimeout, for a read that failed after
+// ctx was canceled: the interrupted read fails with the bare context error, which hides it.
+func waitReadError(ctx context.Context, err error) error {
+	if ctx.Err() != nil {
+		return context.Cause(ctx)
+	}
+	return err
 }
 
 // addTestEvents adds events to the run and prints each case that gets its final outcome.
@@ -756,8 +765,7 @@ of the deployed snapshot, which changes with each deployment.`,
 		defer stopReads()
 		state, err := waitForTestUpdate(readCtx, target.w, target.pipelineID, updateID, run, printer)
 		if err != nil {
-			// A read that the timeout interrupts fails with the bare context error, so the cause tells.
-			isTimeout := errors.Is(context.Cause(readCtx), errTestWaitTimeout)
+			isTimeout := errors.Is(err, errTestWaitTimeout)
 			resumeCmd := target.resumeCommand(cmd, updateID)
 			if !isTimeout && waitCtx.Err() == nil {
 				// The SDK client already retries transient errors, so the read failed for good.
