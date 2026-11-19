@@ -115,6 +115,22 @@ func TestRefreshGuardStopsLaterRequestsWithoutAskingAgain(t *testing.T) {
 	assert.ErrorIs(t, g.failure(), cause)
 }
 
+// TestRefreshGuardNamesPinnedConfigFile checks that a refresh failure of a server pinned to a config file names that file
+// in its login command, so that the command logs in to the file the profile is read from.
+func TestRefreshGuardNamesPinnedConfigFile(t *testing.T) {
+	g := &refreshGuard{
+		authenticate: func(*http.Request) error { return refreshRejected },
+		profile:      "logfood",
+		pinnedFile:   "/work/cfg/logfood.cfg",
+		cancel:       func() {},
+	}
+
+	_ = g.authenticateRequest(&http.Request{Header: http.Header{}})
+
+	require.Error(t, g.failure())
+	assert.Contains(t, g.failure().Error(), "Run: DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks auth login --profile logfood")
+}
+
 // TestRefreshGuardStoresAuthError checks that the refresh failure reaches the user as the AUTH_FAILED error, which names
 // the profile and its login command.
 func TestRefreshGuardStoresAuthError(t *testing.T) {
@@ -140,7 +156,7 @@ func TestRefreshGuardAuthErrorNamesPinnedConfigFile(t *testing.T) {
 	g := &refreshGuard{
 		authenticate: func(*http.Request) error { return refreshRejected },
 		profile:      "logfood",
-		configFile:   "/work/.databrickscfg",
+		pinnedFile:   "/work/.databrickscfg",
 		cancel:       func() {},
 	}
 
@@ -522,7 +538,7 @@ func TestRefreshGuardIgnoresRequestThatEnded(t *testing.T) {
 func TestRefreshGuardIgnoresSessionDelete(t *testing.T) {
 	cancelled := false
 	g := &refreshGuard{
-		authenticate: func(*http.Request) error { return errors.New(refreshTokenExpired) },
+		authenticate: func(*http.Request) error { return refreshRejected },
 		profile:      "logfood",
 		cancel:       func() { cancelled = true },
 	}
@@ -554,7 +570,7 @@ func TestServeAgentKeepsOnlyKnownAgents(t *testing.T) {
 // any binding check, with the flag named.
 func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 	withHome(t)
-	for _, service := range []string{"github", "system.ai", "system..github", "a.b.c.d"} {
+	for _, service := range []string{"github", "system.ai", "system..github", "a.b.c.d", "system.ai.git/hub"} {
 		t.Run(service, func(t *testing.T) {
 			parent := newMCPTestRoot()
 			parent.SetArgs([]string{"mcp", "serve", "--profile", "logfood", "--service", service})

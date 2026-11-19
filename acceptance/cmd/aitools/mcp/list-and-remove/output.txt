@@ -10,7 +10,7 @@ genie_one_mcp-logfood  system.ai.genie_one_mcp
 
 github-logfood  system.ai.github
   claude-code  installed  [TEST_TMP_DIR]/home/.claude.json
-  system.ai.github needs sign-in. Run: databricks aitools mcp login system.ai.github --profile logfood
+  system.ai.github needs sign-in. Run: DATABRICKS_CONFIG_FILE=[TEST_TMP_DIR]/.databrickscfg databricks aitools mcp login system.ai.github --profile logfood
   Public repositories only until a repository owner installs https://github.com/apps/databricks-github-connector (on AWS GovCloud, https://github.com/apps/databricks-gh-connector-gov-cloud).
 
 >>> [CLI] aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code

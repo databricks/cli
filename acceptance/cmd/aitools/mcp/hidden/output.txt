@@ -8,7 +8,9 @@ aitools help does not list mcp
 
 >>> [CLI] aitools mcp --help
 Databricks managed MCP servers give coding agents tools for Databricks services, such as GitHub or web search.
-Use 'add' to install them into coding agents, bound to a Databricks profile.
+Use 'add' to install them into coding agents, bound to a Databricks profile, 'list' to see what is installed,
+and 'remove' to uninstall them. Some services use your account with an external provider, such as GitHub:
+'login' signs you in to one and 'logout' removes the sign-in.
 
 Usage:
   databricks aitools mcp [command]
@@ -16,6 +18,8 @@ Usage:
 Available Commands:
   add         Install Databricks managed MCP servers into coding agents
   list        List Databricks managed MCP servers installed by this CLI
+  login       Sign in to a Databricks managed MCP service with your account
+  logout      Remove your sign-in to a Databricks managed MCP service
   remove      Remove Databricks managed MCP servers from coding agents
 
 Flags:
@@ -54,6 +58,7 @@ Flags:
       --force[=true|false]   Overwrite an existing server with the same name that this CLI did not write
   -h, --help[=true|false]    help for add
       --location string      Schema to resolve leaf names in, as <catalog>.<schema> (default: system.ai, or the one schema that the full names in --names share when there are no leaf names)
+      --login[=true|false]   Sign in to each sign-in-required server that was installed, after the installs
       --name string          Server name to use instead of the generated one; only with exactly one service
       --names string         Services to install: full names (system.ai.github) or leaf names (github), comma-separated
 

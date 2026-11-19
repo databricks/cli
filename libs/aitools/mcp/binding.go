@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -86,11 +87,7 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	if entry == nil {
 		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
 	}
-	pinnedFile := ""
-	if entry != nil && entry.ConfigFile != "" {
-		pinnedFile = filepath.ToSlash(configFile)
-	}
-	if err := AuthenticateBound(ctx, cfg, opts.Profile, pinnedFile); err != nil {
+	if err := AuthenticateBound(ctx, cfg, opts.Profile, PinnedFile(entry, configFile)); err != nil {
 		return nil, nil, err
 	}
 	return cfg, entry, nil
@@ -101,11 +98,29 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 // from the environment, and a token meant for another workspace must not reach this one. It does not authenticate; see
 // AuthenticateBound.
 func BoundConfig(profileName, configFile string) (*config.Config, error) {
-	cfg := &config.Config{
+	return resolveBound(&config.Config{
 		Profile:    profileName,
 		ConfigFile: configFile,
 		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
-	}
+	})
+}
+
+// BoundConfigWithin is BoundConfig with the SDK's request and retry budgets set to budget, rounded up to whole seconds. A
+// budget of zero keeps the SDK's defaults. Resolving the profile runs on a context of its own, so a context deadline does
+// not reach it, and these budgets are what bound it (see profileMetadata.Load in cmd/auth).
+func BoundConfigWithin(profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	seconds := int((budget + time.Second - 1) / time.Second)
+	return resolveBound(&config.Config{
+		Profile:             profileName,
+		ConfigFile:          configFile,
+		Loaders:             []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
+		HTTPTimeoutSeconds:  seconds,
+		RetryTimeoutSeconds: seconds,
+	})
+}
+
+// resolveBound resolves cfg, as BoundConfig does.
+func resolveBound(cfg *config.Config) (*config.Config, error) {
 	if err := cfg.EnsureResolved(); err != nil {
 		// Configuration that the SDK rejects is not a credential failure, so a login would not fix it.
 		return nil, uncategorizedError(err)
@@ -127,6 +142,16 @@ func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pin
 		return AuthErrorIn(profileName, pinnedFile, err)
 	}
 	return nil
+}
+
+// PinnedFile returns the config file that a hint for entry must name, or "" when the hint's command reads the same file
+// without one. An entry pinned to a config file names configFile, the file the profile is read from. A nil entry has no
+// pin. The path has forward slashes, as every hint spells it.
+func PinnedFile(entry *Entry, configFile string) string {
+	if entry != nil && entry.ConfigFile != "" {
+		return filepath.ToSlash(configFile)
+	}
+	return ""
 }
 
 // CheckBinding returns the state entry for service and profileName bound to configFile, the config file the caller
@@ -223,11 +248,17 @@ func InstallConfigFile(ctx context.Context, path string, pinned bool) string {
 // RecreateCommand returns the command that logs in to host for profileName again. configFile is the file the login must
 // write, passed as DATABRICKS_CONFIG_FILE; pass "" when the login's default file is that file.
 func RecreateCommand(host, profileName, configFile string) string {
-	command := authLoginCommand + " --host " + shellquote.BashArg(host) + " --profile " + shellquote.BashArg(profileName)
-	if configFile != "" {
-		command = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(configFile) + " " + command
+	return ConfigFileCommand(configFile, authLoginCommand+" --host "+shellquote.BashArg(host)+" --profile "+shellquote.BashArg(profileName))
+}
+
+// ConfigFileCommand returns command with DATABRICKS_CONFIG_FILE set to configFile, when configFile is not "". A command
+// that a hint prints names the file of a profile that is not the one the shell reads. The file is written with forward
+// slashes on every platform, as the other paths in the hints are.
+func ConfigFileCommand(configFile, command string) string {
+	if configFile == "" {
+		return command
 	}
-	return command
+	return "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(filepath.ToSlash(configFile)) + " " + command
 }
 
 // profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
@@ -300,11 +331,7 @@ func AuthErrorIn(profileName, configFile string, cause error) error {
 // LoginCommand returns the command that logs in profileName. configFile is the file the login must write, passed as
 // DATABRICKS_CONFIG_FILE; pass "" when the login's default file is that file.
 func LoginCommand(profileName, configFile string) string {
-	command := authLoginCommand + " --profile " + shellquote.BashArg(profileName)
-	if configFile != "" {
-		command = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(configFile) + " " + command
-	}
-	return command
+	return ConfigFileCommand(configFile, authLoginCommand+" --profile "+shellquote.BashArg(profileName))
 }
 
 // FindEntry returns the entry for the service and profile whose config file is configFile, or nil when

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -315,4 +316,46 @@ func TestDiscoverRejectsLocationWithoutSchema(t *testing.T) {
 			assert.Zero(t, calls.Load())
 		})
 	}
+}
+
+// TestPathSafeName checks that only "/" and control characters are refused. The dots of a full name are checked by the
+// callers, which split it, and the other URL syntax is escaped in the request.
+func TestPathSafeName(t *testing.T) {
+	for _, name := range []string{"system.ai.github", "system.ai.git#hub", "system.ai.git?hub", "system.ai.git%hub", "system.ai.git hub"} {
+		assert.True(t, PathSafeName(name), "%q", name)
+	}
+	for _, name := range []string{"system.ai/git", "system.ai.git\nhub", "system.ai.git\thub", "system.ai.git\x7fhub"} {
+		assert.False(t, PathSafeName(name), "%q", name)
+	}
+}
+
+func TestGetServiceSignInRequired(t *testing.T) {
+	s := &loginTestServer{}
+	w := loginTestClient(t, s)
+
+	svc, err := GetService(t.Context(), w, loginTestService)
+	require.NoError(t, err)
+	assert.True(t, svc.SignInRequired())
+	assert.Equal(t, "OAUTH_PROVIDER_GITHUB_MCP", svc.OAuthProvider)
+	require.NotNil(t, svc.Known)
+	assert.Equal(t, "GitHub", svc.Known.Label)
+}
+
+// TestGetServiceDeletedSourceIsNotFound checks that a service whose source connection was deleted is NOT_FOUND, as
+// Discover drops it, so that login and logout treat it the same way as add does.
+func TestGetServiceDeletedSourceIsNotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(rw, `{"name":"mcp-services/system.ai.github","config":{"source_connection":{"is_deleted":true,"options":{"oauth_provider":"OAUTH_PROVIDER_GITHUB_MCP"}}}}`)
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+	require.NoError(t, err)
+
+	_, err = GetService(t.Context(), w, loginTestService)
+	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
