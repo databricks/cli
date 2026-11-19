@@ -366,7 +366,7 @@ func readServerOutput(stream interface {
 }
 
 func cleanupRemoteDirectory(ctx context.Context, w *databricks.WorkspaceClient, name, directory string, sessionErr error, diagnostics io.Writer) {
-	if sessionErr != nil && ctx.Err() == nil {
+	if sessionErr != nil && !errors.Is(context.Cause(ctx), context.Canceled) {
 		fmt.Fprintf(diagnostics, "Sandbox SSH session files retained at %s in the sandbox for diagnosis\n", directory)
 		return
 	}

@@ -276,8 +276,10 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 			require.NoError(t, os.WriteFile(filepath.Join(home, filename), buffer.Bytes(), 0o600))
 			if mode == "cancel" {
 				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, time.Second)
+				ctx, cancel = context.WithCancel(ctx)
 				defer cancel()
+				timer := time.AfterFunc(time.Second, cancel)
+				defer timer.Stop()
 			}
 			input, writer := io.Pipe()
 			defer input.Close()
@@ -303,7 +305,7 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 			case "after-ready":
 				assert.Contains(t, err.Error(), "server stopped")
 			case "cancel":
-				assert.ErrorIs(t, err, context.DeadlineExceeded)
+				assert.ErrorIs(t, err, context.Canceled)
 			case "startup-timeout":
 				assert.ErrorIs(t, err, context.DeadlineExceeded)
 				assert.Less(t, time.Since(started), 5*time.Second)
@@ -357,7 +359,7 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 			}
 			assert.True(t, fixture.uploaded)
 			assert.True(t, fixture.terminated, "server command must be terminated independently of stream cancellation")
-			remove := err == nil || mode == "cancel" || mode == "startup-timeout"
+			remove := err == nil || mode == "cancel"
 			assert.Equal(t, remove, fixture.removed, "preserve session logs on failures; clean up successful or cancelled sessions")
 			if !remove {
 				assert.Contains(t, diagnostics.String(), "session files retained at /home/sandbox-agent/session")

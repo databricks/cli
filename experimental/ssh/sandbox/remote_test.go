@@ -70,6 +70,60 @@ type responseStream struct {
 	events []*sandboxexec.ExecuteCommandResponse
 }
 
+func TestCleanupRemoteDirectoryRetainsFailureLogs(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		cause      error
+		sessionErr error
+		remove     bool
+	}{
+		{name: "success", remove: true},
+		{name: "failure", sessionErr: errors.New("server failed")},
+		{name: "user-cancellation", cause: context.Canceled, sessionErr: context.Canceled, remove: true},
+		{name: "startup-timeout", cause: context.DeadlineExceeded, sessionErr: context.Canceled},
+		{name: "readiness-timeout", cause: errors.New("timed out waiting for sandbox SSH server readiness"), sessionErr: context.Canceled},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var removed atomic.Bool
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/.well-known/databricks-config" {
+					_, _ = io.WriteString(w, `{}`)
+					return
+				}
+				assert.Equal(t, "/api/2.0/sandbox-exec/sandboxes/test/exec-sync", r.URL.Path)
+				var request struct {
+					Cmd  string   `json:"cmd"`
+					Args []string `json:"args"`
+				}
+				if !assert.NoError(t, json.NewDecoder(r.Body).Decode(&request)) {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				assert.Equal(t, "rm", request.Cmd)
+				assert.Equal(t, []string{"-rf", "--", "/home/sandbox-agent/session"}, request.Args)
+				removed.Store(true)
+				_, _ = io.WriteString(w, `{"status":"EXECUTE_COMMAND_STATUS_COMPLETED"}`)
+			}))
+			defer server.Close()
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token"})
+			require.NoError(t, err)
+			ctx, cancel := context.WithCancelCause(t.Context())
+			defer cancel(nil)
+			if tc.cause != nil {
+				cancel(tc.cause)
+			}
+			var diagnostics bytes.Buffer
+			sandbox.CleanupRemoteDirectoryForTest(ctx, w, "sandboxes/test", "/home/sandbox-agent/session", tc.sessionErr, &diagnostics)
+			assert.Equal(t, tc.remove, removed.Load())
+			if tc.remove {
+				assert.Empty(t, diagnostics.String())
+			} else {
+				assert.Contains(t, diagnostics.String(), "session files retained at /home/sandbox-agent/session")
+			}
+		})
+	}
+}
+
 func (stream *responseStream) Recv() (*sandboxexec.ExecuteCommandResponse, error) {
 	if len(stream.events) == 0 {
 		return nil, io.EOF

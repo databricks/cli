@@ -1,1 +1,1 @@
-* Use local SSH keys and authenticated WebSocket port forwarding for `databricks sandbox ssh`, including sandboxes created through the public API. ([#7589](https://github.com/databricks/cli/pull/7589))
+* Use local SSH keys and authenticated WebSocket port forwarding for `databricks sandbox ssh`, adding SSH support for sandboxes created through the public Databricks SDK or API. The command no longer accepts `--port`. The sandbox environment must have Python 3 and OpenSSH server (`openssh-server`) installed. ([#7589](https://github.com/databricks/cli/pull/7589))
