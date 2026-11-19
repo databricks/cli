@@ -12,7 +12,7 @@ Unset the DATABRICKS_BUNDLE_ENGINE environment variable (or set it to "direct") 
 See https://docs.databricks.com/dev-tools/bundles/direct for details
 
 >>> print_engines
-1 MISSING POST /telemetry-ext
+1 engine/direct POST /telemetry-ext
 
 === deploy with bundle.engine: terraform
 
