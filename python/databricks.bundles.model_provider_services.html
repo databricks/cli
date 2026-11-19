@@ -329,32 +329,37 @@ catalog and must leave this false and list their models in <cite>targets</cite>.
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.amazon_bedrock">
 <span class="sig-name descname"><span class="pre">amazon_bedrock</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigAmazonBedrockProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_amazon_bedrock_provider_config.ModelProviderServiceConfigAmazonBedrockProviderConfig"><span class="pre">ModelProviderServiceConfigAmazonBedrockProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.amazon_bedrock" title="Link to this definition">¶</a></dt>
-<dd><p>Amazon Bedrock provider configuration.</p>
+<dd><p>Configuration for Amazon Bedrock. Set this field when <cite>provider_type</cite> is
+<cite>EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.anthropic">
 <span class="sig-name descname"><span class="pre">anthropic</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigAnthropicProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_anthropic_provider_config.ModelProviderServiceConfigAnthropicProviderConfig"><span class="pre">ModelProviderServiceConfigAnthropicProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.anthropic" title="Link to this definition">¶</a></dt>
-<dd><p>Anthropic provider configuration. Exactly one of <cite>direct</cite> or <cite>relayed</cite> must
-be set on Create; the two are mutually exclusive.</p>
+<dd><p>Configuration for Anthropic. Set this field when <cite>provider_type</cite> is
+<cite>EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.azure_openai">
 <span class="sig-name descname"><span class="pre">azure_openai</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigAzureOpenAiProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_azure_open_ai_provider_config.ModelProviderServiceConfigAzureOpenAiProviderConfig"><span class="pre">ModelProviderServiceConfigAzureOpenAiProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.azure_openai" title="Link to this definition">¶</a></dt>
-<dd><p>Azure OpenAI provider configuration.</p>
+<dd><p>Configuration for Azure OpenAI. Set this field when <cite>provider_type</cite> is
+<cite>EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.bedrock_mantle">
 <span class="sig-name descname"><span class="pre">bedrock_mantle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigAmazonBedrockProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_amazon_bedrock_provider_config.ModelProviderServiceConfigAmazonBedrockProviderConfig"><span class="pre">ModelProviderServiceConfigAmazonBedrockProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.bedrock_mantle" title="Link to this definition">¶</a></dt>
-<dd><p>Amazon Bedrock provider configuration.</p>
+<dd><p>Configuration for Amazon Bedrock Mantle, with the same fields as
+<cite>amazon_bedrock</cite>. Set this field when <cite>provider_type</cite> is
+<cite>EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.custom">
 <span class="sig-name descname"><span class="pre">custom</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_custom_provider_config.ModelProviderServiceConfigCustomProviderConfig"><span class="pre">ModelProviderServiceConfigCustomProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.custom" title="Link to this definition">¶</a></dt>
-<dd><p>Custom OpenAI-compatible provider configuration.</p>
+<dd><p>Configuration for a custom OpenAI-compatible provider. Set this field when
+<cite>provider_type</cite> is <cite>EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -389,7 +394,8 @@ rejected whenever Service Policies are attached to this securable.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.gemini_enterprise">
 <span class="sig-name descname"><span class="pre">gemini_enterprise</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigGeminiEnterpriseProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_gemini_enterprise_provider_config.ModelProviderServiceConfigGeminiEnterpriseProviderConfig"><span class="pre">ModelProviderServiceConfigGeminiEnterpriseProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.gemini_enterprise" title="Link to this definition">¶</a></dt>
-<dd><p>Gemini Enterprise provider configuration.</p>
+<dd><p>Configuration for Google Gemini Enterprise. Set this field when
+<cite>provider_type</cite> is <cite>EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -403,13 +409,15 @@ service’s inference table instead.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.microsoft_foundry">
 <span class="sig-name descname"><span class="pre">microsoft_foundry</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigMicrosoftFoundryProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_microsoft_foundry_provider_config.ModelProviderServiceConfigMicrosoftFoundryProviderConfig"><span class="pre">ModelProviderServiceConfigMicrosoftFoundryProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.microsoft_foundry" title="Link to this definition">¶</a></dt>
-<dd><p>Microsoft Foundry provider configuration.</p>
+<dd><p>Configuration for Microsoft Foundry. Set this field when
+<cite>provider_type</cite> is <cite>EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfig.openai">
 <span class="sig-name descname"><span class="pre">openai</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigOpenAiProviderConfig" title="databricks.bundles.model_provider_services._models.model_provider_service_config_open_ai_provider_config.ModelProviderServiceConfigOpenAiProviderConfig"><span class="pre">ModelProviderServiceConfigOpenAiProviderConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfig.openai" title="Link to this definition">¶</a></dt>
-<dd><p>OpenAI provider configuration.</p>
+<dd><p>Configuration for OpenAI. Set this field when <cite>provider_type</cite> is
+<cite>EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -844,7 +852,7 @@ supplied via <cite>api_key_value</cite>.</p>
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.api_key_value">
 <span class="sig-name descname"><span class="pre">api_key_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret" title="databricks.bundles.model_provider_services._models.model_provider_service_config_provider_secret.ModelProviderServiceConfigProviderSecret"><span class="pre">ModelProviderServiceConfigProviderSecret</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth.api_key_value" title="Link to this definition">¶</a></dt>
 <dd><p>Secret value forwarded under the <cite>api_key_name</cite> header on outbound
-requests. Supplied as inline plaintext via <cite>ProviderSecret.plaintext</cite>.</p>
+requests. Supply the value in <cite>api_key_value.plaintext</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1445,9 +1453,10 @@ reads.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret.plaintext">
 <span class="sig-name descname"><span class="pre">plaintext</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret.plaintext" title="Link to this definition">¶</a></dt>
-<dd><p>Inline plaintext credential. INPUT_ONLY: the value never round-trips on
-reads. Get and List responses omit <cite>plaintext</cite>; the enclosing secret
-object remains present to indicate that a secret is configured.</p>
+<dd><p>Inline plaintext credential. The value is write-only and never
+round-trips on reads. Get and List responses omit <cite>plaintext</cite>; the
+enclosing secret object remains present to indicate that a secret is
+configured.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1891,7 +1900,7 @@ principal, the service as a whole, or each user by default.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.RateLimit.renewal_period">
 <span class="sig-name descname"><span class="pre">renewal_period</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.RateLimitRateLimitRenewalPeriod" title="databricks.bundles.model_provider_services._models.rate_limit_rate_limit_renewal_period.RateLimitRateLimitRenewalPeriod"><span class="pre">RateLimitRateLimitRenewalPeriod</span></a></em><a class="headerlink" href="#databricks.bundles.model_provider_services.RateLimit.renewal_period" title="Link to this definition">¶</a></dt>
-<dd><p>Renewal period.</p>
+<dd><p>Interval after which the request and token counters reset.</p>
 </dd></dl>
 
 <dl class="py attribute">

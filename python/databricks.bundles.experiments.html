@@ -193,13 +193,13 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.experiments.ExperimentTag.key">
 <span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.experiments.ExperimentTag.key" title="Link to this definition">¶</a></dt>
-<dd><p>The tag key.</p>
+<dd><p>The tag key. Keys are at most 255 characters long.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.experiments.ExperimentTag.value">
 <span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.experiments.ExperimentTag.value" title="Link to this definition">¶</a></dt>
-<dd><p>The tag value.</p>
+<dd><p>The tag value. Values are at most 65535 characters long.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -271,14 +271,19 @@
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.experiments.MlflowExperiment.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.experiments.MlflowExperiment.name" title="Link to this definition">¶</a></dt>
-<dd><p>Experiment name.</p>
+<dd><p>Name of the experiment, as an absolute path in the workspace. Experiments cannot be created
+under <cite>/Repos</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.experiments.MlflowExperiment.artifact_location">
 <span class="sig-name descname"><span class="pre">artifact_location</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.experiments.MlflowExperiment.artifact_location" title="Link to this definition">¶</a></dt>
-<dd><p>Location where all artifacts for the experiment are stored.
-If not provided, the remote server will select an appropriate default.</p>
+<dd><p>URI of the location where the artifacts of the experiment’s runs are stored, such as a Unity
+Catalog volume path of the form <cite>dbfs:/Volumes/&lt;catalog&gt;/&lt;schema&gt;/&lt;volume&gt;/&lt;path&gt;</cite>. The URI
+must have a scheme other than <cite>file</cite> and must not point under the MLflow-managed prefix
+<cite>dbfs:/databricks/mlflow-tracking</cite>. If omitted, artifacts are stored in MLflow-managed
+storage. See <a class="reference external" href="https://docs.databricks.com/aws/en/mlflow/experiments">https://docs.databricks.com/aws/en/mlflow/experiments</a> for the supported
+locations.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -296,10 +301,8 @@ If not provided, the remote server will select an appropriate default.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.experiments.MlflowExperiment.tags">
 <span class="sig-name descname"><span class="pre">tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.experiments.ExperimentTag" title="databricks.bundles.experiments._models.experiment_tag.ExperimentTag"><span class="pre">ExperimentTag</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.experiments.MlflowExperiment.tags" title="Link to this definition">¶</a></dt>
-<dd><p>A collection of tags to set on the experiment. Maximum tag size and number of tags per request
-depends on the storage backend. All storage backends are guaranteed to support tag keys up
-to 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also
-guaranteed to support up to 20 tags per request.</p>
+<dd><p>Tags to set on the new experiment, as key-value pairs. A request can include at most 100
+tags.</p>
 </dd></dl>
 
 <dl class="py method">

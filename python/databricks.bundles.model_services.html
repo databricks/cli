@@ -374,7 +374,8 @@ each are allowed.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_services.ModelServiceConfig.inference_table">
 <span class="sig-name descname"><span class="pre">inference_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_services.InferenceTableConfig" title="databricks.bundles.model_services._models.inference_table_config.InferenceTableConfig"><span class="pre">InferenceTableConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_services.ModelServiceConfig.inference_table" title="Link to this definition">¶</a></dt>
-<dd><p>Inference table configuration for payload logging.</p>
+<dd><p>Configuration for logging request and response payloads to a Unity
+Catalog inference table. Omit this field to leave payload logging off.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -386,7 +387,8 @@ each are allowed.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_services.ModelServiceConfig.routing">
 <span class="sig-name descname"><span class="pre">routing</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_services.ModelServiceConfigRoutingConfig" title="databricks.bundles.model_services._models.model_service_config_routing_config.ModelServiceConfigRoutingConfig"><span class="pre">ModelServiceConfigRoutingConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_services.ModelServiceConfig.routing" title="Link to this definition">¶</a></dt>
-<dd><p>Routing configuration: destinations and fallback.</p>
+<dd><p>Routing configuration: the primary destinations that receive traffic and
+the fallback destinations tried when a primary destination fails.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -429,7 +431,9 @@ and leave the other type-specific configurations unset.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_services.ModelServiceConfigDestinationConfig.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.model_services.ModelServiceConfigDestinationConfig.name" title="Link to this definition">¶</a></dt>
-<dd><p>User-facing label for this destination, used in routing references.</p>
+<dd><p>Label that identifies this destination. Names are compared
+case-insensitively and must be unique within the primary destinations and
+within the fallback destinations.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -596,8 +600,9 @@ Model Serving endpoint at request time.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_services.ModelServiceConfigPayPerTokenConfig.model">
 <span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.model_services.ModelServiceConfigPayPerTokenConfig.model" title="Link to this definition">¶</a></dt>
-<dd><p>Resource name of the Unity Catalog model.
-Format: <cite>models/{catalog}.{schema}.{model}</cite>.</p>
+<dd><p>Resource name of the Unity Catalog foundation model. Pay-per-token
+foundation models live in the <cite>system.ai</cite> schema, so the name has the
+form <cite>models/system.ai.{model}</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1043,7 +1048,7 @@ principal, the service as a whole, or each user by default.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_services.RateLimit.renewal_period">
 <span class="sig-name descname"><span class="pre">renewal_period</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_services.RateLimitRateLimitRenewalPeriod" title="databricks.bundles.model_services._models.rate_limit_rate_limit_renewal_period.RateLimitRateLimitRenewalPeriod"><span class="pre">RateLimitRateLimitRenewalPeriod</span></a></em><a class="headerlink" href="#databricks.bundles.model_services.RateLimit.renewal_period" title="Link to this definition">¶</a></dt>
-<dd><p>Renewal period.</p>
+<dd><p>Interval after which the request and token counters reset.</p>
 </dd></dl>
 
 <dl class="py attribute">

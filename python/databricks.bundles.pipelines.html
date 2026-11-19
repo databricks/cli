@@ -427,7 +427,8 @@ cluster size and cannot currently be mutated over the lifetime of a cluster.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AzureAttributes.log_analytics_info">
 <span class="sig-name descname"><span class="pre">log_analytics_info</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.LogAnalyticsInfo" title="databricks.bundles.pipelines._models.log_analytics_info.LogAnalyticsInfo"><span class="pre">LogAnalyticsInfo</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.AzureAttributes.log_analytics_info" title="Link to this definition">¶</a></dt>
-<dd><p>Defines values necessary to configure and run Azure Log Analytics agent</p>
+<dd><p>Defines values necessary to configure and run Azure Log Analytics agent.
+Both <cite>log_analytics_workspace_id</cite> and <cite>log_analytics_primary_key</cite> must be set, or neither.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -630,6 +631,12 @@ See: <a class="reference external" href="https://cloud.google.com/confidential-c
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions.smartsheet_options">
 <span class="sig-name descname"><span class="pre">smartsheet_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.SmartsheetOptions" title="databricks.bundles.pipelines._models.smartsheet_options.SmartsheetOptions"><span class="pre">SmartsheetOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions.smartsheet_options" title="Link to this definition">¶</a></dt>
 <dd><p>[Public Preview] Smartsheet specific options for ingestion</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions.tiktok_ads_options">
+<span class="sig-name descname"><span class="pre">tiktok_ads_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TikTokAdsOptions" title="databricks.bundles.pipelines._models.tik_tok_ads_options.TikTokAdsOptions"><span class="pre">TikTokAdsOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions.tiktok_ads_options" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] TikTok Ads specific options for ingestion</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1659,7 +1666,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.MavenLibrary.exclusions">
 <span class="sig-name descname"><span class="pre">exclusions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.MavenLibrary.exclusions" title="Link to this definition">¶</a></dt>
-<dd><p>List of dependences to exclude. For example: <cite>[“slf4j:slf4j”, “*:hadoop-client”]</cite>.</p>
+<dd><p>List of dependencies to exclude. For example: <cite>[“slf4j:slf4j”, “*:hadoop-client”]</cite>.</p>
 <p>Maven dependency exclusions:
 <a class="reference external" href="https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html">https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html</a>.</p>
 </dd></dl>
@@ -1911,7 +1918,8 @@ If not specified, UTC will be used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.budget_policy_id">
 <span class="sig-name descname"><span class="pre">budget_policy_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.budget_policy_id" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Budget policy of this pipeline.</p>
+<dd><p>[Public Preview] ID (UUID) of the serverless budget policy applied to this pipeline. Only supported for serverless
+pipelines.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1923,13 +1931,17 @@ If not specified, UTC will be used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.catalog">
 <span class="sig-name descname"><span class="pre">catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.catalog" title="Link to this definition">¶</a></dt>
-<dd><p>A catalog in Unity Catalog to publish data from this pipeline to. If <cite>target</cite> is specified, tables in this pipeline are published to a <cite>target</cite> schema inside <cite>catalog</cite> (for example, <cite>catalog</cite>.`target`.`table`). If <cite>target</cite> is not specified, no data is published to Unity Catalog.</p>
+<dd><p>A catalog in Unity Catalog to publish data from this pipeline to. Tables are published to the
+schema set in <cite>schema</cite> (or the legacy <cite>target</cite>) inside this catalog, for example
+<cite>catalog</cite>.`schema`.`table`; source code can also use fully qualified names to write to other
+schemas and catalogs. If <cite>catalog</cite> is not specified, the pipeline uses the legacy Hive metastore.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.channel">
 <span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.channel" title="Link to this definition">¶</a></dt>
-<dd><p>SDP Release Channel that specifies which version to use.</p>
+<dd><p>Release channel that selects the pipeline runtime version: <cite>CURRENT</cite> (the default) or <cite>PREVIEW</cite>,
+which runs on the upcoming runtime release.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1964,7 +1976,7 @@ job, the job’s setting takes precedence and this field is ignored.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.edition">
 <span class="sig-name descname"><span class="pre">edition</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.edition" title="Link to this definition">¶</a></dt>
-<dd><p>Pipeline product edition.</p>
+<dd><p>Pipeline product edition: <cite>CORE</cite>, <cite>PRO</cite>, or <cite>ADVANCED</cite>. Serverless pipelines require <cite>ADVANCED</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2044,8 +2056,8 @@ added to sys.path when executing Python sources during pipeline execution.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.run_as">
 <span class="sig-name descname"><span class="pre">run_as</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.RunAs" title="databricks.bundles.pipelines._models.run_as.RunAs"><span class="pre">RunAs</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.run_as" title="Link to this definition">¶</a></dt>
-<dd><p>Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.</p>
-<p>Only <cite>user_name</cite> or <cite>service_principal_name</cite> can be specified. If both are specified, an error is thrown.</p>
+<dd><p>The user or service principal that the pipeline runs as. If not specified, the pipeline runs as
+the user who created the pipeline.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -3240,6 +3252,50 @@ It must be in DBSQL format.</p>
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TikTokAdsOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions" title="Link to this definition">¶</a></dt>
 <dd><p>TikTok Ads specific options for ingestion</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.data_level">
+<span class="sig-name descname"><span class="pre">data_level</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokDataLevel" title="databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_data_level.TikTokAdsOptionsTikTokDataLevel"><span class="pre">TikTokAdsOptionsTikTokDataLevel</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.data_level" title="Link to this definition">¶</a></dt>
+<dd><p>[DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.data_level instead.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.dimensions">
+<span class="sig-name descname"><span class="pre">dimensions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.dimensions" title="Link to this definition">¶</a></dt>
+<dd><p>[DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.dimensions instead.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.lookback_window_days">
+<span class="sig-name descname"><span class="pre">lookback_window_days</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.lookback_window_days" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) Number of days to look back for report tables during incremental sync
+to capture late-arriving conversions and attribution data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.metrics">
+<span class="sig-name descname"><span class="pre">metrics</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.metrics" title="Link to this definition">¶</a></dt>
+<dd><p>[DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.metrics instead.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.query_lifetime">
+<span class="sig-name descname"><span class="pre">query_lifetime</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.query_lifetime" title="Link to this definition">¶</a></dt>
+<dd><p>[DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.query_lifetime instead.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.report_type">
+<span class="sig-name descname"><span class="pre">report_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokReportType" title="databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_report_type.TikTokAdsOptionsTikTokReportType"><span class="pre">TikTokAdsOptionsTikTokReportType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.report_type" title="Link to this definition">¶</a></dt>
+<dd><p>[DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.report_type instead.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.sync_start_date">
+<span class="sig-name descname"><span class="pre">sync_start_date</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.sync_start_date" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+This determines the earliest date from which to sync historical data.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptions.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
@@ -3260,6 +3316,36 @@ It must be in DBSQL format.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TikTokAdsOptionsTikTokAdsCustomReportOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions" title="Link to this definition">¶</a></dt>
+<dd><p>User-defined custom report for the TikTok Ads connector. Groups the
+dimensions + metrics + report type + data level that define a TikTok Ads
+custom report request.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.TikTokAdsOptionsTikTokAdsCustomReportOptions.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>

@@ -155,13 +155,17 @@ embedding vector column are always synced.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.DeltaSyncVectorIndexSpecRequest.embedding_source_columns">
 <span class="sig-name descname"><span class="pre">embedding_source_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.vector_search_indexes.EmbeddingSourceColumn" title="databricks.bundles.vector_search_indexes._models.embedding_source_column.EmbeddingSourceColumn"><span class="pre">EmbeddingSourceColumn</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.DeltaSyncVectorIndexSpecRequest.embedding_source_columns" title="Link to this definition">¶</a></dt>
-<dd><p>The columns that contain the embedding source.</p>
+<dd><p>The source table column whose text Databricks embeds, together with the embedding model
+endpoint to use. Set this for an index with Databricks-managed embeddings. Exactly one of
+<cite>embedding_source_columns</cite> or <cite>embedding_vector_columns</cite> must be specified unless the index
+subtype is <cite>FULL_TEXT</cite>, and only one column is supported.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.DeltaSyncVectorIndexSpecRequest.embedding_vector_columns">
 <span class="sig-name descname"><span class="pre">embedding_vector_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.vector_search_indexes.EmbeddingVectorColumn" title="databricks.bundles.vector_search_indexes._models.embedding_vector_column.EmbeddingVectorColumn"><span class="pre">EmbeddingVectorColumn</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.DeltaSyncVectorIndexSpecRequest.embedding_vector_columns" title="Link to this definition">¶</a></dt>
-<dd><p>The columns that contain the embedding vectors.</p>
+<dd><p>The source table column that contains precomputed embedding vectors. Set this instead of
+<cite>embedding_source_columns</cite> for an index with self-managed embeddings.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -181,7 +185,7 @@ embedding vector column are always synced.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.DeltaSyncVectorIndexSpecRequest.source_table">
 <span class="sig-name descname"><span class="pre">source_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.DeltaSyncVectorIndexSpecRequest.source_table" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the source table.</p>
+<dd><p>Three-level Unity Catalog name of the source table that the index is synced from.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -247,21 +251,25 @@ embedding vector column are always synced.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.DirectAccessVectorIndexSpec.embedding_source_columns">
 <span class="sig-name descname"><span class="pre">embedding_source_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.vector_search_indexes.EmbeddingSourceColumn" title="databricks.bundles.vector_search_indexes._models.embedding_source_column.EmbeddingSourceColumn"><span class="pre">EmbeddingSourceColumn</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.DirectAccessVectorIndexSpec.embedding_source_columns" title="Link to this definition">¶</a></dt>
-<dd><p>The columns that contain the embedding source. The format should be array[double].</p>
+<dd><p>Embedding source configuration used to embed <cite>query_text</cite> when the index is queried with text,
+naming the embedding model endpoint to use. The index stores the vectors you supply through
+upsert; this setting never computes embeddings for them.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.DirectAccessVectorIndexSpec.embedding_vector_columns">
 <span class="sig-name descname"><span class="pre">embedding_vector_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.vector_search_indexes.EmbeddingVectorColumn" title="databricks.bundles.vector_search_indexes._models.embedding_vector_column.EmbeddingVectorColumn"><span class="pre">EmbeddingVectorColumn</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.DirectAccessVectorIndexSpec.embedding_vector_columns" title="Link to this definition">¶</a></dt>
-<dd><p>The columns that contain the embedding vectors. The format should be array[double].</p>
+<dd><p>The column that holds the embedding vectors you write to the index. Exactly one column must be
+specified, and <cite>schema_json</cite> must declare it as <cite>array&lt;float&gt;</cite> or <cite>array&lt;double&gt;</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.DirectAccessVectorIndexSpec.schema_json">
 <span class="sig-name descname"><span class="pre">schema_json</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.DirectAccessVectorIndexSpec.schema_json" title="Link to this definition">¶</a></dt>
-<dd><p>The schema of the index in JSON format.
+<dd><p>JSON object that maps each column name of the index to its type, serialized to a string. The
+primary key and the embedding vector column must be present.
 Supported types are <cite>integer</cite>, <cite>long</cite>, <cite>float</cite>, <cite>double</cite>, <cite>boolean</cite>, <cite>string</cite>, <cite>date</cite>, <cite>timestamp</cite>.
-Supported types for vector column: <cite>array&lt;float&gt;</cite>, <cite>array&lt;double&gt;</cite>,`.</p>
+Supported types for vector column: <cite>array&lt;float&gt;</cite>, <cite>array&lt;double&gt;</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -306,7 +314,7 @@ Supported types for vector column: <cite>array&lt;float&gt;</cite>, <cite>array&
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.EmbeddingSourceColumn.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.EmbeddingSourceColumn.name" title="Link to this definition">¶</a></dt>
-<dd><p>Name of the column</p>
+<dd><p>Name of the column that contains the text to embed.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -345,7 +353,7 @@ Supported types for vector column: <cite>array&lt;float&gt;</cite>, <cite>array&
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.EmbeddingVectorColumn.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.EmbeddingVectorColumn.name" title="Link to this definition">¶</a></dt>
-<dd><p>Name of the column</p>
+<dd><p>Name of the column that contains the embedding vectors.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -798,21 +806,21 @@ For deleted principals, <cite>principal</cite> is empty while <cite>principal_id
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.VectorSearchIndex.index_type">
 <span class="sig-name descname"><span class="pre">index_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.vector_search_indexes.VectorIndexType" title="databricks.bundles.vector_search_indexes._models.vector_index_type.VectorIndexType"><span class="pre">VectorIndexType</span></a></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.VectorSearchIndex.index_type" title="Link to this definition">¶</a></dt>
-<dd><p>There are 2 types of AI Search indexes:
-- <cite>DELTA_SYNC</cite>: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.
-- <cite>DIRECT_ACCESS</cite>: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.</p>
+<dd><p>Type of index to create, which determines which spec field is required.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.VectorSearchIndex.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.VectorSearchIndex.name" title="Link to this definition">¶</a></dt>
-<dd><p>Name of the index</p>
+<dd><p>Three-level Unity Catalog name of the index to create.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.vector_search_indexes.VectorSearchIndex.primary_key">
 <span class="sig-name descname"><span class="pre">primary_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.vector_search_indexes.VectorSearchIndex.primary_key" title="Link to this definition">¶</a></dt>
-<dd><p>Primary key of the index</p>
+<dd><p>Name of the column that uniquely identifies each row. For a Delta Sync index it is a column of
+the source table; for a Direct Vector Access index it must be declared in <cite>schema_json</cite>. It
+cannot be the embedding source or embedding vector column.</p>
 </dd></dl>
 
 <dl class="py attribute">

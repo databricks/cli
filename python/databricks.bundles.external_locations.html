@@ -138,7 +138,7 @@
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.external_locations.AwsSqsQueue.queue_url">
 <span class="sig-name descname"><span class="pre">queue_url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.external_locations.AwsSqsQueue.queue_url" title="Link to this definition">¶</a></dt>
-<dd><p>The AQS queue url in the format <a class="reference external" href="https://sqs">https://sqs</a>.{region}.amazonaws.com/{account id}/{queue name}.
+<dd><p>The SQS queue URL in the format <cite>https://sqs.{region}.amazonaws.com/{account id}/{queue name}</cite>.
 Only required for provided_sqs.</p>
 </dd></dl>
 
@@ -172,7 +172,7 @@ Only required for provided_sqs.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.external_locations.AzureQueueStorage.queue_url">
 <span class="sig-name descname"><span class="pre">queue_url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.external_locations.AzureQueueStorage.queue_url" title="Link to this definition">¶</a></dt>
-<dd><p>The AQS queue url in the format <a class="reference external" href="https:/">https:/</a>/{storage account}.queue.core.windows.net/{queue name}
+<dd><p>The AQS queue URL in the format <cite>https://{storage account}.queue.core.windows.net/{queue name}</cite>.
 Only required for provided_aqs.</p>
 </dd></dl>
 
@@ -301,7 +301,8 @@ Required for locations with a service principal storage credential</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.external_locations.ExternalLocation.url">
 <span class="sig-name descname"><span class="pre">url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.external_locations.ExternalLocation.url" title="Link to this definition">¶</a></dt>
-<dd><p>Path URL of the external location.</p>
+<dd><p>URL of the cloud storage path that the external location points to, including the scheme
+(for example <cite>s3://</cite>, <cite>abfss://</cite>, or <cite>gs://</cite>).</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -313,7 +314,7 @@ Required for locations with a service principal storage credential</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.external_locations.ExternalLocation.enable_file_events">
 <span class="sig-name descname"><span class="pre">enable_file_events</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.external_locations.ExternalLocation.enable_file_events" title="Link to this definition">¶</a></dt>
-<dd><p>Whether to enable file events on this external location. Default to <cite>true</cite>. Set to <cite>false</cite> to disable file events.
+<dd><p>Whether to enable file events on this external location. Defaults to <cite>true</cite>. Set to <cite>false</cite> to disable file events.
 The actual applied value may differ due to server-side defaults; check <cite>effective_enable_file_events</cite> for the effective state.</p>
 </dd></dl>
 
@@ -332,7 +333,8 @@ The actual applied value may differ due to server-side defaults; check <cite>eff
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.external_locations.ExternalLocation.file_event_queue">
 <span class="sig-name descname"><span class="pre">file_event_queue</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.external_locations.FileEventQueue" title="databricks.bundles.external_locations._models.file_event_queue.FileEventQueue"><span class="pre">FileEventQueue</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.external_locations.ExternalLocation.file_event_queue" title="Link to this definition">¶</a></dt>
-<dd><p>File event queue settings. If <cite>enable_file_events</cite> is not <cite>false</cite>, must be defined and have exactly one of the documented properties.</p>
+<dd><p>File event queue settings. When <cite>enable_file_events</cite> is <cite>true</cite>, exactly one of the queue options
+must be set. Must be omitted when <cite>enable_file_events</cite> is <cite>false</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -446,7 +448,7 @@ The actual applied value may differ due to server-side defaults; check <cite>eff
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.external_locations.GcpPubsub.subscription_name">
 <span class="sig-name descname"><span class="pre">subscription_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.external_locations.GcpPubsub.subscription_name" title="Link to this definition">¶</a></dt>
-<dd><p>The Pub/Sub subscription name in the format projects/{project}/subscriptions/{subscription name}.
+<dd><p>The Pub/Sub subscription name in the format <cite>projects/{project}/subscriptions/{subscription name}</cite>.
 Only required for provided_pubsub.</p>
 </dd></dl>
 

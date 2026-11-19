@@ -317,16 +317,19 @@ customize the policy definition.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.cluster_policies.Library">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Library</span></span><a class="headerlink" href="#databricks.bundles.cluster_policies.Library" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>A library to install on a cluster. Exactly one of the library-type fields must be set.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.cluster_policies.Library.cran">
 <span class="sig-name descname"><span class="pre">cran</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.cluster_policies.RCranLibrary" title="databricks.bundles.cluster_policies._models.r_cran_library.RCranLibrary"><span class="pre">RCranLibrary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.cluster_policies.Library.cran" title="Link to this definition">¶</a></dt>
-<dd><p>Specification of a CRAN library to be installed as part of the library</p>
+<dd><p>Specification of a CRAN library to be installed.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.cluster_policies.Library.egg">
 <span class="sig-name descname"><span class="pre">egg</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.cluster_policies.Library.egg" title="Link to this definition">¶</a></dt>
-<dd><p>[DEPRECATED] Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.</p>
+<dd><p>[DEPRECATED] Deprecated: Installing Python egg files is not supported in Databricks Runtime 14.0 and above.
+Use a wheel (<cite>whl</cite>) or a PyPI package (<cite>pypi</cite>) instead. The value is the URI of the egg file
+to install.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -349,7 +352,7 @@ launch the cluster with an IAM role to access the S3 URI.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.cluster_policies.Library.pypi">
 <span class="sig-name descname"><span class="pre">pypi</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.cluster_policies.PythonPyPiLibrary" title="databricks.bundles.cluster_policies._models.python_py_pi_library.PythonPyPiLibrary"><span class="pre">PythonPyPiLibrary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.cluster_policies.Library.pypi" title="Link to this definition">¶</a></dt>
-<dd><p>Specification of a PyPi library to be installed. For example:
+<dd><p>Specification of a PyPI library to be installed. For example:
 <cite>{ “package”: “simplejson” }</cite></p>
 </dd></dl>
 
@@ -357,7 +360,8 @@ launch the cluster with an IAM role to access the S3 URI.</p>
 <dt class="sig sig-object py" id="databricks.bundles.cluster_policies.Library.requirements">
 <span class="sig-name descname"><span class="pre">requirements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.cluster_policies.Library.requirements" title="Link to this definition">¶</a></dt>
 <dd><p>URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.
-For example: <cite>{ “requirements”: “/Workspace/path/to/requirements.txt” }</cite> or <cite>{ “requirements” : “/Volumes/path/to/requirements.txt” }</cite></p>
+For example: <cite>{ “requirements”: “/Workspace/path/to/requirements.txt” }</cite> or <cite>{ “requirements” : “/Volumes/path/to/requirements.txt” }</cite>.
+Installing a requirements file requires Databricks Runtime 15.0 or above.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -445,7 +449,7 @@ launch the cluster with an IAM role to access the S3 URI.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.cluster_policies.MavenLibrary.exclusions">
 <span class="sig-name descname"><span class="pre">exclusions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.cluster_policies.MavenLibrary.exclusions" title="Link to this definition">¶</a></dt>
-<dd><p>List of dependences to exclude. For example: <cite>[“slf4j:slf4j”, “*:hadoop-client”]</cite>.</p>
+<dd><p>List of dependencies to exclude. For example: <cite>[“slf4j:slf4j”, “*:hadoop-client”]</cite>.</p>
 <p>Maven dependency exclusions:
 <a class="reference external" href="https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html">https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html</a>.</p>
 </dd></dl>
@@ -487,7 +491,7 @@ and Spark Packages are searched.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.cluster_policies.PythonPyPiLibrary.package">
 <span class="sig-name descname"><span class="pre">package</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.cluster_policies.PythonPyPiLibrary.package" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the pypi package to install. An optional exact version specification is also
+<dd><p>The name of the PyPI package to install. An optional exact version specification is also
 supported. Examples: “simplejson” and “simplejson==3.8.0”.</p>
 </dd></dl>
 

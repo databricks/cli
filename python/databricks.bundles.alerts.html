@@ -180,7 +180,9 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Alert</span></span><a class="headerlink" href="#databricks.bundles.alerts.Alert" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>A SQL alert. An alert runs a query on a schedule, evaluates the result against a condition,
+and notifies users or notification destinations when the condition is met.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.display_name">
 <span class="sig-name descname"><span class="pre">display_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.alerts.Alert.display_name" title="Link to this definition">¶</a></dt>
 <dd><p>The display name of the alert.</p>
@@ -189,7 +191,8 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.evaluation">
 <span class="sig-name descname"><span class="pre">evaluation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.AlertV2Evaluation" title="databricks.bundles.alerts._models.alert_v2_evaluation.AlertV2Evaluation"><span class="pre">AlertV2Evaluation</span></a></em><a class="headerlink" href="#databricks.bundles.alerts.Alert.evaluation" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Condition evaluated against the query result, and who is notified when it is met.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.query_text">
@@ -200,7 +203,8 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.schedule">
 <span class="sig-name descname"><span class="pre">schedule</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.CronSchedule" title="databricks.bundles.alerts._models.cron_schedule.CronSchedule"><span class="pre">CronSchedule</span></a></em><a class="headerlink" href="#databricks.bundles.alerts.Alert.schedule" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Schedule on which the alert runs its query and evaluates the condition.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.warehouse_id">
@@ -211,13 +215,26 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.custom_description">
 <span class="sig-name descname"><span class="pre">custom_description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.Alert.custom_description" title="Link to this definition">¶</a></dt>
-<dd><p>Custom description for the alert. Interpreted according to <cite>custom_template_format</cite>.</p>
+<dd><p>Custom description for the alert, used as the notification body. Interpreted according to <cite>custom_template_format</cite>.
+The available template variables are listed at <a class="reference external" href="https://docs.databricks.com/aws/en/sql/user/alerts/create#notification-templates">https://docs.databricks.com/aws/en/sql/user/alerts/create#notification-templates</a>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.custom_summary">
 <span class="sig-name descname"><span class="pre">custom_summary</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.Alert.custom_summary" title="Link to this definition">¶</a></dt>
-<dd><p>Custom summary for the alert. Interpreted according to <cite>custom_template_format</cite>.</p>
+<dd><p>Custom summary for the alert, used as the notification subject. Interpreted according to <cite>custom_template_format</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.custom_template_format">
+<span class="sig-name descname"><span class="pre">custom_template_format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.CustomTemplateFormat" title="databricks.bundles.alerts._models.custom_template_format.CustomTemplateFormat"><span class="pre">CustomTemplateFormat</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.Alert.custom_template_format" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The format used to interpret the <cite>custom_summary</cite> and <cite>custom_description</cite> templates.</p>
+<p><cite>HTML</cite> treats both templates as HTML with Mustache <cite>{{VARIABLE_NAME}}</cite> placeholders.
+<cite>MARKDOWN</cite> treats them as Markdown with allowlisted <cite>&#64;VARIABLE_NAME</cite> placeholders and converts
+them to the format each notification destination expects, so a single template renders
+correctly in email, Slack, and Microsoft Teams.</p>
+<p>When unset, the API applies no default. Responses omit the field unless a format is stored,
+and a template with no format is rendered as HTML.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -256,9 +273,9 @@ If not specified, the alert will run as the request user.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.Alert.run_as_user_name">
 <span class="sig-name descname"><span class="pre">run_as_user_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.Alert.run_as_user_name" title="Link to this definition">¶</a></dt>
-<dd><p>[DEPRECATED] The run as username or application ID of service principal.
-On Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.
-Deprecated: Use <cite>run_as</cite> field instead. This field will be removed in a future release.</p>
+<dd><p>[DEPRECATED] Deprecated: Use <cite>run_as</cite> field instead. This field will be removed in a future release.
+The run as username or application ID of service principal.
+On Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -350,7 +367,7 @@ supported; complex types such as ARRAY, MAP, and STRUCT are not.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Evaluation.comparison_operator">
 <span class="sig-name descname"><span class="pre">comparison_operator</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.ComparisonOperator" title="databricks.bundles.alerts._models.comparison_operator.ComparisonOperator"><span class="pre">ComparisonOperator</span></a></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2Evaluation.comparison_operator" title="Link to this definition">¶</a></dt>
-<dd><p>Operator used for comparison in alert evaluation.</p>
+<dd><p>Operator used for comparison in alert evaluation. The alert is triggered when the comparison of the source value with the threshold is true. <cite>IS_NULL</cite> and <cite>IS_NOT_NULL</cite> take no threshold.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -362,7 +379,7 @@ supported; complex types such as ARRAY, MAP, and STRUCT are not.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Evaluation.empty_result_state">
 <span class="sig-name descname"><span class="pre">empty_result_state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.AlertEvaluationState" title="databricks.bundles.alerts._models.alert_evaluation_state.AlertEvaluationState"><span class="pre">AlertEvaluationState</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2Evaluation.empty_result_state" title="Link to this definition">¶</a></dt>
-<dd><p>Alert state if result is empty. Please avoid setting this field to be <cite>UNKNOWN</cite> because <cite>UNKNOWN</cite> state is planned to be deprecated.</p>
+<dd><p>Alert state if result is empty. If not set, an empty result sets the state to <cite>ERROR</cite>. Please avoid setting this field to be <cite>UNKNOWN</cite> because <cite>UNKNOWN</cite> state is planned to be deprecated.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -374,7 +391,7 @@ supported; complex types such as ARRAY, MAP, and STRUCT are not.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Evaluation.threshold">
 <span class="sig-name descname"><span class="pre">threshold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.AlertV2Operand" title="databricks.bundles.alerts._models.alert_v2_operand.AlertV2Operand"><span class="pre">AlertV2Operand</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2Evaluation.threshold" title="Link to this definition">¶</a></dt>
-<dd><p>Threshold to user for alert evaluation, can be a column or a value.</p>
+<dd><p>Threshold to compare the source column against, either another column or a fixed value. Not needed when <cite>comparison_operator</cite> is <cite>IS_NULL</cite> or <cite>IS_NOT_NULL</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -421,7 +438,8 @@ Setting this value to 1 allows the alert to send a notification on every evaluat
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Notification.subscriptions">
 <span class="sig-name descname"><span class="pre">subscriptions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.alerts.AlertV2Subscription" title="databricks.bundles.alerts._models.alert_v2_subscription.AlertV2Subscription"><span class="pre">AlertV2Subscription</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2Notification.subscriptions" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Users and notification destinations that receive notifications.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Notification.from_dict">
@@ -453,12 +471,14 @@ Setting this value to 1 allows the alert to send a notification on every evaluat
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Operand.column">
 <span class="sig-name descname"><span class="pre">column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.AlertV2OperandColumn" title="databricks.bundles.alerts._models.alert_v2_operand_column.AlertV2OperandColumn"><span class="pre">AlertV2OperandColumn</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2Operand.column" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Compare the source against another column of the query result.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Operand.value">
 <span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.AlertV2OperandValue" title="databricks.bundles.alerts._models.alert_v2_operand_value.AlertV2OperandValue"><span class="pre">AlertV2OperandValue</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2Operand.value" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Compare the source against a fixed value.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Operand.from_dict">
@@ -490,18 +510,21 @@ Setting this value to 1 allows the alert to send a notification on every evaluat
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2OperandColumn.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2OperandColumn.name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Name of the column in the query result.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2OperandColumn.aggregation">
 <span class="sig-name descname"><span class="pre">aggregation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.Aggregation" title="databricks.bundles.alerts._models.aggregation.Aggregation"><span class="pre">Aggregation</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2OperandColumn.aggregation" title="Link to this definition">¶</a></dt>
-<dd><p>If not set, the behavior is equivalent to using <cite>First row</cite> in the UI.</p>
+<dd><p>Aggregation applied to the column across all rows of the query result: <cite>SUM</cite>, <cite>COUNT</cite>, <cite>COUNT_DISTINCT</cite>, <cite>AVG</cite>, <cite>MEDIAN</cite>, <cite>MIN</cite>, <cite>MAX</cite> or <cite>STDDEV</cite>.
+If not set, the value in the first row is used, which is equivalent to using <cite>First row</cite> in the UI.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2OperandColumn.display">
 <span class="sig-name descname"><span class="pre">display</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2OperandColumn.display" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Label for the column in notifications. Defaults to <cite>name</cite>.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2OperandColumn.from_dict">
@@ -533,17 +556,20 @@ Setting this value to 1 allows the alert to send a notification on every evaluat
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2OperandValue.bool_value">
 <span class="sig-name descname"><span class="pre">bool_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2OperandValue.bool_value" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Boolean threshold, for boolean columns.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2OperandValue.double_value">
 <span class="sig-name descname"><span class="pre">double_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#float" title="(in Python v3.10)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2OperandValue.double_value" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Numeric threshold, for numeric columns.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2OperandValue.string_value">
 <span class="sig-name descname"><span class="pre">string_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2OperandValue.string_value" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>String threshold, for string or timestamp columns.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2OperandValue.from_dict">
@@ -614,12 +640,14 @@ Setting this value to 1 allows the alert to send a notification on every evaluat
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Subscription.destination_id">
 <span class="sig-name descname"><span class="pre">destination_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2Subscription.destination_id" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>ID of the notification destination to notify, as returned by the Notification Destinations API.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Subscription.user_email">
 <span class="sig-name descname"><span class="pre">user_email</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.AlertV2Subscription.user_email" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Email address of the workspace user to notify.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.AlertV2Subscription.from_dict">
@@ -696,7 +724,7 @@ Setting this value to 1 allows the alert to send a notification on every evaluat
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.CronSchedule.quartz_cron_schedule">
 <span class="sig-name descname"><span class="pre">quartz_cron_schedule</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.alerts.CronSchedule.quartz_cron_schedule" title="Link to this definition">¶</a></dt>
-<dd><p>A cron expression using quartz syntax that specifies the schedule for this pipeline.
+<dd><p>A cron expression using quartz syntax that specifies the schedule for this alert.
 Should use the quartz format described here: <a class="reference external" href="http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html">http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html</a></p>
 </dd></dl>
 
@@ -711,7 +739,7 @@ See <a class="reference external" href="https://docs.databricks.com/sql/language
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.alerts.CronSchedule.pause_status">
 <span class="sig-name descname"><span class="pre">pause_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.alerts.SchedulePauseStatus" title="databricks.bundles.alerts._models.schedule_pause_status.SchedulePauseStatus"><span class="pre">SchedulePauseStatus</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.alerts.CronSchedule.pause_status" title="Link to this definition">¶</a></dt>
-<dd><p>Indicate whether this schedule is paused or not.</p>
+<dd><p>Indicates whether this schedule is paused. While paused, the alert is not evaluated.</p>
 </dd></dl>
 
 <dl class="py method">

@@ -135,7 +135,10 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">App</span></span><a class="headerlink" href="#databricks.bundles.apps.App" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>An app that runs on Databricks Apps. The app runs on managed compute in the workspace and is
+deployed from a workspace folder or a Git repository. Each app acts as its own dedicated service
+principal.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.App.name" title="Link to this definition">¶</a></dt>
 <dd><p>The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.
@@ -145,7 +148,9 @@ It must be unique within the workspace.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.budget_policy_id">
 <span class="sig-name descname"><span class="pre">budget_policy_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.budget_policy_id" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview]</p>
+<dd><p>[Public Preview] ID of the serverless budget policy that the app’s compute usage is attributed to. Budget
+policies and usage policies are alternatives: set at most one of <cite>budget_policy_id</cite> and
+<cite>usage_policy_id</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -163,7 +168,10 @@ It must be unique within the workspace.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.compute_size">
 <span class="sig-name descname"><span class="pre">compute_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.ComputeSize" title="databricks.bundles.apps._models.compute_size.ComputeSize"><span class="pre">ComputeSize</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.compute_size" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Size of the compute instances the app runs on. Defaults to MEDIUM. Larger sizes provide more
+CPU and memory at a higher hourly cost. See
+<a class="reference external" href="https://docs.databricks.com/aws/en/dev-tools/databricks-apps/compute-size">https://docs.databricks.com/aws/en/dev-tools/databricks-apps/compute-size</a>.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.config">
@@ -206,29 +214,40 @@ The source_code_path within git_source specifies the relative path to the app co
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.resources">
 <span class="sig-name descname"><span class="pre">resources</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.apps.AppResource" title="databricks.bundles.apps._models.app_resource.AppResource"><span class="pre">AppResource</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.apps.App.resources" title="Link to this definition">¶</a></dt>
-<dd><p>Resources for the app.</p>
+<dd><p>Databricks resources the app depends on. Each entry grants the app’s service principal the
+listed permission on one resource and makes that resource available to the app under the
+entry’s name.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.source_code_path">
 <span class="sig-name descname"><span class="pre">source_code_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.source_code_path" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Workspace file system path of the app source code. On create, the app is deployed from this
+path. Alternative to <cite>git_source</cite>.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.telemetry_export_destinations">
 <span class="sig-name descname"><span class="pre">telemetry_export_destinations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.apps.TelemetryExportDestination" title="databricks.bundles.apps._models.telemetry_export_destination.TelemetryExportDestination"><span class="pre">TelemetryExportDestination</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.apps.App.telemetry_export_destinations" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Destinations that receive the app’s OpenTelemetry logs, metrics and traces. Changes take
+effect when the app is next deployed.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.usage_policy_id">
 <span class="sig-name descname"><span class="pre">usage_policy_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.usage_policy_id" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview]</p>
+<dd><p>[Public Preview] ID of the usage policy that the app’s compute usage is attributed to. Alternative to
+<cite>budget_policy_id</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.user_api_scopes">
 <span class="sig-name descname"><span class="pre">user_api_scopes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.apps.App.user_api_scopes" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview]</p>
+<dd><p>[Public Preview] API scopes the app requests for user authorization. The user access token that Databricks
+forwards to the app is limited to these scopes plus the default identity scopes, so the app
+can act on the user’s behalf only within them. Workspace admins can restrict which scopes apps
+in the workspace may request. See
+<a class="reference external" href="https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth">https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth</a>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -407,18 +426,21 @@ The source_code_path within git_source specifies the relative path to the app co
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.name" title="Link to this definition">¶</a></dt>
-<dd><p>Name of the App Resource.</p>
+<dd><p>Key that identifies the resource within the app. The app configuration (app.yaml) references
+the resource by this key.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.app">
 <span class="sig-name descname"><span class="pre">app</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceApp" title="databricks.bundles.apps._models.app_resource_app.AppResourceApp"><span class="pre">AppResourceApp</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.app" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Another app in the workspace that this app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.database">
 <span class="sig-name descname"><span class="pre">database</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceDatabase" title="databricks.bundles.apps._models.app_resource_database.AppResourceDatabase"><span class="pre">AppResourceDatabase</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.database" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Lakebase Provisioned database the app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.description">
@@ -429,42 +451,51 @@ The source_code_path within git_source specifies the relative path to the app co
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.experiment">
 <span class="sig-name descname"><span class="pre">experiment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceExperiment" title="databricks.bundles.apps._models.app_resource_experiment.AppResourceExperiment"><span class="pre">AppResourceExperiment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.experiment" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>MLflow experiment the app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.genie_space">
 <span class="sig-name descname"><span class="pre">genie_space</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceGenieSpace" title="databricks.bundles.apps._models.app_resource_genie_space.AppResourceGenieSpace"><span class="pre">AppResourceGenieSpace</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.genie_space" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Genie space the app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.job">
 <span class="sig-name descname"><span class="pre">job</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceJob" title="databricks.bundles.apps._models.app_resource_job.AppResourceJob"><span class="pre">AppResourceJob</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.job" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Lakeflow job the app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.postgres">
 <span class="sig-name descname"><span class="pre">postgres</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourcePostgres" title="databricks.bundles.apps._models.app_resource_postgres.AppResourcePostgres"><span class="pre">AppResourcePostgres</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.postgres" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Lakebase Autoscaling Postgres database the app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.secret">
 <span class="sig-name descname"><span class="pre">secret</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceSecret" title="databricks.bundles.apps._models.app_resource_secret.AppResourceSecret"><span class="pre">AppResourceSecret</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.secret" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Secret the app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.serving_endpoint">
 <span class="sig-name descname"><span class="pre">serving_endpoint</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceServingEndpoint" title="databricks.bundles.apps._models.app_resource_serving_endpoint.AppResourceServingEndpoint"><span class="pre">AppResourceServingEndpoint</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.serving_endpoint" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Model serving endpoint the app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.sql_warehouse">
 <span class="sig-name descname"><span class="pre">sql_warehouse</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceSqlWarehouse" title="databricks.bundles.apps._models.app_resource_sql_warehouse.AppResourceSqlWarehouse"><span class="pre">AppResourceSqlWarehouse</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.sql_warehouse" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>SQL warehouse the app is granted access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.uc_securable">
 <span class="sig-name descname"><span class="pre">uc_securable</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceUcSecurable" title="databricks.bundles.apps._models.app_resource_uc_securable.AppResourceUcSecurable"><span class="pre">AppResourceUcSecurable</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResource.uc_securable" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Unity Catalog securable (volume, table, function, connection or model service) the app is
+granted a privilege on.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResource.from_dict">
@@ -496,12 +527,14 @@ The source_code_path within git_source specifies the relative path to the app co
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceApp.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceApp.name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Name of the app to grant access to.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceApp.permission">
 <span class="sig-name descname"><span class="pre">permission</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceAppAppPermission" title="databricks.bundles.apps._models.app_resource_app_app_permission.AppResourceAppAppPermission"><span class="pre">AppResourceAppAppPermission</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceApp.permission" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Permission to grant on that app.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceApp.from_dict">
@@ -543,17 +576,20 @@ The source_code_path within git_source specifies the relative path to the app co
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceDatabase.database_name">
 <span class="sig-name descname"><span class="pre">database_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceDatabase.database_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Name of the database within the instance.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceDatabase.instance_name">
 <span class="sig-name descname"><span class="pre">instance_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceDatabase.instance_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Name of the Lakebase database instance.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceDatabase.permission">
 <span class="sig-name descname"><span class="pre">permission</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceDatabaseDatabasePermission" title="databricks.bundles.apps._models.app_resource_database_database_permission.AppResourceDatabaseDatabasePermission"><span class="pre">AppResourceDatabaseDatabasePermission</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceDatabase.permission" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Permission to grant the app on the database.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceDatabase.from_dict">
@@ -595,12 +631,14 @@ The source_code_path within git_source specifies the relative path to the app co
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceExperiment.experiment_id">
 <span class="sig-name descname"><span class="pre">experiment_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceExperiment.experiment_id" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>ID of the MLflow experiment.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceExperiment.permission">
 <span class="sig-name descname"><span class="pre">permission</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceExperimentExperimentPermission" title="databricks.bundles.apps._models.app_resource_experiment_experiment_permission.AppResourceExperimentExperimentPermission"><span class="pre">AppResourceExperimentExperimentPermission</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceExperiment.permission" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Permission to grant the app on the experiment.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceExperiment.from_dict">
@@ -657,12 +695,14 @@ The source_code_path within git_source specifies the relative path to the app co
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceGenieSpace.permission">
 <span class="sig-name descname"><span class="pre">permission</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceGenieSpaceGenieSpacePermission" title="databricks.bundles.apps._models.app_resource_genie_space_genie_space_permission.AppResourceGenieSpaceGenieSpacePermission"><span class="pre">AppResourceGenieSpaceGenieSpacePermission</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceGenieSpace.permission" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Permission to grant the app on the Genie space.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceGenieSpace.space_id">
 <span class="sig-name descname"><span class="pre">space_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceGenieSpace.space_id" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>ID of the Genie space.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceGenieSpace.from_dict">
@@ -783,17 +823,22 @@ The source_code_path within git_source specifies the relative path to the app co
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourcePostgres.branch">
 <span class="sig-name descname"><span class="pre">branch</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResourcePostgres.branch" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Resource name of the Lakebase Autoscaling branch, in the form
+<cite>projects/{project}/branches/{branch}</cite>.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourcePostgres.database">
 <span class="sig-name descname"><span class="pre">database</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResourcePostgres.database" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Resource name of the database within the branch, in the form
+<cite>projects/{project}/branches/{branch}/databases/{database}</cite>.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourcePostgres.permission">
 <span class="sig-name descname"><span class="pre">permission</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourcePostgresPostgresPermission" title="databricks.bundles.apps._models.app_resource_postgres_postgres_permission.AppResourcePostgresPostgresPermission"><span class="pre">AppResourcePostgresPostgresPermission</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.AppResourcePostgres.permission" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Permission to grant the app on the database.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourcePostgres.from_dict">
@@ -1019,17 +1064,22 @@ The source_code_path within git_source specifies the relative path to the app co
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceUcSecurable.permission">
 <span class="sig-name descname"><span class="pre">permission</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceUcSecurableUcSecurablePermission" title="databricks.bundles.apps._models.app_resource_uc_securable_uc_securable_permission.AppResourceUcSecurableUcSecurablePermission"><span class="pre">AppResourceUcSecurableUcSecurablePermission</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceUcSecurable.permission" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Privilege to grant the app on the securable. The privilege must be valid for the securable
+type, such as READ_VOLUME for a volume or SELECT for a table.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceUcSecurable.securable_full_name">
 <span class="sig-name descname"><span class="pre">securable_full_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceUcSecurable.securable_full_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Full name of the Unity Catalog securable. For volumes, tables and functions this is the
+three-level catalog.schema.object name.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceUcSecurable.securable_type">
 <span class="sig-name descname"><span class="pre">securable_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.AppResourceUcSecurableUcSecurableType" title="databricks.bundles.apps._models.app_resource_uc_securable_uc_securable_type.AppResourceUcSecurableUcSecurableType"><span class="pre">AppResourceUcSecurableUcSecurableType</span></a></em><a class="headerlink" href="#databricks.bundles.apps.AppResourceUcSecurable.securable_type" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Kind of Unity Catalog securable that <cite>securable_full_name</cite> refers to.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.apps.AppResourceUcSecurable.from_dict">
@@ -1333,7 +1383,7 @@ of the repository is used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.TelemetryExportDestination.unity_catalog">
 <span class="sig-name descname"><span class="pre">unity_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.UnityCatalog" title="databricks.bundles.apps._models.unity_catalog.UnityCatalog"><span class="pre">UnityCatalog</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.TelemetryExportDestination.unity_catalog" title="Link to this definition">¶</a></dt>
-<dd><p>Unity Catalog Destinations for OTEL telemetry export.</p>
+<dd><p>Unity Catalog tables that receive the telemetry.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1367,19 +1417,22 @@ of the repository is used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.UnityCatalog.logs_table">
 <span class="sig-name descname"><span class="pre">logs_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.UnityCatalog.logs_table" title="Link to this definition">¶</a></dt>
-<dd><p>Unity Catalog table for OTEL logs.</p>
+<dd><p>Three-level name of the Unity Catalog table that receives OpenTelemetry logs. The table is
+created if it does not exist.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.UnityCatalog.metrics_table">
 <span class="sig-name descname"><span class="pre">metrics_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.UnityCatalog.metrics_table" title="Link to this definition">¶</a></dt>
-<dd><p>Unity Catalog table for OTEL metrics.</p>
+<dd><p>Three-level name of the Unity Catalog table that receives OpenTelemetry metrics. The table is
+created if it does not exist.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.UnityCatalog.traces_table">
 <span class="sig-name descname"><span class="pre">traces_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.UnityCatalog.traces_table" title="Link to this definition">¶</a></dt>
-<dd><p>Unity Catalog table for OTEL traces (spans).</p>
+<dd><p>Three-level name of the Unity Catalog table that receives OpenTelemetry traces (spans). The
+table is created if it does not exist.</p>
 </dd></dl>
 
 <dl class="py method">

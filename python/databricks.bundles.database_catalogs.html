@@ -135,7 +135,11 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.database_catalogs.DatabaseCatalog">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DatabaseCatalog</span></span><a class="headerlink" href="#databricks.bundles.database_catalogs.DatabaseCatalog" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>A Database Catalog registers a Postgres database that lives in a Lakebase database instance as a
+catalog in Unity Catalog, so that the database’s schemas and tables are governed and discoverable
+through Unity Catalog. For an overview, see
+<a class="reference external" href="https://docs.databricks.com/aws/en/oltp/projects/register-uc">https://docs.databricks.com/aws/en/oltp/projects/register-uc</a>.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_catalogs.DatabaseCatalog.database_instance_name">
 <span class="sig-name descname"><span class="pre">database_instance_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.database_catalogs.DatabaseCatalog.database_instance_name" title="Link to this definition">¶</a></dt>
 <dd><p>[Public Preview] The name of the DatabaseInstance housing the database.</p>
@@ -144,19 +148,22 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_catalogs.DatabaseCatalog.database_name">
 <span class="sig-name descname"><span class="pre">database_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.database_catalogs.DatabaseCatalog.database_name" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] The name of the database (in an instance) associated with the catalog.</p>
+<dd><p>[Public Preview] The name of the Postgres database in the instance that the catalog registers. The database must
+already exist unless create_database_if_not_exists is true. The system databases postgres,
+databricks_system, template0 and template1 cannot be registered.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_catalogs.DatabaseCatalog.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.database_catalogs.DatabaseCatalog.name" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] The name of the catalog in UC.</p>
+<dd><p>[Public Preview] The name of the catalog in Unity Catalog.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_catalogs.DatabaseCatalog.create_database_if_not_exists">
 <span class="sig-name descname"><span class="pre">create_database_if_not_exists</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.database_catalogs.DatabaseCatalog.create_database_if_not_exists" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview]</p>
+<dd><p>[Public Preview] If true, the database named in database_name is created in the instance when it does not already
+exist, with the calling user as its owner. Defaults to false.</p>
 </dd></dl>
 
 <dl class="py attribute">

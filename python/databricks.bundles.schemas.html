@@ -543,7 +543,9 @@ For deleted principals, <cite>principal</cite> is empty while <cite>principal_id
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.schemas.Schema.custom_max_retention_hours">
 <span class="sig-name descname"><span class="pre">custom_max_retention_hours</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.schemas.Schema.custom_max_retention_hours" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Custom maximum retention period in hours for the schema.</p>
+<dd><p>[Public Preview] Dropped objects in the schema remain recoverable for this number of hours before they are permanently
+purged. The value must be 0 or within the range allowed for the metastore. Schemas that do not set
+their own value inherit the parent catalog’s value.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -567,7 +569,11 @@ For deleted principals, <cite>principal</cite> is empty while <cite>principal_id
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.schemas.Schema.storage_root">
 <span class="sig-name descname"><span class="pre">storage_root</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.schemas.Schema.storage_root" title="Link to this definition">¶</a></dt>
-<dd><p>Storage root URL for managed tables within schema.</p>
+<dd><p>Managed tables and volumes in the schema are stored under this storage root URL. The path must be
+inside an external location on which the caller has the CREATE MANAGED STORAGE privilege. If omitted,
+managed data is stored under the parent catalog’s storage root, or under the metastore’s root storage
+location when the catalog has none. Schemas in Delta Sharing catalogs cannot have a storage root, and
+schemas in a federated Hive metastore catalog must set one.</p>
 </dd></dl>
 
 <dl class="py method">

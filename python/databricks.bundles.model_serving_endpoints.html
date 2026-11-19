@@ -1514,7 +1514,8 @@ An endpoint name can consist of alphanumeric characters, dashes, and underscores
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.ModelServingEndpoint.description">
 <span class="sig-name descname"><span class="pre">description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_serving_endpoints.ModelServingEndpoint.description" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The description of the serving endpoint.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.ModelServingEndpoint.email_notifications">
@@ -1886,7 +1887,8 @@ provide an API key using one of the following fields: <cite>palm_api_key</cite> 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.Route.served_entity_name">
 <span class="sig-name descname"><span class="pre">served_entity_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_serving_endpoints.Route.served_entity_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The name of the served entity this route configures traffic for.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.Route.served_model_name">
@@ -1938,7 +1940,8 @@ maintains fixed capacity at provisioned_model_units.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.ServedEntityInput.entity_version">
 <span class="sig-name descname"><span class="pre">entity_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_serving_endpoints.ServedEntityInput.entity_version" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The version of the model in Databricks Model Registry or Unity Catalog to be served, or empty if the entity is a FEATURE_SPEC function.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.ServedEntityInput.environment_vars">
@@ -2042,12 +2045,14 @@ maintains fixed capacity at provisioned_model_units.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.ServedModelInput.model_name">
 <span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.model_serving_endpoints.ServedModelInput.model_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The name of the model in Databricks Model Registry to be served or, if the model resides in Unity Catalog, the full name of the model in the form of <strong>catalog_name.schema_name.model_name</strong>.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.ServedModelInput.model_version">
 <span class="sig-name descname"><span class="pre">model_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.model_serving_endpoints.ServedModelInput.model_version" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The version of the model in Databricks Model Registry or Unity Catalog to be served.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_serving_endpoints.ServedModelInput.scale_to_zero_enabled">

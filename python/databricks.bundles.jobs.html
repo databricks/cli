@@ -781,7 +781,8 @@ cluster size and cannot currently be mutated over the lifetime of a cluster.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.AzureAttributes.log_analytics_info">
 <span class="sig-name descname"><span class="pre">log_analytics_info</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.LogAnalyticsInfo" title="databricks.bundles.jobs._models.log_analytics_info.LogAnalyticsInfo"><span class="pre">LogAnalyticsInfo</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AzureAttributes.log_analytics_info" title="Link to this definition">¶</a></dt>
-<dd><p>Defines values necessary to configure and run Azure Log Analytics agent</p>
+<dd><p>Defines values necessary to configure and run Azure Log Analytics agent.
+Both <cite>log_analytics_workspace_id</cite> and <cite>log_analytics_primary_key</cite> must be set, or neither.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1005,7 +1006,7 @@ Note: autoscaling works best with DB runtime versions 3.0 or later.</p>
 <span class="sig-name descname"><span class="pre">autotermination_minutes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.autotermination_minutes" title="Link to this definition">¶</a></dt>
 <dd><p>Automatically terminates the cluster after it is inactive for this time in minutes. If not set,
 this cluster will not be automatically terminated. If specified, the threshold must be between
-10 and 10000 minutes.
+10 and 43200 minutes (30 days).
 Users can also set this value to 0 to explicitly disable automatic termination.</p>
 </dd></dl>
 
@@ -1061,6 +1062,7 @@ from a cluster.</p>
 <li><p><cite>DATA_SECURITY_MODE_AUTO</cite>: Databricks will choose the most appropriate access mode depending on your compute configuration.</p></li>
 <li><p><cite>DATA_SECURITY_MODE_STANDARD</cite>: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.</p></li>
 <li><p><cite>DATA_SECURITY_MODE_DEDICATED</cite>: A secure cluster that can only be exclusively used by a single user specified in <cite>single_user_name</cite>. Most programming languages, cluster features and data governance features are available in this mode.</p></li>
+<li><p><cite>NONE</cite>: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.</p></li>
 </ul>
 <p>The following modes are legacy aliases for the above modes:</p>
 <ul class="simple">
@@ -1073,14 +1075,15 @@ will be removed for future Databricks Runtime versions:</p>
 <li><p><cite>LEGACY_TABLE_ACL</cite>: This mode is for users migrating from legacy Table ACL clusters.</p></li>
 <li><p><cite>LEGACY_PASSTHROUGH</cite>: This mode is for users migrating from legacy Passthrough on high concurrency clusters.</p></li>
 <li><p><cite>LEGACY_SINGLE_USER</cite>: This mode is for users migrating from legacy Passthrough on standard clusters.</p></li>
-<li><p><cite>LEGACY_SINGLE_USER_STANDARD</cite>: This mode provides a way that doesn’t have UC nor passthrough enabled.</p></li>
+<li><p><cite>LEGACY_SINGLE_USER_STANDARD</cite>: This mode provides a way that doesn’t have UC or passthrough enabled.</p></li>
 </ul>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.docker_image">
 <span class="sig-name descname"><span class="pre">docker_image</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.DockerImage" title="databricks.bundles.jobs._models.docker_image.DockerImage"><span class="pre">DockerImage</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.docker_image" title="Link to this definition">¶</a></dt>
-<dd><p>Custom docker image BYOC</p>
+<dd><p>Custom Docker image for the cluster’s nodes, used with
+<a class="reference external" href="https://docs.databricks.com/compute/custom-containers.html">Databricks Container Services</a>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1152,8 +1155,8 @@ If <cite>cluster_log_conf</cite> is specified, init script logs are sent to <cit
 <dd><p>The kind of compute described by this compute specification.</p>
 <p>Depending on <cite>kind</cite>, different validations and default values will be applied.</p>
 <p>Clusters with <cite>kind = CLASSIC_PREVIEW</cite> support the following fields, whereas clusters with no specified <cite>kind</cite> do not.
-* [is_single_node](/api/workspace/clusters/create#is_single_node)
-* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)</p>
+* <a class="reference external" href="https://docs.databricks.com/api/workspace/clusters/create#is_single_node">is_single_node</a>
+* <a class="reference external" href="https://docs.databricks.com/api/workspace/clusters/create#use_ml_runtime">use_ml_runtime</a></p>
 <p>By using the <a class="reference external" href="https://docs.databricks.com/compute/simple-form.html">simple form</a>, your clusters are automatically using <cite>kind = CLASSIC_PREVIEW</cite>.</p>
 </dd></dl>
 
@@ -1266,7 +1269,8 @@ Up to 10 keys can be specified.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.workload_type">
 <span class="sig-name descname"><span class="pre">workload_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.WorkloadType" title="databricks.bundles.jobs._models.workload_type.WorkloadType"><span class="pre">WorkloadType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.workload_type" title="Link to this definition">¶</a></dt>
-<dd><p>Cluster Attributes showing for clusters workload types.</p>
+<dd><p>Types of workloads that can use the cluster, such as notebooks or jobs.
+If omitted, the cluster can be used for both notebooks and jobs.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2101,13 +2105,13 @@ enforced.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DockerBasicAuth.password">
 <span class="sig-name descname"><span class="pre">password</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.DockerBasicAuth.password" title="Link to this definition">¶</a></dt>
-<dd><p>Password of the user</p>
+<dd><p>Password for authenticating to the Docker registry that hosts the image.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DockerBasicAuth.username">
 <span class="sig-name descname"><span class="pre">username</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.DockerBasicAuth.username" title="Link to this definition">¶</a></dt>
-<dd><p>Name of the user</p>
+<dd><p>User name for authenticating to the Docker registry that hosts the image.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2585,7 +2589,8 @@ VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the f
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.GitSource.sparse_checkout">
 <span class="sig-name descname"><span class="pre">sparse_checkout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.SparseCheckout" title="databricks.bundles.jobs._models.sparse_checkout.SparseCheckout"><span class="pre">SparseCheckout</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.GitSource.sparse_checkout" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Sparse checkout settings for the repository. When set, only the directories listed in <cite>patterns</cite> are checked out.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.GitSource.from_dict">
@@ -3139,8 +3144,7 @@ Alerting is based on the 10-minute average of these metrics. If the issue persis
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironment.spec">
 <span class="sig-name descname"><span class="pre">spec</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.Environment" title="databricks.bundles.jobs._models.environment.Environment"><span class="pre">Environment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironment.spec" title="Link to this definition">¶</a></dt>
-<dd><p>The environment entity used to preserve serverless environment side panel, jobs’ environment for non-notebook task, and SDP’s environment for classic and serverless pipelines.
-In this minimal environment spec, only pip and java dependencies are supported.</p>
+<dd><p>The environment specification, including the environment version and the dependencies to install before a task runs.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -3538,7 +3542,8 @@ which override values from <cite>files</cite>, on duplicate keys.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobsHealthRules.rules">
 <span class="sig-name descname"><span class="pre">rules</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.JobsHealthRule" title="databricks.bundles.jobs._models.jobs_health_rule.JobsHealthRule"><span class="pre">JobsHealthRule</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.JobsHealthRules.rules" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The health rules to evaluate for each run.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobsHealthRules.from_dict">
@@ -3583,16 +3588,19 @@ which override values from <cite>files</cite>, on duplicate keys.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Library">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Library</span></span><a class="headerlink" href="#databricks.bundles.jobs.Library" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>A library to install on a cluster. Exactly one of the library-type fields must be set.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Library.cran">
 <span class="sig-name descname"><span class="pre">cran</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.RCranLibrary" title="databricks.bundles.jobs._models.r_cran_library.RCranLibrary"><span class="pre">RCranLibrary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Library.cran" title="Link to this definition">¶</a></dt>
-<dd><p>Specification of a CRAN library to be installed as part of the library</p>
+<dd><p>Specification of a CRAN library to be installed.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Library.egg">
 <span class="sig-name descname"><span class="pre">egg</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Library.egg" title="Link to this definition">¶</a></dt>
-<dd><p>[DEPRECATED] Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.</p>
+<dd><p>[DEPRECATED] Deprecated: Installing Python egg files is not supported in Databricks Runtime 14.0 and above.
+Use a wheel (<cite>whl</cite>) or a PyPI package (<cite>pypi</cite>) instead. The value is the URI of the egg file
+to install.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -3615,7 +3623,7 @@ launch the cluster with an IAM role to access the S3 URI.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Library.pypi">
 <span class="sig-name descname"><span class="pre">pypi</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.PythonPyPiLibrary" title="databricks.bundles.jobs._models.python_py_pi_library.PythonPyPiLibrary"><span class="pre">PythonPyPiLibrary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Library.pypi" title="Link to this definition">¶</a></dt>
-<dd><p>Specification of a PyPi library to be installed. For example:
+<dd><p>Specification of a PyPI library to be installed. For example:
 <cite>{ “package”: “simplejson” }</cite></p>
 </dd></dl>
 
@@ -3623,7 +3631,8 @@ launch the cluster with an IAM role to access the S3 URI.</p>
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Library.requirements">
 <span class="sig-name descname"><span class="pre">requirements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Library.requirements" title="Link to this definition">¶</a></dt>
 <dd><p>URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.
-For example: <cite>{ “requirements”: “/Workspace/path/to/requirements.txt” }</cite> or <cite>{ “requirements” : “/Volumes/path/to/requirements.txt” }</cite></p>
+For example: <cite>{ “requirements”: “/Workspace/path/to/requirements.txt” }</cite> or <cite>{ “requirements” : “/Volumes/path/to/requirements.txt” }</cite>.
+Installing a requirements file requires Databricks Runtime 15.0 or above.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -3832,7 +3841,7 @@ This field is required.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.MavenLibrary.exclusions">
 <span class="sig-name descname"><span class="pre">exclusions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.MavenLibrary.exclusions" title="Link to this definition">¶</a></dt>
-<dd><p>List of dependences to exclude. For example: <cite>[“slf4j:slf4j”, “*:hadoop-client”]</cite>.</p>
+<dd><p>List of dependencies to exclude. For example: <cite>[“slf4j:slf4j”, “*:hadoop-client”]</cite>.</p>
 <p>Maven dependency exclusions:
 <a class="reference external" href="https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html">https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html</a>.</p>
 </dd></dl>
@@ -4363,7 +4372,7 @@ options (refresh_selection, full_refresh_selection) to determine the final set o
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PythonPyPiLibrary.package">
 <span class="sig-name descname"><span class="pre">package</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.PythonPyPiLibrary.package" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the pypi package to install. An optional exact version specification is also
+<dd><p>The name of the PyPI package to install. An optional exact version specification is also
 supported. Examples: “simplejson” and “simplejson==3.8.0”.</p>
 </dd></dl>
 
@@ -4906,7 +4915,7 @@ the Python file will be retrieved from a Git repository defined in <cite>git_sou
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SparseCheckout.patterns">
 <span class="sig-name descname"><span class="pre">patterns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.SparseCheckout.patterns" title="Link to this definition">¶</a></dt>
-<dd><p>List of patterns to include for sparse checkout.</p>
+<dd><p>List of patterns to include for sparse checkout. Each pattern is the path of a directory relative to the repository root.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -5756,7 +5765,7 @@ greater reliability</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Task.health">
 <span class="sig-name descname"><span class="pre">health</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.JobsHealthRules" title="databricks.bundles.jobs._models.jobs_health_rules.JobsHealthRules"><span class="pre">JobsHealthRules</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.health" title="Link to this definition">¶</a></dt>
-<dd><p>An optional set of health rules that can be defined for this job.</p>
+<dd><p>An optional set of health rules that can be defined for this task.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -6143,7 +6152,8 @@ serialization across SDKs and Terraform behave consistently.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.TriggerSettings.table_update">
 <span class="sig-name descname"><span class="pre">table_update</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.TableUpdateTriggerConfiguration" title="databricks.bundles.jobs._models.table_update_trigger_configuration.TableUpdateTriggerConfiguration"><span class="pre">TableUpdateTriggerConfiguration</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.TriggerSettings.table_update" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Table update trigger settings.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.TriggerSettings.from_dict">
@@ -6238,7 +6248,8 @@ or <cite>dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh</cite><
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Webhook.id">
 <span class="sig-name descname"><span class="pre">id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.Webhook.id" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The ID of the notification destination to call. Must be a UUID.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Webhook.from_dict">

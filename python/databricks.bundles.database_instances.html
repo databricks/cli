@@ -166,13 +166,16 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_instances.DatabaseInstance.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.database_instances.DatabaseInstance.name" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] The name of the instance. This is the unique identifier for the instance.</p>
+<dd><p>[Public Preview] The name of the instance. This is the unique identifier for the instance. Must be 1 to 63
+characters long, contain only letters, digits and hyphens, start with a letter, and not contain
+consecutive hyphens.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_instances.DatabaseInstance.capacity">
 <span class="sig-name descname"><span class="pre">capacity</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.database_instances.DatabaseInstance.capacity" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] The sku of the instance. Valid values are “CU_1”, “CU_2”, “CU_4”, “CU_8”.</p>
+<dd><p>[Public Preview] The sku of the instance. Valid values are “CU_1”, “CU_2”, “CU_4”, “CU_8”. Must be set when
+creating an instance.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -184,7 +187,8 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_instances.DatabaseInstance.enable_readable_secondaries">
 <span class="sig-name descname"><span class="pre">enable_readable_secondaries</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.database_instances.DatabaseInstance.enable_readable_secondaries" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Whether to enable secondaries to serve read-only traffic. Defaults to false.</p>
+<dd><p>[Public Preview] Whether to enable secondaries to serve read-only traffic. Defaults to false. Requires a
+node_count greater than 1.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -203,8 +207,9 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_instances.DatabaseInstance.parent_instance_ref">
 <span class="sig-name descname"><span class="pre">parent_instance_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.database_instances.DatabaseInstanceRef" title="databricks.bundles.database_instances._models.database_instance_ref.DatabaseInstanceRef"><span class="pre">DatabaseInstanceRef</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.database_instances.DatabaseInstance.parent_instance_ref" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] The ref of the parent instance. This is only available if the instance is
-child instance.
+<dd><p>[Public Preview] The ref of the parent instance. This is only available if the instance is a
+child instance. A child instance inherits custom_tags and usage_policy_id from
+its parent and cannot set them.
 Input: For specifying the parent instance to create a child instance. Optional.
 Output: Only populated if provided as input to create a child instance.</p>
 </dd></dl>
@@ -226,7 +231,9 @@ Valid values are 2 to 35 days.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.database_instances.DatabaseInstance.stopped">
 <span class="sig-name descname"><span class="pre">stopped</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.database_instances.DatabaseInstance.stopped" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Whether to stop the instance. An input only param, see effective_stopped for the output.</p>
+<dd><p>[Public Preview] Whether to stop the instance. An input only param, see effective_stopped for the output. An
+instance cannot be created in the stopped state; set this field on update to stop or start
+the instance.</p>
 </dd></dl>
 
 <dl class="py method">

@@ -252,7 +252,12 @@ This needs to be in the standard catalog where the user has permissions to creat
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.synced_database_tables.SyncedDatabaseTable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SyncedDatabaseTable</span></span><a class="headerlink" href="#databricks.bundles.synced_database_tables.SyncedDatabaseTable" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>A synced table is a Postgres table in a Lakebase database instance that Databricks keeps in sync
+with a source table in Unity Catalog. A data synchronization pipeline loads the source data and
+then applies later changes according to the scheduling policy, so the table can serve low-latency
+queries without a hand-built ETL process. For an overview, see
+<a class="reference external" href="https://docs.databricks.com/aws/en/oltp/projects/sync-tables">https://docs.databricks.com/aws/en/oltp/projects/sync-tables</a>.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.synced_database_tables.SyncedDatabaseTable.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.synced_database_tables.SyncedDatabaseTable.name" title="Link to this definition">¶</a></dt>
 <dd><p>[Public Preview] Full three-part (catalog, schema, table) name of the table.</p>
@@ -283,13 +288,13 @@ If this field is specified in this scenario, the Postgres database name MUST
 match that of the registered catalog (or the request will be rejected).</p>
 <p>When creating a synced table in a standard catalog, this field is required.
 In this scenario, specifying this field will allow targeting an arbitrary postgres database.
-Note that this has implications for the <cite>create_database_objects_is_missing</cite> field in <cite>spec</cite>.</p>
+If this database does not exist yet, it is created when <cite>create_database_objects_if_missing</cite> in <cite>spec</cite> is true.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.synced_database_tables.SyncedDatabaseTable.spec">
 <span class="sig-name descname"><span class="pre">spec</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.synced_database_tables.SyncedTableSpec" title="databricks.bundles.synced_database_tables._models.synced_table_spec.SyncedTableSpec"><span class="pre">SyncedTableSpec</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.synced_database_tables.SyncedDatabaseTable.spec" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Specification of a synced database table.</p>
+<dd><p>[Public Preview] Specifies the source table, the key columns and how the data synchronization pipeline runs.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -344,7 +349,8 @@ Note that this has implications for the <cite>create_database_objects_is_missing
 <dt class="sig sig-object py" id="databricks.bundles.synced_database_tables.SyncedTableSpec.create_database_objects_if_missing">
 <span class="sig-name descname"><span class="pre">create_database_objects_if_missing</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.synced_database_tables.SyncedTableSpec.create_database_objects_if_missing" title="Link to this definition">¶</a></dt>
 <dd><p>[Public Preview] If true, the synced table’s logical database and schema resources in PG
-will be created if they do not already exist.</p>
+will be created if they do not already exist. The request fails if this is false and the database
+or schema does not exist.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -369,13 +375,19 @@ only requires read permissions.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.synced_database_tables.SyncedTableSpec.primary_key_columns">
 <span class="sig-name descname"><span class="pre">primary_key_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.synced_database_tables.SyncedTableSpec.primary_key_columns" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Primary Key columns to be used for data insert/update in the destination.</p>
+<dd><p>[Public Preview] The primary key columns are used to insert and update rows in the destination table. At least one
+column is required. Rows whose primary key columns contain null values are not synced, and the primary
+key cannot be changed after the table is created.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.synced_database_tables.SyncedTableSpec.scheduling_policy">
 <span class="sig-name descname"><span class="pre">scheduling_policy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.synced_database_tables.SyncedTableSchedulingPolicy" title="databricks.bundles.synced_database_tables._models.synced_table_scheduling_policy.SyncedTableSchedulingPolicy"><span class="pre">SyncedTableSchedulingPolicy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.synced_database_tables.SyncedTableSpec.scheduling_policy" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Scheduling policy of the underlying pipeline.</p>
+<dd><p>[Public Preview] Specifies the scheduling policy of the underlying pipeline. With CONTINUOUS, the pipeline keeps running and
+applies source changes as they happen. With TRIGGERED and SNAPSHOT, the pipeline stops after the
+initial load and syncs again only when it is run (manually, on a schedule or from a job); TRIGGERED
+applies source changes incrementally, while SNAPSHOT copies the full source table on every run.
+CONTINUOUS and TRIGGERED require the source table to provide a change data feed.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -387,7 +399,9 @@ only requires read permissions.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.synced_database_tables.SyncedTableSpec.timeseries_key">
 <span class="sig-name descname"><span class="pre">timeseries_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.synced_database_tables.SyncedTableSpec.timeseries_key" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Time series key to deduplicate (tie-break) rows with the same primary key.</p>
+<dd><p>[Public Preview] The time series key deduplicates (tie-breaks) rows with the same primary key. When primary key values
+can repeat in the source table, the synced table keeps only the row with the latest value of this
+column for each primary key. The key cannot be changed after the table is created.</p>
 </dd></dl>
 
 <dl class="py method">

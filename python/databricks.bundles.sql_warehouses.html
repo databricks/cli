@@ -407,7 +407,8 @@ configurations is:</p>
 <dd><p>The amount of time in minutes that a SQL warehouse must be idle (i.e., no
 RUNNING queries) before it is automatically stopped.</p>
 <p>Supported values:
-- Must be == 0 or &gt;= 10 mins
+- Must be == 0 or &gt;= 1 min for serverless warehouses.
+- Must be == 0 or &gt;= 10 mins for classic and pro warehouses.
 - 0 indicates no autostop.</p>
 <p>Defaults to 120 mins</p>
 </dd></dl>
@@ -513,6 +514,12 @@ manager.</p>
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SqlWarehouse.spot_instance_policy">
 <span class="sig-name descname"><span class="pre">spot_instance_policy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.sql_warehouses.SpotInstancePolicy" title="databricks.bundles.sql_warehouses._models.spot_instance_policy.SpotInstancePolicy"><span class="pre">SpotInstancePolicy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SqlWarehouse.spot_instance_policy" title="Link to this definition">¶</a></dt>
 <dd><p>Configurations whether the endpoint should use spot instances.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SqlWarehouse.statement_timeout">
+<span class="sig-name descname"><span class="pre">statement_timeout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SqlWarehouse.statement_timeout" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Warehouse statement timeout in seconds.</p>
 </dd></dl>
 
 <dl class="py attribute">

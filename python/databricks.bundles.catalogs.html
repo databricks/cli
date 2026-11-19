@@ -180,7 +180,8 @@
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.name" title="Link to this definition">¶</a></dt>
-<dd><p>Name of catalog.</p>
+<dd><p>The name of the catalog is stored in lowercase, can be at most 255 characters long, and cannot
+contain periods, spaces, forward slashes, or control characters.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -192,19 +193,30 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.connection_name">
 <span class="sig-name descname"><span class="pre">connection_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.connection_name" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the connection to an external data source.</p>
+<dd><p>Naming a connection to an external data source creates a foreign catalog that mirrors a database in
+that source, which requires ownership of or the CREATE FOREIGN CATALOG privilege on the connection.
+Connection-specific settings, such as the database to mirror, go in options. The connection cannot be
+changed after creation.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.custom_max_retention_hours">
 <span class="sig-name descname"><span class="pre">custom_max_retention_hours</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.custom_max_retention_hours" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Custom maximum retention period in hours for the catalog</p>
+<dd><p>[Public Preview] Dropped objects in the catalog remain recoverable for this number of hours before they are permanently
+purged. The value applies to standard catalogs only, must be 0 or within the range allowed for the
+metastore, and is inherited by schemas and tables that do not set their own value.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.grants">
 <span class="sig-name descname"><span class="pre">grants</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.catalogs.PrivilegeAssignment" title="databricks.bundles.catalogs._models.privilege_assignment.PrivilegeAssignment"><span class="pre">PrivilegeAssignment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.grants" title="Link to this definition">¶</a></dt>
 <dd><p>The Unity Catalog privileges to grant to principals on this securable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.isolation_mode">
+<span class="sig-name descname"><span class="pre">isolation_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.catalogs.CatalogIsolationMode" title="databricks.bundles.catalogs._models.catalog_isolation_mode.CatalogIsolationMode"><span class="pre">CatalogIsolationMode</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.isolation_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the catalog is accessible from all workspaces (<cite>OPEN</cite>) or only from the workspaces it is bound to (<cite>ISOLATED</cite>). Workspace bindings are not managed by the bundle. When omitted, the catalog keeps its current isolation mode.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -216,7 +228,7 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.managed_encryption_settings">
 <span class="sig-name descname"><span class="pre">managed_encryption_settings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.catalogs.EncryptionSettings" title="databricks.bundles.catalogs._models.encryption_settings.EncryptionSettings"><span class="pre">EncryptionSettings</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.managed_encryption_settings" title="Link to this definition">¶</a></dt>
-<dd><p>Control CMK encryption for managed catalog data</p>
+<dd><p>Customer-managed key (CMK) settings control the encryption at rest of the catalog’s managed data.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -234,20 +246,25 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.provider_name">
 <span class="sig-name descname"><span class="pre">provider_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.provider_name" title="Link to this definition">¶</a></dt>
-<dd><p>The name of delta sharing provider.</p>
-<p>A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.</p>
+<dd><p>The Delta Sharing provider that owns the share must be named here, together with share_name, to
+create a Delta Sharing catalog that exposes the data of the share on a remote sharing server. The
+provider cannot be changed after creation.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.share_name">
 <span class="sig-name descname"><span class="pre">share_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.share_name" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the share under the share provider.</p>
+<dd><p>The share under the Delta Sharing provider must be named here, together with provider_name, to
+create a Delta Sharing catalog. The share cannot be changed after creation.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.Catalog.storage_root">
 <span class="sig-name descname"><span class="pre">storage_root</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.catalogs.Catalog.storage_root" title="Link to this definition">¶</a></dt>
-<dd><p>Storage root URL for managed tables within catalog.</p>
+<dd><p>Managed tables and volumes in the catalog are stored under this storage root URL. The path must be
+inside an external location on which the caller has the CREATE MANAGED STORAGE privilege. If omitted,
+managed data is stored under the metastore’s root storage location, which must then be configured.
+Delta Sharing catalogs cannot have a storage root.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -284,6 +301,21 @@
 <dt class="sig sig-object py" id="databricks.bundles.catalogs.CatalogGrantPrivilege">
 <span class="sig-name descname"><span class="pre">CatalogGrantPrivilege</span></span><a class="headerlink" href="#databricks.bundles.catalogs.CatalogGrantPrivilege" title="Link to this definition">¶</a></dt>
 <dd><p>alias of <a class="reference internal" href="#databricks.bundles.catalogs.Privilege" title="databricks.bundles.catalogs._models.privilege.Privilege"><code class="xref py py-class docutils literal notranslate"><span class="pre">Privilege</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.catalogs.CatalogIsolationMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CatalogIsolationMode</span></span><a class="headerlink" href="#databricks.bundles.catalogs.CatalogIsolationMode" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.catalogs.CatalogIsolationMode.OPEN">
+<span class="sig-name descname"><span class="pre">OPEN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'OPEN'</span></em><a class="headerlink" href="#databricks.bundles.catalogs.CatalogIsolationMode.OPEN" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.catalogs.CatalogIsolationMode.ISOLATED">
+<span class="sig-name descname"><span class="pre">ISOLATED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ISOLATED'</span></em><a class="headerlink" href="#databricks.bundles.catalogs.CatalogIsolationMode.ISOLATED" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
