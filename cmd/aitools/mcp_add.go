@@ -428,7 +428,7 @@ func profileClient(ctx context.Context, name, configFile string) (*databricks.Wo
 	if err != nil {
 		return nil, err
 	}
-	if err := mcp.AuthenticateBound(ctx, cfg, name); err != nil {
+	if err := mcp.AuthenticateBound(ctx, cfg, name, ""); err != nil {
 		return nil, err
 	}
 	return w, nil
