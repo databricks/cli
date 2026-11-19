@@ -5,7 +5,9 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
 )
@@ -27,6 +29,9 @@ type WorkspaceT struct {
 // configure default credentials". A shared client authenticates once and
 // refreshes its token in the background. The SDK does not cache a failed
 // authentication, so the next call on the shared client tries again.
+//
+// Being shared, it also shares one connection pool for the whole test process,
+// hence the health-checked transport (see libs/httptransport).
 var sharedWorkspaceClientState struct {
 	mu     sync.Mutex
 	client *databricks.WorkspaceClient
@@ -38,7 +43,10 @@ func sharedWorkspaceClient(t testutil.TestingT) *databricks.WorkspaceClient {
 	defer s.mu.Unlock()
 
 	if s.client == nil {
-		w, err := databricks.NewWorkspaceClient()
+		cfg := &config.Config{}
+		require.NoError(t, cfg.EnsureResolved())
+		cfg.HTTPTransport = httptransport.HealthChecked(cfg.InsecureSkipVerify)
+		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 		require.NoError(t, err)
 		s.client = w
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -248,7 +249,7 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 	}
 
 	// Set after EnsureResolved, so skip_verify from the profile is known.
-	cfg.HTTPTransport = workspaceTransport(cfg.InsecureSkipVerify)
+	cfg.HTTPTransport = httptransport.HealthChecked(cfg.InsecureSkipVerify)
 
 	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }

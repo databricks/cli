@@ -1,4 +1,4 @@
-package config
+package httptransport
 
 import (
 	"context"
@@ -11,9 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/retry"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -179,41 +177,12 @@ func TestTransportWithoutHealthCheckReusesDeadConnection(t *testing.T) {
 	assert.EqualValues(t, 1, proxy.accepted.Load())
 }
 
-func TestWorkspaceTransportIsShared(t *testing.T) {
-	secure := workspaceTransport(false)
-	insecure := workspaceTransport(true)
-	assert.Same(t, secure, workspaceTransport(false))
-	assert.Same(t, insecure, workspaceTransport(true))
+func TestHealthCheckedIsShared(t *testing.T) {
+	secure := HealthChecked(false)
+	insecure := HealthChecked(true)
+	assert.Same(t, secure, HealthChecked(false))
+	assert.Same(t, insecure, HealthChecked(true))
 	assert.NotSame(t, secure, insecure)
 	assert.Nil(t, secure.TLSClientConfig)
 	assert.True(t, insecure.TLSClientConfig.InsecureSkipVerify)
-}
-
-func TestWorkspaceClientUsesHealthCheckedTransport(t *testing.T) {
-	setupWorkspaceTest(t)
-
-	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
-		Profile: "secure",
-		Host:    "https://secure.cloud.databricks.test",
-		Token:   "token",
-	})
-	require.NoError(t, err)
-	// skip_verify comes from the profile, so it is only known after the config is resolved.
-	err = databrickscfg.SaveToProfile(t.Context(), &config.Config{
-		Profile:            "insecure",
-		Host:               "https://insecure.cloud.databricks.test",
-		Token:              "token",
-		InsecureSkipVerify: true,
-	})
-	require.NoError(t, err)
-
-	w := Workspace{Profile: "secure"}
-	client, err := w.Client(t.Context())
-	require.NoError(t, err)
-	assert.Same(t, workspaceTransport(false), client.Config.HTTPTransport)
-
-	w = Workspace{Profile: "insecure"}
-	client, err = w.Client(t.Context())
-	require.NoError(t, err)
-	assert.Same(t, workspaceTransport(true), client.Config.HTTPTransport)
 }
