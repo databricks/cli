@@ -14,6 +14,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -194,8 +195,8 @@ func TestServerRejectsResumeOfMissingSession(t *testing.T) {
 func resumeEndpoint(endpoint string, request proxy.DialRequest) string {
 	query := url.Values{"id": {request.ConnID}}
 	if request.ResumeCapable {
-		query.Set("delivered", fmt.Sprint(request.Delivered))
-		query.Set(proxy.ResumeVersionParameter, fmt.Sprint(proxy.ResumeProtocolVersion))
+		query.Set("delivered", strconv.FormatInt(request.Delivered, 10))
+		query.Set(proxy.ResumeVersionParameter, strconv.Itoa(proxy.ResumeProtocolVersion))
 	}
 	if request.Reattach {
 		query.Set("reattach", "1")
