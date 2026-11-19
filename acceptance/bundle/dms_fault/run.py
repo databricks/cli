@@ -212,6 +212,7 @@ def main():
                 assert (cwd / "exported-src/pipeline.sql").read_text() == (cwd / "pipeline.sql").read_text()
             run(cwd, "bundle", "deployment", "unbind", key)
             assert resource not in state(cwd)["state"]
+            assert resource not in remote_state(cwd, root)["state"]
             generate(cwd, kind, key, current[resource], bind=True)
             assert ids(cwd)[resource] == current[resource]
             assert remote_state(cwd, root)["state"][resource]["__id__"] == current[resource]
