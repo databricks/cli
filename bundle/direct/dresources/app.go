@@ -138,9 +138,8 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
 	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
 	request := apps.CreateAppRequest{
-		App:             appRequestBody(config.App),
-		NoCompute:       noCompute,
-		ForceSendFields: nil,
+		App:       appRequestBody(config.App),
+		NoCompute: noCompute,
 	}
 
 	retrier := retries.New[apps.App](retries.WithTimeout(15*time.Minute), retries.WithRetryFunc(shouldRetry))

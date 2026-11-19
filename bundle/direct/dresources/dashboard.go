@@ -264,8 +264,6 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 			Dashboard:      dashboard,
 			DatasetCatalog: config.DatasetCatalog,
 			DatasetSchema:  config.DatasetSchema,
-
-			ForceSendFields: nil,
 		})
 	}
 	start := time.Now()
@@ -351,8 +349,6 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 		Dashboard:      dashboard,
 		DatasetCatalog: config.DatasetCatalog,
 		DatasetSchema:  config.DatasetSchema,
-
-		ForceSendFields: nil,
 	})
 	if err != nil {
 		return nil, err

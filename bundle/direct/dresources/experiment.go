@@ -51,9 +51,8 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 
 func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ *PlanEntry) (*ml.Experiment, error) {
 	updateReq := ml.UpdateExperiment{
-		ExperimentId:    id,
-		NewName:         config.Name,
-		ForceSendFields: nil,
+		ExperimentId: id,
+		NewName:      config.Name,
 	}
 
 	return nil, r.client.Experiments.UpdateExperiment(ctx, updateReq)

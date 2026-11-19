@@ -130,8 +130,7 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 
 func (r *ResourceCatalog) DoDelete(ctx context.Context, id string, _ *CatalogState) error {
 	return r.client.Catalogs.Delete(ctx, catalog.DeleteCatalogRequest{
-		Name:            id,
-		Force:           true,
-		ForceSendFields: nil,
+		Name:  id,
+		Force: true,
 	})
 }

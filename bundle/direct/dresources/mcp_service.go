@@ -55,11 +55,10 @@ func responseToMcpServiceConfig(ms *catalog.McpService) (*resources.McpServiceCo
 		return nil, err
 	}
 	return &resources.McpServiceConfig{
-		Parent:          parent,
-		McpServiceId:    id,
-		Comment:         ms.Comment,
-		Config:          ms.Config,
-		ForceSendFields: nil,
+		Parent:       parent,
+		McpServiceId: id,
+		Comment:      ms.Comment,
+		Config:       ms.Config,
 	}, nil
 }
 
@@ -68,17 +67,16 @@ func responseToMcpServiceConfig(ms *catalog.McpService) (*resources.McpServiceCo
 // (server-derived) and sent as its zero value.
 func mcpServiceBody(config *resources.McpServiceConfig) catalog.McpService {
 	return catalog.McpService{
-		Comment:         config.Comment,
-		Config:          config.Config,
-		CreateTime:      nil,
-		CreatedBy:       "",
-		EffectiveOwner:  "",
-		Etag:            "",
-		MetastoreId:     "",
-		Name:            "",
-		UpdateTime:      nil,
-		UpdatedBy:       "",
-		ForceSendFields: nil,
+		Comment:        config.Comment,
+		Config:         config.Config,
+		CreateTime:     nil,
+		CreatedBy:      "",
+		EffectiveOwner: "",
+		Etag:           "",
+		MetastoreId:    "",
+		Name:           "",
+		UpdateTime:     nil,
+		UpdatedBy:      "",
 	}
 }
 
@@ -134,11 +132,10 @@ func (r *ResourceMcpService) DoCreate(ctx context.Context, config *resources.Mcp
 // concurrency on these resources.
 func (r *ResourceMcpService) DoUpdate(ctx context.Context, id string, config *resources.McpServiceConfig, _ *PlanEntry) (*resources.McpServiceConfig, error) {
 	resp, err := r.client.AiGateway.UpdateMcpService(ctx, catalog.UpdateMcpServiceRequest{
-		Etag:            "",
-		McpService:      mcpServiceBody(config),
-		Name:            mcpServiceNamePrefix + id,
-		UpdateMask:      fieldmask.FieldMask{Paths: []string{"*"}},
-		ForceSendFields: nil,
+		Etag:       "",
+		McpService: mcpServiceBody(config),
+		Name:       mcpServiceNamePrefix + id,
+		UpdateMask: fieldmask.FieldMask{Paths: []string{"*"}},
 	})
 	if err != nil {
 		return nil, err
@@ -148,8 +145,7 @@ func (r *ResourceMcpService) DoUpdate(ctx context.Context, id string, config *re
 
 func (r *ResourceMcpService) DoDelete(ctx context.Context, id string, _ *resources.McpServiceConfig) error {
 	return r.client.AiGateway.DeleteMcpService(ctx, catalog.DeleteMcpServiceRequest{
-		Etag:            "",
-		Name:            mcpServiceNamePrefix + id,
-		ForceSendFields: nil,
+		Etag: "",
+		Name: mcpServiceNamePrefix + id,
 	})
 }

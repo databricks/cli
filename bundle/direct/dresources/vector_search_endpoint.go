@@ -137,9 +137,8 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 
 	if entry.Changes.HasChange(pathTargetQps) {
 		_, err := r.client.VectorSearchEndpoints.PatchEndpoint(ctx, vectorsearch.PatchEndpointRequest{
-			EndpointName:    id,
-			TargetQps:       config.TargetQps,
-			ForceSendFields: nil,
+			EndpointName: id,
+			TargetQps:    config.TargetQps,
 		})
 		if err != nil {
 			return nil, err

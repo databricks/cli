@@ -113,15 +113,14 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.
-			ProjectId:       "",
-			CreateTime:      nil,
-			DeleteTime:      nil,
-			Name:            "",
-			PurgeTime:       nil,
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			ProjectId:  "",
+			CreateTime: nil,
+			DeleteTime: nil,
+			Name:       "",
+			PurgeTime:  nil,
+			Status:     nil,
+			Uid:        "",
+			UpdateTime: nil,
 		},
 	}
 	start := time.Now()
@@ -235,15 +234,14 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.
-			ProjectId:       "",
-			CreateTime:      nil,
-			DeleteTime:      nil,
-			Name:            "",
-			PurgeTime:       nil,
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			ProjectId:  "",
+			CreateTime: nil,
+			DeleteTime: nil,
+			Name:       "",
+			PurgeTime:  nil,
+			Status:     nil,
+			Uid:        "",
+			UpdateTime: nil,
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
@@ -264,9 +262,8 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 
 func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, state *PostgresProjectState) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, postgres.DeleteProjectRequest{
-		Name:            id,
-		Purge:           state.PurgeOnDelete != nil && *state.PurgeOnDelete,
-		ForceSendFields: nil,
+		Name:  id,
+		Purge: state.PurgeOnDelete != nil && *state.PurgeOnDelete,
 	})
 	if err != nil {
 		return err

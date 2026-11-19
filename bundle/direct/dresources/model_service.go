@@ -60,11 +60,10 @@ func responseToModelServiceConfig(ms *catalog.ModelService) (*resources.ModelSer
 		return nil, err
 	}
 	return &resources.ModelServiceConfig{
-		Parent:          parent,
-		ModelServiceId:  id,
-		Comment:         ms.Comment,
-		Config:          ms.Config,
-		ForceSendFields: nil,
+		Parent:         parent,
+		ModelServiceId: id,
+		Comment:        ms.Comment,
+		Config:         ms.Config,
 	}, nil
 }
 
@@ -84,7 +83,6 @@ func modelServiceBody(config *resources.ModelServiceConfig) catalog.ModelService
 		SupportedApiTypes: nil,
 		UpdateTime:        nil,
 		UpdatedBy:         "",
-		ForceSendFields:   nil,
 	}
 }
 
@@ -140,11 +138,10 @@ func (r *ResourceModelService) DoCreate(ctx context.Context, config *resources.M
 // concurrency on these resources.
 func (r *ResourceModelService) DoUpdate(ctx context.Context, id string, config *resources.ModelServiceConfig, _ *PlanEntry) (*resources.ModelServiceConfig, error) {
 	resp, err := r.client.AiGateway.UpdateModelService(ctx, catalog.UpdateModelServiceRequest{
-		Etag:            "",
-		ModelService:    modelServiceBody(config),
-		Name:            modelServiceNamePrefix + id,
-		UpdateMask:      fieldmask.FieldMask{Paths: []string{"*"}},
-		ForceSendFields: nil,
+		Etag:         "",
+		ModelService: modelServiceBody(config),
+		Name:         modelServiceNamePrefix + id,
+		UpdateMask:   fieldmask.FieldMask{Paths: []string{"*"}},
 	})
 	if err != nil {
 		return nil, err
@@ -154,8 +151,7 @@ func (r *ResourceModelService) DoUpdate(ctx context.Context, id string, config *
 
 func (r *ResourceModelService) DoDelete(ctx context.Context, id string, _ *resources.ModelServiceConfig) error {
 	return r.client.AiGateway.DeleteModelService(ctx, catalog.DeleteModelServiceRequest{
-		Etag:            "",
-		Name:            modelServiceNamePrefix + id,
-		ForceSendFields: nil,
+		Etag: "",
+		Name: modelServiceNamePrefix + id,
 	})
 }

@@ -261,7 +261,6 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 			UserName:             p.UserName,
 			ServicePrincipalName: p.ServicePrincipalName,
 			GroupName:            p.GroupName,
-			ForceSendFields:      nil,
 		}
 	}
 

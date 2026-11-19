@@ -271,17 +271,15 @@ func diffTags(currentTags, desiredTags []serving.EndpointTag) (addTags []serving
 		v, ok := currentTagsMap[key]
 		if !ok {
 			addTags = append(addTags, serving.EndpointTag{
-				Key:             key,
-				Value:           desiredValue,
-				ForceSendFields: nil,
+				Key:   key,
+				Value: desiredValue,
 			})
 			continue
 		}
 		if v != desiredValue {
 			addTags = append(addTags, serving.EndpointTag{
-				Key:             key,
-				Value:           desiredValue,
-				ForceSendFields: nil,
+				Key:   key,
+				Value: desiredValue,
 			})
 		}
 	}

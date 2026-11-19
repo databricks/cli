@@ -124,7 +124,6 @@ func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error)
 		JobId:               idInt,
 		PageToken:           "",
 		IncludeTriggerState: false,
-		ForceSendFields:     nil,
 	})
 	if err != nil {
 		return nil, err

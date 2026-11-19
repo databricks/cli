@@ -132,8 +132,7 @@ func (*ResourceSchema) IDFromState(state *SchemaState) string {
 
 func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *SchemaState) error {
 	return r.client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
-		FullName:        id,
-		Force:           true,
-		ForceSendFields: nil,
+		FullName: id,
+		Force:    true,
 	})
 }

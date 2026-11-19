@@ -25,22 +25,21 @@ func (*ResourceSecret) New(client *databricks.WorkspaceClient) *ResourceSecret {
 
 func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 	return &catalog.Secret{
-		CatalogName:     input.CatalogName,
-		SchemaName:      input.SchemaName,
-		Name:            input.Name,
-		Value:           input.Value,
-		Comment:         input.Comment,
-		ExpireTime:      input.ExpireTime,
-		Owner:           "",
-		CreateTime:      nil,
-		CreatedBy:       "",
-		EffectiveOwner:  "",
-		EffectiveValue:  "",
-		FullName:        "",
-		MetastoreId:     "",
-		UpdateTime:      nil,
-		UpdatedBy:       "",
-		ForceSendFields: nil,
+		CatalogName:    input.CatalogName,
+		SchemaName:     input.SchemaName,
+		Name:           input.Name,
+		Value:          input.Value,
+		Comment:        input.Comment,
+		ExpireTime:     input.ExpireTime,
+		Owner:          "",
+		CreateTime:     nil,
+		CreatedBy:      "",
+		EffectiveOwner: "",
+		EffectiveValue: "",
+		FullName:       "",
+		MetastoreId:    "",
+		UpdateTime:     nil,
+		UpdatedBy:      "",
 	}
 }
 
@@ -60,9 +59,8 @@ func remapSecretRemote(remote *catalog.Secret) *catalog.Secret {
 // recover the stored value from EffectiveValue.
 func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
 	remote, err := r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
-		FullName:        id,
-		IncludeValue:    true,
-		ForceSendFields: nil,
+		FullName:     id,
+		IncludeValue: true,
 	})
 	if err != nil {
 		return nil, err

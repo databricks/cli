@@ -59,7 +59,6 @@ func responseToModelProviderServiceConfig(ms *catalog.ModelProviderService) (*re
 		ModelProviderServiceId: id,
 		Comment:                ms.Comment,
 		Config:                 ms.Config,
-		ForceSendFields:        nil,
 	}, nil
 }
 
@@ -68,17 +67,16 @@ func responseToModelProviderServiceConfig(ms *catalog.ModelProviderService) (*re
 // is OUTPUT_ONLY (server-derived) and sent as its zero value.
 func modelProviderServiceBody(config *resources.ModelProviderServiceConfig) catalog.ModelProviderService {
 	return catalog.ModelProviderService{
-		Comment:         config.Comment,
-		Config:          config.Config,
-		CreateTime:      nil,
-		CreatedBy:       "",
-		EffectiveOwner:  "",
-		Etag:            "",
-		MetastoreId:     "",
-		Name:            "",
-		UpdateTime:      nil,
-		UpdatedBy:       "",
-		ForceSendFields: nil,
+		Comment:        config.Comment,
+		Config:         config.Config,
+		CreateTime:     nil,
+		CreatedBy:      "",
+		EffectiveOwner: "",
+		Etag:           "",
+		MetastoreId:    "",
+		Name:           "",
+		UpdateTime:     nil,
+		UpdatedBy:      "",
 	}
 }
 
@@ -139,7 +137,6 @@ func (r *ResourceModelProviderService) DoUpdate(ctx context.Context, id string, 
 		Name:                 modelProviderServiceNamePrefix + id,
 		ModelProviderService: modelProviderServiceBody(config),
 		UpdateMask:           fieldmask.FieldMask{Paths: []string{"*"}},
-		ForceSendFields:      nil,
 	})
 	if err != nil {
 		return nil, err
@@ -149,8 +146,7 @@ func (r *ResourceModelProviderService) DoUpdate(ctx context.Context, id string, 
 
 func (r *ResourceModelProviderService) DoDelete(ctx context.Context, id string, _ *resources.ModelProviderServiceConfig) error {
 	return r.client.AiGateway.DeleteModelProviderService(ctx, catalog.DeleteModelProviderServiceRequest{
-		Etag:            "",
-		Name:            modelProviderServiceNamePrefix + id,
-		ForceSendFields: nil,
+		Etag: "",
+		Name: modelProviderServiceNamePrefix + id,
 	})
 }
