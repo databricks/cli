@@ -79,6 +79,7 @@ AGENT_ENV = {
     "GOOSE_PATH_ROOT",
     "GOOSE_TERMINAL",
     "KIRO",
+    "OMNIGENT",
     "OPENCLAW_SHELL",
     "OPENCODE",
     "PI_CODING_AGENT",

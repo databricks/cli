@@ -281,6 +281,8 @@ def main():
     d.add_argument("--seed", type=int, default=1)
     d.add_argument("--json", metavar="PATH")
     args = parser.parse_args()
+    if args.cmd == "time" and args.rounds < 1:
+        parser.error("--rounds must be at least 1")
     if args.json:
         args.json = os.path.abspath(args.json)
 
