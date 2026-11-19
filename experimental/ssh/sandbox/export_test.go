@@ -9,7 +9,7 @@ var (
 	PrepareRemoteForTest         = prepareRemote
 	UploadExecutableForTest      = uploadExecutable
 	ConnectProxyForTest          = connectProxy
-	ServerLauncherScriptForTest  = serverLauncherScript
+	ServerLockScriptForTest      = serverLockScript
 )
 
 type RemoteSetupForTest = remoteSetup

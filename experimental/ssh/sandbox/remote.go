@@ -27,9 +27,6 @@ import (
 //go:embed setup.py
 var setupScript string
 
-//go:embed launch.py
-var serverLauncherScript string
-
 type remoteSetup struct {
 	Home         string `json:"home"`
 	Config       string `json:"config"`
@@ -157,7 +154,7 @@ func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 		cancelStartup(errors.New("timed out waiting for sandbox SSH server readiness"))
 	})
 	defer timer.Stop()
-	stream, err := commandClient.Follow(commandCtx, commandID, "python3", []string{"-c", serverLauncherScript, setup.SessionDir, binary, "sandbox", "server", "--sshd-config", setup.Config, "--sshd", setup.SSHD, "--port", "0", "--log-level", "info", "--log-file", path.Join(setup.SessionDir, "server.log")}, 25*time.Minute)
+	stream, err := commandClient.Follow(commandCtx, commandID, "python3", []string{"-c", serverLockScript, setup.SessionDir, binary, "sandbox", "server", "--sshd-config", setup.Config, "--sshd", setup.SSHD, "--port", "0", "--log-level", "info", "--log-file", path.Join(setup.SessionDir, "server.log")}, 25*time.Minute)
 	if err != nil {
 		return fmt.Errorf("start sandbox SSH server: %w", err)
 	}
@@ -328,3 +325,11 @@ func proxyStream(ctx context.Context, input io.ReadCloser, output io.Writer, dia
 	defer handover.Stop()
 	return proxy.RunClientProxy(ctx, reader, output, func() <-chan time.Time { return handover.C }, 30*time.Second, false, dial)
 }
+
+// Keep the session lease open in the server, including after the local CLI dies.
+const serverLockScript = `import fcntl, os, sys
+lock = open(os.path.join(sys.argv[1], "server.lock"), "a")
+fcntl.flock(lock, fcntl.LOCK_EX)
+os.set_inheritable(lock.fileno(), True)
+os.execv(sys.argv[2], sys.argv[2:])
+`

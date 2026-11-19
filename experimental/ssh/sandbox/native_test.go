@@ -196,7 +196,7 @@ try:
             assert server.poll() is None
             time.sleep(0.01)
         else:
-            raise AssertionError("launcher did not retain its running server's lease")
+            raise AssertionError("server did not retain its lease across exec")
     os.utime(base / "session-active", (time.time() - 90000, time.time() - 90000))
     subprocess.run([sys.executable, "-c", sys.argv[1], json.dumps({"public_key":sys.argv[2]})], check=True)
     assert not (base / "session-old").exists()
@@ -209,7 +209,7 @@ os.utime(base / "session-active", (time.time() - 90000, time.time() - 90000))
 subprocess.run([sys.executable, "-c", sys.argv[1], json.dumps({"public_key":sys.argv[2]})], check=True)
 assert not (base / "session-active").exists()
 `
-	command := exec.CommandContext(t.Context(), "python3", "-c", harness, string(script), string(identity.PublicKey), sandbox.ServerLauncherScriptForTest)
+	command := exec.CommandContext(t.Context(), "python3", "-c", harness, string(script), string(identity.PublicKey), sandbox.ServerLockScriptForTest)
 	command.Env = append(os.Environ(), "HOME="+home)
 	output, err := command.CombinedOutput()
 	require.NoError(t, err, string(output))
