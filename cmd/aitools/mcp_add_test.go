@@ -67,6 +67,7 @@ func TestValidateMCPAddFlags(t *testing.T) {
 			want: `--name "a-" is not a valid server name: use lowercase letters, digits, '-' and '_', with no "__" and no leading or trailing '-' or '_'`,
 		},
 		{name: "valid name", flags: mcpAddFlags{name: "my_github-1"}, names: []string{"github"}},
+		{name: "login alone", flags: mcpAddFlags{login: true}, names: []string{"github"}},
 		{
 			name: "name must be lowercase", flags: mcpAddFlags{name: "GitHub"}, names: []string{"github"},
 			want: `--name "GitHub" is not a valid server name: use lowercase letters, digits, '-' and '_', with no "__" and no leading or trailing '-' or '_'`,
@@ -958,6 +959,12 @@ func TestValidateMCPAddFlagsRefusesAgentsWithNoName(t *testing.T) {
 	assert.ErrorContains(t, err, "--agents names no agent")
 }
 
+// TestMcpAddHasNoNoLoginFlag checks that signing in is the default, so add has no --no-login flag.
+func TestMcpAddHasNoNoLoginFlag(t *testing.T) {
+	err := NewMcpAddCmd().ParseFlags([]string{"--no-login"})
+	assert.ErrorContains(t, err, "unknown flag: --no-login")
+}
+
 // TestMcpAddMissingProfileListsAccountProfileWithWorkspaceID checks that the existing profiles include an account-level profile
 // whose host names a workspace in ?w=, since --profile accepts it.
 func TestMcpAddMissingProfileListsAccountProfileWithWorkspaceID(t *testing.T) {
@@ -1365,7 +1372,7 @@ func TestProfileClientRefusesAccountOnlyProfile(t *testing.T) {
 			home := withHome(t)
 			writeHomeConfig(t, home, "[acct]\n"+tt.config)
 
-			_, err := profileClient(t.Context(), "acct", filepath.Join(home, ".databrickscfg"))
+			_, err := profileClient(t.Context(), "acct", filepath.Join(home, ".databrickscfg"), "")
 			if tt.refused {
 				assert.ErrorContains(t, err, "profile \"acct\" is account-level")
 				return

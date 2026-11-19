@@ -94,7 +94,8 @@ entry, is left in place, and the install record for its agent is dropped. A Data
 this CLI is left in place and reported, and a --names run that names its server is refused. When an agent's config
 moved, the entry is removed from the file it was written to and from the file the agent reads now.
 Entries that run 'aitools mcp serve' without an install record are not chosen by any flag;
-'aitools mcp list' shows them as unmanaged. Provider credentials are not deleted.`,
+'aitools mcp list' shows them as unmanaged. Your sign-ins to services are kept; 'aitools mcp logout'
+removes one.`,
 		Example: `  databricks aitools mcp remove --names github-logfood
   databricks aitools mcp remove --profile logfood --agents cursor
   databricks aitools mcp remove --all`,

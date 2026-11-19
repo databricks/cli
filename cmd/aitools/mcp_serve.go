@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -26,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/spf13/cobra"
@@ -163,7 +163,7 @@ func (s *signInRedirect) RoundTrip(req *http.Request) (*http.Response, error) {
 // loginError is the error for a redirect to sign-in. The login command names DATABRICKS_CONFIG_FILE when the profile is
 // pinned to a config file, since the login must write that file.
 func (s *signInRedirect) loginError(status int) error {
-	return fmt.Errorf("the MCP endpoint redirected to sign-in (HTTP %d), so it did not accept the token for Databricks profile \"%s\"\nRun: %s\nThen restart the MCP server in your agent", status, s.profile, mcp.LoginCommand(s.profile, s.configFile))
+	return fmt.Errorf("the MCP endpoint redirected to sign-in (HTTP %d), so it did not accept the token for Databricks profile \"%s\"\nRun: %s\nThen restart the MCP server in your agent", status, s.profile, mcp.ConfigFileCommand(s.configFile, "databricks auth login --profile "+shellquote.BashArg(s.profile)))
 }
 
 type mcpServeFlags struct {
@@ -207,7 +207,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if f.service == "" {
 		return fmt.Errorf("%s is required", mcpconfig.ServiceFlag)
 	}
-	if !isFullName(strings.Split(f.service, ".")) {
+	if !isServiceName(f.service) {
 		return fmt.Errorf("%s needs a full service name such as system.ai.github", mcpconfig.ServiceFlag)
 	}
 
@@ -225,7 +225,6 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		return serveBindFailure(cmd, profileName, err)
 	}
 
-	configFile := pinnedConfigFile(entry, cfg)
 	authenticate := rebindingAuthenticate(bindingCheck(cmd.Context(), state, entry, f.service, profileName, cfg), cfg.Authenticate)
 	return serveProxy(cmd, proxy.Options{
 		In:           cmd.InOrStdin(),
@@ -239,17 +238,9 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		Transport: &signInRedirect{
 			next:       newUpstreamLog(serveTransport(cfg)),
 			profile:    profileName,
-			configFile: configFile,
+			configFile: mcp.PinnedFile(entry, cfg.ConfigFile),
 		},
-	}, configFile)
-}
-
-// pinnedConfigFile returns the config file that entry pins its profile to, or "" when the entry has none.
-func pinnedConfigFile(entry *mcp.Entry, cfg *config.Config) string {
-	if entry == nil || entry.ConfigFile == "" {
-		return ""
-	}
-	return filepath.ToSlash(cfg.ConfigFile)
+	}, mcp.PinnedFile(entry, cfg.ConfigFile))
 }
 
 // bindingCheck returns the check that runs before each token is fetched. With an install record, entry, it checks the
@@ -295,11 +286,12 @@ func checkBindingWithRetry(check func() error) error {
 }
 
 // serveProxy bridges opts to the service until stdin closes or a signal arrives. Authenticate goes through a
-// refreshGuard, so a rejected token or a changed binding stops the proxy; see proxyResult.
-func serveProxy(cmd *cobra.Command, opts proxy.Options, configFile string) error {
+// refreshGuard, so a rejected token or a changed binding stops the proxy; see proxyResult. pinnedFile is the config
+// file the server is pinned to, or "" (see mcp.PinnedFile).
+func serveProxy(cmd *cobra.Command, opts proxy.Options, pinnedFile string) error {
 	ctx, stop := serveSignalContext(cmd.Context())
 	defer stop()
-	refresh := &refreshGuard{authenticate: opts.Authenticate, profile: opts.Profile, configFile: configFile, cancel: stop}
+	refresh := &refreshGuard{authenticate: opts.Authenticate, profile: opts.Profile, pinnedFile: pinnedFile, cancel: stop}
 	opts.Authenticate = refresh.authenticateRequest
 	return proxyResult(cmd, refresh, proxy.Run(ctx, opts))
 }
@@ -389,8 +381,9 @@ func exitAlreadyPrinted(err error, status int) error {
 type refreshGuard struct {
 	authenticate func(*http.Request) error
 	profile      string
-	configFile   string // the config file the profile is pinned to, or "" when the login's default file is used
-	cancel       context.CancelFunc
+	// pinnedFile is the config file the server is pinned to, or "" (see mcp.PinnedFile).
+	pinnedFile string
+	cancel     context.CancelFunc
 
 	mu  sync.Mutex
 	err error
@@ -422,7 +415,7 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 	}
 	// The hint says to restart the server: a new spawn re-runs the binding checks, and it is the one that picks up the
 	// new login.
-	authErr := fmt.Errorf("%w\nThen restart the MCP server in your agent", mcp.AuthErrorIn(g.profile, g.configFile, err))
+	authErr := fmt.Errorf("%w\nThen restart the MCP server in your agent", mcp.AuthErrorIn(g.profile, g.pinnedFile, err))
 	return g.stop(authErr)
 }
 

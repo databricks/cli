@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -20,10 +21,10 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +45,7 @@ type mcpAddFlags struct {
 	agents   string
 	name     string
 	force    bool
+	login    bool
 }
 
 // addOutput is the `mcp add --output json` document.
@@ -61,11 +63,21 @@ type addServerOutput struct {
 	Service        string           `json:"service"`
 	SignInRequired bool             `json:"sign_in_required"`
 	Agents         []addAgentOutput `json:"agents"`
+	// SignIn is the sign-in of the server under --login, with the state that login reports. It is absent without --login.
+	SignIn *addSignInOutput `json:"sign_in,omitempty"`
 
 	// notes explain the name and the entries that were replaced. The text output prints them; the JSON does not.
 	notes []string
 	// note is the service's prerequisite, printed after the agent results. The text output prints it; the JSON does not.
 	note string
+}
+
+// addSignInOutput is the sign-in of one server under --login: its state, as login reports it, and the failure when the
+// sign-in failed.
+type addSignInOutput struct {
+	State         string                      `json:"state,omitempty"`
+	ErrorCategory protos.AitoolsErrorCategory `json:"error_category,omitempty"`
+	Error         string                      `json:"error,omitempty"`
 }
 
 type addAgentOutput struct {
@@ -110,6 +122,8 @@ type addRequest struct {
 	// refused holds the agents named with --agents that are not installed, with the reason. Their
 	// config is not written.
 	refused map[*agents.Agent]error
+	// login signs in to the sign-in-required servers after they are installed.
+	login bool
 }
 
 // slashPaths rewrites the agent config paths of the document to forward slashes, as the text output
@@ -177,6 +191,7 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 	cmd.Flags().StringVar(&f.agents, "agents", "", "Agents to install for, comma-separated (default: every detected MCP-capable agent)")
 	cmd.Flags().StringVar(&f.name, "name", "", "Server name to use instead of the generated one; only with exactly one service")
 	cmd.Flags().BoolVar(&f.force, "force", false, "Overwrite an existing server with the same name that this CLI did not write")
+	cmd.Flags().BoolVar(&f.login, "login", false, "Sign in to each sign-in-required server that was installed, after the installs")
 	return cmd
 }
 
@@ -270,19 +285,19 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		return err
 	}
 
-	w, err := profileClient(ctx, profileName, configFile)
+	w, err := profileClient(ctx, profileName, configFile, pinned)
 	if err != nil {
 		return err
 	}
 	out.Host = w.Config.Host
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		return describeRequestError(profileName, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
+		return describeRequestError(profileName, pinned, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
 
 	services, err := mcp.Discover(ctx, w, location)
 	if err != nil {
-		return describeRequestError(profileName, err)
+		return describeRequestError(profileName, pinned, err)
 	}
 	picked, err := pickServices(location, fullNames, services)
 	if err != nil {
@@ -304,6 +319,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		configFile:  configFile,
 		pinned:      pinned,
 		refused:     refused,
+		login:       f.login,
 	}
 	if pinned != "" {
 		req.env = map[string]string{mcpconfig.ConfigFileEnv: pinned}
@@ -319,13 +335,15 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	}
 	out.Servers = servers
 
-	// The results are printed even when the state cannot be saved: the agent files were written.
+	// The results are printed even when the state cannot be saved: the agent files were written. The sign-in does not
+	// depend on the state, so it still runs, and every failure is returned.
 	recordErr := recordInstalls(ctx, req, plans, servers)
 	printAddResults(ctx, req, servers)
-	if recordErr != nil {
-		return recordErr
+	var signErr error
+	if req.login {
+		signErr = signInInstalled(ctx, cmd.ErrOrStderr(), w, req, plans, servers)
 	}
-	return agentFailureError(req, servers)
+	return errors.Join(recordErr, signErr, agentFailureError(req, servers))
 }
 
 // validateMCPAddFlags rejects flag combinations that cannot run, before anything is read or written.
@@ -413,22 +431,34 @@ func withExistingProfiles(ctx context.Context, state *mcp.State, profileName str
 
 // profileClient returns a workspace client bound to exactly the named profile in configFile. Its config is the one
 // Bind builds, so the environment's credentials are never sent to the profile's host.
-func profileClient(ctx context.Context, name, configFile string) (*databricks.WorkspaceClient, error) {
+func profileClient(ctx context.Context, name, configFile, pinnedFile string) (*databricks.WorkspaceClient, error) {
 	cfg, err := mcp.BoundConfig(name, configFile)
 	if err != nil {
 		return nil, err
 	}
-	// The workspace commands refuse an account-only profile after the SDK has resolved its workspace ID, so this
-	// checks the resolved config, which includes a workspace given in the host or found by discovery. It runs before
-	// the credential is sent.
-	if cfg.AccountID != "" && (cfg.WorkspaceID == "" || cfg.WorkspaceID == profile.WorkspaceIDNone) {
-		return nil, failure(protos.AitoolsErrorCategoryUncategorized, "profile %q is account-level, with no workspace_id in %s; MCP servers need a profile for one workspace", name, filepath.ToSlash(configFile))
+	if err := checkWorkspaceProfile(name, configFile, cfg); err != nil {
+		return nil, err
 	}
+	return boundClient(ctx, cfg, name, pinnedFile)
+}
+
+// checkWorkspaceProfile refuses an account-only profile, before the credential is sent. The workspace commands refuse it
+// after the SDK has resolved its workspace ID, so this checks the resolved config, which includes a workspace given in the
+// host or found by discovery.
+func checkWorkspaceProfile(name, configFile string, cfg *config.Config) error {
+	if cfg.AccountID != "" && (cfg.WorkspaceID == "" || cfg.WorkspaceID == profile.WorkspaceIDNone) {
+		return failure(protos.AitoolsErrorCategoryUncategorized, "profile %q is account-level, with no workspace_id in %s; MCP servers need a profile for one workspace", name, filepath.ToSlash(configFile))
+	}
+	return nil
+}
+
+// boundClient returns a workspace client for cfg, a bound config of the named profile, once cfg has a credential.
+func boundClient(ctx context.Context, cfg *config.Config, name, pinnedFile string) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return nil, err
 	}
-	if err := mcp.AuthenticateBound(ctx, cfg, name, ""); err != nil {
+	if err := mcp.AuthenticateBound(ctx, cfg, name, pinnedFile); err != nil {
 		return nil, err
 	}
 	return w, nil
@@ -437,9 +467,9 @@ func profileClient(ctx context.Context, name, configFile string) (*databricks.Wo
 // describeRequestError classifies a failed request to the profile's workspace. A credential the workspace
 // rejects is AUTH_FAILED, with the login command for the profile. Other failures are described by
 // describeListError.
-func describeRequestError(profileName string, err error) error {
+func describeRequestError(profileName, pinnedFile string, err error) error {
 	if errors.Is(err, apierr.ErrUnauthenticated) {
-		return mcp.AuthError(profileName, err)
+		return mcp.AuthErrorIn(profileName, pinnedFile, err)
 	}
 	return describeListError(profileName, err)
 }
@@ -1013,6 +1043,60 @@ func requireInstalled(ctx context.Context, a *agents.Agent) error {
 	return failure(protos.AitoolsErrorCategoryUnknownAgent, "%s is not installed; install it first or leave it out of --agents", a.DisplayName)
 }
 
+// signInInstalled signs in to each sign-in-required server that reached an agent, in order, and records the sign-in of
+// each server that reached an agent in servers. A failure does not stop the others, and the failures are joined. The
+// servers are installed either way. A failure names the command to run next when a sign-in can fix it, as the timeout
+// and failed errors do. Other failures get no hint, since logging in again would not fix them.
+func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, req addRequest, plans []addPlan, servers []addServerOutput) error {
+	var errs []error
+	for i := range servers {
+		server := &servers[i]
+		if !installedAnywhere(*server) {
+			continue
+		}
+		if !server.SignInRequired {
+			server.SignIn = &addSignInOutput{State: signInStateNotRequired}
+			continue
+		}
+		// A cancelled command ends the sign-ins that have not started, rather than failing each one with the same error.
+		// The sign-in that the cancellation interrupted has already reported it.
+		if err := ctx.Err(); err != nil {
+			if len(errs) == 0 {
+				errs = append(errs, err)
+			}
+			break
+		}
+		var state string
+		url, err := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
+		if err == nil {
+			state, _, err = signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service)
+		}
+		server.SignIn = &addSignInOutput{State: state}
+		if err != nil {
+			server.SignIn.ErrorCategory = errorCategory(err)
+			server.SignIn.Error = err.Error()
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// signInHint returns the sentence that says a sign-in-required service needs sign-in, with the command that signs the
+// profile in.
+func signInHint(service, profileName, pinnedFile string) string {
+	return fmt.Sprintf("%s needs sign-in. Run: %s", service, mcpLoginHint(service, profileName, pinnedFile))
+}
+
+// installedAnywhere reports whether the server reached at least one agent.
+func installedAnywhere(server addServerOutput) bool {
+	for _, a := range server.Agents {
+		if a.Status != statusFailed {
+			return true
+		}
+	}
+	return false
+}
+
 // recordInstalls adds each server that reached at least one agent to the state file. The file is
 // re-read first, so entries written since planning are kept. Each server is recorded on its own, so that one
 // failure does not keep the others from being saved: their agent files are already written.
@@ -1087,15 +1171,12 @@ func agentFailureError(req addRequest, servers []addServerOutput) error {
 	var errs []error
 	fail := req.explicit
 	for _, server := range servers {
-		reached := false
 		for _, a := range server.Agents {
-			if a.err == nil {
-				reached = true
-				continue
+			if a.err != nil {
+				errs = appendDistinct(errs, a.err)
 			}
-			errs = appendDistinct(errs, a.err)
 		}
-		if !reached {
+		if !installedAnywhere(server) {
 			fail = true
 		}
 	}
@@ -1135,20 +1216,16 @@ func printAddResults(ctx context.Context, req addRequest, servers []addServerOut
 		for _, note := range server.notes {
 			cmdio.LogString(ctx, "  "+note)
 		}
-		succeeded := false
 		for _, a := range server.Agents {
 			cmdio.LogString(ctx, "  "+agentResultLine(ctx, a))
-			if a.Status != statusFailed {
-				succeeded = true
-			}
 			if a.Name == agents.NameCursor && a.Status == statusInstalled {
 				cursorServers = append(cursorServers, server.Name)
 			}
 		}
-		if server.SignInRequired && succeeded {
-			cmdio.LogString(ctx, fmt.Sprintf("  %s needs sign-in. Run: databricks aitools mcp login %s --profile %s", server.Service, shellquote.BashArg(server.Service), shellquote.BashArg(req.profile)))
+		if server.SignInRequired && installedAnywhere(server) && !req.login {
+			cmdio.LogString(ctx, "  "+signInHint(server.Service, req.profile, req.pinned))
 		}
-		if server.note != "" && succeeded {
+		if server.note != "" && installedAnywhere(server) {
 			cmdio.LogString(ctx, "  "+server.note)
 		}
 	}
