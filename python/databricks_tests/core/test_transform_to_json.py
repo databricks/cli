@@ -21,6 +21,22 @@ class Fake:
     dict_field: dict[str, int] = field(default_factory=dict)
 
 
+@dataclass
+class FakeNested:
+    int_field: Optional[int] = None
+
+
+@dataclass
+class FakeMarker:
+    pass
+
+
+@dataclass
+class FakeParent:
+    nested_field: Optional[FakeNested] = None
+    marker_field: Optional[FakeMarker] = None
+
+
 @pytest.mark.parametrize(
     ("input", "expected"),
     [
@@ -35,6 +51,19 @@ class Fake:
         (
             # empty lists, dicts and None is omitted
             Fake(),
+            {},
+        ),
+        (
+            # empty dataclasses are kept
+            FakeParent(nested_field=FakeNested(), marker_field=FakeMarker()),
+            {"nested_field": {}, "marker_field": {}},
+        ),
+        (
+            FakeParent(nested_field=FakeNested(int_field=1)),
+            {"nested_field": {"int_field": 1}},
+        ),
+        (
+            FakeParent(),
             {},
         ),
         (

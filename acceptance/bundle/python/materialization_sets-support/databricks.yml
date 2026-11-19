@@ -20,3 +20,31 @@ resources:
             table_name_prefix: my_feature_1_off
           cron_schedule_trigger:
             mode: DERIVED
+
+    yaml_streaming_mode:
+      materialized_features:
+        - feature_name: main.default.yaml_streaming_feature
+          online_store_config:
+            online_store_name: my_online_store
+            catalog_name: main
+            schema_name: default
+            table_name_prefix: yaml_streaming_feature_on
+          streaming_mode: {}
+
+    yaml_table_trigger:
+      materialized_features:
+        - feature_name: main.default.yaml_table_feature
+          offline_store_config:
+            catalog_name: main
+            schema_name: default
+            table_name_prefix: yaml_table_feature_off
+          table_trigger: {}
+
+    yaml_external_trigger:
+      materialized_features:
+        - feature_name: main.default.yaml_external_feature
+          offline_store_config:
+            catalog_name: main
+            schema_name: default
+            table_name_prefix: yaml_external_feature_off
+          external_trigger: {}
