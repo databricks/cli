@@ -31,8 +31,9 @@ type ServerOptions struct {
 // Readiness is written as one JSON line after the sshd configuration is validated.
 // Token is only returned over the caller's authenticated command-output stream.
 type Readiness struct {
-	Port  int    `json:"port"`
-	Token string `json:"token"`
+	Port          int    `json:"port"`
+	Token         string `json:"token"`
+	ResumeVersion int    `json:"resume_version"`
 }
 
 // Serve relays /ssh WebSockets to one sshd session, including its handovers.
@@ -62,7 +63,7 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 		close(started)
 		mu.Unlock()
 		return exec.CommandContext(ctx, opts.SSHD, "-i", "-f", opts.Config)
-	}, proxy.WithoutSessionResume(), proxy.WithSingleSession(), proxy.WithSessionCompletion(func() { close(completed) }))
+	}, proxy.WithSingleSession(), proxy.WithSessionCompletion(func() { close(completed) }))
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ssh", func(w http.ResponseWriter, r *http.Request) {
 		if subtle.ConstantTimeCompare([]byte(r.Header.Get(RelayTokenHeader)), []byte(token)) != 1 {
@@ -96,7 +97,7 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 		requests.Wait()
 		log.Info(ctx, "Sandbox SSH server stopped")
 	}()
-	if err := json.NewEncoder(output).Encode(Readiness{Port: listener.Addr().(*net.TCPAddr).Port, Token: token}); err != nil {
+	if err := json.NewEncoder(output).Encode(Readiness{Port: listener.Addr().(*net.TCPAddr).Port, Token: token, ResumeVersion: proxy.ResumeProtocolVersion}); err != nil {
 		return fmt.Errorf("report relay readiness: %w", err)
 	}
 	log.Infof(ctx, "Sandbox SSH server ready on port %d", listener.Addr().(*net.TCPAddr).Port)

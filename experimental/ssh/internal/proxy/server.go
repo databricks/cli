@@ -24,7 +24,6 @@ type proxyServer struct {
 	connections         *ConnectionsManager
 	createServerCommand createServerCommandFunc
 	resumeGrace         time.Duration
-	allowResume         bool
 	onSessionEnd        func()
 	singleSession       bool
 	sessionUsed         bool
@@ -33,11 +32,6 @@ type proxyServer struct {
 
 // ServerOption configures the SSH transport capabilities.
 type ServerOption func(*proxyServer)
-
-// WithoutSessionResume rejects requests to resume an interrupted session.
-func WithoutSessionResume() ServerOption {
-	return func(server *proxyServer) { server.allowResume = false }
-}
 
 // WithSessionCompletion runs notify after an accepted logical session ends and is removed.
 // Handovers and failed upgrades do not trigger it.
@@ -56,7 +50,6 @@ func NewProxyServer(ctx context.Context, connections *ConnectionsManager, create
 		connections:         connections,
 		createServerCommand: createServerCommand,
 		resumeGrace:         proxyResumeGrace,
-		allowResume:         true,
 	}
 	for _, option := range options {
 		option(server)
@@ -73,10 +66,6 @@ func (server *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req, err := parseDialRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if !server.allowResume && (req.ResumeCapable || req.Reattach) {
-		http.Error(w, "Session resume is not supported", http.StatusBadRequest)
 		return
 	}
 	ctx := log.NewContext(server.ctx, log.GetLogger(server.ctx).With("session", id))

@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
@@ -11,18 +10,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
-
-func TestServerCanDisableResume(t *testing.T) {
-	manager := NewConnectionsManager(1, 0, WithoutIdleShutdown())
-	handler := NewProxyServer(t.Context(), manager, func(ctx context.Context) *exec.Cmd {
-		t.Error("rejected requests must not start an SSH process")
-		return exec.CommandContext(ctx, "unused")
-	}, WithoutSessionResume())
-	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/ssh?id=test&delivered=0&resume_version=%d", ResumeProtocolVersion), nil))
-	require.Equal(t, http.StatusBadRequest, response.Code)
-	require.Contains(t, response.Body.String(), "resume is not supported")
-}
 
 func TestManagerCanDisableIdleShutdown(t *testing.T) {
 	manager := NewConnectionsManager(1, 0, WithoutIdleShutdown())

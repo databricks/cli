@@ -1,6 +1,7 @@
 package sandbox_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -30,6 +31,9 @@ func TestMain(m *testing.M) {
 		if os.Args[1] == "-t" {
 			os.Exit(0)
 		}
+		if os.Getenv("DATABRICKS_TEST_SANDBOX_SSHD_PID") == "1" {
+			fmt.Fprintf(os.Stdout, "pid:%d\n", os.Getpid())
+		}
 		_, _ = io.Copy(os.Stdout, os.Stdin)
 		os.Exit(0)
 	}
@@ -54,6 +58,7 @@ func startServer(t *testing.T, idle time.Duration) (string, context.CancelFunc, 
 	var ready sandbox.Readiness
 	require.NoError(t, json.NewDecoder(reader).Decode(&ready))
 	require.Equal(t, listener.Addr().(*net.TCPAddr).Port, ready.Port)
+	require.Equal(t, proxy.ResumeProtocolVersion, ready.ResumeVersion)
 	return "ws://token:" + ready.Token + "@" + listener.Addr().String() + "/ssh", cancel, finished, listener
 }
 
@@ -154,9 +159,8 @@ func TestServerListenerFailure(t *testing.T) {
 	}
 }
 
-func TestServerRejectsResumeProtocol(t *testing.T) {
-	resume := fmt.Sprintf("?id=first&delivered=0&resume_version=%d", proxy.ResumeProtocolVersion)
-	for _, query := range []string{resume, resume + "&reattach=1"} {
+func TestServerRejectsUnsupportedResumeProtocol(t *testing.T) {
+	for _, query := range []string{"?id=first&delivered=0&resume_version=1", "?id=first&reattach=1"} {
 		t.Run(query, func(t *testing.T) {
 			endpoint, _, _, _ := startServer(t, time.Minute)
 			conn, response, err := testDial(t.Context(), endpoint+query)
@@ -172,6 +176,95 @@ func TestServerRejectsResumeProtocol(t *testing.T) {
 			require.NoError(t, err)
 			conn.Close()
 		})
+	}
+}
+
+func TestServerRejectsResumeOfMissingSession(t *testing.T) {
+	endpoint, _, _, _ := startServer(t, time.Minute)
+	conn, response, err := testDial(t.Context(), resumeEndpoint(endpoint, proxy.DialRequest{ConnID: "missing", ResumeCapable: true, Reattach: true}))
+	if conn != nil {
+		conn.Close()
+	}
+	require.Error(t, err)
+	require.NotNil(t, response)
+	defer response.Body.Close()
+	assert.Equal(t, http.StatusGone, response.StatusCode)
+}
+
+func resumeEndpoint(endpoint string, request proxy.DialRequest) string {
+	query := url.Values{"id": {request.ConnID}}
+	if request.ResumeCapable {
+		query.Set("delivered", fmt.Sprint(request.Delivered))
+		query.Set(proxy.ResumeVersionParameter, fmt.Sprint(proxy.ResumeProtocolVersion))
+	}
+	if request.Reattach {
+		query.Set("reattach", "1")
+	}
+	return endpoint + "?" + query.Encode()
+}
+
+func TestServerResumesSameProcessAfterWebSocketDrops(t *testing.T) {
+	t.Setenv("DATABRICKS_TEST_SANDBOX_SSHD_PID", "1")
+	endpoint, cancel, finished, _ := startServer(t, time.Minute)
+	defer cancel()
+	input, send := io.Pipe()
+	receive, output := io.Pipe()
+	defer send.Close()
+	defer receive.Close()
+	ctx, stop := context.WithCancel(t.Context())
+	defer stop()
+	connections := make(chan *websocket.Conn, 8)
+	var reattachments atomic.Int32
+	result := make(chan error, 1)
+	go func() {
+		result <- proxy.RunClientProxy(ctx, input, output, func() <-chan time.Time { return nil }, time.Second, true, func(ctx context.Context, request proxy.DialRequest) (*websocket.Conn, error) {
+			conn, err := dialWebSocket(ctx, resumeEndpoint(endpoint, request))
+			if err == nil {
+				connections <- conn
+				if request.Reattach {
+					reattachments.Add(1)
+				}
+			}
+			return conn, err
+		})
+		output.Close()
+	}()
+	reader := bufio.NewReader(receive)
+	pid, err := reader.ReadString('\n')
+	require.NoError(t, err)
+	require.Regexp(t, `^pid:[0-9]+\n$`, pid)
+	for round := range 3 {
+		var connection *websocket.Conn
+		select {
+		case connection = <-connections:
+		case <-time.After(5 * time.Second):
+			t.Fatal("client did not connect")
+		}
+		payload := bytes.Repeat([]byte{byte(round), 0, 127, 128, 255}, 10000)
+		written := make(chan error, 1)
+		go func() { _, err := send.Write(payload); written <- err }()
+		require.NoError(t, connection.UnderlyingConn().Close())
+		got := make([]byte, len(payload))
+		read := make(chan error, 1)
+		go func() { _, err := io.ReadFull(reader, got); read <- err }()
+		select {
+		case err := <-read:
+			require.NoError(t, err)
+		case <-time.After(10 * time.Second):
+			t.Fatal("SSH output did not resume after the WebSocket dropped")
+		}
+		require.NoError(t, <-written)
+		// A restarted child emits another PID line and corrupts this comparison.
+		require.Equal(t, payload, got)
+	}
+	require.Equal(t, int32(3), reattachments.Load())
+	stop()
+	require.NoError(t, <-result)
+	select {
+	case err := <-finished:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not stop after its resumed session ended")
 	}
 }
 
