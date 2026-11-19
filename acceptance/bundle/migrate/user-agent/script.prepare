@@ -1,5 +1,0 @@
-# Per request: the engine tags in the User-Agent (MISSING if none), method and path.
-# The sed strips uniq -c's padding, which differs between GNU and BSD (macOS).
-print_engines() {
-    print_requests.py --get --oneline | jq -r 'select(.path | startswith("/__testserver/") | not) | ((.headers["User-Agent"][0] | [scan("engine/[a-z]+")] | join(",")) as $e | (if $e == "" then "MISSING" else $e end)) + " " + .method + " " + .path' | sort | uniq -c | sed -E 's/^ +//'
-}

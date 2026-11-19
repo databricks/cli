@@ -4,7 +4,7 @@ title "Replay a prior terraform deployment"
 trace replay_tfstate.py "$TESTDIR/../terraform-requests.json" "$TESTDIR/../terraform.tfstate"
 replace_ids.py
 rm -f "$OUT_REQUESTS"
-JOB_ID=$(jq -r '.resources[] | select(.type == "databricks_job") | .instances[0].attributes.id' .databricks/bundle/default/terraform/terraform.tfstate)
+JOB_ID=$(read_id.py test_job)
 
 # bind and unbind only pull the state, so a terraform state is not migrated and they reject it.
 title "bind on a terraform state"

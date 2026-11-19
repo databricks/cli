@@ -4,8 +4,6 @@
 >>> replay_tfstate.py [TESTROOT]/bundle/migrate/user-agent/race/../terraform-requests.json [TESTROOT]/bundle/migrate/user-agent/race/../terraform.tfstate
 
 === Deploy where the local terraform state disappears between the pull and the migration
-Panic Payload: internal error: DeploymentState must be opened first
-Exit code: 1
 
 >>> print_engines
 2 MISSING GET /api/2.0/workspace/export

@@ -6,5 +6,6 @@ replace_ids.py
 rm -f "$OUT_REQUESTS"
 
 title "Deploy where the local terraform state disappears between the pull and the migration"
-trace errcode $CLI bundle deploy 2>&1 | grep -E '^(Panic Payload|Exit code)'
+musterr $CLI bundle deploy &> LOG.deploy
+contains.py 'Panic Payload: internal error: DeploymentState must be opened first' < LOG.deploy > /dev/null
 trace print_engines
