@@ -177,7 +177,8 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettin
 	return r.client.Jobs.DeleteByJobId(ctx, idInt)
 }
 
-// AccessControlList stays empty: it is not supported by DABs.
+// AccessControlList stays empty: it is not supported by DABs. A JobSettings field that
+// CreateJob lacks would be dropped; testdata/field_copies.txt lists it as "not in destination".
 var toCreateJob = newCopier[jobs.JobSettings, jobs.CreateJob]()
 
 func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {

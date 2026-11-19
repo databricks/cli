@@ -385,9 +385,10 @@ func remoteClusterIsRunning(entry *PlanEntry) bool {
 	return remote.State == compute.StateRunning
 }
 
+// CreateCluster.CloneFrom stays empty: it is not supported by DABs.
+var toCreateCluster = newCopier[compute.ClusterSpec, compute.CreateCluster]()
+
 var (
-	// CloneFrom is not supported by DABs.
-	toCreateCluster = newCopier[compute.ClusterSpec, compute.CreateCluster]()
 	toEditCluster   = newCopier[compute.ClusterSpec, compute.EditCluster]()
 	toResizeCluster = newCopier[ClusterState, compute.ResizeCluster]()
 )

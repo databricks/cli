@@ -97,6 +97,8 @@ func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemo
 }
 
 // AllowDuplicateNames and DryRun are request-only, so PipelineSpec has no value for them.
+// Continuous and Development are deprecated in the SDK but remain supported bundle config
+// fields, so they are copied here and into the edit request like any other field.
 var toCreatePipeline = newCopier[pipelines.PipelineSpec, pipelines.CreatePipeline]()
 
 func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {

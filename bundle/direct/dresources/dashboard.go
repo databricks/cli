@@ -143,6 +143,11 @@ func publishedIsCurrent(dashboard *dashboards.Dashboard, published *dashboards.P
 	return !revisionTime.Before(updateTime)
 }
 
+// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
+// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to
+// the server, and that it's serialized in the state even when false (zero value).
+var dashboardForceSend = []string{"EmbedCredentials"}
+
 // serialized_dashboard is a string in the API and any in the config, so each copier skips it
 // and the caller sets it.
 var (
@@ -152,23 +157,18 @@ var (
 		structcopy.Skip("CreateTime", "DashboardId", "LifecycleState", "Path", "UpdateTime", "SerializedDashboard"),
 	)
 
-	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
-	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
 	// DashboardId addresses the dashboard, so it is the id.
 	toPublishRequest = newCopier[DashboardState, dashboards.PublishRequest](
 		structcopy.Skip("DashboardId"),
-		structcopy.ForceSend("EmbedCredentials"),
+		structcopy.ForceSend(dashboardForceSend...),
 	)
 
 	// The output-only fields (create_time, path, ...) are copied as well. dataset_catalog and
 	// dataset_schema are not reported: diffs are detected via etags, which will change if
 	// dataset_catalog/dataset_schema is updated.
-	//
-	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
-	// even when false (zero value).
 	toDashboardState = newCopier[dashboards.Dashboard, DashboardState](
 		structcopy.Skip("SerializedDashboard"),
-		structcopy.ForceSend("EmbedCredentials"),
+		structcopy.ForceSend(dashboardForceSend...),
 	)
 )
 
