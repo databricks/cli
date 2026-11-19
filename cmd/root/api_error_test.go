@@ -33,7 +33,8 @@ func TestDescribeEmptyAPIError(t *testing.T) {
 		{"empty message", newAPIError("", "INTERNAL_ERROR"), "API request failed with 500 Internal Server Error (INTERNAL_ERROR) from POST /api/2.0/x"},
 		{"no error code", newAPIError("", "<nil>"), "API request failed with 500 Internal Server Error from POST /api/2.0/x"},
 		{"whitespace message", newAPIError("\n", ""), "API request failed with 500 Internal Server Error from POST /api/2.0/x"},
-		{"wrapped", fmt.Errorf("backend failed (500 with no details)%w", newAPIError("", "")), "backend failed (500 with no details)"},
+		{"wrapped with own text", fmt.Errorf("creating thing: %w", newAPIError("", "")), "creating thing: "},
+		{"wrapped without own text", fmt.Errorf("%w", newAPIError("", "INTERNAL_ERROR")), "API request failed with 500 Internal Server Error (INTERNAL_ERROR) from POST /api/2.0/x"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := describeEmptyAPIError(tc.err)

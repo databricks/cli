@@ -1,6 +1,7 @@
 package root
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -22,11 +23,14 @@ func (e *describedError) Unwrap() error { return e.err }
 // The SDK then leaves the message empty and the CLI would print a bare "Error: ",
 // which says nothing about which request failed or how.
 //
-// Only a bare API error is described: wrappers either explain the error in their
-// own words or would need their text to be parsed.
+// Only an error that would print as nothing at all is described; wrappers that add
+// their own text already say something about the failure.
 func describeEmptyAPIError(err error) error {
-	apiErr, ok := err.(*apierr.APIError) //nolint:errorlint // only the bare error, see above
-	if !ok || strings.TrimSpace(apiErr.Message) != "" {
+	if strings.TrimSpace(err.Error()) != "" {
+		return err
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 
