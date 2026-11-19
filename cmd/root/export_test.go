@@ -11,6 +11,7 @@ var (
 	ParseSkills              = parseSkills
 	WithSkillsInUserAgent    = withSkillsInUserAgent
 	SkillsInvokedEnvVar      = skillsInvokedEnvVar
+	InitSkillsInvokedFlag    = initSkillsInvokedFlag
 	MaxSkillsUserAgentLength = maxSkillsUserAgentLength
 )
 

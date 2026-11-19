@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -27,11 +29,22 @@ func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("mcp_service_id")
 
+	if _, exists := s.McpServices[key]; exists {
+		return Response{
+			StatusCode: http.StatusConflict,
+			Body: map[string]string{
+				"error_code": "ALREADY_EXISTS",
+				"message":    fmt.Sprintf("McpService '%s' already exists", key),
+			},
+		}
+	}
+
 	ms.Name = "mcp-services/" + key
 	ms.CreatedBy = s.CurrentUser().UserName
 	ms.UpdatedBy = s.CurrentUser().UserName
 	ms.EffectiveOwner = s.CurrentUser().UserName
 	ms.MetastoreId = nextUUID()
+	ms.CreateTime = sdktime.New(time.Unix(0, nowNano()).UTC())
 
 	s.McpServices[key] = ms
 	return Response{

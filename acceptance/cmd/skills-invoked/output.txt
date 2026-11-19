@@ -34,3 +34,28 @@
 >>> [CLI] current-user me
 
 >>> print_requests.py --get //scim/v2/Me
+
+=== Hidden flag adds the skills, so commands still start with databricks
+
+>>> [CLI] current-user me --skills-invoked databricks-core,databricks-jobs
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Flag wins over env var
+
+>>> [CLI] current-user me --skills-invoked from-flag
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== No skills from the flag when telemetry is disabled
+
+>>> [CLI] current-user me --skills-invoked databricks-core
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Flag is hidden from help and completion
+
+>>> [CLI] current-user me --help
+
+>>> [CLI] __complete current-user me --sk
+Completion ended with directive: ShellCompDirectiveNoFileComp

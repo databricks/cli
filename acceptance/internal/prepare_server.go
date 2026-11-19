@@ -220,24 +220,100 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	return cfg, testUser, strconv.Itoa(testserver.TestWorkspaceID)
 }
 
-func recordRequestsCallback(t *testing.T, includeHeaders []string, outputDir string) func(request *testserver.Request) {
-	mu := sync.Mutex{}
+// requestRecorder appends each request to out.requests.txt in outputDir as it arrives.
+type requestRecorder struct {
+	t              *testing.T
+	includeHeaders []string
+	outputDir      string
 
-	return func(request *testserver.Request) {
-		mu.Lock()
-		defer mu.Unlock()
+	mu sync.Mutex
+	// entries holds what was written for requests still waiting for a response; nil unless
+	// failed attempts are dropped.
+	entries map[*testserver.Request]string
+	// failed counts the entries answered with a transient error and not repeated yet.
+	failed map[string]int
+}
 
-		req := getLoggedRequest(request, includeHeaders)
-		reqJson, err := json.MarshalIndent(req, "", "  ")
-		assert.NoErrorf(t, err, "Failed to json-encode: %#v", req)
+func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string, dropRetried bool) *requestRecorder {
+	r := &requestRecorder{
+		t:              t,
+		includeHeaders: includeHeaders,
+		outputDir:      outputDir,
+	}
+	if dropRetried {
+		r.entries = map[*testserver.Request]string{}
+		r.failed = map[string]int{}
+	}
+	return r
+}
 
-		requestsPath := filepath.Join(outputDir, "out.requests.txt")
-		f, err := os.OpenFile(requestsPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-		assert.NoError(t, err)
-		defer f.Close()
+func (r *requestRecorder) path() string {
+	return filepath.Join(r.outputDir, "out.requests.txt")
+}
 
-		_, err = f.WriteString(string(reqJson) + "\n")
-		assert.NoError(t, err)
+func (r *requestRecorder) record(request *testserver.Request) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	req := getLoggedRequest(request, r.includeHeaders)
+	reqJson, err := json.MarshalIndent(req, "", "  ")
+	assert.NoErrorf(r.t, err, "Failed to json-encode: %#v", req)
+	entry := string(reqJson) + "\n"
+
+	if r.failed[entry] > 0 {
+		r.failed[entry]--
+		r.dropFailedAttempt(request, entry)
+	}
+
+	f, err := os.OpenFile(r.path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	assert.NoError(r.t, err)
+	defer f.Close()
+
+	_, err = f.WriteString(entry)
+	assert.NoError(r.t, err)
+	if r.entries != nil {
+		r.entries[request] = entry
+	}
+}
+
+// dropFailedAttempt removes the last copy of entry from out.requests.txt: the attempt that
+// request repeats.
+func (r *requestRecorder) dropFailedAttempt(request *testserver.Request, entry string) {
+	data, err := os.ReadFile(r.path())
+	if errors.Is(err, os.ErrNotExist) {
+		// The script consumed the file since the failed attempt.
+		return
+	}
+	require.NoError(r.t, err)
+
+	i := strings.LastIndex(string(data), entry)
+	if i < 0 {
+		return
+	}
+	data = append(data[:i:i], data[i+len(entry):]...)
+	require.NoError(r.t, os.WriteFile(r.path(), data, 0o644))
+	r.t.Logf("Dropped from out.requests.txt, repeated after a transient error: %s %s", request.Method, request.URL.Path)
+}
+
+// isTransientStatus reports whether a response status is one the CLI may repeat a request after
+// (see libs/retry and the SDK's own retries).
+func isTransientStatus(status int) bool {
+	return status == http.StatusRequestTimeout || status == http.StatusTooManyRequests || status >= 500
+}
+
+// noteResponse remembers a request answered with a transient error, so that if the CLI repeats
+// it, the failed attempt is dropped from out.requests.txt. A real workspace answers with such
+// errors now and then, so recording both attempts makes request goldens flaky. A request that is
+// not repeated stays recorded. Only the proxy uses this: the testserver answers with an error only
+// when a test injects one, and its goldens show that.
+func (r *requestRecorder) noteResponse(request *testserver.Request, response *testserver.EncodedResponse) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	entry, ok := r.entries[request]
+	delete(r.entries, request)
+	if ok && isTransientStatus(response.StatusCode) {
+		r.failed[entry]++
 	}
 }
 
@@ -268,7 +344,7 @@ func startLocalServer(t *testing.T,
 	// Record API requests in out.requests.txt if RecordRequests is true
 	// in test.toml
 	if recordRequests {
-		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+		s.RequestCallback = newRequestRecorder(t, includeHeaders, outputDir, false).record
 	}
 
 	// Log API responses if the -logrequests flag is set.
@@ -322,14 +398,26 @@ func startProxyServer(t *testing.T,
 ) string {
 	s := testproxy.New(t, upstream)
 
+	var responseCallbacks []func(request *testserver.Request, response *testserver.EncodedResponse)
+
 	// Record API requests in out.requests.txt if RecordRequests is true in test.toml.
 	if recordRequests {
-		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+		recorder := newRequestRecorder(t, includeHeaders, outputDir, true)
+		s.RequestCallback = recorder.record
+		responseCallbacks = append(responseCallbacks, recorder.noteResponse)
 	}
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {
-		s.ResponseCallback = logResponseCallback(t)
+		responseCallbacks = append(responseCallbacks, logResponseCallback(t))
+	}
+
+	if len(responseCallbacks) > 0 {
+		s.ResponseCallback = func(request *testserver.Request, response *testserver.EncodedResponse) {
+			for _, callback := range responseCallbacks {
+				callback(request, response)
+			}
+		}
 	}
 
 	return s.URL

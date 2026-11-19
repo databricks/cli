@@ -124,15 +124,28 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	if resp, ok := s.requireParentDirectory(nodePath); !ok {
 		return resp
 	}
-	objectID := nextTreenodeID()
-	s.files[nodePath] = FileEntry{
-		Info: workspace.ObjectInfo{
-			// The service registers its own node type, which get-status reports back;
-			// a plain FILE is what the fake used to claim and the real API never returns.
-			ObjectType: "BUNDLE_DEPLOYMENT",
-			Path:       nodePath,
-			ObjectId:   objectID,
-		},
+	// Like the service, a second create in the same folder is rejected once the record exists,
+	// and a node left without a record (a create that failed half-way) is finalized in place.
+	var objectID int64
+	if existing, ok := s.files[nodePath]; ok {
+		objectID = existing.Info.ObjectId
+		if _, ok := s.DmsDeployments[strconv.FormatInt(objectID, 10)]; ok {
+			return Response{
+				StatusCode: 409,
+				Body:       map[string]string{"error_code": "ALREADY_EXISTS", "message": "deployment " + strconv.FormatInt(objectID, 10) + " already exists"},
+			}
+		}
+	} else {
+		objectID = nextTreenodeID()
+		s.files[nodePath] = FileEntry{
+			Info: workspace.ObjectInfo{
+				// The service registers its own node type, which get-status reports back;
+				// a plain FILE is what the fake used to claim and the real API never returns.
+				ObjectType: "BUNDLE_DEPLOYMENT",
+				Path:       nodePath,
+				ObjectId:   objectID,
+			},
+		}
 	}
 
 	// The record carries no version yet; last_version_id stays empty until

@@ -8,7 +8,7 @@ View job run at: [DATABRICKS_URL]/jobs/runs/555?o=[WORKSPACE_ID]
 
 Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
-  databricks air logs 555
+  databricks air logs 555 --follow
 
 === submit includes the Databricks AI environment version and omits dependencies
 
