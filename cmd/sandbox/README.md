@@ -33,8 +33,10 @@ after 24 hours and are renewed during connection setup. The sandbox's persistent
 HOME stores its server key and public-key entries, allowing reuse after restart.
 Each proxy invocation starts and cleans up its own remote server command. The server waits up to two minutes for its first connection and exits when its
 SSH session ends. The CLI renews the WebSocket and command-output stream every
-25 minutes before their route lifetime limits. A broken forwarding connection
-ends the SSH session; reconnect to start another one. Setup prunes session
+25 minutes before their route lifetime limits. If a forwarding connection drops
+unexpectedly, the CLI attempts to resume the same SSH session for up to 60 seconds.
+If recovery fails or the remote session is gone, SSH ends and reconnecting starts
+a new session. Setup prunes session
 directories older than a day while preserving directories leased by active servers.
 The CLI allows up to ten minutes to prepare the remote server, including sandbox
 startup and executable upload. The SSH handshake allows fifteen minutes overall,
