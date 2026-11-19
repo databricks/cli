@@ -81,16 +81,6 @@ func TestSamePathComparesExistingFilesByIdentity(t *testing.T) {
 		t.Skipf("cannot create hard link: %v", err)
 	}
 
-	assert.True(t, samePath(a, b))
-	assert.False(t, samePath(filepath.Join(dir, "x"), filepath.Join(dir, "X")))
-}
-
-// TestAbsoluteAsWrittenInRootDoesNotDoubleSeparator checks that a path relative to a working directory that is a root
-// gets one separator, not two.
-func TestAbsoluteAsWrittenInRootDoesNotDoubleSeparator(t *testing.T) {
-	root := filepath.VolumeName(t.TempDir()) + string(filepath.Separator)
-	t.Chdir(root)
-	got, err := AbsoluteAsWritten("cfg")
-	require.NoError(t, err)
-	assert.Equal(t, root+"cfg", got)
+	assert.True(t, SamePath(a, b))
+	assert.False(t, SamePath(filepath.Join(dir, "x"), filepath.Join(dir, "X")))
 }

@@ -658,16 +658,17 @@ type agentEntries map[*agents.Agent]map[string]map[string]any
 func readAgentEntries(ctx context.Context, targets []*agents.Agent) (agentEntries, map[*agents.Agent]error) {
 	held := make(agentEntries, len(targets))
 	var unreadable map[*agents.Agent]error
+	files := newAgentFiles()
 	for _, a := range targets {
-		entries, err := agentconfig.Read(ctx, a)
-		if err != nil {
+		cfg := files.current(ctx, a)
+		if cfg.err != nil {
 			if unreadable == nil {
 				unreadable = map[*agents.Agent]error{}
 			}
-			unreadable[a] = err
+			unreadable[a] = cfg.err
 			continue
 		}
-		held[a] = entries
+		held[a] = cfg.entries
 	}
 	return held, unreadable
 }
@@ -750,10 +751,10 @@ func chooseName(ctx context.Context, in planInput, state *mcp.State, fullName st
 	if stored != "" {
 		// A stored name gets the checks that --name gets, since a hand edit can leave a name that does not split as mcp__<name>__<tool> does.
 		if mcp.Sanitize(stored) != stored {
-			return "", nil, "", failure(protos.AitoolsErrorCategoryUncategorized, "%s is installed as %q, which is not a valid server name: "+serverNameRules+". Run: databricks aitools mcp remove --profile %s and add it again", fullName, stored, shellquote.BashArg(b.profile))
+			return "", nil, "", failure(protos.AitoolsErrorCategoryUncategorized, "%s is installed as %q, which is not a valid server name: "+serverNameRules+". Run: %s and add it again", fullName, stored, mcp.RemoveNamesCommand(stored))
 		}
 		if len(stored) > mcp.MaxServerNameLen {
-			return "", nil, "", failure(protos.AitoolsErrorCategoryUncategorized, "%s is installed as %q, which is longer than the %d-character server name limit. Run: databricks aitools mcp remove --profile %s and add it again", fullName, stored, mcp.MaxServerNameLen, shellquote.BashArg(b.profile))
+			return "", nil, "", failure(protos.AitoolsErrorCategoryUncategorized, "%s is installed as %q, which is longer than the %d-character server name limit. Run: %s and add it again", fullName, stored, mcp.MaxServerNameLen, mcp.RemoveNamesCommand(stored))
 		}
 		if in.nameFlag != "" && in.nameFlag != stored {
 			return "", nil, "", failure(protos.AitoolsErrorCategoryInvalidFlags, "%s is already installed on profile %s as %s; remove it before using --name %s", fullName, b.profile, stored, in.nameFlag)
@@ -947,7 +948,7 @@ func installServer(ctx context.Context, req addRequest, plan addPlan) addServerO
 			err = plan.failed[a]
 		}
 		if err == nil {
-			args := append(slices.Clone(mcpconfig.ServeCommand), mcpconfig.ProfileFlag, req.profile, mcpconfig.ServiceFlag, plan.service.FullName, mcpconfig.AgentFlag, a.Name)
+			args := mcpconfig.ServeArgs(req.profile, plan.service.FullName, a.Name)
 			path, status, err = agentconfig.Upsert(ctx, a, plan.name, req.binary, args, req.env, req.force)
 			// A detected agent was not named, so --agents is no way out for it.
 			if req.explicit {

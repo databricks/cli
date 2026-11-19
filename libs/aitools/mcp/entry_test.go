@@ -1,9 +1,11 @@
 package mcp_test
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -72,4 +74,38 @@ func defaultFile(t *testing.T) string {
 	path, err := mcp.ResolveConfigFile(t.Context(), "")
 	require.NoError(t, err)
 	return path
+}
+
+// adoptEntry returns an unmanaged serve entry with the given environment, which is omitted when nil.
+func adoptEntry(env map[string]any, args ...any) map[string]any {
+	entry := map[string]any{"command": "databricks", "args": append([]any{"aitools", "mcp", "serve"}, args...)}
+	if env != nil {
+		entry["env"] = env
+	}
+	return entry
+}
+
+// TestAdoptCommand checks that an unmanaged serve entry names the install that adopts it: the service and profile its
+// arguments name, bound to the config file the entry serves. An entry without a service or profile names no command.
+func TestAdoptCommand(t *testing.T) {
+	ctx := t.Context()
+	cfgPath := filepath.Join(t.TempDir(), "databrickscfg")
+	pinned, err := mcp.ResolveConfigFile(ctx, cfgPath)
+	require.NoError(t, err)
+	defaultFile, err := mcp.ResolveConfigFile(ctx, "")
+	require.NoError(t, err)
+	flags := []any{"--profile", "logfood", "--service", "system.ai.github", "--agent", "claude-code"}
+
+	// An unpinned entry binds to the default file, which a command that runs with no config file override binds to.
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	assert.Equal(t, "databricks aitools mcp add --names system.ai.github --profile logfood --agents claude-code",
+		mcp.AdoptCommand(ctx, adoptEntry(nil, flags...), "claude-code"))
+	// A shell that selects another file makes the command name the default file explicitly.
+	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+	assert.Equal(t, "DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(defaultFile))+" databricks aitools mcp add --names system.ai.github --profile logfood --agents claude-code",
+		mcp.AdoptCommand(ctx, adoptEntry(nil, flags...), "claude-code"))
+	assert.Equal(t, "DATABRICKS_CONFIG_FILE="+shellquote.BashArg(filepath.ToSlash(pinned))+" databricks aitools mcp add --names system.ai.github --profile logfood --agents claude-code",
+		mcp.AdoptCommand(ctx, adoptEntry(map[string]any{"DATABRICKS_CONFIG_FILE": cfgPath}, flags...), "claude-code"))
+	assert.Empty(t, mcp.AdoptCommand(ctx, adoptEntry(nil, "--profile", "logfood"), "claude-code"))
+	assert.Empty(t, mcp.AdoptCommand(ctx, adoptEntry(nil, "--service", "system.ai.github"), "claude-code"))
 }

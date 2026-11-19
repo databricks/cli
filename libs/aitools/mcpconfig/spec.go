@@ -88,6 +88,12 @@ func Argv(entry map[string]any) ([]string, bool) {
 // IsDatabricksEntry recognizes it, so both sides share this definition.
 var ServeCommand = []string{"aitools", "mcp", "serve"}
 
+// ServeArgs returns the arguments that `aitools mcp serve` takes for the server service on profile, run for agent: the
+// flags that name the binding of an entry.
+func ServeArgs(profile, service, agent string) []string {
+	return append(slices.Clone(ServeCommand), ProfileFlag, profile, ServiceFlag, service, AgentFlag, agent)
+}
+
 // The flags that `aitools mcp serve` takes, which an entry carries to name its binding.
 const (
 	ServiceFlag = "--service"

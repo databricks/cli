@@ -36,7 +36,7 @@ const (
 
 var (
 	// ErrNotOwned means an entry with the name exists and was not written by
-	// this CLI. Upsert needs force to replace it, and Remove never deletes it.
+	// this CLI. Upsert needs force to replace it, and RemoveAt never deletes it.
 	ErrNotOwned = errors.New("entry was not written by databricks")
 	// ErrConfigInvalid means an agent config file exists but cannot be parsed.
 	// Such a file is never written to.
@@ -112,7 +112,7 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if !mcpconfig.IsDatabricksEntry(ours) {
 		return "", "", fmt.Errorf("server %q: args must start with aitools mcp serve", name)
 	}
-	path, err := spec.Path(ctx)
+	path, err := configPath(ctx, spec)
 	if err != nil {
 		return "", "", err
 	}
@@ -148,15 +148,11 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 		status = StatusUpdated
 		err = doc.put(root, name, want, nil)
 	default:
-		merged, mergeErr := keepUserKeys(current, ours, keys)
+		merged, changed, mergeErr := mergeLaunch(spec, current, ours)
 		if mergeErr != nil {
 			return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, mergeErr)
 		}
-		same, cmpErr := sameEntry(launchKeysOf(current, keys), launchKeysOf(merged, keys))
-		if cmpErr != nil {
-			return path, "", cmpErr
-		}
-		if same {
+		if !changed {
 			return path, StatusUnchanged, nil
 		}
 		status = StatusUpdated
@@ -174,18 +170,29 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	return path, status, nil
 }
 
-// Remove deletes server name from agent a's config. It reports false, without
-// writing, when there is no such entry, and refuses an entry this CLI did not
-// write.
-func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
-	if err := checkName(name); err != nil {
-		return false, err
-	}
+// Changed reports whether current, an entry this CLI owns for agent a, differs from what Upsert writes now for a server
+// that runs cmd with args and env. Only the launch keys are compared, as Upsert compares them.
+func Changed(a *agents.Agent, current map[string]any, cmd string, args []string, env map[string]string) (bool, error) {
 	spec, err := specOf(a)
 	if err != nil {
 		return false, err
 	}
-	path, err := spec.Path(ctx)
+	ours, err := normalize(spec.Entry(cmd, args, env))
+	if err != nil {
+		return false, err
+	}
+	_, changed, err := mergeLaunch(spec, current, ours)
+	return changed, err
+}
+
+// RemoveAt deletes server name from the config file at path, and refuses an entry this CLI did not write. It reports
+// false, without writing, when there is no such entry. The file need not be the one the spec names now: a record names
+// the file an entry was written to, and the agent's config may have moved since. A missing file has no entry.
+func RemoveAt(a *agents.Agent, path, name string) (bool, error) {
+	if err := checkName(name); err != nil {
+		return false, err
+	}
+	spec, err := specOf(a)
 	if err != nil {
 		return false, err
 	}
@@ -226,14 +233,11 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	return true, nil
 }
 
-// Read returns every server entry in agent a's config, keyed by name. A missing
-// file has no entries.
-func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, error) {
+// ReadAt returns every server entry in the config file at path, keyed by name. A missing file has no entries. The file
+// need not be the one the spec names now: a record names the file an entry was written to, and the agent's config may
+// have moved since.
+func ReadAt(a *agents.Agent, path string) (map[string]map[string]any, error) {
 	spec, err := specOf(a)
-	if err != nil {
-		return nil, err
-	}
-	path, err := spec.Path(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +252,27 @@ func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, erro
 	return entries, nil
 }
 
-// checkName refuses a name that no agent would accept. Upsert and Remove both
+// Path returns the absolute path of agent a's MCP config file, where Upsert writes. It does not read the file.
+func Path(ctx context.Context, a *agents.Agent) (string, error) {
+	spec, err := specOf(a)
+	if err != nil {
+		return "", err
+	}
+	return configPath(ctx, spec)
+}
+
+// configPath returns the absolute path of the config file of spec. A config dir set to a relative path is made absolute
+// here, not when the path is used, so that a record of the path works from any directory. The path is not cleaned, as
+// mcpconfig.AbsoluteAsWritten keeps it, so that a ".." after a symlink still resolves through the link.
+func configPath(ctx context.Context, spec *mcpconfig.Spec) (string, error) {
+	path, err := spec.Path(ctx)
+	if err != nil {
+		return "", err
+	}
+	return mcpconfig.AbsoluteAsWritten(path)
+}
+
+// checkName refuses a name that no agent would accept. Upsert and RemoveAt both
 // check it, so a name that cannot be written is never looked up either.
 func checkName(name string) error {
 	if !mcpconfig.ValidServerName(name) {
@@ -486,6 +510,21 @@ func launchKeysOf(entry map[string]any, keys []string) map[string]any {
 		}
 	}
 	return out
+}
+
+// mergeLaunch returns current with the launch keys of want written over it, and whether that changes the launch keys of
+// current. The other keys of current are kept, so they are not compared.
+func mergeLaunch(spec *mcpconfig.Spec, current, want map[string]any) (map[string]any, bool, error) {
+	keys := ownedKeys(spec)
+	merged, err := keepUserKeys(current, want, keys)
+	if err != nil {
+		return nil, false, err
+	}
+	same, err := sameEntry(launchKeysOf(current, keys), launchKeysOf(merged, keys))
+	if err != nil {
+		return nil, false, err
+	}
+	return merged, !same, nil
 }
 
 // keepUserKeys returns current with the keys listed in keys set to those of want,

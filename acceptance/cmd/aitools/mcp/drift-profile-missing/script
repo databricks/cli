@@ -1,0 +1,24 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+mkdir -p home/.claude
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# The service, created in the fake workspace. The fake keeps one workspace per token, so each profile gets its own copy.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile dogfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-dogfood
+
+title "Both profiles get a server"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code
+trace $CLI aitools mcp add --profile dogfood --names system.ai.genie_one_mcp --agents claude-code
+
+title "logfood is deleted from the Databricks config file: list reports it and exits 0"
+envsubst < dogfood-only.databrickscfg > out && mv out .databrickscfg
+trace $CLI aitools mcp list
+
+title "dogfood now points at another host: list reports the host change"
+envsubst < dogfood-moved.databrickscfg > out && mv out .databrickscfg
+trace $CLI aitools mcp list --output json
+
+title "The same change in text"
+trace $CLI aitools mcp list
