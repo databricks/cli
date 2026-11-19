@@ -31,8 +31,8 @@ const (
 	//                           (renaming files / pushing to workspace) failed.
 	//   - migrate_warnings:     the conversion emitted warnings (e.g. resources the direct engine can't represent).
 	//   - migrate_state_missing: the terraform state was pulled, but its local file was gone
-	//                            when the migration read it (e.g. a concurrent deploy migrated
-	//                            it). Nothing was converted, and a retry is expected to succeed.
+	//                            when the migration read it. Nothing was converted. When a
+	//                            concurrent deploy migrated it, a retry picks up the direct state.
 	DirectMigrateError        = "direct_migrate_error"
 	DirectMigrateCommitError  = "direct_migrate_commit_error"
 	DirectMigrateWarnings     = "direct_migrate_warnings"
