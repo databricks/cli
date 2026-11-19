@@ -1,0 +1,90 @@
+# How the postgres Update APIs clear a field, via raw $CLI (no bundle). Each case sets
+# a field, then clears it three ways: masking the field itself with the field omitted
+# from the body, masking the whole spec with the field omitted, and masking the whole
+# spec with the zero value sent explicitly. After each update the field is read back
+# from status.
+#
+# The bundle removes a field from the config by omitting it from the body, so
+# "omitted" is the shape that matters. Scalars cannot be cleared that way under either
+# mask: the field mask is rejected, the spec mask leaves the value in place. Repeated
+# fields are cleared by the field mask, while under the spec mask project custom_tags
+# are kept but role membership_roles are cleared.
+#
+# Repeated fields have no explicit-zero case: the SDK drops an empty list from the
+# body, so "custom_tags": [] sends the same request as omitting it.
+#
+# To run this outside the acceptance harness (against a real workspace), stub the
+# harness-provided helpers, then `bash` this file:
+#   export CLI=databricks UNIQUE_NAME=$(date +%s)
+#   errcode() { "$@" || echo "Exit code: $?"; }
+#   title()   { printf '\n=== %s\n' "$*"; }
+
+pid="factcheck-clear-${UNIQUE_NAME}"
+project="projects/${pid}"
+branch="${project}/branches/production"
+endpoint="${branch}/endpoints/primary"
+role="${branch}/roles/factcheck-role"
+
+cleanup() {
+    $CLI postgres delete-project "$project" --purge --no-wait &> LOG.cleanup || true
+}
+trap cleanup EXIT
+
+# update KIND NAME MASK BODY: send one update, report only whether it was accepted.
+update() {
+    echo "update-$1 update_mask=$3 body=$4"
+    errcode $CLI postgres update-$1 "$2" "$3" --json "$4" > /dev/null
+}
+
+$CLI postgres create-project "$pid" --json '{"spec":{"display_name":"factcheck","pg_version":16}}' &> LOG.create
+$CLI postgres create-role "$branch" --role-id factcheck-role --json '{"spec":{"postgres_role":"factcheck_role"}}' &> LOG.create-role
+
+project_field() { $CLI postgres get-project "$project" | jq -c ".status | {$1}"; }
+branch_field() { $CLI postgres get-branch "$branch" | jq -c ".status | {$1}"; }
+endpoint_field() { $CLI postgres get-endpoint "$endpoint" | jq -c ".status | {$1}"; }
+role_field() { $CLI postgres get-role "$role" | jq -c ".status | {$1}"; }
+
+title "project enable_pg_native_login (bool)"
+P='"display_name":"factcheck","pg_version":16'
+for clear in "spec.enable_pg_native_login|{\"spec\":{}}" "spec|{\"spec\":{$P}}" "spec|{\"spec\":{$P,\"enable_pg_native_login\":false}}"; do
+    update project "$project" spec.enable_pg_native_login '{"spec":{"enable_pg_native_login":true}}'
+    update project "$project" "${clear%%|*}" "${clear#*|}"
+    project_field enable_pg_native_login
+done
+
+title "project custom_tags (repeated)"
+for clear in "spec.custom_tags|{\"spec\":{}}" "spec|{\"spec\":{$P}}"; do
+    update project "$project" spec.custom_tags '{"spec":{"custom_tags":[{"key":"team","value":"data"}]}}'
+    update project "$project" "${clear%%|*}" "${clear#*|}"
+    project_field custom_tags
+done
+
+title "branch is_protected (bool)"
+for clear in "spec.is_protected|{\"spec\":{}}" "spec|{\"spec\":{\"no_expiry\":true}}" "spec|{\"spec\":{\"no_expiry\":true,\"is_protected\":false}}"; do
+    update branch "$branch" spec.is_protected '{"spec":{"is_protected":true}}'
+    update branch "$branch" "${clear%%|*}" "${clear#*|}"
+    branch_field is_protected
+done
+
+title "endpoint disabled (bool)"
+E='"endpoint_type":"ENDPOINT_TYPE_READ_WRITE"'
+for clear in "spec.disabled|{\"spec\":{}}" "spec|{\"spec\":{$E}}" "spec|{\"spec\":{$E,\"disabled\":false}}"; do
+    update endpoint "$endpoint" spec.disabled '{"spec":{"disabled":true}}'
+    update endpoint "$endpoint" "${clear%%|*}" "${clear#*|}"
+    endpoint_field disabled
+done
+
+title "role attributes.createdb (bool in a message)"
+R='"postgres_role":"factcheck_role"'
+for clear in "spec.attributes.createdb|{\"spec\":{\"attributes\":{}}}" "spec|{\"spec\":{$R,\"attributes\":{}}}" "spec|{\"spec\":{$R,\"attributes\":{\"createdb\":false}}}"; do
+    update role "$role" spec.attributes.createdb '{"spec":{"attributes":{"createdb":true}}}'
+    update role "$role" "${clear%%|*}" "${clear#*|}"
+    role_field 'createdb: .attributes.createdb'
+done
+
+title "role membership_roles (repeated)"
+for clear in "spec.membership_roles|{\"spec\":{}}" "spec|{\"spec\":{$R}}"; do
+    update role "$role" spec.membership_roles '{"spec":{"membership_roles":["DATABRICKS_SUPERUSER"]}}'
+    update role "$role" "${clear%%|*}" "${clear#*|}"
+    role_field membership_roles
+done
