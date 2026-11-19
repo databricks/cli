@@ -178,8 +178,8 @@ Error: feedback message must contain 1 to 10000 characters, including a visible 
 Error: --run-id must be a positive job run ID
 
 >>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN AGENT=test-agent [CLI] feedback --yes=false hello
-Flag --yes has been deprecated, confirmation is no longer required; omit this flag
-Error: --yes=false declines sending feedback from an AI agent; omit --yes to send without confirmation
+Flag --yes has been deprecated, omit this flag when sending feedback; skip the feedback command when declining
+Error: feedback was not sent because --yes=false
 
 === General CLI feedback
 
@@ -250,19 +250,19 @@ Thank you! Your feedback was sent. Reference: [UUID][10]
 === An explicit rejection from an AI agent sends nothing
 
 >>> AGENT=test-agent [CLI] feedback --yes=false hello
-Flag --yes has been deprecated, confirmation is no longer required; omit this flag
-Error: --yes=false declines sending feedback from an AI agent; omit --yes to send without confirmation
+Flag --yes has been deprecated, omit this flag when sending feedback; skip the feedback command when declining
+Error: feedback was not sent because --yes=false
 
 >>> AGENT=test-agent [CLI] feedback -y=false hello
-Flag --yes has been deprecated, confirmation is no longer required; omit this flag
-Error: --yes=false declines sending feedback from an AI agent; omit --yes to send without confirmation
+Flag --yes has been deprecated, omit this flag when sending feedback; skip the feedback command when declining
+Error: feedback was not sent because --yes=false
 
->>> find.py ^out\.requests\.txt$ --expect 0
+>>> assert_not_exists.py [OUTPUT_DIR]/out.requests.txt
 
 === The deprecated --yes flag remains accepted
 
 >>> AGENT=test-agent [CLI] feedback --yes hello
-Flag --yes has been deprecated, confirmation is no longer required; omit this flag
+Flag --yes has been deprecated, omit this flag when sending feedback; skip the feedback command when declining
 Thank you! Your feedback was sent. Reference: [UUID][14]
 
 >>> print_requests.py //telemetry-ext

@@ -31,7 +31,7 @@ const (
 	runIDKey         = "run-id"
 
 	legacyConfirmationFlag        = "yes"
-	legacyConfirmationDeprecation = "confirmation is no longer required; omit this flag"
+	legacyConfirmationDeprecation = "omit this flag when sending feedback; skip the feedback command when declining"
 )
 
 var productComponents = map[string]string{
@@ -110,7 +110,7 @@ the reference ID.`
 			return err
 		}
 		if cmd.Flags().Changed(legacyConfirmationFlag) && !opts.yes && useragent.AgentProvider() != "" {
-			return errors.New("--yes=false declines sending feedback from an AI agent; omit --yes to send without confirmation")
+			return errors.New("feedback was not sent because --yes=false")
 		}
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 		return root.MustWorkspaceClient(cmd, args)

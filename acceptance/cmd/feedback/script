@@ -53,7 +53,7 @@ print_feedback
 title "An explicit rejection from an AI agent sends nothing"
 musterr trace AGENT=test-agent $CLI feedback --yes=false "hello"
 musterr trace AGENT=test-agent $CLI feedback -y=false "hello"
-trace find.py '^out\.requests\.txt$' --expect 0
+trace assert_not_exists.py "$OUT_REQUESTS"
 
 title "The deprecated --yes flag remains accepted"
 trace AGENT=test-agent $CLI feedback --yes "hello"
