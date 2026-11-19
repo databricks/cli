@@ -9,6 +9,8 @@ import (
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/sys/unix"
 )
 
 func TestRootInUserHome(t *testing.T) {
@@ -20,8 +22,6 @@ func TestRootInUserHome(t *testing.T) {
 	}{
 		{name: "the user in their home", euid: os.Geteuid(), home: userHome},
 		{name: "another user in the home", euid: os.Geteuid() + 1, home: userHome},
-		// The root directory is owned by root on every Unix system.
-		{name: "root in a root-owned home", euid: 0, home: "/"},
 		{name: "root with a home that does not exist", euid: 0, home: filepath.Join(userHome, "missing")},
 		{name: "root without a home", euid: 0, home: ""},
 	}
@@ -31,6 +31,16 @@ func TestRootInUserHome(t *testing.T) {
 			assert.False(t, rootInUserHome(ctx, tc.euid))
 		})
 	}
+}
+
+func TestRootInUserHomeOwnedByRoot(t *testing.T) {
+	var st unix.Stat_t
+	require.NoError(t, unix.Stat("/", &st))
+	if st.Uid != 0 {
+		t.Skip("the root directory is not owned by root, as in a user namespace that does not map root")
+	}
+	ctx := env.WithUserHomeDir(t.Context(), "/")
+	assert.False(t, rootInUserHome(ctx, 0))
 }
 
 func TestRootInUserHomeOwnedByAnotherUser(t *testing.T) {

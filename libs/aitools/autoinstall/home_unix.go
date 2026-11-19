@@ -14,7 +14,9 @@ import (
 // that another user owns, as under sudo with HOME kept (the macOS default,
 // and `sudo -E` on Linux). What auto-install writes there, its state and the
 // agents' files, would belong to root, and the user could no longer change
-// it. A home that cannot be inspected counts as not.
+// it. A home that cannot be inspected counts as not. Only the home is
+// checked: an agent directory set through an environment variable, such as
+// CLAUDE_CONFIG_DIR kept by `sudo -E -H`, is out of scope.
 func RootInUserHome(ctx context.Context) bool {
 	return rootInUserHome(ctx, os.Geteuid())
 }

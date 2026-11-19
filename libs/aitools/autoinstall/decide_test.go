@@ -29,7 +29,7 @@ func TestDecide(t *testing.T) {
 		{name: "root in a user's home", modify: func(in *Inputs) { in.RootInUserHome = true }, want: ReasonRootInUserHome},
 		{name: "root in a user's home before the state", modify: func(in *Inputs) {
 			in.RootInUserHome = true
-			in.State = State{LastVersion: "1.30.0", Attempts: 3}
+			in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts}
 			in.CI = true
 		}, want: ReasonRootInUserHome},
 

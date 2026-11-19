@@ -111,8 +111,13 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 		EnvOptOut: autoinstall.EnvOptedOut(ctx) || autoinstall.Declined(),
 	}
 	// What never auto-installs skips before the state is read, and without a
-	// log line: these are most runs.
-	if slices.Contains(stateFreeSkips, autoinstall.Decide(in)) {
+	// log line: these are most runs. Root in a user's home is rare, and a user
+	// who always runs the CLI under sudo needs a way to see why nothing
+	// installs, so it logs.
+	if reason := autoinstall.Decide(in); slices.Contains(stateFreeSkips, reason) {
+		if reason == autoinstall.ReasonRootInUserHome {
+			log.Debugf(ctx, "auto-install: skipped: %s", reason)
+		}
 		return
 	}
 	var err error
