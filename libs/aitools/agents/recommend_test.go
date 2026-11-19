@@ -40,7 +40,7 @@ func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 	defer func() { Registry = origRegistry }()
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	err := RecommendSkillsInstall(ctx, noopInstall)
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	assert.NoError(t, err)
 	assert.Empty(t, hintKinds(t, ctx))
 }
@@ -57,7 +57,24 @@ func TestRecommendSkillsInstallSkipsWhenPluginInstalled(t *testing.T) {
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	ctx = telemetry.WithNewLogger(ctx)
-	err := RecommendSkillsInstall(ctx, noopInstall)
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
+	assert.NoError(t, err)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
+func TestRecommendSkillsInstallSkipsWhenPluginRecorded(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Chdir(t.TempDir())
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".copilot"), 0o755))
+	recorded := func(context.Context) []string { return []string{NameCodex, NameCopilot} }
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	err := RecommendSkillsInstall(ctx, recorded, noopInstall)
 	assert.NoError(t, err)
 	assert.Empty(t, stderr.String())
 	assert.Empty(t, hintKinds(t, ctx))
@@ -73,7 +90,7 @@ func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
 	defer func() { Registry = origRegistry }()
 
 	ctx := cmdio.MockDiscard(t.Context())
-	err := RecommendSkillsInstall(ctx, noopInstall)
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	assert.NoError(t, err)
 }
 
@@ -94,7 +111,7 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	ctx = telemetry.WithNewLogger(ctx)
-	err := RecommendSkillsInstall(ctx, noopInstall)
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	require.NoError(t, err)
 	assert.Contains(t, stderr.String(), "databricks aitools install")
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindAppsInitTip}, hintKinds(t, ctx))
@@ -129,7 +146,7 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 
 	errc := make(chan error, 1)
 	go func() {
-		errc <- RecommendSkillsInstall(ctx, noopInstall)
+		errc <- RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	}()
 
 	_, err := testIO.Stdin.WriteString("n\n")

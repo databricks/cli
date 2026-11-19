@@ -38,7 +38,7 @@ func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Con
 	if dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx) {
 		return
 	}
-	if HasDatabricksToolingInstalled(ctx) || len(installedPlugins(ctx)) > 0 {
+	if HasDatabricksToolingInstalled(ctx, installedPlugins) || len(installedPlugins(ctx)) > 0 {
 		return
 	}
 	// Recorded plugins are checked above, so DatabricksTooling only needs the
@@ -53,11 +53,11 @@ func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Con
 }
 
 // RecommendSkillsInstall checks if coding agents are detected without Databricks tooling (skills
-// or the databricks plugin) installed.
+// or the databricks plugin) installed; installedPlugins is passed to HasDatabricksToolingInstalled.
 // In interactive mode, prompts the user to install now using installFn; a "no" also turns
 // auto-install off. In non-interactive mode, prints a hint.
-func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context) error) error {
-	if HasDatabricksToolingInstalled(ctx) {
+func RecommendSkillsInstall(ctx context.Context, installedPlugins func(context.Context) []string, installFn func(context.Context) error) error {
+	if HasDatabricksToolingInstalled(ctx, installedPlugins) {
 		return nil
 	}
 
