@@ -1,1 +1,0 @@
-* Stop printing the Databricks AI tooling install hint on `auth`, `configure`, `current-user me`, `version`, `help`, and shell-completion commands. ([#7452](https://github.com/databricks/cli/pull/7452))
