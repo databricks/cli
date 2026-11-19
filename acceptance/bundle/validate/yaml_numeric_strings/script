@@ -1,0 +1,9 @@
+trace $CLI bundle validate -o json | jq '.resources | {
+  job_name: .jobs.job.name,
+  job_tags: .jobs.job.tags,
+  job_parameters: .jobs.job.parameters,
+  git_commit: .jobs.job.git_source.git_commit,
+  tasks: [.jobs.job.tasks[] | del(.notebook_task.notebook_path, .new_cluster.num_workers)],
+  pipeline: .pipelines.pipeline | {catalog, schema, configuration, policy_id: .clusters[0].policy_id},
+  dashboard_warehouse_id: .dashboards.dashboard.warehouse_id
+}'

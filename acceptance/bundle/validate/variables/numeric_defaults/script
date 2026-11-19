@@ -1,0 +1,6 @@
+export BUNDLE_VAR_from_env=0012345678901234
+trace $CLI bundle validate -o json --var from_flag=0012345678901234 | jq '{
+  variables: .variables | map_values(.value),
+  policy_id: .resources.jobs.job.tasks[0].new_cluster.policy_id,
+  base_parameters: .resources.jobs.job.tasks[0].notebook_task.base_parameters
+}'
