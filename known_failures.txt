@@ -26,3 +26,13 @@ acceptance TestAccept/bundle/resources/apps/lifecycle-started-omitted/DMS=true
 acceptance TestAccept/bundle/resources/apps/lifecycle-started-omitted/DMS=  # go/cli/dashboard/error/657, same backend bug (deploy after start fails), added 2026-11-16
 acceptance TestAccept/bundle/resources/apps/lifecycle-started-toggle/DMS=
 acceptance TestAccept/bundle/resources/apps/lifecycle-started-toggle/DMS=true
+
+# go/cli/dashboard/error/3781 go/cli/dashboard/error/3782: Azure workspace alert quota (5000) reached by leaked test alerts, waiting for workspace cleanup, added 2026-11-19
+acceptance TestAccept/bundle/deployment/bind/alert/DMS=
+acceptance TestAccept/bundle/deployment/bind/alert/DMS=true
+acceptance TestAccept/bundle/generate/alert/DMS=
+acceptance TestAccept/bundle/generate/alert/DMS=true
+acceptance TestAccept/bundle/resources/alerts/basic/DMS=
+acceptance TestAccept/bundle/resources/alerts/basic/DMS=true
+acceptance TestAccept/bundle/resources/alerts/with_file/DMS=
+acceptance TestAccept/bundle/resources/alerts/with_file/DMS=true
