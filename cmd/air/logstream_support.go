@@ -78,6 +78,36 @@ func (s *seenSet) removeBefore(nano int64) {
 	}
 }
 
+// The AIR entry script ends every attempt's output, successful or not, with an
+// execution summary whose last three lines are:
+//
+//	Time in container: 1.2s
+//	Completed at ...   (or: ERROR: Script failed with exit code N after Ns)
+//	================================
+const (
+	summaryContainerTimePrefix = "Time in container: "
+	summaryCompletedPrefix     = "Completed at "
+	summaryFailedPrefix        = "ERROR: Script failed with exit code "
+	summaryClosingRule         = "================================"
+)
+
+// summaryTracker reports whether the most recently emitted lines are the end
+// of the entry script's execution summary. It only decides how long to keep
+// polling for late log records; the run's outcome always comes from the Jobs
+// run state, because user code can print the same lines.
+type summaryTracker struct {
+	// previous holds the last two emitted lines, newest last.
+	previous [2]string
+	ended    bool
+}
+
+func (s *summaryTracker) observe(body string) {
+	s.ended = body == summaryClosingRule &&
+		strings.HasPrefix(s.previous[0], summaryContainerTimePrefix) &&
+		(strings.HasPrefix(s.previous[1], summaryCompletedPrefix) || strings.HasPrefix(s.previous[1], summaryFailedPrefix))
+	s.previous[0], s.previous[1] = s.previous[1], body
+}
+
 // logEvent is one JSONL streaming event.
 type logEvent struct {
 	Type string `json:"type"`
