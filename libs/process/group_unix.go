@@ -35,8 +35,9 @@ func WithProcessGroup() execOption {
 
 		c.WaitDelay = processGroupGracePeriod
 		c.Cancel = func() error {
-			// With Setpgid and Pgid unset, the child's group ID equals its PID;
-			// a negative PID targets the whole group. Map "no such process" to
+			// With Setpgid and Pgid unset, or with Setsid (see withNewSession),
+			// the child's group ID equals its PID; a negative PID targets the
+			// whole group. Map "no such process" to
 			// os.ErrProcessDone so a benign exit/cancel race is not surfaced as a
 			// Wait error.
 			err := syscall.Kill(-c.Process.Pid, syscall.SIGTERM)
@@ -51,9 +52,10 @@ func WithProcessGroup() execOption {
 
 // reapProcessGroup sends a final SIGKILL to the child's process group after the
 // command has been waited on, closing the gap left by Go's WaitDelay escalation
-// (which SIGKILLs only the leader PID). It runs only for a WithProcessGroup child
-// whose context was cancelled — the escalation path — so a normally-exited
-// command is never signalled.
+// (which SIGKILLs only the leader PID). It runs only for a WithProcessGroup child,
+// a group leader through Setpgid or a session leader through Setsid, whose
+// context was cancelled — the escalation path — so a normally-exited command is
+// never signalled.
 //
 // It is safe against PID reuse: this runs synchronously after Wait has returned
 // (the leader is reaped), not on a delayed timer. The group ID stays reserved by
