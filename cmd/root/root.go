@@ -176,6 +176,7 @@ Stack Trace:
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
+		err = describeEmptyAPIError(err)
 		if cmdctx.HasConfigUsed(cmd.Context()) {
 			cfg := cmdctx.ConfigUsed(cmd.Context())
 			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
