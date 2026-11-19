@@ -22,11 +22,16 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/aitools/mcp/proxy"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/browser"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/shellquote"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -225,22 +230,54 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		return serveBindFailure(cmd, profileName, err)
 	}
 
+	// A server pinned to a config file names that file in its hints, as add and login do.
+	pinnedFile := mcp.PinnedFile(entry, cfg.ConfigFile)
+	ctx, stop := serveSignalContext(cmd.Context())
+	defer stop()
+	// The bridge and the sign-in client share the guard, so a refresh failure in either one stops the proxy.
+	// Each token fetch re-checks the binding first; see rebindingAuthenticate.
 	authenticate := rebindingAuthenticate(bindingCheck(cmd.Context(), state, entry, f.service, profileName, cfg), cfg.Authenticate)
-	return serveProxy(cmd, proxy.Options{
-		In:           cmd.InOrStdin(),
-		Out:          cmd.OutOrStdout(),
-		Err:          cmd.ErrOrStderr(),
-		Endpoint:     mcp.ServiceURL(cfg.Host, f.service),
-		Config:       cfg,
-		Authenticate: authenticate,
-		Profile:      profileName,
-		Agent:        serveAgent(f.agent, cmd.ErrOrStderr()),
+	refresh := &refreshGuard{authenticate: authenticate, profile: profileName, pinnedFile: pinnedFile, cancel: stop}
+
+	// The sign-in client is built only when serveChallenge reads the service or signs in. A server whose record says it
+	// needs no sign-in makes no call at start.
+	var w *databricks.WorkspaceClient
+	if entry == nil || entry.SignInRequired {
+		w, err = guardedClient(cfg, refresh)
+		if err != nil {
+			return serveFailure(cmd, err, 1)
+		}
+	}
+	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile}, cmd.ErrOrStderr())
+	if err != nil {
+		// A rejected token stops serve by cancelling ctx, so the refresh failure is checked before the signal, and its
+		// message is the one that names the login.
+		if refreshErr := refresh.failure(); refreshErr != nil {
+			return serveFailure(cmd, refreshErr, serveBindStatus)
+		}
+		if ctx.Err() != nil {
+			// A signal during the start ends serve as a shutdown does, with no line.
+			return nil
+		}
+		// serveChallenge fails only on an auth failure (see lookupAtStart), which exits serveBindStatus.
+		return serveFailure(cmd, err, serveBindStatus)
+	}
+
+	return serveProxy(ctx, cmd, refresh, proxy.Options{
+		In:       cmd.InOrStdin(),
+		Out:      cmd.OutOrStdout(),
+		Err:      cmd.ErrOrStderr(),
+		Endpoint: mcp.ServiceURL(cfg.Host, f.service),
+		Config:   cfg,
+		Profile:  profileName,
+		Agent:    serveAgent(f.agent, cmd.ErrOrStderr()),
 		Transport: &signInRedirect{
 			next:       newUpstreamLog(serveTransport(cfg)),
 			profile:    profileName,
 			configFile: mcp.PinnedFile(entry, cfg.ConfigFile),
 		},
-	}, mcp.PinnedFile(entry, cfg.ConfigFile))
+		Challenge: challenge,
+	})
 }
 
 // bindingCheck returns the check that runs before each token is fetched. With an install record, entry, it checks the
@@ -285,13 +322,162 @@ func checkBindingWithRetry(check func() error) error {
 	return check()
 }
 
-// serveProxy bridges opts to the service until stdin closes or a signal arrives. Authenticate goes through a
-// refreshGuard, so a rejected token or a changed binding stops the proxy; see proxyResult. pinnedFile is the config
-// file the server is pinned to, or "" (see mcp.PinnedFile).
-func serveProxy(cmd *cobra.Command, opts proxy.Options, pinnedFile string) error {
-	ctx, stop := serveSignalContext(cmd.Context())
-	defer stop()
-	refresh := &refreshGuard{authenticate: opts.Authenticate, profile: opts.Profile, pinnedFile: pinnedFile, cancel: stop}
+// guardedClient returns the client of the bound profile whose requests the refresh guard authenticates. The SDK calls
+// the guard for each request the client makes, so a token that cannot be refreshed stops the proxy from any of them. The
+// profile's config is read again for the client, since its own credentials are the guard's.
+func guardedClient(cfg *config.Config, refresh *refreshGuard) (*databricks.WorkspaceClient, error) {
+	guarded, err := mcp.BoundConfig(cfg.Profile, cfg.ConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	// The "none" sentinel is the CLI's, not a workspace ID, so the SDK must not send it as the routing header.
+	if guarded.WorkspaceID == profile.WorkspaceIDNone {
+		guarded.WorkspaceID = ""
+	}
+	guarded.Credentials = guardCredentials{refresh: refresh}
+	return databricks.NewWorkspaceClient((*databricks.Config)(guarded))
+}
+
+// guardCredentials is the credentials strategy of the sign-in client: each request it makes is authenticated by the
+// refresh guard.
+type guardCredentials struct {
+	refresh *refreshGuard
+}
+
+// Name implements config.CredentialsStrategy.
+func (guardCredentials) Name() string {
+	return "aitools-mcp"
+}
+
+// Configure implements config.CredentialsStrategy.
+func (g guardCredentials) Configure(context.Context, *config.Config) (credentials.CredentialsProvider, error) {
+	return credentials.CredentialsProviderFn(g.refresh.authenticateCall), nil
+}
+
+// serveTarget is the server that a serve session bridges: its service, the bound profile, the install record, and the
+// config file it is pinned to. w is the profile's client, which must be guardedClient's.
+type serveTarget struct {
+	// w is nil when entry says the service needs no sign-in. serveChallenge returns before it would use it then.
+	w          *databricks.WorkspaceClient
+	entry      *mcp.Entry
+	profile    string
+	service    string
+	pinnedFile string
+}
+
+// serveChallenge returns the sign-in handling of a service that needs provider sign-in, or nil for
+// a pure passthrough. The state entry decides when there is one; otherwise the service is read once. A read that fails
+// for a reason other than the credential does not stop the serve: the sign-in handling is on then, since it acts only on
+// a challenge that names the service, and the failure is written to errOut.
+func serveChallenge(ctx context.Context, t serveTarget, errOut io.Writer) (*proxy.Challenge, error) {
+	signInRequired := t.entry != nil && t.entry.SignInRequired
+	if t.entry == nil {
+		svc, err := lookupAtStart(ctx, t.w, t.profile, t.pinnedFile, t.service)
+		switch {
+		case err == nil:
+			signInRequired = svc.SignInRequired()
+		case authFailed(err):
+			return nil, err
+		case ctx.Err() != nil:
+			// The serve is stopping, so the read's failure is its cancellation, which is not reported.
+			return nil, ctx.Err()
+		default:
+			fmt.Fprintf(errOut, "%v; serving it with sign-in handling on\n", err)
+			signInRequired = true
+		}
+	}
+	if !signInRequired {
+		return nil, nil
+	}
+	// The record holds the workspace the profile was bound to, which the binding check keeps it on. A server with no record
+	// has no workspace ID that is known without a request, so its challenges match the profile's host only.
+	var workspaceID string
+	if t.entry != nil {
+		workspaceID = t.entry.WorkspaceID
+	}
+	return &proxy.Challenge{
+		Service:       t.service,
+		Profile:       t.profile,
+		Host:          t.w.Config.Host,
+		WorkspaceID:   workspaceID,
+		Label:         mcp.ProviderLabel(t.service),
+		LoginCommand:  mcpLoginHint(t.service, t.profile, t.pinnedFile),
+		LogoutCommand: mcpLogoutHint(t.service, t.profile, t.pinnedFile),
+		PinnedFile:    t.pinnedFile,
+		SignIn:        serveSignIn(t),
+	}, nil
+}
+
+// lookupAtStart reads a service for a server with no install record. The read is bounded by profileCheckTimeout, as the
+// checks of list --check are, so that a host that does not answer does not hold up the start for the SDK's retry budget.
+func lookupAtStart(ctx context.Context, w *databricks.WorkspaceClient, profileName, pinnedFile, service string) (mcp.Service, error) {
+	ctx, cancel := context.WithTimeout(ctx, profileCheckTimeout)
+	defer cancel()
+	svc, err := mcp.GetService(ctx, w, service)
+	if err != nil {
+		// A credential the workspace rejects gets its sign-in page instead of the service's answer, so that is an auth failure.
+		if errors.Is(err, httpclient.ErrHTMLContent) {
+			cause := fmt.Errorf("cannot read MCP service %s: the workspace answered with a sign-in page instead of JSON", service)
+			return mcp.Service{}, mcp.AuthErrorIn(profileName, pinnedFile, cause)
+		}
+		err = describeRequestError(profileName, pinnedFile, err)
+		return mcp.Service{}, fmt.Errorf("cannot read MCP service %s: %w", service, err)
+	}
+	return svc, nil
+}
+
+// serveOpenPage opens the sign-in page for serve. Its stdin is the protocol stream, so the browser command gets none. Tests
+// replace it.
+var serveOpenPage = browser.OpenOutputToStderrWithoutStdin
+
+// serveSignIn is the authenticate tool's sign-in, the one `login` runs. Its progress goes to the request's stderr, which the
+// proxy serializes, since stdout carries the protocol. The page opens only when req.Open is set, so the proxy decides how
+// often the browser opens. w must be guardedClient's.
+func serveSignIn(t serveTarget) proxy.SignInFunc {
+	w, profileName, service, pinnedFile := t.w, t.profile, t.service, t.pinnedFile
+	// The record holds the workspace the profile was bound to, which the binding check keeps it on, so its ID needs no
+	// request. Without one, the first sign-in that needs it resolves it; the proxy runs one sign-in at a time.
+	var workspaceID string
+	if t.entry != nil && t.entry.WorkspaceID != profile.WorkspaceIDNone {
+		workspaceID = t.entry.WorkspaceID
+	}
+	return func(ctx context.Context, req proxy.SignInRequest) (bool, bool, error) {
+		if workspaceID == "" {
+			id, err := auth.ResolveWorkspaceID(ctx, w)
+			if err != nil {
+				return false, false, describeRequestError(profileName, pinnedFile, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
+			}
+			workspaceID = id
+		}
+		url, err := mcp.SignInURL(w.Config.Host, service, workspaceID)
+		if err != nil {
+			return false, false, err
+		}
+		// The page opens only when req.Open is set. Otherwise the sign-in only waits, and the proxy's progress names the page.
+		var openPage func(context.Context, string) error
+		if req.Open {
+			// The browser command must outlive the request: the request's context would kill it when the call is cancelled, and
+			// with it the page the user is on.
+			openPage = func(pageCtx context.Context, url string) error {
+				return serveOpenPage(context.WithoutCancel(pageCtx), url)
+			}
+		}
+		svc := mcp.Service{FullName: service, Known: mcp.KnownOf(service)}
+		_, alreadySignedIn, urlShown, err := signIn(ctx, req.Stderr, w, pinnedFile, url, svc, signInOptions{Profile: profileName, Open: openPage, OnPoll: func() { req.Progress(url) }})
+		if err != nil {
+			return false, urlShown, err
+		}
+		// The note is printed here, as login prints it, so the authenticate tool's sign-in shows it too.
+		if svc.Known != nil && svc.Known.Note != "" {
+			fmt.Fprintln(req.Stderr, svc.Known.Note)
+		}
+		return alreadySignedIn, urlShown, nil
+	}
+}
+
+// serveProxy bridges opts to the service until stdin closes or ctx is done. The requests are authenticated by refresh, so
+// that a refresh failure or a changed binding stops the proxy; see proxyResult.
+func serveProxy(ctx context.Context, cmd *cobra.Command, refresh *refreshGuard, opts proxy.Options) error {
 	opts.Authenticate = refresh.authenticateRequest
 	return proxyResult(cmd, refresh, proxy.Run(ctx, opts))
 }
@@ -343,6 +529,12 @@ func serveAgent(name string, stderr io.Writer) string {
 // binding or sign-in from the other failures, which exit 1.
 const serveBindStatus = 2
 
+// authFailed reports whether err is a credential the profile cannot provide.
+func authFailed(err error) bool {
+	be, ok := errors.AsType[*mcp.BindError](err)
+	return ok && be.Category == mcp.BindAuthFailed
+}
+
 // serveFailure prints err to stderr as `Error: <err>`, the form Execute uses for every other failure, and returns it
 // with the exit status. Execute does not print it again, so the message is written exactly once.
 func serveFailure(cmd *cobra.Command, err error, status int) error {
@@ -372,12 +564,12 @@ func exitAlreadyPrinted(err error, status int) error {
 	return errors.Join(root.ErrAlreadyPrinted, &root.ExitStatusError{Status: status, Err: err})
 }
 
-// refreshGuard wraps the profile's authenticate for the bridge. A rejected token (see credentialRejected) fails that
-// request with an error that names the profile and its login command, then stops the proxy, which exits 2. A changed
-// binding (see rebindingAuthenticate) stops it the same way, with the error of the binding check. Later requests fail
-// at once, without asking for a token again. A transient failure fails only its request, and the next request asks for
-// a token again. A request whose own context ended does not stop it, nor does the session DELETE at shutdown, which is
-// skipped after a failure.
+// refreshGuard wraps the profile's authenticate for the bridge and for the sign-in client. A rejected token (see
+// credentialRejected) fails that request with an error that names the profile and its login command, then stops the
+// proxy, which exits 2. A changed binding (see rebindingAuthenticate) stops it the same way, with the error of the binding
+// check. Later requests fail at once, without asking for a token again. A transient failure fails only its request, and
+// the next request asks for a token again. A request whose own context ended does not stop it, nor does the bridge's
+// session DELETE at shutdown, which is skipped after a failure.
 type refreshGuard struct {
 	authenticate func(*http.Request) error
 	profile      string
@@ -398,12 +590,29 @@ func (g *refreshGuard) authenticateRequest(r *http.Request) error {
 		return g.stoppedError()
 	}
 	err := g.authenticate(r)
-	if err == nil {
-		return nil
-	}
-	if r.Context().Err() != nil || r.Method == http.MethodDelete {
+	if err == nil || r.Context().Err() != nil || r.Method == http.MethodDelete {
 		return err
 	}
+	return g.fail(err)
+}
+
+// authenticateCall is the sign-in client's authentication. Unlike authenticateRequest it does not skip a DELETE, since the
+// sign-in's own DELETE is a call that needs its credential.
+func (g *refreshGuard) authenticateCall(r *http.Request) error {
+	if g.failure() != nil {
+		return g.stoppedError()
+	}
+	err := g.authenticate(r)
+	if err == nil || r.Context().Err() != nil {
+		return err
+	}
+	return g.fail(err)
+}
+
+// fail records err, a token that cannot be refreshed or a changed binding, and returns the error for the request that hit
+// it. The first failure stops the proxy. The hint says to restart the server: a new spawn re-runs the binding checks, and
+// it is the one that picks up the new login.
+func (g *refreshGuard) fail(err error) error {
 	if bindingChanged(err) {
 		// The check failed before any token was fetched, so the error says what changed and how to fix it.
 		return g.stop(err)

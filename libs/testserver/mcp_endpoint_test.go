@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,4 +94,33 @@ func TestMcpEndpointNoBodyForNotificationsAndResponses(t *testing.T) {
 			assert.Nil(t, response.Body)
 		})
 	}
+}
+
+func TestMcpEndpointPassesThroughOnceCredentialExists(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	const name = "system.ai.github"
+	mcpServicesTestSeed(workspace, name, "GitHub", mcpServicesTestGitHubProvider)
+	const list = `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`
+
+	assert.EqualValues(t, -32006, mcpEndpointTestCall(t, workspace, name, list)["error"].(map[string]any)["code"])
+
+	workspace.McpUserCredentialCreate(name)
+
+	reply := mcpEndpointTestCall(t, workspace, name, list)
+	assert.Nil(t, reply["error"])
+	assert.NotNil(t, reply["result"])
+
+	workspace.McpUserCredentials = map[string]catalog.McpServiceUserMappedCredential{}
+	assert.EqualValues(t, -32006, mcpEndpointTestCall(t, workspace, name, list)["error"].(map[string]any)["code"])
+}
+
+func TestMcpEndpointCredentialMatchesNameWithoutCase(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	const name = "system.ai.github"
+	mcpServicesTestSeed(workspace, name, "GitHub", mcpServicesTestGitHubProvider)
+	workspace.McpUserCredentialCreate(name)
+	const list = `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`
+
+	reply := mcpEndpointTestCall(t, workspace, "SYSTEM.AI.GITHUB", list)
+	assert.Nil(t, reply["error"], "the service and the credential match the name without case")
 }
