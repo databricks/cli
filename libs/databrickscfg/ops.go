@@ -147,7 +147,7 @@ func GetSectionNames(ctx context.Context, configFilePath string) ([]string, erro
 // loadConfigFile loads a config file without creating it if it doesn't exist.
 // Returns (nil, nil) when the file is not found.
 func loadConfigFile(ctx context.Context, filename string) (*config.File, error) {
-	filename, err := resolveConfigFilePath(ctx, filename)
+	filename, err := ResolveConfigFilePath(ctx, filename)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +161,9 @@ func loadConfigFile(ctx context.Context, filename string) (*config.File, error) 
 	return configFile, nil
 }
 
-// resolveConfigFilePath defaults to ~/.databrickscfg and expands ~ to the home directory.
-func resolveConfigFilePath(ctx context.Context, filename string) (string, error) {
+// ResolveConfigFilePath defaults to ~/.databrickscfg and expands ~ to the home directory.
+// It does not make the path absolute or resolve symlinks.
+func ResolveConfigFilePath(ctx context.Context, filename string) (string, error) {
 	if filename == "" {
 		filename = "~/.databrickscfg"
 	}
@@ -346,7 +347,7 @@ func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string
 }
 
 func loadOrCreateConfigFile(ctx context.Context, filename string) (*config.File, error) {
-	filename, err := resolveConfigFilePath(ctx, filename)
+	filename, err := ResolveConfigFilePath(ctx, filename)
 	if err != nil {
 		return nil, err
 	}

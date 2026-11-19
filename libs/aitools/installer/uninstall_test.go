@@ -488,7 +488,7 @@ func TestUninstallCountsRemovedSkills(t *testing.T) {
 	// so the skill counts as removed.
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.NoError(t, os.RemoveAll(filepath.Join(globalDir, "databricks-sql")))
-	require.NoError(t, SaveState(globalDir, &InstallState{SchemaVersion: schemaVersionV2, Skills: map[string]string{"databricks-sql": "0.1.0"}}))
+	require.NoError(t, SaveState(globalDir, &InstallState{SchemaVersion: CurrentSchemaVersion, Skills: map[string]string{"databricks-sql": "0.1.0"}}))
 	result, err = UninstallSkillsWithResult(ctx, UninstallOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.SkillsChanged)
@@ -574,7 +574,7 @@ func TestUninstallSkillFailuresAreSorted(t *testing.T) {
 		require.NoError(t, os.MkdirAll(filepath.Join(globalDir, name), 0o755))
 		skills[name] = "0.1.0"
 	}
-	require.NoError(t, SaveState(globalDir, &InstallState{SchemaVersion: schemaVersionV2, Skills: skills}))
+	require.NoError(t, SaveState(globalDir, &InstallState{SchemaVersion: CurrentSchemaVersion, Skills: skills}))
 
 	orig := removeAllFn
 	t.Cleanup(func() { removeAllFn = orig })
@@ -602,7 +602,7 @@ func TestUninstallTargetedUntrackedSkillGivesRecoveryGuidance(t *testing.T) {
 
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.NoError(t, SaveState(globalDir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Skills:        map[string]string{"databricks-jobs": "0.1.0"},
 	}))
 
@@ -611,4 +611,57 @@ func TestUninstallTargetedUntrackedSkillGivesRecoveryGuidance(t *testing.T) {
 	assert.Contains(t, err.Error(), "not tracked in Databricks aitools state")
 	assert.Contains(t, err.Error(), "Cursor")
 	assert.Contains(t, err.Error(), "install --skills-only --agents cursor")
+}
+
+func TestUninstallKeepsStateFileWithMCPRecords(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := installTestSkills(t, tmp)
+	require.NoError(t, SaveMCPState(globalDir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	ctx := cmdio.MockDiscard(t.Context())
+	_, err := UninstallSkillsWithResult(ctx, UninstallOptions{})
+	require.NoError(t, err)
+
+	// The skills are gone, but the MCP records stay in the file.
+	loaded, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Nil(t, loaded)
+	mcp, err := LoadMCPState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, mcp.Servers)
+}
+
+// TestUninstallMCPOnlyStateReturnsError checks that a state file holding only MCP records counts
+// as having no skills or plugins, and that uninstall leaves the MCP records in place.
+func TestUninstallMCPOnlyStateReturnsError(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, SaveMCPState(globalDir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	_, err := UninstallSkillsWithResult(cmdio.MockDiscard(t.Context()), UninstallOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no skills or plugins installed")
+
+	mcp, err := LoadMCPState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, []MCPEntry{{Name: "github-logfood"}}, mcp.Servers)
+}
+
+// TestUninstallRemovesLeftoverFilesWithoutSkills checks that a state file with file and repo-dir
+// records but no skills or plugins is still uninstalled, and the file is removed, as on main.
+func TestUninstallRemovesLeftoverFilesWithoutSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, SaveState(globalDir, &InstallState{
+		SchemaVersion: CurrentSchemaVersion,
+		Skills:        map[string]string{},
+		RepoDirs:      map[string]string{"databricks-sql": "repo"},
+		Files:         map[string]FileRecord{"databricks-sql/SKILL.md": {SHA256: "abc"}},
+	}))
+
+	_, err := UninstallSkillsWithResult(cmdio.MockDiscard(t.Context()), UninstallOptions{})
+	require.NoError(t, err)
+
+	_, err = os.Stat(filepath.Join(globalDir, ".state.json"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
