@@ -14,6 +14,8 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -115,6 +117,38 @@ func TestServerRejectsInvalidConfigurationBeforeReadiness(t *testing.T) {
 	assert.Empty(t, output.String())
 	_, err = listener.Accept()
 	assert.ErrorIs(t, err, net.ErrClosed)
+}
+
+func TestServerReportsSSHDStartFailureAfterReadiness(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("sandbox servers run on Linux")
+	}
+	sshd := filepath.Join(t.TempDir(), "sshd")
+	require.NoError(t, os.WriteFile(sshd, []byte("#!/bin/sh\nexit 0\n"), 0o700))
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	reader, writer := io.Pipe()
+	defer reader.Close()
+	finished := make(chan error, 1)
+	go func() {
+		finished <- sandbox.Serve(ctx, listener, sandbox.ServerOptions{SSHD: sshd, Config: "config", ConnectTimeout: time.Minute}, writer)
+		writer.Close()
+	}()
+	var ready sandbox.Readiness
+	require.NoError(t, json.NewDecoder(reader).Decode(&ready))
+	// Force a real exec failure after the configuration check succeeded.
+	require.NoError(t, os.Remove(sshd))
+	conn, err := dialWebSocket(t.Context(), "ws://token:"+ready.Token+"@"+listener.Addr().String()+"/ssh?id=failed-start")
+	require.NoError(t, err)
+	defer conn.Close()
+	select {
+	case err := <-finished:
+		require.ErrorContains(t, err, "failed to start SSHD process")
+	case <-time.After(5 * time.Second):
+		t.Fatal("sshd startup failure did not stop the server")
+	}
 }
 
 func TestServerStopsAfterItsSessionEnds(t *testing.T) {

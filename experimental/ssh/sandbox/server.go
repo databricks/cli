@@ -54,7 +54,8 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 	defer cancel()
 	connections := proxy.NewConnectionsManager(1, 0, proxy.WithoutIdleShutdown())
 	token := rand.Text()
-	started, completed := make(chan struct{}), make(chan struct{})
+	started := make(chan struct{})
+	completed := make(chan error, 1)
 	var requests sync.WaitGroup
 	var mu sync.Mutex
 	closing := false
@@ -63,7 +64,7 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 		close(started)
 		mu.Unlock()
 		return exec.CommandContext(ctx, opts.SSHD, "-i", "-f", opts.Config)
-	}, proxy.WithSingleSession(), proxy.WithSessionCompletion(func() { close(completed) }))
+	}, proxy.WithSingleSession(), proxy.WithSessionCompletion(func(err error) { completed <- err }))
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ssh", func(w http.ResponseWriter, r *http.Request) {
 		if subtle.ConstantTimeCompare([]byte(r.Header.Get(RelayTokenHeader)), []byte(token)) != 1 {
@@ -126,8 +127,8 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 				log.Info(ctx, "Sandbox SSH server timed out waiting for its first connection")
 				return nil
 			}
-		case <-completed:
-			return nil
+		case err := <-completed:
+			return err
 		case <-stopped:
 			if errors.Is(serveErr, http.ErrServerClosed) {
 				return nil

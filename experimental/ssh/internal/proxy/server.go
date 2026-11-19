@@ -24,7 +24,7 @@ type proxyServer struct {
 	connections         *ConnectionsManager
 	createServerCommand createServerCommandFunc
 	resumeGrace         time.Duration
-	onSessionEnd        func()
+	onSessionEnd        func(error)
 	singleSession       bool
 	sessionUsed         bool
 	sessionMu           sync.Mutex
@@ -33,9 +33,9 @@ type proxyServer struct {
 // ServerOption configures the SSH transport capabilities.
 type ServerOption func(*proxyServer)
 
-// WithSessionCompletion runs notify after an accepted logical session ends and is removed.
-// Handovers and failed upgrades do not trigger it.
-func WithSessionCompletion(notify func()) ServerOption {
+// WithSessionCompletion reports process startup failures or a completed logical session.
+// Established sessions report nil; handovers and failed upgrades do not notify.
+func WithSessionCompletion(notify func(error)) ServerOption {
 	return func(server *proxyServer) { server.onSessionEnd = notify }
 }
 
@@ -140,8 +140,8 @@ func (server *proxyServer) handleExistingConnection(ctx context.Context, w http.
 }
 
 func (server *proxyServer) handleNewConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, id string, req DialRequest) {
-	// Failed upgrades can retry; a started SSH session consumes this server permanently.
-	accepted := false
+	// Failed upgrades and process starts can retry; a started session consumes this server.
+	processStarted := false
 	if server.singleSession {
 		server.sessionMu.Lock()
 		if server.sessionUsed {
@@ -152,7 +152,7 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 		server.sessionUsed = true
 		server.sessionMu.Unlock()
 		defer func() {
-			if !accepted {
+			if !processStarted {
 				server.sessionMu.Lock()
 				server.sessionUsed = false
 				server.sessionMu.Unlock()
@@ -174,18 +174,25 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 		http.Error(w, "Maximum clients reached", http.StatusServiceUnavailable)
 		return
 	}
+	var command *exec.Cmd
+	var err error
 	defer func() {
 		server.connections.Remove(id)
-		if accepted && server.onSessionEnd != nil {
-			server.onSessionEnd()
+		if command != nil && server.onSessionEnd != nil {
+			var startErr error
+			if !processStarted {
+				startErr = err
+			}
+			server.onSessionEnd(startErr)
 		}
 	}()
 
 	log.Infof(ctx, "Starting proxy server for new connection, count: %d", server.connections.Count())
-	err := runServerProxy(ctx, conn, func(ctx context.Context) *exec.Cmd {
-		accepted = true
-		return server.createServerCommand(ctx)
+	err = runServerProxy(ctx, conn, func(ctx context.Context) *exec.Cmd {
+		command = server.createServerCommand(ctx)
+		return command
 	}, w, r)
+	processStarted = command != nil && command.Process != nil
 	if err != nil {
 		log.Errorf(ctx, "Proxy server error: %v", err)
 	} else {
@@ -212,11 +219,13 @@ func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCom
 	if err != nil {
 		return fmt.Errorf("failed to get stdin pipe: %w", err)
 	}
+	defer sshdStdin.Close()
 
 	sshdStdout, err := serverCmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
+	defer sshdStdout.Close()
 
 	err = serverCmd.Start()
 	if err != nil {

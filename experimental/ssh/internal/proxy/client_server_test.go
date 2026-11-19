@@ -570,7 +570,7 @@ func TestSingleSessionCannotStartAgainAfterDisconnect(t *testing.T) {
 	handler := NewProxyServer(t.Context(), manager, func(ctx context.Context) *exec.Cmd {
 		started.Add(1)
 		return exec.CommandContext(ctx, "cat")
-	}, WithSingleSession(), WithSessionCompletion(func() { close(completed) }))
+	}, WithSingleSession(), WithSessionCompletion(func(error) { close(completed) }))
 	server := httptest.NewServer(handler)
 	defer server.Close()
 	connection, response, err := websocket.DefaultDialer.Dial("ws"+server.URL[4:]+"?id=session", nil)
