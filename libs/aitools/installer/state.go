@@ -65,7 +65,8 @@ type InstallState struct {
 	// skills. Raw skills of other plugin agents were written by an older CLI or
 	// while the agent's CLI was missing, and update migrates those to the
 	// plugin. Recording a plugin install for an agent removes its name, and so
-	// does an install that tried the plugin for it and failed.
+	// do an install that tried the plugin for it and failed, and an uninstall
+	// that names the agent with --agents and no --skills.
 	//
 	// Unlike Plugins, nothing on disk shows this choice again: an older CLI
 	// that rewrites the state drops the field, and update then migrates these

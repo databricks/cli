@@ -124,6 +124,15 @@ type agentChoice struct {
 }
 
 func NewInstallCmd() *cobra.Command {
+	return newInstallCmd(true)
+}
+
+// newInstallCmd builds the install command. recordSkillsOnly says whether
+// --skills-only records the user's choice of raw skills, so update keeps those
+// agents off the plugin. The deprecated `experimental aitools skills install`
+// alias passes false: it always adds --skills-only to keep its pre-plugin
+// behavior, so its users did not decline the plugin.
+func newInstallCmd(recordSkillsOnly bool) *cobra.Command {
 	var skillsFlag, agentsFlag, scopeFlag, pathFlag string
 	var includeExperimental, skillsOnly bool
 	var projectFlag, globalFlag bool
@@ -196,7 +205,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			opts := installer.InstallOptions{
 				IncludeExperimental: includeExperimental,
 				SpecificSkills:      splitAndTrim(skillsFlag),
-				SkillsOnly:          skillsOnly,
+				SkillsOnly:          skillsOnly && recordSkillsOnly,
 			}
 
 			// --skills cherry-picks individual skill files, which only applies to

@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"syscall"
 	"testing"
@@ -473,13 +473,14 @@ func TestInstallSkillsForAgentsRecordsSkillsOnlyAgents(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 	src := &mockManifestSource{manifest: testManifest()}
 
-	binDir := t.TempDir()
-	binName := "plugin-agent-cli"
-	if runtime.GOOS == "windows" {
-		binName += ".exe"
+	origLookPath := agents.LookPath
+	t.Cleanup(func() { agents.LookPath = origLookPath })
+	agents.LookPath = func(name string) (string, error) {
+		if name == "plugin-agent-cli" {
+			return filepath.Join("/usr/bin", name), nil
+		}
+		return "", exec.ErrNotFound
 	}
-	require.NoError(t, os.WriteFile(filepath.Join(binDir, binName), []byte("#!/bin/sh\n"), 0o755))
-	t.Setenv("PATH", binDir)
 
 	plain := testAgent(tmp)
 	withPlugin := testAgent(tmp)

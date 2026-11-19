@@ -119,6 +119,13 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 			cmdio.LogString(ctx, fmt.Sprintf("  %s  removed databricks plugin%s", agent.DisplayName, note))
 		}
 	}
+	// Uninstalling an agent ends its --skills-only choice, so raw skills it
+	// gets later another way are migrated to the plugin by update.
+	if fullUninstall && targetedAgents {
+		state.SkillsOnlyAgents = slices.DeleteFunc(state.SkillsOnlyAgents, func(name string) bool {
+			return agentFilter[name]
+		})
+	}
 
 	// Determine which skills to remove.
 	var toRemove []string

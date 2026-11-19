@@ -335,6 +335,8 @@ func TestMapAgentScope(t *testing.T) {
 }
 
 func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude", "codex")
 	orig := installPluginForAgentFn
@@ -407,6 +409,8 @@ func TestExecutePlanFailedPluginForgetsSkillsOnlyChoice(t *testing.T) {
 }
 
 func TestExecutePlanNothingInstalledIsAnError(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude")
 	orig := installPluginForAgentFn
@@ -539,6 +543,8 @@ func TestExecutePlanNoSkillsToInstall(t *testing.T) {
 }
 
 func TestExecutePlanNoSkillsToInstallWithPluginFailures(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude")
 	setupPluginMock(t)

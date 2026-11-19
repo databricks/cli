@@ -14,6 +14,14 @@ export APPDATA="${USERPROFILE:-$HOME}/AppData/Roaming"
 # the script runs first. Windows also finds a command under each PATHEXT
 # extension (e.g. claude.cmd), so check those names too.
 mkdir_bin=$(command -v mkdir)
+# The harness's agent CLI stand-ins (acceptance/internal/fakeagent), for the
+# runs below that need an agent CLI on PATH. They only accept the MCP commands,
+# so a plugin install through one of them fails.
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+  fake_agent_path=$(cygpath -u "$FAKE_AGENT_DIR")
+else
+  fake_agent_path=$FAKE_AGENT_DIR
+fi
 rm_bin=$(command -v rm)
 cp_bin=$(command -v cp)
 exts=""
@@ -65,6 +73,16 @@ trace musterr $CLI aitools install --agents=claude-code
 
 title "the suggested recovery command works"
 trace $CLI aitools install --agents=claude-code --skills-only
+
+title "--skills-only with the agent's CLI on PATH: update keeps the skill files"
+# With Claude Code's CLI on PATH, --skills-only records that the user declined
+# the plugin, so update refreshes the skill files and does not try the plugin.
+path_without_agents=$PATH
+export PATH="$fake_agent_path:$PATH"
+trace $CLI aitools install --agents=claude-code --skills-only
+trace $CLI aitools update --force
+check_claude_skills
+export PATH=$path_without_agents
 
 title "project scope: a personal plugin does not replace the project's skill files"
 # Project skill files are shared through the repository, so a user-scope plugin
