@@ -253,6 +253,15 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !ok {
 		return m, nil
 	}
+	if in.Paste {
+		// A paste is literal filter text: it doesn't navigate or toggle
+		// search the way typed "j", "k" or "/" do.
+		if m.searchActive && in.Text != "" {
+			m.appendFilter(in.Text)
+		}
+		return m, nil
+	}
+
 	switch in.Key {
 	case "ctrl+c":
 		m.cancelled = true
