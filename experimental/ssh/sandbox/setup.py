@@ -57,8 +57,8 @@ with open(base / "host-key.lock", "a") as lock:
     if not host_key.exists():
         subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(host_key)], check=True)
     host_public = subprocess.check_output(["ssh-keygen", "-y", "-f", str(host_key)], universal_newlines=True).strip()
-# The server inherits this lock across exec; a crashed client cannot make an
-# active session eligible for deletion, even after a day.
+# The launcher holds this lock until its server and SSH children have exited.
+# A crashed client cannot make an active session eligible for deletion.
 for old_session in base.glob("session-*"):
     try:
         if old_session.is_symlink() or not old_session.is_dir() or old_session.stat().st_mtime >= time.time() - 86400:
