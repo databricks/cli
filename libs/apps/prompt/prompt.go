@@ -28,15 +28,24 @@ const DefaultAppDescription = "A Databricks App powered by AppKit"
 
 // Brand palette — tuned for legibility on both light and dark terminals.
 var (
-	colorRed    = lipgloss.Color("#E84040") // Bright Databricks red
-	colorGray   = lipgloss.Color("#A1A1AA") // Light gray, legible on dark backgrounds
-	colorYellow = lipgloss.Color("#FFAB00") // Databricks yellow / amber
-	colorOrange = lipgloss.Color("#FF5F40") // Databricks orange (code blocks)
-	colorDimmed = lipgloss.AdaptiveColor{Light: "#A1A1AA", Dark: "#52525B"}
+	colorRed    cmdio.Color = lipgloss.Color("#E84040") // Bright Databricks red
+	colorGray   cmdio.Color = lipgloss.Color("#A1A1AA") // Light gray, legible on dark backgrounds
+	colorYellow cmdio.Color = lipgloss.Color("#FFAB00") // Databricks yellow / amber
+	colorOrange cmdio.Color = lipgloss.Color("#FF5F40") // Databricks orange (code blocks)
+
+	colorDimmedLight cmdio.Color = lipgloss.Color("#A1A1AA")
+	colorDimmedDark  cmdio.Color = lipgloss.Color("#52525B")
 )
 
 // AppkitTheme returns a custom theme for appkit prompts.
 func AppkitTheme() *huh.Theme {
+	return appkitTheme(cmdio.HasDarkBackground())
+}
+
+// appkitTheme builds the theme for a known background, matching the shape of
+// huh v2's ThemeFunc.
+func appkitTheme(isDark bool) *huh.Theme {
+	lightDark := cmdio.LightDark(isDark)
 	t := huh.ThemeBase()
 
 	t.Focused.Title = t.Focused.Title.Foreground(colorRed).Bold(true)
@@ -53,7 +62,7 @@ func AppkitTheme() *huh.Theme {
 		BorderTop(false).BorderBottom(false).
 		BorderForeground(colorYellow)
 	t.Focused.BlurredButton = t.Focused.BlurredButton.
-		Foreground(colorDimmed).
+		Foreground(lightDark(colorDimmedLight, colorDimmedDark)).
 		Background(lipgloss.Color("")).
 		Bold(false)
 

@@ -555,3 +555,8 @@ func TestListSystemAIModelServicesWithoutAccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []ListItem{{ID: browseCatalogsID, Label: "Browse other catalogs..."}}, f.Items)
 }
+
+func TestAppkitThemeDimmedButtonFollowsBackground(t *testing.T) {
+	assert.Equal(t, colorDimmedDark, appkitTheme(true).Focused.BlurredButton.GetForeground())
+	assert.Equal(t, colorDimmedLight, appkitTheme(false).Focused.BlurredButton.GetForeground())
+}
