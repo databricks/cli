@@ -38,6 +38,10 @@ type Spec struct {
 	// it, and writers must take the same lock. The lock is the directory named
 	// after the file's real path with a .lock suffix.
 	Lock bool
+	// Legacy is set when an older layout of the config kept servers directly
+	// under the table that Root sits in, beside the key Root names. Writers
+	// refuse such a config.
+	Legacy bool
 }
 
 // Argv returns the command line of a stdio entry as argv[0] and its arguments.

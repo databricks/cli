@@ -251,6 +251,9 @@ var Registry = []*Agent{
 			Format: mcpconfig.FormatJSON,
 			Root:   "mcp.servers",
 			Entry:  openCodeMCPEntry,
+			// OpenCode's V1 layout kept servers directly under mcp. See
+			// https://opencode.ai/docs/migrate-v1/.
+			Legacy: true,
 		},
 	},
 	{

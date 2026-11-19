@@ -880,6 +880,45 @@ func TestUpsertRefusesDanglingOpenCodeLink(t *testing.T) {
 	assert.NotZero(t, info.Mode()&os.ModeSymlink, "link is kept")
 }
 
+// TestOpenCodeV1LayoutIsRefused checks that a write refuses an OpenCode config
+// whose mcp table holds V1 servers. A V2 mcp.servers table added beside them
+// would be read by a V1 OpenCode as a server named servers. The V2 mcp.timeout
+// object is not a server, so it does not block a write.
+func TestOpenCodeV1LayoutIsRefused(t *testing.T) {
+	a := agents.ByName(agents.NameOpenCode)
+	tests := []struct {
+		name    string
+		body    string
+		refused bool
+	}{
+		{"v1 local server", `{"mcp":{"playwright":{"type":"local","command":["npx","@playwright/mcp"],"enabled":true}}}`, true},
+		{"v1 server with command only", `{"mcp":{"playwright":{"command":["npx"]}}}`, true},
+		{"v1 server beside v2 table", `{"mcp":{"servers":{},"playwright":{"type":"remote","url":"https://mcp.example.test/mcp"}}}`, true},
+		{"v2 servers and timeout", `{"mcp":{"servers":{"other":{"type":"local","command":["npx"]}},"timeout":{"catalog":30000,"execution":30000}}}`, false},
+		{"v2 servers only", `{"mcp":{"servers":{}}}`, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := testHome(t)
+			path, err := a.MCP.Path(ctx)
+			require.NoError(t, err)
+			writeFile(t, path, []byte(tc.body), 0o600)
+
+			_, _, upsertErr := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
+			_, removeErr := Remove(ctx, a, testName)
+			if !tc.refused {
+				require.NoError(t, upsertErr)
+				require.NoError(t, removeErr)
+				return
+			}
+			assert.ErrorContains(t, upsertErr, "older layout")
+			assert.ErrorContains(t, upsertErr, `"mcp.servers"`)
+			assert.ErrorContains(t, removeErr, "older layout")
+			assert.Equal(t, tc.body, string(readFile(t, path)))
+		})
+	}
+}
+
 // TestUpsertRefusesEnvThatIsNotATable checks that an env value that is not a table
 // is refused and not overwritten.
 func TestUpsertRefusesEnvThatIsNotATable(t *testing.T) {

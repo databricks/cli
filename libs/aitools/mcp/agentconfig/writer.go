@@ -135,6 +135,9 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err != nil {
 		return path, "", err
 	}
+	if err := checkLegacy(path, spec, doc); err != nil {
+		return path, "", err
+	}
 	root := rootPath(spec)
 	current, found, err := doc.entry(root, name)
 	if err != nil {
@@ -205,6 +208,9 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if err := checkLegacy(path, spec, doc); err != nil {
+		return false, err
+	}
 	root := rootPath(spec)
 	current, found, err := doc.entry(root, name)
 	if err != nil {
@@ -268,6 +274,36 @@ func specOf(a *agents.Agent) (*mcpconfig.Spec, error) {
 
 func rootPath(spec *mcpconfig.Spec) []string {
 	return strings.Split(spec.Root, ".")
+}
+
+// checkLegacy refuses a config that still holds servers in an older layout, next
+// to the table that Root names. A write would add that table beside them, which
+// the older layout reads as a server. An object with a type or command key is
+// taken as a server. Other objects in the table, such as a timeout, are not.
+func checkLegacy(path string, spec *mcpconfig.Spec, doc document) error {
+	if !spec.Legacy {
+		return nil
+	}
+	root := rootPath(spec)
+	parent, own := root[:len(root)-1], root[len(root)-1]
+	members, err := doc.entries(parent)
+	if err != nil {
+		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	var legacy []string
+	for name, member := range members {
+		_, typed := member["type"]
+		_, command := member["command"]
+		if name != own && (typed || command) {
+			legacy = append(legacy, name)
+		}
+	}
+	if len(legacy) == 0 {
+		return nil
+	}
+	slices.Sort(legacy)
+	return fmt.Errorf("%s: %q holds servers in an older layout (%s); move them under %q and try again",
+		filepath.ToSlash(path), strings.Join(parent, "."), strings.Join(legacy, ", "), spec.Root)
 }
 
 // Claude Code takes a lock while it saves its config, so a write that reads and
