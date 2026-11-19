@@ -187,6 +187,8 @@ func TestExecuteBatchSetsOnWaitTimeoutContinue(t *testing.T) {
 }
 
 func TestExecuteBatchPreservesInputOrder(t *testing.T) {
+	// Waits for the engine's real 1s poll interval; run it alongside the other slow test.
+	t.Parallel()
 	// Index 0 is slow (PENDING then SUCCEEDED on first poll); 1 and 2 are
 	// immediate. Despite the staggered completion, results stay in input order.
 	ctx := cmdio.MockDiscard(t.Context())

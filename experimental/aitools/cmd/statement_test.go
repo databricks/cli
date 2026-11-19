@@ -71,6 +71,8 @@ func TestSubmitStatementWrapsTransportError(t *testing.T) {
 }
 
 func TestGetStatementResultPolls(t *testing.T) {
+	// Waits for the engine's real 1s poll interval; run it alongside the other slow test.
+	t.Parallel()
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 

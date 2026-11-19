@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/libs/sqlcli"
@@ -106,6 +107,9 @@ func TestExecuteAndPollImmediateFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "syntax error")
 }
 
+// fastPoll keeps polling tests from waiting the engine's real 1s+ backoff.
+var fastPoll = sqlexec.WithPollInterval(time.Millisecond, time.Millisecond)
+
 func TestExecuteAndPollWithPolling(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
@@ -129,7 +133,7 @@ func TestExecuteAndPollWithPolling(t *testing.T) {
 		Result:      &sql.ResultData{DataArray: [][]string{{"42"}}},
 	}, nil).Once()
 
-	client := sqlexec.New(mockAPI, "wh-123")
+	client := sqlexec.New(mockAPI, "wh-123", fastPoll)
 	stmt, err := executeAndPoll(ctx, client, "SELECT 42", nil)
 	require.NoError(t, err)
 	assert.Equal(t, sql.StatementStateSucceeded, stmt.State)
@@ -156,7 +160,7 @@ func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
 		},
 	}, nil).Once()
 
-	_, err := executeAndPoll(ctx, sqlexec.New(mockAPI, "wh-123"), "SELECT 1", nil)
+	_, err := executeAndPoll(ctx, sqlexec.New(mockAPI, "wh-123", fastPoll), "SELECT 1", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "RESOURCE_EXHAUSTED")
 }
