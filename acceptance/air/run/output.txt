@@ -120,7 +120,7 @@ Tip: use the --debug flag to see more details and a trace of this error:
 === unsupported priority is rejected
 
 >>> [CLI] air run -f invalid-priority.yaml --dry-run
-Error: compute.priority_class: invalid priority_class "HIGH": valid values are: BEST_EFFORT, NORMAL
+Error: compute.priority_class: invalid priority_class "HIGH": valid values are: NORMAL
 
 Tip: use the --debug flag to see more details and a trace of this error:
   databricks --debug air run …

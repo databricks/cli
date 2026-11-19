@@ -39,16 +39,9 @@ const (
 	priorityClassNormal     priorityClass = "NORMAL"
 )
 
-// priorityClasses lists every valid value, low to high. Used for validation
-// error messages.
-var priorityClasses = []priorityClass{priorityClassBestEffort, priorityClassNormal}
-
 func validPriorityClassesHint() string {
-	names := make([]string, len(priorityClasses))
-	for i, p := range priorityClasses {
-		names[i] = string(p)
-	}
-	return "valid values are: " + strings.Join(names, ", ")
+	// BEST_EFFORT remains accepted for compatibility with existing YAML.
+	return "valid values are: " + string(priorityClassNormal)
 }
 
 // parsePriorityClass normalizes a YAML priority_class to the enum's contract

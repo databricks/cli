@@ -78,7 +78,8 @@ func TestParsePriorityClass(t *testing.T) {
 	for _, in := range []string{"urgent", "", "HIGH", "high", "CRITICAL"} {
 		_, err := parsePriorityClass(in)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "valid values are: BEST_EFFORT, NORMAL")
+		assert.ErrorContains(t, err, "valid values are: NORMAL")
+		assert.NotContains(t, err.Error(), "BEST_EFFORT")
 	}
 }
 
