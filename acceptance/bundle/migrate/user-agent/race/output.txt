@@ -1,7 +1,7 @@
 
 === Replay a prior terraform deployment
 
->>> replay_tfstate.py terraform-requests.json terraform.tfstate
+>>> replay_tfstate.py [TESTROOT]/bundle/migrate/user-agent/race/../terraform-requests.json [TESTROOT]/bundle/migrate/user-agent/race/../terraform.tfstate
 
 === Deploy where the local terraform state disappears between the pull and the migration
 Panic Payload: internal error: DeploymentState must be opened first

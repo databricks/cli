@@ -1,7 +1,7 @@
 
 === Replay a prior terraform deployment
 
->>> replay_tfstate.py terraform-requests.json terraform.tfstate
+>>> replay_tfstate.py [TESTROOT]/bundle/migrate/user-agent/engine-pinned/../terraform-requests.json [TESTROOT]/bundle/migrate/user-agent/engine-pinned/../terraform.tfstate
 
 === deploy with DATABRICKS_BUNDLE_ENGINE=terraform
 
