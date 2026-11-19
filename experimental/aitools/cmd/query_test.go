@@ -22,6 +22,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// fastPoll keeps the package's polling tests from waiting on the engine's
+// real 1s+ backoff.
+var fastPoll = sqlexec.WithPollInterval(time.Millisecond, time.Millisecond)
+
 func TestCleanSQL(t *testing.T) {
 	tests := []struct {
 		name string
@@ -106,9 +110,6 @@ func TestExecuteAndPollImmediateFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "SYNTAX_ERROR")
 	assert.Contains(t, err.Error(), "syntax error")
 }
-
-// fastPoll keeps polling tests from waiting the engine's real 1s+ backoff.
-var fastPoll = sqlexec.WithPollInterval(time.Millisecond, time.Millisecond)
 
 func TestExecuteAndPollWithPolling(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())

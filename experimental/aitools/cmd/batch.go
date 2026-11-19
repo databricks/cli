@@ -59,7 +59,7 @@ type batchResultError struct {
 // reused across the batch, so callers must ensure each SQL uses only markers
 // that are covered.
 //
-// opts are passed to the sqlexec client.
+// Tests pass sqlexec.WithPollInterval in opts to skip the real poll backoff.
 func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int, opts ...sqlexec.Option) []batchResult {
 	client := sqlexec.New(api, warehouseID, opts...)
 

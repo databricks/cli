@@ -59,7 +59,7 @@ invoked the synchronous path.)`,
 // server-side statement (intentional: 'get' is a poll-only operation; use
 // 'cancel' to terminate explicitly).
 //
-// opts are passed to the sqlexec client.
+// Tests pass sqlexec.WithPollInterval in opts to skip the real poll backoff.
 func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface, statementID string, opts ...sqlexec.Option) (statementInfo, error) {
 	// Get/Poll don't use the warehouse ID.
 	client := sqlexec.New(api, "", opts...)
