@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -46,6 +47,9 @@ func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 
 	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
 	require.NoError(t, err)
+	// The proxies of all tests share the transport's connection pool, so a dead connection
+	// would otherwise fail requests of every test that follows (see libs/httptransport).
+	clientCfg.Transport = httptransport.HealthChecked(clientCfg.InsecureSkipVerify)
 	s.apiClient = httpclient.NewApiClient(clientCfg)
 
 	// Set up the proxy handler as the default handler for all requests.
