@@ -17,9 +17,9 @@ trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle deploy
 trace print_migration_telemetry
 # A failed migration is fatal, so the deploy could only have run on the direct engine: every
 # request it made, including those before the failure and the telemetry upload, is tagged
-# engine/direct. An untagged request would show up as MISSING.
-trace print_requests.py --get --oneline | jq -r 'select(.path | startswith("/__testserver/") | not) | (.headers["User-Agent"][0] | [scan("engine/[a-z]+")] | join(",") | if . == "" then "MISSING" else . end) + " " + .path' | sort -u
-rm -f "$OUT_REQUESTS"
+# engine/direct. An untagged request would show up as MISSING. print_engines also clears
+# the recorded requests for the next step.
+trace print_engines
 
 title "Local state was NOT rewritten (still terraform)"
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
