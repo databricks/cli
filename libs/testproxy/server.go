@@ -47,10 +47,9 @@ func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 
 	// The proxies of all tests share the transport's connection pool, so a dead connection
 	// would otherwise fail requests of every test that follows (see libs/httptransport). Set
-	// before the config is resolved, so the token-refresh client uses it too.
-	if upstream.HTTPTransport == nil {
-		upstream.HTTPTransport = httptransport.HealthChecked(upstream.InsecureSkipVerify)
-	}
+	// before the config is resolved, so the token-refresh client uses it too. With a transport
+	// set, the SDK ignores skip_verify; the proxy doesn't use it.
+	upstream.HTTPTransport = httptransport.HealthChecked(false)
 	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
 	require.NoError(t, err)
 	s.apiClient = httpclient.NewApiClient(clientCfg)

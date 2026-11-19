@@ -1,7 +1,6 @@
 package testproxy
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/databricks/cli/libs/httptransport"
@@ -15,12 +14,4 @@ func TestProxyUsesHealthCheckedTransport(t *testing.T) {
 	upstream := &config.Config{Host: server.URL, Token: "token"}
 	New(t, upstream)
 	assert.Same(t, httptransport.HealthChecked(false), upstream.HTTPTransport)
-}
-
-func TestProxyKeepsCallerTransport(t *testing.T) {
-	server := testserver.New(t)
-	transport := &http.Transport{}
-	upstream := &config.Config{Host: server.URL, Token: "token", HTTPTransport: transport}
-	New(t, upstream)
-	assert.Same(t, transport, upstream.HTTPTransport)
 }
