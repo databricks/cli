@@ -22,6 +22,7 @@ func (*ResourceExternalLocation) PrepareState(input *resources.ExternalLocation)
 }
 
 // The output-only effective_* fields are mirrored into state to avoid churn in remapped config.
+// SkipValidation is an input-only parameter, never returned by the API.
 var toCreateExternalLocation = newCopier[catalog.ExternalLocationInfo, catalog.CreateExternalLocation]()
 
 func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) *catalog.CreateExternalLocation {
@@ -49,6 +50,7 @@ var externalLocationForceSend = []string{"Comment"}
 
 // The effective_* fields are output-only, so they are never sent in an update. Name addresses
 // the location, so it is the id; the name in the config goes in NewName when it differs.
+// IsolationMode and Owner are not supported by DABs.
 var toUpdateExternalLocation = newCopier[catalog.CreateExternalLocation, catalog.UpdateExternalLocation](
 	structcopy.Skip("EffectiveEnableFileEvents", "EffectiveFileEventQueue", "Name"),
 	structcopy.ForceSend(externalLocationForceSend...),

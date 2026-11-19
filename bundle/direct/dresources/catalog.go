@@ -86,6 +86,7 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *CatalogState) (s
 var catalogForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
 // Name addresses the catalog, so it is the id; the name in the config goes in NewName when it differs.
+// EnablePredictiveOptimization and Owner are not supported by DABs.
 var toUpdateCatalog = newCopier[CatalogState, catalog.UpdateCatalog](
 	structcopy.Skip("Name"),
 	structcopy.ForceSend(catalogForceSend...),

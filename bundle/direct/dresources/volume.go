@@ -66,7 +66,7 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *VolumeState) (str
 var volumeForceSend = []string{"Comment"}
 
 // Name addresses the volume by its full name; the name in the config goes in NewName when it
-// differs, which only DoUpdateWithID does.
+// differs, which only DoUpdateWithID does. Owner is not supported by DABs.
 var toUpdateVolume = newCopier[VolumeState, catalog.UpdateVolumeRequestContent](
 	structcopy.Skip("Name"),
 	structcopy.ForceSend(volumeForceSend...),

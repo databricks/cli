@@ -62,6 +62,7 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 	return &input.CreateEndpoint
 }
 
+// UsagePolicyId is missing in remote.
 var toCreateVectorSearchEndpoint = newCopier[VectorSearchEndpointRemote, vectorsearch.CreateEndpoint]()
 
 func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {

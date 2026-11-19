@@ -77,6 +77,7 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (str
 // migrate invariant (schema.yml is excluded there, and schema_tf_compat.yml covers migrate instead).
 var schemaForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
+// EnablePredictiveOptimization and Owner are not supported by DABs.
 var toUpdateSchema = newCopier[catalog.CreateSchema, catalog.UpdateSchema](structcopy.ForceSend(schemaForceSend...))
 
 func makeUpdateSchema(id, newName string, config *catalog.CreateSchema) catalog.UpdateSchema {
