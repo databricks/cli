@@ -1,7 +1,7 @@
 package mcp
 
-// systemAILocation is the schema that ships the Databricks managed MCP services.
-const systemAILocation = "system.ai"
+// SystemAILocation is the schema that ships the Databricks managed MCP services.
+const SystemAILocation = "system.ai"
 
 // KnownService is the CLI's own description of a system.ai service, keyed by leaf name.
 type KnownService struct {

@@ -84,6 +84,31 @@ func Argv(entry map[string]any) ([]string, bool) {
 	}
 }
 
+// ServeCommand is the argv that starts an MCP server, after the binary: `aitools mcp serve`. Entries carry it, and
+// IsDatabricksEntry recognizes it, so both sides share this definition.
+var ServeCommand = []string{"aitools", "mcp", "serve"}
+
+// The flags that `aitools mcp serve` takes, which an entry carries to name its binding.
+const (
+	ServiceFlag = "--service"
+	ProfileFlag = "--profile"
+	AgentFlag   = "--agent"
+)
+
+// EnvKeys are the entry keys that hold environment variables: env for most agents, and environment for OpenCode.
+var EnvKeys = []string{"env", "environment"}
+
+// EntryEnv returns the environment variables of an entry, under the first of EnvKeys that holds an object. It returns
+// nil when the entry has none.
+func EntryEnv(entry map[string]any) map[string]any {
+	for _, key := range EnvKeys {
+		if vars, ok := entry[key].(map[string]any); ok {
+			return vars
+		}
+	}
+	return nil
+}
+
 // IsDatabricksEntry reports whether entry runs `databricks aitools mcp serve`,
 // which is how we recognize entries we wrote.
 func IsDatabricksEntry(entry map[string]any) bool {
@@ -93,7 +118,7 @@ func IsDatabricksEntry(entry map[string]any) bool {
 	}
 	args := argv[1:]
 	return IsDatabricksBinary(argv[0]) &&
-		len(args) >= 3 && args[0] == "aitools" && args[1] == "mcp" && args[2] == "serve"
+		len(args) >= len(ServeCommand) && slices.Equal(args[:len(ServeCommand)], ServeCommand)
 }
 
 // IsDatabricksBinary reports whether cmd names the databricks binary, as a bare

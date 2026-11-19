@@ -73,3 +73,24 @@ func TestValidServerName(t *testing.T) {
 		assert.False(t, ValidServerName(name), name)
 	}
 }
+
+// TestEntryEnv checks which object holds the environment of an entry: env, or environment for OpenCode.
+func TestEntryEnv(t *testing.T) {
+	vars := map[string]any{"DATABRICKS_CONFIG_FILE": "/cfg"}
+	tests := []struct {
+		name  string
+		entry map[string]any
+		want  map[string]any
+	}{
+		{name: "env", entry: map[string]any{"env": vars}, want: vars},
+		{name: "environment", entry: map[string]any{"environment": vars}, want: vars},
+		{name: "env is read before environment", entry: map[string]any{"env": vars, "environment": map[string]any{"other": "x"}}, want: vars},
+		{name: "not an object is absent", entry: map[string]any{"env": "DATABRICKS_CONFIG_FILE=/cfg"}, want: nil},
+		{name: "no environment", entry: map[string]any{"command": "databricks"}, want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, EntryEnv(tt.entry))
+		})
+	}
+}
