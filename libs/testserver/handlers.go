@@ -1402,7 +1402,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+		return req.Workspace.DatabaseCatalogDelete(req.Vars["name"])
 	})
 
 	// Synced Database Tables:

@@ -145,8 +145,12 @@ func (e *recoveryError) Unwrap() error { return e.err }
 
 // isAlreadyExists reports whether a create request failed because the resource exists. Features,
 // dashboards, vector search endpoints and AI Gateway services (checked for model provider services)
-// answer with 409 ALREADY_EXISTS, serving endpoints with
-// 400 RESOURCE_ALREADY_EXISTS (observed on AWS, 2026-11).
+// answer with 409 ALREADY_EXISTS, serving endpoints with 400 RESOURCE_ALREADY_EXISTS and database
+// catalogs with 400 CATALOG_ALREADY_EXISTS (observed on AWS, 2026-11).
 func isAlreadyExists(err error) bool {
-	return errors.Is(err, apierr.ErrAlreadyExists) || errors.Is(err, apierr.ErrResourceAlreadyExists)
+	if errors.Is(err, apierr.ErrAlreadyExists) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
+		return true
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.ErrorCode == "CATALOG_ALREADY_EXISTS"
 }
