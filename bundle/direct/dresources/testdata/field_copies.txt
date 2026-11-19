@@ -261,6 +261,30 @@ compute.Policy -> compute.CreatePolicy
   PolicyFamilyDefinitionOverrides: copied
   PolicyFamilyId: copied
 
+dashboards.Dashboard -> dresources.DashboardState
+  CreateTime: copied
+  DashboardId: copied
+  DatasetCatalog: not in source
+  DatasetSchema: not in source
+  DisplayName: copied
+  EmbedCredentials: not in source, always sent
+  Etag: copied
+  LifecycleState: copied
+  ParentPath: copied
+  Path: copied
+  Published: not in source
+  SerializedDashboard: skipped
+  UpdateTime: copied
+  WarehouseId: copied
+
+dashboards.GenieSpace -> resources.GenieSpaceConfig
+  Description: copied
+  Etag: copied
+  ParentPath: copied
+  SerializedSpace: skipped
+  Title: copied
+  WarehouseId: copied
+
 dresources.CatalogState -> catalog.UpdateCatalog
   Comment: copied, always sent
   CustomMaxRetentionHours: copied, always sent
@@ -316,6 +340,23 @@ dresources.ClusterState -> compute.ResizeCluster
   Autoscale: copied
   ClusterId: not in source
   NumWorkers: copied
+
+dresources.DashboardState -> dashboards.Dashboard
+  CreateTime: skipped
+  DashboardId: skipped
+  DisplayName: copied
+  Etag: copied
+  LifecycleState: skipped
+  ParentPath: copied
+  Path: skipped
+  SerializedDashboard: skipped
+  UpdateTime: skipped
+  WarehouseId: copied
+
+dresources.DashboardState -> dashboards.PublishRequest
+  DashboardId: skipped
+  EmbedCredentials: copied, always sent
+  WarehouseId: copied
 
 dresources.MlflowModelRemote -> ml.CreateModelRequest
   Description: copied
@@ -564,6 +605,22 @@ pipelines.PipelineSpec -> pipelines.CreatePipeline
   Testing: copied
   Trigger: copied
   UsagePolicyId: copied
+
+resources.GenieSpaceConfig -> dashboards.GenieCreateSpaceRequest
+  Description: copied
+  ParentPath: copied
+  SerializedSpace: skipped
+  Title: copied
+  WarehouseId: copied
+
+resources.GenieSpaceConfig -> dashboards.GenieUpdateSpaceRequest
+  Description: copied, always sent
+  Etag: skipped
+  ParentPath: copied
+  SerializedSpace: skipped
+  SpaceId: not in source
+  Title: copied
+  WarehouseId: copied
 
 serving.AiGatewayConfig -> serving.PutAiGatewayRequest
   FallbackConfig: copied

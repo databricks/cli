@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -70,22 +69,32 @@ func prepareGenieSpaceRequest(config *resources.GenieSpaceConfig) (string, error
 	}
 }
 
-func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace string) *resources.GenieSpaceConfig {
+// serialized_space is a string in the API and any in the config, so each copier skips it and
+// the caller sets it.
+var (
 	// SerializedSpace is excluded so it is never force-sent as an empty value; it is always
 	// populated from the bundle config on write. Done here (rather than in a RemapState) so
 	// every remote-producing path (DoRead/DoCreate/DoUpdate) yields the same force-send set.
-	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields, "SerializedSpace")
+	toGenieSpaceConfig = newCopier[dashboards.GenieSpace, resources.GenieSpaceConfig](
+		structcopy.Skip("SerializedSpace"),
+	)
 
-	return &resources.GenieSpaceConfig{
-		Description:     space.Description,
-		Etag:            space.Etag,
-		Title:           space.Title,
-		WarehouseId:     space.WarehouseId,
-		ParentPath:      ensureWorkspacePrefix(space.ParentPath),
-		SerializedSpace: serializedSpace,
+	toGenieCreateSpace = newCopier[resources.GenieSpaceConfig, dashboards.GenieCreateSpaceRequest](
+		structcopy.Skip("SerializedSpace"),
+	)
 
-		ForceSendFields: forceSendFields,
-	}
+	// Etag is left empty, see DoUpdate.
+	toGenieUpdateSpace = newCopier[resources.GenieSpaceConfig, dashboards.GenieUpdateSpaceRequest](
+		structcopy.Skip("SerializedSpace", "Etag"),
+		structcopy.ForceSend(genieSpaceForceSend...),
+	)
+)
+
+func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace string) *resources.GenieSpaceConfig {
+	config := toGenieSpaceConfig.Copy(space)
+	config.ParentPath = ensureWorkspacePrefix(space.ParentPath)
+	config.SerializedSpace = serializedSpace
+	return config
 }
 
 // isMissingGenieParentPathError reports whether the given Create error means
@@ -129,17 +138,10 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 		return "", nil, err
 	}
 
-	req := dashboards.GenieCreateSpaceRequest{
-		Description:     config.Description,
-		Title:           config.Title,
-		WarehouseId:     config.WarehouseId,
-		ParentPath:      config.ParentPath,
-		SerializedSpace: serializedSpace,
+	req := toGenieCreateSpace.Copy(config)
+	req.SerializedSpace = serializedSpace
 
-		ForceSendFields: utils.FilterFields[dashboards.GenieCreateSpaceRequest](config.ForceSendFields),
-	}
-
-	createResp, err := r.client.Genie.CreateSpace(ctx, req)
+	createResp, err := r.client.Genie.CreateSpace(ctx, *req)
 
 	// Retry once after creating the parent directory when the workspace folder
 	// is missing. Genie can surface this either as a standard missing-resource
@@ -150,7 +152,7 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}
-		createResp, err = r.client.Genie.CreateSpace(ctx, req)
+		createResp, err = r.client.Genie.CreateSpace(ctx, *req)
 	}
 	if err != nil {
 		return "", nil, err
@@ -182,17 +184,10 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 	// migrates serialized_space to a newer schema version, so a stale etag would
 	// 409 a legitimate update after a migration. Etag is therefore left empty;
 	// out-of-band drift is surfaced on read via OverrideChangeDesc instead.
-	updateResp, err := r.client.Genie.UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
-		SpaceId:         id,
-		Description:     config.Description,
-		Title:           config.Title,
-		WarehouseId:     config.WarehouseId,
-		ParentPath:      config.ParentPath,
-		SerializedSpace: serializedSpace,
-		Etag:            "",
-
-		ForceSendFields: utils.FilterFields[dashboards.GenieUpdateSpaceRequest](append(slices.Clone(genieSpaceForceSend), config.ForceSendFields...)),
-	})
+	req := toGenieUpdateSpace.Copy(config)
+	req.SpaceId = id
+	req.SerializedSpace = serializedSpace
+	updateResp, err := r.client.Genie.UpdateSpace(ctx, *req)
 	if err != nil {
 		return nil, err
 	}

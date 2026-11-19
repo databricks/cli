@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"slices"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -118,39 +117,7 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*DashboardSt
 	// don't spuriously republish. See DashboardState.Published.
 	published := publishedErr == nil && publishedIsCurrent(dashboard, publishedDashboard)
 
-	forceSendFields := utils.FilterFields[DashboardState](dashboard.ForceSendFields)
-	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
-	// even when false (zero value).
-	if !slices.Contains(forceSendFields, "EmbedCredentials") {
-		forceSendFields = append(forceSendFields, "EmbedCredentials")
-	}
-
-	var embedCredentials bool
-	if publishedDashboard != nil {
-		embedCredentials = publishedDashboard.EmbedCredentials
-	}
-
-	return &DashboardState{
-		DisplayName:         dashboard.DisplayName,
-		Etag:                dashboard.Etag,
-		WarehouseId:         dashboard.WarehouseId,
-		SerializedDashboard: dashboard.SerializedDashboard,
-		ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
-		// diffs are detected via etags, which will change if dataset_catalog/dataset_schema is updated.
-		DatasetCatalog: "",
-		DatasetSchema:  "",
-
-		// Output only fields.
-		CreateTime:      dashboard.CreateTime,
-		DashboardId:     dashboard.DashboardId,
-		LifecycleState:  dashboard.LifecycleState,
-		Path:            dashboard.Path,
-		UpdateTime:      dashboard.UpdateTime,
-		ForceSendFields: forceSendFields,
-
-		EmbedCredentials: embedCredentials,
-		Published:        published,
-	}, nil
+	return responseToState(dashboard, publishedDashboard, dashboard.SerializedDashboard, published), nil
 }
 
 // publishedIsCurrent reports whether the published revision reflects the current
@@ -176,22 +143,37 @@ func publishedIsCurrent(dashboard *dashboards.Dashboard, published *dashboards.P
 	return !revisionTime.Before(updateTime)
 }
 
+// serialized_dashboard is a string in the API and any in the config, so each copier skips it
+// and the caller sets it.
+var (
+	// The output-only fields are not sent. Fields like "embed_credentials" are part of the
+	// bundle configuration but not the create request here, so they are left out.
+	toDashboardRequest = newCopier[DashboardState, dashboards.Dashboard](
+		structcopy.Skip("CreateTime", "DashboardId", "LifecycleState", "Path", "UpdateTime", "SerializedDashboard"),
+	)
+
+	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
+	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
+	// DashboardId addresses the dashboard, so it is the id.
+	toPublishRequest = newCopier[DashboardState, dashboards.PublishRequest](
+		structcopy.Skip("DashboardId"),
+		structcopy.ForceSend("EmbedCredentials"),
+	)
+
+	// The output-only fields (create_time, path, ...) are copied as well. dataset_catalog and
+	// dataset_schema are not reported: diffs are detected via etags, which will change if
+	// dataset_catalog/dataset_schema is updated.
+	//
+	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
+	// even when false (zero value).
+	toDashboardState = newCopier[dashboards.Dashboard, DashboardState](
+		structcopy.Skip("SerializedDashboard"),
+		structcopy.ForceSend("EmbedCredentials"),
+	)
+)
+
 func prepareDashboardRequest(config *DashboardState) (dashboards.Dashboard, error) {
-	dashboard := dashboards.Dashboard{
-		DisplayName:         config.DisplayName,
-		ParentPath:          config.ParentPath,
-		WarehouseId:         config.WarehouseId,
-		Etag:                config.Etag,
-		CreateTime:          "",
-		DashboardId:         "",
-		LifecycleState:      "",
-		Path:                "",
-		SerializedDashboard: "",
-		UpdateTime:          "",
-		// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
-		// Thus we need to filter such fields out.
-		ForceSendFields: utils.FilterFields[dashboards.Dashboard](config.ForceSendFields),
-	}
+	dashboard := toDashboardRequest.Copy(config)
 	switch v := config.SerializedDashboard.(type) {
 	case nil:
 	case string:
@@ -199,58 +181,26 @@ func prepareDashboardRequest(config *DashboardState) (dashboards.Dashboard, erro
 	default:
 		return dashboards.Dashboard{}, fmt.Errorf("internal error: serialized_dashboard should have been normalized to a string, got %T", v)
 	}
-	return dashboard, nil
+	return *dashboard, nil
 }
 
 func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, config *DashboardState) (*dashboards.PublishedDashboard, error) {
-	// embed_credentials as a zero valued default in resourcemutator/resource_mutator.go.
-	// Thus we always need to include it in the ForceSendFields list to ensure that it is sent to the server.
-	forceSendFields := utils.FilterFields[dashboards.PublishRequest](config.ForceSendFields)
-	if !slices.Contains(forceSendFields, "EmbedCredentials") {
-		forceSendFields = append(forceSendFields, "EmbedCredentials")
-	}
-
-	return r.client.Lakeview.Publish(ctx, dashboards.PublishRequest{
-		DashboardId:      id,
-		EmbedCredentials: config.EmbedCredentials,
-		WarehouseId:      config.WarehouseId,
-		ForceSendFields:  forceSendFields,
-	})
+	request := toPublishRequest.Copy(config)
+	request.DashboardId = id
+	return r.client.Lakeview.Publish(ctx, *request)
 }
 
+// responseToState returns the state of a dashboard the API reported. publishResp is nil for a
+// dashboard that is not published.
 func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dashboards.PublishedDashboard, serializedDashboard string, published bool) *DashboardState {
-	forceSendFields := utils.FilterFields[DashboardState](createOrUpdateResp.ForceSendFields)
-	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
-	// even when false (zero value).
-	if !slices.Contains(forceSendFields, "EmbedCredentials") {
-		forceSendFields = append(forceSendFields, "EmbedCredentials")
-	}
-
-	var embedCredentials bool
+	state := toDashboardState.Copy(createOrUpdateResp)
+	state.SerializedDashboard = serializedDashboard
+	state.ParentPath = ensureWorkspacePrefix(createOrUpdateResp.ParentPath)
 	if publishResp != nil {
-		embedCredentials = publishResp.EmbedCredentials
+		state.EmbedCredentials = publishResp.EmbedCredentials
 	}
-
-	return &DashboardState{
-		DisplayName:         createOrUpdateResp.DisplayName,
-		Etag:                createOrUpdateResp.Etag,
-		WarehouseId:         createOrUpdateResp.WarehouseId,
-		SerializedDashboard: serializedDashboard,
-		ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
-		DatasetCatalog:      "",
-		DatasetSchema:       "",
-
-		// Output only fields
-		CreateTime:      createOrUpdateResp.CreateTime,
-		DashboardId:     createOrUpdateResp.DashboardId,
-		LifecycleState:  createOrUpdateResp.LifecycleState,
-		Path:            createOrUpdateResp.Path,
-		UpdateTime:      createOrUpdateResp.UpdateTime,
-		ForceSendFields: forceSendFields,
-
-		EmbedCredentials: embedCredentials,
-		Published:        published,
-	}
+	state.Published = published
+	return state
 }
 
 func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState) (string, *DashboardState, error) {
