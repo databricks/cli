@@ -61,7 +61,7 @@ func WithProcessGroup() execOption {
 // or returns ESRCH on an already-empty group; there is no 10s window in which the
 // PGID could be reused by an unrelated group before the signal is sent.
 func reapProcessGroup(ctx context.Context, c *exec.Cmd) {
-	if c.SysProcAttr == nil || !c.SysProcAttr.Setpgid {
+	if c.SysProcAttr == nil || (!c.SysProcAttr.Setpgid && !c.SysProcAttr.Setsid) {
 		return
 	}
 	if c.Process == nil || ctx.Err() == nil {
