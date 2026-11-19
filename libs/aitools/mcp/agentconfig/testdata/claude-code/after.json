@@ -1,0 +1,32 @@
+{
+  "numStartups": 4,
+  "theme": "dark",
+  "userID": "not-a-real-id",
+  "mcpServers": {
+    "other": {
+      "type": "http",
+      "url": "https://mcp.example.test/mcp"
+    },
+    "genie_one_mcp-dogfood": {
+      "args": [
+        "aitools",
+        "mcp",
+        "serve",
+        "--profile",
+        "dogfood",
+        "--service",
+        "system.ai.genie_one_mcp",
+        "--agent",
+        "claude-code"
+      ],
+      "command": "/opt/databricks/bin/databricks",
+      "env": {},
+      "type": "stdio"
+    }
+  },
+  "projects": {
+    "/work": {
+      "allowedTools": []
+    }
+  }
+}
