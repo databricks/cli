@@ -42,7 +42,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	// TODO: we should cache CurrentUser.Me at the SDK level
 	//      for now we let clients pass in any existing user they might already have
 	if me == nil {
-		me, err = iamutil.GetCurrentUser(ctx, wsc)
+		me, err = iamutil.GetUserPrincipal(ctx, wsc)
 		if err != nil {
 			return err
 		}

@@ -44,7 +44,7 @@ func fuseUserInfo(ctx context.Context, client *databricks.WorkspaceClient) (user
 	// User metadata is optional. Limit its lookup before publishing the server port.
 	userCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	me, err := iamutil.GetCurrentUser(userCtx, client)
+	me, err := iamutil.GetUserPrincipal(userCtx, client)
 	if err != nil {
 		log.Debugf(ctx, "Registering filesystem credentials without user metadata: %v", err)
 		return "", ""

@@ -31,7 +31,7 @@ type WorkspaceMetadata struct {
 
 // GetWorkspaceHomeDir returns the current user's workspace home folder.
 func GetWorkspaceHomeDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
-	me, err := iamutil.GetCurrentUser(ctx, client)
+	me, err := iamutil.GetUserPrincipal(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}

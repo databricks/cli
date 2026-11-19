@@ -14,7 +14,7 @@ import (
 // CreateKeysSecretScope creates or retrieves the secret scope for SSH keys.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, sessionID string) (string, error) {
-	me, err := iamutil.GetCurrentUser(ctx, client)
+	me, err := iamutil.GetUserPrincipal(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}

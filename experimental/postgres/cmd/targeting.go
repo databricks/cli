@@ -114,7 +114,7 @@ func resolveProvisioned(ctx context.Context, w *databricks.WorkspaceClient, inst
 		return nil, fmt.Errorf("database instance %q is not ready for accepting connections (state: %s)", instance.Name, instance.State)
 	}
 
-	user, err := iamutil.GetCurrentUser(ctx, w)
+	user, err := iamutil.GetUserPrincipal(ctx, w)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
@@ -175,7 +175,7 @@ func resolveAutoscaling(ctx context.Context, w *databricks.WorkspaceClient, spec
 		return nil, err
 	}
 
-	user, err := iamutil.GetCurrentUser(ctx, w)
+	user, err := iamutil.GetUserPrincipal(ctx, w)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}

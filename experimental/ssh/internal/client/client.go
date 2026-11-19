@@ -598,7 +598,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	}
 
 	// Get Databricks user name for the workspace path
-	currentUser, err := iamutil.GetCurrentUser(ctx, client)
+	currentUser, err := iamutil.GetUserPrincipal(ctx, client)
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
