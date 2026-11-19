@@ -2,15 +2,19 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
@@ -41,37 +45,39 @@ type BindResult struct {
 	HasChanges bool
 	// Action is the planned action for the bound resource (e.g., "skip", "update", "recreate")
 	Action deployplan.ActionType
-	// Plan contains the full deployment plan for the bound resource
+	// Plan is the plan a deploy after the bind would run; it is the one presented to the user.
 	Plan *deployplan.Plan
-	// TempStatePath is the path to the temporary state file
+	// BindPlan records the bound resource in the state without touching the backend. Applying it
+	// to StatePath completes the bind.
+	BindPlan *deployplan.Plan
+	// TempStatePath is the path to the temporary state file BindPlan was applied to
 	TempStatePath string
 	// StatePath is the path to the final state file
 	StatePath string
 }
 
-// Bind adds an existing workspace resource to a temporary state and calculates
-// if there will be any changes when deploying.
+// Bind adds an existing workspace resource to the state and calculates the changes a deploy would
+// make to it afterwards. It reuses the regular plan and apply:
 //
-// Flow:
-// 1. Load current state file
-// 2. Update id of the target resource
-// 3. Update state path to temp file (state file + ".temp-bind")
-// 4. Perform plan + update to populate state with resolved config
-// 5. Calculate plan again - this is the plan presented to the user
+//  1. Plan against the current state with the resource recorded at resourceID and an empty state.
+//     The bound resource's entry is turned into a state-only update: applying it records the
+//     resolved config as the resource's state, with no backend call (the bind plan).
+//  2. Apply the bind plan to a copy of the state (state file + ".temp-bind") and plan again
+//     against it. This is the plan presented to the user.
 //
-// Call Finalize to commit the state or Cancel to discard.
+// Call FinalizeBind to apply the bind plan to the state, or Cancel to discard.
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
-	// Check if the resource is already managed (bound to a different ID)
-	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
+	err := b.StateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
+	if err != nil {
 		// State that cannot be read is not the same as state without a binding:
 		// the resource may well be managed already, and binding on top of it
 		// would take over a resource whose ownership was never checked. A state
 		// file that does not exist yet opens successfully as an empty one.
 		return nil, fmt.Errorf("cannot check whether %s is already bound: %w", resourceKey, err)
 	}
-	existingID := checkStateDB.GetResourceID(resourceKey)
-	if _, err := checkStateDB.Finalize(ctx); err != nil {
+	existingID := b.StateDB.GetResourceID(resourceKey)
+	data := b.StateDB.Data
+	if _, err := b.StateDB.Finalize(ctx); err != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", err)
 	}
 	if existingID != "" {
@@ -80,6 +86,11 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			ExistingID:  existingID,
 			NewID:       resourceID,
 		}
+	}
+
+	bindPlan, err := b.calculateBindPlan(ctx, client, configRoot, statePath, data, resourceKey, resourceID)
+	if err != nil {
+		return nil, err
 	}
 
 	tmpStatePath := statePath + ".temp-bind"
@@ -91,113 +102,21 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		}
 	}
 
-	// Open temp state
-	err := b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(false), dstate.OpenDmsArgs{})
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-	if err := b.StateDB.UpgradeToWrite(); err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-
-	// Save state with ID and empty state (like migrate does)
-	err = b.StateDB.SaveState(ctx, resourceKey, resourceID, struct{}{}, nil)
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-
-	// Finalize to persist temp state to disk
-	_, err = b.StateDB.Finalize(ctx)
-	if err != nil {
+	if err := b.applyBindPlan(ctx, client, tmpStatePath, bindPlan); err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
 
 	log.Infof(ctx, "Bound %s to id=%s (in temp state)", resourceKey, resourceID)
 
-	// First plan + update: populate state with resolved config
+	// Plan against the temp state: this is the plan to present to the user (change between remote
+	// resource and config).
 	err = b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
 	plan, err := b.CalculatePlan(ctx, client, configRoot)
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-	if _, err := b.StateDB.Finalize(ctx); err != nil {
-		log.Warnf(ctx, "failed to finalize state: %v", err)
-	}
-
-	// Populate the state with the resolved config
-	entry := plan.Plan[resourceKey]
-	sv, ok := b.StateCache.Load(resourceKey)
-	if ok && sv != nil {
-		var dependsOn []deployplan.DependsOnEntry
-		if entry != nil {
-			dependsOn = entry.DependsOn
-		}
-
-		// Copy etag from remote state for resources that use etag-based drift
-		// detection (dashboards and genie spaces). The etag is not provided by the
-		// user; it comes from remote. If we don't store it in state, we won't
-		// detect remote drift correctly and the next plan shows a bogus update.
-		if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && entry != nil && entry.RemoteState != nil {
-			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
-			if err == nil && etag != nil {
-				if etagStr, ok := etag.(string); ok && etagStr != "" {
-					_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
-				}
-			}
-		}
-
-		// Compact hashed_fields fields so the persisted state stays small. Not needed for
-		// correctness — the next plan (CalculatePlan) compacts the saved state on read.
-		adapter, err := b.getAdapterForKey(resourceKey)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, fmt.Errorf("compacting state: %w", err)
-		}
-
-		err = b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-		if err := b.StateDB.UpgradeToWrite(); err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-
-		err = b.StateDB.SaveState(ctx, resourceKey, resourceID, compacted, dependsOn)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-
-		_, err = b.StateDB.Finalize(ctx)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
-	}
-
-	// Second plan: this is the plan to present to the user (change between remote resource and config)
-	err = b.StateDB.Open(ctx, tmpStatePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
-	if err != nil {
-		os.Remove(tmpStatePath)
-		return nil, err
-	}
-	plan, err = b.CalculatePlan(ctx, client, configRoot)
 	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", ferr)
 	}
@@ -211,11 +130,12 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		HasChanges:    false,
 		Action:        deployplan.Skip,
 		Plan:          plan,
+		BindPlan:      bindPlan,
 		TempStatePath: tmpStatePath,
 		StatePath:     statePath,
 	}
 
-	entry = plan.Plan[resourceKey]
+	entry := plan.Plan[resourceKey]
 	if entry != nil {
 		result.Action = entry.Action
 		// A state-only entry only records something in the state (such as an internal ID a bind
@@ -226,12 +146,123 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	return result, nil
 }
 
-// Finalize completes the bind operation by renaming the temp state to the final location.
-func (result *BindResult) Finalize() error {
-	if result == nil || result.TempStatePath == "" {
-		return nil
+// calculateBindPlan plans against data with resourceKey recorded at resourceID and an empty
+// state, and returns the plan that records the resource's resolved config as its state.
+//
+// The plan holds the bound resource as a state-only update. Its dependencies are kept as skipped
+// entries: the graph needs every node an entry depends on, and the dependency edges are saved in
+// the state alongside the resource.
+func (b *DeploymentBundle) calculateBindPlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string, data dstate.Database, resourceKey, resourceID string) (*deployplan.Plan, error) {
+	data.State = maps.Clone(data.State)
+	if data.State == nil {
+		data.State = make(map[string]dstate.ResourceEntry)
 	}
-	return os.Rename(result.TempStatePath, result.StatePath)
+	// An empty state, like migrate records: the plan fills it in from the config.
+	data.State[resourceKey] = dstate.ResourceEntry{ID: resourceID, State: json.RawMessage("{}")}
+
+	b.StateDB.OpenWithData(statePath, data)
+	fullPlan, err := b.CalculatePlan(ctx, client, configRoot)
+	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
+		log.Warnf(ctx, "failed to finalize state: %v", ferr)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	entry := fullPlan.Plan[resourceKey]
+	// The resolved config, which the plan keeps even when it skips the entry.
+	sv, ok := b.StateCache.Load(resourceKey)
+	if entry == nil || !ok {
+		return nil, fmt.Errorf("internal error: %s: missing from the plan", resourceKey)
+	}
+
+	// Copy etag from remote state for resources that use etag-based drift
+	// detection (dashboards and genie spaces). The etag is not provided by the
+	// user; it comes from remote. If we don't store it in state, we won't
+	// detect remote drift correctly and the next plan shows a bogus update.
+	if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && entry.RemoteState != nil {
+		etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
+		if err == nil && etag != nil {
+			if etagStr, ok := etag.(string); ok && etagStr != "" {
+				_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
+			}
+		}
+	}
+
+	newState, err := sv.ToJSON()
+	if err != nil {
+		return nil, fmt.Errorf("%s: cannot serialize state: %w", resourceKey, err)
+	}
+	// References planning could not resolve point at resources whose values are only known after
+	// they are deployed. The state records them unresolved; the next deploy resolves them.
+	newState.Refs = nil
+
+	bindPlan := deployplan.NewPlanDirect()
+	bindPlan.Lineage = fullPlan.Lineage
+	bindPlan.Serial = fullPlan.Serial
+	bindPlan.Features = fullPlan.Features
+	bindPlan.Plan[resourceKey] = &deployplan.PlanEntry{
+		// The state the plan is applied to does not have the resource yet.
+		ID:          resourceID,
+		DependsOn:   entry.DependsOn,
+		Action:      deployplan.Update,
+		StateOnly:   true,
+		NewState:    newState,
+		RemoteState: entry.RemoteState,
+	}
+
+	queue := slices.Clone(entry.DependsOn)
+	for len(queue) > 0 {
+		dep := queue[0].Node
+		queue = queue[1:]
+		if bindPlan.Plan[dep] != nil {
+			continue
+		}
+		depEntry := fullPlan.Plan[dep]
+		if depEntry == nil {
+			return nil, fmt.Errorf("internal error: %s: dependency %s not in the plan", resourceKey, dep)
+		}
+		bindPlan.Plan[dep] = &deployplan.PlanEntry{
+			DependsOn: depEntry.DependsOn,
+			Action:    deployplan.Skip,
+		}
+		queue = append(queue, depEntry.DependsOn...)
+	}
+
+	return bindPlan, nil
+}
+
+// applyBindPlan applies the bind plan to the state at statePath with the regular deploy apply.
+func (b *DeploymentBundle) applyBindPlan(ctx context.Context, client *databricks.WorkspaceClient, statePath string, bindPlan *deployplan.Plan) error {
+	err := b.StateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{})
+	if err != nil {
+		return err
+	}
+	if err := b.StateDB.UpgradeToWrite(); err != nil {
+		_, _ = b.StateDB.Finalize(ctx)
+		return err
+	}
+
+	err = b.InitForApply(ctx, client, bindPlan)
+	if err == nil {
+		b.Apply(ctx, client, bindPlan, false)
+	}
+
+	// Finalize even if Apply failed, so the state stays consistent with what was applied.
+	_, ferr := b.StateDB.Finalize(ctx)
+	if err != nil {
+		return err
+	}
+	if logdiag.HasError(ctx) {
+		return errors.New("recording the bound resource in the state failed")
+	}
+	return ferr
+}
+
+// FinalizeBind completes the bind operation by applying the bind plan to the state.
+func (b *DeploymentBundle) FinalizeBind(ctx context.Context, client *databricks.WorkspaceClient, result *BindResult) error {
+	defer result.Cancel()
+	return b.applyBindPlan(ctx, client, result.StatePath, result.BindPlan)
 }
 
 // Cancel cleans up temp state without committing changes.

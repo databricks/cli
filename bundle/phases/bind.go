@@ -107,8 +107,8 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		}
 	}
 
-	// Finalize: rename temp state to final location
-	err = result.Finalize()
+	// Finalize: record the bound resource in the state
+	err = b.DeploymentBundle.FinalizeBind(ctx, b.WorkspaceClient(ctx), result)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
