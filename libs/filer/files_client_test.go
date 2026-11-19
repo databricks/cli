@@ -312,14 +312,90 @@ func TestFilesClientRetriesThrottledUploadFromStartOffset(t *testing.T) {
 	assert.Equal(t, []string{"abc", "abc", "abc"}, uploads)
 }
 
-func TestFilesClientDoesNotRetryNonSeekableUpload(t *testing.T) {
+// uploadsWithOneThrottle records each PUT body; the first PUT is throttled.
+func uploadsWithOneThrottle(server *testserver.Server) *[]string {
+	var uploads []string
+	put := throttled(1, ok)
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		uploads = append(uploads, string(req.Body))
+		return put(req)
+	})
+	return &uploads
+}
+
+func TestFilesClientRetriesSmallNonSeekableUpload(t *testing.T) {
 	ctx := t.Context()
 	server := testserver.New(t)
-	server.Handle("PUT", "/api/2.0/fs/files/{path...}", throttled(1, ok))
+	uploads := uploadsWithOneThrottle(server)
 	f := newFilesClientWithFastRetries(t, server)
+	setReplayBufferSize(t, 3)
+
+	// Exactly filesReplayBufferSize bytes still fit in the buffer.
+	require.NoError(t, f.Write(ctx, "hello", onlyReader{strings.NewReader("abc")}, CreateParentDirectories))
+	assert.Equal(t, []string{"abc", "abc"}, *uploads)
+}
+
+func TestFilesClientRetriesSmallPipeUpload(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	uploads := uploadsWithOneThrottle(server)
+	f := newFilesClientWithFastRetries(t, server)
+
+	// A pipe is an *os.File whose Seek fails.
+	pr, pw, err := os.Pipe()
+	require.NoError(t, err)
+	_, err = pw.WriteString("abc")
+	require.NoError(t, err)
+	require.NoError(t, pw.Close())
+	defer pr.Close()
+
+	require.NoError(t, f.Write(ctx, "hello", pr, CreateParentDirectories))
+	assert.Equal(t, []string{"abc", "abc"}, *uploads)
+}
+
+func TestFilesClientDoesNotRetryLargeNonSeekableUpload(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	uploads := uploadsWithOneThrottle(server)
+	f := newFilesClientWithFastRetries(t, server)
+	setReplayBufferSize(t, 2)
 
 	err := f.Write(ctx, "hello", onlyReader{strings.NewReader("abc")}, CreateParentDirectories)
 	assert.ErrorContains(t, err, "AWS S3 is throttling requests")
+	assert.Equal(t, []string{"abc"}, *uploads)
+}
+
+// countingReader counts Read calls on a non-seekable reader, modelling a DBFS
+// read handle that makes one API call per Read.
+type countingReader struct {
+	r     io.Reader
+	calls int
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	c.calls++
+	return c.r.Read(p)
+}
+
+func TestFilesClientBuffersUploadInLargeReads(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	uploads := uploadsWithOneThrottle(server)
+	f := newFilesClientWithFastRetries(t, server)
+
+	content := strings.Repeat("x", filesReplayReadSize)
+	src := &countingReader{r: strings.NewReader(content)}
+	require.NoError(t, f.Write(ctx, "hello", src, CreateParentDirectories))
+	assert.Len(t, *uploads, 2)
+	// One Read fills the buffer and one more returns EOF; io.ReadAll's own
+	// growing chunks would take about 20.
+	assert.LessOrEqual(t, src.calls, 3)
+}
+
+func setReplayBufferSize(t *testing.T, n int) {
+	old := filesReplayBufferSize
+	filesReplayBufferSize = n
+	t.Cleanup(func() { filesReplayBufferSize = old })
 }
 
 func TestFilesClientStopsRetryingAfterLimit(t *testing.T) {
