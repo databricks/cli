@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 
@@ -68,7 +67,7 @@ func openServerOutput(output io.Writer) (io.WriteCloser, error) {
 		return serverOutputWriter{output}, nil
 	}
 	file, ok := output.(*os.File)
-	if !ok || runtime.GOOS != "linux" {
+	if !ok {
 		return nil, errors.New("server output must be a Linux command-execution pipe")
 	}
 	info, err := file.Stat()
@@ -78,9 +77,7 @@ func openServerOutput(output io.Writer) (io.WriteCloser, error) {
 	if info.Mode()&os.ModeNamedPipe == 0 {
 		return nil, errors.New("server output must be a Linux command-execution pipe")
 	}
-	// Reopening inherited stdout registers its pipe with Go's poller, so
-	// Close interrupts blocked writes without changing the inherited fd.
-	return os.OpenFile(fmt.Sprintf("/proc/self/fd/%d", file.Fd()), os.O_WRONLY, 0)
+	return duplicateServerOutput(file)
 }
 
 type serverOutputWriter struct{ io.Writer }

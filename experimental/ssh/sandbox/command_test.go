@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"os"
 	"os/exec"
@@ -25,39 +26,54 @@ func TestServerOutputInterruptsInheritedStdout(t *testing.T) {
 		t.Skip("Linux sandbox command output uses /proc/self/fd")
 	}
 	const marker = "server output write interrupted\n"
-	if os.Getenv("DATABRICKS_TEST_SERVER_OUTPUT") == "1" {
+	if mode := os.Getenv("DATABRICKS_TEST_SERVER_OUTPUT"); mode != "" {
+		// An inherited pipe remains writable even when its permissions prevent reopening.
+		require.NoError(t, os.Stdout.Chmod(0))
 		output, err := openServerOutput(os.Stdout)
 		require.NoError(t, err)
 		defer output.Close()
 		file := output.(*os.File)
-		require.NoError(t, file.SetWriteDeadline(time.Now().Add(100*time.Millisecond)))
+		if mode == "deadline" {
+			require.NoError(t, file.SetWriteDeadline(time.Now().Add(100*time.Millisecond)))
+		} else {
+			timer := time.AfterFunc(100*time.Millisecond, func() { file.Close() })
+			defer timer.Stop()
+		}
 		_, err = file.Write(make([]byte, 16<<20))
-		require.ErrorIs(t, err, os.ErrDeadlineExceeded)
+		if mode == "deadline" {
+			require.ErrorIs(t, err, os.ErrDeadlineExceeded)
+		} else {
+			require.ErrorIs(t, err, fs.ErrClosed)
+		}
 		fmt.Fprint(os.Stderr, marker)
 		return
 	}
-	executable, err := os.Executable()
-	require.NoError(t, err)
-	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, executable, "-test.run=^TestServerOutputInterruptsInheritedStdout$")
-	cmd.Env = append(os.Environ(), "DATABRICKS_TEST_SERVER_OUTPUT=1")
-	stdout, err := cmd.StdoutPipe()
-	require.NoError(t, err)
-	stderr, err := cmd.StderrPipe()
-	require.NoError(t, err)
-	require.NoError(t, cmd.Start())
-	t.Cleanup(func() {
-		_ = cmd.Process.Kill()
-		_ = cmd.Wait()
-	})
-	// Keep stdout full until the child's write has been interrupted.
-	line, err := bufio.NewReader(stderr).ReadString('\n')
-	require.NoError(t, err)
-	require.Equal(t, marker, line)
-	_, err = io.Copy(io.Discard, stdout)
-	require.NoError(t, err)
-	require.NoError(t, cmd.Wait())
+	for _, mode := range []string{"deadline", "close"} {
+		t.Run(mode, func(t *testing.T) {
+			executable, err := os.Executable()
+			require.NoError(t, err)
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, executable, "-test.run=^TestServerOutputInterruptsInheritedStdout$")
+			cmd.Env = append(os.Environ(), "DATABRICKS_TEST_SERVER_OUTPUT="+mode)
+			stdout, err := cmd.StdoutPipe()
+			require.NoError(t, err)
+			stderr, err := cmd.StderrPipe()
+			require.NoError(t, err)
+			require.NoError(t, cmd.Start())
+			t.Cleanup(func() {
+				_ = cmd.Process.Kill()
+				_ = cmd.Wait()
+			})
+			// Keep stdout full until the child's write has been interrupted.
+			line, err := bufio.NewReader(stderr).ReadString('\n')
+			require.NoError(t, err)
+			require.Equal(t, marker, line)
+			_, err = io.Copy(io.Discard, stdout)
+			require.NoError(t, err)
+			require.NoError(t, cmd.Wait())
+		})
+	}
 }
 
 func TestServerCommandValidatesArguments(t *testing.T) {

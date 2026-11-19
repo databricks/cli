@@ -1,6 +1,7 @@
 package sandbox_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -112,6 +113,26 @@ func TestReadServerOutput(t *testing.T) {
 	stream := &responseStream{events: []*sandboxexec.ExecuteCommandResponse{{ProcessEvent: &sandboxexec.ProcessEvent{Event: &sandboxexec.ProcessEvent_Start{Start: &sandboxexec.StartEvent{CommandId: new("wrong")}}}}}}
 	sandbox.ReadServerOutputForTest(stream, "expected", ready, stopped, io.Discard)
 	require.ErrorContains(t, <-stopped, "unexpected command ID")
+}
+
+func TestReadServerOutputSuppressesDiagnosticsAfterReadiness(t *testing.T) {
+	stderr := func(text string) *sandboxexec.ExecuteCommandResponse {
+		return &sandboxexec.ExecuteCommandResponse{ProcessEvent: &sandboxexec.ProcessEvent{Event: &sandboxexec.ProcessEvent_Data{Data: &sandboxexec.DataEvent{Output: &sandboxexec.DataEvent_Stderr{Stderr: []byte(text)}}}}}
+	}
+	stream := &responseStream{events: []*sandboxexec.ExecuteCommandResponse{
+		stderr("startup diagnostic\n"),
+		{ProcessEvent: &sandboxexec.ProcessEvent{Event: &sandboxexec.ProcessEvent_Data{Data: &sandboxexec.DataEvent{Output: &sandboxexec.DataEvent_Stdout{Stdout: []byte("{\"port\":40000,\"token\":\"invocation-token\"}\n")}}}}},
+		stderr("Info: Handover accepted\n"),
+		stderr("Error: context canceled\n"),
+		{ProcessEvent: &sandboxexec.ProcessEvent{Event: &sandboxexec.ProcessEvent_End{End: &sandboxexec.EndEvent{ExitCode: new(int32(0))}}}},
+	}}
+	var diagnostics bytes.Buffer
+	ready := make(chan sandbox.Readiness, 1)
+	stopped := make(chan error, 1)
+	sandbox.ReadServerOutputForTest(stream, "command", ready, stopped, &diagnostics)
+	require.NoError(t, <-stopped)
+	assert.Equal(t, 40000, (<-ready).Port)
+	assert.Equal(t, "startup diagnostic\n", diagnostics.String())
 }
 
 func TestForwardingURL(t *testing.T) {
