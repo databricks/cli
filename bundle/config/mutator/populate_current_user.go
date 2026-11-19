@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -15,8 +16,16 @@ import (
 
 type populateCurrentUser struct{}
 
-// cachedCurrentUser is the principal and its groups under one cache entry. Entries
-// written without groups decode with a nil User and are read as a miss.
+// currentUserCacheKey keys the cached principal and groups. Version keeps entries
+// written before the groups were cached, which have another shape, from being read.
+type currentUserCacheKey struct {
+	Fingerprint bundle.UserFingerprint
+	Version     int
+}
+
+const currentUserCacheVersion = 2
+
+// cachedCurrentUser is the principal with its groups, cached as one entry.
 type cachedCurrentUser struct {
 	User   *iam.User          `json:"user"`
 	Groups []iam.ComplexValue `json:"groups"`
@@ -36,33 +45,41 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		return nil
 	}
 	w := b.WorkspaceClient(ctx)
-	fingerprint := b.GetUserFingerprint(ctx)
+	key := currentUserCacheKey{Fingerprint: b.GetUserFingerprint(ctx), Version: currentUserCacheVersion}
 
-	// A cache hit makes no identity/me or parent-groups request. Groups are cached with
-	// the principal, so a stale membership lasts as long as the principal entry does.
-	var user *iam.User
-	var diags diag.Diagnostics
-	if cached, ok := cache.Get[cachedCurrentUser](ctx, b.Cache, fingerprint); ok && cached.User != nil {
-		user = cached.User
-		user.Groups = cached.Groups
-	} else {
+	// The groups are part of the cached value, so a cache hit makes no identity/me or
+	// parent-groups request. A failed groups read is not cached: it returns an error from
+	// the compute function, and the principal is kept for the warning below.
+	var principal *iam.User
+	var groupsErr error
+	cached, err := cache.GetOrCompute(ctx, b.Cache, key, func(ctx context.Context) (cachedCurrentUser, error) {
 		me, err := iamutil.GetUserPrincipal(ctx, w)
 		if err != nil {
-			return diag.FromErr(err)
+			return cachedCurrentUser{}, err
 		}
-		user = me
+		principal = me
 		groups, err := iamutil.CurrentUserGroups(ctx, w)
 		if err != nil {
-			// Not cached, so the next command reads the groups again.
-			diags = diag.Diagnostics{{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("Could not read the groups of the current user: %v", err),
-			}}
-			b.CurrentUserGroupsUnknown = true
-		} else {
-			user.Groups = groups
-			cache.Put(ctx, b.Cache, fingerprint, cachedCurrentUser{User: user, Groups: groups})
+			groupsErr = err
+			return cachedCurrentUser{}, err
 		}
+		return cachedCurrentUser{User: me, Groups: groups}, nil
+	})
+
+	var diags diag.Diagnostics
+	user := cached.User
+	switch {
+	case err == nil:
+		user.Groups = cached.Groups
+	case groupsErr != nil && errors.Is(err, groupsErr):
+		user = principal
+		diags = diag.Diagnostics{{
+			Severity: diag.Warning,
+			Summary:  fmt.Sprintf("Could not read the groups of the current user: %v", groupsErr),
+		}}
+		b.CurrentUserGroupsUnknown = true
+	default:
+		return diag.FromErr(err)
 	}
 
 	b.Config.Workspace.CurrentUser = &config.User{
