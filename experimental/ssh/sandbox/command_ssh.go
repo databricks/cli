@@ -151,9 +151,17 @@ func sshClientOptions(cmd *cobra.Command, cfg *config.Config, name string, ident
 
 func sshProcessEnvironment(ctx context.Context, cfg *config.Config) []string {
 	variables := env.All(ctx)
+	if variables["DATABRICKS_HOST"] != cfg.Host {
+		delete(variables, "DATABRICKS_ACCOUNT_ID")
+		delete(variables, "DATABRICKS_WORKSPACE_ID")
+	}
 	variables["DATABRICKS_HOST"] = cfg.Host
-	variables["DATABRICKS_ACCOUNT_ID"] = cfg.AccountID
-	variables["DATABRICKS_WORKSPACE_ID"] = cfg.WorkspaceID
+	if cfg.AccountID != "" {
+		variables["DATABRICKS_ACCOUNT_ID"] = cfg.AccountID
+	}
+	if cfg.WorkspaceID != "" {
+		variables["DATABRICKS_WORKSPACE_ID"] = cfg.WorkspaceID
+	}
 	if cfg.Profile != "" {
 		// An implicit profile must retain environment-first auth precedence.
 		// Converting it to --profile would give the profile precedence instead.

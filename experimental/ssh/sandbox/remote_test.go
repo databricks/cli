@@ -90,6 +90,8 @@ func TestReadServerOutput(t *testing.T) {
 		{"fragmented", []string{"{\"port\":4", "0000,\"token\":\"invocation-token\"}\n"}, 40000, "EOF"},
 		{"invalid-json", []string{"hello\n"}, 0, "invalid character"},
 		{"invalid-port", []string{"{\"port\":22}\n"}, 0, "invalid sandbox relay port"},
+		{"missing-token", []string{"{\"port\":40000}\n"}, 0, "no invocation token"},
+		{"empty-token", []string{"{\"port\":40000,\"token\":\"\"}\n"}, 0, "no invocation token"},
 		{"too-large", []string{strings.Repeat("x", 4097)}, 0, "too large"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

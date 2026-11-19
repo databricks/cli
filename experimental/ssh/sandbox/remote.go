@@ -38,7 +38,7 @@ type remoteSetup struct {
 	SessionDir   string `json:"session_dir"`
 }
 
-// WaitForRunning preserves stopped-sandbox startup for SSH callers.
+// WaitForRunning polls until the sandbox is running, starting it if stopped.
 func WaitForRunning(ctx context.Context, w *databricks.WorkspaceClient, name string) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()

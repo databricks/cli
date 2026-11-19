@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
+// Name returns the Linux CLI release archive name for the architecture and version.
 func Name(architecture, version string) string {
 	if strings.Contains(version, "dev") {
 		return fmt.Sprintf("databricks_cli_linux_%s.zip", architecture)
@@ -19,6 +20,8 @@ func Name(architecture, version string) string {
 	return fmt.Sprintf("databricks_cli_%s_linux_%s.zip", version, architecture)
 }
 
+// OpenLocal opens the matching Linux CLI release archive from releasesDir.
+// The caller must close the returned reader.
 func OpenLocal(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
 	log.Infof(ctx, "Looking for CLI releases in directory: %s", releasesDir)
 	releaseName := Name(architecture, version)
@@ -30,6 +33,8 @@ func OpenLocal(ctx context.Context, architecture, version, releasesDir string) (
 	return file, nil
 }
 
+// OpenPublished downloads the matching Linux CLI release archive.
+// The caller must close the returned reader.
 func OpenPublished(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
 	// TODO: download and check databricks_cli_<version>_SHA256SUMS
 	fileName := Name(architecture, version)

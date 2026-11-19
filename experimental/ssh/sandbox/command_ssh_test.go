@@ -100,6 +100,34 @@ func TestSSHProcessEnvironmentPreservesResolvedWorkspaceAndCredentials(t *testin
 	assert.Equal(t, "environment-token", actual["DATABRICKS_TOKEN"])
 }
 
+func TestSSHProcessEnvironmentPreservesInheritedIDsWhenUnresolved(t *testing.T) {
+	for _, test := range []struct {
+		name, parentHost, accountID, workspaceID, wantAccount, wantWorkspace string
+	}{
+		{"same host unresolved", "https://workspace.test", "", "", "inherited-account", "456"},
+		{"same host resolved account", "https://workspace.test", "selected-account", "", "selected-account", "456"},
+		{"same host resolved workspace", "https://workspace.test", "", "123", "inherited-account", "123"},
+		{"changed host unresolved", "https://old-workspace.test", "", "", "", ""},
+		{"changed host resolved account", "https://old-workspace.test", "selected-account", "", "selected-account", ""},
+		{"changed host resolved workspace", "https://old-workspace.test", "", "123", "", "123"},
+		{"missing host unresolved", "", "", "", "", ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := env.Set(t.Context(), "DATABRICKS_ACCOUNT_ID", "inherited-account")
+			ctx = env.Set(ctx, "DATABRICKS_WORKSPACE_ID", "456")
+			ctx = env.Set(ctx, "DATABRICKS_HOST", test.parentHost)
+			cfg := &config.Config{Host: "https://workspace.test", AccountID: test.accountID, WorkspaceID: test.workspaceID}
+			actual := map[string]string{}
+			for _, variable := range sshProcessEnvironment(ctx, cfg) {
+				key, value, _ := strings.Cut(variable, "=")
+				actual[key] = value
+			}
+			assert.Equal(t, test.wantAccount, actual["DATABRICKS_ACCOUNT_ID"])
+			assert.Equal(t, test.wantWorkspace, actual["DATABRICKS_WORKSPACE_ID"])
+		})
+	}
+}
+
 func TestSSHProxyLoadsSavedConfigFile(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, `{}`)
