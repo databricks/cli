@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -297,7 +298,7 @@ func TestBindNeverUsesEnvTokenForProfileWithoutToken(t *testing.T) {
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindAuthFailed)
-	assert.Contains(t, err.Error(), "\nRun: databricks auth login --profile logfood")
+	assert.Contains(t, err.Error(), "\nRun: "+mcp.LoginCommand(bindingTestProfile, filepath.ToSlash(resolvedConfigFile(t, cfgPath))))
 	assert.NotContains(t, err.Error(), "dapi-env-token")
 	assert.Error(t, errors.Unwrap(err))
 }
@@ -354,7 +355,9 @@ func TestBindTokenCannotBeMinted(t *testing.T) {
 		Stderr:  &bytes.Buffer{},
 	})
 	requireBindError(t, err, mcp.BindAuthFailed)
-	assert.Contains(t, err.Error(), "\nRun: databricks auth login --profile logfood")
+	// The server is pinned to the file, so the login command names it: the bare command would log in to the file the
+	// shell reads.
+	assert.Contains(t, err.Error(), "\nRun: "+mcp.LoginCommand(bindingTestProfile, filepath.ToSlash(resolvedConfigFile(t, cfgPath))))
 	assert.Error(t, errors.Unwrap(err))
 }
 
@@ -391,7 +394,6 @@ func requireBindError(t *testing.T, err error, want mcp.BindCategory) {
 	var bindErr *mcp.BindError
 	require.ErrorAs(t, err, &bindErr)
 	assert.Equal(t, want, bindErr.Category)
-	assert.Equal(t, 2, bindErr.ExitCode())
 }
 
 // bindingTestDefaultConfig writes contents to ~/.databrickscfg in a fresh home directory, with
@@ -877,4 +879,70 @@ func TestCheckBindingChecksProfileWithoutEntry(t *testing.T) {
 			assert.Equal(t, bindErr.Error(), err.Error())
 		})
 	}
+}
+
+// TestCheckUnrecordedBindingWordsChangesWithoutRecord checks the runtime check for a server with no install record. Its
+// messages name no record to remove, and the missing-profile message is the one the startup check gives.
+func TestCheckUnrecordedBindingWordsChangesWithoutRecord(t *testing.T) {
+	tests := []struct {
+		name     string
+		contents string
+		host     string // the host the server was bound to at start
+		category mcp.BindCategory
+		want     func(configFile string) string
+	}{
+		{
+			name:     "profile missing",
+			contents: "[other]\nhost = https://other.test\n",
+			host:     bindingTestHost,
+			category: mcp.BindProfileNotFound,
+			want: func(configFile string) string {
+				return fmt.Sprintf(`MCP server system.ai.github needs Databricks profile "logfood", which does not exist in %s. Set it up with: databricks auth login --profile logfood`, configFile)
+			},
+		},
+		{
+			name:     "host changed",
+			contents: bindingTestProfileContents(bindingTestToken),
+			host:     "https://adb-999.test",
+			category: mcp.BindProfileHostChanged,
+			want: func(string) string {
+				return `MCP server system.ai.github was set up for https://adb-999.test, but profile "logfood" now points at https://adb-123.test. Restart the MCP server in your agent to use the current host`
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfgPath := bindingTestConfig(t, tt.contents)
+			resolved := bindingTestResolved(t, cfgPath)
+
+			err := mcp.CheckUnrecordedBinding(bindingTestService, bindingTestProfile, resolved, &config.Config{Host: tt.host})
+			requireBindError(t, err, tt.category)
+			assert.Equal(t, tt.want(filepath.ToSlash(resolved)), err.Error())
+		})
+	}
+}
+
+// resolvedConfigFile returns the config file path that Bind names in its hints: symlinks in path are resolved, as
+// ResolveConfigFile does (on macOS the temporary directory is under a symlink).
+func resolvedConfigFile(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := mcp.ResolveConfigFile(t.Context(), path)
+	require.NoError(t, err)
+	return resolved
+}
+
+func TestAuthErrorNamesPinnedConfigFile(t *testing.T) {
+	cause := errors.New("invalid access token")
+	assert.EqualError(t, mcp.AuthErrorIn("logfood", "/work/cfg/logfood.cfg", cause),
+		"invalid access token\nRun: DATABRICKS_CONFIG_FILE=/work/cfg/logfood.cfg databricks auth login --profile logfood")
+	assert.EqualError(t, mcp.AuthError("logfood", cause), "invalid access token\nRun: databricks auth login --profile logfood")
+}
+
+// TestConfigFileCommandUsesForwardSlashes checks that a pinned config file is named with forward slashes, so that the
+// hints read the same on Windows. A path that filepath builds there has backslashes, which the shell command must not
+// carry. On other systems the two forms are the same, so the test guards the Windows run.
+func TestConfigFileCommandUsesForwardSlashes(t *testing.T) {
+	path := filepath.Join("work", "cfg", "logfood.cfg")
+	assert.Equal(t, "DATABRICKS_CONFIG_FILE="+filepath.ToSlash(path)+" databricks auth login --profile logfood",
+		mcp.ConfigFileCommand(path, "databricks auth login --profile logfood"))
 }

@@ -1928,6 +1928,32 @@ func TestRunRecordsSessionOnlyFromInitializeResult(t *testing.T) {
 	assert.Empty(t, deletedSessions(fake), "no session was started, so none is deleted")
 }
 
+// Authenticate returns ErrSkipRequest for the session DELETE: no DELETE is sent, and nothing is logged, since the
+// session is over.
+func TestRunSkipsSessionDeleteWhenAuthenticateSkipsIt(t *testing.T) {
+	srv, fake := newFakeEndpoint(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.Header().Set("Mcp-Session-Id", "s1")
+		answer(w, r)
+	})
+	b := bridgeFor(srv.URL)
+	authenticate := b.Authenticate
+	b.Authenticate = func(r *http.Request) error {
+		if r.Method == http.MethodDelete {
+			return ErrSkipRequest
+		}
+		return authenticate(r)
+	}
+
+	_, errOut := runAll(t, b, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}`+"\n")
+
+	assert.Empty(t, deletedSessions(fake))
+	assert.Empty(t, errOut)
+}
+
 // deletedSessions returns the Mcp-Session-Id of each DELETE the fake endpoint received, in order.
 func deletedSessions(fake *fakeEndpoint) []string {
 	var sessions []string

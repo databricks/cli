@@ -76,6 +76,8 @@ type Executor struct {
 	shell         shell
 	dir           string
 	inheritOutput bool
+	// stdoutToStderr sends the command's stdout to stderr when inheritOutput is set.
+	stdoutToStderr bool
 }
 
 // NewCommandExecutor creates an Executor with default output behavior (no inheritance)
@@ -93,6 +95,13 @@ func NewCommandExecutor(dir string) (*Executor, error) {
 
 func (e *Executor) WithInheritOutput() {
 	e.inheritOutput = true
+}
+
+// WithInheritOutputToStderr is WithInheritOutput, except that the command's stdout goes to stderr. The output is not
+// piped, so Wait does not wait for a child that the command leaves holding its output open.
+func (e *Executor) WithInheritOutputToStderr() {
+	e.inheritOutput = true
+	e.stdoutToStderr = true
 }
 
 func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Executor, error) {
@@ -132,6 +141,9 @@ func (e *Executor) StartCommand(ctx context.Context, command string) (Command, e
 func (e *Executor) start(cmd *osexec.Cmd, ec *execContext) (Command, error) {
 	if e.inheritOutput {
 		cmd.Stdout = os.Stdout
+		if e.stdoutToStderr {
+			cmd.Stdout = os.Stderr
+		}
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
 		return &command{cmd, ec, nil, nil}, cmd.Start()

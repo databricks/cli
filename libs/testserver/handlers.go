@@ -985,8 +985,24 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesUpdate(req, req.Vars["name"])
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return req.Workspace.McpUserCredentialCreate(req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/ai-gateway/mcp-services/{name}", func(req Request) any {
+		return req.Workspace.McpEndpoint(req, req.Vars["name"])
 	})
 
 	// Feature Engineering features:

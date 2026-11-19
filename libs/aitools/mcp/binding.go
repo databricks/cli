@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -16,10 +17,6 @@ import (
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/config"
 )
-
-// bindExitCode is the exit status for binding failures, so callers can tell them apart
-// from other errors.
-const bindExitCode = 2
 
 // Commands that binding messages tell the user to run.
 const (
@@ -63,11 +60,6 @@ func (e *BindError) Unwrap() error {
 	return e.cause
 }
 
-// ExitCode returns the process exit status for this failure.
-func (e *BindError) ExitCode() int {
-	return bindExitCode
-}
-
 // Bind checks that the profile still names the host and workspace recorded for the service,
 // then authenticates with the profile's own credentials. It never reads stdin, prompts, or
 // loads a bundle. It returns the resolved config and the matching state entry, which is nil
@@ -95,7 +87,7 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	if entry == nil {
 		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
 	}
-	if err := AuthenticateBound(ctx, cfg, opts.Profile); err != nil {
+	if err := AuthenticateBound(ctx, cfg, opts.Profile, PinnedFile(entry, configFile)); err != nil {
 		return nil, nil, err
 	}
 	return cfg, entry, nil
@@ -106,11 +98,29 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 // from the environment, and a token meant for another workspace must not reach this one. It does not authenticate; see
 // AuthenticateBound.
 func BoundConfig(profileName, configFile string) (*config.Config, error) {
-	cfg := &config.Config{
+	return resolveBound(&config.Config{
 		Profile:    profileName,
 		ConfigFile: configFile,
 		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
-	}
+	})
+}
+
+// BoundConfigWithin is BoundConfig with the SDK's request and retry budgets set to budget, rounded up to whole seconds. A
+// budget of zero keeps the SDK's defaults. Resolving the profile runs on a context of its own, so a context deadline does
+// not reach it, and these budgets are what bound it (see profileMetadata.Load in cmd/auth).
+func BoundConfigWithin(profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	seconds := int((budget + time.Second - 1) / time.Second)
+	return resolveBound(&config.Config{
+		Profile:             profileName,
+		ConfigFile:          configFile,
+		Loaders:             []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
+		HTTPTimeoutSeconds:  seconds,
+		RetryTimeoutSeconds: seconds,
+	})
+}
+
+// resolveBound resolves cfg, as BoundConfig does.
+func resolveBound(cfg *config.Config) (*config.Config, error) {
 	if err := cfg.EnsureResolved(); err != nil {
 		// Configuration that the SDK rejects is not a credential failure, so a login would not fix it.
 		return nil, uncategorizedError(err)
@@ -119,8 +129,9 @@ func BoundConfig(profileName, configFile string) (*config.Config, error) {
 }
 
 // AuthenticateBound checks that cfg, from BoundConfig for profileName, has a credential. A credential the profile cannot
-// provide is AUTH_FAILED, with the login command for the profile.
-func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName string) error {
+// provide is AUTH_FAILED, with the login command for the profile. pinnedFile is the config file an entry pins the
+// profile to, or "" when there is none; the login command names it.
+func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pinnedFile string) error {
 	// Authenticate only writes headers onto req, which is never sent. The request takes
 	// the command's context, as in cmd/root/auth.go.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
@@ -128,9 +139,19 @@ func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName stri
 		return uncategorizedError(err)
 	}
 	if err := cfg.Authenticate(req); err != nil {
-		return AuthError(profileName, err)
+		return AuthErrorIn(profileName, pinnedFile, err)
 	}
 	return nil
+}
+
+// PinnedFile returns the config file that a hint for entry must name, or "" when the hint's command reads the same file
+// without one. An entry pinned to a config file names configFile, the file the profile is read from. A nil entry has no
+// pin. The path has forward slashes, as every hint spells it.
+func PinnedFile(entry *Entry, configFile string) string {
+	if entry != nil && entry.ConfigFile != "" {
+		return filepath.ToSlash(configFile)
+	}
+	return ""
 }
 
 // CheckBinding returns the state entry for service and profileName bound to configFile, the config file the caller
@@ -155,6 +176,21 @@ func CheckBinding(ctx context.Context, state *State, service, profileName, confi
 		return nil, driftError(entry.Name, profileName, *entry, *drift)
 	}
 	return entry, nil
+}
+
+// CheckUnrecordedBinding is CheckBinding for a server with no install record. Nothing records the host the server was
+// bound to, so cfg, the config Bind resolved at start, stands in for the record. The messages name no record to remove,
+// since there is none.
+func CheckUnrecordedBinding(service, profileName, configFile string, cfg *config.Config) error {
+	p, err := profileFor(service, profileName, configFile, nil)
+	if err != nil {
+		return err
+	}
+	bound := Entry{Host: cfg.Host, WorkspaceID: cfg.WorkspaceID}
+	if drift := driftOf(bound, p); drift != nil {
+		return unrecordedDriftError(service, profileName, bound, *drift)
+	}
+	return nil
 }
 
 // profileFor returns the profile profileName in configFile, or the PROFILE_NOT_FOUND error that says it
@@ -212,11 +248,17 @@ func InstallConfigFile(ctx context.Context, path string, pinned bool) string {
 // RecreateCommand returns the command that logs in to host for profileName again. configFile is the file the login must
 // write, passed as DATABRICKS_CONFIG_FILE; pass "" when the login's default file is that file.
 func RecreateCommand(host, profileName, configFile string) string {
-	command := authLoginCommand + " --host " + shellquote.BashArg(host) + " --profile " + shellquote.BashArg(profileName)
-	if configFile != "" {
-		command = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(configFile) + " " + command
+	return ConfigFileCommand(configFile, authLoginCommand+" --host "+shellquote.BashArg(host)+" --profile "+shellquote.BashArg(profileName))
+}
+
+// ConfigFileCommand returns command with DATABRICKS_CONFIG_FILE set to configFile, when configFile is not "". A command
+// that a hint prints names the file of a profile that is not the one the shell reads. The file is written with forward
+// slashes on every platform, as the other paths in the hints are.
+func ConfigFileCommand(configFile, command string) string {
+	if configFile == "" {
+		return command
 	}
-	return command
+	return "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(filepath.ToSlash(configFile)) + " " + command
 }
 
 // profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
@@ -258,6 +300,13 @@ func driftError(name, profileName string, entry Entry, drift Drift) error {
 	return &BindError{Category: BindProfileHostChanged, message: message}
 }
 
+// unrecordedDriftError is the PROFILE_HOST_CHANGED error for a server with no install record. A restart binds the server
+// to the profile's current host, as the startup check does without a record.
+func unrecordedDriftError(service, profileName string, bound Entry, drift Drift) error {
+	message := DriftMessage("MCP server "+service, bound, profileName, drift) + ". Restart the MCP server in your agent to use the current host"
+	return &BindError{Category: BindProfileHostChanged, message: message}
+}
+
 // configFileError is the PROFILE_HOST_CHANGED error for an entry whose config file is not the one in
 // use. The profile may name the same host there, but the server was set up against the recorded file.
 func configFileError(name, profileName, recordedPath, currentPath string) error {
@@ -269,8 +318,20 @@ func configFileError(name, profileName, recordedPath, currentPath string) error 
 // AuthError is the AUTH_FAILED error for a credential that the profile's own settings could not
 // provide. The message points at the login command for the profile.
 func AuthError(profileName string, cause error) error {
-	message := fmt.Sprintf("%s\nRun: %s --profile %s", cause, authLoginCommand, shellquote.BashArg(profileName))
+	return AuthErrorIn(profileName, "", cause)
+}
+
+// AuthErrorIn is AuthError for a profile pinned to configFile. The login command names configFile, since the login must
+// write that file; pass "" when the login's default file is that file.
+func AuthErrorIn(profileName, configFile string, cause error) error {
+	message := fmt.Sprintf("%s\nRun: %s", cause, LoginCommand(profileName, configFile))
 	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
+}
+
+// LoginCommand returns the command that logs in profileName. configFile is the file the login must write, passed as
+// DATABRICKS_CONFIG_FILE; pass "" when the login's default file is that file.
+func LoginCommand(profileName, configFile string) string {
+	return ConfigFileCommand(configFile, authLoginCommand+" --profile "+shellquote.BashArg(profileName))
 }
 
 // FindEntry returns the entry for the service and profile whose config file is configFile, or nil when

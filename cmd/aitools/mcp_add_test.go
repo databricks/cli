@@ -67,6 +67,7 @@ func TestValidateMCPAddFlags(t *testing.T) {
 			want: `--name "a-" is not a valid server name: use lowercase letters, digits, '-' and '_', with no "__" and no leading or trailing '-' or '_'`,
 		},
 		{name: "valid name", flags: mcpAddFlags{name: "my_github-1"}, names: []string{"github"}},
+		{name: "login alone", flags: mcpAddFlags{login: true}, names: []string{"github"}},
 		{
 			name: "name must be lowercase", flags: mcpAddFlags{name: "GitHub"}, names: []string{"github"},
 			want: `--name "GitHub" is not a valid server name: use lowercase letters, digits, '-' and '_', with no "__" and no leading or trailing '-' or '_'`,
@@ -958,6 +959,12 @@ func TestValidateMCPAddFlagsRefusesAgentsWithNoName(t *testing.T) {
 	assert.ErrorContains(t, err, "--agents names no agent")
 }
 
+// TestMcpAddHasNoNoLoginFlag checks that signing in is the default, so add has no --no-login flag.
+func TestMcpAddHasNoNoLoginFlag(t *testing.T) {
+	err := NewMcpAddCmd().ParseFlags([]string{"--no-login"})
+	assert.ErrorContains(t, err, "unknown flag: --no-login")
+}
+
 // TestMcpAddMissingProfileListsAccountProfileWithWorkspaceID checks that the existing profiles include an account-level profile
 // whose host names a workspace in ?w=, since --profile accepts it.
 func TestMcpAddMissingProfileListsAccountProfileWithWorkspaceID(t *testing.T) {
@@ -1008,6 +1015,28 @@ func TestMcpAddRejectedTokenIsAuthFailed(t *testing.T) {
 	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindAuthFailed), errorCategory(err))
 	assert.Contains(t, err.Error(), "Run: databricks auth login --profile logfood")
 	assert.NoFileExists(t, filepath.Join(home, ".claude.json"))
+}
+
+// TestMcpAddBindingFailureExitsOne checks that a binding failure is an ordinary failure of add: it exits 1 in text and
+// in JSON mode. Exit 2 is serve's status for binding failures, which an agent restarts on.
+func TestMcpAddBindingFailureExitsOne(t *testing.T) {
+	home := withHome(t)
+	withDatabricksBinary(t)
+	server := noRequestServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
+	require.NoError(t, mcp.SaveState(t.Context(), &mcp.State{Servers: []mcp.Entry{{
+		Name: "github-logfood", Service: "system.ai.github", Profile: "logfood", Host: "https://adb-123.test",
+	}}}))
+	args := []string{"--profile", "logfood", "--names", "github", "--agents", "claude-code"}
+
+	_, err := newAddTestCmd(t, args...)
+	require.Error(t, err)
+	assert.Equal(t, protos.AitoolsErrorCategory(mcp.BindProfileHostChanged), errorCategory(err))
+	assert.Equal(t, 1, root.ExitStatus(err))
+
+	_, err = newAddTestCmd(t, append(args, "--output", "json")...)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, 1, root.ExitStatus(err))
 }
 
 // TestMcpAddRefusesBinaryNotNamedDatabricks checks that the binary must be databricks: an argv[0] with another name, not on PATH, is refused, not replaced.
@@ -1343,7 +1372,7 @@ func TestProfileClientRefusesAccountOnlyProfile(t *testing.T) {
 			home := withHome(t)
 			writeHomeConfig(t, home, "[acct]\n"+tt.config)
 
-			_, err := profileClient(t.Context(), "acct", filepath.Join(home, ".databrickscfg"))
+			_, err := profileClient(t.Context(), "acct", filepath.Join(home, ".databrickscfg"), "")
 			if tt.refused {
 				assert.ErrorContains(t, err, "profile \"acct\" is account-level")
 				return

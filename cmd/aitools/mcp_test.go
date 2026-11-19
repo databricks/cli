@@ -33,7 +33,7 @@ func TestMcpCommandIsHidden(t *testing.T) {
 	for _, c := range mcp.Commands() {
 		names = append(names, c.Name())
 	}
-	assert.Equal(t, []string{"add", "list", "remove"}, names)
+	assert.Equal(t, []string{"add", "list", "login", "logout", "remove", "serve"}, names)
 
 	for _, c := range root.NewCommand(t.Context(), Spec).Commands() {
 		if c.Name() == "mcp" {

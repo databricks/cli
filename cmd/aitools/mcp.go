@@ -27,6 +27,7 @@ const (
 	categoryProfileRequired    protos.AitoolsErrorCategory = "PROFILE_REQUIRED"
 	categoryPermissionDenied   protos.AitoolsErrorCategory = "MCP_PERMISSION_DENIED"
 	categoryLocationNotFound   protos.AitoolsErrorCategory = "MCP_LOCATION_NOT_FOUND"
+	categorySignInTimeout      protos.AitoolsErrorCategory = "SIGN_IN_TIMEOUT"
 )
 
 // NewMcpCmd returns the `aitools mcp` group. It stays hidden until the whole MCP
@@ -36,12 +37,17 @@ func NewMcpCmd() *cobra.Command {
 		Use:   "mcp",
 		Short: "Manage Databricks managed MCP servers for coding agents",
 		Long: `Databricks managed MCP servers give coding agents tools for Databricks services, such as GitHub or web search.
-Use 'add' to install them into coding agents, bound to a Databricks profile.`,
+Use 'add' to install them into coding agents, bound to a Databricks profile, 'list' to see what is installed,
+and 'remove' to uninstall them. Some services use your account with an external provider, such as GitHub:
+'login' signs you in to one and 'logout' removes the sign-in.`,
 		Hidden: true,
 	}
 	cmd.AddCommand(NewMcpAddCmd())
 	cmd.AddCommand(NewMcpListCmd())
 	cmd.AddCommand(NewMcpRemoveCmd())
+	cmd.AddCommand(NewMcpLoginCmd())
+	cmd.AddCommand(NewMcpLogoutCmd())
+	cmd.AddCommand(NewMcpServeCmd())
 	return cmd
 }
 
@@ -58,6 +64,12 @@ func withAgentsHint(err error, agent string) error {
 		return err
 	}
 	return fmt.Errorf("%s is read-only; make it writable or leave %s out of --agents: %w", ro.Path, agent, ro.Err)
+}
+
+// failureWithCause is failure for a message that does not repeat its cause. cause is kept for errors.Is and errors.As
+// but is not printed.
+func failureWithCause(category protos.AitoolsErrorCategory, cause error, format string, args ...any) error {
+	return withCategory(&displayError{msg: fmt.Sprintf(format, args...), err: cause}, category)
 }
 
 // errorCategory classifies an error by its typed errors only, never by its text. Failures without a
