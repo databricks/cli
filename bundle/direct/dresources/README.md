@@ -131,13 +131,14 @@ Tell the copier about the exceptions only, each with a comment that says why:
  - `structcopy.Skip("Owner")` leaves a field unset although the source has it. Use it for a field the request must not carry and for one that is set by hand after the copy (the ID, a value that needs converting).
  - `structcopy.ForceSend("Comment")` sends a field even when it is zero, so that removing it from the config clears it. Only list fields verified against a real workspace, see `schemaForceSend`.
 
-Do not set `ForceSendFields` next to a copy. The copier derives it: the copied fields that the
-source lists, followed by the `ForceSend` ones. The SDK rejects a name its struct does not have,
-and the name of a field that was not copied would send that field's zero value.
+Do not set `ForceSendFields` next to a copy. The copier derives it: the `ForceSend` fields plus
+the copied fields that the source lists. The SDK rejects a name its struct does not have, and the
+name of a field that was not copied would send that field's zero value.
 
-A field with the same name but another type or JSON name in the two structs is an error until it
-is skipped. `TestFieldCopies` reports it, and records what every copier does with each field of
-the struct it builds in `testdata/field_copies.txt`. `./task generate-direct` regenerates that
+A field with the same name but another JSON name or type in the two structs is an error until it
+is skipped; only the enum types the SDK declares once per request and response are converted.
+`TestFieldCopies` reports it, and records what every copier does with each field of the struct
+it builds in `testdata/field_copies.txt`. `./task generate-direct` regenerates that
 file. On an SDK bump, read its diff the way you would review the wiring of a new field: it shows
 which requests and states pick the field up, and which leave it unset because their source has
 no such field.

@@ -70,8 +70,8 @@ func New[Src, Dst any](opts ...Option) *Copier[Src, Dst] {
 // Copy returns a new Dst holding the fields of src that Dst has as well. The copy is
 // shallow: maps, slices and pointers are shared with src.
 //
-// ForceSendFields is not copied but derived: it lists the copied fields that src lists,
-// followed by the [ForceSend] fields. The SDK marshaller rejects a name its struct lacks
+// ForceSendFields is not copied but derived: it lists the [ForceSend] fields, followed by
+// the copied fields that src lists. The SDK marshaller rejects a name its struct lacks
 // and would send the zero value of a field that was left unset.
 func (c *Copier[Src, Dst]) Copy(src *Src) *Dst {
 	p, err := c.plan()
@@ -155,7 +155,7 @@ func newPlan(src, dst reflect.Type, o options) (*plan, error) {
 		}
 	}
 
-	p := &plan{src: src, dst: dst, fields: nil, steps: nil, forced: nil}
+	p := &plan{src: src, dst: dst}
 
 	for _, name := range o.forceSend {
 		d, ok := dstFields[name]
@@ -206,7 +206,7 @@ func newPlan(src, dst reflect.Type, o options) (*plan, error) {
 }
 
 func newCopyStep(s, d field) (copyStep, error) {
-	step := copyStep{src: s.index, dst: d.index, convertTo: nil}
+	step := copyStep{src: s.index, dst: d.index}
 	if s.jsonName != d.jsonName {
 		return step, fmt.Errorf("%s is %q in the source's JSON but %q in the destination's; skip it and set it by hand", d.name, s.jsonName, d.jsonName)
 	}
@@ -227,7 +227,7 @@ func (p *plan) slot(index []int) *forceSendSlot {
 			return &p.forced[i]
 		}
 	}
-	p.forced = append(p.forced, forceSendSlot{index: index, always: nil, from: nil})
+	p.forced = append(p.forced, forceSendSlot{index: index})
 	return &p.forced[len(p.forced)-1]
 }
 
