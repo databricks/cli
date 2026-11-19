@@ -1,0 +1,654 @@
+// Package agentconfig reads and writes the user-scope MCP server entries of
+// coding agents. A write changes only the bytes of the one entry it is asked to
+// change, writes the file back atomically, and keeps comments and layout
+// elsewhere in the file.
+package agentconfig
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
+	"maps"
+	"os"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/atomicfile"
+)
+
+// Status is the outcome of Upsert.
+type Status string
+
+const (
+	StatusAdded     Status = "added"
+	StatusUpdated   Status = "updated"
+	StatusUnchanged Status = "unchanged"
+)
+
+var (
+	// ErrNotOwned means an entry with the name exists and was not written by
+	// this CLI. Upsert needs force to replace it, and Remove never deletes it.
+	ErrNotOwned = errors.New("entry was not written by databricks")
+	// ErrConfigInvalid means an agent config file exists but cannot be parsed.
+	// Such a file is never written to.
+	ErrConfigInvalid = errors.New("agent config file cannot be parsed")
+	// ErrReadOnly means an agent config file exists and the user cannot write it,
+	// so the write is refused. The error is a *ReadOnlyError.
+	ErrReadOnly = errors.New("agent config file is read-only")
+)
+
+var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
+
+// document is an agent config file in memory.
+type document interface {
+	// entry returns the server entry name under root, and whether it exists.
+	entry(root []string, name string) (map[string]any, bool, error)
+	// entries returns the object-valued members under root, keyed by name.
+	entries(root []string) (map[string]map[string]any, error)
+	// put writes entry as server name under root, creating missing levels and
+	// replacing an existing server. A nil entry removes the server, and removing
+	// an absent one is a no-op. With keys, an existing server changes only those
+	// keys, and its other keys keep their bytes where the format allows it.
+	put(root []string, name string, entry map[string]any, keys []string) error
+	// bytes serializes the document.
+	bytes() ([]byte, error)
+}
+
+// launchKeys are the entry keys that describe how a server starts. An agent's
+// builder writes only some of them (see ownedKeys).
+var launchKeys = []string{"command", "args", "env", "environment", "type"}
+
+// ownedKeys returns the launch keys that the agent's builder writes. Upsert
+// updates these keys and keeps every other key of the entry. The probe passes a
+// variable, since a builder writes its env key only when it has variables.
+func ownedKeys(spec *mcpconfig.Spec) []string {
+	probe := spec.Entry("", nil, map[string]string{mcpconfig.ConfigFileEnv: ""})
+	var keys []string
+	for _, key := range launchKeys {
+		if _, ok := probe[key]; ok {
+			keys = append(keys, key)
+		}
+	}
+	return keys
+}
+
+// Upsert writes a stdio server name for agent a, which runs cmd with args and
+// env. The only variable env may set is mcpconfig.ConfigFileEnv, since other variables are the
+// user's and no later write could remove them. An entry this CLI wrote gets its
+// launch keys updated, and its other keys are kept. A foreign entry is replaced
+// only when force is set. The file is left alone when the entry already matches.
+// cmd must be the databricks binary, or the entry could never be recognized as
+// ours. It returns the config file path.
+func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []string, env map[string]string, force bool) (string, Status, error) {
+	if err := checkName(name); err != nil {
+		return "", "", err
+	}
+	for _, k := range slices.Sorted(maps.Keys(env)) {
+		if k != mcpconfig.ConfigFileEnv {
+			return "", "", fmt.Errorf("server %q: env may only set %s, got %q", name, mcpconfig.ConfigFileEnv, k)
+		}
+	}
+	spec, err := specOf(a)
+	if err != nil {
+		return "", "", err
+	}
+	want := spec.Entry(cmd, args, env)
+	ours, err := normalize(want)
+	if err != nil {
+		return "", "", err
+	}
+	if !mcpconfig.IsDatabricksBinary(cmd) {
+		return "", "", fmt.Errorf("server %q: command %q must be the databricks binary, named databricks or databricks.exe", name, cmd)
+	}
+	if !mcpconfig.IsDatabricksEntry(ours) {
+		return "", "", fmt.Errorf("server %q: args must start with aitools mcp serve", name)
+	}
+	path, err := spec.Path(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	if spec.Lock {
+		release, err := lockConfig(path)
+		if err != nil {
+			return path, "", err
+		}
+		defer release()
+	}
+	doc, err := load(spec, path)
+	if err != nil {
+		return path, "", err
+	}
+	if err := checkLegacy(path, spec, doc); err != nil {
+		return path, "", err
+	}
+	root := rootPath(spec)
+	current, found, err := doc.entry(root, name)
+	if err != nil {
+		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+
+	keys := ownedKeys(spec)
+	var status Status
+	switch {
+	case !found:
+		status = StatusAdded
+		err = doc.put(root, name, want, nil)
+	case !mcpconfig.IsDatabricksEntry(current) && !force:
+		return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
+	case !mcpconfig.IsDatabricksEntry(current):
+		status = StatusUpdated
+		err = doc.put(root, name, want, nil)
+	default:
+		merged, mergeErr := keepUserKeys(current, ours, keys)
+		if mergeErr != nil {
+			return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, mergeErr)
+		}
+		same, cmpErr := sameEntry(launchKeysOf(current, keys), launchKeysOf(merged, keys))
+		if cmpErr != nil {
+			return path, "", cmpErr
+		}
+		if same {
+			return path, StatusUnchanged, nil
+		}
+		status = StatusUpdated
+		err = doc.put(root, name, merged, keys)
+	}
+	if err != nil {
+		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	if err := checkWritable(path); err != nil {
+		return path, "", err
+	}
+	if err := save(path, doc); err != nil {
+		return path, "", err
+	}
+	return path, status, nil
+}
+
+// Remove deletes server name from agent a's config. It reports false, without
+// writing, when there is no such entry, and refuses an entry this CLI did not
+// write.
+func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
+	if err := checkName(name); err != nil {
+		return false, err
+	}
+	spec, err := specOf(a)
+	if err != nil {
+		return false, err
+	}
+	path, err := spec.Path(ctx)
+	if err != nil {
+		return false, err
+	}
+	if spec.Lock {
+		release, err := lockConfig(path)
+		if err != nil {
+			return false, err
+		}
+		defer release()
+	}
+	doc, err := load(spec, path)
+	if err != nil {
+		return false, err
+	}
+	if err := checkLegacy(path, spec, doc); err != nil {
+		return false, err
+	}
+	root := rootPath(spec)
+	current, found, err := doc.entry(root, name)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	if !found {
+		return false, nil
+	}
+	if !mcpconfig.IsDatabricksEntry(current) {
+		return false, fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
+	}
+	if err := doc.put(root, name, nil, nil); err != nil {
+		return false, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	if err := checkWritable(path); err != nil {
+		return false, err
+	}
+	if err := save(path, doc); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// Read returns every server entry in agent a's config, keyed by name. A missing
+// file has no entries.
+func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, error) {
+	spec, err := specOf(a)
+	if err != nil {
+		return nil, err
+	}
+	path, err := spec.Path(ctx)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := load(spec, path)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := doc.entries(rootPath(spec))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	return entries, nil
+}
+
+// checkName refuses a name that no agent would accept. Upsert and Remove both
+// check it, so a name that cannot be written is never looked up either.
+func checkName(name string) error {
+	if !mcpconfig.ValidServerName(name) {
+		return fmt.Errorf("server name %q must contain only letters, digits, '-' and '_'", name)
+	}
+	return nil
+}
+
+func specOf(a *agents.Agent) (*mcpconfig.Spec, error) {
+	if a.MCP == nil {
+		return nil, fmt.Errorf("agent %s does not take MCP servers", a.DisplayName)
+	}
+	return a.MCP, nil
+}
+
+func rootPath(spec *mcpconfig.Spec) []string {
+	return strings.Split(spec.Root, ".")
+}
+
+// checkLegacy refuses a config that still holds servers in an older layout, next
+// to the table that Root names. A write would add that table beside them, which
+// the older layout reads as a server. An object with a type or command key is
+// taken as a server. Other objects in the table, such as a timeout, are not.
+func checkLegacy(path string, spec *mcpconfig.Spec, doc document) error {
+	if !spec.Legacy {
+		return nil
+	}
+	root := rootPath(spec)
+	parent, own := root[:len(root)-1], root[len(root)-1]
+	members, err := doc.entries(parent)
+	if err != nil {
+		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	var legacy []string
+	for name, member := range members {
+		_, typed := member["type"]
+		_, command := member["command"]
+		if name != own && (typed || command) {
+			legacy = append(legacy, name)
+		}
+	}
+	if len(legacy) == 0 {
+		return nil
+	}
+	slices.Sort(legacy)
+	return fmt.Errorf("%s: %q holds servers in an older layout (%s); move them under %q and try again",
+		filepath.ToSlash(path), strings.Join(parent, "."), strings.Join(legacy, ", "), spec.Root)
+}
+
+// Claude Code takes a lock while it saves its config, so a write that reads and
+// then renames without the lock can lose Claude's update, or be lost to it. The
+// lock is the directory <path>.lock: Claude Code makes it with mkdir and
+// removes it with rmdir, and treats a lock whose mtime is over 10 s old as left
+// behind by a process that died.
+const (
+	// lockStaleAfter is the age after which a lock is taken as abandoned.
+	lockStaleAfter = 10 * time.Second
+	// lockRetry is the pause between attempts to take a lock that is held.
+	lockRetry = time.Millisecond
+)
+
+// lockTimeout bounds the wait for a lock held by a live process. It is longer
+// than lockStaleAfter, so a lock left by a process that died is taken over on
+// the first attempt rather than failing it. A live holder keeps the lock for a
+// few milliseconds, since Claude Code only rereads and rewrites the file under it.
+var lockTimeout = 15 * time.Second
+
+// lockConfig takes the lock on the config file at path and returns the function
+// that releases it. The lock is held for a few milliseconds at most, so it is
+// not refreshed while held; a holder that dies leaves it to go stale.
+func lockConfig(path string) (func(), error) {
+	lock, err := configLock(path)
+	if err != nil {
+		return nil, err
+	}
+	// With no config directory, Claude Code has never saved this file, so there is no lock to share. The lock is not
+	// taken then, so that a remove does not create the directory.
+	if _, err := os.Stat(filepath.Dir(lock)); errors.Is(err, fs.ErrNotExist) {
+		return func() {}, nil
+	}
+	deadline := time.Now().Add(lockTimeout)
+	for {
+		err := os.Mkdir(lock, 0o700)
+		if err == nil {
+			return func() { _ = os.Remove(lock) }, nil
+		}
+		if lockBusy(err) {
+			// Windows refuses to create a directory that another process is still removing, with access denied.
+			// The lock is then being released, so it is tried again; a real permission problem fails at the deadline.
+			if time.Now().After(deadline) {
+				return nil, fmt.Errorf("lock %s: %w", filepath.ToSlash(lock), err)
+			}
+			time.Sleep(lockRetry)
+			continue
+		}
+		if !errors.Is(err, fs.ErrExist) {
+			return nil, fmt.Errorf("lock %s: %w", filepath.ToSlash(lock), err)
+		}
+		if info, statErr := os.Stat(lock); statErr == nil && time.Since(info.ModTime()) > lockStaleAfter {
+			if err := os.Remove(lock); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				return nil, fmt.Errorf("remove stale lock %s: %w", filepath.ToSlash(lock), err)
+			}
+			continue
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("%s is locked by another process, most likely Claude Code saving its config; try again", filepath.ToSlash(lock))
+		}
+		time.Sleep(lockRetry)
+	}
+}
+
+// lockBusy reports whether a failed mkdir of a lock means the lock is being released: on Windows, creating a directory
+// that is pending deletion fails with access denied.
+func lockBusy(err error) bool {
+	return runtime.GOOS == "windows" && errors.Is(err, fs.ErrPermission)
+}
+
+// configLock returns the lock path for the config file at path: its absolute
+// path with a .lock suffix. Claude Code names its lock after the config path as
+// given, without resolving symlinks, so a symlinked config is locked next to the
+// link, not next to its target. A symlink in a parent directory needs no care,
+// since both names reach the same directory.
+func configLock(path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	return abs + ".lock", nil
+}
+
+// load reads and parses the config at path. A missing file is an empty document.
+func load(spec *mcpconfig.Spec, path string) (document, error) {
+	data, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("read %s: %w", filepath.ToSlash(path), err)
+	}
+	var doc document
+	switch spec.Format {
+	case mcpconfig.FormatJSON:
+		doc, err = parseJSON(data)
+	case mcpconfig.FormatTOML:
+		doc, err = parseTOML(data)
+	default:
+		return nil, fmt.Errorf("unknown config format %d", spec.Format)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w: %w", filepath.ToSlash(path), ErrConfigInvalid, err)
+	}
+	return doc, nil
+}
+
+// ReadOnlyError is a write refused because the config file at Path is read-only.
+// It matches ErrReadOnly, and wraps the error that opening the file returned.
+type ReadOnlyError struct {
+	Path string
+	Err  error
+}
+
+func (e *ReadOnlyError) Error() string {
+	return fmt.Sprintf("%s is read-only; make it writable: %v", e.Path, e.Err)
+}
+
+func (e *ReadOnlyError) Unwrap() error { return e.Err }
+
+func (e *ReadOnlyError) Is(target error) bool { return target == ErrReadOnly }
+
+// checkWritable refuses an existing config file that the user cannot write. The
+// save replaces the file by rename, which needs write permission only on the
+// directory, so a read-only file would be replaced anyway. A file the user made
+// read-only is one they mean to keep as it is. A missing file is not refused.
+func checkWritable(path string) error {
+	f, err := os.OpenFile(path, os.O_WRONLY, 0)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return nil
+	case errors.Is(err, fs.ErrPermission):
+		return &ReadOnlyError{Path: filepath.ToSlash(path), Err: err}
+	case err != nil:
+		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	return f.Close()
+}
+
+// save writes doc to path atomically. The file keeps its mode; a new file gets
+// 0600 and a new directory 0700, because agent configs can hold auth state.
+func save(path string, doc document) error {
+	data, err := doc.bytes()
+	if err != nil {
+		return fmt.Errorf("serialize %s: %w", filepath.ToSlash(path), err)
+	}
+	perm := os.FileMode(0o600)
+	if info, err := os.Stat(path); err == nil {
+		perm = info.Mode().Perm()
+	}
+	// Rename would replace a symlink (dotfile managers link configs) with a
+	// regular file, so write to the link's target. A link whose target does not
+	// exist is refused: there is no target to write.
+	target := path
+	resolved, err := filepath.EvalSymlinks(path)
+	switch {
+	case err == nil:
+		target = resolved
+	case errors.Is(err, fs.ErrNotExist):
+		if info, lerr := os.Lstat(path); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("%s is a symlink to a file that does not exist: %w", filepath.ToSlash(path), err)
+		}
+	default:
+		return fmt.Errorf("resolve %s: %w", filepath.ToSlash(path), err)
+	}
+	return atomicfile.Write(target, data, perm, atomicfile.MkDir(0o700))
+}
+
+// lineEnding returns CRLF when data uses it, and LF otherwise.
+func lineEnding(data []byte) string {
+	if bytes.Contains(data, []byte("\r\n")) {
+		return "\r\n"
+	}
+	return "\n"
+}
+
+// withBOM puts the byte order mark back in front of data when the file had one.
+func withBOM(data []byte, bom bool) []byte {
+	if !bom {
+		return data
+	}
+	return append(append([]byte{}, utf8BOM...), data...)
+}
+
+// launchKeysOf returns the keys of entry that are listed in keys.
+func launchKeysOf(entry map[string]any, keys []string) map[string]any {
+	out := map[string]any{}
+	for _, key := range keys {
+		if v, ok := entry[key]; ok {
+			out[key] = v
+		}
+	}
+	return out
+}
+
+// keepUserKeys returns current with the keys listed in keys set to those of want,
+// and every other key of current kept. A listed key that want lacks is removed.
+// The env tables are merged by mergeEnv.
+func keepUserKeys(current, want map[string]any, keys []string) (map[string]any, error) {
+	out := maps.Clone(current)
+	for _, key := range keys {
+		value, ok := want[key]
+		if slices.Contains(mcpconfig.EnvKeys, key) {
+			var err error
+			value, ok, err = mergeEnv(current[key], value, ok)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if ok {
+			out[key] = value
+		} else {
+			delete(out, key)
+		}
+	}
+	return out, nil
+}
+
+// mergeEnv returns the env table after a write. It holds the variables of want,
+// and the variables of have other than the pinned config file variable. It
+// reports false when the table is absent: want lacks it and no variable is left.
+func mergeEnv(have, want any, inWant bool) (any, bool, error) {
+	haveEnv, err := envTable(have)
+	if err != nil {
+		return nil, false, err
+	}
+	wantEnv, _ := want.(map[string]any)
+	out := map[string]any{}
+	for k, v := range haveEnv {
+		if k != mcpconfig.ConfigFileEnv {
+			out[k] = v
+		}
+	}
+	maps.Copy(out, wantEnv)
+	if len(out) == 0 && !inWant {
+		return nil, false, nil
+	}
+	return out, true, nil
+}
+
+// envTable returns the variables of an env table, or nil when v is absent.
+func envTable(v any) (map[string]any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	table, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("environment variables are not a table: %w", ErrConfigInvalid)
+	}
+	return table, nil
+}
+
+// checkEdit verifies an edit to a document, in memory and before it is saved: the
+// server is entry (or gone when entry is nil), and nothing else in the document
+// changed. sameRest compares the document without the server, and sameEntry
+// compares the server with entry; both compare in the terms of the format. A
+// removal drops the containers it leaves empty, up to the root, as withoutServer
+// does, and the check accepts that drop and nothing else.
+func checkEdit(before, after map[string]any, root []string, name string, entry map[string]any, sameRest, sameEntry func(a, b map[string]any) (bool, error)) error {
+	eq, err := sameRest(withoutServer(before, root, name), withoutServer(after, root, name))
+	if err != nil {
+		return err
+	}
+	if !eq {
+		return errors.New("the edit changed other settings")
+	}
+	got, found := serverIn(after, root, name)
+	if entry == nil {
+		if found {
+			return errors.New("the edit did not remove the server")
+		}
+		return nil
+	}
+	if !found {
+		return errors.New("the edit did not add the server")
+	}
+	eq, err = sameEntry(got, entry)
+	if err != nil {
+		return err
+	}
+	if !eq {
+		return errors.New("the edit wrote a different server")
+	}
+	return nil
+}
+
+// serverIn returns the table of server name under root, and whether name is there
+// at all. A name that holds something other than a table is found, with a nil table.
+func serverIn(doc map[string]any, root []string, name string) (map[string]any, bool) {
+	for _, key := range root {
+		child, ok := doc[key].(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		doc = child
+	}
+	v, ok := doc[name]
+	if !ok {
+		return nil, false
+	}
+	entry, _ := v.(map[string]any)
+	return entry, true
+}
+
+// withoutServer returns doc without the server name under root. The tables on
+// the way are copied, so doc is not changed. A table left empty is dropped, so
+// a file without the table and one whose table only held the server compare equal.
+func withoutServer(doc map[string]any, root []string, name string) map[string]any {
+	out := maps.Clone(doc)
+	if len(root) == 0 {
+		delete(out, name)
+		return out
+	}
+	child, ok := out[root[0]].(map[string]any)
+	if !ok {
+		return out
+	}
+	rest := withoutServer(child, root[1:], name)
+	if len(rest) == 0 {
+		delete(out, root[0])
+	} else {
+		out[root[0]] = rest
+	}
+	return out
+}
+
+// sameEntry compares two entries as JSON values, so the in-memory Go types of a
+// freshly built entry and one decoded from a file compare equal.
+func sameEntry(a, b map[string]any) (bool, error) {
+	na, err := normalize(a)
+	if err != nil {
+		return false, err
+	}
+	nb, err := normalize(b)
+	if err != nil {
+		return false, err
+	}
+	return reflect.DeepEqual(na, nb), nil
+}
+
+func normalize(entry map[string]any) (map[string]any, error) {
+	raw, err := json.Marshal(entry)
+	if err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	if err := decodeJSON(raw, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// decodeJSON decodes data into v. Numbers stay as their text, so a value read
+// from a file is not rounded on the way.
+func decodeJSON(data []byte, v any) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	return dec.Decode(v)
+}
