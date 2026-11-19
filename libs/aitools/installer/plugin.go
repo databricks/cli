@@ -563,6 +563,30 @@ func ForgetPluginInstalls(ctx context.Context, cliScope string, agentNames []str
 	return SaveState(dir, state)
 }
 
+// ForgetSkillsOnlyChoice removes the named agents from the agents the user put
+// on raw skills with `install --skills-only`, in the state file for the given
+// CLI scope. Install calls it for agents whose plugin install it attempted and
+// that failed, so update tries the plugin again. Agents not in the list, or a
+// scope without state, are left as they are.
+func ForgetSkillsOnlyChoice(ctx context.Context, cliScope string, agentNames []string) error {
+	dir, err := skillsDir(ctx, cliScope)
+	if err != nil {
+		return err
+	}
+	state, err := LoadState(dir)
+	if err != nil || state == nil {
+		return err
+	}
+	n := len(state.SkillsOnlyAgents)
+	state.SkillsOnlyAgents = slices.DeleteFunc(state.SkillsOnlyAgents, func(name string) bool {
+		return slices.Contains(agentNames, name)
+	})
+	if len(state.SkillsOnlyAgents) == n {
+		return nil
+	}
+	return SaveState(dir, state)
+}
+
 // ManualPluginInstallCommands returns the commands, in order, that install the
 // databricks plugin through the agent's own CLI. When the headless install
 // fails, running them by hand shows the agent's full output. Returns nil for an

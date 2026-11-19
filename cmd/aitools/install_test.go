@@ -373,6 +373,39 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	assert.NotErrorIs(t, err, errNoAgentSetUp)
 }
 
+// An install that tries the plugin for an agent the user had put on raw skills
+// ends that choice even when the plugin install fails, so update tries the
+// plugin again. The choice of an agent not asked for the plugin stays.
+func TestExecutePlanFailedPluginForgetsSkillsOnlyChoice(t *testing.T) {
+	setupTestAgents(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	fakeBinsOnPath(t, "claude")
+	orig := installPluginForAgentFn
+	t.Cleanup(func() { installPluginForAgentFn = orig })
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed}
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := installer.GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{
+		SchemaVersion:    installer.CurrentSchemaVersion,
+		Release:          "v0.2.5",
+		Skills:           map[string]string{"databricks": "0.2.5"},
+		SkillsOnlyAgents: []string{agents.NameClaudeCode, agents.NameCodex},
+	}))
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	plan := buildPlan(t.Context(), []*agents.Agent{claude}, installer.ScopeGlobal, false, false)
+	_, err = executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, true)
+	require.ErrorIs(t, err, errNoAgentSetUp)
+
+	st, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{agents.NameCodex}, st.SkillsOnlyAgents)
+}
+
 func TestExecutePlanNothingInstalledIsAnError(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude")

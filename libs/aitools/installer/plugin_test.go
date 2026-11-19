@@ -842,6 +842,38 @@ func TestRecordPluginInstallsForgetsSkillsOnlyChoice(t *testing.T) {
 	assert.Equal(t, []string{agents.NameClaudeCode}, st.SkillsOnlyAgents)
 }
 
+// Forgetting the --skills-only choice of some agents keeps the choice of the
+// others and the rest of the state.
+func TestForgetSkillsOnlyChoice(t *testing.T) {
+	setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, SaveState(dir, &InstallState{
+		SchemaVersion:    CurrentSchemaVersion,
+		Skills:           map[string]string{"databricks": "0.1.0"},
+		SkillsOnlyAgents: []string{agents.NameClaudeCode, agents.NameCodex},
+	}))
+
+	require.NoError(t, ForgetSkillsOnlyChoice(ctx, ScopeGlobal, []string{agents.NameCodex, agents.NameCopilot}))
+
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{agents.NameClaudeCode}, st.SkillsOnlyAgents)
+	assert.Equal(t, map[string]string{"databricks": "0.1.0"}, st.Skills)
+}
+
+func TestForgetSkillsOnlyChoiceWithoutState(t *testing.T) {
+	setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	require.NoError(t, ForgetSkillsOnlyChoice(ctx, ScopeGlobal, []string{agents.NameCodex}))
+	dir, err := GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	st, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Nil(t, st)
+}
+
 func TestRecordPluginInstallsThenSkillsInstallNoPanic(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
