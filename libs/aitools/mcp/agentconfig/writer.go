@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -308,7 +309,7 @@ func checkLegacy(path string, spec *mcpconfig.Spec, doc document) error {
 
 // Claude Code takes a lock while it saves its config, so a write that reads and
 // then renames without the lock can lose Claude's update, or be lost to it. The
-// lock is the directory <real path>.lock: Claude Code makes it with mkdir and
+// lock is the directory <path>.lock: Claude Code makes it with mkdir and
 // removes it with rmdir, and treats a lock whose mtime is over 10 s old as left
 // behind by a process that died.
 const (
@@ -343,6 +344,15 @@ func lockConfig(path string) (func(), error) {
 		if err == nil {
 			return func() { _ = os.Remove(lock) }, nil
 		}
+		if lockBusy(err) {
+			// Windows refuses to create a directory that another process is still removing, with access denied.
+			// The lock is then being released, so it is tried again; a real permission problem fails at the deadline.
+			if time.Now().After(deadline) {
+				return nil, fmt.Errorf("lock %s: %w", filepath.ToSlash(lock), err)
+			}
+			time.Sleep(lockRetry)
+			continue
+		}
 		if !errors.Is(err, fs.ErrExist) {
 			return nil, fmt.Errorf("lock %s: %w", filepath.ToSlash(lock), err)
 		}
@@ -359,23 +369,21 @@ func lockConfig(path string) (func(), error) {
 	}
 }
 
-// configLock returns the lock path for the config file at path. Like
-// proper-lockfile, it names the lock after the file's real path, so a symlinked
-// config is locked where its target is. A file that does not exist yet has no
-// real path, and its absolute path is used.
+// lockBusy reports whether a failed mkdir of a lock means the lock is being released: on Windows, creating a directory
+// that is pending deletion fails with access denied.
+func lockBusy(err error) bool {
+	return runtime.GOOS == "windows" && errors.Is(err, fs.ErrPermission)
+}
+
+// configLock returns the lock path for the config file at path: its absolute
+// path with a .lock suffix. Claude Code names its lock after the config path as
+// given, without resolving symlinks, so a symlinked config is locked next to the
+// link, not next to its target. A symlink in a parent directory needs no care,
+// since both names reach the same directory.
 func configLock(path string) (string, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
-	}
-	resolved, err := filepath.EvalSymlinks(abs)
-	switch {
-	case err == nil:
-		abs = resolved
-	case errors.Is(err, fs.ErrNotExist):
-		// A missing file, or a link to one; save refuses the latter.
-	default:
-		return "", fmt.Errorf("resolve %s: %w", filepath.ToSlash(path), err)
 	}
 	return abs + ".lock", nil
 }

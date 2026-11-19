@@ -36,7 +36,7 @@ type Spec struct {
 	Entry func(cmd string, args []string, env map[string]string) map[string]any
 	// Lock is set when the agent takes a lock on its config file while it saves
 	// it, and writers must take the same lock. The lock is the directory named
-	// after the file's real path with a .lock suffix.
+	// after the file's path as given, symlinks not resolved, with a .lock suffix.
 	Lock bool
 	// Legacy is set when an older layout of the config kept servers directly
 	// under the table that Root sits in, beside the key Root names. Writers

@@ -981,14 +981,12 @@ func lockedAgent(path string) *agents.Agent {
 
 func TestConfigLockPath(t *testing.T) {
 	dir := t.TempDir()
-	realDir, err := filepath.EvalSymlinks(dir)
-	require.NoError(t, err)
 
 	existing := filepath.Join(dir, ".claude.json")
 	writeFile(t, existing, []byte(`{}`), 0o600)
 	got, err := configLock(existing)
 	require.NoError(t, err)
-	assert.Equal(t, filepath.Join(realDir, ".claude.json.lock"), got)
+	assert.Equal(t, filepath.Join(dir, ".claude.json.lock"), got)
 
 	missing := filepath.Join(dir, "missing", ".claude.json")
 	got, err = configLock(missing)
@@ -996,21 +994,41 @@ func TestConfigLockPath(t *testing.T) {
 	assert.Equal(t, filepath.Join(dir, "missing", ".claude.json.lock"), got)
 }
 
-func TestConfigLockPathFollowsSymlink(t *testing.T) {
+// TestConfigLockPathIsTheLinkPath checks that a symlinked config is locked next to the link, where Claude Code locks it,
+// not next to its target.
+func TestConfigLockPathIsTheLinkPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("creating symlinks needs privileges on Windows")
 	}
 	dir := t.TempDir()
-	realDir, err := filepath.EvalSymlinks(dir)
-	require.NoError(t, err)
-	target := filepath.Join(dir, "dotfiles", ".claude.json")
+	target := filepath.Join(dir, "dotfiles", "claude.json")
 	writeFile(t, target, []byte(`{}`), 0o600)
-	link := filepath.Join(dir, "linked.json")
+	link := filepath.Join(dir, ".claude.json")
 	require.NoError(t, os.Symlink(target, link))
 
 	got, err := configLock(link)
 	require.NoError(t, err)
-	assert.Equal(t, filepath.Join(realDir, "dotfiles", ".claude.json.lock"), got)
+	assert.Equal(t, link+".lock", got)
+}
+
+// TestSymlinkedConfigWaitsForClaudesLock checks that an edit of a symlinked config waits for the lock Claude Code holds
+// next to the link.
+func TestSymlinkedConfigWaitsForClaudesLock(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs privileges on Windows")
+	}
+	defer func(prev time.Duration) { lockTimeout = prev }(lockTimeout)
+	lockTimeout = 200 * time.Millisecond
+	dir := t.TempDir()
+	target := filepath.Join(dir, "dotfiles", "claude.json")
+	writeFile(t, target, []byte(`{}`), 0o600)
+	link := filepath.Join(dir, ".claude.json")
+	require.NoError(t, os.Symlink(target, link))
+	require.NoError(t, os.Mkdir(link+".lock", 0o700)) // what a live Claude Code holds
+	t.Cleanup(func() { _ = os.Remove(link + ".lock") })
+
+	_, _, err := Upsert(t.Context(), lockedAgent(link), testName, testCmd, testArgs("test"), nil, false)
+	assert.ErrorContains(t, err, "is locked by another process")
 }
 
 // TestLockedEditHoldsLockUntilReleased checks that the lock directory exists
@@ -1212,16 +1230,16 @@ func TestLockedEditLosesNoUpdates(t *testing.T) {
 	require.NoError(t, err)
 	writeFile(t, path, seed, 0o600)
 
-	// Claude Code locks the real path of the config, as configLock does. The test
-	// resolves it on its own, so the lock under test is not checked against itself.
-	real, err := filepath.EvalSymlinks(path)
+	// Claude Code locks the config's path as given, as configLock does. The test
+	// builds the name on its own, so the lock under test is not checked against itself.
+	abs, err := filepath.Abs(path)
 	require.NoError(t, err)
 
 	var saves atomic.Int64
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		claudeLikeWriter(path, real+".lock", stop, &saves)
+		claudeLikeWriter(path, abs+".lock", stop, &saves)
 	})
 	stopWriter := sync.OnceFunc(func() {
 		close(stop)
