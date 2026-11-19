@@ -5,12 +5,14 @@
 
 === Deploy where the local terraform state disappears between the pull and the migration
 
+>>> musterr [CLI] bundle deploy
+Executing 'postbuild' script
+Error: migrating Terraform state to the direct engine: terraform state [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate was removed after it was pulled; if another deploy is running, wait for it to finish and run this command again
+
+
+>>> print_migration_telemetry
+direct_migrate_state_missing true
+
 >>> print_engines
 2 MISSING GET /api/2.0/workspace/export
-3 engine/terraform GET /api/2.0/workspace/export
-4 engine/terraform GET /api/2.0/workspace/get-status
-1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
-1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
-1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-2 engine/terraform POST /api/2.0/workspace/delete
-1 engine/terraform POST /api/2.0/workspace/mkdirs
+1 MISSING POST /telemetry-ext

@@ -589,14 +589,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 // after approval, destroy commits as part of its teardown. The caller tags the user agent with the
 // resolved stateDesc.Engine afterwards.
 func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
-	migrated, err := statemgmt.Migrate(ctx, b)
-	if err != nil {
+	if err := statemgmt.Migrate(ctx, b); err != nil {
 		return fmt.Errorf("migrating Terraform state to the direct engine: %w", err)
 	}
-	if migrated {
-		stateDesc.Engine = engine.EngineDirect
-		b.Metrics.StateEngine = engine.EngineDirect
-	}
+	stateDesc.Engine = engine.EngineDirect
+	b.Metrics.StateEngine = engine.EngineDirect
 	return nil
 }
 
