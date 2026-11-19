@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/experimental/ssh/sandbox"
 	"github.com/databricks/cli/experimental/ssh/sandbox/internal/sandboxexec"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/gorilla/websocket"
@@ -199,11 +200,13 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 	for _, tc := range []struct {
 		name, mode    string
 		resumeVersion int
+		quiet         bool
 	}{
 		{name: "before-ready", mode: "before-ready"},
 		{name: "after-ready", mode: "after-ready"},
 		{name: "cancel", mode: "cancel"},
 		{name: "clean-close", mode: "clean-close"},
+		{name: "quiet-clean-close", mode: "clean-close", quiet: true},
 		{name: "startup-timeout", mode: "startup-timeout"},
 		{name: "slow-session", mode: "slow-session"},
 		{name: "clean-output-first", mode: "clean-output-first"},
@@ -217,6 +220,9 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 			mode := tc.mode
 			home := t.TempDir()
 			ctx := env.WithUserHomeDir(t.Context(), home)
+			if tc.quiet {
+				ctx = cmdio.WithQuiet(ctx)
+			}
 			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
 			identity, err := sandbox.LocalIdentity(ctx, "https://workspace.test", "caller", "sandboxes/test")
@@ -262,7 +268,8 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 			if mode == "startup-timeout" || mode == "slow-session" {
 				startupTimeout = time.Second
 			}
-			err = sandbox.ConnectProxyForTest(ctx, w, "sandboxes/test", identity, home, input, io.Discard, io.Discard, startupTimeout)
+			var diagnostics bytes.Buffer
+			err = sandbox.ConnectProxyForTest(ctx, w, "sandboxes/test", identity, home, input, io.Discard, &diagnostics, startupTimeout)
 			if mode == "clean-close" || mode == "slow-session" || mode == "clean-output-first" {
 				require.NoError(t, err)
 			} else {
@@ -317,7 +324,18 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 			}
 			assert.True(t, fixture.uploaded)
 			assert.True(t, fixture.terminated, "server command must be terminated independently of stream cancellation")
-			assert.True(t, fixture.removed, "session files must be removed on failures")
+			remove := err == nil || mode == "cancel" || mode == "startup-timeout"
+			assert.Equal(t, remove, fixture.removed, "preserve session logs on failures; clean up successful or cancelled sessions")
+			if !remove {
+				assert.Contains(t, diagnostics.String(), "session files retained at /home/sandbox-agent/session")
+			}
+			if tc.quiet {
+				assert.NotContains(t, diagnostics.String(), "Waiting for")
+				assert.NotContains(t, diagnostics.String(), "checking or uploading")
+			} else {
+				assert.Contains(t, diagnostics.String(), "Waiting for sandboxes/test to be running")
+				assert.Contains(t, diagnostics.String(), "checking or uploading the CLI executable")
+			}
 		})
 	}
 }

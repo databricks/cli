@@ -234,6 +234,8 @@ func buildSSHArgs(identity *Identity, proxyCommand string, extraArgs []string) [
 		"ssh", "-i", identity.KeyPath, "-o", "IdentitiesOnly=yes", "-o", "PreferredAuthentications=publickey",
 		// Include authentication and the proxy's ten-minute remote setup budget.
 		"-o", "ConnectTimeout=900",
+		// Each invocation owns its server; do not reuse a user's multiplexed connection.
+		"-o", "ControlPath=none",
 		"-o", "StrictHostKeyChecking=yes", "-o", "UserKnownHostsFile=" + quoteSSHOption(identity.KnownHostsPath),
 		"-o", "HostKeyAlias=" + identity.HostKeyAlias, "-o", "ServerAliveInterval=30", "-o", "ProxyCommand=" + proxyCommand,
 		"sandbox-agent@" + identity.HostKeyAlias,

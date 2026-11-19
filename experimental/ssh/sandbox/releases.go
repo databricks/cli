@@ -25,6 +25,13 @@ const maxReleaseSize = 256 << 20
 //go:embed cache.py
 var executableCacheScript string
 
+// executableUploadReader preserves Seek so SDK retries rewind the upload body.
+type executableUploadReader struct {
+	*bytes.Reader
+}
+
+func (executableUploadReader) Close() error { return nil }
+
 func uploadExecutable(ctx context.Context, w *databricks.WorkspaceClient, name string, setup *remoteSetup, releasesDir string) (string, error) {
 	architecture := map[string]string{"x86_64": "amd64", "aarch64": "arm64"}[setup.Architecture]
 	if architecture == "" {
@@ -41,13 +48,15 @@ func uploadExecutable(ctx context.Context, w *databricks.WorkspaceClient, name s
 		}
 		cacheID = fmt.Sprintf("%x", sha256.Sum256(data))
 	}
-	destination := path.Join(setup.Home, ".databricks", "sandbox-ssh", "releases", architecture+"-"+cacheID, "databricks")
-	cached, err := executableCacheCommand(ctx, w, name, "check", destination)
+	releaseID := architecture + "-" + cacheID
+	destination := path.Join(setup.Home, ".databricks", "sandbox-ssh", "releases", releaseID, "databricks")
+	executable := path.Join(setup.SessionDir, releaseID)
+	cached, err := executableCacheCommand(ctx, w, name, "check", destination, setup.SessionDir)
 	if err != nil {
 		return "", err
 	}
 	if cached {
-		return destination, nil
+		return executable, nil
 	}
 	if data == nil {
 		data, err = readLinuxExecutable(ctx, architecture, releasesDir)
@@ -56,17 +65,17 @@ func uploadExecutable(ctx context.Context, w *databricks.WorkspaceClient, name s
 		}
 	}
 	temporary := path.Join(setup.SessionDir, "databricks.upload")
-	if err := w.Sandbox.UploadFile(ctx, sdk.UploadFileRequest{Parent: name, Path: temporary, Contents: io.NopCloser(bytes.NewReader(data))}); err != nil {
+	if err := w.Sandbox.UploadFile(ctx, sdk.UploadFileRequest{Parent: name, Path: temporary, Contents: executableUploadReader{bytes.NewReader(data)}}); err != nil {
 		return "", fmt.Errorf("upload sandbox SSH executable: %w", err)
 	}
-	cached, err = executableCacheCommand(ctx, w, name, "install", destination, temporary, fmt.Sprintf("%x", sha256.Sum256(data)))
+	cached, err = executableCacheCommand(ctx, w, name, "install", destination, setup.SessionDir, temporary, fmt.Sprintf("%x", sha256.Sum256(data)))
 	if err != nil {
 		return "", err
 	}
 	if !cached {
 		return "", errors.New("sandbox SSH executable installation did not complete")
 	}
-	return destination, nil
+	return executable, nil
 }
 
 func readLinuxExecutable(ctx context.Context, architecture, releasesDir string) ([]byte, error) {

@@ -150,30 +150,28 @@ func (o *Output) Recv() (*ExecuteCommandResponse, error) {
 }
 
 func (o *Output) reattach() (*ExecuteCommandResponse, error) {
+	// Match the WebSocket resume budget for independent command-output outages.
+	retryCtx, cancelRetry := context.WithTimeout(o.ctx, time.Minute)
+	defer cancelRetry()
+	backoff := 250 * time.Millisecond
 	var err error
-	for attempt := range 5 {
+	for {
 		if o.ctx.Err() != nil {
 			return nil, status.FromContextError(o.ctx.Err()).Err()
-		}
-		if attempt > 0 {
-			timer := time.NewTimer(250 * time.Millisecond << (attempt - 1))
-			select {
-			case <-o.ctx.Done():
-				timer.Stop()
-				return nil, status.FromContextError(o.ctx.Err()).Err()
-			case <-timer.C:
-			}
 		}
 		streamCtx, cancel := context.WithTimeout(o.ctx, o.lifetime)
 		o.streamCtx = streamCtx //nolint:fatcontext // Each RPC derives from the original session context, not the previous RPC.
 		o.cancel = cancel
+		// Heartbeats can be 30s apart, so allow the full recovery budget for a response.
+		stopRetry := context.AfterFunc(retryCtx, cancel)
 		o.stream, err = o.client.attach(o.streamCtx, o.commandID, o.sequence)
 		var response *ExecuteCommandResponse
 		if err == nil {
 			// Streaming RPC failures may surface only on the first receive.
 			response, err = o.stream.Recv()
 		}
-		if err == nil {
+		retryStopped := stopRetry()
+		if err == nil && retryStopped {
 			o.sequence = response.GetSequenceNumber()
 			return response, nil
 		}
@@ -181,11 +179,24 @@ func (o *Output) reattach() (*ExecuteCommandResponse, error) {
 		if o.ctx.Err() != nil {
 			return nil, status.FromContextError(o.ctx.Err()).Err()
 		}
+		if retryCtx.Err() != nil && (err == nil || status.Code(err) == codes.Canceled) {
+			err = status.FromContextError(retryCtx.Err()).Err()
+		}
 		if !retryableOutputError(err) {
 			return nil, err
 		}
+		timer := time.NewTimer(backoff)
+		select {
+		case <-retryCtx.Done():
+			timer.Stop()
+			if o.ctx.Err() != nil {
+				return nil, status.FromContextError(o.ctx.Err()).Err()
+			}
+			return nil, err
+		case <-timer.C:
+		}
+		backoff = min(2*backoff, 2*time.Second)
 	}
-	return nil, err
 }
 
 func retryableOutputError(err error) bool {

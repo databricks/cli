@@ -36,8 +36,10 @@ func TestResolveSSHName(t *testing.T) {
 	_, err = ResolveSSHName(ctx, w, "")
 	require.ErrorContains(t, err, "unavailable through the Sandbox API")
 	assert.Equal(t, "missing", getDefault(ctx, server.URL))
-	_, err = ResolveSSHName(ctx, w, "a/b")
-	require.ErrorContains(t, err, "invalid sandbox ID")
+	for _, id := range []string{".", "..", "sandboxes/.", "sandboxes/..", "a/b", `a\b`, "a?b", "a#b", "a b", "a\tb"} {
+		_, err = ResolveSSHName(ctx, w, id)
+		require.ErrorContains(t, err, "invalid sandbox ID", id)
+	}
 	name, err := ResolveSSHName(ctx, w, "sandboxes/test")
 	require.NoError(t, err)
 	assert.Equal(t, "sandboxes/test", name)

@@ -8,14 +8,18 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/experimental/ssh/sandbox/internal/sandboxexec"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type (
@@ -36,6 +40,26 @@ func (service *commandService) record(ctx context.Context, id string) {
 	service.mu.Lock()
 	defer service.mu.Unlock()
 	service.calls = append(service.calls, recordedCall{md.Copy(), id})
+}
+
+func newCommandTestClient(t *testing.T, server *grpc.Server) *sandboxexec.Client {
+	t.Helper()
+	endpoint := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
+			server.ServeHTTP(w, r)
+			return
+		}
+		_, _ = io.WriteString(w, `{}`)
+	}))
+	endpoint.EnableHTTP2 = true
+	endpoint.StartTLS()
+	t.Cleanup(endpoint.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: endpoint.URL, Token: "test-token", WorkspaceID: "123", InsecureSkipVerify: true, HTTPTransport: endpoint.Client().Transport})
+	require.NoError(t, err)
+	client, err := sandboxexec.New(w, "sandboxes/test")
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, client.Close()) })
+	return client
 }
 
 func TestAuthenticatedStreamingExecutionAndTermination(t *testing.T) {
@@ -67,21 +91,7 @@ func TestAuthenticatedStreamingExecutionAndTermination(t *testing.T) {
 		}}},
 	}, implementation)
 	defer server.Stop()
-	endpoint := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
-			server.ServeHTTP(w, r)
-			return
-		}
-		_, _ = io.WriteString(w, `{}`)
-	}))
-	endpoint.EnableHTTP2 = true
-	endpoint.StartTLS()
-	defer endpoint.Close()
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: endpoint.URL, Token: "test-token", WorkspaceID: "123", InsecureSkipVerify: true, HTTPTransport: endpoint.Client().Transport})
-	require.NoError(t, err)
-	client, err := sandboxexec.New(w, "sandboxes/test")
-	require.NoError(t, err)
-	defer client.Close()
+	client := newCommandTestClient(t, server)
 	stream, err := client.Execute(t.Context(), "command-id", "/remote/databricks", []string{"sandbox", "server"})
 	require.NoError(t, err)
 	event, err := stream.Recv()
@@ -106,4 +116,129 @@ func TestClientRejectsPlaintext(t *testing.T) {
 	require.NoError(t, err)
 	_, err = sandboxexec.New(w, "sandboxes/test")
 	require.ErrorContains(t, err, "HTTPS")
+}
+
+func TestOutputRecoversFromLongOutputOnlyOutage(t *testing.T) {
+	t.Parallel()
+	const outage = 5 * time.Second
+	started := sync.OnceValue(time.Now)
+	var attaches atomic.Int32
+	output, starts, _ := newOutputForAttachTest(t, codes.Unavailable, func(_ any, stream grpc.ServerStream) error {
+		request := new(sandboxexec.AttachCommandRequest)
+		if err := stream.RecvMsg(request); err != nil {
+			return err
+		}
+		attaches.Add(1)
+		assert.Equal(t, "command-id", request.GetCommandId())
+		assert.Equal(t, int64(7), request.GetLastSequenceNumber())
+		if time.Since(started()) < outage {
+			return status.Error(codes.Unavailable, "command output temporarily unavailable")
+		}
+		return stream.SendMsg(&sandboxexec.ExecuteCommandResponse{SequenceNumber: new(int64(8))})
+	})
+	response, err := output.Recv()
+	require.NoError(t, err)
+	assert.Equal(t, int64(8), response.GetSequenceNumber())
+	assert.GreaterOrEqual(t, time.Since(started()), outage)
+	assert.Greater(t, attaches.Load(), int32(5))
+	_, err = output.Recv()
+	require.ErrorIs(t, err, io.EOF)
+	assert.Equal(t, int32(1), starts.Load())
+}
+
+func TestOutputReattachTiming(t *testing.T) {
+	t.Parallel()
+	for _, scenario := range []string{"stalled", "recovered"} {
+		t.Run(scenario, func(t *testing.T) {
+			t.Parallel()
+			var starts, attaches atomic.Int32
+			attemptDurations := make(chan time.Duration, 8)
+			server := grpc.NewServer()
+			t.Cleanup(server.Stop)
+			server.RegisterService(&grpc.ServiceDesc{
+				ServiceName: "databricks.sandbox.SandboxService", HandlerType: (*service)(nil),
+				Streams: []grpc.StreamDesc{
+					{StreamName: "ExecuteCommand", ServerStreams: true, Handler: func(_ any, stream grpc.ServerStream) error {
+						request := new(sandboxexec.ExecuteCommandRequest)
+						if err := stream.RecvMsg(request); err != nil {
+							return err
+						}
+						starts.Add(1)
+						assert.Equal(t, "command-id", request.GetCommandId())
+						if err := stream.SendMsg(&sandboxexec.ExecuteCommandResponse{SequenceNumber: new(int64(7))}); err != nil {
+							return err
+						}
+						return status.Error(codes.Unavailable, "command-output transport interrupted")
+					}},
+					{StreamName: "AttachCommand", ServerStreams: true, Handler: func(_ any, stream grpc.ServerStream) error {
+						request := new(sandboxexec.AttachCommandRequest)
+						if err := stream.RecvMsg(request); err != nil {
+							return err
+						}
+						attaches.Add(1)
+						assert.Equal(t, "command-id", request.GetCommandId())
+						assert.Equal(t, int64(7), request.GetLastSequenceNumber())
+						if scenario == "stalled" {
+							started := time.Now()
+							<-stream.Context().Done()
+							attemptDurations <- time.Since(started)
+							return stream.Context().Err()
+						}
+						// Match the production heartbeat delay before the first output.
+						timer := time.NewTimer(30 * time.Second)
+						defer timer.Stop()
+						select {
+						case <-stream.Context().Done():
+							return stream.Context().Err()
+						case <-timer.C:
+						}
+						if err := stream.SendMsg(&sandboxexec.ExecuteCommandResponse{SequenceNumber: new(int64(8))}); err != nil {
+							return err
+						}
+						// The recovered stream must also outlive the recovery deadline.
+						timer.Reset(31 * time.Second)
+						select {
+						case <-stream.Context().Done():
+							return stream.Context().Err()
+						case <-timer.C:
+						}
+						return stream.SendMsg(&sandboxexec.ExecuteCommandResponse{SequenceNumber: new(int64(9))})
+					}},
+				},
+			}, &commandService{})
+			client := newCommandTestClient(t, server)
+			ctx, cancel := context.WithTimeout(t.Context(), 70*time.Second)
+			defer cancel()
+			output, err := client.Follow(ctx, "command-id", "databricks", nil, 2*time.Minute)
+			require.NoError(t, err)
+			response, err := output.Recv()
+			require.NoError(t, err)
+			require.Equal(t, int64(7), response.GetSequenceNumber())
+			started := time.Now()
+			response, err = output.Recv()
+			if scenario == "recovered" {
+				require.NoError(t, err)
+				require.Equal(t, int64(8), response.GetSequenceNumber())
+				assert.GreaterOrEqual(t, time.Since(started), 30*time.Second)
+				response, err = output.Recv()
+				require.NoError(t, err)
+				assert.Equal(t, int64(9), response.GetSequenceNumber())
+				_, err = output.Recv()
+				require.ErrorIs(t, err, io.EOF)
+			} else {
+				require.Equal(t, codes.DeadlineExceeded, status.Code(err))
+				select {
+				case elapsed := <-attemptDurations:
+					assert.InDelta(t, float64(time.Minute), float64(elapsed), float64(2*time.Second))
+				case <-time.After(time.Second):
+					t.Fatal("stalled attach was not canceled")
+				}
+			}
+			elapsed := time.Since(started)
+			assert.GreaterOrEqual(t, elapsed, time.Minute)
+			assert.Less(t, elapsed, 65*time.Second)
+			assert.Equal(t, int32(1), starts.Load())
+			assert.Equal(t, int32(1), attaches.Load())
+		})
+	}
 }

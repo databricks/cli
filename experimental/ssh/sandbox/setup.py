@@ -59,15 +59,22 @@ with open(base / "host-key.lock", "a") as lock:
     host_public = subprocess.check_output(["ssh-keygen", "-y", "-f", str(host_key)], universal_newlines=True).strip()
 # The server inherits this lock across exec; a crashed client cannot make an
 # active session eligible for deletion, even after a day.
-for old_session in base.glob("session-*"):
-    try:
-        if old_session.is_symlink() or not old_session.is_dir() or old_session.stat().st_mtime >= time.time() - 86400:
-            continue
-        with open(old_session / "server.lock", "a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            shutil.rmtree(old_session)
-    except (BlockingIOError, FileNotFoundError):
-        pass
+# Serialize pruners so none recreates server.lock while another removes it.
+with open(base / "sessions.lock", "a") as cleanup_lock:
+    fcntl.flock(cleanup_lock, fcntl.LOCK_EX)
+    for old_session in base.glob("session-*"):
+        try:
+            if (
+                old_session.is_symlink()
+                or not old_session.is_dir()
+                or old_session.stat().st_mtime >= time.time() - 86400
+            ):
+                continue
+            with open(old_session / "server.lock", "a") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                shutil.rmtree(old_session)
+        except (BlockingIOError, FileNotFoundError):
+            pass
 session = Path(tempfile.mkdtemp(prefix="session-", dir=base))
 config = session / "sshd_config"
 

@@ -29,7 +29,10 @@ func ResolveSSHName(ctx context.Context, w *databricks.WorkspaceClient, requeste
 	if err != nil {
 		return "", err
 	}
-	if id == "" || strings.ContainsAny(id, "/\\?#") || strings.ContainsFunc(id, unicode.IsSpace) {
+	if err := validateSandboxID(id); err != nil {
+		return "", err
+	}
+	if id == "" || strings.ContainsAny(id, "?#") || strings.ContainsFunc(id, unicode.IsSpace) {
 		return "", fmt.Errorf("invalid sandbox ID %q", id)
 	}
 	name := "sandboxes/" + id

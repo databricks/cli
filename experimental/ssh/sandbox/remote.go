@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/sandbox/internal/sandboxexec"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
@@ -124,6 +125,9 @@ func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 	// Stop this timer after readiness; it must not limit an established session.
 	startupTimer := time.AfterFunc(startupTimeout, func() { cancelStartup(context.DeadlineExceeded) })
 	defer startupTimer.Stop()
+	if !cmdio.IsQuiet(ctx) {
+		fmt.Fprintf(diagnostics, "Waiting for %s to be running...\n", name)
+	}
 	if err := WaitForRunning(ctx, w, name); err != nil {
 		return err
 	}
@@ -131,7 +135,10 @@ func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 	if err != nil {
 		return err
 	}
-	defer cleanupRemoteDirectory(ctx, w, name, setup.SessionDir)
+	defer func() { cleanupRemoteDirectory(ctx, w, name, setup.SessionDir, err, diagnostics) }()
+	if !cmdio.IsQuiet(ctx) {
+		fmt.Fprintln(diagnostics, "Preparing sandbox SSH server (checking or uploading the CLI executable)...")
+	}
 	binary, err := uploadExecutable(ctx, w, name, setup, releasesDir)
 	if err != nil {
 		return err
@@ -311,7 +318,11 @@ func readServerOutput(stream interface {
 	}
 }
 
-func cleanupRemoteDirectory(ctx context.Context, w *databricks.WorkspaceClient, name, directory string) {
+func cleanupRemoteDirectory(ctx context.Context, w *databricks.WorkspaceClient, name, directory string, sessionErr error, diagnostics io.Writer) {
+	if sessionErr != nil && ctx.Err() == nil {
+		fmt.Fprintf(diagnostics, "Sandbox SSH session files retained at %s in the sandbox for diagnosis\n", directory)
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 	defer cancel()
 	_, err := w.Sandbox.ExecuteCommandSync(ctx, sdk.ExecuteCommandSyncRequest{Name: name, Cmd: "rm", Args: []string{"-rf", "--", directory}})

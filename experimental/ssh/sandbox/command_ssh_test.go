@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	sandboxcmd "github.com/databricks/cli/cmd/sandbox"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -26,8 +28,30 @@ func TestBuildSSHArgsBaseFlags(t *testing.T) {
 	got := buildSSHArgs(identity, "databricks sandbox ssh id --proxy", nil)
 	assert.Equal(t, "sandbox-agent@sandbox-host", got[len(got)-1])
 	assert.Contains(t, got, "StrictHostKeyChecking=yes")
+	assert.Contains(t, got, "ControlPath=none")
 	assert.Contains(t, got, `UserKnownHostsFile="/keys/known hosts"`)
 	assert.Contains(t, got, "ProxyCommand=databricks sandbox ssh id --proxy")
+}
+
+func TestBuildSSHArgsIgnoresInheritedControlPath(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("requires the local Unix OpenSSH client")
+	}
+	if _, err := exec.LookPath("ssh"); err != nil {
+		t.Skip("requires OpenSSH")
+	}
+	t.Setenv("SHELL", "/bin/sh")
+	configPath := filepath.Join(t.TempDir(), "config")
+	config := "Host *\n  ControlMaster auto\n  ControlPath " + filepath.Join(t.TempDir(), "%r@%h:%p") + "\n"
+	require.NoError(t, os.WriteFile(configPath, []byte(config), 0o600))
+	identity := &Identity{KeyPath: "/nonexistent/key", KnownHostsPath: "/nonexistent/known_hosts", HostKeyAlias: "sandbox-" + strings.Repeat("a", 64)}
+	marker := filepath.Join(t.TempDir(), "proxy-started")
+	args := buildSSHArgs(identity, "touch "+shellquote.BashArg(marker), nil)
+	command := exec.CommandContext(t.Context(), "ssh", append([]string{"-F", configPath}, args[1:]...)...)
+	output, err := command.CombinedOutput()
+	require.Error(t, err, "the test proxy exits before SSH negotiation")
+	assert.FileExists(t, marker, "OpenSSH must reach its ProxyCommand despite the long configured ControlPath")
+	assert.NotContains(t, string(output), "ControlPath too long")
 }
 
 func TestSSHClientOptionsPreserveProfileAndTarget(t *testing.T) {

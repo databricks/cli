@@ -169,6 +169,7 @@ func TestSetupPrunesOnlyAbandonedSessionDirectories(t *testing.T) {
 		t.Skip("requires openssh-server")
 	}
 	home := t.TempDir()
+	require.NoError(t, os.Chmod(home, 0o700))
 	ctx := env.WithUserHomeDir(t.Context(), home)
 	identity, err := sandbox.LocalIdentity(ctx, "https://workspace.test", "caller", "sandboxes/test")
 	require.NoError(t, err)
@@ -178,12 +179,19 @@ func TestSetupPrunesOnlyAbandonedSessionDirectories(t *testing.T) {
 from pathlib import Path
 base = Path.home() / ".databricks" / "sandbox-ssh"
 base.mkdir(parents=True)
-for name in ("session-old", "session-active", "session-recent", "releases", "persistent-key"):
+for name in ("session-old", "session-active", "session-recent", "releases", "persistent-key") + tuple("session-abandoned-" + str(i) for i in range(16)):
     directory = base / name
     directory.mkdir()
     (directory / "keep").write_text("content")
     if name != "session-recent":
         os.utime(directory, (time.time() - 90000, time.time() - 90000))
+cache = base / "releases" / ("amd64-" + "a" * 64)
+cache.mkdir()
+executable = cache / "databricks"
+executable.write_text("in-use executable")
+executable.chmod(0o700)
+subprocess.run([sys.executable, "-c", sys.argv[4], "check", str(executable), str(base / "session-active")], check=True)
+os.utime(cache, (time.time() - 40 * 86400, time.time() - 40 * 86400))
 server = subprocess.Popen([sys.executable, "-c", sys.argv[3], str(base / "session-active"), "/bin/sleep", "60"])
 try:
     with (base / "session-active" / "server.lock").open("a") as lock:
@@ -198,18 +206,57 @@ try:
         else:
             raise AssertionError("server did not retain its lease across exec")
     os.utime(base / "session-active", (time.time() - 90000, time.time() - 90000))
-    subprocess.run([sys.executable, "-c", sys.argv[1], json.dumps({"public_key":sys.argv[2]})], check=True)
+    # Probe across processes so simultaneous deletion of different old sessions
+    # fails deterministically, rather than relying on a rare rmtree race.
+    prefix = '''import fcntl, os, shutil, sys, time
+from pathlib import Path
+probe = open(Path.home() / ".databricks" / "sandbox-ssh" / ".cleanup-probe", "a")
+remove = shutil.rmtree
+def checked_remove(path):
+    fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    try:
+        time.sleep(0.01)
+        remove(path)
+    finally:
+        fcntl.flock(probe, fcntl.LOCK_UN)
+shutil.rmtree = checked_remove
+print("ready", flush=True)
+assert sys.stdin.read(1) == "x"
+'''
+    commands = [subprocess.Popen([sys.executable, "-c", prefix + sys.argv[1], json.dumps({"public_key":sys.argv[2]})], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True) for _ in range(8)]
+    try:
+        for command in commands:
+            assert command.stdout.readline() == "ready\n"
+        for command in commands:
+            command.stdin.write("x")
+            command.stdin.flush()
+        for command in commands:
+            stdout, stderr = command.communicate(timeout=20)
+            assert command.returncode == 0, (stdout, stderr)
+    finally:
+        for command in commands:
+            if command.poll() is None:
+                command.kill()
+            command.wait(timeout=5)
     assert not (base / "session-old").exists()
+    assert not list(base.glob("session-abandoned-*"))
     for name in ("session-active", "session-recent", "releases", "persistent-key"):
         assert (base / name / "keep").read_text() == "content", name
+    subprocess.run([sys.executable, "-c", sys.argv[4], "check", str(executable), str(base / "session-active")], check=True)
+    assert executable.read_text() == "in-use executable"
 finally:
     server.terminate()
     server.wait(timeout=5)
 os.utime(base / "session-active", (time.time() - 90000, time.time() - 90000))
 subprocess.run([sys.executable, "-c", sys.argv[1], json.dumps({"public_key":sys.argv[2]})], check=True)
 assert not (base / "session-active").exists()
+os.utime(cache, (time.time() - 40 * 86400, time.time() - 40 * 86400))
+subprocess.run([sys.executable, "-c", sys.argv[4], "check", str(base / "releases" / ("amd64-" + "b" * 64) / "databricks"), str(base / "session-recent")], check=True)
+assert not cache.exists()
 `
-	command := exec.CommandContext(t.Context(), "python3", "-c", harness, string(script), string(identity.PublicKey), sandbox.ServerLockScriptForTest)
+	cacheScript, err := os.ReadFile("cache.py")
+	require.NoError(t, err)
+	command := exec.CommandContext(t.Context(), "python3", "-c", harness, string(script), string(identity.PublicKey), sandbox.ServerLockScriptForTest, string(cacheScript))
 	command.Env = append(os.Environ(), "HOME="+home)
 	output, err := command.CombinedOutput()
 	require.NoError(t, err, string(output))

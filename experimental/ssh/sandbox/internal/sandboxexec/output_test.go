@@ -138,7 +138,7 @@ func newOutputForAttachTest(t *testing.T, sourceFailure codes.Code, attach grpc.
 	client, err := sandboxexec.New(workspace, "sandboxes/test")
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, client.Close()) })
-	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 70*time.Second)
 	t.Cleanup(cancel)
 	output, err := client.Follow(ctx, "command-id", "databricks", nil, 200*time.Millisecond)
 	require.NoError(t, err)
@@ -303,6 +303,7 @@ func TestOutputCancelsAttachRetry(t *testing.T) {
 }
 
 func TestOutputAttachRetryExhaustion(t *testing.T) {
+	t.Parallel()
 	for _, code := range []codes.Code{codes.Unavailable, codes.DeadlineExceeded} {
 		t.Run(code.String(), func(t *testing.T) {
 			t.Parallel()
@@ -317,6 +318,7 @@ func TestOutputAttachRetryExhaustion(t *testing.T) {
 				assert.Equal(t, int64(7), request.GetLastSequenceNumber())
 				return status.Error(code, "attach remains unavailable")
 			})
+			started := time.Now()
 			result := make(chan error, 1)
 			go func() {
 				_, err := output.Recv()
@@ -325,11 +327,12 @@ func TestOutputAttachRetryExhaustion(t *testing.T) {
 			select {
 			case err := <-result:
 				require.Equal(t, code, status.Code(err))
-			case <-time.After(8 * time.Second):
+			case <-time.After(65 * time.Second):
 				t.Fatal("attach retries did not exhaust within their bound")
 			}
+			require.GreaterOrEqual(t, time.Since(started), time.Minute)
 			require.Equal(t, int32(1), starts.Load())
-			require.Equal(t, int32(5), attaches.Load())
+			require.Greater(t, attaches.Load(), int32(5))
 		})
 	}
 }
