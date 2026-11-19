@@ -34,8 +34,8 @@ func TestMain(m *testing.M) {
 	if endpoint := os.Getenv("DATABRICKS_TEST_SANDBOX_PROXY_URL"); endpoint != "" {
 		// TestMain also runs as a standalone SSH transport subprocess.
 		//nolint:gocritic // TestMain has no testing.T context.
-		err := sandbox.ProxyStreamForTest(context.Background(), os.Stdin, os.Stdout, func(ctx context.Context, request proxy.DialRequest) (*websocket.Conn, error) {
-			conn, err := dialWebSocket(ctx, endpoint+"?id="+request.ConnID)
+		err := sandbox.ProxyStreamForTest(context.Background(), os.Stdin, os.Stdout, true, func(ctx context.Context, request proxy.DialRequest) (*websocket.Conn, error) {
+			conn, err := dialWebSocket(ctx, resumeEndpoint(endpoint, request))
 			return conn, err
 		})
 		if err != nil {

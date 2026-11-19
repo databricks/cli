@@ -10,13 +10,16 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/sandbox"
 	"github.com/databricks/cli/experimental/ssh/sandbox/internal/sandboxexec"
 	"github.com/databricks/cli/internal/build"
@@ -33,6 +36,7 @@ type execService any
 
 type remoteFixture struct {
 	mode                          string
+	resumeVersion                 int
 	publicKey                     string
 	connected                     chan struct{}
 	outputEnded                   chan struct{}
@@ -40,6 +44,7 @@ type remoteFixture struct {
 	terminated, removed, uploaded bool
 	authenticated                 bool
 	commandID                     string
+	dialQueries                   []url.Values
 }
 
 func (fixture *remoteFixture) execute(_ any, stream grpc.ServerStream) error {
@@ -58,8 +63,12 @@ func (fixture *remoteFixture) execute(_ any, stream grpc.ServerStream) error {
 	case "cancel", "startup-timeout":
 		<-stream.Context().Done()
 		return stream.Context().Err()
-	case "after-ready", "clean-close", "slow-session", "clean-output-first":
-		if err := stream.SendMsg(&sandboxexec.ExecuteCommandResponse{ProcessEvent: &sandboxexec.ProcessEvent{Event: &sandboxexec.ProcessEvent_Data{Data: &sandboxexec.DataEvent{Output: &sandboxexec.DataEvent_Stdout{Stdout: []byte("{\"port\":40000,\"token\":\"invocation-token\"}\n")}}}}}); err != nil {
+	case "after-ready", "clean-close", "slow-session", "clean-output-first", "resume-dial", "resume-gone", "resume-conflict":
+		readiness := "{\"port\":40000,\"token\":\"invocation-token\"}\n"
+		if fixture.resumeVersion != 0 {
+			readiness = fmt.Sprintf("{\"port\":40000,\"token\":\"invocation-token\",\"resume_version\":%d}\n", fixture.resumeVersion)
+		}
+		if err := stream.SendMsg(&sandboxexec.ExecuteCommandResponse{ProcessEvent: &sandboxexec.ProcessEvent{Event: &sandboxexec.ProcessEvent_Data{Data: &sandboxexec.DataEvent{Output: &sandboxexec.DataEvent_Stdout{Stdout: []byte(readiness)}}}}}); err != nil {
 			return err
 		}
 		select {
@@ -67,7 +76,7 @@ func (fixture *remoteFixture) execute(_ any, stream grpc.ServerStream) error {
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		}
-		if fixture.mode == "clean-close" || fixture.mode == "slow-session" {
+		if fixture.mode == "clean-close" || fixture.mode == "slow-session" || fixture.mode == "resume-gone" || fixture.mode == "resume-conflict" {
 			<-stream.Context().Done()
 			return stream.Context().Err()
 		}
@@ -137,7 +146,22 @@ func (fixture *remoteFixture) serveHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 		fixture.mu.Lock()
 		fixture.authenticated = true
+		fixture.dialQueries = append(fixture.dialQueries, r.URL.Query())
 		fixture.mu.Unlock()
+		if fixture.mode == "resume-dial" {
+			http.Error(w, "connection rejected", http.StatusGone)
+			return
+		}
+		if r.URL.Query().Get("reattach") == "1" {
+			switch fixture.mode {
+			case "resume-gone":
+				http.Error(w, "session expired", http.StatusGone)
+				return
+			case "resume-conflict":
+				http.Error(w, "session unavailable", http.StatusConflict)
+				return
+			}
+		}
 		upgrader := websocket.Upgrader{}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -146,6 +170,9 @@ func (fixture *remoteFixture) serveHTTP(w http.ResponseWriter, r *http.Request) 
 		defer conn.Close()
 		_ = conn.WriteMessage(websocket.BinaryMessage, []byte("SSH-2.0-test\r\n"))
 		close(fixture.connected)
+		if fixture.mode == "resume-gone" || fixture.mode == "resume-conflict" {
+			return
+		}
 		if fixture.mode == "slow-session" {
 			time.Sleep(1500 * time.Millisecond)
 		}
@@ -169,13 +196,32 @@ func (fixture *remoteFixture) serveHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T) {
-	for _, mode := range []string{"before-ready", "after-ready", "cancel", "clean-close", "startup-timeout", "slow-session", "clean-output-first"} {
-		t.Run(mode, func(t *testing.T) {
+	for _, tc := range []struct {
+		name, mode    string
+		resumeVersion int
+	}{
+		{name: "before-ready", mode: "before-ready"},
+		{name: "after-ready", mode: "after-ready"},
+		{name: "cancel", mode: "cancel"},
+		{name: "clean-close", mode: "clean-close"},
+		{name: "startup-timeout", mode: "startup-timeout"},
+		{name: "slow-session", mode: "slow-session"},
+		{name: "clean-output-first", mode: "clean-output-first"},
+		{name: "unsupported-resume-v1", mode: "clean-close", resumeVersion: 1},
+		{name: "unsupported-resume-future", mode: "clean-close", resumeVersion: proxy.ResumeProtocolVersion + 1},
+		{name: "resume-initial-dial", mode: "resume-dial", resumeVersion: proxy.ResumeProtocolVersion},
+		{name: "resume-reattach-gone", mode: "resume-gone", resumeVersion: proxy.ResumeProtocolVersion},
+		{name: "resume-reattach-conflict", mode: "resume-conflict", resumeVersion: proxy.ResumeProtocolVersion},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mode := tc.mode
 			home := t.TempDir()
 			ctx := env.WithUserHomeDir(t.Context(), home)
+			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
 			identity, err := sandbox.LocalIdentity(ctx, "https://workspace.test", "caller", "sandboxes/test")
 			require.NoError(t, err)
-			fixture := &remoteFixture{mode: mode, publicKey: string(identity.PublicKey), connected: make(chan struct{}), outputEnded: make(chan struct{})}
+			fixture := &remoteFixture{mode: mode, resumeVersion: tc.resumeVersion, publicKey: string(identity.PublicKey), connected: make(chan struct{}), outputEnded: make(chan struct{})}
 			grpcServer := grpc.NewServer()
 			grpcServer.RegisterService(&grpc.ServiceDesc{ServiceName: "databricks.sandbox.SandboxService", HandlerType: (*execService)(nil), Streams: []grpc.StreamDesc{{StreamName: "ExecuteCommand", ServerStreams: true, Handler: fixture.execute}}, Methods: []grpc.MethodDesc{{MethodName: "TerminateCommand", Handler: fixture.terminate}}}, fixture)
 			defer grpcServer.Stop()
@@ -234,11 +280,40 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 				assert.Less(t, time.Since(started), 5*time.Second)
 			case "slow-session":
 				assert.Greater(t, time.Since(started), startupTimeout)
+			case "resume-dial":
+				assert.ErrorIs(t, err, proxy.ErrConnectFailed)
+				assert.NotErrorIs(t, err, proxy.ErrReattachRejected)
+			case "resume-gone", "resume-conflict":
+				assert.ErrorIs(t, err, proxy.ErrWebsocketDropped)
+				assert.ErrorIs(t, err, proxy.ErrReattachRejected)
 			}
 			fixture.mu.Lock()
 			defer fixture.mu.Unlock()
-			if mode == "after-ready" || mode == "clean-close" {
+			if mode == "after-ready" || mode == "clean-close" || tc.resumeVersion == proxy.ResumeProtocolVersion {
 				assert.True(t, fixture.authenticated)
+			}
+			if fixture.authenticated {
+				if mode == "resume-gone" || mode == "resume-conflict" {
+					require.Len(t, fixture.dialQueries, 2)
+					assert.Equal(t, url.Values{
+						"id":                         {fixture.dialQueries[0].Get("id")},
+						proxy.ResumeVersionParameter: {"2"},
+						"delivered":                  {strconv.Itoa(len("SSH-2.0-test\r\n"))},
+						"reattach":                   {"1"},
+					}, fixture.dialQueries[1])
+				} else {
+					require.Len(t, fixture.dialQueries, 1)
+				}
+				query := fixture.dialQueries[0]
+				assert.NotEmpty(t, query.Get("id"))
+				assert.False(t, query.Has("reattach"))
+				if tc.resumeVersion == proxy.ResumeProtocolVersion {
+					assert.Equal(t, "2", query.Get(proxy.ResumeVersionParameter))
+					assert.Equal(t, "0", query.Get("delivered"))
+				} else {
+					assert.False(t, query.Has(proxy.ResumeVersionParameter))
+					assert.False(t, query.Has("delivered"))
+				}
 			}
 			assert.True(t, fixture.uploaded)
 			assert.True(t, fixture.terminated, "server command must be terminated independently of stream cancellation")

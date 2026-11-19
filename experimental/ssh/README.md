@@ -233,9 +233,12 @@ Resume protocol v2 lets an SSH session survive a dropped websocket without losin
 bytes. The protocol is symmetric: the client and server keep separate offsets and replay buffers
 for their outgoing streams.
 
-Before opening the websocket, the client requests `/capabilities`. It enables resume only when the
+For compute SSH, the client requests `/capabilities` before opening the websocket. It enables resume only when the
 server returns `{"resume_version":2}`. A missing route, another version, an invalid response, or a
 probe that takes more than ten seconds leaves resume disabled. The SSH connection still proceeds.
+For sandbox SSH, the server reports `resume_version` in its command-output readiness response.
+The client enables resume only for version 2 and authenticates each replacement WebSocket through
+sandbox port forwarding using current workspace credentials and the invocation token.
 When resume is enabled, the initial websocket URL includes these query parameters:
 
 | Parameter | Initial value | Meaning |

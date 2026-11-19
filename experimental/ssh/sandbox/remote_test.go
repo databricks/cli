@@ -136,12 +136,26 @@ func TestReadServerOutputSuppressesDiagnosticsAfterReadiness(t *testing.T) {
 }
 
 func TestForwardingURL(t *testing.T) {
-	endpoint, err := sandbox.ForwardingURLForTest("https://workspace.test", "sandboxes/test", 40000, "connection")
-	require.NoError(t, err)
-	assert.Equal(t, "wss://workspace.test/sandbox-proxy/sandboxes/test/ports/40000/ssh?id=connection", endpoint)
-	_, err = sandbox.ForwardingURLForTest("http://workspace.test", "sandboxes/test", 40000, "connection")
+	for _, tc := range []struct {
+		name  string
+		dial  proxy.DialRequest
+		query string
+	}{
+		{"raw", proxy.DialRequest{ConnID: "connection"}, "id=connection"},
+		{"raw-ignores-resume-fields", proxy.DialRequest{ConnID: "connection", Delivered: 4096, Reattach: true}, "id=connection"},
+		{"initial", proxy.DialRequest{ConnID: "connection", ResumeCapable: true}, "delivered=0&id=connection&resume_version=2"},
+		{"handover", proxy.DialRequest{ConnID: "connection", ResumeCapable: true, Delivered: 4096}, "delivered=4096&id=connection&resume_version=2"},
+		{"reattach", proxy.DialRequest{ConnID: "connection", ResumeCapable: true, Delivered: 8192, Reattach: true}, "delivered=8192&id=connection&reattach=1&resume_version=2"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint, err := sandbox.ForwardingURLForTest("https://workspace.test", "sandboxes/test", 40000, tc.dial)
+			require.NoError(t, err)
+			assert.Equal(t, "wss://workspace.test/sandbox-proxy/sandboxes/test/ports/40000/ssh?"+tc.query, endpoint)
+		})
+	}
+	_, err := sandbox.ForwardingURLForTest("http://workspace.test", "sandboxes/test", 40000, proxy.DialRequest{ConnID: "connection"})
 	require.Error(t, err)
-	_, err = sandbox.ForwardingURLForTest("https://workspace.test", "sandboxes/../other", 40000, "connection")
+	_, err = sandbox.ForwardingURLForTest("https://workspace.test", "sandboxes/../other", 40000, proxy.DialRequest{ConnID: "connection"})
 	require.Error(t, err)
 }
 
@@ -218,7 +232,7 @@ func TestProxyStreamStopsWithoutWaitingForBlockedStdin(t *testing.T) {
 	defer server.Close()
 	finished := make(chan error, 1)
 	go func() {
-		finished <- sandbox.ProxyStreamForTest(t.Context(), input, io.Discard, func(ctx context.Context, _ proxy.DialRequest) (*websocket.Conn, error) {
+		finished <- sandbox.ProxyStreamForTest(t.Context(), input, io.Discard, false, func(ctx context.Context, _ proxy.DialRequest) (*websocket.Conn, error) {
 			conn, response, err := websocket.DefaultDialer.DialContext(ctx, strings.Replace(server.URL, "http://", "ws://", 1), nil)
 			if response != nil {
 				response.Body.Close()

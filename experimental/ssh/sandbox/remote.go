@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 	"uuid"
@@ -188,9 +189,9 @@ func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 		case <-proxyCtx.Done():
 		}
 	}()
-	proxyErr := proxyStream(proxyCtx, input, output,
+	proxyErr := proxyStream(proxyCtx, input, output, readiness.ResumeVersion == proxy.ResumeProtocolVersion,
 		func(ctx context.Context, request proxy.DialRequest) (*websocket.Conn, error) {
-			endpoint, err := forwardingURL(w.Config.Host, name, readiness.Port, request.ConnID)
+			endpoint, err := forwardingURL(w.Config.Host, name, readiness.Port, request)
 			if err != nil {
 				return nil, err
 			}
@@ -212,6 +213,9 @@ func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 			if response != nil {
 				response.Body.Close()
 			}
+			if err != nil && request.Reattach && response != nil && (response.StatusCode == http.StatusConflict || response.StatusCode == http.StatusGone) {
+				return nil, errors.Join(proxy.ErrReattachRejected, fmt.Errorf("reattach failed (HTTP %d): %w", response.StatusCode, err))
+			}
 			return conn, err
 		})
 	// Seal completion before the server-output watcher can report a later exit.
@@ -222,7 +226,7 @@ func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 	return proxyErr
 }
 
-func forwardingURL(host, name string, port int, id string) (string, error) {
+func forwardingURL(host, name string, port int, dial proxy.DialRequest) (string, error) {
 	endpoint, err := url.Parse(host)
 	if err != nil || endpoint.Scheme != "https" {
 		return "", errors.New("port forwarding requires an HTTPS workspace URL")
@@ -232,7 +236,15 @@ func forwardingURL(host, name string, port int, id string) (string, error) {
 	}
 	endpoint.Scheme = "wss"
 	endpoint.Path = fmt.Sprintf("/sandbox-proxy/%s/ports/%d/ssh", name, port)
-	endpoint.RawQuery = url.Values{"id": {id}}.Encode()
+	query := url.Values{"id": {dial.ConnID}}
+	if dial.ResumeCapable {
+		query.Set(proxy.ResumeVersionParameter, strconv.Itoa(proxy.ResumeProtocolVersion))
+		query.Set("delivered", strconv.FormatInt(dial.Delivered, 10))
+		if dial.Reattach {
+			query.Set("reattach", "1")
+		}
+	}
+	endpoint.RawQuery = query.Encode()
 	return endpoint.String(), nil
 }
 
@@ -311,7 +323,7 @@ func cleanupRemoteDirectory(ctx context.Context, w *databricks.WorkspaceClient, 
 // A read from inherited stdin can remain blocked after Close on Unix. Keep that
 // read outside the shared proxy's wait group so a closed WebSocket can end the
 // standalone proxy command. Process exit reclaims any remaining stdin read.
-func proxyStream(ctx context.Context, input io.ReadCloser, output io.Writer, dial func(context.Context, proxy.DialRequest) (*websocket.Conn, error)) error {
+func proxyStream(ctx context.Context, input io.ReadCloser, output io.Writer, resumable bool, dial func(context.Context, proxy.DialRequest) (*websocket.Conn, error)) error {
 	reader, writer := io.Pipe()
 	defer input.Close()
 	defer reader.Close()
@@ -323,7 +335,7 @@ func proxyStream(ctx context.Context, input io.ReadCloser, output io.Writer, dia
 	// Refresh the WebSocket before the forwarding route's connection lifetime limit.
 	handover := time.NewTicker(25 * time.Minute)
 	defer handover.Stop()
-	return proxy.RunClientProxy(ctx, reader, output, func() <-chan time.Time { return handover.C }, 30*time.Second, false, dial)
+	return proxy.RunClientProxy(ctx, reader, output, func() <-chan time.Time { return handover.C }, 30*time.Second, resumable, dial)
 }
 
 // Keep the session lease open in the server, including after the local CLI dies.
