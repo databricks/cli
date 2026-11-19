@@ -1,0 +1,55 @@
+
+=== The create request times out but the service was created: deploy uses the service
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created model_provider_services.mps1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //model-provider-services
+POST /api/2.1/unity-catalog/model-provider-services
+GET /api/2.1/unity-catalog/model-provider-services/main.myschema.myservice
+
+=== The create request is cancelled and the service was not created: deploy repeats the create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.model_provider_services.mps1: retrying after 499 from POST /api/2.1/unity-catalog/model-provider-services
+Created model_provider_services.mps1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //model-provider-services
+POST /api/2.1/unity-catalog/model-provider-services
+GET /api/2.1/unity-catalog/model-provider-services/main.myschema.myservice
+POST /api/2.1/unity-catalog/model-provider-services
+
+=== The create request is cancelled after creating the service and the first lookup is cancelled too: deploy repeats the lookup and uses the service
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.model_provider_services.mps1: retrying after 499 from GET /api/2.1/unity-catalog/model-provider-services/main.myschema.myservice
+Created model_provider_services.mps1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //model-provider-services
+POST /api/2.1/unity-catalog/model-provider-services
+GET /api/2.1/unity-catalog/model-provider-services/main.myschema.myservice
+GET /api/2.1/unity-catalog/model-provider-services/main.myschema.myservice
+
+=== The create request times out after creating the service and the lookup misses it: the repeated create gets ALREADY_EXISTS and the next lookup finds the service
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.model_provider_services.mps1: retrying after 504 Gateway Timeout from POST /api/2.1/unity-catalog/model-provider-services
+Created model_provider_services.mps1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //model-provider-services
+POST /api/2.1/unity-catalog/model-provider-services
+GET /api/2.1/unity-catalog/model-provider-services/main.myschema.myservice
+POST /api/2.1/unity-catalog/model-provider-services
+GET /api/2.1/unity-catalog/model-provider-services/main.myschema.myservice

@@ -1,1 +1,0 @@
-* Throttle Claude Code's native plugin install hint separately from the text hint: it prints at most once per 10 minutes per session, so the install dialog still comes up when a subagent, a hook, or a command outside a Claude Code subprocess runs the session's first `databricks` command. ([#7692](https://github.com/databricks/cli/pull/7692))

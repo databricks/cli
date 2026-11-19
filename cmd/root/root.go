@@ -51,6 +51,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
 	initTargetFlag(cmd)
+	initSkillsInvokedFlag(cmd)
 
 	// Deprecated flag. Warn if it is specified.
 	initProgressLoggerFlag(cmd, logFlags)
@@ -88,6 +89,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 		ctx = installer.WithAiDevKitInUserAgent(ctx)
 		ctx = installer.WithCallingAgentToolingInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
+		ctx = withSkillsInUserAgent(ctx, cmd)
 		cmd.SetContext(ctx)
 
 		// Recommend installing Databricks AI tooling to the calling coding agent

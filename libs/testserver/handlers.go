@@ -642,6 +642,22 @@ func AddDefaultHandlers(server *Server) {
 		return server.fakeOidc.OidcDeviceAuth(req)
 	})
 
+	server.Handle("GET", "/oidc/accounts/{account_id}/.well-known/oauth-authorization-server", func(req Request) any {
+		return server.fakeOidc.AccountOidcEndpoints(req.Vars["account_id"])
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+
 	server.Handle("POST", "/telemetry-ext", func(req Request) any {
 		var request struct {
 			ProtoLogs []string `json:"protoLogs"`
@@ -957,6 +973,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesCreate(req)
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services", func(req Request) any {
+		return req.Workspace.McpServicesList(req)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
 	})
@@ -974,7 +994,8 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.FeaturesCreate(req)
 	})
 	server.Handle("GET", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+		// Features are stored lowercased, and the cloud GET matches the name case-insensitively.
+		return MapGet(req.Workspace, req.Workspace.Features, strings.ToLower(req.Vars["full_name"]))
 	})
 	server.Handle("PATCH", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
 		return req.Workspace.FeaturesUpdate(req, req.Vars["full_name"])

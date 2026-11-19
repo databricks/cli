@@ -711,6 +711,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
+	// TODO: complex arg: operations
 	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `Deprecated: This legacy pipeline setting does not control batch job scheduling. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
@@ -2671,6 +2672,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
+	// TODO: complex arg: operations
 	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `Deprecated: This legacy pipeline setting does not control batch job scheduling. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger

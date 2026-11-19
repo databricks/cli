@@ -136,7 +136,12 @@ func retryMessage(err error) string {
 			req := rw.Response.Request
 			endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
 		}
-		msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
+		status := strconv.Itoa(apiErr.StatusCode)
+		// Non-standard codes such as 499 have no status text.
+		if text := http.StatusText(apiErr.StatusCode); text != "" {
+			status += " " + text
+		}
+		msg = fmt.Sprintf("retrying after %s%s", status, endpoint)
 		// Include the context the caller added to the error, e.g. the path of the file being written.
 		if err.Error() != apiErr.Error() {
 			msg += ": " + err.Error()

@@ -197,3 +197,12 @@ readplanarg() {
         printf ""
     fi
 }
+
+# unset_ci_env clears CI and the CI/CD provider markers, so a test behaves the
+# same in CI as on a laptop. The provider list mirrors listCiCdProviders in the
+# Go SDK's useragent/cicd.go (read by useragent.CiCdProvider()); keep it in
+# sync when the SDK adds a provider. PROJECT_ID alone defeats the Google Cloud
+# Build check, which requires all of its variables.
+unset_ci_env() {
+    unset CI GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD CIRCLECI TRAVIS BITBUCKET_BUILD_NUMBER PROJECT_ID CODEBUILD_BUILD_ARN TFC_RUN_ID
+}

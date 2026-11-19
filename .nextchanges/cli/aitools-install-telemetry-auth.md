@@ -1,1 +1,0 @@
-* Fix `databricks aitools install` waiting a long time on an unreachable or slow workspace while it resolves authentication for telemetry; that wait is now limited to a few seconds. ([#7468](https://github.com/databricks/cli/pull/7468))

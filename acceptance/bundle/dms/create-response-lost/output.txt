@@ -1,0 +1,68 @@
+
+=== The first deploy's create is applied, but its response is lost
+
+>>> fault.py --after-handler POST /api/2.0/bundle/deployments 500 0 1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-create-response-lost-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The deploy recovered the deployment: the job carries its id
+
+>>> [CLI] jobs get [JOB_ID]
+{
+  "deployment_id": "[DEPLOYMENT_ID]",
+  "kind": "BUNDLE",
+  "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-create-response-lost-[UNIQUE_NAME]/default/state/metadata.json",
+  "version_id": "1"
+}
+
+=== No drift after the deploy
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== A create that finds an earlier deployment with versions does not adopt it
+
+>>> fault.py GET /api/2.0/bundle/deployments/* 500 0 3
+
+>>> [CLI] bundle deploy
+Warn: Could not read deployment history: Fault injected by test.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-create-response-lost-[UNIQUE_NAME]/default/files...
+Warn: Could not enable deployment history for this deploy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
+Updated jobs.foo
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== Destroy, so the next deploy creates a new deployment
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-create-response-lost-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+=== A create retried into ALREADY_EXISTS is recovered
+
+>>> fault.py --after-handler POST /api/2.0/bundle/deployments 503 0 1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-create-response-lost-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [JOB_ID_2]
+{
+  "deployment_id": "[DEPLOYMENT_ID_2]",
+  "kind": "BUNDLE",
+  "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-create-response-lost-[UNIQUE_NAME]/default/state/metadata.json",
+  "version_id": "1"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

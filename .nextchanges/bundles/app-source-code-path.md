@@ -1,1 +1,0 @@
-* Send `source_code_path` on the app Create request and `git_source` on the app Create and Update requests, so the app records its configured source before its first deployment. ([#6399](https://github.com/databricks/cli/pull/6399))

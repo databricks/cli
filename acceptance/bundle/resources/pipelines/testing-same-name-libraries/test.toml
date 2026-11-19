@@ -1,0 +1,6 @@
+# Runs only against the local test server.
+Cloud = false
+
+[[Repls]]
+Old = '\\'
+New = '/'

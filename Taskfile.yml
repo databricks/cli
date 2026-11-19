@@ -758,6 +758,10 @@ tasks:
 
   # --- Integration tests ---
 
+  # CI runs these on GitHub-hosted runners, which cancel a job after 6h. The 5h20m
+  # go test timeout leaves room for setup, the build and the report steps, so a
+  # slow run ends with a timeout panic that lists the running tests instead of a
+  # killed job with no output for the package.
   integration:
     desc: Run integration tests (requires Databricks workspace)
     deps: [install-pythons]
@@ -769,7 +773,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=12h
+          -- -parallel 4 -timeout=5h20m
 
   integration-short:
     desc: Run integration tests except the slow ones (skips CloudSlow via -short)
@@ -783,7 +787,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=12h -short
+          -- -parallel 4 -timeout=5h20m -short
 
   cloud-select:
     desc: Run selection of integration tests (tests changed in this branch)

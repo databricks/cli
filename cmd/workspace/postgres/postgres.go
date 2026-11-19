@@ -1167,7 +1167,7 @@ func newCreateMigration() *cobra.Command {
     DATABASE_MAPPINGS: Required. Mappings from source databases to target databases.
     MIGRATION_TYPE: Required. Immutable. The intended migration mode, selected when the
       migration is created.
-      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY, MIGRATION_TYPE_ONLINE]`
+      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY]`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -1560,7 +1560,8 @@ func newCreateSnapshot() *cobra.Command {
 	cmd.Long = `Create a Snapshot.
 
   Creates a snapshot, an immutable point-in-time copy of a branch's data, within
-  the project.
+  the project. Returns a long-running operation. Poll it until done is true; its
+  response holds the new snapshot.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1570,7 +1571,10 @@ func newCreateSnapshot() *cobra.Command {
   Arguments:
     PARENT: The project in which to create the snapshot. Format: projects/{project_id}
     SNAPSHOT_ID: Client-chosen ID for the snapshot. It becomes the final segment of the
-      snapshot resource name and cannot be changed after creation.`
+      snapshot resource name and cannot be changed after creation. The ID must
+      be 3 to 63 characters long, start with a lowercase letter, end with a
+      lowercase letter or digit, and contain only lowercase letters, digits, and
+      hyphens.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1675,7 +1679,7 @@ func newCreateSyncedTable() *cobra.Command {
 
 	cmd.Flags().Var(&createSyncedTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `Output only.`)
+	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `The full resource name of the synced table, where (catalog, schema, table) are the Unity Catalog names of the synced table.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1683,7 +1687,9 @@ func newCreateSyncedTable() *cobra.Command {
 	cmd.Short = `Create a Synced Database Table.`
 	cmd.Long = `Create a Synced Database Table.
 
-  Create a Synced Table.
+  Create a Synced Table. Creates the synced table in Unity Catalog and the
+  Postgres table on the branch, and starts the pipeline that loads the initial
+  data from the source table.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2226,6 +2232,8 @@ func newDeleteDatabase() *cobra.Command {
 	cmd.Short = `Delete a Database.`
 	cmd.Long = `Delete a Database.
 
+  Deletes the specified Postgres database.
+
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
@@ -2745,7 +2753,8 @@ func newDeleteSnapshot() *cobra.Command {
 	cmd.Short = `Delete a Snapshot.`
 	cmd.Long = `Delete a Snapshot.
 
-  Deletes the specified snapshot.
+  Deletes the specified snapshot. A deleted snapshot cannot be recovered.
+  Returns a long-running operation. Poll it until done is true.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2847,7 +2856,9 @@ func newDeleteSyncedTable() *cobra.Command {
 	cmd.Short = `Delete a Synced Database Table.`
 	cmd.Long = `Delete a Synced Database Table.
 
-  Delete a Synced Table.
+  Delete a Synced Table. Drops the Postgres table, removes the synced table from
+  its pipeline, and deletes it from Unity Catalog. The pipeline itself is
+  deleted when no other synced table uses it.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -3426,6 +3437,8 @@ func newGetDatabase() *cobra.Command {
 	cmd.Use = "get-database NAME"
 	cmd.Short = `Get a Database.`
 	cmd.Long = `Get a Database.
+
+  Retrieves information about the specified Postgres database.
 
   Arguments:
     NAME: The name of the Database to retrieve. Format:
@@ -4300,7 +4313,7 @@ func newListDatabases() *cobra.Command {
 	cmd.Short = `List postgres databases in a branch.`
 	cmd.Long = `List postgres databases in a branch.
 
-  List Databases.
+  Returns a list of Postgres databases in the branch.
 
   Arguments:
     PARENT: The Branch that owns this collection of databases. Format:
@@ -5493,6 +5506,9 @@ func newUpdateDatabase() *cobra.Command {
 	cmd.Short = `Update a Database.`
 	cmd.Long = `Update a Database.
 
+  Updates the specified Postgres database. Only the fields named in
+  update_mask change.
+
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
@@ -5501,7 +5517,8 @@ func newUpdateDatabase() *cobra.Command {
   Arguments:
     NAME: The resource name of the database. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The list of fields to update. The updatable fields are spec.role and
+      spec.postgres_database.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -5766,7 +5783,7 @@ func newUpdateMigration() *cobra.Command {
     DATABASE_MAPPINGS: Required. Mappings from source databases to target databases.
     MIGRATION_TYPE: Required. Immutable. The intended migration mode, selected when the
       migration is created.
-      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY, MIGRATION_TYPE_ONLINE]`
+      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY]`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

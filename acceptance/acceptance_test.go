@@ -293,6 +293,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// from the host shell would move the venv the localenv tests expect.
 	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset
 
+	// Agent skills set DATABRICKS_SKILLS_INVOKED (experimental skill tracking),
+	// so a host value would add skill/ pairs to recorded user agents.
+	os.Unsetenv("DATABRICKS_SKILLS_INVOKED") //nolint:usetesting // t.Setenv cannot unset
+
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
 		// has already marked the parent test as failed.
