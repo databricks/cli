@@ -1,0 +1,16 @@
+
+=== Replay a prior terraform deployment
+
+>>> replay_tfstate.py [TESTROOT]/bundle/migrate/user-agent/race/../terraform-requests.json [TESTROOT]/bundle/migrate/user-agent/race/../terraform.tfstate
+
+=== Deploy where the local terraform state disappears between the pull and the migration
+
+>>> print_engines
+2 MISSING GET /api/2.0/workspace/export
+3 engine/terraform GET /api/2.0/workspace/export
+4 engine/terraform GET /api/2.0/workspace/get-status
+1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
+1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+1 engine/terraform POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+2 engine/terraform POST /api/2.0/workspace/delete
+1 engine/terraform POST /api/2.0/workspace/mkdirs
