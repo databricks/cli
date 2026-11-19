@@ -10,6 +10,9 @@ Executing 'postbuild' script
 Error: migrating Terraform state to the direct engine: terraform state [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate was removed after it was pulled; if another deploy is running, wait for it to finish and run this command again
 
 
+>>> print_migration_telemetry
+direct_migrate_state_missing true
+
 >>> print_engines
 2 MISSING GET /api/2.0/workspace/export
 1 MISSING POST /telemetry-ext

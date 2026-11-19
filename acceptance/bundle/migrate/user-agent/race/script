@@ -7,4 +7,5 @@ rm -f "$OUT_REQUESTS"
 
 title "Deploy where the local terraform state disappears between the pull and the migration"
 trace musterr $CLI bundle deploy
+trace print_migration_telemetry
 trace print_engines
