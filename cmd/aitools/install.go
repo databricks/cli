@@ -568,8 +568,8 @@ func (p *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return p, cmd
 }
 
-// View draws nothing once Esc cancelled the picker, as huh's form does after Ctrl+C, so both keys leave the same
-// screen.
+// View draws nothing once Esc cancelled the picker, so Esc leaves no picker on screen. Ctrl+C interrupts the program,
+// which keeps the last frame, as huh's Run does.
 func (p *pickerModel) View() string {
 	if p.cancelled {
 		return ""
