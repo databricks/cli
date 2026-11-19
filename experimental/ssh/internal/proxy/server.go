@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/log"
@@ -23,15 +24,37 @@ type proxyServer struct {
 	connections         *ConnectionsManager
 	createServerCommand createServerCommandFunc
 	resumeGrace         time.Duration
+	onSessionEnd        func(error)
+	singleSession       bool
+	sessionUsed         bool
+	sessionMu           sync.Mutex
 }
 
-func NewProxyServer(ctx context.Context, connections *ConnectionsManager, createServerCommand createServerCommandFunc) *proxyServer {
-	return &proxyServer{
+// ServerOption configures the SSH transport capabilities.
+type ServerOption func(*proxyServer)
+
+// WithSessionCompletion reports process startup failures or a completed logical session.
+// Established sessions report nil; handovers and failed upgrades do not notify.
+func WithSessionCompletion(notify func(error)) ServerOption {
+	return func(server *proxyServer) { server.onSessionEnd = notify }
+}
+
+// WithSingleSession permits handovers but never starts a second SSH session.
+func WithSingleSession() ServerOption {
+	return func(server *proxyServer) { server.singleSession = true }
+}
+
+func NewProxyServer(ctx context.Context, connections *ConnectionsManager, createServerCommand createServerCommandFunc, options ...ServerOption) *proxyServer {
+	server := &proxyServer{
 		ctx:                 ctx,
 		connections:         connections,
 		createServerCommand: createServerCommand,
 		resumeGrace:         proxyResumeGrace,
 	}
+	for _, option := range options {
+		option(server)
+	}
+	return server
 }
 
 func (server *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -117,6 +140,26 @@ func (server *proxyServer) handleExistingConnection(ctx context.Context, w http.
 }
 
 func (server *proxyServer) handleNewConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, id string, req DialRequest) {
+	// Failed upgrades can retry; invoking the process factory consumes this server.
+	var command *exec.Cmd
+	if server.singleSession {
+		server.sessionMu.Lock()
+		if server.sessionUsed {
+			server.sessionMu.Unlock()
+			http.Error(w, "SSH session already used", http.StatusServiceUnavailable)
+			return
+		}
+		server.sessionUsed = true
+		server.sessionMu.Unlock()
+		defer func() {
+			if command == nil {
+				server.sessionMu.Lock()
+				server.sessionUsed = false
+				server.sessionMu.Unlock()
+			}
+		}()
+	}
+
 	// The server never dials, so it passes no connection factory: reattaching, for it, means
 	// waiting for the client to come back.
 	var conn *proxyConnection
@@ -131,10 +174,23 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 		http.Error(w, "Maximum clients reached", http.StatusServiceUnavailable)
 		return
 	}
-	defer server.connections.Remove(id)
+	var err error
+	defer func() {
+		server.connections.Remove(id)
+		if command != nil && server.onSessionEnd != nil {
+			var startErr error
+			if command.Process == nil {
+				startErr = err
+			}
+			server.onSessionEnd(startErr)
+		}
+	}()
 
 	log.Infof(ctx, "Starting proxy server for new connection, count: %d", server.connections.Count())
-	err := runServerProxy(ctx, conn, server.createServerCommand, w, r)
+	err = runServerProxy(ctx, conn, func(ctx context.Context) *exec.Cmd {
+		command = server.createServerCommand(ctx)
+		return command
+	}, w, r)
 	if err != nil {
 		log.Errorf(ctx, "Proxy server error: %v", err)
 	} else {
@@ -161,11 +217,13 @@ func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCom
 	if err != nil {
 		return fmt.Errorf("failed to get stdin pipe: %w", err)
 	}
+	defer sshdStdin.Close()
 
 	sshdStdout, err := serverCmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
+	defer sshdStdout.Close()
 
 	err = serverCmd.Start()
 	if err != nil {
