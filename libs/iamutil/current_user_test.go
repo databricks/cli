@@ -225,6 +225,26 @@ func TestCurrentUserGroupsFailsWhenParentGroupsFail(t *testing.T) {
 	assert.Nil(t, groups)
 }
 
+// A transient 500 on the parent-groups call is retried, as the identity/me call is.
+func TestCurrentUserGroupsRetriesOn500(t *testing.T) {
+	var calls atomic.Int32
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(testserver.Request) any {
+		if calls.Add(1) == 1 {
+			return testserver.Response{StatusCode: http.StatusInternalServerError, Body: map[string]any{"error_code": "TEMPORARILY_UNAVAILABLE"}}
+		}
+		return map[string]any{"me_transitive_parent_groups": []map[string]any{{"group_id": "11", "group_name": "eng"}}}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	groups, err := CurrentUserGroups(t.Context(), w)
+	require.NoError(t, err)
+	assert.Equal(t, []iam.ComplexValue{{Value: "11", Display: "eng"}}, groups)
+	assert.Equal(t, int32(2), calls.Load())
+}
+
 func TestGetUserPrincipalRejectsAssumedGroup(t *testing.T) {
 	w := newIdentityMeWorkspace(t, func(testserver.Request) testserver.Response {
 		return testserver.Response{Body: map[string]any{"group": map[string]any{"group_id": "3000033333", "group_name": "data-engineers"}}}

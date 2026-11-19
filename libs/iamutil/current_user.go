@@ -65,7 +65,11 @@ func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.Us
 // GetCurrentUserOnce is GetCurrentUser with a single attempt, for probes that should
 // fail fast rather than wait out transient 500s.
 func GetCurrentUserOnce(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	p, err := getIdentityMe(ctx, w)
+	c, err := newIdentityClient(w)
+	if err != nil {
+		return nil, err
+	}
+	p, err := getIdentityMe(ctx, c)
 	if err != nil {
 		return nil, err
 	}
@@ -88,31 +92,57 @@ func GetUserPrincipal(ctx context.Context, w *databricks.WorkspaceClient) (*iam.
 
 // pollIdentityMe is getIdentityMe that retries HTTP 500 responses for meRetryTimeout.
 func pollIdentityMe(ctx context.Context, w *databricks.WorkspaceClient) (*currentPrincipal, error) {
-	return retries.Poll(ctx, meRetryTimeout, func() (*currentPrincipal, *retries.Err) {
-		p, err := getIdentityMe(ctx, w)
+	c, err := newIdentityClient(w)
+	if err != nil {
+		return nil, err
+	}
+	return retryOn500(ctx, func() (*currentPrincipal, error) {
+		return getIdentityMe(ctx, c)
+	})
+}
+
+// retryOn500 runs get, retrying HTTP 500 responses for meRetryTimeout. Other errors fail at once.
+func retryOn500[T any](ctx context.Context, get func() (T, error)) (T, error) {
+	res, err := retries.Poll(ctx, meRetryTimeout, func() (*T, *retries.Err) {
+		v, err := get()
 		if err == nil {
-			return p, nil
+			return &v, nil
 		}
 		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusInternalServerError {
 			return nil, retries.Continue(err)
 		}
 		return nil, retries.Halt(err)
 	})
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+	return *res, nil
 }
 
-// identityGet sends a GET to path with the workspace's auth headers and decodes the
-// response into out.
-func identityGet(ctx context.Context, w *databricks.WorkspaceClient, path string, query map[string]any, out any) error {
+// identityClient sends GETs to the identity endpoints. Build one per command and reuse it
+// across retries and pages.
+type identityClient struct {
+	client  *databricksclient.DatabricksClient
+	headers map[string]string
+}
+
+func newIdentityClient(w *databricks.WorkspaceClient) (*identityClient, error) {
 	c, err := databricksclient.New(w.Config)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return c.Do(ctx, http.MethodGet, path, auth.WorkspaceIDHeaders(w.Config), query, nil, out)
+	return &identityClient{client: c, headers: auth.WorkspaceIDHeaders(w.Config)}, nil
 }
 
-func getIdentityMe(ctx context.Context, w *databricks.WorkspaceClient) (*currentPrincipal, error) {
+// get sends a GET to path and decodes the response into out.
+func (c *identityClient) get(ctx context.Context, path string, query map[string]any, out any) error {
+	return c.client.Do(ctx, http.MethodGet, path, c.headers, query, nil, out)
+}
+
+func getIdentityMe(ctx context.Context, c *identityClient) (*currentPrincipal, error) {
 	var me identityMe
-	if err := identityGet(ctx, w, identityMePath, nil, &me); err != nil {
+	if err := c.get(ctx, identityMePath, nil, &me); err != nil {
 		return nil, err
 	}
 	user, err := meToUser(&me)
@@ -176,6 +206,10 @@ type parentGroup struct {
 // directly or through parent groups, following every page. The response also names
 // workspace-local groups such as admins and users, which the account group list lacks.
 func listCurrentUserParentGroups(ctx context.Context, w *databricks.WorkspaceClient) ([]parentGroup, error) {
+	c, err := newIdentityClient(w)
+	if err != nil {
+		return nil, err
+	}
 	var groups []parentGroup
 	pageToken := ""
 	for {
@@ -187,7 +221,10 @@ func listCurrentUserParentGroups(ctx context.Context, w *databricks.WorkspaceCli
 			Groups        []parentGroup `json:"me_transitive_parent_groups"`
 			NextPageToken string        `json:"next_page_token,omitempty"`
 		}
-		if err := identityGet(ctx, w, identityMeTransitiveParentGroupsPath, query, &page); err != nil {
+		_, err = retryOn500(ctx, func() (struct{}, error) {
+			return struct{}{}, c.get(ctx, identityMeTransitiveParentGroupsPath, query, &page)
+		})
+		if err != nil {
 			return nil, err
 		}
 		groups = append(groups, page.Groups...)
