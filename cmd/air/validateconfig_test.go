@@ -455,16 +455,16 @@ func TestValidateConfigRequestCarriesPriorityClass(t *testing.T) {
 	srv := validateServer(t, http.StatusOK, `{}`, &gotReq)
 
 	cfg := baseRunConfig()
-	cfg.Compute.PoolID = new("cap-8xh100-res")
+	cfg.Compute.AcceleratorPoolID = new("cap-8xh100-res")
 	cfg.Compute.PriorityClass = new("NORMAL")
 	_, err := preflightValidate(t.Context(), validationTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
 	require.NoError(t, err)
 
 	task := gotReq["task"].(map[string]any)
-	// priority_class is task-level; provisioned_capacity_id stays on the compute spec.
+	// priority_class is task-level; accelerator_pool_id stays on the compute spec.
 	assert.Equal(t, "NORMAL", task["priority_class"])
 	compute := task["deployments"].([]any)[0].(map[string]any)["compute"].(map[string]any)
-	assert.Equal(t, "cap-8xh100-res", compute["provisioned_capacity_id"])
+	assert.Equal(t, "cap-8xh100-res", compute["accelerator_pool_id"])
 }
 
 func TestValidateConfigRequestOmitsUnsetOptions(t *testing.T) {
@@ -491,4 +491,30 @@ func TestValidateConfigRequestCarriesEnvironment(t *testing.T) {
 	raw, err := json.Marshal(request["environment"])
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"base_environment":"workspace-base-environments/databricks_ai_v6","dependencies":["torch==2.3.0","numpy"]}`, string(raw))
+}
+
+func TestValidateConfigRequestPoolSelectors(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		poolID *string
+		want   string
+	}{
+		{name: "omitted"},
+		{name: "explicit", poolID: new("pool-1"), want: "pool-1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := baseRunConfig()
+			cfg.Compute.AcceleratorPoolID = tc.poolID
+			require.NoError(t, cfg.Compute.validate())
+			req := validateConfigRequest(t.Context(), cfg, "/Workspace/Users/me/cmd.sh", nil, "token")
+			task := req["task"].(map[string]any)
+			compute := task["deployments"].([]any)[0].(map[string]any)["compute"].(map[string]any)
+			if tc.want == "" {
+				assert.NotContains(t, compute, "accelerator_pool_id")
+			} else {
+				assert.Equal(t, tc.want, compute["accelerator_pool_id"])
+			}
+			assert.NotContains(t, compute, "provisioned_capacity_id")
+		})
+	}
 }
