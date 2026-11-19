@@ -12,27 +12,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestServerCanDisableResumeAndHandover(t *testing.T) {
+func TestServerCanDisableResume(t *testing.T) {
 	manager := NewConnectionsManager(1, 0, WithoutIdleShutdown())
-	defer manager.Close()
 	handler := NewProxyServer(t.Context(), manager, func(ctx context.Context) *exec.Cmd {
 		t.Error("rejected requests must not start an SSH process")
 		return exec.CommandContext(ctx, "unused")
-	}, WithoutSessionResume(), WithoutHandover())
+	}, WithoutSessionResume())
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/ssh?id=test&delivered=0&resume_version=%d", ResumeProtocolVersion), nil))
 	require.Equal(t, http.StatusBadRequest, response.Code)
 	require.Contains(t, response.Body.String(), "resume is not supported")
-	require.True(t, manager.TryAdd("test", newProxyConnection(nil)))
-	response = httptest.NewRecorder()
-	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/ssh?id=test", nil))
-	require.Equal(t, http.StatusBadRequest, response.Code)
-	require.Contains(t, response.Body.String(), "handover is not supported")
 }
 
 func TestManagerCanDisableIdleShutdown(t *testing.T) {
 	manager := NewConnectionsManager(1, 0, WithoutIdleShutdown())
-	defer manager.Close()
 	require.True(t, manager.TryAdd("session", newProxyConnection(nil)))
 	manager.Remove("session")
 	select {
@@ -44,12 +37,11 @@ func TestManagerCanDisableIdleShutdown(t *testing.T) {
 
 func TestSingleSessionRejectsReuseAfterManagerRemoval(t *testing.T) {
 	manager := NewConnectionsManager(1, 0, WithoutIdleShutdown())
-	defer manager.Close()
 	handler := NewProxyServer(t.Context(), manager, func(ctx context.Context) *exec.Cmd {
 		t.Fatal("a completed logical session must never start another process")
 		return nil
 	}, WithSingleSession())
-	// Reproduce the gap after Remove and before the outer sandbox handler returns.
+	// Simulate a session that already ended and was removed from the manager.
 	handler.sessionUsed = true
 	for _, id := range []string{"same-session", "different-session"} {
 		response := httptest.NewRecorder()
@@ -59,23 +51,24 @@ func TestSingleSessionRejectsReuseAfterManagerRemoval(t *testing.T) {
 }
 
 func TestSingleSessionFailedUpgradeDoesNotConsumeSession(t *testing.T) {
+	completed := false
 	manager := NewConnectionsManager(1, 0, WithoutIdleShutdown())
-	defer manager.Close()
 	handler := NewProxyServer(t.Context(), manager, func(ctx context.Context) *exec.Cmd {
 		t.Fatal("a non-WebSocket request must never start a process")
 		return nil
-	}, WithSingleSession())
+	}, WithSingleSession(), WithSessionCompletion(func() { completed = true }))
 	for range 2 {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/ssh?id=test", nil))
 		require.Equal(t, http.StatusBadRequest, response.Code)
 		require.False(t, handler.sessionUsed)
+		require.False(t, completed)
+		require.Zero(t, manager.Count())
 	}
 }
 
 func TestZeroIdleTimeoutStillSignalsImmediately(t *testing.T) {
 	manager := NewConnectionsManager(1, 0)
-	defer manager.Close()
 	select {
 	case <-manager.TimedOut:
 	case <-time.After(5 * time.Second):

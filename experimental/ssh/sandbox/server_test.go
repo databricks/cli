@@ -201,7 +201,7 @@ func dialWebSocket(ctx context.Context, endpoint string) (*websocket.Conn, error
 	return conn, err
 }
 
-// Blocking readiness lets the idle timer fire before Serve starts receiving it.
+// Blocking readiness past ConnectTimeout catches a deadline that starts before readiness is written.
 type blockedReadiness struct {
 	entered chan struct{}
 	release chan struct{}
@@ -365,6 +365,43 @@ func TestServerHandoverSurvivesWebSocketLifetimeLimit(t *testing.T) {
 	require.GreaterOrEqual(t, dials.Load(), int32(3))
 	stop()
 	require.NoError(t, <-result)
-	cancel()
-	require.ErrorIs(t, <-finished, context.Canceled)
+	select {
+	case err := <-finished:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not stop after its handed-over session ended")
+	}
+}
+
+func TestServerFailedUpgradeCanRetry(t *testing.T) {
+	endpoint, _, finished, _ := startServer(t, time.Minute)
+	u, err := url.Parse(endpoint)
+	require.NoError(t, err)
+	token, _ := u.User.Password()
+	u.User = nil
+	u.Scheme = "http"
+	u.RawQuery = "id=failed"
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, u.String(), nil)
+	require.NoError(t, err)
+	request.Header.Set(sandbox.RelayTokenHeader, token)
+	response, err := http.DefaultClient.Do(request)
+	require.NoError(t, err)
+	response.Body.Close()
+	require.Equal(t, http.StatusBadRequest, response.StatusCode)
+
+	conn, err := dialWebSocket(t.Context(), endpoint+"?id=retry")
+	require.NoError(t, err)
+	defer conn.Close()
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
+	require.NoError(t, conn.WriteMessage(websocket.BinaryMessage, []byte("retry")))
+	_, message, err := conn.ReadMessage()
+	require.NoError(t, err)
+	require.Equal(t, "retry", string(message))
+	require.NoError(t, conn.Close())
+	select {
+	case err := <-finished:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not stop after the retried session ended")
+	}
 }

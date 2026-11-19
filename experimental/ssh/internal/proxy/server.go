@@ -25,7 +25,7 @@ type proxyServer struct {
 	createServerCommand createServerCommandFunc
 	resumeGrace         time.Duration
 	allowResume         bool
-	allowHandover       bool
+	onSessionEnd        func()
 	singleSession       bool
 	sessionUsed         bool
 	sessionMu           sync.Mutex
@@ -39,9 +39,10 @@ func WithoutSessionResume() ServerOption {
 	return func(server *proxyServer) { server.allowResume = false }
 }
 
-// WithoutHandover rejects requests to switch an active session to another WebSocket.
-func WithoutHandover() ServerOption {
-	return func(server *proxyServer) { server.allowHandover = false }
+// WithSessionCompletion runs notify after an accepted logical session ends and is removed.
+// Handovers and failed upgrades do not trigger it.
+func WithSessionCompletion(notify func()) ServerOption {
+	return func(server *proxyServer) { server.onSessionEnd = notify }
 }
 
 // WithSingleSession permits handovers but never starts a second SSH session.
@@ -56,7 +57,6 @@ func NewProxyServer(ctx context.Context, connections *ConnectionsManager, create
 		createServerCommand: createServerCommand,
 		resumeGrace:         proxyResumeGrace,
 		allowResume:         true,
-		allowHandover:       true,
 	}
 	for _, option := range options {
 		option(server)
@@ -85,10 +85,6 @@ func (server *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case exists && conn != nil && req.Reattach:
 		server.handleReattach(ctx, w, r, conn, req)
 	case exists && conn != nil:
-		if !server.allowHandover {
-			http.Error(w, "Session handover is not supported", http.StatusBadRequest)
-			return
-		}
 		server.handleExistingConnection(ctx, w, r, conn)
 	case req.Reattach:
 		// The session is gone: its grace period expired, or the server restarted. Say so instead
@@ -189,7 +185,12 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 		http.Error(w, "Maximum clients reached", http.StatusServiceUnavailable)
 		return
 	}
-	defer server.connections.Remove(id)
+	defer func() {
+		server.connections.Remove(id)
+		if accepted && server.onSessionEnd != nil {
+			server.onSessionEnd()
+		}
+	}()
 
 	log.Infof(ctx, "Starting proxy server for new connection, count: %d", server.connections.Count())
 	err := runServerProxy(ctx, conn, func(ctx context.Context) *exec.Cmd {

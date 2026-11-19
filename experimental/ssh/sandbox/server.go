@@ -52,20 +52,17 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	connections := proxy.NewConnectionsManager(1, 0, proxy.WithoutIdleShutdown())
-	defer connections.Close()
 	token := rand.Text()
 	started, completed := make(chan struct{}), make(chan struct{})
 	var requests sync.WaitGroup
 	var mu sync.Mutex
-	var sessionID string
-	admitting, closing := false, false
+	closing := false
 	handler := proxy.NewProxyServer(ctx, connections, func(ctx context.Context) *exec.Cmd {
 		mu.Lock()
-		admitting = false
 		close(started)
 		mu.Unlock()
 		return exec.CommandContext(ctx, opts.SSHD, "-i", "-f", opts.Config)
-	}, proxy.WithoutSessionResume(), proxy.WithSingleSession())
+	}, proxy.WithoutSessionResume(), proxy.WithSingleSession(), proxy.WithSessionCompletion(func() { close(completed) }))
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ssh", func(w http.ResponseWriter, r *http.Request) {
 		if subtle.ConstantTimeCompare([]byte(r.Header.Get(RelayTokenHeader)), []byte(token)) != 1 {
@@ -73,37 +70,16 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		id := r.URL.Query().Get("id")
-		if id == "" {
-			http.Error(w, "Missing 'id' query parameter", http.StatusBadRequest)
-			return
-		}
 		mu.Lock()
-		if closing || admitting || (sessionID != "" && sessionID != id) {
+		if closing {
 			mu.Unlock()
-			log.Info(ctx, "Rejecting another sandbox SSH session")
-			http.Error(w, "SSH session already active or server is stopping", http.StatusServiceUnavailable)
+			log.Info(ctx, "Rejecting sandbox SSH connection while stopping")
+			http.Error(w, "SSH server is stopping", http.StatusServiceUnavailable)
 			return
-		}
-		first := sessionID == ""
-		if first {
-			sessionID, admitting = id, true
 		}
 		requests.Add(1)
 		mu.Unlock()
-		defer func() {
-			mu.Lock()
-			if first {
-				if admitting {
-					sessionID, admitting = "", false
-				} else {
-					closing = true
-					close(completed)
-				}
-			}
-			mu.Unlock()
-			requests.Done()
-		}()
+		defer requests.Done()
 		handler.ServeHTTP(w, r)
 	})
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
@@ -136,9 +112,13 @@ func Serve(ctx context.Context, listener net.Listener, opts ServerOptions, outpu
 			firstConnection = nil
 		case <-timer.C:
 			mu.Lock()
-			connected := sessionID != "" && !admitting
-			if !connected {
+			connected := false
+			select {
+			case <-started:
+				connected = true
+			default:
 				closing = true
+				cancel()
 			}
 			mu.Unlock()
 			if !connected {

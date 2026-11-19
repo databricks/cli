@@ -565,12 +565,12 @@ func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
 
 func TestSingleSessionCannotStartAgainAfterDisconnect(t *testing.T) {
 	manager := NewConnectionsManager(1, 0, WithoutIdleShutdown())
-	defer manager.Close()
+	completed := make(chan struct{})
 	var started atomic.Int32
 	handler := NewProxyServer(t.Context(), manager, func(ctx context.Context) *exec.Cmd {
 		started.Add(1)
 		return exec.CommandContext(ctx, "cat")
-	}, WithSingleSession())
+	}, WithSingleSession(), WithSessionCompletion(func() { close(completed) }))
 	server := httptest.NewServer(handler)
 	defer server.Close()
 	connection, response, err := websocket.DefaultDialer.Dial("ws"+server.URL[4:]+"?id=session", nil)
@@ -584,7 +584,12 @@ func TestSingleSessionCannotStartAgainAfterDisconnect(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "first-session", string(message))
 	require.NoError(t, connection.Close())
-	require.Eventually(t, func() bool { return manager.Count() == 0 }, 5*time.Second, time.Millisecond)
+	select {
+	case <-completed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("logical session completion was not reported")
+	}
+	require.Zero(t, manager.Count())
 	for _, id := range []string{"session", "another-session"} {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/ssh?id="+id, nil))

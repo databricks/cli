@@ -31,7 +31,7 @@ func NewConnectionsManager(maxClients int, shutdownDelay time.Duration, options 
 		maxClients:    maxClients,
 		shutdownDelay: shutdownDelay,
 		connections:   make(map[string]*proxyConnection),
-		TimedOut:      make(chan bool, 1),
+		TimedOut:      make(chan bool),
 	}
 	for _, option := range options {
 		option(cm)
@@ -101,10 +101,7 @@ func (cm *ConnectionsManager) startShutdownTimer(delay time.Duration) {
 		cm.shutdownTimer.Stop()
 	}
 	cm.shutdownTimer = time.AfterFunc(delay, func() {
-		select {
-		case cm.TimedOut <- true:
-		default:
-		}
+		cm.TimedOut <- true
 	})
 }
 
@@ -114,9 +111,4 @@ func (cm *ConnectionsManager) cancelShutdownTimer() {
 	if cm.shutdownTimer != nil {
 		cm.shutdownTimer.Stop()
 	}
-}
-
-// Close stops the idle timer.
-func (cm *ConnectionsManager) Close() {
-	cm.cancelShutdownTimer()
 }
