@@ -392,6 +392,51 @@ type blockedReadiness struct {
 	release chan struct{}
 }
 
+type failingHeartbeat struct {
+	ready bool
+	err   error
+}
+
+func (output *failingHeartbeat) Write(data []byte) (int, error) {
+	if !output.ready {
+		output.ready = true
+		return len(data), nil
+	}
+	return 0, output.err
+}
+
+func (*failingHeartbeat) Close() error { return nil }
+
+func TestServerStopsWhenCommandHeartbeatFails(t *testing.T) {
+	t.Setenv("DATABRICKS_TEST_SANDBOX_SSHD", "1")
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	require.NoError(t, err)
+	executable, err := os.Executable()
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	brokenPipe := errors.New("command output pipe closed")
+	output := &failingHeartbeat{err: brokenPipe}
+	finished := make(chan error, 1)
+	go func() {
+		finished <- sandbox.Serve(ctx, listener, sandbox.ServerOptions{
+			SSHD: executable, Config: "test-config", ConnectTimeout: time.Minute, OutputHeartbeat: 10 * time.Millisecond,
+		}, output)
+	}()
+	select {
+	case err := <-finished:
+		require.ErrorIs(t, err, brokenPipe)
+		require.ErrorContains(t, err, "write command heartbeat")
+	case <-time.After(5 * time.Second):
+		t.Fatal("server ignored its broken command-output pipe")
+	}
+	connection, err := net.DialTimeout("tcp4", listener.Addr().String(), time.Second)
+	if connection != nil {
+		connection.Close()
+	}
+	require.Error(t, err, "server listener must close after the heartbeat fails")
+}
+
 func (writer blockedReadiness) Write(data []byte) (int, error) {
 	close(writer.entered)
 	<-writer.release

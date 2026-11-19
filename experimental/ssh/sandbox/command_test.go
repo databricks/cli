@@ -23,7 +23,7 @@ import (
 
 func TestServerOutputInterruptsInheritedStdout(t *testing.T) {
 	if runtime.GOOS != "linux" {
-		t.Skip("Linux sandbox command output uses /proc/self/fd")
+		t.Skip("sandbox command output uses Linux pipes")
 	}
 	const marker = "server output write interrupted\n"
 	if mode := os.Getenv("DATABRICKS_TEST_SERVER_OUTPUT"); mode != "" {

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,8 +15,10 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 const servicePath = "/databricks.sandbox.SandboxService/"
@@ -130,24 +133,66 @@ func (c *Client) Follow(ctx context.Context, commandID, executable string, args 
 }
 
 func (o *Output) Recv() (*ExecuteCommandResponse, error) {
-	for {
-		response, err := o.stream.Recv()
-		if err == nil {
-			o.sequence = response.GetSequenceNumber()
-			return response, nil
+	response, err := o.stream.Recv()
+	if err == nil {
+		o.sequence = response.GetSequenceNumber()
+		return response, nil
+	}
+	// A command-output RPC can lose its HTTP/2 transport while the command and
+	// SSH WebSocket are still healthy. Reattach instead of restarting the command.
+	reattach := o.ctx.Err() == nil && !errors.Is(err, io.EOF) &&
+		(errors.Is(o.streamCtx.Err(), context.DeadlineExceeded) || retryableOutputError(err))
+	o.cancel()
+	if !reattach {
+		return nil, err
+	}
+	return o.reattach()
+}
+
+func (o *Output) reattach() (*ExecuteCommandResponse, error) {
+	var err error
+	for attempt := range 5 {
+		if o.ctx.Err() != nil {
+			return nil, status.FromContextError(o.ctx.Err()).Err()
 		}
-		rotate := errors.Is(o.streamCtx.Err(), context.DeadlineExceeded) && o.ctx.Err() == nil
-		o.cancel()
-		if !rotate {
-			return nil, err
+		if attempt > 0 {
+			timer := time.NewTimer(250 * time.Millisecond << (attempt - 1))
+			select {
+			case <-o.ctx.Done():
+				timer.Stop()
+				return nil, status.FromContextError(o.ctx.Err()).Err()
+			case <-timer.C:
+			}
 		}
 		streamCtx, cancel := context.WithTimeout(o.ctx, o.lifetime)
 		o.streamCtx = streamCtx //nolint:fatcontext // Each RPC derives from the original session context, not the previous RPC.
 		o.cancel = cancel
 		o.stream, err = o.client.attach(o.streamCtx, o.commandID, o.sequence)
-		if err != nil {
-			o.cancel()
+		var response *ExecuteCommandResponse
+		if err == nil {
+			// Streaming RPC failures may surface only on the first receive.
+			response, err = o.stream.Recv()
+		}
+		if err == nil {
+			o.sequence = response.GetSequenceNumber()
+			return response, nil
+		}
+		o.cancel()
+		if o.ctx.Err() != nil {
+			return nil, status.FromContextError(o.ctx.Err()).Err()
+		}
+		if !retryableOutputError(err) {
 			return nil, err
 		}
+	}
+	return nil, err
+}
+
+func retryableOutputError(err error) bool {
+	switch status.Code(err) {
+	case codes.Unavailable, codes.DeadlineExceeded, codes.Internal:
+		return true
+	default:
+		return false
 	}
 }
