@@ -23,6 +23,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const sshConnectTimeoutSeconds = 900
+
 // CommandDependencies supplies sandbox selection and completion from the stable commands.
 type CommandDependencies struct {
 	ResolveName func(context.Context, *databricks.WorkspaceClient, string) (string, error)
@@ -233,7 +235,7 @@ func buildSSHArgs(identity *Identity, proxyCommand string, extraArgs []string) [
 	args := []string{
 		"ssh", "-i", identity.KeyPath, "-o", "IdentitiesOnly=yes", "-o", "PreferredAuthentications=publickey",
 		// Include authentication and the proxy's ten-minute remote setup budget.
-		"-o", "ConnectTimeout=900",
+		"-o", fmt.Sprintf("ConnectTimeout=%d", sshConnectTimeoutSeconds),
 		// Each invocation owns its server; do not reuse a user's multiplexed connection.
 		"-o", "ControlPath=none",
 		"-o", "StrictHostKeyChecking=yes", "-o", "UserKnownHostsFile=" + quoteSSHOption(identity.KnownHostsPath),

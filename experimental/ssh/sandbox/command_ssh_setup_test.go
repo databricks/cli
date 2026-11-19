@@ -1,4 +1,4 @@
-package sandbox
+package sandbox_test
 
 import (
 	"io"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	cmdsandbox "github.com/databricks/cli/cmd/sandbox"
+	"github.com/databricks/cli/experimental/ssh/sandbox"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
@@ -40,5 +41,5 @@ func TestSSHSetupRequiresPersistentWorkspaceSelection(t *testing.T) {
 }
 
 func newSSHSetupCommand() *cobra.Command {
-	return NewSSHSetupCommand(CommandDependencies{ResolveName: cmdsandbox.ResolveSSHName, Complete: cmdsandbox.CompleteSandboxIDs})
+	return sandbox.NewSSHSetupCommand(sandbox.CommandDependencies{ResolveName: cmdsandbox.ResolveSSHName, Complete: cmdsandbox.CompleteSandboxIDs})
 }

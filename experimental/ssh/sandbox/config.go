@@ -36,7 +36,7 @@ func WriteHostConfig(ctx context.Context, alias, mainConfig, proxyCommand string
 	if err := ValidateHostAlias(alias); err != nil {
 		return "", err
 	}
-	config := sshconfig.GenerateHostConfigWithTimeout(alias, "sandbox-agent", escapeSSHPath(identity.KeyPath), escapeSSHPath(identity.KnownHostsPath), identity.HostKeyAlias, proxyCommand, 900)
+	config := sshconfig.GenerateHostConfigWithTimeout(alias, "sandbox-agent", escapeSSHPath(identity.KeyPath), escapeSSHPath(identity.KnownHostsPath), identity.HostKeyAlias, proxyCommand, sshConnectTimeoutSeconds)
 	destination, err := sshconfig.GetHostConfigPath(ctx, alias)
 	if err != nil {
 		return "", err
