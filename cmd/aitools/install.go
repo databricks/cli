@@ -568,7 +568,14 @@ func (p *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return p, cmd
 }
 
-func (p *pickerModel) View() string { return p.form.View() }
+// View draws nothing once Esc cancelled the picker, as huh's form does after Ctrl+C, so both keys leave the same
+// screen.
+func (p *pickerModel) View() string {
+	if p.cancelled {
+		return ""
+	}
+	return p.form.View()
+}
 
 // newPicker returns the program of form. Run sets the commands that submit and
 // cancel a form, and newPicker sets them too, since it runs the form without Run.
@@ -579,10 +586,11 @@ func newPicker(form *huh.Form, searching func() bool) *pickerModel {
 }
 
 // runPicker runs form and returns huh.ErrUserAborted when the user cancels it,
-// with Esc or Ctrl+C.
+// with Esc or Ctrl+C. It takes the program options huh's Run sets: the picker
+// draws on stderr, so a redirected stdout gets none of it, and reports focus.
 func runPicker(form *huh.Form, searching func() bool) error {
 	p := newPicker(form, searching)
-	_, err := tea.NewProgram(p).Run()
+	_, err := tea.NewProgram(p, tea.WithOutput(os.Stderr), tea.WithReportFocus()).Run()
 	return pickerError(p.cancelled, err)
 }
 

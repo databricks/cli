@@ -1837,6 +1837,7 @@ func TestAgentPickerEscCancelsLikeCtrlC(t *testing.T) {
 	_, cmd := p.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	assert.True(t, p.cancelled)
 	assert.Equal(t, tea.QuitMsg{}, cmd())
+	assert.Empty(t, p.View(), "a cancelled picker leaves nothing on screen")
 	assert.ErrorIs(t, pickerError(p.cancelled, nil), huh.ErrUserAborted)
 
 	field = agentPickerField(installer.ScopeGlobal, options, &selected)
