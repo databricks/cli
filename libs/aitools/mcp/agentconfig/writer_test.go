@@ -1075,6 +1075,35 @@ func TestUnlockedAgentIgnoresLock(t *testing.T) {
 	assert.Equal(t, StatusAdded, status)
 }
 
+// TestClaudeLegacyConfigIsLockedAndWritten checks that when Claude Code reads its
+// legacy config, an edit writes that file under the lock on it, and leaves
+// ~/.claude.json alone.
+func TestClaudeLegacyConfigIsLockedAndWritten(t *testing.T) {
+	defer func(prev time.Duration) { lockTimeout = prev }(lockTimeout)
+	lockTimeout = 200 * time.Millisecond
+
+	ctx := testHome(t)
+	home, err := env.UserHomeDir(ctx)
+	require.NoError(t, err)
+	legacy := filepath.Join(home, ".claude", ".config.json")
+	writeFile(t, legacy, []byte(`{"mcpServers":{"other":{"command":"npx"}}}`), 0o600)
+	a := agents.ByName(agents.NameClaudeCode)
+
+	lock, err := configLock(legacy)
+	require.NoError(t, err)
+	require.NoError(t, os.Mkdir(lock, 0o700))
+	_, _, err = Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
+	require.ErrorContains(t, err, filepath.ToSlash(lock)+" is locked by another process")
+
+	require.NoError(t, os.Remove(lock))
+	path, status, err := Upsert(ctx, a, testName, testCmd, testArgs("test"), nil, false)
+	require.NoError(t, err)
+	assert.Equal(t, legacy, path)
+	assert.Equal(t, StatusAdded, status)
+	_, err = os.Stat(filepath.Join(home, ".claude.json"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
 // TestLockedEditTimesOutOnLiveLock checks that an edit waits for a lock that
 // another process holds, and fails naming the lock once the wait is over. The
 // lock is not ours, so it is left in place.

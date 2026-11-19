@@ -438,15 +438,56 @@ func gooseConfigDir(ctx context.Context) (string, error) {
 	return filepath.Join(xdg, "goose"), nil
 }
 
-// claudeMCPPath returns Claude Code's global config file, which holds user-scope
-// mcpServers next to auth state. It sits in the home directory, not in ~/.claude;
-// CLAUDE_CONFIG_DIR moves it to <dir>/.claude.json.
+// claudeMCPPath returns the file that Claude Code reads its user-scope mcpServers
+// from. That is the global config, which holds auth state next to them: it sits
+// in the home directory, not in ~/.claude, and CLAUDE_CONFIG_DIR moves it to
+// <dir>/.claude.json. Claude Code reads the legacy <config dir>/.config.json
+// instead when claudeLegacyWins says so.
 // See https://code.claude.com/docs/en/env-vars.
 func claudeMCPPath(ctx context.Context) (string, error) {
+	global, err := claudeGlobalConfig(ctx)
+	if err != nil {
+		return "", err
+	}
+	dir, err := claudeConfigDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	legacy := filepath.Join(dir, ".config.json")
+	if claudeLegacyWins(legacy, global) {
+		return legacy, nil
+	}
+	return global, nil
+}
+
+// claudeGlobalConfig returns Claude Code's global config file: .claude.json in
+// CLAUDE_CONFIG_DIR when that is set, and in the home directory otherwise.
+func claudeGlobalConfig(ctx context.Context) (string, error) {
 	if dir := env.Get(ctx, "CLAUDE_CONFIG_DIR"); dir != "" {
 		return filepath.Join(dir, ".claude.json"), nil
 	}
 	return homeSubdir(".claude.json")(ctx)
+}
+
+// claudeLegacyWins reports whether Claude Code reads the legacy config file
+// instead of the global one, following its config path resolution. A non-empty
+// legacy file always wins. An empty one wins only if some write bit is set and
+// the global file is missing. A legacy file that cannot be inspected does not
+// win. Claude Code also treats an empty, read-only global file as a placeholder
+// on Linux and WSL, which this does not model.
+func claudeLegacyWins(legacy, global string) bool {
+	info, err := os.Stat(legacy)
+	if err != nil || !info.Mode().IsRegular() {
+		return false
+	}
+	if info.Size() > 0 {
+		return true
+	}
+	if info.Mode().Perm()&0o222 == 0 {
+		return false
+	}
+	_, err = os.Stat(global)
+	return err != nil
 }
 
 // claudeMCPEntry matches `claude mcp add`, which always writes an env map, even an empty one.

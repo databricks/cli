@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -102,6 +103,51 @@ func TestMCPPaths(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, got)
 		})
+	}
+}
+
+// TestClaudeMCPPathFollowsLegacyConfig checks that Claude's MCP path is the legacy
+// .config.json when Claude Code reads that file, and the global file otherwise.
+// The legacy file is read when it is non-empty. An empty one that can be written
+// is read only when the global file is missing.
+func TestClaudeMCPPathFollowsLegacyConfig(t *testing.T) {
+	tests := []struct {
+		name  string
+		files map[string]string
+		want  string
+	}{
+		{"no files", nil, "global"},
+		{"legacy only, non-empty", map[string]string{"legacy": "{}"}, "legacy"},
+		{"legacy and global, non-empty", map[string]string{"legacy": "{}", "global": "{}"}, "legacy"},
+		{"legacy empty, global non-empty", map[string]string{"legacy": "", "global": "{}"}, "global"},
+		{"legacy empty, global empty", map[string]string{"legacy": "", "global": ""}, "global"},
+		{"legacy empty, global missing", map[string]string{"legacy": ""}, "legacy"},
+		{"global only", map[string]string{"global": "{}"}, "global"},
+	}
+	for _, tc := range tests {
+		for _, override := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s override=%t", tc.name, override), func(t *testing.T) {
+				ctx, home := clearMCPOverrides(t)
+				configDir, globalDir := filepath.Join(home, ".claude"), home
+				if override {
+					custom := t.TempDir()
+					ctx = env.Set(ctx, "CLAUDE_CONFIG_DIR", custom)
+					configDir, globalDir = custom, custom
+				}
+				paths := map[string]string{
+					"legacy": filepath.Join(configDir, ".config.json"),
+					"global": filepath.Join(globalDir, ".claude.json"),
+				}
+				for kind, body := range tc.files {
+					require.NoError(t, os.MkdirAll(filepath.Dir(paths[kind]), 0o755))
+					require.NoError(t, os.WriteFile(paths[kind], []byte(body), 0o600))
+				}
+
+				got, err := ByName(NameClaudeCode).MCP.Path(ctx)
+				require.NoError(t, err)
+				assert.Equal(t, paths[tc.want], got)
+			})
+		}
 	}
 }
 
