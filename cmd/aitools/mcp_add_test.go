@@ -1585,6 +1585,7 @@ func TestInstallServerWritesOnlyAgentsInstalledForMCP(t *testing.T) {
 		{name: "gemini with projects.json", agent: "gemini", dirs: []string{".gemini"}, files: map[string]string{".gemini/projects.json": "{}"}, written: ".gemini/settings.json"},
 		{name: "gemini directory alone is refused", agent: "gemini", dirs: []string{".gemini/antigravity"}, absent: ".gemini/settings.json"},
 		{name: "antigravity from its own directory", agent: "antigravity", dirs: []string{".gemini/antigravity"}, written: ".gemini/config/mcp_config.json"},
+		// Codex is written directly, so a codex CLI on PATH is not run and the direct writer writes the config.
 		{name: "cli on PATH", agent: "codex", onPath: true, written: ".codex/config.toml"},
 	}
 	for _, tt := range tests {
