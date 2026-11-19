@@ -44,7 +44,7 @@ func Sanitize(s string) string {
 // capServerName. Tool names in agents are mcp__<name>__<tool>, so the name must stay stable for
 // the entry's life.
 func ServerName(fullName, profile string) (string, error) {
-	leaf := leafOf(fullName)
+	leaf := LeafOf(fullName)
 	if Sanitize(leaf) == "" {
 		return "", fmt.Errorf("%w: %q has no characters that can be used in a server name", ErrNoServerName, leaf)
 	}
@@ -82,8 +82,8 @@ func capServerName(name string) string {
 // that a server name can contain. The user has to choose the server name instead.
 var ErrNoServerName = errors.New("cannot derive a server name from the service name")
 
-// leafOf returns the service name after the last ".". Unity Catalog names cannot contain ".".
-func leafOf(fullName string) string {
+// LeafOf returns the service name after the last ".". Unity Catalog names cannot contain ".".
+func LeafOf(fullName string) string {
 	return fullName[strings.LastIndex(fullName, ".")+1:]
 }
 

@@ -639,9 +639,9 @@ func TestCursorApprovalHintNamesBinary(t *testing.T) {
 		cursorApprovalHint([]string{"github-logfood", "web_search-logfood"}))
 }
 
-// newAddTestRoot returns a root command with the persistent --profile and --output flags that root
+// newMCPTestRoot returns a root command with the persistent --profile and --output flags that root
 // defines, and the mcp group.
-func newAddTestRoot() *cobra.Command {
+func newMCPTestRoot() *cobra.Command {
 	parent := &cobra.Command{Use: "databricks", SilenceErrors: true, SilenceUsage: true}
 	output := flags.OutputText
 	parent.PersistentFlags().VarP(&output, "output", "o", "output type: text or json")
@@ -653,7 +653,7 @@ func newAddTestRoot() *cobra.Command {
 // newAddTestCmd runs `aitools mcp add` under a root, as root does.
 func newAddTestCmd(t *testing.T, args ...string) (*bytes.Buffer, error) {
 	t.Helper()
-	parent := newAddTestRoot()
+	parent := newMCPTestRoot()
 	var stdout bytes.Buffer
 	parent.SetOut(&stdout)
 	parent.SetErr(&bytes.Buffer{})
@@ -764,7 +764,7 @@ func TestMcpAddRejectsUnknownAgentBeforeProfile(t *testing.T) {
 func TestMcpAddJSONWriteFailureKeepsRunError(t *testing.T) {
 	withHome(t)
 	withDatabricksBinary(t)
-	parent := newAddTestRoot()
+	parent := newMCPTestRoot()
 	parent.SetOut(failingWriter{})
 	parent.SetErr(&bytes.Buffer{})
 	parent.SetArgs([]string{"mcp", "add", "--names", "github", "--output", "json"})
@@ -1225,7 +1225,7 @@ func TestPlanAddsRefusesRecoveredNameHeldByAnotherServer(t *testing.T) {
 func TestPlanAddsRefusesStoredNameThatIsNotAServerName(t *testing.T) {
 	claude := agents.ByName("claude-code")
 	const host = "https://adb-123.test"
-	want := `system.ai.github is installed as "%s", which is not a valid server name: use lowercase letters, digits, '-' and '_', with no "__" and no leading or trailing '-' or '_'. Run: databricks aitools mcp remove --profile logfood and add it again`
+	want := `system.ai.github is installed as "%s", which is not a valid server name: use lowercase letters, digits, '-' and '_', with no "__" and no leading or trailing '-' or '_'. Run: %[2]s and add it again`
 
 	t.Run("state entry", func(t *testing.T) {
 		withHome(t)
@@ -1233,7 +1233,7 @@ func TestPlanAddsRefusesStoredNameThatIsNotAServerName(t *testing.T) {
 		_, err := planNames(t, "", defaultBinding(t, "logfood"), state, []string{"system.ai.github"}, []*agents.Agent{claude})
 		require.Error(t, err)
 		assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, errorCategory(err))
-		assert.Equal(t, fmt.Sprintf(want, "Github Logfood"), err.Error())
+		assert.Equal(t, fmt.Sprintf(want, "Github Logfood", mcp.RemoveNamesCommand("Github Logfood")), err.Error())
 	})
 
 	t.Run("agent entry", func(t *testing.T) {
@@ -1243,7 +1243,7 @@ func TestPlanAddsRefusesStoredNameThatIsNotAServerName(t *testing.T) {
 		_, err := planNames(t, "", defaultBinding(t, "logfood"), &mcp.State{}, []string{"system.ai.github"}, []*agents.Agent{claude})
 		require.Error(t, err)
 		assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, errorCategory(err))
-		assert.Equal(t, fmt.Sprintf(want, "github__logfood"), err.Error())
+		assert.Equal(t, fmt.Sprintf(want, "github__logfood", mcp.RemoveNamesCommand("github__logfood")), err.Error())
 	})
 }
 
@@ -1258,7 +1258,7 @@ func TestPlanAddsRefusesStoredNameLongerThanTheCap(t *testing.T) {
 	_, err := planNames(t, "", defaultBinding(t, "logfood"), state, []string{"system.ai.github"}, []*agents.Agent{claude})
 	require.Error(t, err)
 	assert.Equal(t, protos.AitoolsErrorCategoryUncategorized, errorCategory(err))
-	assert.Equal(t, fmt.Sprintf(`system.ai.github is installed as "%s", which is longer than the 32-character server name limit. Run: databricks aitools mcp remove --profile logfood and add it again`, long), err.Error())
+	assert.Equal(t, fmt.Sprintf(`system.ai.github is installed as "%s", which is longer than the 32-character server name limit. Run: %s and add it again`, long, mcp.RemoveNamesCommand(long)), err.Error())
 }
 
 // TestMcpAddRefusesUnmanagedEntryBeforeAnyRequest checks that the stored name of a server is refused before any request when an agent holds that
