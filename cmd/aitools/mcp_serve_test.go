@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -28,8 +29,13 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
@@ -618,6 +624,146 @@ func TestMcpServeRejectsServiceWithoutThreeParts(t *testing.T) {
 	}
 }
 
+// TestMcpServeFailedStartLogsNothing checks that a start that fails its binding checks logs no PROXY_STARTED, so nothing
+// uploads.
+func TestMcpServeFailedStartLogsNothing(t *testing.T) {
+	withHome(t)
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := env.Set(telemetry.WithNewLogger(cmdio.MockDiscard(t.Context())), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	err := parent.ExecuteContext(ctx)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	assert.Empty(t, telemetry.BufferedEvents(serve.Context()))
+}
+
+// TestMcpServeRejectedStartLogsNothing checks that a start whose startup read is rejected by the profile's credential logs
+// no PROXY_STARTED, so the run has nothing to upload, and sets no upload config.
+func TestMcpServeRejectedStartLogsNothing(t *testing.T) {
+	home := withHome(t)
+	server := serviceServer(t, http.StatusUnauthorized, `{"error_code":"UNAUTHENTICATED","message":"Invalid access token."}`)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-expired\n")
+
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	err := parent.ExecuteContext(ctx)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	assert.Empty(t, telemetry.BufferedEvents(serve.Context()))
+	_, uploads := telemetry.UploadConfig(serve.Context())
+	assert.False(t, uploads)
+}
+
+// TestMcpServeUploadUsesProfileBoundAtStart checks that the exit upload of a serving run authenticates with the profile as
+// it was bound at start, so a token that the config file gets during the session does not change the upload.
+func TestMcpServeUploadUsesProfileBoundAtStart(t *testing.T) {
+	home := withHome(t)
+	server := newEchoMCPServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-bound\n")
+
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	var stdout lockedBuffer
+	parent.SetOut(&stdout)
+	in, stdin := io.Pipe()
+	parent.SetIn(in)
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := serveRunContext(t)
+	done := make(chan error, 1)
+	go func() { done <- parent.ExecuteContext(ctx) }()
+
+	_, err := io.WriteString(stdin, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`+"\n")
+	require.NoError(t, err)
+	require.Eventually(t, func() bool { return strings.Contains(stdout.String(), `"id":1`) }, 10*time.Second, time.Millisecond)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-rotated\n")
+	require.NoError(t, stdin.Close())
+	require.NoError(t, <-done)
+
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	cfg, uploads := telemetry.UploadConfig(serve.Context())
+	require.True(t, uploads)
+	assert.Equal(t, "dapi-bound", cfg.Token)
+}
+
+// serveRunContext returns the context of a serve run whose telemetry uploads: enabled, with the exec ID and runtime that
+// cmd/root sets on a run.
+func serveRunContext(t *testing.T) context.Context {
+	t.Helper()
+	ctx := env.Set(telemetry.WithNewLogger(cmdio.MockDiscard(t.Context())), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	return cmdctx.GenerateExecId(dbr.DetectRuntime(ctx))
+}
+
+// TestMcpServeUploadsProxyStartedAtStart checks that serve uploads its PROXY_STARTED while it still serves, so a serve that
+// is killed, or whose token expires while it idles, has sent it. The exit upload does not send it again.
+func TestMcpServeUploadsProxyStartedAtStart(t *testing.T) {
+	home := withHome(t)
+	server, uploaded := newEchoMCPServerWithUploads(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-bound\n")
+
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	var stdout lockedBuffer
+	parent.SetOut(&stdout)
+	in, stdin := io.Pipe()
+	parent.SetIn(in)
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := serveRunContext(t)
+	done := make(chan error, 1)
+	go func() { done <- parent.ExecuteContext(ctx) }()
+
+	_, err := io.WriteString(stdin, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`+"\n")
+	require.NoError(t, err)
+	require.Eventually(t, func() bool { return strings.Contains(stdout.String(), `"id":1`) }, 10*time.Second, time.Millisecond)
+	assert.Equal(t, []protos.AitoolsMcpOperation{protos.AitoolsMcpOperationProxyStarted}, uploaded(), "serve is still running")
+
+	require.NoError(t, stdin.Close())
+	require.NoError(t, <-done)
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	require.NoError(t, telemetry.Upload(serve.Context(), protos.ExecutionContext{}))
+	assert.Equal(t, []protos.AitoolsMcpOperation{protos.AitoolsMcpOperationProxyStarted}, uploaded(), "the exit upload does not resend it")
+}
+
+// TestMcpServeDropsUploadAfterRepoint checks that a profile re-pointed at another host during the session leaves serve
+// with no upload config at exit, even when no request ran after the re-point. The upload's token comes from the token
+// cache by profile name, so it would be the new host's token, sent to the bound host.
+func TestMcpServeDropsUploadAfterRepoint(t *testing.T) {
+	home := withHome(t)
+	server := newEchoMCPServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-bound\n")
+
+	parent := newMCPTestRoot()
+	parent.SetErr(&bytes.Buffer{})
+	var stdout lockedBuffer
+	parent.SetOut(&stdout)
+	in, stdin := io.Pipe()
+	parent.SetIn(in)
+	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
+	ctx := serveRunContext(t)
+	done := make(chan error, 1)
+	go func() { done <- parent.ExecuteContext(ctx) }()
+
+	_, err := io.WriteString(stdin, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`+"\n")
+	require.NoError(t, err)
+	require.Eventually(t, func() bool { return strings.Contains(stdout.String(), `"id":1`) }, 10*time.Second, time.Millisecond)
+	writeHomeConfig(t, home, "[logfood]\nhost = https://other.test\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-other\n")
+	require.NoError(t, stdin.Close())
+	require.NoError(t, <-done)
+
+	serve, _, findErr := parent.Find([]string{"mcp", "serve"})
+	require.NoError(t, findErr)
+	_, uploads := telemetry.UploadConfig(serve.Context())
+	assert.False(t, uploads)
+}
+
 // TestMcpServeStateReadFailureExitsTwo checks that a state file that cannot be read stops the binding checks, so it
 // exits 2 like the other binding failures.
 func TestMcpServeStateReadFailureExitsTwo(t *testing.T) {
@@ -670,11 +816,16 @@ func TestProxyResultRefreshFailureWinsOverStdinError(t *testing.T) {
 	}
 	require.Error(t, g.authenticateRequest(&http.Request{Header: http.Header{}}))
 	cmd := NewMcpServeCmd()
+	cmd.SetContext(telemetry.WithNewLogger(t.Context()))
+	telemetry.SetUploadConfig(cmd.Context(), &config.Config{Host: "https://adb-1.test"})
 	var stderr bytes.Buffer
 	cmd.SetErr(&stderr)
 
 	err := proxyResult(cmd, g, errors.New("read stdin: input/output error"))
 
+	// The run uploads like any other: its upload config is the profile bound at start, which never refreshes a token.
+	_, uploads := telemetry.UploadConfig(cmd.Context())
+	assert.True(t, uploads)
 	assert.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.Equal(t, serveBindStatus, root.ExitStatus(err))
 	assert.ErrorIs(t, err, cause)
@@ -758,29 +909,70 @@ func failsToolsListOnce(err error) func(*http.Request) error {
 // so the session DELETE at shutdown is sent.
 func newEchoMCPServer(t *testing.T) *httptest.Server {
 	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(echoMCP))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// echoMCP answers an MCP request as newEchoMCPServer does.
+func echoMCP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodDelete {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	var msg struct {
+		ID     json.RawMessage `json:"id"`
+		Method string          `json:"method"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Mcp-Session-Id", "session-1")
+	result := `{"tools":[]}`
+	if msg.Method == "initialize" {
+		result = `{"protocolVersion":"2025-06-18","capabilities":{},"serverInfo":{"name":"fake","version":"1"}}`
+	}
+	fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":%s}`, msg.ID, result)
+}
+
+// newEchoMCPServerWithUploads is newEchoMCPServer that also takes telemetry uploads. The function it returns gives the
+// operation of each AitoolsMcpEvent the uploads carried so far, in order.
+func newEchoMCPServerWithUploads(t *testing.T) (*httptest.Server, func() []protos.AitoolsMcpOperation) {
+	t.Helper()
+	var mu sync.Mutex
+	var operations []protos.AitoolsMcpOperation
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodDelete {
-			w.WriteHeader(http.StatusOK)
+		if r.URL.Path != "/telemetry-ext" {
+			echoMCP(w, r)
 			return
 		}
-		var msg struct {
-			ID     json.RawMessage `json:"id"`
-			Method string          `json:"method"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		var body telemetry.RequestBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Mcp-Session-Id", "session-1")
-		result := `{"tools":[]}`
-		if msg.Method == "initialize" {
-			result = `{"protocolVersion":"2025-06-18","capabilities":{},"serverInfo":{"name":"fake","version":"1"}}`
+		mu.Lock()
+		defer mu.Unlock()
+		for _, p := range body.ProtoLogs {
+			var entry protos.FrontendLog
+			if err := json.Unmarshal([]byte(p), &entry); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if e := entry.Entry.DatabricksCliLog.AitoolsMcpEvent; e != nil {
+				operations = append(operations, e.Operation)
+			}
 		}
-		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":%s}`, msg.ID, result)
+		fmt.Fprintf(w, `{"numProtoSuccess":%d}`, len(body.ProtoLogs))
 	}))
 	t.Cleanup(server.Close)
-	return server
+	return server, func() []protos.AitoolsMcpOperation {
+		mu.Lock()
+		defer mu.Unlock()
+		return slices.Clone(operations)
+	}
 }
 
 // TestServeProxyTransientRefreshFailureKeepsServing checks that a token failure which is not a rejection fails only the

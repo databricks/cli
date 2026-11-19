@@ -1,0 +1,22 @@
+sethome home
+mkdir -p home/.claude home/.codex
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# Seeding the fake is not an MCP command, so its uploads (if any) are dropped here.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment":"Ask questions about your data"}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment":"Repositories, issues, pull requests","config":{"source_connection":{"name":"connections/github","options":{"oauth_provider":"github"}}}}' > /dev/null
+rm -f "$OUT_REQUESTS"
+
+title "A new install for two agents: CHANGED per (service, agent); github needs sign-in, so its sign-in state is PENDING"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex --output json > /dev/null
+mcp_events
+
+title "The same servers again are re-asserted: UNCHANGED"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex --output json > /dev/null
+mcp_events
+
+title "An agent config that does not parse fails that agent only: FAILED with AGENT_CONFIG_INVALID"
+cp codex-config.toml home/.codex/config.toml
+trace musterr $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents claude-code,codex --output json > /dev/null
+mcp_events

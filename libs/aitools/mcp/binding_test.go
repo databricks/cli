@@ -10,8 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -985,4 +987,18 @@ func TestConfigFileCommandUsesForwardSlashes(t *testing.T) {
 	path := filepath.Join("work", "cfg", "logfood.cfg")
 	assert.Equal(t, "DATABRICKS_CONFIG_FILE="+filepath.ToSlash(path)+" databricks auth login --profile logfood",
 		mcp.ConfigFileCommand(path, "databricks auth login --profile logfood"))
+}
+
+// TestBoundUploadConfigNeverRefreshes checks that the config of a telemetry upload never refreshes a token, and that the
+// config a serve session binds keeps the default chain.
+func TestBoundUploadConfigNeverRefreshes(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+
+	upload, err := mcp.BoundUploadConfig(t.Context(), bindingTestProfile, cfgPath, time.Second)
+	require.NoError(t, err)
+	assert.Equal(t, auth.CredentialsWithoutRefresh(), upload.Credentials)
+
+	session, err := mcp.BoundConfigWithin(bindingTestProfile, cfgPath, time.Second)
+	require.NoError(t, err)
+	assert.Nil(t, session.Credentials, "the session leaves Credentials unset, so the SDK keeps the default chain")
 }
