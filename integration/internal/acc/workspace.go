@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
 )
@@ -43,10 +42,10 @@ func sharedWorkspaceClient(t testutil.TestingT) *databricks.WorkspaceClient {
 	defer s.mu.Unlock()
 
 	if s.client == nil {
-		cfg := &config.Config{}
-		require.NoError(t, cfg.EnsureResolved())
-		cfg.HTTPTransport = httptransport.HealthChecked(cfg.InsecureSkipVerify)
-		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		// Set before the config is resolved, so the token-refresh client uses it too. With a
+		// transport set, the SDK ignores skip_verify; the integration tests don't use it.
+		cfg := &databricks.Config{HTTPTransport: httptransport.HealthChecked(false)}
+		w, err := databricks.NewWorkspaceClient(cfg)
 		require.NoError(t, err)
 		s.client = w
 	}

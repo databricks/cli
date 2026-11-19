@@ -45,11 +45,14 @@ func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 		t: t,
 	}
 
+	// The proxies of all tests share the transport's connection pool, so a dead connection
+	// would otherwise fail requests of every test that follows (see libs/httptransport). Set
+	// before the config is resolved, so the token-refresh client uses it too.
+	if upstream.HTTPTransport == nil {
+		upstream.HTTPTransport = httptransport.HealthChecked(upstream.InsecureSkipVerify)
+	}
 	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
 	require.NoError(t, err)
-	// The proxies of all tests share the transport's connection pool, so a dead connection
-	// would otherwise fail requests of every test that follows (see libs/httptransport).
-	clientCfg.Transport = httptransport.HealthChecked(clientCfg.InsecureSkipVerify)
 	s.apiClient = httpclient.NewApiClient(clientCfg)
 
 	// Set up the proxy handler as the default handler for all requests.

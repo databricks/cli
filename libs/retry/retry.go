@@ -74,7 +74,7 @@ func isInactivityTimeout(err error) bool {
 }
 
 // isConnectionLost reports whether the HTTP/2 health check closed the connection because a ping went
-// unanswered (see bundle/config/transport.go). It replaces the inactivity timeout for a request on
+// unanswered (see libs/httptransport). It replaces the inactivity timeout for a request on
 // a dead connection, with the same uncertainty about whether the server applied it, and the retry
 // goes out on a new connection.
 //

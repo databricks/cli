@@ -57,13 +57,10 @@ var (
 	insecureHealthCheckedTransport = sync.OnceValue(func() *http.Transport { return newHealthCheckedTransport(true) })
 )
 
-// HealthChecked returns the shared health-checked transport.
-//
-// Users: the bundle workspace client, and the workspace commands run in a bundle root
-// (cmd/root/auth.go builds their client from the bundle client's config); the shared workspace
-// client of the integration tests and the acceptance test proxy, which live for the whole test
-// process, so one dead connection would otherwise fail every test that follows. The token-refresh
-// client the SDK builds while resolving a config still uses the SDK default.
+// HealthChecked returns the shared health-checked transport. Use it for clients that live long
+// enough to see a connection die, in particular clients shared by a whole test process, where one
+// dead connection would otherwise fail every test that follows. Set it on the config before the
+// config is resolved, so the SDK's token-refresh client uses it too.
 func HealthChecked(insecureSkipVerify bool) *http.Transport {
 	if insecureSkipVerify {
 		return insecureHealthCheckedTransport()
