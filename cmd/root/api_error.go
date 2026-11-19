@@ -1,7 +1,6 @@
 package root
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -26,8 +25,7 @@ func (e *describedError) Unwrap() error { return e.err }
 // Only a bare API error is described: wrappers either explain the error in their
 // own words or would need their text to be parsed.
 func describeEmptyAPIError(err error) error {
-	apiErr := &apierr.APIError{}
-	ok := errors.As(err, &apiErr)
+	apiErr, ok := err.(*apierr.APIError) //nolint:errorlint // only the bare error, see above
 	if !ok || strings.TrimSpace(apiErr.Message) != "" {
 		return err
 	}
