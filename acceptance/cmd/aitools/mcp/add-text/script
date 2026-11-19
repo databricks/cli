@@ -1,0 +1,18 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+mkdir -p home/.claude home/.cursor
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# The services of system.ai, created in the fake workspace.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile logfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-logfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=github" --profile logfood --json '{"comment": "Repositories, issues, pull requests", "config": {"source_connection": {"name": "connections/github", "options": {"oauth_provider": "OAUTH_PROVIDER_GITHUB_MCP"}}}}' &> LOG.create-github-logfood
+
+title "Text output: Cursor approval hint, and the sign-in step for github"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,cursor
+
+title "Running it again re-asserts the entries, and nothing is written twice"
+trace $CLI aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,cursor
+
+title "Cursor config"
+trace cat home/.cursor/mcp.json

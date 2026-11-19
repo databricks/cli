@@ -20,8 +20,8 @@ const (
 
 // Profile lookups that do not yield a usable profile.
 var (
-	// errProfileMissing means the config file has no profile of the name, or does not exist.
-	errProfileMissing = errors.New("profile missing")
+	// ErrProfileMissing means the config file has no profile of the name, or does not exist.
+	ErrProfileMissing = errors.New("profile missing")
 	// errProfileNoHost means the config file has a section of the name whose host is missing or empty.
 	errProfileNoHost = errors.New("profile has no host")
 )
@@ -106,12 +106,12 @@ func Reconcile(ctx context.Context, state *State) ([]Drift, error) {
 // checkEntry returns the drift of one entry, or nil when its profile still names the recorded host
 // and workspace. The entry's profile is read from the config file the entry is pinned to.
 func checkEntry(ctx context.Context, files configFiles, entry Entry) (*Drift, error) {
-	path, err := resolveConfigFile(ctx, entry.ConfigFile)
+	path, err := ResolveConfigFile(ctx, entry.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
 	p, err := files.profile(path, entry.Profile)
-	if errors.Is(err, errProfileMissing) || errors.Is(err, errProfileNoHost) {
+	if errors.Is(err, ErrProfileMissing) || errors.Is(err, errProfileNoHost) {
 		return &Drift{Kind: DriftProfileMissing, Entry: entry}, nil
 	}
 	if err != nil {
@@ -124,7 +124,7 @@ func checkEntry(ctx context.Context, files configFiles, entry Entry) (*Drift, er
 // parsed once. A nil file is one that does not exist.
 type configFiles map[string]*config.File
 
-// profile returns the profile named name from the config file at path. It returns errProfileMissing
+// profile returns the profile named name from the config file at path. It returns ErrProfileMissing
 // when the file does not exist or has no section of that name, and errProfileNoHost when the section
 // has no host or an empty one.
 func (c configFiles) profile(path, name string) (profile.Profile, error) {
@@ -141,11 +141,11 @@ func (c configFiles) profile(path, name string) (profile.Profile, error) {
 		c[path] = file
 	}
 	if file == nil {
-		return profile.Profile{}, errProfileMissing
+		return profile.Profile{}, ErrProfileMissing
 	}
 	section, err := file.GetSection(name)
 	if err != nil {
-		return profile.Profile{}, errProfileMissing
+		return profile.Profile{}, ErrProfileMissing
 	}
 	keys := section.KeysHash()
 	if keys["host"] == "" {

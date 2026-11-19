@@ -1,0 +1,11 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+mkdir -p home/.claude
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+title "A profile that does not exist is refused before any request, and the error lists the profiles that exist"
+musterr trace $CLI aitools mcp add --profile logfod --names system.ai.genie_one_mcp --agents claude-code
+
+title "Nothing was written"
+trace ls -A home

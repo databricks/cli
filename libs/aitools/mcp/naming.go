@@ -10,9 +10,9 @@ import (
 	"sync"
 )
 
-// maxServerNameLen caps a server name. Agents expose tools as mcp__<server>__<tool> and limit
+// MaxServerNameLen caps a server name. Agents expose tools as mcp__<server>__<tool> and limit
 // tool names to about 64 characters.
-const maxServerNameLen = 32
+const MaxServerNameLen = 32
 
 // serverNameHashLen is the number of hex characters that end a capped server name.
 const serverNameHashLen = 6
@@ -40,7 +40,7 @@ func Sanitize(s string) string {
 // ServerName returns the agent-facing name of the server for a service (catalog.schema.leaf)
 // and a profile: <leaf>-<profile> in system.ai, <catalog>-<schema>-<leaf>-<profile> elsewhere.
 // Each part is sanitized and parts that sanitize to nothing are left out, except the leaf, which
-// makes an error wrapping ErrNoServerName. A name longer than maxServerNameLen is capped by
+// makes an error wrapping ErrNoServerName. A name longer than MaxServerNameLen is capped by
 // capServerName. Tool names in agents are mcp__<name>__<tool>, so the name must stay stable for
 // the entry's life.
 func ServerName(fullName, profile string) (string, error) {
@@ -63,18 +63,18 @@ func ServerName(fullName, profile string) (string, error) {
 	return capServerName(strings.Join(name, "-")), nil
 }
 
-// capServerName returns name unchanged when it fits in maxServerNameLen. Otherwise it cuts name
+// capServerName returns name unchanged when it fits in MaxServerNameLen. Otherwise it cuts name
 // to fit beside "-" and serverNameHashLen hex characters of the sha256 of the uncut name, drops
 // any "-" or "_" the cut leaves at its end, and appends "-" and the hash. Long names that share a
 // prefix stay distinct, and the same name always gets the same result. name is sanitized, so it
 // is ASCII and cutting it by byte is safe.
 func capServerName(name string) string {
-	if len(name) <= maxServerNameLen {
+	if len(name) <= MaxServerNameLen {
 		return name
 	}
 	sum := sha256.Sum256([]byte(name))
 	hash := hex.EncodeToString(sum[:])[:serverNameHashLen]
-	head := strings.TrimRight(name[:maxServerNameLen-len(hash)-1], "-_")
+	head := strings.TrimRight(name[:MaxServerNameLen-len(hash)-1], "-_")
 	return head + "-" + hash
 }
 
@@ -89,12 +89,12 @@ func leafOf(fullName string) string {
 
 // inSystemAI reports whether a service full name is in system.ai, in any casing.
 func inSystemAI(fullName string) bool {
-	return strings.HasPrefix(strings.ToLower(fullName), systemAILocation+".")
+	return strings.HasPrefix(strings.ToLower(fullName), SystemAILocation+".")
 }
 
 // UniqueName returns base, or base-2, base-3, ... for the first candidate for which taken
 // returns false. Each candidate is capped like a server name, so a suffix cannot push the name
-// past maxServerNameLen.
+// past MaxServerNameLen.
 func UniqueName(base string, taken func(string) bool) string {
 	if !taken(base) {
 		return base

@@ -102,7 +102,7 @@ func TestServerNameCapFollowsSanitizeRules(t *testing.T) {
 		serverName(t, "main.sales.abcdefghijklm-n", "production"),
 		serverName(t, "main.sales.abcdefghijklmnopqrstuvwxyz", "production_"),
 	} {
-		assert.LessOrEqual(t, len(name), maxServerNameLen, name)
+		assert.LessOrEqual(t, len(name), MaxServerNameLen, name)
 		assert.NotContains(t, name, "__", name)
 		assert.NotRegexp(t, `^[-_]|[-_]$`, name)
 	}
@@ -134,10 +134,10 @@ func TestUniqueName(t *testing.T) {
 
 func TestUniqueNameSuffixStaysWithinCap(t *testing.T) {
 	base := "main-sales-abcdefghijklmnop-prod"
-	require.Len(t, base, maxServerNameLen)
+	require.Len(t, base, MaxServerNameLen)
 	taken := func(name string) bool { return name == base }
 	got := UniqueName(base, taken)
-	assert.LessOrEqual(t, len(got), maxServerNameLen, got)
+	assert.LessOrEqual(t, len(got), MaxServerNameLen, got)
 	assert.NotEqual(t, base, got)
 	assert.Equal(t, got, UniqueName(base, taken))
 }
