@@ -1,4 +1,4 @@
-package aitools
+package aitools_test
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 
 	aitoolscmd "github.com/databricks/cli/cmd/aitools"
 	"github.com/databricks/cli/cmd/root"
+	aitools "github.com/databricks/cli/experimental/aitools/cmd"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,7 @@ func flagSummary(cmd *cobra.Command) []string {
 }
 
 func TestExperimentalAitoolsSubcommands(t *testing.T) {
-	cmd := NewAitoolsCmd()
+	cmd := aitools.NewAitoolsCmd()
 	assert.True(t, cmd.Hidden)
 
 	var names []string
@@ -52,7 +53,7 @@ func TestExperimentalAitoolsSubcommands(t *testing.T) {
 // `databricks aitools <name>` with a notice that points to the new path.
 func TestDeprecatedAliasesMirrorStableCommands(t *testing.T) {
 	stable := root.NewCommand(t.Context(), aitoolscmd.Spec)
-	experimental := NewAitoolsCmd()
+	experimental := aitools.NewAitoolsCmd()
 
 	for _, name := range []string{"install", "update", "uninstall", "list", "version"} {
 		t.Run(name, func(t *testing.T) {
