@@ -200,12 +200,7 @@ func (r *ResourcePostgresRole) recoverFailedCreate(ctx context.Context, req post
 	}, createErr)
 }
 
-func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *PostgresRoleState, entry *PlanEntry) (*PostgresRoleRemote, error) {
-	// Build update mask from fields that have action="update" in the changes map.
-	// Prefix with "spec." because the API expects paths relative to the Role
-	// object, not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", nil)
-
+func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *PostgresRoleState, _ *PlanEntry) (*PostgresRoleRemote, error) {
 	waiter, err := r.client.Postgres.UpdateRole(ctx, postgres.UpdateRoleRequest{
 		Name: id,
 		Role: postgres.Role{
@@ -221,7 +216,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 			ForceSendFields: nil,
 		},
 		UpdateMask: fieldmask.FieldMask{
-			Paths: fieldPaths,
+			Paths: postgresSpecUpdateMask,
 		},
 	})
 	if err != nil {

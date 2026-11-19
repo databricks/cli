@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
   "q": {
-    "update_mask": "spec.attributes.createdb"
+    "update_mask": "spec"
   },
   "body": {
     "spec": {

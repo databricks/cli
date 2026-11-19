@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"encoding/json"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -10,8 +11,9 @@ import (
 // update. Since 2026-11-12 the API returns spec as stored for projects, branches,
 // endpoints, databases and roles (catalogs, data APIs and synced tables were not
 // observed to change and still return status only): the fields the
-// caller set (a field masked but absent from the body keeps its previous value, except
-// a repeated field, which is cleared),
+// caller set (under a field mask, a field masked but absent from the body keeps its
+// previous value, except a repeated field, which is cleared; the whole-spec mask
+// replaces the echoed spec with the body),
 // minus inputOnly fields that are consulted once and never echoed. Defaults the
 // backend materializes appear only in status, not in spec.
 //
@@ -45,7 +47,10 @@ func echoedSpec[T any](stored *T, body []byte, mask string, oneofGroups map[stri
 		for path := range strings.SplitSeq(mask, ",") {
 			path = strings.TrimSpace(path)
 			if path == "spec" || path == "*" {
-				mergeSpecMap(result, bodySpec)
+				// The whole-spec mask replaces the echoed spec with the body, even though the
+				// fields it omits keep their value in status (probed against a real workspace
+				// on 2026-11-19).
+				result = maps.Clone(bodySpec)
 				continue
 			}
 			rel, ok := strings.CutPrefix(path, "spec.")
@@ -126,19 +131,6 @@ func maskSetsGroup(mask, group string, members []string) bool {
 // specPathParts splits a "spec."-prefixed mask path into keys relative to the spec.
 func specPathParts(path string) []string {
 	return strings.Split(strings.TrimPrefix(path, "spec."), ".")
-}
-
-// mergeSpecMap deep-merges src into dst; keys absent from src keep their dst value.
-func mergeSpecMap(dst, src map[string]any) {
-	for k, v := range src {
-		srcChild, srcIsMap := v.(map[string]any)
-		dstChild, dstIsMap := dst[k].(map[string]any)
-		if srcIsMap && dstIsMap {
-			mergeSpecMap(dstChild, srcChild)
-			continue
-		}
-		dst[k] = v
-	}
 }
 
 // specMapGet returns the value at parts in m, if present.

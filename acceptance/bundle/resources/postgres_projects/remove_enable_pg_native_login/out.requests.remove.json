@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
   "q": {
-    "update_mask": "spec.enable_pg_native_login"
+    "update_mask": "spec"
   },
   "body": {
     "spec": {

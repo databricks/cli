@@ -1,0 +1,7 @@
+# Regression from update_mask=spec, verified against a real workspace on 2026-11-19. With a
+# field mask, removing the last tag masks spec.custom_tags with no custom_tags in the body,
+# which the API applies by clearing the tags. Under the whole-spec mask the API keeps the
+# stored tags when the body omits them, and the SDK cannot send an empty list instead. It
+# echoes back the spec as sent, so out.plan.after_remove.json shows no drift although
+# out.get.remove.json still has the tag. See factcheck/clear_field.
+Badness = "Removing all custom_tags is silently ignored: the deploy succeeds and the plan shows no drift, but the project keeps its tags. This worked before update_mask=spec"

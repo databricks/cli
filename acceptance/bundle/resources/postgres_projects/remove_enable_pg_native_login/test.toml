@@ -1,4 +1,5 @@
-# Verified against a real workspace on 2026-11-19: the direct engine masks spec.enable_pg_native_login and omits it from
-# the body, and the API rejects a masked scalar with no value. The old value stays in state, so
-# out.plan.after_remove.json shows the removal pending again and every later deploy fails the same way.
-Badness = "Removing enable_pg_native_login fails: the field is named in update_mask but omitted from the body, which the API rejects"
+# Verified against a real workspace on 2026-11-19: the engine masks the whole spec and omits
+# enable_pg_native_login from the body. The API accepts it and keeps the stored value in status, but echoes
+# back the spec as sent, so out.plan.after_remove.json shows no drift although out.get.remove.json still
+# reports the old value. Before update_mask=spec this deploy failed with 400.
+Badness = "Removing enable_pg_native_login is silently ignored: the deploy succeeds and the plan shows no drift, but the resource keeps the old value"

@@ -130,13 +130,7 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, config *PostgresDatabaseState, entry *PlanEntry) (*PostgresDatabaseRemote, error) {
-	// Build update mask from fields that have action="update" in the changes map.
-	// This excludes immutable fields and fields that haven't changed.
-	// Prefix with "spec." because the API expects paths relative to the Database object,
-	// not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", nil)
-
+func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, config *PostgresDatabaseState, _ *PlanEntry) (*PostgresDatabaseRemote, error) {
 	waiter, err := r.client.Postgres.UpdateDatabase(ctx, postgres.UpdateDatabaseRequest{
 		Database: postgres.Database{
 			Spec: &config.DatabaseDatabaseSpec,
@@ -152,7 +146,7 @@ func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, conf
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
-			Paths: fieldPaths,
+			Paths: postgresSpecUpdateMask,
 		},
 	})
 	if err != nil {

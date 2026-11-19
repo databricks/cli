@@ -14,7 +14,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/[DEV_BRANCH_ID]",
   "q": {
-    "update_mask": "spec.is_protected"
+    "update_mask": "spec"
   },
   "body": {
     "spec": {

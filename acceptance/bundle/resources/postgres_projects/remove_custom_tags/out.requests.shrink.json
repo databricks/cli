@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
   "q": {
-    "update_mask": "spec.custom_tags"
+    "update_mask": "spec"
   },
   "body": {
     "spec": {

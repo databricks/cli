@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "q": {
-    "update_mask": "spec.is_protected"
+    "update_mask": "spec"
   },
   "body": {
     "spec": {
