@@ -26,6 +26,12 @@ func TestDecide(t *testing.T) {
 		{name: "cache disabled", modify: func(in *Inputs) { in.CacheDisabled = true }, want: ReasonCacheDisabled},
 		{name: "development build", modify: func(in *Inputs) { in.Version = "1.31.0-dev+abcdef123456" }, want: ReasonDevelopmentBuild},
 		{name: "snapshot build", modify: func(in *Inputs) { in.Version = "1.30.1-dev+abcdef1" }, want: ReasonDevelopmentBuild},
+		{name: "root in a user's home", modify: func(in *Inputs) { in.RootInUserHome = true }, want: ReasonRootInUserHome},
+		{name: "root in a user's home before the state", modify: func(in *Inputs) {
+			in.RootInUserHome = true
+			in.State = State{LastVersion: "1.30.0", Attempts: 3}
+			in.CI = true
+		}, want: ReasonRootInUserHome},
 
 		{name: "same version, settled", modify: func(in *Inputs) { in.State.LastVersion = "1.30.0" }, want: ReasonAlreadyRan},
 		{name: "same version, failed before", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: 3} }, want: ReasonRun},
@@ -65,7 +71,7 @@ func TestDecide(t *testing.T) {
 }
 
 func TestReasonDue(t *testing.T) {
-	notDue := []Reason{ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonAlreadyRan, ReasonRetriesExhausted}
+	notDue := []Reason{ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted}
 	due := []Reason{ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun}
 	for _, r := range notDue {
 		assert.False(t, r.Due(), r)

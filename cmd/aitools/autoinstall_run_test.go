@@ -365,6 +365,49 @@ func TestAutoInstallSkipsTheGateLookupWithoutAgents(t *testing.T) {
 	assert.Equal(t, autoinstall.State{ID: "treatment-machine"}, state, "the version is not settled")
 }
 
+// Root running in a user's home (sudo with HOME kept) leaves the home alone:
+// it takes no lock, reads and writes no state, looks no gate up and installs
+// nothing, so the user's own runs can still write there. The same run as the
+// user installs.
+func TestAutoInstallSkipsRootInAUserHome(t *testing.T) {
+	run := func(t *testing.T, rootInHome bool) (ctx context.Context, home string, lookups *int) {
+		home = setupAutoInstallHome(t, "")
+		if rootInHome {
+			// The state the setup seeds would hide a state file or lock file
+			// the run creates.
+			require.NoError(t, os.RemoveAll(filepath.Join(home, ".databricks")))
+		}
+		t.Cleanup(func() { rootInUserHome = autoinstall.RootInUserHome })
+		rootInUserHome = func(context.Context) bool { return rootInHome }
+		lookups = new(int)
+		t.Cleanup(func() { gateOn = autoinstall.GateOn })
+		gateOn = func(context.Context, string) (bool, error) {
+			*lookups++
+			return true, nil
+		}
+		ctx = cmdio.MockDiscard(t.Context())
+		ctx = telemetry.WithNewLogger(ctx)
+		runAutoInstallHook(ctx)
+		return ctx, home, lookups
+	}
+
+	t.Run("root in a user's home", func(t *testing.T) {
+		ctx, home, lookups := run(t, true)
+		assert.NoDirExists(t, filepath.Join(home, ".databricks"))
+		assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+		assert.Zero(t, *lookups)
+		assert.Empty(t, telemetry.BufferedEvents(ctx))
+	})
+	t.Run("the user", func(t *testing.T) {
+		ctx, home, lookups := run(t, false)
+		assert.FileExists(t, filepath.Join(home, ".cursor", "skills", "databricks-test", "SKILL.md"))
+		assert.Equal(t, 1, *lookups)
+		state, err := autoinstall.Load(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	})
+}
+
 func TestToolsPlanNewAgents(t *testing.T) {
 	claude := &agents.Agent{DisplayName: "Claude Code"}
 	cursor := &agents.Agent{DisplayName: "Cursor"}

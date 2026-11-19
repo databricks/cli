@@ -49,6 +49,9 @@ const (
 // gateOn is autoinstall.GateOn; tests replace it.
 var gateOn = autoinstall.GateOn
 
+// rootInUserHome is autoinstall.RootInUserHome; tests replace it.
+var rootInUserHome = autoinstall.RootInUserHome
+
 // notifyInterrupt returns a context that is canceled when the CLI receives
 // Ctrl+C or a request to terminate; tests replace it.
 var notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -102,6 +105,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 		OnRuntime:      dbr.RunsOnRuntime(ctx),
 		CacheDisabled:  autoinstall.CacheDisabled(ctx),
 		Version:        version,
+		RootInUserHome: rootInUserHome(ctx),
 		CI:             agents.InCI(ctx),
 		// A "no" earlier in this process counts even if storing it failed.
 		EnvOptOut: autoinstall.EnvOptedOut(ctx) || autoinstall.Declined(),
@@ -403,6 +407,7 @@ var stateFreeSkips = []autoinstall.Reason{
 	autoinstall.ReasonOnRuntime,
 	autoinstall.ReasonCacheDisabled,
 	autoinstall.ReasonDevelopmentBuild,
+	autoinstall.ReasonRootInUserHome,
 }
 
 // skipOutcomes are the reported outcomes of the skips that settle a version.
