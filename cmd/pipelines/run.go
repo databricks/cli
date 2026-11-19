@@ -167,9 +167,11 @@ func fetchAndDisplayPipelineUpdate(ctx context.Context, w *databricks.WorkspaceC
 		return errors.New("no update ID provided")
 	}
 
-	getUpdateResponse, err := w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
-		PipelineId: pipelineId,
-		UpdateId:   updateId,
+	getUpdateResponse, err := retry.With(ctx, retry.IsTransientRead, func() (*pipelines.GetUpdateResponse, error) {
+		return w.Pipelines.GetUpdate(ctx, pipelines.GetUpdateRequest{
+			PipelineId: pipelineId,
+			UpdateId:   updateId,
+		})
 	})
 	if err != nil {
 		return err

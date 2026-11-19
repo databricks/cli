@@ -2,11 +2,9 @@ package root
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
-	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -34,18 +32,13 @@ func describeEmptyAPIError(err error) error {
 		return err
 	}
 
-	status := strconv.Itoa(apiErr.StatusCode)
-	if text := http.StatusText(apiErr.StatusCode); text != "" {
-		status += " " + text
-	}
-	desc := "API request failed with " + status
+	desc := "API request failed with " + diag.FormatAPIErrorStatus(apiErr)
 	// The SDK formats a missing error_code as "<nil>".
 	if code := apiErr.ErrorCode; code != "" && code != "<nil>" {
 		desc += " (" + code + ")"
 	}
-	if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
-		req := rw.Response.Request
-		desc += fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
+	if endpoint := diag.FormatAPIErrorEndpoint(apiErr); endpoint != "" {
+		desc += " from " + endpoint
 	}
 	return &describedError{msg: desc, err: err}
 }

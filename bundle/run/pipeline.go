@@ -59,10 +59,12 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId
 	// Otherwise for long lived pipelines, there can be a lot of unnecessary
 	// latency due to multiple pagination API calls needed underneath the hood for
 	// ListPipelineEventsAll
-	events, err := w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
-		Filter:     `level='ERROR'`,
-		MaxResults: 100,
-		PipelineId: pipelineId,
+	events, err := retry.With(ctx, retry.IsTransientRead, func() ([]pipelines.PipelineEvent, error) {
+		return w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
+			Filter:     `level='ERROR'`,
+			MaxResults: 100,
+			PipelineId: pipelineId,
+		})
 	})
 	if err != nil {
 		return err
