@@ -71,8 +71,6 @@ func TestSubmitStatementWrapsTransportError(t *testing.T) {
 }
 
 func TestGetStatementResultPolls(t *testing.T) {
-	// Waits for the engine's real 1s poll interval; run it alongside the other slow test.
-	t.Parallel()
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
@@ -88,7 +86,7 @@ func TestGetStatementResultPolls(t *testing.T) {
 		Result:      &sql.ResultData{DataArray: [][]string{{"42"}}},
 	}, nil).Once()
 
-	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
+	info, err := getStatementResult(ctx, mockAPI, "stmt-1", fastPoll)
 	require.NoError(t, err)
 	assert.Equal(t, "stmt-1", info.StatementID)
 	assert.Equal(t, sql.StatementStateSucceeded, info.State)

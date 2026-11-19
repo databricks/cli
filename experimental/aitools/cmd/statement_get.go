@@ -58,9 +58,11 @@ invoked the synchronous path.)`,
 // Context cancellation propagates from the poll WITHOUT cancelling the
 // server-side statement (intentional: 'get' is a poll-only operation; use
 // 'cancel' to terminate explicitly).
-func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface, statementID string) (statementInfo, error) {
+//
+// opts are passed to the sqlexec client.
+func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface, statementID string, opts ...sqlexec.Option) (statementInfo, error) {
 	// Get/Poll don't use the warehouse ID.
-	client := sqlexec.New(api, "")
+	client := sqlexec.New(api, "", opts...)
 
 	// Fetch the current state first so Poll can short-circuit if the statement
 	// is already terminal.
