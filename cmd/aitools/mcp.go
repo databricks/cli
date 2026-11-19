@@ -42,6 +42,7 @@ Use 'add' to install them into coding agents, bound to a Databricks profile.`,
 	cmd.AddCommand(NewMcpAddCmd())
 	cmd.AddCommand(NewMcpListCmd())
 	cmd.AddCommand(NewMcpRemoveCmd())
+	cmd.AddCommand(NewMcpServeCmd())
 	return cmd
 }
 
