@@ -40,6 +40,12 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
+	// Without the groups, a grant through a group may already apply, so suggesting the
+	// identity could be wrong. The populate step has already warned about the groups.
+	if b.CurrentUserGroupsUnknown {
+		return nil
+	}
+
 	me := b.Config.Workspace.CurrentUser.User
 	identityType := "user_name"
 	if iamutil.IsServicePrincipal(me) {

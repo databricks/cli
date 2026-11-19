@@ -26,6 +26,18 @@ func TestPermissionDiagnosticsApplySuccess(t *testing.T) {
 	require.NoError(t, diags.Error())
 }
 
+// When the groups could not be read, a grant through a group may already apply, so the
+// recommendation to add the identity is withheld.
+func TestPermissionDiagnosticsSkipsRecommendationWhenGroupsUnknown(t *testing.T) {
+	b := mockBundle(t, []resources.Permission{
+		{Level: "CAN_VIEW", UserName: "testuser@databricks.com"},
+	})
+	require.NotEmpty(t, bundle.Apply(t.Context(), b, permissions.PermissionDiagnostics()))
+
+	b.CurrentUserGroupsUnknown = true
+	require.Empty(t, bundle.Apply(t.Context(), b, permissions.PermissionDiagnostics()))
+}
+
 func TestPermissionDiagnosticsEmpty(t *testing.T) {
 	b := mockBundle(t, nil)
 
@@ -137,7 +149,7 @@ func TestPermissionDiagnosticsGroupDoesNotExist(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "may include: nosuchgroup.")
 }
 
-// A group the current user belongs to, matched by ID, grants CAN_MANAGE. The report
+// A group the current user belongs to, matched by name, grants CAN_MANAGE. The report
 // is then a stale permission set, not a missing grant.
 func TestPermissionDiagnosticsGroupMember(t *testing.T) {
 	b, _ := mockBundleWithGroups(t, []resources.Permission{

@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"net/http"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -68,7 +69,39 @@ func TestPopulateCurrentUserWarnsWhenGroupsFail(t *testing.T) {
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, "Could not read the groups of the current user")
 	assert.Nil(t, b.Config.Workspace.CurrentUser.Groups)
+	assert.True(t, b.CurrentUserGroupsUnknown)
 	assert.Equal(t, "tester@databricks.com", b.Config.Workspace.CurrentUser.UserName)
+}
+
+// The groups are cached with the principal, so a second command with the same
+// fingerprint reads neither identity/me nor the parent groups.
+func TestPopulateCurrentUserCachesGroupsWithPrincipal(t *testing.T) {
+	server := testserver.New(t)
+	var meCalls, parentCalls atomic.Int32
+	server.Handle("GET", "/api/2.0/identity/me", func(req testserver.Request) any {
+		meCalls.Add(1)
+		return req.Workspace.IdentityMe(req.Token)
+	})
+	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(req testserver.Request) any {
+		parentCalls.Add(1)
+		return req.Workspace.IdentityMeTransitiveParentGroups()
+	})
+	first := newPopulateBundle(t, server, "alpha")
+
+	diags := bundle.Apply(t.Context(), first, PopulateCurrentUser())
+	require.NoError(t, diags.Error())
+	assert.Equal(t, int32(1), meCalls.Load())
+	assert.Equal(t, int32(1), parentCalls.Load())
+
+	second := &bundle.Bundle{Config: config.Root{}}
+	second.Cache = first.Cache
+	second.SetWorkpaceClient(first.WorkspaceClient(t.Context()))
+	diags = bundle.Apply(t.Context(), second, PopulateCurrentUser())
+	require.NoError(t, diags.Error())
+	assert.Equal(t, int32(1), meCalls.Load())
+	assert.Equal(t, int32(1), parentCalls.Load())
+	require.Len(t, second.Config.Workspace.CurrentUser.Groups, 1)
+	assert.Equal(t, "alpha", second.Config.Workspace.CurrentUser.Groups[0].Display)
 }
 
 // An assumed group is not a user: bundle commands that deploy as the current user fail
