@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -29,10 +30,12 @@ const (
 // every project or for the working directory (see pluginInstall.appliesTo): a
 // plugin installed for another project does not load for the app being
 // created. For Codex and Copilot the CLI install state is the only plugin
-// source, so a plugin installed with the agent's own CLI is missed.
+// source, so a plugin installed with the agent's own CLI is missed, and a
+// plugin later removed with it still counts until the record is cleared.
 // installedPlugins is a parameter because this package cannot import the
-// installer; callers pass installer.InstalledPluginAgents. It also reports
-// true when no agent is detected.
+// installer; callers pass installer.InstalledPluginAgents. It is called only
+// once a detected agent has no plugin manifest reader. It also reports true
+// when no agent is detected.
 func HasDatabricksToolingInstalled(ctx context.Context, installedPlugins func(context.Context) []string) bool {
 	installed := DetectInstalled(ctx)
 	if len(installed) == 0 || hasSharedSkills(ctx) {
@@ -42,10 +45,10 @@ func HasDatabricksToolingInstalled(ctx context.Context, installedPlugins func(co
 	if wd, err := os.Getwd(); err == nil {
 		cwd = resolvePath(wd)
 	}
-	recorded := installedPlugins(ctx)
+	recorded := sync.OnceValue(func() []string { return installedPlugins(ctx) })
 	for _, a := range installed {
 		if a.pluginInstalls == nil {
-			if !slices.Contains(recorded, a.Name) {
+			if !slices.Contains(recorded(), a.Name) {
 				return false
 			}
 			continue

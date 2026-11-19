@@ -4,7 +4,9 @@
 sethome home
 export CLAUDECODE=1
 unset CLAUDE_CODE_SESSION_ID
-unset CLAUDE_CONFIG_DIR
+# Agent detection reads these config-dir overrides besides HOME; unset them so
+# the host's agent dirs can't add a detected agent.
+unset CLAUDE_CONFIG_DIR XDG_CONFIG_HOME GEMINI_CLI_HOME PI_CODING_AGENT_DIR GOOSE_PATH_ROOT APPDATA
 
 title "apps init with flags prints the tip: one hint-shown event per hint printed"
 trace $CLI apps init --template ./template --skip-install --name app-tip > LOG.apps-init
@@ -19,23 +21,12 @@ rm -rf app-plugin
 
 title "codex and copilot plugins recorded by aitools install: no tip, no event"
 # Codex and Copilot have no plugin manifest the CLI can read, so the plugin
-# record in the CLI install state is what counts for them.
+# record in the committed recorded-plugin-home/.databricks/aitools/skills/.state.json
+# is what counts for them.
 sethome ./recorded-plugin-home
+# CLAUDECODE from the first case would make the calling-agent install hint
+# fire, since this home has no Claude Code plugin.
 unset CLAUDECODE
-mkdir -p "$HOME/.codex" "$HOME/.copilot" "${USERPROFILE:-$HOME}/.databricks/aitools/skills"
-cat > "${USERPROFILE:-$HOME}/.databricks/aitools/skills/.state.json" <<'STATE'
-{
-  "schema_version": 2,
-  "release": "v0.2.32",
-  "last_updated": "2026-01-01T00:00:00Z",
-  "skills": {},
-  "scope": "global",
-  "plugins": {
-    "codex": {"marketplace": "databricks-agent-skills", "plugin": "databricks", "scope": "user", "version": "0.2.32"},
-    "copilot": {"marketplace": "databricks-agent-skills", "plugin": "databricks", "scope": "user", "version": "0.2.32"}
-  }
-}
-STATE
 trace $CLI apps init --template ./template --skip-install --name app-recorded > LOG.apps-init-recorded
 trace print_telemetry
-rm -rf app-recorded recorded-plugin-home
+rm -rf app-recorded

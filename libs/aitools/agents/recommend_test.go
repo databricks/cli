@@ -65,8 +65,7 @@ func TestRecommendSkillsInstallSkipsWhenPluginInstalled(t *testing.T) {
 
 func TestRecommendSkillsInstallSkipsWhenPluginRecorded(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
+	testutil.SetAgentEnv(t, "HOME", home, "USERPROFILE", home)
 	t.Chdir(t.TempDir())
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".copilot"), 0o755))
@@ -168,7 +167,7 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 
 func TestMaybeVersionCheckTip(t *testing.T) {
 	noPlugins := func(context.Context) []string { return nil }
-	recordedCodexPlugin := func(context.Context) []string { return []string{"codex_0.2.6"} }
+	recordedCodexPlugin := func(context.Context) []string { return []string{NameCodex} }
 
 	for _, tc := range []struct {
 		name             string
