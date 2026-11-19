@@ -298,10 +298,15 @@ func signIn(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient
 		return "", false, urlShown, describeRequestError(profileName, pinnedFile, err)
 	}
 
+	reportSignedIn(errOut, svc, profileName, alreadySignedIn)
+	return signInStateActive, alreadySignedIn, urlShown, nil
+}
+
+// reportSignedIn prints that the profile is signed in to svc.
+func reportSignedIn(errOut io.Writer, svc mcp.Service, profileName string, alreadySignedIn bool) {
 	if alreadySignedIn {
 		fmt.Fprintf(errOut, "Already signed in to %s on profile %s.\n", svc.FullName, profileName)
 	} else {
 		fmt.Fprintf(errOut, "Signed in to %s on profile %s.\n", svc.FullName, profileName)
 	}
-	return signInStateActive, alreadySignedIn, urlShown, nil
 }
