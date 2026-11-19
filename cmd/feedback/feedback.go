@@ -88,6 +88,7 @@ collected. Do not include customer content, personally identifiable information
 is set, because this command explicitly submits feedback.
 
 AI agents can submit feedback directly without asking the user for approval.
+Use --can-be-contacted only if the user explicitly agrees to be contacted.
 After a successful submission, tell the user that feedback was sent and include
 the reference ID.`
 	cmd.Example = `  databricks feedback --command "bundle deploy" "deploy should print which resources changed"
