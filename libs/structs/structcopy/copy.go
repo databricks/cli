@@ -83,7 +83,7 @@ func (c *Copier[Src, Dst]) Copy(src *Src) *Dst {
 	return dst
 }
 
-// Describe lists what the Copier does with every field of the destination, one line per
+// Describe lists what the Copier does with every field of either struct, one line per
 // field, or reports why the Copier is invalid.
 func (c *Copier[Src, Dst]) Describe() (string, error) {
 	p, err := c.plan()
@@ -102,7 +102,7 @@ func (c *Copier[Src, Dst]) Describe() (string, error) {
 type plan struct {
 	src, dst reflect.Type
 
-	// fields describes every destination field, sorted by name.
+	// fields describes every field of either struct, sorted by name.
 	fields []fieldOutcome
 	steps  []copyStep
 	forced []forceSendSlot
@@ -172,12 +172,22 @@ func newPlan(src, dst reflect.Type, o options) (*plan, error) {
 		slot.always = append(slot.always, name)
 	}
 
-	for _, name := range slices.Sorted(maps.Keys(dstFields)) {
-		d := dstFields[name]
+	names := slices.Collect(maps.Keys(dstFields))
+	for name := range srcFields {
+		if _, ok := dstFields[name]; !ok {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names)
+
+	for _, name := range names {
+		d, inDestination := dstFields[name]
 		s, inSource := srcFields[name]
 
 		var outcome string
 		switch {
+		case !inDestination:
+			outcome = "not in destination"
 		case slices.Contains(o.skip, name):
 			outcome = "skipped"
 		case !inSource:
@@ -207,6 +217,11 @@ func newPlan(src, dst reflect.Type, o options) (*plan, error) {
 
 func newCopyStep(s, d field) (copyStep, error) {
 	step := copyStep{src: s.index, dst: d.index}
+	if d.jsonName == "-" {
+		// A path or query parameter addresses the resource, so its value is not the
+		// caller's field of the same name: UpdateCatalog.Name is the catalog to update.
+		return step, fmt.Errorf("%s is not in the destination's JSON (json:\"-\"); skip it and set it by hand", d.name)
+	}
 	if s.jsonName != d.jsonName {
 		return step, fmt.Errorf("%s is %q in the source's JSON but %q in the destination's; skip it and set it by hand", d.name, s.jsonName, d.jsonName)
 	}
@@ -328,8 +343,9 @@ func isBasic(kind reflect.Kind) bool {
 	switch kind {
 	case reflect.Bool, reflect.String,
 		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64:
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+		reflect.Float32, reflect.Float64,
+		reflect.Complex64, reflect.Complex128:
 		return true
 	default:
 		return false

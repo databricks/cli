@@ -136,12 +136,18 @@ the copied fields that the source lists. The SDK rejects a name its struct does 
 name of a field that was not copied would send that field's zero value.
 
 A field with the same name but another JSON name or type in the two structs is an error until it
-is skipped; only the enum types the SDK declares once per request and response are converted.
-`TestFieldCopies` reports it, and records what every copier does with each field of the struct
-it builds in `testdata/field_copies.txt`. `./task generate-direct` regenerates that
-file. On an SDK bump, read its diff the way you would review the wiring of a new field: it shows
-which requests and states pick the field up, and which leave it unset because their source has
-no such field.
+is skipped. Only a type of the same basic kind is converted, as with the enum types the SDK
+declares once per request and response. A destination field outside the JSON body (`json:"-"`, a
+path or query parameter) is an error until it is skipped as well: it addresses the resource, so
+set it from the ID.
+
+`TestFieldCopies` reports these errors, and records what every copier does with each field of
+either struct in `testdata/field_copies.txt`. `./task generate-direct` regenerates that file. On
+an SDK bump, read its diff the way you would review the wiring of a new field:
+
+ - `copied`: the request or state picks the field up.
+ - `not in source`: the field stays unset, because the struct it is copied from has no such field.
+ - `not in destination`: the copy drops the field. A state field that an update request drops cannot be updated in place, so classify it in `<resource_type>.yml`.
 
 ## OverrideChangeDesc
 

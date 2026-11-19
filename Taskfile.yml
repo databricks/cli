@@ -1102,9 +1102,10 @@ tasks:
       - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/output bundle/direct/dresources/configs"
 
   # Refreshes the listing of what every structcopy.Copier of the direct engine
-  # does with each field of the struct it builds (see TestFieldCopies). An SDK
-  # bump (go.mod / go.sum) that adds a field to such a struct changes it. Runs
-  # after generate-direct-resources, whose output the package embeds.
+  # does with each field of the two structs it copies between (see
+  # TestFieldCopies). An SDK bump (go.mod / go.sum) that adds a field to one of
+  # them changes it. Runs after generate-direct-resources, whose output the
+  # package embeds.
   generate-direct-copies:
     desc: Regenerate bundle/direct/dresources/testdata/field_copies.txt
     deps: ['generate-direct-resources']

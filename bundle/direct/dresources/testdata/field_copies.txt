@@ -1,15 +1,29 @@
 catalog.CatalogInfo -> dresources.CatalogState
+  BrowseOnly: not in destination
+  CatalogType: not in destination
   Comment: copied
   ConnectionName: copied
+  CreatedAt: not in destination
+  CreatedBy: not in destination
   CustomMaxRetentionHours: copied
+  EffectivePredictiveOptimizationFlag: not in destination
+  EnablePredictiveOptimization: not in destination
+  FullName: not in destination
   IsolationMode: copied
   ManagedEncryptionSettings: copied
+  MetastoreId: not in destination
   Name: copied
   Options: copied
+  Owner: not in destination
   Properties: copied
   ProviderName: copied
+  ProvisioningInfo: not in destination
+  SecurableType: not in destination
   ShareName: copied
+  StorageLocation: not in destination
   StorageRoot: copied
+  UpdatedAt: not in destination
+  UpdatedBy: not in destination
 
 catalog.CreateExternalLocation -> catalog.UpdateExternalLocation
   Comment: copied, always sent
@@ -47,16 +61,23 @@ catalog.CreateRegisteredModelRequest -> catalog.UpdateRegisteredModelRequest
   UpdatedBy: copied
 
 catalog.CreateSchema -> catalog.UpdateSchema
+  CatalogName: not in destination
   Comment: copied, always sent
   CustomMaxRetentionHours: copied, always sent
   EnablePredictiveOptimization: not in source
   FullName: not in source
+  Name: not in destination
   NewName: not in source
   Owner: not in source
   Properties: copied
+  StorageRoot: not in destination
 
 catalog.ExternalLocationInfo -> catalog.CreateExternalLocation
+  BrowseOnly: not in destination
   Comment: copied
+  CreatedAt: not in destination
+  CreatedBy: not in destination
+  CredentialId: not in destination
   CredentialName: copied
   EffectiveEnableFileEvents: copied
   EffectiveFileEventQueue: copied
@@ -64,24 +85,34 @@ catalog.ExternalLocationInfo -> catalog.CreateExternalLocation
   EncryptionDetails: copied
   Fallback: copied
   FileEventQueue: copied
+  IsolationMode: not in destination
+  MetastoreId: not in destination
   Name: copied
+  Owner: not in destination
   ReadOnly: copied
   SkipValidation: not in source
+  UpdatedAt: not in destination
+  UpdatedBy: not in destination
   Url: copied
 
 catalog.MonitorInfo -> dresources.QualityMonitorState
   AssetsDir: copied
   BaselineTableName: copied
   CustomMetrics: copied
+  DashboardId: not in destination
   DataClassificationConfig: copied
+  DriftMetricsTableName: not in destination
   InferenceLog: copied
   LatestMonitorFailureMsg: copied
+  MonitorVersion: not in destination
   Notifications: copied
   OutputSchemaName: copied
+  ProfileMetricsTableName: not in destination
   Schedule: copied
   SkipBuiltinDashboard: not in source
   SlicingExprs: copied
   Snapshot: copied
+  Status: not in destination
   TableName: copied
   TimeSeries: copied
   WarehouseId: not in source
@@ -103,13 +134,25 @@ catalog.RegisteredModelInfo -> catalog.CreateRegisteredModelRequest
   UpdatedBy: copied
 
 catalog.SchemaInfo -> dresources.SchemaState
+  BrowseOnly: not in destination
   CatalogName: copied
+  CatalogType: not in destination
   Comment: copied
+  CreatedAt: not in destination
+  CreatedBy: not in destination
   CustomMaxRetentionHours: copied
+  EffectivePredictiveOptimizationFlag: not in destination
+  EnablePredictiveOptimization: not in destination
+  FullName: not in destination
+  MetastoreId: not in destination
   Name: copied
+  Owner: not in destination
   Properties: copied
   SchemaId: copied
+  StorageLocation: not in destination
   StorageRoot: copied
+  UpdatedAt: not in destination
+  UpdatedBy: not in destination
 
 catalog.Secret -> catalog.Secret
   CatalogName: copied
@@ -129,11 +172,21 @@ catalog.Secret -> catalog.Secret
   Value: copied
 
 catalog.VolumeInfo -> dresources.VolumeState
+  AccessPoint: not in destination
+  BrowseOnly: not in destination
   CatalogName: copied
   Comment: copied
+  CreatedAt: not in destination
+  CreatedBy: not in destination
+  EncryptionDetails: not in destination
+  FullName: not in destination
+  MetastoreId: not in destination
   Name: copied
+  Owner: not in destination
   SchemaName: copied
   StorageLocation: copied
+  UpdatedAt: not in destination
+  UpdatedBy: not in destination
   VolumeId: copied
   VolumeType: copied
 
@@ -214,13 +267,21 @@ compute.ClusterSpec -> compute.EditCluster
   WorkloadType: copied
 
 compute.CreateInstancePool -> compute.EditInstancePool
+  AwsAttributes: not in destination
+  AzureAttributes: not in destination
   CustomTags: copied
+  DiskSpec: not in destination
+  EnableElasticDisk: not in destination
+  GcpAttributes: not in destination
   IdleInstanceAutoterminationMinutes: copied
   InstancePoolId: not in source
   InstancePoolName: copied
   MaxCapacity: copied
   MinIdleInstances: copied
+  NodeTypeFlexibility: not in destination
   NodeTypeId: copied
+  PreloadedDockerImages: not in destination
+  PreloadedSparkVersions: not in destination
   RemoteDiskThroughput: copied
   TotalInitialRemoteDiskSize: copied
 
@@ -238,10 +299,12 @@ compute.GetInstancePool -> compute.CreateInstancePool
   AwsAttributes: copied
   AzureAttributes: copied
   CustomTags: copied
+  DefaultTags: not in destination
   DiskSpec: copied
   EnableElasticDisk: copied
   GcpAttributes: copied
   IdleInstanceAutoterminationMinutes: copied
+  InstancePoolId: not in destination
   InstancePoolName: copied
   MaxCapacity: copied
   MinIdleInstances: copied
@@ -250,16 +313,23 @@ compute.GetInstancePool -> compute.CreateInstancePool
   PreloadedDockerImages: copied
   PreloadedSparkVersions: copied
   RemoteDiskThroughput: copied
+  State: not in destination
+  Stats: not in destination
+  Status: not in destination
   TotalInitialRemoteDiskSize: copied
 
 compute.Policy -> compute.CreatePolicy
+  CreatedAtTimestamp: not in destination
+  CreatorUserName: not in destination
   Definition: copied
   Description: copied
+  IsDefault: not in destination
   Libraries: copied
   MaxClustersPerUser: copied
   Name: copied
   PolicyFamilyDefinitionOverrides: copied
   PolicyFamilyId: copied
+  PolicyId: not in destination
 
 dashboards.Dashboard -> dresources.DashboardState
   CreateTime: copied
@@ -278,15 +348,19 @@ dashboards.Dashboard -> dresources.DashboardState
   WarehouseId: copied
 
 dashboards.GenieSpace -> resources.GenieSpaceConfig
+  CreateTime: not in destination
   Description: copied
   Etag: copied
   ParentPath: copied
   SerializedSpace: skipped
+  SpaceId: not in destination
   Title: copied
+  UpdateTime: not in destination
   WarehouseId: copied
 
 dresources.CatalogState -> catalog.UpdateCatalog
   Comment: copied, always sent
+  ConnectionName: not in destination
   CustomMaxRetentionHours: copied, always sent
   EnablePredictiveOptimization: not in source
   IsolationMode: copied
@@ -296,6 +370,9 @@ dresources.CatalogState -> catalog.UpdateCatalog
   Options: copied
   Owner: not in source
   Properties: copied
+  ProviderName: not in destination
+  ShareName: not in destination
+  StorageRoot: not in destination
 
 dresources.ClusterRemote -> dresources.ClusterState
   ApplyPolicyDefaultValues: copied
@@ -303,22 +380,34 @@ dresources.ClusterRemote -> dresources.ClusterState
   AutoterminationMinutes: copied
   AwsAttributes: copied
   AzureAttributes: copied
+  ClusterCores: not in destination
+  ClusterId: not in destination
   ClusterLogConf: copied
+  ClusterLogStatus: not in destination
+  ClusterMemoryMb: not in destination
   ClusterName: copied
+  ClusterSource: not in destination
+  CreatorUserName: not in destination
   CustomTags: copied
   DataSecurityMode: copied
+  DefaultTags: not in destination
   DependencyMode: copied
   DockerImage: copied
+  Driver: not in destination
   DriverInstancePoolId: copied
   DriverNodeTypeFlexibility: copied
   DriverNodeTypeId: copied
   EnableElasticDisk: copied
   EnableLocalDiskEncryption: copied
+  Executors: not in destination
   GcpAttributes: copied
   InitScripts: copied
   InstancePoolId: copied
   IsSingleNode: copied
+  JdbcPort: not in destination
   Kind: copied
+  LastRestartedTime: not in destination
+  LastStateLossTime: not in destination
   Libraries: copied
   Lifecycle: copied
   NodeTypeId: copied
@@ -328,40 +417,104 @@ dresources.ClusterRemote -> dresources.ClusterState
   RuntimeEngine: copied
   SingleUserName: copied
   SparkConf: copied
+  SparkContextId: not in destination
   SparkEnvVars: copied
   SparkVersion: copied
+  Spec: not in destination
   SshPublicKeys: copied
+  StartTime: not in destination
+  State: not in destination
+  StateMessage: not in destination
+  TerminatedTime: not in destination
+  TerminationReason: not in destination
   TotalInitialRemoteDiskSize: copied
   UseMlRuntime: copied
   WorkerNodeTypeFlexibility: copied
   WorkloadType: copied
 
 dresources.ClusterState -> compute.ResizeCluster
+  ApplyPolicyDefaultValues: not in destination
   Autoscale: copied
+  AutoterminationMinutes: not in destination
+  AwsAttributes: not in destination
+  AzureAttributes: not in destination
   ClusterId: not in source
+  ClusterLogConf: not in destination
+  ClusterName: not in destination
+  CustomTags: not in destination
+  DataSecurityMode: not in destination
+  DependencyMode: not in destination
+  DockerImage: not in destination
+  DriverInstancePoolId: not in destination
+  DriverNodeTypeFlexibility: not in destination
+  DriverNodeTypeId: not in destination
+  EnableElasticDisk: not in destination
+  EnableLocalDiskEncryption: not in destination
+  GcpAttributes: not in destination
+  InitScripts: not in destination
+  InstancePoolId: not in destination
+  IsSingleNode: not in destination
+  Kind: not in destination
+  Libraries: not in destination
+  Lifecycle: not in destination
+  NodeTypeId: not in destination
   NumWorkers: copied
+  PolicyId: not in destination
+  RemoteDiskThroughput: not in destination
+  RuntimeEngine: not in destination
+  SingleUserName: not in destination
+  SparkConf: not in destination
+  SparkEnvVars: not in destination
+  SparkVersion: not in destination
+  SshPublicKeys: not in destination
+  TotalInitialRemoteDiskSize: not in destination
+  UseMlRuntime: not in destination
+  WorkerNodeTypeFlexibility: not in destination
+  WorkloadType: not in destination
 
 dresources.DashboardState -> dashboards.Dashboard
   CreateTime: skipped
   DashboardId: skipped
+  DatasetCatalog: not in destination
+  DatasetSchema: not in destination
   DisplayName: copied
+  EmbedCredentials: not in destination
   Etag: copied
   LifecycleState: skipped
   ParentPath: copied
   Path: skipped
+  Published: not in destination
   SerializedDashboard: skipped
   UpdateTime: skipped
   WarehouseId: copied
 
 dresources.DashboardState -> dashboards.PublishRequest
+  CreateTime: not in destination
   DashboardId: skipped
+  DatasetCatalog: not in destination
+  DatasetSchema: not in destination
+  DisplayName: not in destination
   EmbedCredentials: copied, always sent
+  Etag: not in destination
+  LifecycleState: not in destination
+  ParentPath: not in destination
+  Path: not in destination
+  Published: not in destination
+  SerializedDashboard: not in destination
+  UpdateTime: not in destination
   WarehouseId: copied
 
 dresources.MlflowModelRemote -> ml.CreateModelRequest
+  CreationTimestamp: not in destination
   Description: copied
+  Id: not in destination
+  LastUpdatedTimestamp: not in destination
+  LatestVersions: not in destination
+  ModelId: not in destination
   Name: copied
+  PermissionLevel: not in destination
   Tags: copied
+  UserId: not in destination
 
 dresources.ModelServingEndpointRemote -> serving.CreateServingEndpoint
   AiGateway: copied
@@ -369,6 +522,8 @@ dresources.ModelServingEndpointRemote -> serving.CreateServingEndpoint
   Config: copied
   Description: copied
   EmailNotifications: copied
+  EndpointDetails: not in destination
+  EndpointId: not in destination
   Name: copied
   RateLimits: not in source
   RouteOptimized: copied
@@ -378,6 +533,7 @@ dresources.ModelServingEndpointRemote -> serving.CreateServingEndpoint
 dresources.PipelineState -> pipelines.EditPipeline
   AllowDuplicateNames: copied
   BudgetPolicyId: copied
+  CascadeOnDestroy: not in destination
   Catalog: copied
   Channel: copied
   Clusters: copied
@@ -385,6 +541,7 @@ dresources.PipelineState -> pipelines.EditPipeline
   Continuous: copied
   Deployment: copied
   Development: copied
+  DryRun: not in destination
   Edition: copied
   Environment: copied
   EventLog: copied
@@ -414,6 +571,7 @@ dresources.PipelineState -> pipelines.EditPipeline
   UsagePolicyId: copied
 
 dresources.QualityMonitorState -> catalog.UpdateMonitor
+  AssetsDir: not in destination
   BaselineTableName: copied
   CustomMetrics: copied
   DashboardId: not in source
@@ -423,14 +581,17 @@ dresources.QualityMonitorState -> catalog.UpdateMonitor
   Notifications: copied
   OutputSchemaName: copied
   Schedule: copied
+  SkipBuiltinDashboard: not in destination
   SlicingExprs: copied
   Snapshot: copied
   TableName: skipped
   TimeSeries: copied
+  WarehouseId: not in destination
 
 dresources.SecretScopeRemote -> dresources.SecretScopeConfig
   BackendAzureKeyvault: copied
   InitialManagePrincipal: not in source
+  Name: not in destination
   Scope: copied
   ScopeBackendType: copied
 
@@ -442,14 +603,21 @@ dresources.SqlWarehouseRemote -> dresources.SqlWarehouseState
   CustomerVersionLabel: copied
   EnablePhoton: copied
   EnableServerlessCompute: copied
+  Health: not in destination
+  Id: not in destination
   InstanceProfileArn: copied
+  JdbcUrl: not in destination
   Lifecycle: copied
   MaxDbu: copied
   MaxNumClusters: copied
   MinNumClusters: copied
   Name: copied
+  NumActiveSessions: not in destination
+  NumClusters: not in destination
+  OdbcParams: not in destination
   ReydenClusterSizeMultiplier: copied
   SpotInstancePolicy: copied
+  State: not in destination
   StatementTimeout: copied
   Tags: copied
   WarehouseType: copied, converted from sql.GetWarehouseResponseWarehouseType
@@ -464,6 +632,7 @@ dresources.SqlWarehouseState -> sql.EditWarehouseRequest
   EnableServerlessCompute: copied
   Id: not in source
   InstanceProfileArn: copied
+  Lifecycle: not in destination
   MaxDbu: copied
   MaxNumClusters: copied
   MinNumClusters: copied
@@ -476,26 +645,45 @@ dresources.SqlWarehouseState -> sql.EditWarehouseRequest
 
 dresources.VectorSearchEndpointRemote -> vectorsearch.CreateEndpoint
   BudgetPolicyId: copied
+  CreationTimestamp: not in destination
+  Creator: not in destination
+  CustomTags: not in destination
+  EffectiveBudgetPolicyId: not in destination
+  EndpointStatus: not in destination
   EndpointType: copied
+  EndpointUuid: not in destination
+  Id: not in destination
+  LastUpdatedTimestamp: not in destination
+  LastUpdatedUser: not in destination
   Name: copied
+  NumIndexes: not in destination
+  ScalingInfo: not in destination
   TargetQps: copied
   UsagePolicyId: not in source
 
 dresources.VectorSearchIndexRemote -> dresources.VectorSearchIndexState
+  Creator: not in destination
   DeltaSyncIndexSpec: skipped
   DirectAccessIndexSpec: copied
+  EndpointId: not in destination
   EndpointName: copied
   EndpointUuid: copied
   IndexSubtype: copied
   IndexType: copied
   Name: copied
   PrimaryKey: copied
+  Status: not in destination
 
 dresources.VolumeState -> catalog.UpdateVolumeRequestContent
+  CatalogName: not in destination
   Comment: copied, always sent
   Name: skipped
   NewName: not in source
   Owner: not in source
+  SchemaName: not in destination
+  StorageLocation: not in destination
+  VolumeId: not in destination
+  VolumeType: not in destination
 
 jobs.JobSettings -> jobs.CreateJob
   AccessControlList: not in source
@@ -532,9 +720,14 @@ jobs.JobSettings -> jobs.CreateJob
 ml.CreateModelRequest -> ml.UpdateModelRequest
   Description: copied
   Name: skipped
+  Tags: not in destination
 
 ml.Experiment -> ml.CreateExperiment
   ArtifactLocation: copied
+  CreationTime: not in destination
+  ExperimentId: not in destination
+  LastUpdateTime: not in destination
+  LifecycleStage: not in destination
   Name: copied
   Tags: copied
   TraceLocation: copied
@@ -608,6 +801,7 @@ pipelines.PipelineSpec -> pipelines.CreatePipeline
 
 resources.GenieSpaceConfig -> dashboards.GenieCreateSpaceRequest
   Description: copied
+  Etag: not in destination
   ParentPath: copied
   SerializedSpace: skipped
   Title: copied
@@ -634,10 +828,12 @@ serving.AutoCaptureConfigOutput -> serving.AutoCaptureConfigInput
   CatalogName: copied
   Enabled: copied
   SchemaName: copied
+  State: not in destination
   TableNamePrefix: copied
 
 serving.EndpointCoreConfigOutput -> serving.EndpointCoreConfigInput
   AutoCaptureConfig: skipped
+  ConfigVersion: not in destination
   Name: not in source
   ServedEntities: skipped
   ServedModels: skipped
@@ -645,10 +841,13 @@ serving.EndpointCoreConfigOutput -> serving.EndpointCoreConfigInput
 
 serving.ServedEntityOutput -> serving.ServedEntityInput
   BurstScalingEnabled: copied
+  CreationTimestamp: not in destination
+  Creator: not in destination
   EntityName: copied
   EntityVersion: copied
   EnvironmentVars: copied
   ExternalModel: copied
+  FoundationModel: not in destination
   InstanceProfileArn: copied
   MaxProvisionedConcurrency: copied
   MaxProvisionedThroughput: copied
@@ -657,6 +856,7 @@ serving.ServedEntityOutput -> serving.ServedEntityInput
   Name: copied
   ProvisionedModelUnits: copied
   ScaleToZeroEnabled: copied
+  State: not in destination
   WorkloadSize: copied
   WorkloadType: copied
 
@@ -664,13 +864,23 @@ serving.ServingEndpointDetailed -> dresources.ModelServingEndpointRemote
   AiGateway: copied
   BudgetPolicyId: copied
   Config: skipped
+  CreationTimestamp: not in destination
+  Creator: not in destination
+  DataPlaneInfo: not in destination
   Description: copied
   EmailNotifications: copied
   EndpointDetails: not in source
   EndpointId: not in source
+  EndpointUrl: not in destination
+  Id: not in destination
+  LastUpdatedTimestamp: not in destination
   Name: copied
+  PendingConfig: not in destination
+  PermissionLevel: not in destination
   RouteOptimized: copied
+  State: not in destination
   Tags: copied
+  Task: not in destination
   TelemetryConfig: copied
 
 vectorsearch.DeltaSyncVectorIndexSpecResponse -> vectorsearch.DeltaSyncVectorIndexSpecRequest
@@ -679,5 +889,6 @@ vectorsearch.DeltaSyncVectorIndexSpecResponse -> vectorsearch.DeltaSyncVectorInd
   EmbeddingSourceColumns: copied
   EmbeddingVectorColumns: copied
   EmbeddingWritebackTable: copied
+  PipelineId: not in destination
   PipelineType: copied
   SourceTable: copied

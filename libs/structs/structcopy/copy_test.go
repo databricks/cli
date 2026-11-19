@@ -159,6 +159,15 @@ func TestCopyKeepsForceSendFieldsPerStruct(t *testing.T) {
 	assert.Equal(t, []string{"ThingId"}, got.ForceSendFields)
 }
 
+func TestForceSendOnPromotedFieldUsesForceSendFieldsOfItsStruct(t *testing.T) {
+	copier := structcopy.New[remoteThing, stateWithOwnForceSend](structcopy.ForceSend("ThingId", "Comment"))
+
+	got := copier.Copy(&remoteThing{})
+
+	assert.Equal(t, []string{"Comment"}, got.createThing.ForceSendFields)
+	assert.Equal(t, []string{"ThingId"}, got.ForceSendFields)
+}
+
 type withUnexportedField struct {
 	Name   string `json:"name,omitempty"`
 	secret string
@@ -237,11 +246,14 @@ func TestDescribe(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `structcopy_test.thingState -> structcopy_test.updateThing
   Comment: copied, always sent
+  Kind: not in destination
   Name: skipped
   NewName: not in source
   Owner: not in source
   Size: copied
+  SkipValidation: not in destination
   Tags: copied
+  ThingId: not in destination
 `, got)
 }
 
@@ -264,6 +276,9 @@ type (
 	}
 	embeddedPointer struct {
 		*createThing
+	}
+	getThing struct {
+		Name string `json:"-" url:"-"`
 	}
 )
 
@@ -297,6 +312,18 @@ func TestInvalidCopier(t *testing.T) {
 			describe: structcopy.New[createThing, sizeRenamedOnWire]().Describe,
 			copy:     func() { structcopy.New[createThing, sizeRenamedOnWire]().Copy(&createThing{}) },
 			want:     `structcopy: structcopy_test.createThing -> structcopy_test.sizeRenamedOnWire: Size is "size" in the source's JSON but "capacity" in the destination's; skip it and set it by hand`,
+		},
+		{
+			name:     "field is a path parameter in the destination",
+			describe: structcopy.New[createThing, updateThing]().Describe,
+			copy:     func() { structcopy.New[createThing, updateThing]().Copy(&createThing{}) },
+			want:     `structcopy: structcopy_test.createThing -> structcopy_test.updateThing: Name is not in the destination's JSON (json:"-"); skip it and set it by hand`,
+		},
+		{
+			name:     "field is a path parameter in both",
+			describe: structcopy.New[getThing, updateThing]().Describe,
+			copy:     func() { structcopy.New[getThing, updateThing]().Copy(&getThing{}) },
+			want:     `structcopy: structcopy_test.getThing -> structcopy_test.updateThing: Name is not in the destination's JSON (json:"-"); skip it and set it by hand`,
 		},
 		{
 			name:     "skipped field is not in the destination",
