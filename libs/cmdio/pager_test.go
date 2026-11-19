@@ -136,7 +136,8 @@ func TestPagerModelBatchPromptsWhenMore(t *testing.T) {
 	assert.False(t, m.iterDone)
 	assert.True(t, m.hasPrinted)
 	assert.False(t, m.drainAll)
-	assert.True(t, m.fetching, "page is not printed yet")
+	assert.True(t, m.printing)
+	assert.Equal(t, pagerPromptText, m.View())
 	cmds := unwrapCmds(t, runCmd(t, cmd))
 	require.Len(t, cmds, 2)
 	assert.Contains(t, printedText(t, runCmd(t, cmds[0])), "1\n2")
@@ -145,13 +146,13 @@ func TestPagerModelBatchPromptsWhenMore(t *testing.T) {
 
 	_, cmd = m.Update(printed)
 	assert.Nil(t, cmd)
-	assert.False(t, m.fetching)
+	assert.False(t, m.printing)
 	assert.Equal(t, pagerPromptText, m.View())
 }
 
-// TestPagerModelKeysWaitForPagePrint pins the ordering fix: tea runs each
-// Cmd on its own goroutine, so a fetch started before the previous page's
-// print reached the event loop could print and quit first, dropping rows.
+// TestPagerModelKeysWaitForPagePrint covers the window between a batchMsg
+// and its pagePrintedMsg: tea runs each Cmd on its own goroutine, so a
+// fetch or Quit issued then could overtake the page's print and drop rows.
 func TestPagerModelKeysWaitForPagePrint(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
 	m.fetching = true
@@ -166,6 +167,19 @@ func TestPagerModelKeysWaitForPagePrint(t *testing.T) {
 	_, cmd = m.Update(pagePrintedMsg{})
 	_, isFetch := runCmd(t, cmd).(batchMsg)
 	assert.True(t, isFetch, "the deferred drain fetches once the page is printed")
+}
+
+func TestPagerModelQuitWaitsForPagePrint(t *testing.T) {
+	m := newTestPager(t, &numberIterator{n: 100}, 5)
+	m.fetching = true
+	_, _ = m.Update(batchMsg{lines: []string{"1", "2"}, done: false})
+
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	assert.Nil(t, cmd, "q before the page is printed must not quit yet")
+
+	_, cmd = m.Update(pagePrintedMsg{})
+	_, isQuit := runCmd(t, cmd).(tea.QuitMsg)
+	assert.True(t, isQuit, "the deferred quit fires once the page is printed")
 }
 
 func TestPagerModelBatchDrainingChainsFetch(t *testing.T) {
@@ -238,7 +252,7 @@ func TestPagerModelSpaceIgnoredDuringFetch(t *testing.T) {
 
 func TestPagerModelEnterDuringFetchDefersFetch(t *testing.T) {
 	// ENTER during an in-flight fetch flips drainAll but can't issue a new
-	// fetch; the pending pagePrintedMsg will chain one when it arrives.
+	// fetch; the pagePrintedMsg after the pending batch chains one.
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
 	m.fetching = true
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})

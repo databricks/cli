@@ -76,24 +76,33 @@ func pagedOutput(
 	return stripANSI(out.String())
 }
 
-func countContentLines(s string) int {
-	count := 0
+// contentLines returns the visible rows, without the pager's prompt and
+// spinner lines.
+func contentLines(s string) []string {
+	var rows []string
 	for _, line := range screenLines(s) {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == "" || strings.Contains(trimmed, pagerPromptText) {
+		if trimmed == "" || strings.Contains(trimmed, pagerPromptText) || strings.Contains(trimmed, pagerLoadingText) {
 			continue
 		}
-		count++
+		rows = append(rows, trimmed)
 	}
-	return count
+	return rows
+}
+
+func countContentLines(s string) int {
+	return len(contentLines(s))
 }
 
 func TestPagedTemplateDrainsFullIterator(t *testing.T) {
 	out := pagedOutput(t, MockDiscard(t.Context()), &numberIterator{n: 23}, "", "{{range .}}{{.}}\n{{end}}", 5)
 	assert.Equal(t, 23, countContentLines(out))
+	// Pages must come out in order, not just all present.
+	var want []string
 	for i := 1; i <= 23; i++ {
-		assert.Contains(t, out, strconv.Itoa(i))
+		want = append(want, strconv.Itoa(i))
 	}
+	assert.Equal(t, want, contentLines(out))
 }
 
 func TestPagedTemplateRespectsLimit(t *testing.T) {
