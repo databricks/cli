@@ -120,7 +120,7 @@ func resolveProfile(ctx context.Context, flagValue string) (string, error) {
 	case 1:
 		return profiles[0].Name, nil
 	}
-	return "", failure(categoryProfileRequired, "several workspace profiles exist; pass --profile. Found: %s", strings.Join(profiles.Names(), ", "))
+	return "", failureWithCause(categoryProfileRequired, &profileChoice{profiles: profiles}, "several workspace profiles exist; pass --profile. Found: %s", strings.Join(profiles.Names(), ", "))
 }
 
 // mcpWorkspaceProfile reports whether auto-detect may pick p. It accepts the profiles that --profile accepts: a
