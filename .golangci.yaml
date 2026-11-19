@@ -61,43 +61,55 @@ linters:
           deny:
             - pkg: "github.com/databricks/cli/experimental"
               desc: "must not import experimental/ packages; use an interface or move the dependency"
-        # aitools layers: cmd/aitools (cobra commands) -> libs/aitools/installer
-        # -> libs/aitools/agents -> shared libs. Lower layers must not reach up.
+        # aitools layers: cmd/aitools (cobra commands) -> libs/aitools -> shared
+        # libs. Lower layers must not reach up. The aitools rules anchor their
+        # files patterns at ${config-path} (the repository root) so that a
+        # libs or cmd directory above the checkout does not match.
         aitools-libs-no-commands:
           files:
-            - "**/libs/aitools/**"
+            - "${config-path}/libs/aitools/**"
           deny:
             - pkg: "github.com/databricks/cli/cmd$"
               desc: "libs/aitools must not import command packages; pass what it needs in from cmd/aitools"
             - pkg: "github.com/databricks/cli/cmd/"
               desc: "libs/aitools must not import command packages; pass what it needs in from cmd/aitools"
         aitools-commands-only-root:
+          # lax: allow everything except cmd and cmd/*; the longer allow entries
+          # win over the cmd/ deny.
           list-mode: lax
           files:
-            - "**/cmd/aitools/**"
+            - "${config-path}/cmd/aitools/**"
           allow:
-            - "github.com/databricks/cli/cmd/root"
-            - "github.com/databricks/cli/cmd/aitools"
+            - "github.com/databricks/cli/cmd/root$"
+            - "github.com/databricks/cli/cmd/root/"
+            - "github.com/databricks/cli/cmd/aitools$"
+            - "github.com/databricks/cli/cmd/aitools/"
           deny:
+            - pkg: "github.com/databricks/cli/cmd$"
+              desc: "cmd/aitools may import only cmd/root and itself; share code through libs/aitools instead of another command group"
             - pkg: "github.com/databricks/cli/cmd/"
               desc: "cmd/aitools may import only cmd/root and itself; share code through libs/aitools instead of another command group"
         libs-no-aitools:
           files:
-            - "**/libs/**"
-            - "!**/libs/aitools/**"
+            - "${config-path}/libs/**"
+            - "!${config-path}/libs/aitools/**"
           deny:
-            - pkg: "github.com/databricks/cli/libs/aitools"
+            - pkg: "github.com/databricks/cli/libs/aitools$"
+              desc: "shared libs must not depend on the aitools feature packages"
+            - pkg: "github.com/databricks/cli/libs/aitools/"
               desc: "shared libs must not depend on the aitools feature packages"
         # cmd/root/root.go calls the aitools user-agent and hint hooks from the
         # root pre-run and the auto-install hook from the root post-run; keep
         # those calls in that one file. Tests may import aitools to stub them.
         root-aitools-hooks-in-root-go:
           files:
-            - "**/cmd/root/**"
-            - "!**/cmd/root/root.go"
+            - "${config-path}/cmd/root/**"
+            - "!${config-path}/cmd/root/root.go"
             - "!$test"
           deny:
-            - pkg: "github.com/databricks/cli/libs/aitools"
+            - pkg: "github.com/databricks/cli/libs/aitools$"
+              desc: "aitools hooks belong in cmd/root/root.go only"
+            - pkg: "github.com/databricks/cli/libs/aitools/"
               desc: "aitools hooks belong in cmd/root/root.go only"
         no-legacy-rand:
           deny:
