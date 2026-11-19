@@ -260,6 +260,7 @@ def fold_pending_operation_writes(requests):
         result.append(dict(req, body={k: v for k, v in body.items() if k != "sequence_id"}))
     return result
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path_filters", nargs="*", help="Path substring filters")
