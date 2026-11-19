@@ -44,6 +44,47 @@ func NewTestIO(in io.Reader, out, err io.Writer) *cmdIO {
 	}
 }
 
+// TestIOOptions adjusts [NewTestIOWithOptions]. The zero value gives the same
+// cmdIO as [NewTestIO].
+type TestIOOptions struct {
+	// HeaderTemplate and Template are the command's text templates, as
+	// cmd/root sets them from command annotations. [RenderIterator] pages
+	// only when Template is set and a pager is supported: stdin, stderr and
+	// stdout are terminals (StdoutNotTTY and StderrNotTTY turn the last two
+	// off) and the output is text.
+	HeaderTemplate string
+	Template       string
+
+	// ColorFromEnv derives NoColor and Dumb from NO_COLOR and TERM in ctx,
+	// the way [NewIO] does, instead of leaving them off.
+	ColorFromEnv bool
+
+	// NoColor and Dumb set the color capabilities directly. They are
+	// independent: NoColor keeps prompts and the pager, Dumb refuses them.
+	NoColor bool
+	Dumb    bool
+
+	// StdoutNotTTY and StderrNotTTY report the stream as redirected.
+	StdoutNotTTY bool
+	StderrNotTTY bool
+}
+
+// NewTestIOWithOptions is [NewTestIO] with the adjustments in opts. ctx is
+// only read when opts.ColorFromEnv is set.
+func NewTestIOWithOptions(ctx context.Context, in io.Reader, out, err io.Writer, opts TestIOOptions) *cmdIO {
+	c := NewTestIO(in, out, err)
+	c.headerTemplate = opts.HeaderTemplate
+	c.template = opts.Template
+	if opts.ColorFromEnv {
+		c.capabilities.noColor, c.capabilities.dumb = colorFromEnv(ctx)
+	}
+	c.capabilities.noColor = c.capabilities.noColor || opts.NoColor
+	c.capabilities.dumb = c.capabilities.dumb || opts.Dumb
+	c.capabilities.stdoutIsTTY = !opts.StdoutNotTTY
+	c.capabilities.stderrIsTTY = !opts.StderrNotTTY
+	return c
+}
+
 type Test struct {
 	Done context.CancelFunc
 
