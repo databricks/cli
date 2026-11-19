@@ -109,6 +109,39 @@ So when a field comes back under a different path than `StateType` uses:
 This makes the field present in `InputType`, `StateType`, and `RemoteType`, so it participates
 in normal drift detection and is no longer subject to the `missing_in_remote` suppression.
 
+## Copying fields between SDK structs: newCopier
+
+The SDK describes a resource with several structs (a response, a create request, an update
+request) that share most of their fields. Do not list those fields in a struct literal. Declare a
+copier instead, which copies every field the two structs have under the same name:
+
+```go
+var toSchemaState = newCopier[catalog.SchemaInfo, SchemaState]()
+
+func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *SchemaState {
+	return toSchemaState.Copy(info)
+}
+```
+
+A field the SDK adds to both structs is then copied without a code change. A `RemapState` written
+this way is the dumb copy the section above asks for.
+
+Tell the copier about the exceptions only, each with a comment that says why:
+
+ - `structcopy.Skip("Owner")` leaves a field unset although the source has it. Use it for a field the request must not carry and for one that is set by hand after the copy (the ID, a value that needs converting).
+ - `structcopy.ForceSend("Comment")` sends a field even when it is zero, so that removing it from the config clears it. Only list fields verified against a real workspace, see `schemaForceSend`.
+
+Do not set `ForceSendFields` next to a copy. The copier derives it: the copied fields that the
+source lists, followed by the `ForceSend` ones. The SDK rejects a name its struct does not have,
+and the name of a field that was not copied would send that field's zero value.
+
+A field with the same name but another type or JSON name in the two structs is an error until it
+is skipped. `TestFieldCopies` reports it, and records what every copier does with each field of
+the struct it builds in `testdata/field_copies.txt`. `./task generate-direct` regenerates that
+file. On an SDK bump, read its diff the way you would review the wiring of a new field: it shows
+which requests and states pick the field up, and which leave it unset because their source has
+no such field.
+
 ## OverrideChangeDesc
 
 Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` settings cannot express the needed logic. Skipping an action with `change.Action = deployplan.Skip` in `OverrideChangeDesc` creates a silent no-op: the plan shows no change even if the user's config differs from remote. Document the skip reason clearly in both the comment and `change.Reason`.

@@ -9,7 +9,7 @@ allowed-tools: Read, Edit, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion
 
 The SDK version lives in `go.mod` (`github.com/databricks/databricks-sdk-go`) and the pinned spec SHA lives in `.codegen/_openapi_sha`.
 These two move as a pair; everything else in this skill is regenerated from them or is fallout you fix by hand.
-Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/configs/*.generated.yml`, `python/databricks/bundles/**`); regenerate them.
+Do not hand-edit generated files (`.codegen/cli.json`, `cmd/workspace/*`, `cmd/account/*`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/configs/*.generated.yml`, `bundle/direct/dresources/testdata/field_copies.txt`, `python/databricks/bundles/**`); regenerate them.
 
 The Python tasks (`pydabs-*`, and the `pydabs-codegen` step inside `generate-check`) all run through `uv`. If one fails because `uv` is missing or because the host's `python3` is too old (e.g. 3.9), install `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`) rather than touching the system Python: `uv run` provisions the interpreter each package pins (`>=3.10`, and `==3.13.*` under `python/codegen/`) and downloads it if needed. Do not chase the system Python version.
 The acceptance goldens are the exception: they need CI's `uv` index, see step 4.
@@ -52,7 +52,7 @@ Decide with the user whether to keep the tagging-producer drift or restore those
 The task ends with step 4 (`generate-clijson-post` runs `bump-sdk-post`) and ignores its error, so read the end of its output, or go on with step 4 directly.
 
 **4. Regenerate everything downstream: `./task bump-sdk-post`.**
-This is the whole mechanical part of the bump: `install-pythons` and `install-ruff`, then `generate-check` (command stubs, refschema, schema, validation, direct-engine YAML, pydabs), then `test-update` for the acceptance goldens.
+This is the whole mechanical part of the bump: `install-pythons` and `install-ruff`, then `generate-check` (command stubs, refschema, schema, validation, direct-engine YAML and field copy listing, pydabs), then `test-update` for the acceptance goldens.
 Everything after it needs judgment.
 Run directly, it fails on errors: `generate-refschema` and `test-update` build the CLI, so it fails while the bump still breaks compilation; fix that (step 5) and rerun the task.
 
@@ -62,13 +62,14 @@ Run it in CI's environment, or the goldens pick up local drift:
 - Ruff: `./task install-ruff` installs CI's version (0.9.1) via uv; `bump-sdk-post` adds uv's tool executable directory to `PATH` for `test-update`. The acceptance runner only checks that Ruff is available.
 - Go: the `toolchain` in `go.mod`. A newer local `go` also changes goldens and generated `gofmt` output; use `GOTOOLCHAIN=<pinned>` if they differ.
 
-Before going on, account for every changed file outside the generated set, including the bumper's (its environment is not CI's either): a bump without fallout changes `cmd/**`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `python/databricks/bundles/**`, `acceptance/bundle/refschema/output` and help-text goldens (`acceptance/help/output.txt`, `acceptance/cmd/account/account-help/output.txt`).
+Before going on, account for every changed file outside the generated set, including the bumper's (its environment is not CI's either): a bump without fallout changes `cmd/**`, `bundle/schema/jsonschema.json`, `bundle/internal/validation/generated/*`, `bundle/direct/dresources/testdata/field_copies.txt`, `python/databricks/bundles/**`, `acceptance/bundle/refschema/output` and help-text goldens (`acceptance/help/output.txt`, `acceptance/cmd/account/account-help/output.txt`).
 Revert any golden change you can't attribute to the new SDK or spec.
 
 **5. Handle SDK breaking changes.**
 Read the SDK's `CHANGELOG.md` at the target version (in the module cache) to enumerate breaking changes before chasing compile errors.
 A removed struct field that the CLI used (e.g. `jobs.AiRuntimeTask.CodeSourcePath`) should have its usage temporarily disabled with a comment noting it returns in a later SDK bump, not deleted outright.
-A new struct field triggers an `exhaustruct` lint failure in `bundle/direct/dresources/*`. Run `./task lint` and (in case of issues) wire the field through `PrepareState` and `RemapState` when it exists on both the input and remote types.
+A new struct field usually needs no wiring in `bundle/direct/dresources/*`: the structs built with `newCopier` pick it up, and step 4 records that in `bundle/direct/dresources/testdata/field_copies.txt`. Read that file's diff as the review of the wiring: `copied` means a request or state now carries the field, `not in source` means it stays unset because the struct it is copied from has no such field (see "Copying fields between SDK structs" in `bundle/direct/dresources/README.md`). `TestFieldCopies` fails on a field whose type or JSON name differs between the two structs; skip it in the copier and set it by hand.
+A struct literal that is still built by hand triggers an `exhaustruct` lint failure instead. Run `./task lint` and (in case of issues) wire the field through by hand.
 Where a remote is rebuilt by hand from a GET response (e.g. `makeJobRunRemote` maps `jobs.Run` into the `jobs.RunNow`-shaped `JobRunRemote`), copy the new field from the response if the response has it, and list it with the request-only zero values otherwise.
 `job_runs.yml` must list every `jobs.RunNow` field under `ignore_remote_changes`; `TestJobRunIgnoresEveryRequestField` fails on a new one.
 A field the new spec now annotates as output-only may already be emitted into `<resource_type>.generated.yml`, making the manual entry in `<resource_type>.yml` redundant; `TestResourcesYMLNoRedundantRules` catches this, so remove the manual entry.
