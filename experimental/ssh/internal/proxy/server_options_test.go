@@ -80,7 +80,11 @@ func TestSingleSessionConcurrentStartupFailuresInvokeFactoryOnce(t *testing.T) {
 		starts.Add(1)
 		return exec.CommandContext(ctx, "missing-sshd-executable")
 	}, WithSingleSession(), WithSessionCompletion(func(error) { completions.Add(1) }))
-	server := httptest.NewServer(handler)
+	handled := make(chan struct{}, 16)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler.ServeHTTP(w, r)
+		handled <- struct{}{}
+	}))
 	defer server.Close()
 	var clients sync.WaitGroup
 	for i := range 16 {
@@ -98,6 +102,13 @@ func TestSingleSessionConcurrentStartupFailuresInvokeFactoryOnce(t *testing.T) {
 		})
 	}
 	clients.Wait()
+	for range 16 {
+		select {
+		case <-handled:
+		case <-time.After(5 * time.Second):
+			t.Fatal("failed startup did not release its handler")
+		}
+	}
 	server.Close()
 	require.EqualValues(t, 1, starts.Load())
 	require.EqualValues(t, 1, completions.Load())

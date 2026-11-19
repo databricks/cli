@@ -23,7 +23,10 @@ with tempfile.TemporaryDirectory() as temporary:
     sshd = directory / "sshd"
     # A long-running child exercises cancellation without requiring system sshd.
     sshd.write_text(
-        '#!/bin/sh\nif [ "$1" = "-t" ]; then exit 0; fi\necho $$ > "' + str(child_pid) + '"\nexec sleep 300\n'
+        '#!/bin/sh\nif [ "$1" = "-t" ]; then exit 0; fi\n'
+        f'echo $$ > "{child_pid}.tmp"\n'
+        f'mv "{child_pid}.tmp" "{child_pid}"\n'
+        "exec sleep 300\n"
     )
     sshd.chmod(0o700)
     help_result = subprocess.run(
