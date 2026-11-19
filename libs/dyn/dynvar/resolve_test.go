@@ -30,6 +30,22 @@ func TestResolve(t *testing.T) {
 	assert.Equal(t, "a", getByPath(t, out, "c").MustString())
 }
 
+func TestResolveKeepsSourceText(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"a": dyn.V(12345678901234.0).WithSourceText("0012345678901234"),
+		"b": dyn.V("${a}"),
+		"c": dyn.V("id-${a}"),
+	})
+
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+
+	text, ok := getByPath(t, out, "b").SourceText()
+	assert.True(t, ok)
+	assert.Equal(t, "0012345678901234", text)
+	assert.Equal(t, "id-0012345678901234", getByPath(t, out, "c").MustString())
+}
+
 func TestResolveNotFound(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
 		"b": dyn.V("${a}"),

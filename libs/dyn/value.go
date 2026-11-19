@@ -21,6 +21,11 @@ type Value struct {
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
 	anchor bool
+
+	// Source text of a scalar that the YAML loader resolved to a non-string type,
+	// e.g. "0042" for the int 42. A string field uses it verbatim instead of
+	// formatting the resolved value, which would drop leading zeros and similar.
+	src string
 }
 
 // InvalidValue is equal to the zero-value of Value.
@@ -64,6 +69,8 @@ func (v Value) WithLocations(loc []diag.Location) Value {
 		// create a copy of the locations, so that mutations to the original slice
 		// don't affect new value.
 		l: slices.Clone(loc),
+
+		src: v.src,
 	}
 }
 
@@ -72,7 +79,20 @@ func (v Value) AppendLocationsFromValue(w Value) Value {
 		v: v.v,
 		k: v.k,
 		l: append(v.l, w.l...),
+
+		src: v.src,
 	}
+}
+
+// WithSourceText returns a copy of the value that remembers the text it was parsed from.
+func (v Value) WithSourceText(text string) Value {
+	v.src = text
+	return v
+}
+
+// SourceText returns the text a scalar was parsed from, if it was recorded.
+func (v Value) SourceText() (string, bool) {
+	return v.src, v.src != ""
 }
 
 func (v Value) Kind() Kind {
@@ -187,6 +207,8 @@ func (v Value) MarkAnchor() Value {
 		l: v.l,
 
 		anchor: true,
+
+		src: v.src,
 	}
 }
 

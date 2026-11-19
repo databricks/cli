@@ -223,6 +223,11 @@ func toTypedSlice(dst reflect.Value, src dyn.Value) error {
 }
 
 func toTypedString(dst reflect.Value, src dyn.Value) error {
+	if text, ok := src.SourceText(); ok {
+		dst.SetString(text)
+		return nil
+	}
+
 	switch src.Kind() {
 	case dyn.KindString:
 		dst.SetString(src.MustString())

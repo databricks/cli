@@ -33,3 +33,20 @@ func TestYAMLEmpty(t *testing.T) {
 	self := loadYAML(t, "testdata/empty.yml")
 	assert.Equal(t, dyn.NilValue, self)
 }
+
+func TestYAMLScalarSourceText(t *testing.T) {
+	input := "int: 0042\nfloat: 1.10\nbool: True\nquoted: \"0042\"\nstr: abc\n"
+	v, err := yamlloader.LoadYAML("file.yml", bytes.NewBufferString(input))
+	require.NoError(t, err)
+
+	for key, want := range map[string]string{"int": "0042", "float": "1.10", "bool": "True"} {
+		text, ok := v.Get(key).SourceText()
+		assert.True(t, ok, key)
+		assert.Equal(t, want, text, key)
+	}
+
+	for _, key := range []string{"quoted", "str"} {
+		_, ok := v.Get(key).SourceText()
+		assert.False(t, ok, key)
+	}
+}
