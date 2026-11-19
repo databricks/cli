@@ -13,6 +13,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"uuid"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/retries"
 	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
 	"github.com/gorilla/websocket"
 )
@@ -114,7 +116,46 @@ func ConnectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 	return connectProxy(ctx, w, name, identity, releasesDir, input, output, diagnostics, 10*time.Minute)
 }
 
-func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name string, identity *Identity, releasesDir string, input io.ReadCloser, output, diagnostics io.Writer, startupTimeout time.Duration) (err error) {
+var errServerTermination = errors.New("could not stop sandbox SSH server")
+
+type forwardingHandshakeError struct {
+	status int
+	cause  error
+}
+
+func (e *forwardingHandshakeError) Error() string {
+	return fmt.Sprintf("forwarding WebSocket handshake returned HTTP %d: %v", e.status, e.cause)
+}
+func (e *forwardingHandshakeError) Unwrap() error { return e.cause }
+
+func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name string, identity *Identity, releasesDir string, input io.ReadCloser, output, diagnostics io.Writer, startupTimeout time.Duration) error {
+	defer input.Close()
+	deadline := time.Now().Add(startupTimeout)
+	_, err := retries.Poll(ctx, startupTimeout, func() (*struct{}, *retries.Err) {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return nil, retries.Halt(context.DeadlineExceeded)
+		}
+		// Bound setup and retries without limiting an established SSH session.
+		err := connectProxyAttempt(ctx, w, name, identity, releasesDir, input, output, diagnostics, remaining)
+		if err == nil {
+			return nil, nil
+		}
+		handshake, ok := errors.AsType[*forwardingHandshakeError](err)
+		if errors.Is(err, proxy.ErrConnectFailed) && !errors.Is(err, errServerTermination) && ok {
+			switch handshake.status {
+			case http.StatusRequestTimeout, http.StatusTooManyRequests, http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+				// An upgrade error may hide an accepted connection. The failed attempt has
+				// stopped its server; use a fresh invocation rather than racing a handover.
+				return nil, retries.Continue(err)
+			}
+		}
+		return nil, retries.Halt(err)
+	})
+	return err
+}
+
+func connectProxyAttempt(ctx context.Context, w *databricks.WorkspaceClient, name string, identity *Identity, releasesDir string, input io.ReadCloser, output, diagnostics io.Writer, startupTimeout time.Duration) (err error) {
 	ctx, cancelStartup := context.WithCancelCause(ctx)
 	defer cancelStartup(nil)
 	defer func() {
@@ -152,8 +193,11 @@ func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 	defer func() {
 		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 		defer cancel()
-		if err := commandClient.Terminate(cleanupCtx, commandID); err != nil {
-			log.Warnf(ctx, "Could not stop sandbox SSH server: %v", err)
+		if stopErr := commandClient.Terminate(cleanupCtx, commandID); stopErr != nil {
+			log.Warnf(ctx, "Could not stop sandbox SSH server: %v", stopErr)
+			if err != nil {
+				err = errors.Join(err, fmt.Errorf("%w: %w", errServerTermination, stopErr))
+			}
 		}
 	}()
 	commandCtx, cancel := context.WithCancel(ctx)
@@ -219,9 +263,12 @@ func connectProxy(ctx context.Context, w *databricks.WorkspaceClient, name strin
 			conn, response, err := dialer.DialContext(ctx, endpoint, req.Header)
 			if response != nil {
 				response.Body.Close()
+				if err != nil {
+					err = &forwardingHandshakeError{status: response.StatusCode, cause: err}
+				}
 			}
 			if err != nil && request.Reattach && response != nil && (response.StatusCode == http.StatusConflict || response.StatusCode == http.StatusGone) {
-				return nil, errors.Join(proxy.ErrReattachRejected, fmt.Errorf("reattach failed (HTTP %d): %w", response.StatusCode, err))
+				return nil, errors.Join(proxy.ErrReattachRejected, err)
 			}
 			return conn, err
 		})
@@ -335,18 +382,40 @@ func cleanupRemoteDirectory(ctx context.Context, w *databricks.WorkspaceClient, 
 // read outside the shared proxy's wait group so a closed WebSocket can end the
 // standalone proxy command. Process exit reclaims any remaining stdin read.
 func proxyStream(ctx context.Context, input io.ReadCloser, output io.Writer, resumable bool, dial func(context.Context, proxy.DialRequest) (*websocket.Conn, error)) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	reader, writer := io.Pipe()
-	defer input.Close()
 	defer reader.Close()
 	defer writer.Close()
-	go func() {
-		_, err := io.Copy(writer, input)
-		writer.CloseWithError(err)
+	connected := make(chan struct{})
+	ready := sync.OnceFunc(func() { close(connected) })
+	defer func() {
+		select {
+		case <-connected:
+			input.Close()
+		default:
+		}
 	}()
-	// Refresh the WebSocket before the forwarding route's connection lifetime limit.
+	go func() {
+		select {
+		case <-connected:
+			_, err := io.Copy(writer, input)
+			writer.CloseWithError(err)
+		case <-ctx.Done():
+		}
+	}()
+	// Keep stdin untouched until the upgrade succeeds, so a failed initial
+	// connection can retry with a fresh remote server without losing SSH bytes.
+	connect := func(ctx context.Context, request proxy.DialRequest) (*websocket.Conn, error) {
+		conn, err := dial(ctx, request)
+		if err == nil {
+			ready()
+		}
+		return conn, err
+	}
 	handover := time.NewTicker(25 * time.Minute)
 	defer handover.Stop()
-	return proxy.RunClientProxy(ctx, reader, output, func() <-chan time.Time { return handover.C }, 30*time.Second, resumable, dial)
+	return proxy.RunClientProxy(ctx, reader, output, func() <-chan time.Time { return handover.C }, 30*time.Second, resumable, connect)
 }
 
 // Keep the session lease open in the server, including after the local CLI dies.

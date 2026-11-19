@@ -3,6 +3,7 @@ package sandboxexec_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -241,4 +242,85 @@ func TestOutputReattachTiming(t *testing.T) {
 			assert.Equal(t, int32(1), attaches.Load())
 		})
 	}
+}
+
+func TestOutputRecoversUnconfirmedExecution(t *testing.T) {
+	for _, registered := range []bool{false, true} {
+		t.Run(fmt.Sprintf("registered=%t", registered), func(t *testing.T) {
+			t.Parallel()
+			var executes, attaches, processes atomic.Int32
+			rpc := grpc.NewServer()
+			t.Cleanup(rpc.Stop)
+			rpc.RegisterService(&grpc.ServiceDesc{
+				ServiceName: "databricks.sandbox.SandboxService", HandlerType: (*service)(nil),
+				Streams: []grpc.StreamDesc{
+					{StreamName: "ExecuteCommand", ServerStreams: true, Handler: func(_ any, stream grpc.ServerStream) error {
+						request := new(sandboxexec.ExecuteCommandRequest)
+						if err := stream.RecvMsg(request); err != nil {
+							return err
+						}
+						assert.Equal(t, "command-id", request.GetCommandId())
+						assert.Equal(t, "python3", request.GetCmd())
+						assert.Equal(t, []string{"-c", "server"}, request.GetArgs())
+						attempt := executes.Add(1)
+						if attempt == 1 {
+							if registered {
+								processes.Add(1)
+							}
+							return status.Error(codes.Unavailable, "execute transport interrupted")
+						}
+						if registered {
+							return status.Error(codes.AlreadyExists, "command_id is already in use")
+						}
+						processes.Add(1)
+						return stream.SendMsg(&sandboxexec.ExecuteCommandResponse{SequenceNumber: new(int64(1))})
+					}},
+					{StreamName: "AttachCommand", ServerStreams: true, Handler: func(_ any, stream grpc.ServerStream) error {
+						request := new(sandboxexec.AttachCommandRequest)
+						if err := stream.RecvMsg(request); err != nil {
+							return err
+						}
+						assert.Equal(t, "command-id", request.GetCommandId())
+						assert.Zero(t, request.GetLastSequenceNumber())
+						if attaches.Add(1) == 1 {
+							return status.Error(codes.NotFound, "command not found")
+						}
+						return stream.SendMsg(&sandboxexec.ExecuteCommandResponse{SequenceNumber: new(int64(1))})
+					}},
+				},
+			}, &commandService{})
+			client := newCommandTestClient(t, rpc)
+			output, err := client.Follow(t.Context(), "command-id", "python3", []string{"-c", "server"}, time.Minute)
+			require.NoError(t, err)
+			response, err := output.Recv()
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), response.GetSequenceNumber())
+			assert.EqualValues(t, 2, executes.Load())
+			assert.EqualValues(t, 1, processes.Load())
+			expectedAttaches := int32(1)
+			if registered {
+				expectedAttaches = 2
+			}
+			assert.Equal(t, expectedAttaches, attaches.Load())
+			_, err = output.Recv()
+			assert.ErrorIs(t, err, io.EOF)
+		})
+	}
+}
+
+func TestOutputDoesNotRestartConfirmedMissingCommand(t *testing.T) {
+	var attaches atomic.Int32
+	output, starts, _ := newOutputForAttachTest(t, codes.Unavailable, func(_ any, stream grpc.ServerStream) error {
+		request := new(sandboxexec.AttachCommandRequest)
+		if err := stream.RecvMsg(request); err != nil {
+			return err
+		}
+		attaches.Add(1)
+		return status.Error(codes.NotFound, "confirmed command no longer exists")
+	})
+	_, err := output.Recv()
+	require.Equal(t, codes.NotFound, status.Code(err))
+	assert.ErrorContains(t, err, "original command-output error")
+	assert.EqualValues(t, 1, starts.Load())
+	assert.EqualValues(t, 1, attaches.Load())
 }

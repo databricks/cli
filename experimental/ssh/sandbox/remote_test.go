@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -276,4 +278,19 @@ func TestReadServerOutputExitStatus(t *testing.T) {
 			})
 		}
 	}
+}
+
+type untouchedInput struct{ reads, closes atomic.Int32 }
+
+func (input *untouchedInput) Read([]byte) (int, error) { input.reads.Add(1); return 0, io.EOF }
+func (input *untouchedInput) Close() error             { input.closes.Add(1); return nil }
+
+func TestProxyStreamPreservesInputWhenUpgradeFails(t *testing.T) {
+	input := new(untouchedInput)
+	err := sandbox.ProxyStreamForTest(t.Context(), input, io.Discard, true, func(context.Context, proxy.DialRequest) (*websocket.Conn, error) {
+		return nil, errors.New("upgrade failed")
+	})
+	require.ErrorIs(t, err, proxy.ErrConnectFailed)
+	assert.Zero(t, input.reads.Load())
+	assert.Zero(t, input.closes.Load())
 }

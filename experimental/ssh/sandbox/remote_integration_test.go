@@ -30,22 +30,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
 type execService any
 
 type remoteFixture struct {
-	mode                          string
-	resumeVersion                 int
-	publicKey                     string
-	connected                     chan struct{}
-	outputEnded                   chan struct{}
-	mu                            sync.Mutex
-	terminated, removed, uploaded bool
-	authenticated                 bool
-	commandID                     string
-	dialQueries                   []url.Values
+	mode                           string
+	forwardStatus, forwardFailures int
+	terminateError                 bool
+	resumeVersion                  int
+	publicKey                      string
+	connected                      chan struct{}
+	outputEnded                    chan struct{}
+	mu                             sync.Mutex
+	terminated, removed, uploaded  bool
+	authenticated                  bool
+	commandID                      string
+	dialQueries                    []url.Values
 }
 
 func (fixture *remoteFixture) execute(_ any, stream grpc.ServerStream) error {
@@ -101,6 +105,9 @@ func (fixture *remoteFixture) terminate(_ any, _ context.Context, decode func(an
 		return nil, errors.New("termination used a different command ID")
 	}
 	fixture.terminated = true
+	if fixture.terminateError {
+		return nil, status.Error(codes.Unavailable, "termination failed")
+	}
 	return &sandboxexec.TerminateCommandResponse{}, nil
 }
 
@@ -148,7 +155,12 @@ func (fixture *remoteFixture) serveHTTP(w http.ResponseWriter, r *http.Request) 
 		fixture.mu.Lock()
 		fixture.authenticated = true
 		fixture.dialQueries = append(fixture.dialQueries, r.URL.Query())
+		attempt := len(fixture.dialQueries)
 		fixture.mu.Unlock()
+		if attempt <= fixture.forwardFailures {
+			http.Error(w, "forwarding rejected", fixture.forwardStatus)
+			return
+		}
 		if fixture.mode == "resume-dial" {
 			http.Error(w, "connection rejected", http.StatusGone)
 			return
@@ -198,10 +210,17 @@ func (fixture *remoteFixture) serveHTTP(w http.ResponseWriter, r *http.Request) 
 
 func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T) {
 	for _, tc := range []struct {
-		name, mode    string
-		resumeVersion int
-		quiet         bool
+		name, mode                     string
+		resumeVersion                  int
+		quiet                          bool
+		forwardStatus, forwardFailures int
+		wantForwardError               bool
+		terminateError                 bool
 	}{
+		{name: "forwarding-503", mode: "clean-close", forwardStatus: http.StatusServiceUnavailable, forwardFailures: 2},
+		{name: "forwarding-429", mode: "clean-close", forwardStatus: http.StatusTooManyRequests, forwardFailures: 1},
+		{name: "forwarding-503-stop-failed", mode: "clean-close", forwardStatus: http.StatusServiceUnavailable, forwardFailures: 1, wantForwardError: true, terminateError: true},
+		{name: "forwarding-403", mode: "clean-close", forwardStatus: http.StatusForbidden, forwardFailures: 1, wantForwardError: true},
 		{name: "before-ready", mode: "before-ready"},
 		{name: "after-ready", mode: "after-ready"},
 		{name: "cancel", mode: "cancel"},
@@ -227,7 +246,7 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 			defer cancel()
 			identity, err := sandbox.LocalIdentity(ctx, "https://workspace.test", "caller", "sandboxes/test")
 			require.NoError(t, err)
-			fixture := &remoteFixture{mode: mode, resumeVersion: tc.resumeVersion, publicKey: string(identity.PublicKey), connected: make(chan struct{}), outputEnded: make(chan struct{})}
+			fixture := &remoteFixture{mode: mode, terminateError: tc.terminateError, forwardStatus: tc.forwardStatus, forwardFailures: tc.forwardFailures, resumeVersion: tc.resumeVersion, publicKey: string(identity.PublicKey), connected: make(chan struct{}), outputEnded: make(chan struct{})}
 			grpcServer := grpc.NewServer()
 			grpcServer.RegisterService(&grpc.ServiceDesc{ServiceName: "databricks.sandbox.SandboxService", HandlerType: (*execService)(nil), Streams: []grpc.StreamDesc{{StreamName: "ExecuteCommand", ServerStreams: true, Handler: fixture.execute}}, Methods: []grpc.MethodDesc{{MethodName: "TerminateCommand", Handler: fixture.terminate}}}, fixture)
 			defer grpcServer.Stop()
@@ -270,10 +289,13 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 			}
 			var diagnostics bytes.Buffer
 			err = sandbox.ConnectProxyForTest(ctx, w, "sandboxes/test", identity, home, input, io.Discard, &diagnostics, startupTimeout)
-			if mode == "clean-close" || mode == "slow-session" || mode == "clean-output-first" {
+			if (mode == "clean-close" || mode == "slow-session" || mode == "clean-output-first") && !tc.wantForwardError {
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
+			}
+			if tc.wantForwardError {
+				assert.ErrorContains(t, err, fmt.Sprintf("HTTP %d", tc.forwardStatus))
 			}
 			switch mode {
 			case "before-ready":
@@ -309,7 +331,18 @@ func TestConnectProxyCleansUpAfterCompletionFailureAndCancellation(t *testing.T)
 						"reattach":                   {"1"},
 					}, fixture.dialQueries[1])
 				} else {
-					require.Len(t, fixture.dialQueries, 1)
+					expected := 1
+					if !tc.wantForwardError {
+						expected += tc.forwardFailures
+					}
+					require.Len(t, fixture.dialQueries, expected)
+					for i, query := range fixture.dialQueries[1:] {
+						if tc.forwardFailures > 0 {
+							assert.NotEqual(t, fixture.dialQueries[i].Get("id"), query.Get("id"))
+						} else {
+							assert.Equal(t, fixture.dialQueries[0], query)
+						}
+					}
 				}
 				query := fixture.dialQueries[0]
 				assert.NotEmpty(t, query.Get("id"))

@@ -110,18 +110,22 @@ func (c *Client) attach(ctx context.Context, commandID string, sequence int64) (
 
 // Output renews command-output streams without restarting the remote process.
 type Output struct {
-	client    *Client
-	ctx       context.Context
-	streamCtx context.Context
-	cancel    context.CancelFunc
-	stream    grpc.ServerStreamingClient[ExecuteCommandResponse]
-	commandID string
-	sequence  int64
-	lifetime  time.Duration
+	client     *Client
+	ctx        context.Context
+	streamCtx  context.Context
+	cancel     context.CancelFunc
+	stream     grpc.ServerStreamingClient[ExecuteCommandResponse]
+	commandID  string
+	executable string
+	args       []string
+	received   bool
+	sequence   int64
+	lifetime   time.Duration
 }
 
-// Follow executes once and reattaches from the last sequence number before the
-// route's stream lifetime expires. Cancel ctx to close the output stream.
+// Follow reattaches from the last sequence number before the route expires.
+// Unconfirmed startup retries reuse commandID so the daemon rejects duplicates.
+// Cancel ctx to close the output stream.
 func (c *Client) Follow(ctx context.Context, commandID, executable string, args []string, lifetime time.Duration) (*Output, error) {
 	streamCtx, cancel := context.WithTimeout(ctx, lifetime)
 	stream, err := c.Execute(streamCtx, commandID, executable, args)
@@ -129,13 +133,14 @@ func (c *Client) Follow(ctx context.Context, commandID, executable string, args 
 		cancel()
 		return nil, err
 	}
-	return &Output{client: c, ctx: ctx, streamCtx: streamCtx, cancel: cancel, stream: stream, commandID: commandID, lifetime: lifetime}, nil
+	return &Output{client: c, ctx: ctx, streamCtx: streamCtx, cancel: cancel, stream: stream, commandID: commandID, executable: executable, args: args, lifetime: lifetime}, nil
 }
 
 func (o *Output) Recv() (*ExecuteCommandResponse, error) {
 	response, err := o.stream.Recv()
 	if err == nil {
 		o.sequence = response.GetSequenceNumber()
+		o.received = true
 		return response, nil
 	}
 	// A command-output RPC can lose its HTTP/2 transport while the command and
@@ -146,7 +151,11 @@ func (o *Output) Recv() (*ExecuteCommandResponse, error) {
 	if !reattach {
 		return nil, err
 	}
-	return o.reattach()
+	response, attachErr := o.reattach()
+	if attachErr != nil {
+		return nil, errors.Join(fmt.Errorf("reattach command output: %w", attachErr), fmt.Errorf("original command-output error: %w", err))
+	}
+	return response, nil
 }
 
 func (o *Output) reattach() (*ExecuteCommandResponse, error) {
@@ -154,6 +163,7 @@ func (o *Output) reattach() (*ExecuteCommandResponse, error) {
 	retryCtx, cancelRetry := context.WithTimeout(o.ctx, time.Minute)
 	defer cancelRetry()
 	backoff := 250 * time.Millisecond
+	execute := false
 	var err error
 	for {
 		if o.ctx.Err() != nil {
@@ -164,7 +174,11 @@ func (o *Output) reattach() (*ExecuteCommandResponse, error) {
 		o.cancel = cancel
 		// Heartbeats can be 30s apart, so allow the full recovery budget for a response.
 		stopRetry := context.AfterFunc(retryCtx, cancel)
-		o.stream, err = o.client.attach(o.streamCtx, o.commandID, o.sequence)
+		if execute {
+			o.stream, err = o.client.Execute(o.streamCtx, o.commandID, o.executable, o.args)
+		} else {
+			o.stream, err = o.client.attach(o.streamCtx, o.commandID, o.sequence)
+		}
 		var response *ExecuteCommandResponse
 		if err == nil {
 			// Streaming RPC failures may surface only on the first receive.
@@ -173,6 +187,7 @@ func (o *Output) reattach() (*ExecuteCommandResponse, error) {
 		retryStopped := stopRetry()
 		if err == nil && retryStopped {
 			o.sequence = response.GetSequenceNumber()
+			o.received = true
 			return response, nil
 		}
 		o.cancel()
@@ -182,9 +197,13 @@ func (o *Output) reattach() (*ExecuteCommandResponse, error) {
 		if retryCtx.Err() != nil && (err == nil || status.Code(err) == codes.Canceled) {
 			err = status.FromContextError(retryCtx.Err()).Err()
 		}
-		if !retryableOutputError(err) {
+		// A lost initial Execute may not have registered the command. Reusing its
+		// ID is safe: the daemon atomically rejects a duplicate before spawning.
+		retryStartup := !o.received && ((!execute && status.Code(err) == codes.NotFound) || (execute && status.Code(err) == codes.AlreadyExists))
+		if !retryStartup && !retryableOutputError(err) {
 			return nil, err
 		}
+		execute = !o.received && status.Code(err) == codes.NotFound
 		timer := time.NewTimer(backoff)
 		select {
 		case <-retryCtx.Done():
