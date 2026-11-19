@@ -70,3 +70,12 @@ errcode trace $CLI air run --dry-run
 
 title "experimental path directs users to the top-level command"
 errcode trace $CLI experimental air run -f valid.yaml --dry-run
+
+title "removed pool field is rejected"
+musterr trace $CLI air run -f removed-pool.yaml --dry-run
+
+title "unsupported priority is rejected"
+musterr trace $CLI air run -f invalid-priority.yaml --dry-run
+
+title "priority without a pool is rejected"
+musterr trace $CLI air run -f priority-without-pool.yaml --dry-run
