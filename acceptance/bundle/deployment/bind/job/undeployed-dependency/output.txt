@@ -42,7 +42,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> jq {serial, job_1: .state["resources.jobs.job_1"] | {__id__, depends_on, description: .state.description}} .databricks/bundle/default/resources.json
 {
-  "serial": 3,
+  "serial": 2,
   "job_1": {
     "__id__": "[EXTERNAL_JOB_ID]",
     "depends_on": [
