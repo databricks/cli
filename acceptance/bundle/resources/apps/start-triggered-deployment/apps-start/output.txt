@@ -1,0 +1,33 @@
+
+=== Deploy: the app is created stopped and nothing is deployed to it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/start-deployment-apps-start-[UNIQUE_NAME]/default/files...
+Created apps.myapp
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] apps get [UNIQUE_NAME]
+{
+  "active_deployment": null,
+  "pending_deployment": null
+}
+
+=== Start the compute outside the bundle: the bundle has not deployed anything, so the app has no deployment
+
+>>> errcode [CLI] apps start [UNIQUE_NAME]
+"ACTIVE"
+
+>>> [CLI] apps get [UNIQUE_NAME]
+{
+  "active_deployment": null,
+  "pending_deployment": null
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/start-deployment-apps-start-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

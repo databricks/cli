@@ -1,0 +1,15 @@
+bundle:
+  name: start-deployment-on-update-$UNIQUE_NAME
+
+resources:
+  apps:
+    myapp:
+      name: $UNIQUE_NAME
+      source_code_path: ./app
+      config:
+        command: ["flask", "--app", "app", "run"]
+        env:
+          - name: FROM_BUNDLE_CONFIG
+            value: "1"
+      lifecycle:
+        started: false

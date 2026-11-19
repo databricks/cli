@@ -1,0 +1,13 @@
+bundle:
+  name: start-deployment-bundle-run-$UNIQUE_NAME
+
+resources:
+  apps:
+    myapp:
+      name: $UNIQUE_NAME
+      source_code_path: ./app
+      config:
+        command: ["flask", "--app", "app", "run"]
+        env:
+          - name: FROM_BUNDLE_CONFIG
+            value: "1"

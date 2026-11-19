@@ -1,0 +1,38 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# wait_for_deployments gives a deployment that the backend starts by itself time to show up
+# and to finish. Only a real workspace can start one, so there is nothing to wait for locally.
+wait_for_deployments() {
+    if [ -z "$CLOUD_ENV" ]; then
+        return 0
+    fi
+    local states
+    for i in $(seq 60); do
+        sleep 10
+        states=$($CLI apps get "$1" | jq -r '[.active_deployment, .pending_deployment | select(. != null) | .status.state] | join(" ")')
+        echo "poll $i: deployment states: [$states]" >> LOG.wait_for_deployments
+        if [ -z "$states" ] && [ "$i" -ge 6 ]; then
+            return 0
+        fi
+        if [ -n "$states" ] && [[ "$states" != *IN_PROGRESS* ]]; then
+            return 0
+        fi
+    done
+}
+
+title "Deploy: the app is created stopped and nothing is deployed to it"
+trace $CLI bundle deploy
+trace $CLI apps get $UNIQUE_NAME | app_deployments
+
+# The source folder has an app.yaml that runs, with a different env var than the bundle's
+# inline config, so a deployment made from the folder alone is told apart from the bundle's.
+title "Start the compute outside the bundle: the bundle has not deployed anything, so the app has no deployment"
+{ trace errcode $CLI apps start $UNIQUE_NAME | jq '.compute_status.state'; } || true
+wait_for_deployments $UNIQUE_NAME
+$CLI apps get $UNIQUE_NAME > LOG.app_after_start
+trace $CLI apps get $UNIQUE_NAME | app_deployments

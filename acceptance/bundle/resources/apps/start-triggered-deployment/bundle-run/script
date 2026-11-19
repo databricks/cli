@@ -1,0 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# The source folder has no app.yaml: the inline config is the only place that says how to
+# run the app.
+title "Deploy: the app is created stopped and nothing is deployed to it"
+trace $CLI bundle deploy
+
+title "Run: the compute is started and the source is deployed with the inline config"
+trace errcode $CLI bundle run myapp
+$CLI apps get $UNIQUE_NAME > LOG.app_after_run
+trace $CLI apps get $UNIQUE_NAME | app_deployments

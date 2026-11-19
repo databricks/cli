@@ -1,0 +1,9 @@
+command:
+  - flask
+  - --app
+  - app
+  - run
+
+env:
+  - name: FROM_APP_YAML
+    value: "1"

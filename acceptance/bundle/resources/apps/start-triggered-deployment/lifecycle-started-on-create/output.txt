@@ -1,0 +1,35 @@
+
+=== Deploy with lifecycle.started=true: the app is created with compute and the source is deployed with the inline config
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/start-deployment-on-create-[UNIQUE_NAME]/default/files...
+Created apps.myapp
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] apps get [UNIQUE_NAME]
+{
+  "active_deployment": {
+    "command": [
+      "flask",
+      "--app",
+      "app",
+      "run"
+    ],
+    "env_vars": [
+      {
+        "name": "FROM_BUNDLE_CONFIG"
+      }
+    ],
+    "state": "SUCCEEDED"
+  },
+  "pending_deployment": null
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/start-deployment-on-create-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

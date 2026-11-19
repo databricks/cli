@@ -1,0 +1,20 @@
+# These tests show what starting the compute of a bundle-created app does to its deployments.
+# Create records source_code_path on the app (#6399). The goldens hold what the bundle asks
+# for: the only deployment an app gets is the one the CLI makes, carrying the inline config.
+Cloud = true
+RecordRequests = false
+
+# The DMS variant adds nothing here, and each variant starts app compute on every cloud.
+EnvMatrix.DMS = []
+
+Ignore = [".databricks", "databricks.yml"]
+
+# App deployment progress messages are non-deterministic on cloud (different status messages
+# per poll), so filter them out entirely.
+[[Repls]]
+Old = '(?m)^✓ [^\n]*\n'
+New = ""
+
+[[Repls]]
+Old = 'You can access the app at \S+'
+New = 'You can access the app at [APP_URL]'
