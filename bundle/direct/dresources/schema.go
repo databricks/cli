@@ -2,11 +2,10 @@ package dresources
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -43,17 +42,10 @@ func (*ResourceSchema) PrepareState(input *resources.Schema) *SchemaState {
 	}
 }
 
+var toSchemaState = newCopier[catalog.SchemaInfo, SchemaState]()
+
 func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *SchemaState {
-	return &SchemaState{
-		CatalogName:             info.CatalogName,
-		Comment:                 info.Comment,
-		CustomMaxRetentionHours: info.CustomMaxRetentionHours,
-		Name:                    info.Name,
-		Properties:              info.Properties,
-		StorageRoot:             info.StorageRoot,
-		ForceSendFields:         utils.FilterFields[catalog.CreateSchema](info.ForceSendFields),
-		SchemaId:                info.SchemaId,
-	}
+	return toSchemaState.Copy(info)
 }
 
 func (r *ResourceSchema) DoRead(ctx context.Context, id string) (*catalog.SchemaInfo, error) {
@@ -85,17 +77,13 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (str
 // migrate invariant (schema.yml is excluded there, and schema_tf_compat.yml covers migrate instead).
 var schemaForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
+var toUpdateSchema = newCopier[catalog.CreateSchema, catalog.UpdateSchema](structcopy.ForceSend(schemaForceSend...))
+
 func makeUpdateSchema(id, newName string, config *catalog.CreateSchema) catalog.UpdateSchema {
-	return catalog.UpdateSchema{
-		Comment:                      config.Comment,
-		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
-		EnablePredictiveOptimization: "", // Not supported by DABs
-		FullName:                     id,
-		NewName:                      newName,
-		Owner:                        "", // Not supported by DABs
-		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateSchema](append(slices.Clone(schemaForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "NewName", "Owner"),
-	}
+	request := toUpdateSchema.Copy(config)
+	request.FullName = id
+	request.NewName = newName
+	return *request
 }
 
 // DoUpdate updates the schema in place and returns remote state.

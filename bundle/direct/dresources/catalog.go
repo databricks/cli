@@ -3,10 +3,9 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -44,21 +43,10 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *CatalogState {
 	}
 }
 
+var toCatalogState = newCopier[catalog.CatalogInfo, CatalogState]()
+
 func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *CatalogState {
-	return &CatalogState{
-		Comment:                   info.Comment,
-		ConnectionName:            info.ConnectionName,
-		CustomMaxRetentionHours:   info.CustomMaxRetentionHours,
-		ManagedEncryptionSettings: info.ManagedEncryptionSettings,
-		Name:                      info.Name,
-		Options:                   info.Options,
-		Properties:                info.Properties,
-		ProviderName:              info.ProviderName,
-		ShareName:                 info.ShareName,
-		StorageRoot:               info.StorageRoot,
-		ForceSendFields:           utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
-		IsolationMode:             info.IsolationMode,
-	}
+	return toCatalogState.Copy(info)
 }
 
 func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalog.CatalogInfo, error) {
@@ -75,19 +63,12 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *CatalogState) (s
 	}
 
 	// UC only accepts isolation_mode on update, so a configured value takes a second call.
-	response, err = r.client.Catalogs.Update(ctx, catalog.UpdateCatalog{
-		Comment:                      "",
-		CustomMaxRetentionHours:      0,
-		EnablePredictiveOptimization: "",
-		IsolationMode:                config.IsolationMode,
-		ManagedEncryptionSettings:    nil,
-		Name:                         response.Name,
-		NewName:                      "",
-		Options:                      nil,
-		Owner:                        "",
-		Properties:                   nil,
-		ForceSendFields:              nil,
-	})
+	// It carries nothing else: fields are set one by one so that a field the SDK adds to
+	// UpdateCatalog needs no change here.
+	var setIsolationMode catalog.UpdateCatalog
+	setIsolationMode.Name = response.Name
+	setIsolationMode.IsolationMode = config.IsolationMode
+	response, err = r.client.Catalogs.Update(ctx, setIsolationMode)
 	if err != nil {
 		// The catalog exists but is not in state, so the next deploy fails with "already
 		// exists"; name the cause here since the caller only knows a create failed.
@@ -104,23 +85,18 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *CatalogState) (s
 // rejected with "Nothing to update").
 var catalogForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
+// Name addresses the catalog, so it is the id; the name in the config goes in NewName when it differs.
+var toUpdateCatalog = newCopier[CatalogState, catalog.UpdateCatalog](
+	structcopy.Skip("Name"),
+	structcopy.ForceSend(catalogForceSend...),
+)
+
 // DoUpdate updates the catalog in place and returns remote state.
 func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *CatalogState, _ *PlanEntry) (*catalog.CatalogInfo, error) {
-	updateRequest := catalog.UpdateCatalog{
-		Comment:                      config.Comment,
-		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
-		EnablePredictiveOptimization: "", // Not supported by DABs
-		IsolationMode:                config.IsolationMode,
-		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
-		Name:                         id,
-		NewName:                      "", // Only set if name actually changes (see DoUpdateWithID)
-		Options:                      config.Options,
-		Owner:                        "", // Not supported by DABs
-		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "Owner"),
-	}
+	updateRequest := toUpdateCatalog.Copy(config)
+	updateRequest.Name = id
 
-	response, err := r.client.Catalogs.Update(ctx, updateRequest)
+	response, err := r.client.Catalogs.Update(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -130,25 +106,14 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *Catal
 
 // DoUpdateWithID updates the catalog and returns the new ID if the name changes.
 func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *CatalogState, _ *PlanEntry) (string, *catalog.CatalogInfo, error) {
-	updateRequest := catalog.UpdateCatalog{
-		Comment:                      config.Comment,
-		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
-		EnablePredictiveOptimization: "", // Not supported by DABs
-		IsolationMode:                config.IsolationMode,
-		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
-		Name:                         id,
-		NewName:                      "", // Initialized below if needed
-		Options:                      config.Options,
-		Owner:                        "", // Not supported by DABs
-		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](append(slices.Clone(catalogForceSend), config.ForceSendFields...), "EnablePredictiveOptimization", "Owner"),
-	}
+	updateRequest := toUpdateCatalog.Copy(config)
+	updateRequest.Name = id
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
 
-	response, err := r.client.Catalogs.Update(ctx, updateRequest)
+	response, err := r.client.Catalogs.Update(ctx, *updateRequest)
 	if err != nil {
 		return "", nil, err
 	}

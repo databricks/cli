@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -42,13 +42,19 @@ func (*ResourceMlflowModel) PrepareState(input *resources.MlflowModel) *ml.Creat
 	return &input.CreateModelRequest
 }
 
+var (
+	toCreateModel = newCopier[MlflowModelRemote, ml.CreateModelRequest]()
+
+	// Name addresses the model, so it is the id.
+	toUpdateModel = newCopier[ml.CreateModelRequest, ml.UpdateModelRequest](structcopy.Skip("Name"))
+
+	// ml.Model, the UpdateModel response, carries neither Id nor PermissionLevel, so they
+	// stay empty; ModelId is carried forward from the remote state the update started from.
+	toMlflowModelRemote = newCopier[ml.Model, MlflowModelRemote]()
+)
+
 func (*ResourceMlflowModel) RemapState(output *MlflowModelRemote) *ml.CreateModelRequest {
-	return &ml.CreateModelRequest{
-		Name:            output.Name,
-		Tags:            output.Tags,
-		Description:     output.Description,
-		ForceSendFields: utils.FilterFields[ml.CreateModelRequest](output.ForceSendFields),
-	}
+	return toCreateModel.Copy(output)
 }
 
 func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*MlflowModelRemote, error) {
@@ -78,13 +84,10 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 }
 
 func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, entry *PlanEntry) (*MlflowModelRemote, error) {
-	updateRequest := ml.UpdateModelRequest{
-		Name:            id,
-		Description:     config.Description,
-		ForceSendFields: utils.FilterFields[ml.UpdateModelRequest](config.ForceSendFields),
-	}
+	updateRequest := toUpdateModel.Copy(config)
+	updateRequest.Name = id
 
-	response, err := r.client.ModelRegistry.UpdateModel(ctx, updateRequest)
+	response, err := r.client.ModelRegistry.UpdateModel(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -98,23 +101,11 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		modelId = old.ModelId
 	}
 
-	// Id and PermissionLevel are left empty because ml.Model (the UpdateModel
-	// response) does not carry them; every other field is taken from the
-	// response so references against the post-update remote state resolve to
-	// real values until the next plan's DoRead.
-	return &MlflowModelRemote{
-		CreationTimestamp:    response.RegisteredModel.CreationTimestamp,
-		Description:          response.RegisteredModel.Description,
-		Id:                   "",
-		LastUpdatedTimestamp: response.RegisteredModel.LastUpdatedTimestamp,
-		LatestVersions:       response.RegisteredModel.LatestVersions,
-		Name:                 response.RegisteredModel.Name,
-		PermissionLevel:      "",
-		Tags:                 response.RegisteredModel.Tags,
-		UserId:               response.RegisteredModel.UserId,
-		ForceSendFields:      utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "Id", "PermissionLevel"),
-		ModelId:              modelId,
-	}, nil
+	// Every field the response has is taken from it, so references against the
+	// post-update remote state resolve to real values until the next plan's DoRead.
+	remote := toMlflowModelRemote.Copy(response.RegisteredModel)
+	remote.ModelId = modelId
+	return remote, nil
 }
 
 func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string, _ *ml.CreateModelRequest) error {

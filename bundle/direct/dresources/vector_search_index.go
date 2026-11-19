@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -81,32 +82,23 @@ func (*ResourceVectorSearchIndex) PrepareState(input *resources.VectorSearchInde
 	}
 }
 
+var (
+	// DeltaSyncIndexSpec has a type of its own in the response, so it is converted on its own.
+	toVectorSearchIndexState = newCopier[VectorSearchIndexRemote, VectorSearchIndexState](
+		structcopy.Skip("DeltaSyncIndexSpec"),
+	)
+	toDeltaSyncIndexSpecRequest = newCopier[vectorsearch.DeltaSyncVectorIndexSpecResponse, vectorsearch.DeltaSyncVectorIndexSpecRequest]()
+)
+
 func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *VectorSearchIndexState {
-	state := &VectorSearchIndexState{
-		DeltaSyncIndexSpec:    nil, // need to remap below
-		DirectAccessIndexSpec: remote.DirectAccessIndexSpec,
-		IndexSubtype:          remote.IndexSubtype,
-		Name:                  remote.Name,
-		EndpointName:          remote.EndpointName,
-		IndexType:             remote.IndexType,
-		PrimaryKey:            remote.PrimaryKey,
-		EndpointUuid:          remote.EndpointUuid,
-	}
+	state := toVectorSearchIndexState.Copy(remote)
 	if remote.DeltaSyncIndexSpec != nil {
-		state.DeltaSyncIndexSpec = &vectorsearch.DeltaSyncVectorIndexSpecRequest{
-			ColumnsToIndex:          remote.DeltaSyncIndexSpec.ColumnsToIndex,
-			ColumnsToSync:           remote.DeltaSyncIndexSpec.ColumnsToSync,
-			EmbeddingSourceColumns:  remote.DeltaSyncIndexSpec.EmbeddingSourceColumns,
-			EmbeddingVectorColumns:  remote.DeltaSyncIndexSpec.EmbeddingVectorColumns,
-			EmbeddingWritebackTable: remote.DeltaSyncIndexSpec.EmbeddingWritebackTable,
-			PipelineType:            remote.DeltaSyncIndexSpec.PipelineType,
-			SourceTable:             remote.DeltaSyncIndexSpec.SourceTable,
-			// ForceSendFields is an SDK marshaling concern (which zero-valued
-			// fields to wire-serialize) that has no meaning on the read path.
-			// Local config doesn't carry one either, so leave it nil rather
-			// than copy whatever the response struct happened to use.
-			ForceSendFields: nil,
-		}
+		state.DeltaSyncIndexSpec = toDeltaSyncIndexSpecRequest.Copy(remote.DeltaSyncIndexSpec)
+		// ForceSendFields is an SDK marshaling concern (which zero-valued
+		// fields to wire-serialize) that has no meaning on the read path.
+		// Local config doesn't carry one either, so leave it nil rather
+		// than copy whatever the response struct happened to use.
+		state.DeltaSyncIndexSpec.ForceSendFields = nil
 	}
 	return state
 }

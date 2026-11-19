@@ -2,13 +2,12 @@ package dresources
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -41,7 +40,7 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 		MetastoreId:     "",
 		UpdateTime:      nil,
 		UpdatedBy:       "",
-		ForceSendFields: utils.FilterFields[catalog.Secret](nil),
+		ForceSendFields: nil,
 	}
 }
 
@@ -87,13 +86,13 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 // body and the old value would drift back. Verified against a real workspace: {"comment": ""} clears it.
 var secretForceSend = []string{"Comment"}
 
+var toUpdateSecret = newCopier[catalog.Secret, catalog.Secret](structcopy.ForceSend(secretForceSend...))
+
 // DoUpdate updates the secret in place and returns remote state.
 func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog.Secret, _ *PlanEntry) (*catalog.Secret, error) {
-	secret := *state
-	secret.ForceSendFields = utils.FilterFields[catalog.Secret](append(slices.Clone(secretForceSend), state.ForceSendFields...))
 	response, err := r.client.SecretsUc.UpdateSecret(ctx, catalog.UpdateSecretRequest{
 		FullName: id,
-		Secret:   secret,
+		Secret:   *toUpdateSecret.Copy(state),
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"*"},
 		},

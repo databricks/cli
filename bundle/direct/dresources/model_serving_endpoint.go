@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -36,6 +36,20 @@ func (*ResourceModelServingEndpoint) PrepareState(input *resources.ModelServingE
 	return &input.CreateServingEndpoint
 }
 
+// The API reports a config with types of its own (the *Output ones); these convert them
+// to the types a request takes.
+var (
+	//nolint:staticcheck // SA1019: deprecated AutoCaptureConfig{Input,Output} kept for bundle config compatibility
+	toAutoCaptureConfigInput = newCopier[serving.AutoCaptureConfigOutput, serving.AutoCaptureConfigInput]()
+	toServedEntityInput      = newCopier[serving.ServedEntityOutput, serving.ServedEntityInput]()
+
+	// AutoCaptureConfig and ServedEntities are converted on their own. ServedModels, which
+	// served_entities deprecates, is left unset.
+	toEndpointCoreConfigInput = newCopier[serving.EndpointCoreConfigOutput, serving.EndpointCoreConfigInput](
+		structcopy.Skip("AutoCaptureConfig", "ServedEntities", "ServedModels"),
+	)
+)
+
 // AutoCaptureConfig is the legacy inference-table API; the recommended replacement
 // is AI Gateway inference tables. Bundles still expose it, so the conversion has to
 // keep working until users have migrated.
@@ -45,36 +59,13 @@ func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *se
 	if output == nil {
 		return nil
 	}
-	return &serving.AutoCaptureConfigInput{
-		CatalogName:     output.CatalogName,
-		SchemaName:      output.SchemaName,
-		TableNamePrefix: output.TableNamePrefix,
-		Enabled:         output.Enabled,
-		ForceSendFields: utils.FilterFields[serving.AutoCaptureConfigInput](output.ForceSendFields),
-	}
+	return toAutoCaptureConfigInput.Copy(output)
 }
 
 func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.ServedEntityInput {
 	entities := make([]serving.ServedEntityInput, len(output))
-	for i, entity := range output {
-		entities[i] = serving.ServedEntityInput{
-			EntityName:                entity.EntityName,
-			EntityVersion:             entity.EntityVersion,
-			EnvironmentVars:           entity.EnvironmentVars,
-			ExternalModel:             entity.ExternalModel,
-			InstanceProfileArn:        entity.InstanceProfileArn,
-			MaxProvisionedConcurrency: entity.MaxProvisionedConcurrency,
-			MaxProvisionedThroughput:  entity.MaxProvisionedThroughput,
-			MinProvisionedConcurrency: entity.MinProvisionedConcurrency,
-			MinProvisionedThroughput:  entity.MinProvisionedThroughput,
-			Name:                      entity.Name,
-			ProvisionedModelUnits:     entity.ProvisionedModelUnits,
-			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
-			WorkloadSize:              entity.WorkloadSize,
-			WorkloadType:              entity.WorkloadType,
-			BurstScalingEnabled:       entity.BurstScalingEnabled,
-			ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](entity.ForceSendFields),
-		}
+	for i := range output {
+		entities[i] = *toServedEntityInput.Copy(&output[i])
 	}
 
 	return entities
@@ -84,32 +75,19 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 	if output == nil {
 		return nil
 	}
-	return &serving.EndpointCoreConfigInput{
-		AutoCaptureConfig: autoCaptureConfigOutputToInput(output.AutoCaptureConfig),
-		ServedEntities:    servedEntitiesOutputToInput(output.ServedEntities),
-		ServedModels:      nil,
-		TrafficConfig:     output.TrafficConfig,
-		Name:              "",
-	}
+	config := toEndpointCoreConfigInput.Copy(output)
+	config.AutoCaptureConfig = autoCaptureConfigOutputToInput(output.AutoCaptureConfig)
+	config.ServedEntities = servedEntitiesOutputToInput(output.ServedEntities)
+	return config
 }
 
-func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemote) *serving.CreateServingEndpoint {
-	return &serving.CreateServingEndpoint{
-		AiGateway:          state.AiGateway,
-		BudgetPolicyId:     state.BudgetPolicyId,
-		Config:             state.Config,
-		Description:        state.Description,
-		EmailNotifications: state.EmailNotifications,
-		Name:               state.Name,
-		RouteOptimized:     state.RouteOptimized,
-		Tags:               state.Tags,
-		TelemetryConfig:    state.TelemetryConfig,
-		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](state.ForceSendFields),
+// Rate limits are a deprecated field that are not returned by the API on GET calls, so the
+// remote state has no value for them.
+// TODO(shreyas): Add a warning when users try setting top level rate limits.
+var toCreateServingEndpoint = newCopier[ModelServingEndpointRemote, serving.CreateServingEndpoint]()
 
-		// Rate limits are a deprecated field that are not returned by the API on GET calls. Thus we map them to nil.
-		// TODO(shreyas): Add a warning when users try setting top level rate limits.
-		RateLimits: nil,
-	}
+func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemote) *serving.CreateServingEndpoint {
+	return toCreateServingEndpoint.Copy(state)
 }
 
 type ModelServingEndpointRemote struct {
@@ -143,21 +121,17 @@ func (s ModelServingEndpointRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+// Config is converted on its own, see configOutputToInput.
+var toModelServingEndpointRemote = newCopier[serving.ServingEndpointDetailed, ModelServingEndpointRemote](
+	structcopy.Skip("Config"),
+)
+
 func newModelServingEndpointRemote(details *serving.ServingEndpointDetailed) *ModelServingEndpointRemote {
-	return &ModelServingEndpointRemote{
-		EndpointDetails:    details,
-		EndpointId:         details.Id,
-		AiGateway:          details.AiGateway,
-		BudgetPolicyId:     details.BudgetPolicyId,
-		Config:             configOutputToInput(details.Config),
-		Description:        details.Description,
-		EmailNotifications: details.EmailNotifications,
-		Name:               details.Name,
-		RouteOptimized:     details.RouteOptimized,
-		Tags:               details.Tags,
-		TelemetryConfig:    details.TelemetryConfig,
-		ForceSendFields:    utils.FilterFields[ModelServingEndpointRemote](details.ForceSendFields),
-	}
+	remote := toModelServingEndpointRemote.Copy(details)
+	remote.EndpointDetails = details
+	remote.EndpointId = details.Id
+	remote.Config = configOutputToInput(details.Config)
+	return remote
 }
 
 func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*ModelServingEndpointRemote, error) {
@@ -217,29 +191,19 @@ func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id s
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
+var toPutAiGateway = newCopier[serving.AiGatewayConfig, serving.PutAiGatewayRequest]()
+
 func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id string, aiGateway *serving.AiGatewayConfig) error {
 	if aiGateway == nil {
-		req := serving.PutAiGatewayRequest{
-			Name:                 id,
-			FallbackConfig:       nil,
-			Guardrails:           nil,
-			InferenceTableConfig: nil,
-			RateLimits:           nil,
-			UsageTrackingConfig:  nil,
-		}
+		var req serving.PutAiGatewayRequest
+		req.Name = id
 		_, err := r.client.ServingEndpoints.PutAiGateway(ctx, req)
 		return err
 	}
 
-	req := serving.PutAiGatewayRequest{
-		Name:                 id,
-		FallbackConfig:       aiGateway.FallbackConfig,
-		Guardrails:           aiGateway.Guardrails,
-		InferenceTableConfig: aiGateway.InferenceTableConfig,
-		RateLimits:           aiGateway.RateLimits,
-		UsageTrackingConfig:  aiGateway.UsageTrackingConfig,
-	}
-	_, err := r.client.ServingEndpoints.PutAiGateway(ctx, req)
+	req := toPutAiGateway.Copy(aiGateway)
+	req.Name = id
+	_, err := r.client.ServingEndpoints.PutAiGateway(ctx, *req)
 	if err != nil {
 		return fmt.Errorf("failed to update AI gateway: %w", err)
 	}
@@ -250,23 +214,13 @@ func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id s
 func (r *ResourceModelServingEndpoint) updateConfig(ctx context.Context, id string, config *serving.EndpointCoreConfigInput) error {
 	if config == nil {
 		// Unset config in resource.
-		req := serving.EndpointCoreConfigInput{
-			Name:              id,
-			AutoCaptureConfig: nil,
-			ServedEntities:    nil,
-			TrafficConfig:     nil,
-			ServedModels:      nil,
-		}
+		var req serving.EndpointCoreConfigInput
+		req.Name = id
 		_, err := r.client.ServingEndpoints.UpdateConfig(ctx, req)
 		return err
 	}
-	req := serving.EndpointCoreConfigInput{
-		Name:              id,
-		AutoCaptureConfig: config.AutoCaptureConfig,
-		ServedEntities:    config.ServedEntities,
-		TrafficConfig:     config.TrafficConfig,
-		ServedModels:      config.ServedModels,
-	}
+	req := *config
+	req.Name = id
 	_, err := r.client.ServingEndpoints.UpdateConfig(ctx, req)
 	if err != nil {
 		return fmt.Errorf("failed to update config: %w", err)

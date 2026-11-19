@@ -3,12 +3,11 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -45,17 +44,10 @@ func (*ResourceVolume) PrepareState(input *resources.Volume) *VolumeState {
 	}
 }
 
+var toVolumeState = newCopier[catalog.VolumeInfo, VolumeState]()
+
 func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *VolumeState {
-	return &VolumeState{
-		CatalogName:     info.CatalogName,
-		Comment:         info.Comment,
-		Name:            info.Name,
-		SchemaName:      info.SchemaName,
-		StorageLocation: info.StorageLocation,
-		VolumeType:      info.VolumeType,
-		ForceSendFields: utils.FilterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
-		VolumeId:        info.VolumeId,
-	}
+	return toVolumeState.Copy(info)
 }
 
 func (r *ResourceVolume) DoRead(ctx context.Context, id string) (*catalog.VolumeInfo, error) {
@@ -73,15 +65,16 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *VolumeState) (str
 // See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
 var volumeForceSend = []string{"Comment"}
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *VolumeState, _ *PlanEntry) (*catalog.VolumeInfo, error) {
-	updateRequest := catalog.UpdateVolumeRequestContent{
-		Comment: config.Comment,
-		Name:    id,
-		NewName: "", // Not supported by Update(). Needs DoUpdateWithID()
-		Owner:   "", // Not supported by DABs
+// Name addresses the volume by its full name; the name in the config goes in NewName when it
+// differs, which only DoUpdateWithID does.
+var toUpdateVolume = newCopier[VolumeState, catalog.UpdateVolumeRequestContent](
+	structcopy.Skip("Name"),
+	structcopy.ForceSend(volumeForceSend...),
+)
 
-		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "NewName", "Owner"),
-	}
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *VolumeState, _ *PlanEntry) (*catalog.VolumeInfo, error) {
+	updateRequest := toUpdateVolume.Copy(config)
+	updateRequest.Name = id
 
 	nameFromID, err := getNameFromID(id)
 	if err != nil {
@@ -92,7 +85,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *Volume
 		return nil, fmt.Errorf("internal error: unexpected change of name from %#v to %#v", nameFromID, config.Name)
 	}
 
-	response, err := r.client.Volumes.Update(ctx, updateRequest)
+	response, err := r.client.Volumes.Update(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -105,15 +98,7 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *Volume
 }
 
 func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *VolumeState, _ *PlanEntry) (string, *catalog.VolumeInfo, error) {
-	updateRequest := catalog.UpdateVolumeRequestContent{
-		Comment: config.Comment,
-		Name:    "", // Initialized below
-
-		NewName: "", // Initialized below if needed
-		Owner:   "", // Not supported by DABs
-
-		ForceSendFields: utils.FilterFields[catalog.UpdateVolumeRequestContent](append(slices.Clone(volumeForceSend), config.ForceSendFields...), "Owner"),
-	}
+	updateRequest := toUpdateVolume.Copy(config)
 
 	items := strings.Split(id, ".")
 	if len(items) == 0 {
@@ -129,7 +114,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		updateRequest.NewName = config.Name
 	}
 
-	response, err := r.client.Volumes.Update(ctx, updateRequest)
+	response, err := r.client.Volumes.Update(ctx, *updateRequest)
 	if err != nil || response == nil {
 		return "", nil, err
 	}

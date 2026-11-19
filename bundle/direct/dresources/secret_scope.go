@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -59,14 +58,10 @@ func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretSc
 	}
 }
 
+var toSecretScopeConfig = newCopier[SecretScopeRemote, SecretScopeConfig]()
+
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
-	return &SecretScopeConfig{
-		Scope:                  remote.Scope,
-		ScopeBackendType:       remote.ScopeBackendType,
-		BackendAzureKeyvault:   remote.BackendAzureKeyvault,
-		InitialManagePrincipal: "",
-		ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
-	}
+	return toSecretScopeConfig.Copy(remote)
 }
 
 // DoRead fetches the secret scope by name. Since the Secrets API does not provide

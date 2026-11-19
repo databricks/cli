@@ -3,12 +3,11 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -30,28 +29,12 @@ func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *
 	return &input.CreateRegisteredModelRequest
 }
 
+// The output-only fields (created_at, updated_by, ...) are copied as well. Remote changes to
+// them are ignored via ignore_remote_changes in registered_models.yml rather than zeroed here.
+var toCreateRegisteredModel = newCopier[catalog.RegisteredModelInfo, catalog.CreateRegisteredModelRequest]()
+
 func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
-	return &catalog.CreateRegisteredModelRequest{
-		CatalogName:     model.CatalogName,
-		Comment:         model.Comment,
-		Name:            model.Name,
-		SchemaName:      model.SchemaName,
-		StorageLocation: model.StorageLocation,
-		ForceSendFields: utils.FilterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
-
-		Aliases:     model.Aliases,
-		BrowseOnly:  model.BrowseOnly,
-		FullName:    model.FullName,
-		MetastoreId: model.MetastoreId,
-		Owner:       model.Owner,
-
-		// Output only fields. Remote changes to these are ignored via
-		// ignore_remote_changes in registered_models.yml rather than zeroed here.
-		CreatedAt: model.CreatedAt,
-		CreatedBy: model.CreatedBy,
-		UpdatedAt: model.UpdatedAt,
-		UpdatedBy: model.UpdatedBy,
-	}
+	return toCreateRegisteredModel.Copy(model)
 }
 
 func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
@@ -91,37 +74,25 @@ func (r *ResourceRegisteredModel) WaitAfterCreate(ctx context.Context, id string
 // See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
 var registeredModelForceSend = []string{"Comment"}
 
+// Not copied into an update:
+//   - Owner is settable in the config (it comes from the embedded CreateRegisteredModelRequest)
+//     and create sends it, but update never has: a change to it is silently dropped rather
+//     than applied.
+//   - Aliases are ignored by the update API; syncAliases applies them through the alias API.
+//   - FullName addresses the model, so it is the id.
+//
+// NewName stays empty: name updates are not supported yet without recreating. Can be added as
+// a follow-up. TF does not support changing name without a recreate either.
+var toUpdateRegisteredModel = newCopier[catalog.CreateRegisteredModelRequest, catalog.UpdateRegisteredModelRequest](
+	structcopy.Skip("Owner", "Aliases", "FullName"),
+	structcopy.ForceSend(registeredModelForceSend...),
+)
+
 func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) (*catalog.RegisteredModelInfo, error) {
-	updateRequest := catalog.UpdateRegisteredModelRequest{
-		FullName:        id,
-		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName"),
+	updateRequest := toUpdateRegisteredModel.Copy(config)
+	updateRequest.FullName = id
 
-		// Owner is settable in the config (it comes from the embedded
-		// CreateRegisteredModelRequest) and create sends it, but update never has: a
-		// change to it is silently dropped rather than applied.
-		Owner: "",
-
-		// Name updates are not supported yet without recreating. Can be added as a follow-up.
-		// Note: TF also does not support changing name without a recreate so the current behavior matches TF.
-		NewName: "",
-
-		// The update API ignores aliases; syncAliases applies them through the alias API.
-		Aliases: nil,
-
-		BrowseOnly:      config.BrowseOnly,
-		CreatedAt:       config.CreatedAt,
-		CreatedBy:       config.CreatedBy,
-		MetastoreId:     config.MetastoreId,
-		UpdatedAt:       config.UpdatedAt,
-		UpdatedBy:       config.UpdatedBy,
-		SchemaName:      config.SchemaName,
-		StorageLocation: config.StorageLocation,
-		Name:            config.Name,
-		CatalogName:     config.CatalogName,
-	}
-
-	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
+	response, err := r.client.RegisteredModels.Update(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}

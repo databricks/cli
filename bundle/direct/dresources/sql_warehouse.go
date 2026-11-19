@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -68,30 +67,15 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWar
 	return s
 }
 
+var (
+	toSqlWarehouseState = newCopier[SqlWarehouseRemote, SqlWarehouseState]()
+	toEditWarehouse     = newCopier[SqlWarehouseState, sql.EditWarehouseRequest]()
+)
+
 // RemapState maps the remote SqlWarehouseRemote to SqlWarehouseState for diff comparison.
 // Started is derived from warehouse state so the planner can detect start/stop changes.
 func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWarehouseState {
-	return &SqlWarehouseState{
-		AutoStopMins:                warehouse.AutoStopMins,
-		Channel:                     warehouse.Channel,
-		ClusterSize:                 warehouse.ClusterSize,
-		CreatorName:                 warehouse.CreatorName,
-		CustomerVersionLabel:        warehouse.CustomerVersionLabel,
-		EnablePhoton:                warehouse.EnablePhoton,
-		EnableServerlessCompute:     warehouse.EnableServerlessCompute,
-		InstanceProfileArn:          warehouse.InstanceProfileArn,
-		MaxDbu:                      warehouse.MaxDbu,
-		MaxNumClusters:              warehouse.MaxNumClusters,
-		MinNumClusters:              warehouse.MinNumClusters,
-		Name:                        warehouse.Name,
-		ReydenClusterSizeMultiplier: warehouse.ReydenClusterSizeMultiplier,
-		SpotInstancePolicy:          warehouse.SpotInstancePolicy,
-		StatementTimeout:            warehouse.StatementTimeout,
-		Tags:                        warehouse.Tags,
-		WarehouseType:               sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
-		ForceSendFields:             utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
-		Lifecycle:                   warehouse.Lifecycle,
-	}
+	return toSqlWarehouseState.Copy(warehouse)
 }
 
 // DoRead reads the warehouse by id.
@@ -137,29 +121,10 @@ func hasWarehouseChanges(entry *PlanEntry) bool {
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *SqlWarehouseState, entry *PlanEntry) (*SqlWarehouseRemote, error) {
 	edited := hasWarehouseChanges(entry)
 	if edited {
-		request := sql.EditWarehouseRequest{
-			AutoStopMins:                config.AutoStopMins,
-			Channel:                     config.Channel,
-			ClusterSize:                 config.ClusterSize,
-			CreatorName:                 config.CreatorName,
-			CustomerVersionLabel:        config.CustomerVersionLabel,
-			EnablePhoton:                config.EnablePhoton,
-			EnableServerlessCompute:     config.EnableServerlessCompute,
-			Id:                          id,
-			InstanceProfileArn:          config.InstanceProfileArn,
-			MaxDbu:                      config.MaxDbu,
-			MaxNumClusters:              config.MaxNumClusters,
-			MinNumClusters:              config.MinNumClusters,
-			Name:                        config.Name,
-			ReydenClusterSizeMultiplier: config.ReydenClusterSizeMultiplier,
-			SpotInstancePolicy:          config.SpotInstancePolicy,
-			StatementTimeout:            config.StatementTimeout,
-			Tags:                        config.Tags,
-			WarehouseType:               sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
-			ForceSendFields:             utils.FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),
-		}
+		request := toEditWarehouse.Copy(config)
+		request.Id = id
 
-		waiter, err := r.client.Warehouses.Edit(ctx, request)
+		waiter, err := r.client.Warehouses.Edit(ctx, *request)
 		if err != nil {
 			return nil, err
 		}

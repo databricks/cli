@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -179,44 +178,11 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettin
 	return r.client.Jobs.DeleteByJobId(ctx, idInt)
 }
 
-func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
-	// Note, exhaustruct linter validates that all off CreateJob fields are initialized.
-	// We don't have linter that validates that all of config fields are used.
-	result := jobs.CreateJob{
-		AccessControlList:    nil, // Not supported by DABs
-		BudgetPolicyId:       config.BudgetPolicyId,
-		Continuous:           config.Continuous,
-		Deployment:           config.Deployment,
-		Description:          config.Description,
-		DurationTarget:       config.DurationTarget,
-		EditMode:             config.EditMode,
-		EmailNotifications:   config.EmailNotifications,
-		EnvironmentVariables: config.EnvironmentVariables,
-		Environments:         config.Environments,
-		Format:               config.Format,
-		GitSource:            config.GitSource,
-		Health:               config.Health,
-		JobClusters:          config.JobClusters,
-		MaxConcurrentRuns:    config.MaxConcurrentRuns,
-		Name:                 config.Name,
-		NotificationSettings: config.NotificationSettings,
-		Parameters:           config.Parameters,
-		ParentPath:           config.ParentPath,
-		PerformanceTarget:    config.PerformanceTarget,
-		Queue:                config.Queue,
-		RunAs:                config.RunAs,
-		Schedule:             config.Schedule,
-		Tags:                 config.Tags,
-		Tasks:                config.Tasks,
-		TimeoutSeconds:       config.TimeoutSeconds,
-		Trigger:              config.Trigger,
-		Triggers:             config.Triggers,
-		UsagePolicyId:        config.UsagePolicyId,
-		WebhookNotifications: config.WebhookNotifications,
-		ForceSendFields:      utils.FilterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),
-	}
+// AccessControlList stays empty: it is not supported by DABs.
+var toCreateJob = newCopier[jobs.JobSettings, jobs.CreateJob]()
 
-	return result, nil
+func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
+	return *toCreateJob.Copy(&config), nil
 }
 
 func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {

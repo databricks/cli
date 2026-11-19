@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -97,50 +96,16 @@ func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemo
 	return makePipelineRemote(resp), nil
 }
 
+// AllowDuplicateNames and DryRun are request-only, so PipelineSpec has no value for them.
+var toCreatePipeline = newCopier[pipelines.PipelineSpec, pipelines.CreatePipeline]()
+
 func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	var createPipeline pipelines.CreatePipeline
 	if p.Spec != nil {
-		spec := p.Spec
-		createPipeline = pipelines.CreatePipeline{
-			// Note: AllowDuplicateNames and DryRun are not in PipelineSpec,
-			// they are request-only fields, so they stay at their zero values.
-			AllowDuplicateNames: false,
-			BudgetPolicyId:      spec.BudgetPolicyId,
-			Catalog:             spec.Catalog,
-			Channel:             spec.Channel,
-			Clusters:            spec.Clusters,
-			Configuration:       spec.Configuration,
-			Continuous:          spec.Continuous, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-			Deployment:          spec.Deployment,
-			Development:         spec.Development, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-			DryRun:              false,
-			Edition:             spec.Edition,
-			Environment:         spec.Environment,
-			EventLog:            spec.EventLog,
-			Filters:             spec.Filters,
-			GatewayDefinition:   spec.GatewayDefinition,
-			Id:                  spec.Id,
-			IngestionDefinition: spec.IngestionDefinition,
-			Libraries:           spec.Libraries,
-			Name:                spec.Name,
-			Notifications:       spec.Notifications,
-			Parameters:          p.Parameters,
-			ParentPath:          spec.ParentPath,
-			Photon:              spec.Photon,
-			RestartWindow:       spec.RestartWindow,
-			RootPath:            spec.RootPath,
-			RunAs:               p.RunAs,
-			Schema:              spec.Schema,
-			Serverless:          spec.Serverless,
-			ServerlessComputeId: spec.ServerlessComputeId,
-			Storage:             spec.Storage,
-			Tags:                spec.Tags,
-			Target:              spec.Target,
-			Testing:             spec.Testing,
-			Trigger:             spec.Trigger,
-			UsagePolicyId:       spec.UsagePolicyId,
-			ForceSendFields:     utils.FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "Parameters", "RunAs"),
-		}
+		createPipeline = *toCreatePipeline.Copy(p.Spec)
+		// The response reports these next to the spec, not in it.
+		createPipeline.Parameters = p.Parameters
+		createPipeline.RunAs = p.RunAs
 	}
 	return &PipelineRemote{
 		CreatePipeline:               createPipeline,
@@ -167,6 +132,8 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *PipelineState) 
 	return response.PipelineId, nil, nil
 }
 
+var toEditPipeline = newCopier[PipelineState, pipelines.EditPipeline]()
+
 func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *PipelineState, entry *PlanEntry) (*PipelineRemote, error) {
 	// cascade_on_destroy is a delete-time-only setting with no update API, so a change to it
 	// alone must persist to state without a pipeline Update call.
@@ -174,47 +141,10 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *Pipe
 		return nil, nil
 	}
 
-	request := pipelines.EditPipeline{
-		AllowDuplicateNames:  config.AllowDuplicateNames,
-		BudgetPolicyId:       config.BudgetPolicyId,
-		Catalog:              config.Catalog,
-		Channel:              config.Channel,
-		Clusters:             config.Clusters,
-		Configuration:        config.Configuration,
-		Continuous:           config.Continuous, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-		Deployment:           config.Deployment,
-		Development:          config.Development, //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-		Edition:              config.Edition,
-		Environment:          config.Environment,
-		EventLog:             config.EventLog,
-		ExpectedLastModified: 0,
-		Filters:              config.Filters,
-		GatewayDefinition:    config.GatewayDefinition,
-		Id:                   config.Id,
-		IngestionDefinition:  config.IngestionDefinition,
-		Libraries:            config.Libraries,
-		Name:                 config.Name,
-		Notifications:        config.Notifications,
-		Parameters:           config.Parameters,
-		ParentPath:           config.ParentPath,
-		Photon:               config.Photon,
-		RestartWindow:        config.RestartWindow,
-		RootPath:             config.RootPath,
-		RunAs:                config.RunAs,
-		Schema:               config.Schema,
-		Serverless:           config.Serverless,
-		ServerlessComputeId:  config.ServerlessComputeId,
-		Storage:              config.Storage,
-		Tags:                 config.Tags,
-		Target:               config.Target,
-		Testing:              config.Testing,
-		Trigger:              config.Trigger,
-		UsagePolicyId:        config.UsagePolicyId,
-		PipelineId:           id,
-		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
-	}
+	request := toEditPipeline.Copy(config)
+	request.PipelineId = id
 
-	return nil, r.client.Pipelines.Update(ctx, request)
+	return nil, r.client.Pipelines.Update(ctx, *request)
 }
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *PipelineState) error {

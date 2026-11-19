@@ -1,0 +1,626 @@
+catalog.CatalogInfo -> dresources.CatalogState
+  Comment: copied
+  ConnectionName: copied
+  CustomMaxRetentionHours: copied
+  IsolationMode: copied
+  ManagedEncryptionSettings: copied
+  Name: copied
+  Options: copied
+  Properties: copied
+  ProviderName: copied
+  ShareName: copied
+  StorageRoot: copied
+
+catalog.CreateExternalLocation -> catalog.UpdateExternalLocation
+  Comment: copied, always sent
+  CredentialName: copied
+  EffectiveEnableFileEvents: skipped
+  EffectiveFileEventQueue: skipped
+  EnableFileEvents: copied
+  EncryptionDetails: copied
+  Fallback: copied
+  FileEventQueue: copied
+  Force: not in source
+  IsolationMode: not in source
+  Name: skipped
+  NewName: not in source
+  Owner: not in source
+  ReadOnly: copied
+  SkipValidation: copied
+  Url: copied
+
+catalog.CreateRegisteredModelRequest -> catalog.UpdateRegisteredModelRequest
+  Aliases: skipped
+  BrowseOnly: copied
+  CatalogName: copied
+  Comment: copied, always sent
+  CreatedAt: copied
+  CreatedBy: copied
+  FullName: skipped
+  MetastoreId: copied
+  Name: copied
+  NewName: not in source
+  Owner: skipped
+  SchemaName: copied
+  StorageLocation: copied
+  UpdatedAt: copied
+  UpdatedBy: copied
+
+catalog.CreateSchema -> catalog.UpdateSchema
+  Comment: copied, always sent
+  CustomMaxRetentionHours: copied, always sent
+  EnablePredictiveOptimization: not in source
+  FullName: not in source
+  NewName: not in source
+  Owner: not in source
+  Properties: copied
+
+catalog.ExternalLocationInfo -> catalog.CreateExternalLocation
+  Comment: copied
+  CredentialName: copied
+  EffectiveEnableFileEvents: copied
+  EffectiveFileEventQueue: copied
+  EnableFileEvents: copied
+  EncryptionDetails: copied
+  Fallback: copied
+  FileEventQueue: copied
+  Name: copied
+  ReadOnly: copied
+  SkipValidation: not in source
+  Url: copied
+
+catalog.MonitorInfo -> dresources.QualityMonitorState
+  AssetsDir: copied
+  BaselineTableName: copied
+  CustomMetrics: copied
+  DataClassificationConfig: copied
+  InferenceLog: copied
+  LatestMonitorFailureMsg: copied
+  Notifications: copied
+  OutputSchemaName: copied
+  Schedule: copied
+  SkipBuiltinDashboard: not in source
+  SlicingExprs: copied
+  Snapshot: copied
+  TableName: copied
+  TimeSeries: copied
+  WarehouseId: not in source
+
+catalog.RegisteredModelInfo -> catalog.CreateRegisteredModelRequest
+  Aliases: copied
+  BrowseOnly: copied
+  CatalogName: copied
+  Comment: copied
+  CreatedAt: copied
+  CreatedBy: copied
+  FullName: copied
+  MetastoreId: copied
+  Name: copied
+  Owner: copied
+  SchemaName: copied
+  StorageLocation: copied
+  UpdatedAt: copied
+  UpdatedBy: copied
+
+catalog.SchemaInfo -> dresources.SchemaState
+  CatalogName: copied
+  Comment: copied
+  CustomMaxRetentionHours: copied
+  Name: copied
+  Properties: copied
+  SchemaId: copied
+  StorageRoot: copied
+
+catalog.Secret -> catalog.Secret
+  CatalogName: copied
+  Comment: copied, always sent
+  CreateTime: copied
+  CreatedBy: copied
+  EffectiveOwner: copied
+  EffectiveValue: copied
+  ExpireTime: copied
+  FullName: copied
+  MetastoreId: copied
+  Name: copied
+  Owner: copied
+  SchemaName: copied
+  UpdateTime: copied
+  UpdatedBy: copied
+  Value: copied
+
+catalog.VolumeInfo -> dresources.VolumeState
+  CatalogName: copied
+  Comment: copied
+  Name: copied
+  SchemaName: copied
+  StorageLocation: copied
+  VolumeId: copied
+  VolumeType: copied
+
+compute.ClusterSpec -> compute.CreateCluster
+  ApplyPolicyDefaultValues: copied
+  Autoscale: copied
+  AutoterminationMinutes: copied
+  AwsAttributes: copied
+  AzureAttributes: copied
+  CloneFrom: not in source
+  ClusterLogConf: copied
+  ClusterName: copied
+  CustomTags: copied
+  DataSecurityMode: copied
+  DependencyMode: copied
+  DockerImage: copied
+  DriverInstancePoolId: copied
+  DriverNodeTypeFlexibility: copied
+  DriverNodeTypeId: copied
+  EnableElasticDisk: copied
+  EnableLocalDiskEncryption: copied
+  GcpAttributes: copied
+  InitScripts: copied
+  InstancePoolId: copied
+  IsSingleNode: copied
+  Kind: copied
+  NodeTypeId: copied
+  NumWorkers: copied
+  PolicyId: copied
+  RemoteDiskThroughput: copied
+  RuntimeEngine: copied
+  SingleUserName: copied
+  SparkConf: copied
+  SparkEnvVars: copied
+  SparkVersion: copied
+  SshPublicKeys: copied
+  TotalInitialRemoteDiskSize: copied
+  UseMlRuntime: copied
+  WorkerNodeTypeFlexibility: copied
+  WorkloadType: copied
+
+compute.ClusterSpec -> compute.EditCluster
+  ApplyPolicyDefaultValues: copied
+  Autoscale: copied
+  AutoterminationMinutes: copied
+  AwsAttributes: copied
+  AzureAttributes: copied
+  ClusterId: not in source
+  ClusterLogConf: copied
+  ClusterName: copied
+  CustomTags: copied
+  DataSecurityMode: copied
+  DependencyMode: copied
+  DockerImage: copied
+  DriverInstancePoolId: copied
+  DriverNodeTypeFlexibility: copied
+  DriverNodeTypeId: copied
+  EnableElasticDisk: copied
+  EnableLocalDiskEncryption: copied
+  GcpAttributes: copied
+  InitScripts: copied
+  InstancePoolId: copied
+  IsSingleNode: copied
+  Kind: copied
+  NodeTypeId: copied
+  NumWorkers: copied
+  PolicyId: copied
+  RemoteDiskThroughput: copied
+  RuntimeEngine: copied
+  SingleUserName: copied
+  SparkConf: copied
+  SparkEnvVars: copied
+  SparkVersion: copied
+  SshPublicKeys: copied
+  TotalInitialRemoteDiskSize: copied
+  UseMlRuntime: copied
+  WorkerNodeTypeFlexibility: copied
+  WorkloadType: copied
+
+compute.CreateInstancePool -> compute.EditInstancePool
+  CustomTags: copied
+  IdleInstanceAutoterminationMinutes: copied
+  InstancePoolId: not in source
+  InstancePoolName: copied
+  MaxCapacity: copied
+  MinIdleInstances: copied
+  NodeTypeId: copied
+  RemoteDiskThroughput: copied
+  TotalInitialRemoteDiskSize: copied
+
+compute.CreatePolicy -> compute.EditPolicy
+  Definition: copied
+  Description: copied
+  Libraries: copied
+  MaxClustersPerUser: copied
+  Name: copied
+  PolicyFamilyDefinitionOverrides: copied
+  PolicyFamilyId: copied
+  PolicyId: not in source
+
+compute.GetInstancePool -> compute.CreateInstancePool
+  AwsAttributes: copied
+  AzureAttributes: copied
+  CustomTags: copied
+  DiskSpec: copied
+  EnableElasticDisk: copied
+  GcpAttributes: copied
+  IdleInstanceAutoterminationMinutes: copied
+  InstancePoolName: copied
+  MaxCapacity: copied
+  MinIdleInstances: copied
+  NodeTypeFlexibility: copied
+  NodeTypeId: copied
+  PreloadedDockerImages: copied
+  PreloadedSparkVersions: copied
+  RemoteDiskThroughput: copied
+  TotalInitialRemoteDiskSize: copied
+
+compute.Policy -> compute.CreatePolicy
+  Definition: copied
+  Description: copied
+  Libraries: copied
+  MaxClustersPerUser: copied
+  Name: copied
+  PolicyFamilyDefinitionOverrides: copied
+  PolicyFamilyId: copied
+
+dresources.CatalogState -> catalog.UpdateCatalog
+  Comment: copied, always sent
+  CustomMaxRetentionHours: copied, always sent
+  EnablePredictiveOptimization: not in source
+  IsolationMode: copied
+  ManagedEncryptionSettings: copied
+  Name: skipped
+  NewName: not in source
+  Options: copied
+  Owner: not in source
+  Properties: copied
+
+dresources.ClusterRemote -> dresources.ClusterState
+  ApplyPolicyDefaultValues: copied
+  Autoscale: copied
+  AutoterminationMinutes: copied
+  AwsAttributes: copied
+  AzureAttributes: copied
+  ClusterLogConf: copied
+  ClusterName: copied
+  CustomTags: copied
+  DataSecurityMode: copied
+  DependencyMode: copied
+  DockerImage: copied
+  DriverInstancePoolId: copied
+  DriverNodeTypeFlexibility: copied
+  DriverNodeTypeId: copied
+  EnableElasticDisk: copied
+  EnableLocalDiskEncryption: copied
+  GcpAttributes: copied
+  InitScripts: copied
+  InstancePoolId: copied
+  IsSingleNode: copied
+  Kind: copied
+  Libraries: copied
+  Lifecycle: copied
+  NodeTypeId: copied
+  NumWorkers: copied
+  PolicyId: copied
+  RemoteDiskThroughput: copied
+  RuntimeEngine: copied
+  SingleUserName: copied
+  SparkConf: copied
+  SparkEnvVars: copied
+  SparkVersion: copied
+  SshPublicKeys: copied
+  TotalInitialRemoteDiskSize: copied
+  UseMlRuntime: copied
+  WorkerNodeTypeFlexibility: copied
+  WorkloadType: copied
+
+dresources.ClusterState -> compute.ResizeCluster
+  Autoscale: copied
+  ClusterId: not in source
+  NumWorkers: copied
+
+dresources.MlflowModelRemote -> ml.CreateModelRequest
+  Description: copied
+  Name: copied
+  Tags: copied
+
+dresources.ModelServingEndpointRemote -> serving.CreateServingEndpoint
+  AiGateway: copied
+  BudgetPolicyId: copied
+  Config: copied
+  Description: copied
+  EmailNotifications: copied
+  Name: copied
+  RateLimits: not in source
+  RouteOptimized: copied
+  Tags: copied
+  TelemetryConfig: copied
+
+dresources.PipelineState -> pipelines.EditPipeline
+  AllowDuplicateNames: copied
+  BudgetPolicyId: copied
+  Catalog: copied
+  Channel: copied
+  Clusters: copied
+  Configuration: copied
+  Continuous: copied
+  Deployment: copied
+  Development: copied
+  Edition: copied
+  Environment: copied
+  EventLog: copied
+  ExpectedLastModified: not in source
+  Filters: copied
+  GatewayDefinition: copied
+  Id: copied
+  IngestionDefinition: copied
+  Libraries: copied
+  Name: copied
+  Notifications: copied
+  Parameters: copied
+  ParentPath: copied
+  Photon: copied
+  PipelineId: not in source
+  RestartWindow: copied
+  RootPath: copied
+  RunAs: copied
+  Schema: copied
+  Serverless: copied
+  ServerlessComputeId: copied
+  Storage: copied
+  Tags: copied
+  Target: copied
+  Testing: copied
+  Trigger: copied
+  UsagePolicyId: copied
+
+dresources.QualityMonitorState -> catalog.UpdateMonitor
+  BaselineTableName: copied
+  CustomMetrics: copied
+  DashboardId: not in source
+  DataClassificationConfig: copied
+  InferenceLog: copied
+  LatestMonitorFailureMsg: skipped
+  Notifications: copied
+  OutputSchemaName: copied
+  Schedule: copied
+  SlicingExprs: copied
+  Snapshot: copied
+  TableName: skipped
+  TimeSeries: copied
+
+dresources.SecretScopeRemote -> dresources.SecretScopeConfig
+  BackendAzureKeyvault: copied
+  InitialManagePrincipal: not in source
+  Scope: copied
+  ScopeBackendType: copied
+
+dresources.SqlWarehouseRemote -> dresources.SqlWarehouseState
+  AutoStopMins: copied
+  Channel: copied
+  ClusterSize: copied
+  CreatorName: copied
+  CustomerVersionLabel: copied
+  EnablePhoton: copied
+  EnableServerlessCompute: copied
+  InstanceProfileArn: copied
+  Lifecycle: copied
+  MaxDbu: copied
+  MaxNumClusters: copied
+  MinNumClusters: copied
+  Name: copied
+  ReydenClusterSizeMultiplier: copied
+  SpotInstancePolicy: copied
+  StatementTimeout: copied
+  Tags: copied
+  WarehouseType: copied, converted from sql.GetWarehouseResponseWarehouseType
+
+dresources.SqlWarehouseState -> sql.EditWarehouseRequest
+  AutoStopMins: copied
+  Channel: copied
+  ClusterSize: copied
+  CreatorName: copied
+  CustomerVersionLabel: copied
+  EnablePhoton: copied
+  EnableServerlessCompute: copied
+  Id: not in source
+  InstanceProfileArn: copied
+  MaxDbu: copied
+  MaxNumClusters: copied
+  MinNumClusters: copied
+  Name: copied
+  ReydenClusterSizeMultiplier: copied
+  SpotInstancePolicy: copied
+  StatementTimeout: copied
+  Tags: copied
+  WarehouseType: copied, converted from sql.CreateWarehouseRequestWarehouseType
+
+dresources.VectorSearchEndpointRemote -> vectorsearch.CreateEndpoint
+  BudgetPolicyId: copied
+  EndpointType: copied
+  Name: copied
+  TargetQps: copied
+  UsagePolicyId: not in source
+
+dresources.VectorSearchIndexRemote -> dresources.VectorSearchIndexState
+  DeltaSyncIndexSpec: skipped
+  DirectAccessIndexSpec: copied
+  EndpointName: copied
+  EndpointUuid: copied
+  IndexSubtype: copied
+  IndexType: copied
+  Name: copied
+  PrimaryKey: copied
+
+dresources.VolumeState -> catalog.UpdateVolumeRequestContent
+  Comment: copied, always sent
+  Name: skipped
+  NewName: not in source
+  Owner: not in source
+
+jobs.JobSettings -> jobs.CreateJob
+  AccessControlList: not in source
+  BudgetPolicyId: copied
+  Continuous: copied
+  Deployment: copied
+  Description: copied
+  DurationTarget: copied
+  EditMode: copied
+  EmailNotifications: copied
+  EnvironmentVariables: copied
+  Environments: copied
+  Format: copied
+  GitSource: copied
+  Health: copied
+  JobClusters: copied
+  MaxConcurrentRuns: copied
+  Name: copied
+  NotificationSettings: copied
+  Parameters: copied
+  ParentPath: copied
+  PerformanceTarget: copied
+  Queue: copied
+  RunAs: copied
+  Schedule: copied
+  Tags: copied
+  Tasks: copied
+  TimeoutSeconds: copied
+  Trigger: copied
+  Triggers: copied
+  UsagePolicyId: copied
+  WebhookNotifications: copied
+
+ml.CreateModelRequest -> ml.UpdateModelRequest
+  Description: copied
+  Name: skipped
+
+ml.Experiment -> ml.CreateExperiment
+  ArtifactLocation: copied
+  Name: copied
+  Tags: copied
+  TraceLocation: copied
+
+ml.Feature -> ml.Feature
+  CatalogName: copied
+  CreatedAt: copied
+  CreatedBy: copied
+  Description: copied, always sent
+  Entities: copied
+  FilterCondition: copied
+  FullName: copied
+  Function: copied
+  Inputs: copied
+  LineageContext: copied
+  Name: copied
+  OutputTypeText: copied
+  SchemaName: copied
+  Source: copied
+  TimeWindow: copied
+  TimeseriesColumn: copied
+
+ml.Model -> dresources.MlflowModelRemote
+  CreationTimestamp: copied
+  Description: copied
+  Id: not in source
+  LastUpdatedTimestamp: copied
+  LatestVersions: copied
+  ModelId: not in source
+  Name: copied
+  PermissionLevel: not in source
+  Tags: copied
+  UserId: copied
+
+pipelines.PipelineSpec -> pipelines.CreatePipeline
+  AllowDuplicateNames: not in source
+  BudgetPolicyId: copied
+  Catalog: copied
+  Channel: copied
+  Clusters: copied
+  Configuration: copied
+  Continuous: copied
+  Deployment: copied
+  Development: copied
+  DryRun: not in source
+  Edition: copied
+  Environment: copied
+  EventLog: copied
+  Filters: copied
+  GatewayDefinition: copied
+  Id: copied
+  IngestionDefinition: copied
+  Libraries: copied
+  Name: copied
+  Notifications: copied
+  Parameters: not in source
+  ParentPath: copied
+  Photon: copied
+  RestartWindow: copied
+  RootPath: copied
+  RunAs: not in source
+  Schema: copied
+  Serverless: copied
+  ServerlessComputeId: copied
+  Storage: copied
+  Tags: copied
+  Target: copied
+  Testing: copied
+  Trigger: copied
+  UsagePolicyId: copied
+
+serving.AiGatewayConfig -> serving.PutAiGatewayRequest
+  FallbackConfig: copied
+  Guardrails: copied
+  InferenceTableConfig: copied
+  Name: not in source
+  RateLimits: copied
+  UsageTrackingConfig: copied
+
+serving.AutoCaptureConfigOutput -> serving.AutoCaptureConfigInput
+  CatalogName: copied
+  Enabled: copied
+  SchemaName: copied
+  TableNamePrefix: copied
+
+serving.EndpointCoreConfigOutput -> serving.EndpointCoreConfigInput
+  AutoCaptureConfig: skipped
+  Name: not in source
+  ServedEntities: skipped
+  ServedModels: skipped
+  TrafficConfig: copied
+
+serving.ServedEntityOutput -> serving.ServedEntityInput
+  BurstScalingEnabled: copied
+  EntityName: copied
+  EntityVersion: copied
+  EnvironmentVars: copied
+  ExternalModel: copied
+  InstanceProfileArn: copied
+  MaxProvisionedConcurrency: copied
+  MaxProvisionedThroughput: copied
+  MinProvisionedConcurrency: copied
+  MinProvisionedThroughput: copied
+  Name: copied
+  ProvisionedModelUnits: copied
+  ScaleToZeroEnabled: copied
+  WorkloadSize: copied
+  WorkloadType: copied
+
+serving.ServingEndpointDetailed -> dresources.ModelServingEndpointRemote
+  AiGateway: copied
+  BudgetPolicyId: copied
+  Config: skipped
+  Description: copied
+  EmailNotifications: copied
+  EndpointDetails: not in source
+  EndpointId: not in source
+  Name: copied
+  RouteOptimized: copied
+  Tags: copied
+  TelemetryConfig: copied
+
+vectorsearch.DeltaSyncVectorIndexSpecResponse -> vectorsearch.DeltaSyncVectorIndexSpecRequest
+  ColumnsToIndex: copied
+  ColumnsToSync: copied
+  EmbeddingSourceColumns: copied
+  EmbeddingVectorColumns: copied
+  EmbeddingWritebackTable: copied
+  PipelineType: copied
+  SourceTable: copied
