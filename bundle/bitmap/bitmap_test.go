@@ -355,9 +355,6 @@ func TestBitsRejectsUnsupportedTelemetryField(t *testing.T) {
 }
 
 func TestParseSchema(t *testing.T) {
-	// A CRLF checkout of schema.txt (Windows) must parse to the same clean field
-	// paths as an LF one, so Merge's dedup matches and the schema does not double.
-	assert.Equal(t, []string{"variables", "bundle.name"}, parseSchema([]byte("variables\r\nbundle.name\r\n")))
 	assert.Equal(t, []string{"variables", "bundle.name"}, parseSchema([]byte("variables\nbundle.name\n")))
 
 	// Blank lines (leading, internal, trailing) are dropped so they can never

@@ -1092,15 +1092,15 @@ tasks:
     cmds:
       - go test ./acceptance -run TestAccept/bundle/refschema -update
 
-  # Appends any newly added bundle config fields to bundle/bitmap/schema.txt, the
-  # embedded bitmap schema (see cmd/bundle/bitmap). The schema is append-only, so
-  # update-schema reads the currently embedded schema and only appends. Output is
-  # written to a temp file first so the redirect does not truncate schema.txt
-  # before `go run` embeds it at compile time. Also refreshes the schema embedded
-  # in the databricks-bundles decoder (python/databricks/bundles/_bitmap) and the
-  # listing in acceptance/bundle/bitmap/full, which tracks every schema line.
+  # Appends any newly added bundle config fields to the bitmap schema (see
+  # cmd/bundle/bitmap). The schema is append-only, so update-schema reads the
+  # currently embedded schema and only appends. genschema compresses it into
+  # bundle/bitmap/schema.deflate, which the CLI embeds, and an identical copy in
+  # the databricks-bundles decoder (python/databricks/bundles/_bitmap). The
+  # compressed files are not reviewable; the listing in
+  # acceptance/bundle/bitmap/full shows every schema line with its bit.
   generate-bitmap-schema:
-    desc: Regenerate bundle/bitmap/schema.txt and the acceptance goldens that depend on it
+    desc: Regenerate the bitmap schema and the acceptance goldens that depend on it
     sources:
       - bundle/**/*.go
       - exclude: bundle/**/*_test.go
@@ -1112,14 +1112,14 @@ tasks:
       - go.sum
       - "{{.EMBED_SOURCES}}"
     generates:
-      - bundle/bitmap/schema.txt
+      - bundle/bitmap/schema.deflate
       - acceptance/bundle/bitmap/full/output/*.txt
       - acceptance/bundle/bitmap/presence/out.bitmap.b64
-      - python/databricks/bundles/_bitmap/_schema.py
+      - python/databricks/bundles/_bitmap/schema.deflate
     cmds:
       - go run . bundle bitmap update-schema > bundle/bitmap/schema.txt.tmp
-      - mv bundle/bitmap/schema.txt.tmp bundle/bitmap/schema.txt
-      - go run ./bundle/bitmap/genpython python/databricks/bundles/_bitmap/_schema.py
+      - go run ./bundle/bitmap/genschema bundle/bitmap/schema.txt.tmp bundle/bitmap/schema.deflate python/databricks/bundles/_bitmap/schema.deflate
+      - rm bundle/bitmap/schema.txt.tmp
       # The encoded bitmap in presence carries the schema size.
       - go test ./acceptance -run 'TestAccept/bundle/bitmap/(full|presence)' -update
 

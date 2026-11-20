@@ -84,7 +84,7 @@ tasks:
           ! -path databricks/bundles/core \
           ! -path databricks/bundles/_bitmap \
           -exec rm -rf {} \;
-      # _bitmap/ is the bundle bitmap decoder; its _schema.py comes from
+      # _bitmap/ is the bundle bitmap decoder; its schema.deflate comes from
       # generate-bitmap-schema in the root Taskfile, not from this codegen.
       # core/ is hand-written except for the generated wiring under _generated/.
       - rm -rf databricks/bundles/core/_generated
