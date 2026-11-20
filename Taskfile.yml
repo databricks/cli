@@ -1100,24 +1100,28 @@ tasks:
   # in the databricks-bundles decoder (python/databricks/bundles/_bitmap) and the
   # listing in acceptance/bundle/bitmap/full, which tracks every schema line.
   generate-bitmap-schema:
-    desc: Regenerate bundle/bitmap/schema.txt and its acceptance listing
+    desc: Regenerate bundle/bitmap/schema.txt and the acceptance goldens that depend on it
     sources:
       - bundle/**/*.go
       - exclude: bundle/**/*_test.go
       - acceptance/bundle/bitmap/full/script
       - acceptance/bundle/bitmap/full/split.py
+      - acceptance/bundle/bitmap/presence/script
+      - acceptance/bundle/bitmap/presence/databricks.yml
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
     generates:
       - bundle/bitmap/schema.txt
       - acceptance/bundle/bitmap/full/output/*.txt
+      - acceptance/bundle/bitmap/presence/out.bitmap.b64
       - python/databricks/bundles/_bitmap/_schema.py
     cmds:
       - go run . bundle bitmap update-schema > bundle/bitmap/schema.txt.tmp
       - mv bundle/bitmap/schema.txt.tmp bundle/bitmap/schema.txt
       - go run ./bundle/bitmap/genpython python/databricks/bundles/_bitmap/_schema.py
-      - go test ./acceptance -run TestAccept/bundle/bitmap/full -update
+      # The encoded bitmap in presence carries the schema size.
+      - go test ./acceptance -run 'TestAccept/bundle/bitmap/(full|presence)' -update
 
   # Upstream field documentation comes from the checked-in .codegen/cli.json;
   # bundle/internal/schema/annotations.yml carries the CLI-owned docs and

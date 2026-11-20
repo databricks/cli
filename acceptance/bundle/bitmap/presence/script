@@ -10,23 +10,23 @@ trace $CLI bundle bitmap bitmap -o json > out.bitmap.json
 # The encoded bitmap decodes back to the same fields, with the CLI and with the
 # self-contained decoder in databricks-bundles. --reinstall-package: the wheel's
 # version does not change with the code, and uv would reuse a cached install.
-trace $CLI bundle bitmap bitmap > bitmap.b64
-trace $CLI bundle bitmap decode < bitmap.b64 > decoded.txt
-diff.py out.bitmap.txt decoded.txt
-trace $CLI bundle bitmap decode -o json < bitmap.b64 > decoded.json
-diff.py out.bitmap.json decoded.json
+trace $CLI bundle bitmap bitmap > out.bitmap.b64
+trace $CLI bundle bitmap decode < out.bitmap.b64 > decoded.txt
+trace diff.py out.bitmap.txt decoded.txt
+trace $CLI bundle bitmap decode -o json < out.bitmap.b64 > decoded.json
+trace diff.py out.bitmap.json decoded.json
 # Encoding is deterministic, so re-encoding a decoded bitmap gives the same bytes.
-trace $CLI bundle bitmap decode -o compressed < bitmap.b64 > recoded.b64
-diff.py bitmap.b64 recoded.b64
-trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap < bitmap.b64 > decoded-python.txt
-diff.py out.bitmap.txt decoded-python.txt
-trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap -o json < bitmap.b64 > decoded-python.json
-diff.py out.bitmap.json decoded-python.json
+trace $CLI bundle bitmap decode -o compressed < out.bitmap.b64 > recoded.b64
+trace diff.py out.bitmap.b64 recoded.b64
+trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap < out.bitmap.b64 > decoded-python.txt
+trace diff.py out.bitmap.txt decoded-python.txt
+trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap -o json < out.bitmap.b64 > decoded-python.json
+trace diff.py out.bitmap.json decoded-python.json
 
 # A value passed with --var gives the same bits as BUNDLE_VAR_off_flag (test.toml): the bits
 # record what the config sets, not how a variable got its value.
 trace $CLI bundle bitmap bitmap -o text --var off_flag=false > var-flag.txt
-diff.py out.bitmap.txt var-flag.txt
+trace diff.py out.bitmap.txt var-flag.txt
 
 trace $CLI bundle bitmap update-schema --validate
 
