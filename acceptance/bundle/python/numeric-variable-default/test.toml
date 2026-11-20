@@ -1,0 +1,4 @@
+# The column depends on the size of the Python output, which includes paths.
+[[Repls]]
+Old = '__generated_by_python__\.yml:\d+:\d+'
+New = '__generated_by_python__.yml:[POS]'
