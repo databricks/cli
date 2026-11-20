@@ -71,7 +71,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep the SSH server and detached processes (tmux, setsid, nohup) running while detached work remains, bounded by --server-timeout")
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
-	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
+	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type, for example GPU_1xA10, GPU_8xH100 or GPU_1xRTX6000")
 	cmd.Flags().StringVar(&ide, "ide", "", "Open remote IDE window (vscode or cursor)")
 	cmd.Flags().StringVar(&usagePolicyID, "usage-policy-id", "", "Usage policy ID for the serverless SSH server job (serverless only)")
 
