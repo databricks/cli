@@ -58,7 +58,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("parsing terraform state: %w%s", err, migrationFailedHint)
 	}
 	if tfState == nil {
-		b.Metrics.SetBoolValue(metrics.DirectMigrateStateMissing, true)
+		b.Telemetry.DirectMigrateStateMissing = true
 		return fmt.Errorf("terraform state %s was removed after it was pulled; if another deploy is running, wait for it to finish and run this command again", localTerraformPath)
 	}
 
