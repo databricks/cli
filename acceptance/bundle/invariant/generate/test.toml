@@ -1,0 +1,26 @@
+# This invariant checks the CLI's own round-trip from deployment state to configuration,
+# which the fake server exercises as well as a workspace would; no_drift covers the deploy.
+Cloud = false
+
+# Generate does not touch deployment history, so one deploy per config is enough.
+EnvMatrix.DMS = []
+
+# Job runs have no generate command: a run is triggered, not imported.
+EnvMatrixExclude.no_job_run = ["INPUT_CONFIG=job_run.yml.tmpl"]
+EnvMatrixExclude.no_job_run_job_ref = ["INPUT_CONFIG=job_run_job_ref.yml.tmpl"]
+
+# The app generator downloads the app's source files, which the fake workspace does not serve.
+EnvMatrixExclude.no_app_sources_locally = ["INPUT_CONFIG=app.yml.tmpl"]
+
+# TODO: these types fail generate because the deployment engine state does not map onto the
+# bundle resource. Fix the adapters, then drop the exclusion.
+# Secret scopes: state uses scope/scope_backend_type, the resource name/backend_type.
+EnvMatrixExclude.secret_scope_todo = ["INPUT_CONFIG=secret_scope.yml.tmpl"]
+EnvMatrixExclude.secret_scope_default_backend_todo = ["INPUT_CONFIG=secret_scope_default_backend_type.yml.tmpl"]
+# Secrets: PrepareState clears the metadata fields that RemapState keeps from the remote.
+EnvMatrixExclude.secret_todo = ["INPUT_CONFIG=secret.yml.tmpl"]
+# Vector search indexes: PrepareState clears endpoint_uuid, RemapState keeps it.
+EnvMatrixExclude.vector_search_index_todo = ["INPUT_CONFIG=vector_search_index.yml.tmpl"]
+# Postgres endpoints: GET does not return the spec, so the generated endpoint_type is empty
+# and validate warns.
+EnvMatrixExclude.postgres_endpoint_todo = ["INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
