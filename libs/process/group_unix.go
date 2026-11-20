@@ -35,9 +35,9 @@ func WithProcessGroup() execOption {
 
 		c.WaitDelay = processGroupGracePeriod
 		c.Cancel = func() error {
-			// With Setpgid and Pgid unset, or with Setsid (see withNewSession),
-			// the child's group ID equals its PID; a negative PID targets the
-			// whole group. Map "no such process" to
+			// The child leads its own process group (Setpgid with Pgid 0, or
+			// Setsid; see withNewSession), so its group ID equals its PID and a
+			// negative PID targets the whole group. Map "no such process" to
 			// os.ErrProcessDone so a benign exit/cancel race is not surfaced as a
 			// Wait error.
 			err := syscall.Kill(-c.Process.Pid, syscall.SIGTERM)

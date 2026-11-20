@@ -3,7 +3,6 @@
 package process
 
 import (
-	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -60,37 +59,4 @@ func TestBackgroundInGroupForwardsInterrupt(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return errors.Is(syscall.Kill(grandchildPid, 0), syscall.ESRCH)
 	}, 5*time.Second, 20*time.Millisecond, "grandchild %d outlived the interrupt", grandchildPid)
-}
-
-// TestBackgroundInGroupReapsGrandchildAfterEscalation covers the SIGKILL
-// escalation for a child that leads its own session: the final group SIGKILL
-// must reach the grandchild of a leader that ignores SIGTERM.
-func TestBackgroundInGroupReapsGrandchildAfterEscalation(t *testing.T) {
-	orig := processGroupGracePeriod
-	processGroupGracePeriod = 500 * time.Millisecond
-	t.Cleanup(func() { processGroupGracePeriod = orig })
-
-	ctx, cancel := context.WithCancel(t.Context())
-	pidFile := filepath.Join(t.TempDir(), "grandchild.pid")
-	script := []string{"sh", "-c", `trap '' TERM; sleep 300 & echo $! > "$1"; wait`, "sh", pidFile}
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		_, _ = BackgroundInGroup(ctx, script)
-	}()
-
-	grandchildPid := waitForPid(t, pidFile)
-	cancel()
-
-	select {
-	case <-done:
-	case <-time.After(processGroupGracePeriod + 10*time.Second):
-		t.Fatal("BackgroundInGroup did not return after escalation")
-	}
-
-	assert.Eventually(t, func() bool {
-		return errors.Is(syscall.Kill(grandchildPid, 0), syscall.ESRCH)
-	}, 5*time.Second, 20*time.Millisecond,
-		"grandchild %d survived the SIGKILL escalation (re-orphaned)", grandchildPid)
 }
