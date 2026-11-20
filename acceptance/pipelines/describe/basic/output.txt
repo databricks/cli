@@ -1,0 +1,57 @@
+
+=== describe by pipeline id
+
+>>> [CLI] pipelines describe [UUID]
+Pipeline: My Pipeline
+ID: [UUID]
+State: IDLE
+Health: HEALTHY
+Creator: alice@example.com
+Run as: alice@example.com
+Target: main.sales
+Mode: Triggered, Development
+Compute: Serverless
+Channel: CURRENT
+
+Last run:
+  Update ID: upd-9
+  State: COMPLETED
+  Started: [TIMESTAMP]
+  Refreshed: [orders, customers]
+  Cause: API_CALL
+
+=== json output
+
+>>> [CLI] pipelines describe [UUID] --output json
+{
+  "pipeline": {
+    "creator_user_name": "alice@example.com",
+    "health": "HEALTHY",
+    "latest_updates": [
+      {
+        "update_id": "upd-9"
+      }
+    ],
+    "name": "My Pipeline",
+    "pipeline_id": "[UUID]",
+    "run_as_user_name": "alice@example.com",
+    "spec": {
+      "catalog": "main",
+      "channel": "CURRENT",
+      "development": true,
+      "schema": "sales",
+      "serverless": true
+    },
+    "state": "IDLE"
+  },
+  "last_update": {
+    "cause": "API_CALL",
+    "creation_time": [NUMID],
+    "refresh_selection": [
+      "orders",
+      "customers"
+    ],
+    "state": "COMPLETED",
+    "update_id": "upd-9"
+  }
+}
