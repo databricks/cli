@@ -24,7 +24,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== Remove suspend_timeout_duration: neither engine can apply it
+=== Remove suspend_timeout_duration
 
 >>> update_file.py databricks.yml       suspend_timeout_duration: 300s 
 

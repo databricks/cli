@@ -260,16 +260,12 @@ var branchOneofGroups = map[string]string{
 }
 
 func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, entry *PlanEntry) (*PostgresBranchRemote, error) {
-	// Build the mask from the plan's change list and prefix with "spec." (the
-	// API expects paths relative to Branch). The API rejects mask entries
-	// that aren't also populated in the request body, and a wildcard "*"
-	// expands to nested attributes the body would have to set too — so we
-	// can't use a static all-fields mask. The change list naturally tracks
-	// what the user actually set, so the body and mask stay consistent.
+	// The change list only decides whether there is anything to send: the request
+	// masks the whole spec (see postgresSpecUpdateMask).
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", branchOneofGroups)
 
 	// purge_on_delete is an input-only flag consulted at delete time; it is
-	// not a spec field. Strip it from the mask so toggling it between deploys
+	// not a spec field. Ignore it so toggling it between deploys
 	// becomes a state-only refresh (the framework saves newState when this
 	// returns nil error).
 	fieldPaths = slices.DeleteFunc(fieldPaths, func(p string) bool {
@@ -295,7 +291,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
-			Paths: fieldPaths,
+			Paths: postgresSpecUpdateMask,
 		},
 	})
 	if err != nil {

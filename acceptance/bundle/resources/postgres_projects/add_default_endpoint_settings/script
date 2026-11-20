@@ -16,9 +16,6 @@ trace update_file.py databricks.yml "#TO_ADD: " ""
 # to its leaves. (The top-level plan verdict is 'update' on both engines.)
 $CLI bundle plan -o json | plan_filter.py > out.plan.json
 
-# The consequence shows up at deploy time, which diverges by engine, so route it to
-# per-engine files. Masking the whole message means the API requires the suspension
-# oneof in the body (see dresources/util.go), so the direct deploy FAILS with a 400;
-# terraform masks the leaf spec.default_endpoint_settings.autoscaling_limit_max_cu
-# and succeeds.
+# The engine masks the whole spec, so the block-level change does not reach the mask
+# and the deploy succeeds.
 errcode $CLI bundle deploy > out.deploy.txt 2>&1

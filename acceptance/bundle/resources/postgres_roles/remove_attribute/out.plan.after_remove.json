@@ -1,11 +1,6 @@
 {
-  "action": "update",
+  "action": "skip",
   "changes": {
-    "attributes.createdb": {
-      "action": "update",
-      "old": true,
-      "remote": true
-    },
     "postgres_role": {
       "action": "skip",
       "reason": "spec:input_only",

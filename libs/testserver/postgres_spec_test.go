@@ -31,9 +31,17 @@ func TestEchoedSpecUpdateOneofReplacesSibling(t *testing.T) {
 	assert.True(t, spec.IsProtected, "fields outside the mask keep their stored value")
 }
 
-func TestEchoedSpecUpdateMaskedButAbsentKeepsPrevious(t *testing.T) {
+func TestEchoedSpecUpdateWholeSpecReplacesEcho(t *testing.T) {
 	stored := echoedSpec[postgres.ProjectSpec](nil, []byte(`{"spec":{"display_name":"a","history_retention_duration":"604800s"}}`), "", projectOneofGroups)
 	spec := echoedSpec(stored, []byte(`{"spec":{"display_name":"b"}}`), "spec", projectOneofGroups)
+	require.NotNil(t, spec)
+	assert.Equal(t, "b", spec.DisplayName)
+	assert.Nil(t, spec.HistoryRetentionDuration, "the echo drops a field the body omits, though status keeps it")
+}
+
+func TestEchoedSpecUpdateMaskedButAbsentKeepsPrevious(t *testing.T) {
+	stored := echoedSpec[postgres.ProjectSpec](nil, []byte(`{"spec":{"display_name":"a","history_retention_duration":"604800s"}}`), "", projectOneofGroups)
+	spec := echoedSpec(stored, []byte(`{"spec":{"display_name":"b"}}`), "spec.display_name,spec.history_retention_duration", projectOneofGroups)
 	require.NotNil(t, spec)
 	assert.Equal(t, "b", spec.DisplayName)
 	require.NotNil(t, spec.HistoryRetentionDuration)

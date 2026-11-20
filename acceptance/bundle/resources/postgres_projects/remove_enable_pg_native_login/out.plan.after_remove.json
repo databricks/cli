@@ -1,11 +1,6 @@
 {
-  "action": "update",
+  "action": "skip",
   "changes": {
-    "enable_pg_native_login": {
-      "action": "update",
-      "old": true,
-      "remote": true
-    },
     "pg_version": {
       "action": "skip",
       "reason": "spec:input_only",

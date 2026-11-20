@@ -1,11 +1,6 @@
 {
-  "action": "update",
+  "action": "skip",
   "changes": {
-    "history_retention_duration": {
-      "action": "update",
-      "old": "604800s",
-      "remote": "604800s"
-    },
     "pg_version": {
       "action": "skip",
       "reason": "spec:input_only",

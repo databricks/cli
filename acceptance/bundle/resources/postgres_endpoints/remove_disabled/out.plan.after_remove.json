@@ -1,10 +1,4 @@
 {
-  "action": "update",
-  "changes": {
-    "disabled": {
-      "action": "update",
-      "old": true,
-      "remote": true
-    }
-  }
+  "action": "skip",
+  "changes": null
 }
