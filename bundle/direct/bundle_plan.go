@@ -428,6 +428,14 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				entry.StateOnly = true
 			}
 		}
+		if resourceKey == b.bindResourceKey {
+			// The resource being bound: applying records the config as its state at the bound ID,
+			// which the state the plan is applied to does not have yet. The changes a deploy would
+			// make are planned afterwards, against the state the bind leaves.
+			action = deployplan.Update
+			entry.StateOnly = true
+			entry.ID = dbentry.ID
+		}
 
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
 		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
