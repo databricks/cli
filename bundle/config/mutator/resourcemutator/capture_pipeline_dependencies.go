@@ -44,7 +44,16 @@ func (m *capturePipelineDependencies) Apply(ctx context.Context, b *bundle.Bundl
 		if err != nil {
 			return diag.FromErr(err)
 		}
+		// A schema or volume is only usable with privileges on its catalog and schema too.
+		candidates := slices.Clone(deps)
 		for _, dep := range deps {
+			parents, err := ucParents(b, dep)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			candidates = append(candidates, parents...)
+		}
+		for _, dep := range candidates {
 			for _, sub := range []string{".grants", ".permissions"} {
 				target := dep + sub
 				if !hasPrivileges(b, target) || slices.Contains(deps, target) {
@@ -132,8 +141,49 @@ func directDependencies(b *bundle.Bundle, node string) ([]string, error) {
 	return deps, nil
 }
 
+// ucParents returns the catalogs and schemas that a schema or volume lives in, transitively, e.g. the
+// schema and the catalog of a volume. Their grants are needed to use the object.
+func ucParents(b *bundle.Bundle, node string) ([]string, error) {
+	if !isUCObject(node) {
+		return nil, nil
+	}
+	deps, err := directDependencies(b, node)
+	if err != nil {
+		return nil, err
+	}
+	var parents []string
+	for _, dep := range deps {
+		if !isUCContainer(dep) {
+			continue
+		}
+		parents = append(parents, dep)
+		more, err := ucParents(b, dep)
+		if err != nil {
+			return nil, err
+		}
+		parents = append(parents, more...)
+	}
+	return parents, nil
+}
+
+func isUCObject(node string) bool {
+	return isTopLevelOf(node, "resources.schemas.") || isTopLevelOf(node, "resources.volumes.")
+}
+
+func isUCContainer(node string) bool {
+	return isTopLevelOf(node, "resources.catalogs.") || isTopLevelOf(node, "resources.schemas.")
+}
+
+// isTopLevelOf reports whether node is a resource of the given type, e.g. "resources.schemas.foo"
+// but not "resources.schemas.foo.grants".
+func isTopLevelOf(node, prefix string) bool {
+	rest, ok := strings.CutPrefix(node, prefix)
+	return ok && rest != "" && !strings.Contains(rest, ".")
+}
+
 // reaches reports whether from is to or depends on it, directly or through other nodes. It is the
-// guard against a cycle: a pipeline must not wait on a node that waits on the pipeline.
+// guard against a cycle: a pipeline must not wait on a node that waits on the pipeline. It is only
+// called for candidate entries, since directDependencies re-walks the whole resource on every visit.
 func reaches(b *bundle.Bundle, from, to string) (bool, error) {
 	visited := make(map[string]bool)
 	stack := []string{from}

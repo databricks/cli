@@ -72,7 +72,7 @@ func TestCapturePipelineDependencies(t *testing.T) {
 			},
 		},
 		{
-			name: "pipeline waits for the schema's grants, not its catalog's",
+			name: "pipeline waits for the grants of the schema and of its catalog",
 			resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}, Grants: grants("sp")}},
 				Schemas: map[string]*resources.Schema{"src": {
@@ -82,7 +82,31 @@ func TestCapturePipelineDependencies(t *testing.T) {
 				Pipelines: map[string]*resources.Pipeline{"load": pipeline()},
 			},
 			expected: map[string][]resources.DependsOn{
-				"pipelines.load": {{Resource: "schemas.src.grants"}},
+				"pipelines.load": {{Resource: "schemas.src.grants"}, {Resource: "catalogs.main.grants"}},
+			},
+		},
+		{
+			name: "pipeline that refers to a volume waits for the grants of the volume, its schema and its catalog",
+			resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}, Grants: grants("sp")}},
+				Schemas: map[string]*resources.Schema{"src": {
+					CreateSchema: catalog.CreateSchema{CatalogName: "${resources.catalogs.main.name}", Name: "src"},
+					Grants:       grants("sp"),
+				}},
+				Volumes: map[string]*resources.Volume{"raw": {
+					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+						CatalogName: "${resources.catalogs.main.name}",
+						SchemaName:  "${resources.schemas.src.name}",
+						Name:        "raw",
+					},
+					Grants: grants("sp"),
+				}},
+				Pipelines: map[string]*resources.Pipeline{"load": {
+					CreatePipeline: pipelines.CreatePipeline{Catalog: "${resources.volumes.raw.catalog_name}", Schema: "${resources.volumes.raw.schema_name}"},
+				}},
+			},
+			expected: map[string][]resources.DependsOn{
+				"pipelines.load": {{Resource: "volumes.raw.grants"}, {Resource: "catalogs.main.grants"}, {Resource: "schemas.src.grants"}},
 			},
 		},
 		{

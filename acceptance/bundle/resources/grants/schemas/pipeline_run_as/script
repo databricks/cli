@@ -23,7 +23,9 @@ title "The plan orders dependents after the grants"
 trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'
 
 trace $CLI bundle deploy
-# The catalog PATCH is excluded because its order relative to the schema is not fixed.
+# The pipeline waits for the catalog grants and the schema grants. The catalog grants are
+# not ordered with the schema, so they are printed in their own list.
+trace print_requests.py --keep --summary //unity-catalog/permissions/catalog //pipelines
 trace print_requests.py --summary //unity-catalog/schemas //unity-catalog/permissions/schema //pipelines
 
 trace $CLI bundle plan
