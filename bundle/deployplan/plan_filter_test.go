@@ -269,6 +269,41 @@ func TestFilterToSelected_DeletionErrorsOnLiveDependent(t *testing.T) {
 	assert.ErrorContains(t, err, "jobs.live still references it")
 }
 
+// A delete reached through a forward dependency edge is subject to the same
+// live-dependent check as a selected delete.
+func TestFilterToSelected_DependencyDeletionErrorsOnLiveDependent(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.gone"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	p.Plan["resources.jobs.live"] = &deployplan.PlanEntry{
+		Action:    deployplan.Update,
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.gone"}},
+	}
+
+	err := p.FilterToSelected(t.Context(), []string{"jobs.live"})
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "cannot delete jobs.gone (not selected, but required by the selection)")
+	assert.ErrorContains(t, err, "jobs.live still references it")
+}
+
+// A delete reached through the cascade (reverse) edge of a selected delete keeps the
+// plain error: it is not required by the selection, it is removed along with it.
+func TestFilterToSelected_CascadeDeletionErrorsOnLiveDependent(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.a"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	p.Plan["resources.jobs.b"] = &deployplan.PlanEntry{
+		Action:    deployplan.Delete,
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.a"}},
+	}
+	p.Plan["resources.jobs.c"] = &deployplan.PlanEntry{
+		Action:    deployplan.Update,
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.b"}},
+	}
+
+	err := p.FilterToSelected(t.Context(), []string{"jobs.a"})
+	require.Error(t, err)
+	assert.EqualError(t, err, "cannot delete jobs.b: jobs.c still references it; remove the reference or also remove jobs.c from the config")
+}
+
 // Selecting a resource for deletion leaves its own dependencies alone: they are not
 // pulled into the plan, so they stay deployed untouched.
 func TestFilterToSelected_DeletionLeavesDependencies(t *testing.T) {

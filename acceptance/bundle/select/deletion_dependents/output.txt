@@ -19,6 +19,16 @@ Error: cannot delete jobs.producer: jobs.consumer still references it; remove th
 
 Files: 1 uploaded, 0 deleted
 
+>>> [CLI] bundle plan --select jobs.consumer
+Error: cannot delete jobs.producer (not selected, but required by the selection): jobs.consumer still references it; remove the reference or also remove jobs.consumer from the config
+
+
+>>> [CLI] bundle deploy --select jobs.consumer
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-deldep-[UNIQUE_NAME]/default/files...
+Error: cannot delete jobs.producer (not selected, but required by the selection): jobs.consumer still references it; remove the reference or also remove jobs.consumer from the config
+
+Files: 0 uploaded, 0 deleted
+
 >>> print_requests.py --sort //jobs/delete --keep
 
 >>> [CLI] bundle plan

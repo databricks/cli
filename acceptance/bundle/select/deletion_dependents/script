@@ -23,7 +23,12 @@ musterr trace $CLI bundle plan --select jobs.producer
 # bundle deploy --select also errors before sending any delete request.
 musterr trace $CLI bundle deploy --select jobs.producer
 
-# No delete request was sent by either command.
+# Selecting only consumer pulls in producer as a dependency. That delete would
+# leave consumer broken just the same, so it must error too.
+musterr trace $CLI bundle plan --select jobs.consumer
+musterr trace $CLI bundle deploy --select jobs.consumer
+
+# No delete request was sent by any of these commands.
 trace print_requests.py --sort //jobs/delete --keep
 
 # A full plan still works and shows producer as a pending delete.
