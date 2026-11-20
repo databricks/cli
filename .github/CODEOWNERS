@@ -26,6 +26,7 @@
 
 # SSH tunnel
 /experimental/ssh/                      @databricks/eng-deco-cli @databricks/eng-deco-ax
+/experimental/ssh/sandbox/              @databricks/eng-deco-cli @databricks/eng-sandbox
 /acceptance/ssh/                        @databricks/eng-deco-cli @databricks/eng-deco-ax
 
 # Apps
