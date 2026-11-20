@@ -1,0 +1,7 @@
+bundle:
+  name: bind-undeployed-dependency
+
+resources:
+  jobs:
+    deployed:
+      name: deployed upstream
