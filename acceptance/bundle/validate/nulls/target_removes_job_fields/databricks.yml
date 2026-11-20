@@ -1,0 +1,40 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      description: base description
+      max_concurrent_runs: 5
+      queue:
+        enabled: false
+      schedule:
+        quartz_cron_expression: 0 0 * * * ?
+        timezone_id: UTC
+        pause_status: PAUSED
+      tags:
+        removed: "1"
+        kept: "1"
+      email_notifications:
+        on_failure:
+          - base@example.com
+        on_success:
+          - base@example.com
+
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          description: null
+          max_concurrent_runs: null
+          queue: null
+          schedule:
+            pause_status: null
+          tags:
+            removed: null
+            not_in_base: null
+          email_notifications:
+            on_failure: null
+          timeout_seconds: null

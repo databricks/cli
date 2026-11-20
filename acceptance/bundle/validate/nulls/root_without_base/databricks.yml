@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      description: null
+      tags:
+        kept: "1"
+        not_in_base: null
+      email_notifications:
+        on_failure: null

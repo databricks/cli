@@ -1,0 +1,9 @@
+# Lists whose elements are merged by key (tasks by task_key, job_clusters by job_cluster_key, job parameters by name,
+# pipeline clusters by label): a null field in a target element is meant to remove that field
+# from the base element with the same key. An element whose key is not in the base (t3) should not get the null field.
+trace $CLI bundle validate -o json -t dev | jq '.resources | {
+  job_clusters: .jobs.foo.job_clusters,
+  parameters: .jobs.foo.parameters,
+  tasks: .jobs.foo.tasks,
+  pipeline_clusters: .pipelines.bar.clusters
+}'
