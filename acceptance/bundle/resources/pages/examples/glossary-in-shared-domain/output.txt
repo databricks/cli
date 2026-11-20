@@ -1,0 +1,62 @@
+
+=== The domain is owned by another team and exists before the bundle is deployed
+
+>>> [CLI] bundle validate
+Name: payments_glossary
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/payments_glossary/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/payments_glossary/default/files...
+Created pages.chargeback
+Created pages.refund
+Files: 3 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle summary
+Name: payments_glossary
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/payments_glossary/default
+Resources:
+  Pages:
+    chargeback:
+      Name: Chargeback
+      URL:  [DATABRICKS_URL]/discover/pages/[UUID][0]?w=[WORKSPACE_ID]
+    refund:
+      Name: Refund
+      URL:  [DATABRICKS_URL]/discover/pages/[UUID][1]?w=[WORKSPACE_ID]
+
+=== The pages are published in the domain
+{
+  "display_name": "Chargeback",
+  "synonyms": [
+    "dispute",
+    "reversal"
+  ],
+  "state": "PUBLISHED"
+}
+{
+  "display_name": "Refund",
+  "synonyms": null,
+  "state": "PUBLISHED"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pages.chargeback
+  delete resources.pages.refund
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.chargeback
+  delete resources.pages.refund
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/payments_glossary/default
+
+Destroy: 2 deleted

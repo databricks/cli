@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/knowledge"
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
@@ -29,6 +30,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
+	"github.com/databricks/databricks-sdk-go/service/domains"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -42,6 +44,14 @@ import (
 )
 
 var testConfig map[string]any = map[string]any{
+	"domains": &resources.Domain{
+		TagKey:      "Payments",
+		Subtitle:    "Payment processing data",
+		Description: "Everything about payments.",
+		Icon:        &domains.DomainIcon{Name: domains.DomainIconNameBank, Color: "#1B5E20"},
+		Draft:       true,
+	},
+
 	"apps": &resources.App{
 		Name: "myapp",
 	},
@@ -367,6 +377,25 @@ type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClie
 
 // some resource require other resources to exist
 var testDeps = map[string]prepareWorkspace{
+	"pages": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// A page belongs to a domain, so create one first.
+		domain, err := client.Domains.CreateDomain(ctx, domains.CreateDomainRequest{
+			Domain: domains.Domain{TagKey: "Finance"},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.Page{
+			Domain:      domain.Name,
+			DisplayName: "Chargeback",
+			Description: "A reversal of a card payment.",
+			Body:        "# Chargeback\n\nA reversal of a card payment.\n",
+			Synonyms:    []string{"dispute", "reversal"},
+			State:       knowledge.StatePublished,
+		}, nil
+	},
+
 	"database_catalogs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		_, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 			DatabaseInstance: database.DatabaseInstance{

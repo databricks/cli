@@ -1028,6 +1028,74 @@
                   }
                 ]
               },
+              "resources.Domain": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "[Public Preview]",
+                    "properties": {
+                      "business_owner_ids": {
+                        "description": "[Public Preview] Principal IDs of the business owners (users, groups, or service principals).",
+                        "$ref": "#/$defs/slice/int64",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "description": {
+                        "description": "[Public Preview] Full description (max 4096 chars)",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "draft": {
+                        "description": "[Public Preview] Whether to mark the domain as a draft. If omitted on Create, the server\napplies a default; the resolved value is returned in `effective_draft`.",
+                        "$ref": "#/$defs/bool",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "icon": {
+                        "description": "[Public Preview] Icon to display for the domain.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/domains.DomainIcon",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "description": "[Public Preview] Full resource name of the domain. The primary identifier for this resource.\nFormat: `domains/{domain_id}`\nIdentifies the domain on get, update, and delete. Not an input on\ncreate — to choose the id, set `CreateDomainRequest.domain_id`.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "parent_domain_id": {
+                        "description": "[Public Preview] Domain ID of the parent. If absent, this is a top-level domain.\nIf present, this domain is a subdomain of the specified parent.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "subtitle": {
+                        "description": "[Public Preview] Short description (max 280 chars)",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "tag_key": {
+                        "description": "[Public Preview] Governed tag key associated with this domain.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      },
+                      "technical_owner_ids": {
+                        "description": "[Public Preview] Principal IDs of the technical owners (users, groups, or service principals).",
+                        "$ref": "#/$defs/slice/int64",
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "tag_key"
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.ExternalLocation": {
                 "oneOf": [
                   {
@@ -2235,6 +2303,66 @@
                     "required": [
                       "level"
                     ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.Page": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "[Beta]",
+                    "properties": {
+                      "body": {
+                        "description": "The Markdown body of the page. Mutually exclusive with `file_path`.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "description": {
+                        "description": "A short description of the page.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "display_name": {
+                        "description": "The title of the page, 1 to 200 characters. The titles of the published pages of a domain must be unique.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "domain": {
+                        "description": "The resource name of the domain the page belongs to, in the form `domains/{domain_id}`.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "file_path": {
+                        "description": "Local path to a Markdown file holding the body of the page. The contents are inlined into `body` at deploy time. Mutually exclusive with an inline `body`.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "owner_ids": {
+                        "description": "The ID of the principal that owns the page: a user, group, or service principal. At most one. Defaults to the identity that deploys the bundle.",
+                        "$ref": "#/$defs/slice/string"
+                      },
+                      "state": {
+                        "description": "The lifecycle state of the page. A page is created as a draft unless the state is `PUBLISHED`.",
+                        "$ref": "#/$defs/github.com/databricks/cli/libs/knowledge.State",
+                        "enum": [
+                          "DRAFT",
+                          "PUBLISHED"
+                        ]
+                      },
+                      "synonyms": {
+                        "description": "Alternate names or abbreviations for the title of the page. At most 50, each 1 to 200 characters.",
+                        "$ref": "#/$defs/slice/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "display_name",
+                      "domain"
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
@@ -3904,6 +4032,10 @@
                         "description": "The name of the dashboard for which to retrieve an ID.",
                         "$ref": "#/$defs/string"
                       },
+                      "domain": {
+                        "description": "The governed tag key of the domain for which to retrieve an ID.",
+                        "$ref": "#/$defs/string"
+                      },
                       "instance_pool": {
                         "description": "The name of the instance_pool for which to retrieve an ID.",
                         "$ref": "#/$defs/string"
@@ -3959,7 +4091,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lookup": {
-                        "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
+                        "description": "The name of the alert, cluster_policy, cluster, dashboard, domain, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
                       },
                       "sensitive": {
@@ -3989,9 +4121,9 @@
                     "$ref": "#/$defs/string"
                   },
                   "lookup": {
-                    "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
+                    "description": "The name of the alert, cluster_policy, cluster, dashboard, domain, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup",
-                    "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID."
+                    "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `domain`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID."
                   },
                   "sensitive": {
                     "description": "Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.",
@@ -4419,6 +4551,10 @@
                     "database_instances": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.DatabaseInstance"
                     },
+                    "domains": {
+                      "description": "The domain definitions for the bundle, where each key is the name of the domain. A domain groups data and AI assets on the Discover page by business area.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Domain"
+                    },
                     "experiments": {
                       "description": "The experiment definitions for the bundle, where each key is the name of the experiment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
@@ -4477,6 +4613,10 @@
                       "description": "The model definitions for the bundle, where each key is the name of the model.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel",
                       "markdownDescription": "The model definitions for the bundle, where each key is the name of the model. See [models](https://docs.databricks.com/dev-tools/bundles/resources.html#models)."
+                    },
+                    "pages": {
+                      "description": "The page definitions for the bundle, where each key is the name of the page. A page documents a business term or concept, written in Markdown, in a domain.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Page"
                     },
                     "pipelines": {
                       "description": "The pipeline definitions for the bundle, where each key is the name of the pipeline.",
@@ -4814,6 +4954,9 @@
           },
           "libs": {
             "exec.ExecutableType": {
+              "type": "string"
+            },
+            "knowledge.State": {
               "type": "string"
             }
           }
@@ -9969,6 +10112,191 @@
                   "required": [
                     "granularities",
                     "timestamp_column"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "domains.DomainIcon": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Icon configuration for a domain.",
+                  "properties": {
+                    "color": {
+                      "description": "[Public Preview] Hex color code with # prefix (e.g., \"#FF5733\").",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "name": {
+                      "description": "[Public Preview] Available icon names for a domain.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/domains.DomainIconName",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "domains.DomainIconName": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Available icon names for a domain.",
+                  "enum": [
+                    "ADDRESS_BOOK",
+                    "ALARM",
+                    "ARROWS_IN",
+                    "ATOM",
+                    "BALLOON",
+                    "BANK",
+                    "BARRICADE",
+                    "BASKET",
+                    "BRIDGE",
+                    "CACTUS",
+                    "CALL_BELL",
+                    "CARROT",
+                    "CHART_PIE_SLICE",
+                    "CITY",
+                    "CLOUD",
+                    "COINS",
+                    "COMPASS_ROSE",
+                    "CRANE_TOWER",
+                    "CROWN",
+                    "CUBE_TRANSPARENT",
+                    "FADERS",
+                    "FLAG_BANNER_FOLD",
+                    "FLAG_CHECKERED",
+                    "GAVEL",
+                    "HAMBURGER",
+                    "HEAD_CIRCUIT",
+                    "HOURGLASS_HIGH",
+                    "INTERSECT_THREE",
+                    "MICROSCOPE",
+                    "MOON_STARS",
+                    "PACKAGE",
+                    "PARACHUTE",
+                    "PEPPER",
+                    "PIGGY_BANK",
+                    "PILL",
+                    "PLANET",
+                    "PLANT",
+                    "PLUGS_CONNECTED",
+                    "POPCORN",
+                    "PRESENTATION_CHART",
+                    "PUZZLE_PIECE",
+                    "RAINBOW",
+                    "RANKING",
+                    "RECEIPT",
+                    "ROCKET",
+                    "RULER",
+                    "SAILBOAT",
+                    "SCALES",
+                    "SCAN_SMILEY",
+                    "SCROLL",
+                    "SHIELD_CHECKERED",
+                    "SNEAKER",
+                    "SNOWFLAKE",
+                    "SOLAR_ROOF",
+                    "SPEEDOMETER",
+                    "STAMP",
+                    "STEPS",
+                    "STRATEGY",
+                    "SWORD",
+                    "TELEVISION_SIMPLE",
+                    "TENT",
+                    "TICKET",
+                    "TRACTOR",
+                    "TRAFFIC_CONE",
+                    "TRAIN",
+                    "TREE_EVERGREEN",
+                    "TREE_STRUCTURE",
+                    "TROLLEY_SUITCASE",
+                    "TROPHY",
+                    "TRUCK_TRAILER",
+                    "USERS_THREE",
+                    "VECTOR_THREE"
+                  ],
+                  "enumDescriptions": [
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -22263,6 +22591,20 @@
                     }
                   ]
                 },
+                "resources.Domain": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Domain"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.ExternalLocation": {
                   "oneOf": [
                     {
@@ -22451,6 +22793,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.Page": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Page"
                       }
                     },
                     {

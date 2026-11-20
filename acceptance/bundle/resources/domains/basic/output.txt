@@ -1,0 +1,210 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created domains.fraud
+Created domains.payments
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //domains
+{
+  "method": "POST",
+  "path": "/api/2.0/domains",
+  "body": {
+    "description": "Everything about payments.",
+    "icon": {
+      "color": "#1B5E20",
+      "name": "BANK"
+    },
+    "subtitle": "Payment processing data",
+    "tag_key": "Payments"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/domains",
+  "body": {
+    "parent_domain_id": "[UUID][0]",
+    "subtitle": "Fraud detection",
+    "tag_key": "Payments/Fraud"
+  }
+}
+
+=== Summary shows the domain ID
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Domains:
+    fraud:
+      Name: Payments/Fraud
+      URL:  [DATABRICKS_URL]/discover/manage/domains/[UUID][1]?w=[WORKSPACE_ID]
+    payments:
+      Name: Payments
+      URL:  [DATABRICKS_URL]/discover/manage/domains/[UUID][0]?w=[WORKSPACE_ID]
+
+=== Verify deployment
+
+>>> [CLI] domains get-domain domains/[UUID][0]
+{
+  "name": "domains/[UUID][0]",
+  "tag_key": "Payments",
+  "subtitle": "Payment processing data",
+  "icon": {
+    "color": "#1B5E20",
+    "name": "BANK"
+  },
+  "effective_draft": false
+}
+
+>>> [CLI] domains get-domain domains/[UUID][1]
+{
+  "name": "domains/[UUID][1]",
+  "tag_key": "Payments/Fraud",
+  "parent_domain_id": "[UUID][0]"
+}
+
+=== A second plan has no changes
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Update the subtitle (should update in place, and leave draft alone)
+
+>>> update_file.py databricks.yml Payment processing data Payments data
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated domains.payments
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //domains
+{
+  "method": "PATCH",
+  "path": "/api/2.0/domains/[UUID][0]",
+  "q": {
+    "update_mask": "subtitle,description,icon,technical_owner_ids,business_owner_ids"
+  },
+  "body": {
+    "description": "Everything about payments.",
+    "icon": {
+      "color": "#1B5E20",
+      "name": "BANK"
+    },
+    "subtitle": "Payments data",
+    "tag_key": "Payments"
+  }
+}
+
+=== Mark the domain as a draft
+
+>>> update_file.py databricks.yml description: Everything about payments. draft: true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated domains.payments
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //domains
+{
+  "method": "PATCH",
+  "path": "/api/2.0/domains/[UUID][0]",
+  "q": {
+    "update_mask": "subtitle,description,icon,technical_owner_ids,business_owner_ids,draft"
+  },
+  "body": {
+    "draft": true,
+    "icon": {
+      "color": "#1B5E20",
+      "name": "BANK"
+    },
+    "subtitle": "Payments data",
+    "tag_key": "Payments"
+  }
+}
+
+>>> [CLI] domains get-domain domains/[UUID][0]
+{
+  "subtitle": "Payments data",
+  "description": "",
+  "effective_draft": true
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Publish the domain again (an explicit false is written)
+
+>>> update_file.py databricks.yml draft: true draft: false
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated domains.payments
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //domains
+{
+  "method": "PATCH",
+  "path": "/api/2.0/domains/[UUID][0]",
+  "q": {
+    "update_mask": "subtitle,description,icon,technical_owner_ids,business_owner_ids,draft"
+  },
+  "body": {
+    "draft": false,
+    "icon": {
+      "color": "#1B5E20",
+      "name": "BANK"
+    },
+    "subtitle": "Payments data",
+    "tag_key": "Payments"
+  }
+}
+
+>>> [CLI] domains get-domain domains/[UUID][0]
+{
+  "effective_draft": false
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Change the tag key (should plan a recreate)
+
+>>> update_file.py databricks.yml Payments/Fraud Payments/Risk
+
+>>> [CLI] bundle plan
+recreate domains.fraud
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.domains.fraud
+  delete resources.domains.payments
+
+This action will result in the deletion of the following domains.
+Deleting a domain also deletes its subdomains. The governed tag of a domain and the tags
+on assets are kept:
+  delete resources.domains.fraud
+  delete resources.domains.payments
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted
+
+>>> print_requests.py //domains
+{
+  "method": "DELETE",
+  "path": "/api/2.0/domains/[UUID][1]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/domains/[UUID][0]"
+}

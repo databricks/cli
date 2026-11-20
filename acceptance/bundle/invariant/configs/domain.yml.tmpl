@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  domains:
+    foo:
+      tag_key: test-domain-$UNIQUE_NAME
+      subtitle: Test domain
+      draft: true
+
+    bar:
+      tag_key: test-domain-$UNIQUE_NAME/sub
+      parent_domain_id: ${resources.domains.foo.id}

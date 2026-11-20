@@ -1,0 +1,12 @@
+# The pages in these tests live in a domain that the bundle creates, which needs the
+# Manage Discover permission and an existing governed tag. The test workspaces do not
+# provide those, so these tests only run against the fake server.
+Cloud = false
+
+Ignore = [
+    ".databricks",
+]
+
+# Deployment history has no "pages." or "domains." resource-key prefix yet, so the deploy cannot record
+# history for it. See dmsResourceTypes in libs/testserver/bundledeployments.go.
+EnvMatrixExclude.no_pages_dms = ["DMS=true"]

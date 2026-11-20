@@ -1,0 +1,86 @@
+
+>>> [CLI] bundle validate
+Name: payments_domain
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/payments_domain/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create domains.fraud
+create domains.payments
+create pages.false_positive
+create pages.settlement
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/payments_domain/default/files...
+Created domains.fraud
+Created domains.payments
+Created pages.false_positive
+Created pages.settlement
+Files: 2 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle summary
+Name: payments_domain
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/payments_domain/default
+Resources:
+  Domains:
+    fraud:
+      Name: Payments/Fraud
+      URL:  [DATABRICKS_URL]/discover/manage/domains/[UUID][0]?w=[WORKSPACE_ID]
+    payments:
+      Name: Payments
+      URL:  [DATABRICKS_URL]/discover/manage/domains/[UUID][1]?w=[WORKSPACE_ID]
+  Pages:
+    false_positive:
+      Name: False positive
+      URL:  [DATABRICKS_URL]/discover/pages/[UUID][2]?w=[WORKSPACE_ID]
+    settlement:
+      Name: Settlement
+      URL:  [DATABRICKS_URL]/discover/pages/[UUID][3]?w=[WORKSPACE_ID]
+
+=== Each page is in the domain it references
+
+>>> [CLI] domains get-domain domains/[UUID][0]
+{
+  "name": "domains/[UUID][0]",
+  "tag_key": "Payments/Fraud",
+  "parent_domain_id": "[UUID][1]"
+}
+
+>>> [CLI] api get /api/2.0/knowledge/pages/[UUID][2]
+{
+  "display_name": "False positive",
+  "domain": "domains/[UUID][0]",
+  "state": "PUBLISHED"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.domains.fraud
+  delete resources.domains.payments
+  delete resources.pages.false_positive
+  delete resources.pages.settlement
+
+This action will result in the deletion of the following domains.
+Deleting a domain also deletes its subdomains. The governed tag of a domain and the tags
+on assets are kept:
+  delete resources.domains.fraud
+  delete resources.domains.payments
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.false_positive
+  delete resources.pages.settlement
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/payments_domain/default
+
+Destroy: 4 deleted

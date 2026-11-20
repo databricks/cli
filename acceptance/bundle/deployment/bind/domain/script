@@ -1,0 +1,22 @@
+title "Create the domain outside the bundle"
+DOMAIN_ID=$($CLI domains create-domain Payments --subtitle "Created outside the bundle" | jq -r .domain_id)
+print_requests.py > /dev/null
+
+trace $CLI bundle deployment bind payments $DOMAIN_ID --auto-approve
+trace $CLI bundle summary
+
+title "The bound domain differs from the config, so the deploy updates it in place"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //domains
+trace $CLI domains get-domain domains/$DOMAIN_ID | jq '{tag_key, subtitle}'
+
+title "Binding a domain that does not exist is an error"
+trace $CLI bundle deployment unbind payments
+trace musterr $CLI bundle deployment bind payments 00000000-0000-0000-0000-000000000000 --auto-approve
+
+title "After unbind the domain is no longer part of the bundle, so destroy leaves it alone"
+trace $CLI bundle destroy --auto-approve
+trace $CLI domains get-domain domains/$DOMAIN_ID | jq '{tag_key, subtitle}'
+
+rm -f out.requests.txt

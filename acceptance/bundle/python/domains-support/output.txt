@@ -1,0 +1,32 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_domain"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "domains": {
+      "my_domain_1": {
+        "subtitle": "Payment processing data (updated)",
+        "tag_key": "Payments"
+      },
+      "my_domain_2": {
+        "draft": true,
+        "icon": {
+          "color": "#C83243",
+          "name": "SHIELD_CHECKERED"
+        },
+        "parent_domain_id": "${resources.domains.my_domain_1.id}",
+        "subtitle": "Fraud detection (updated)",
+        "tag_key": "Payments/Fraud"
+      }
+    }
+  }
+}

@@ -19,6 +19,7 @@ See `Bundle configuration in Python <https://docs.databricks.com/aws/en/dev-tool
    databricks.bundles.data_quality_monitors
    databricks.bundles.database_catalogs
    databricks.bundles.database_instances
+   databricks.bundles.domains
    databricks.bundles.experiments
    databricks.bundles.external_locations
    databricks.bundles.feature_specs

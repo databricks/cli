@@ -1,0 +1,16 @@
+title "The domain is owned by another team and exists before the bundle is deployed"
+$CLI domains create-domain Payments > /dev/null
+
+trace $CLI bundle validate
+trace $CLI bundle deploy
+trace $CLI bundle summary
+
+title "The pages are published in the domain"
+for page in chargeback refund; do
+  PAGE_ID=$($CLI bundle summary -o json | jq -r .resources.pages.$page.id)
+  $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, synonyms, state}'
+done
+
+trace $CLI bundle destroy --auto-approve
+
+rm -f out.requests.txt

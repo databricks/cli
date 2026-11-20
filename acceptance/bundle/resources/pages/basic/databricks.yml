@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle
+
+resources:
+  domains:
+    payments:
+      tag_key: Payments
+
+  pages:
+    chargeback:
+      domain: ${resources.domains.payments.name}
+      display_name: Chargeback
+      description: A reversal of a card payment.
+      synonyms:
+        - reversal
+        - dispute
+        - " reversal "
+      body: |-
+        # Chargeback
+
+        A reversal of a card payment, initiated by the cardholder's bank.

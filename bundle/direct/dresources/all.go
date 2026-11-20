@@ -50,6 +50,8 @@ var SupportedResources = map[string]any{
 	"instance_pools":              (*ResourceInstancePool)(nil),
 	"secrets":                     (*ResourceSecret)(nil),
 	"cluster_policies":            (*ResourceClusterPolicy)(nil),
+	"domains":                     (*ResourceDomain)(nil),
+	"pages":                       (*ResourcePage)(nil),
 
 	// Permissions
 	"jobs.permissions":                    (*ResourcePermissions)(nil),

@@ -110,6 +110,15 @@ All data stored in them will be permanently lost:`
 	deletePostgresDatabaseMessage = `This action will result in the deletion of the following Lakebase databases.
 All data stored in them will be permanently lost:`
 
+	deleteOrRecreateDomainMessage = `
+This action will result in the deletion or recreation of the following domains.
+Deleting a domain also deletes its subdomains. The governed tag of a domain and the tags
+on assets are kept:`
+
+	deleteOrRecreatePageMessage = `
+This action will result in the deletion or recreation of the following pages.
+A deleted page cannot be restored:`
+
 	deleteVectorSearchIndexMessage = `This action will result in the deletion of the following Vector Search indexes.
 For Delta Sync indexes, the source Delta Table is preserved but the embedding pipeline is removed.
 For Direct Access indexes, all upserted vectors are permanently lost:`
@@ -122,4 +131,11 @@ Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the
 
 	deleteFeatureSpecMessage = `This action will result in the deletion of the following FeatureSpecs.
 Feature Serving endpoints and training code that use them can no longer load them:`
+
+	deleteDomainMessage = `This action will result in the deletion of the following domains.
+Deleting a domain also deletes its subdomains. The governed tag of a domain and the tags
+on assets are kept:`
+
+	deletePageMessage = `This action will result in the deletion of the following pages.
+A deleted page cannot be restored:`
 )

@@ -1,0 +1,32 @@
+# A glossary for a domain that is owned by another team.
+#
+# The pages are written in Markdown files next to this configuration. The domain is
+# looked up by the key of the governed tag it is built on, so the configuration does not
+# depend on the ID of the domain.
+bundle:
+  name: payments_glossary
+
+variables:
+  payments_domain:
+    description: The ID of the domain that the pages belong to.
+    lookup:
+      domain: Payments
+
+resources:
+  pages:
+    chargeback:
+      domain: domains/${var.payments_domain}
+      display_name: Chargeback
+      description: A reversal of a card payment, initiated by the bank of the cardholder.
+      synonyms:
+        - dispute
+        - reversal
+      state: PUBLISHED
+      file_path: ./pages/chargeback.md
+
+    refund:
+      domain: domains/${var.payments_domain}
+      display_name: Refund
+      description: Money that a merchant returns to a customer.
+      state: PUBLISHED
+      file_path: ./pages/refund.md

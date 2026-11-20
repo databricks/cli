@@ -1,0 +1,64 @@
+
+=== The domain is not part of the bundle: it is created outside of it
+
+=== The lookup resolves the tag key of the domain to its ID
+
+>>> [CLI] bundle validate -o json
+{
+  "variable": "[UUID][0]",
+  "domain": "domains/[UUID][0]"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //knowledge
+{
+  "method": "POST",
+  "path": "/api/2.0/knowledge/pages",
+  "q": {
+    "request_id": "[UUID][1]"
+  },
+  "body": {
+    "body": "A reversal of a card payment.",
+    "display_name": "Chargeback",
+    "domain": "domains/[UUID][0]"
+  }
+}
+
+=== Destroying the bundle deletes the page and keeps the domain
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pages.chargeback
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.chargeback
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+>>> [CLI] domains get-domain domains/[UUID][0]
+{
+  "tag_key": "Payments"
+}
+
+=== A lookup of a domain that does not exist is an error
+
+>>> update_file.py databricks.yml domain: Payments domain: Finance
+
+>>> musterr [CLI] bundle validate
+Error: failed to resolve domain: Finance, err: domain with tag key "Finance" does not exist, or you do not have permission to manage it
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error

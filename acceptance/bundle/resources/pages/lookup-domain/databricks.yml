@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+variables:
+  payments_domain:
+    description: The ID of the domain that the pages of this bundle belong to.
+    lookup:
+      domain: Payments
+
+resources:
+  pages:
+    chargeback:
+      domain: domains/${var.payments_domain}
+      display_name: Chargeback
+      body: A reversal of a card payment.

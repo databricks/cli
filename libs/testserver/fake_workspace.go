@@ -23,8 +23,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
+	"github.com/databricks/databricks-sdk-go/service/domains"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 
+	"github.com/databricks/cli/libs/knowledge"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -228,6 +230,8 @@ type FakeWorkspace struct {
 	PipelineUpdates       map[string]pipelines.UpdateInfo
 	Monitors              map[string]catalog.MonitorInfo
 	DataQualityMonitors   map[string]dataquality.Monitor
+	Domains               map[string]domains.Domain
+	Pages                 map[string]knowledge.Page
 	Apps                  map[string]apps.App
 	Schemas               map[string]catalog.SchemaInfo
 	Grants                map[string][]catalog.PrivilegeAssignment
@@ -543,6 +547,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PipelineUpdates:       map[string]pipelines.UpdateInfo{},
 		Monitors:              map[string]catalog.MonitorInfo{},
 		DataQualityMonitors:   map[string]dataquality.Monitor{},
+		Domains:               map[string]domains.Domain{},
+		Pages:                 map[string]knowledge.Page{},
 		Apps:                  map[string]apps.App{},
 		Catalogs:              map[string]catalog.CatalogInfo{},
 		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},

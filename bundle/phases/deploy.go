@@ -43,6 +43,8 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "materialization_sets", message: deleteOrRecreateMaterializationSetMessage},
 	{group: "features", message: deleteOrRecreateFeatureMessage},
 	{group: "feature_specs", message: deleteOrRecreateFeatureSpecMessage},
+	{group: "domains", message: deleteOrRecreateDomainMessage},
+	{group: "pages", message: deleteOrRecreatePageMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
