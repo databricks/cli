@@ -41,7 +41,23 @@ rm databricks.yml.backup
 title "Sync again: the permissions are now in the config"
 $CLI bundle config-remote-sync
 
-title "Deploy keeps the remote owner"
+title "Grant access remotely before the saved permissions are deployed"
+$CLI permissions set pipelines $pipeline_id --json '{"access_control_list":[
+  {"permission_level":"IS_OWNER","user_name":"owner@example.com"},
+  {"permission_level":"CAN_MANAGE","user_name":"'"$CURRENT_USER_NAME"'"},
+  {"permission_level":"CAN_VIEW","group_name":"users"},
+  {"permission_level":"CAN_RUN","user_name":"late@example.com"}
+]}' > /dev/null
+
+title "Detect and save changes"
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Deploy keeps the remote owner and grant"
 $CLI bundle deploy
 trace $CLI permissions get pipelines $pipeline_id | jq -c '[.access_control_list[] | {user_name, group_name, level: .all_permissions[0].permission_level}]'
 
