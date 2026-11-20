@@ -306,15 +306,9 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 	}
 }
 
-// autoInstallAsks reports whether auto-install asks before installing: no
-// coding agent is detected (see installPromptsSupported), so a person may have
-// run the command. It asks only when the question can be seen and answered
-// (canAsk) and skips otherwise, with or without a terminal: a run from ssh,
-// nohup, cron or an IDE extension has none, and installing there would skip
-// the consent of a person who cannot see the question. Coding agents get the
-// tools without a question. The question is a plain-text line, so TERM=dumb
-// and an MSYS2 pty pipe, which turn off the TUI prompts of install, do not
-// skip it.
+// autoInstallAsks reports whether auto-install asks before a first install:
+// no coding agent is detected. A run that cannot ask (see canAsk) skips;
+// coding agents install without a question.
 func autoInstallAsks() bool {
 	return useragent.AgentProvider() == ""
 }
