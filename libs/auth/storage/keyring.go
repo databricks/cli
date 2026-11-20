@@ -38,6 +38,12 @@ const AccessTokenPartMarker = "#access-token-"
 // https://github.com/zalando/go-keyring/blob/v0.2.8/keyring_darwin.go#L86-L89
 const accessTokenPartSize = 2048
 
+// ErrAccessTokenNotStored is wrapped in the error of a Put that stored the
+// entry of a split token, with its refresh token, but not all of its access
+// token parts. Lookup then returns the token without an access token, so the
+// next command refreshes it.
+var ErrAccessTokenNotStored = errors.New("access token not stored")
+
 // keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
 // the account name ProbeKeyring writes and deletes. A fixed name like
 // "__probe__" could collide with a user profile of the same name (which is
@@ -55,10 +61,9 @@ const keyringProbeAccountPrefix = "__probe_"
 // a GUI unlock prompt that no one answers in a headless session.
 const defaultKeyringTimeout = 3 * time.Second
 
-// splitLookupAttempts and splitLookupDelay bound how long Lookup waits for
-// another process to finish writing or deleting a split token: it reads the
-// entry again after 25, 50, 100 and 200 milliseconds, like the store update
-// recovery in u2m.
+// splitLookupAttempts and splitLookupDelay make Lookup read an incomplete
+// split token again after 25, 50, 100 and 200 milliseconds, like the store
+// update recovery in u2m.
 const (
 	splitLookupAttempts = 5
 	splitLookupDelay    = 25 * time.Millisecond
@@ -118,13 +123,11 @@ func (zalandoBackend) Set(service, account, secret string) error {
 	return keyring.Set(service, account, secret)
 }
 
-// darwinCommandTooBig reports whether go-keyring's macOS backend is sure to
-// reject secret as too big. That backend starts `security -i` before it checks
-// the size and does not reap the process when it rejects the secret, so
-// without this check a long-running process would leave one behind on every
-// store of a split token. The command is counted without shell quotes, which
-// only make it longer, so this never rejects a secret that go-keyring would
-// store.
+// darwinCommandTooBig reports whether go-keyring's macOS backend will reject
+// secret as too big. It does so only after starting `security -i`, which it
+// then never reaps, so Set checks first. The count leaves out shell quotes,
+// which only make the command longer, so no secret that go-keyring would store
+// is rejected.
 // https://github.com/zalando/go-keyring/blob/v0.2.8/keyring_darwin.go#L82-L88
 func darwinCommandTooBig(service, account, secret string) bool {
 	password := "go-keyring-base64:" + base64.StdEncoding.EncodeToString([]byte(secret))
@@ -151,8 +154,8 @@ type keyringStore struct {
 	timeout        time.Duration
 	keyringSvcName string
 
-	// retryDelay is how long Lookup first waits before it reads a split token
-	// with missing or mismatched parts again. It doubles on each attempt.
+	// retryDelay is Lookup's first wait before it reads an incomplete split
+	// token again. It doubles on each attempt.
 	retryDelay time.Duration
 }
 
@@ -232,7 +235,7 @@ func (k *keyringStore) Put(key string, e Entry) error {
 	}
 	err = k.set(key, string(raw))
 	if e.Token != nil && errors.Is(err, keyring.ErrSetDataTooBig) {
-		return k.putSplit(key, e.Token)
+		return k.putSplit(key, entryFields(e))
 	}
 	return err
 }
@@ -244,13 +247,15 @@ func (k *keyringStore) Put(key string, e Entry) error {
 // The entry is written first because it holds the refresh token. The server
 // rotates the refresh token on every refresh, so losing the new one logs the
 // user out, while losing the access token only costs another refresh.
-func (k *keyringStore) putSplit(key string, t *oauth2.Token) error {
+func (k *keyringStore) putSplit(key string, fields entryFields) error {
+	t := fields.Token
 	sum := sha256.Sum256([]byte(t.AccessToken))
 	n := (len(t.AccessToken) + accessTokenPartSize - 1) / accessTokenPartSize
 	rest := *t
 	rest.AccessToken = ""
+	fields.Token = &oauth2.Token{}
 	raw, err := json.Marshal(keyringEntry{
-		Token: &oauth2.Token{},
+		entryFields: fields,
 		Split: &splitToken{
 			Token:             rest,
 			AccessTokenParts:  n,
@@ -267,7 +272,7 @@ func (k *keyringStore) putSplit(key string, t *oauth2.Token) error {
 		start := i * accessTokenPartSize
 		part := t.AccessToken[start:min(start+accessTokenPartSize, len(t.AccessToken))]
 		if err := k.set(accessTokenPartKey(key, i), part); err != nil {
-			return err
+			return fmt.Errorf("%w: %w", ErrAccessTokenNotStored, err)
 		}
 	}
 	return nil
@@ -304,12 +309,10 @@ func (k *keyringStore) Delete(key string) error {
 
 // Lookup implements the Store interface, returning ErrNotFound on a miss.
 //
-// A split token whose access token parts are missing or do not match is read
-// again a few times, because another process may be writing or deleting it.
-// Refreshing it at once could use up a refresh token that the other process
-// already replaced, or restore a login that was just deleted. If the parts
-// still do not match, the token is returned without its access token, so that
-// the caller refreshes it.
+// A split token with missing or mismatched parts is read again a few times
+// before it is returned without its access token, because another process
+// may be writing or deleting it: refreshing at once could spend a refresh
+// token that process replaced, or restore a login it deleted.
 func (k *keyringStore) Lookup(key string) (Entry, error) {
 	delay := k.retryDelay
 	for attempt := 1; ; attempt++ {
@@ -338,7 +341,7 @@ func (k *keyringStore) lookup(key string) (Entry, bool, error) {
 		return Entry{}, false, fmt.Errorf("unmarshal token: %w", err)
 	}
 	if entry.Split != nil {
-		return k.lookupSplit(key, entry.Split)
+		return k.lookupSplit(key, entry)
 	}
 	return Entry(entry.entryFields), true, nil
 }
@@ -347,13 +350,16 @@ func (k *keyringStore) lookup(key string) (Entry, bool, error) {
 // parts are missing or do not match the entry, because a write was interrupted
 // or another process is writing, it returns the token without an access token
 // and reports it as incomplete.
-func (k *keyringStore) lookupSplit(key string, s *splitToken) (Entry, bool, error) {
+func (k *keyringStore) lookupSplit(key string, entry keyringEntry) (Entry, bool, error) {
+	s := entry.Split
 	t := s.Token
+	e := Entry(entry.entryFields)
+	e.Token = &t
 	var accessToken strings.Builder
 	for i := range s.AccessTokenParts {
 		part, err := k.get(accessTokenPartKey(key, i))
 		if errors.Is(err, keyring.ErrNotFound) {
-			return Entry{Token: &t}, false, nil
+			return e, false, nil
 		}
 		if err != nil {
 			return Entry{}, false, wrapKeyringUnreachable(err)
@@ -362,10 +368,10 @@ func (k *keyringStore) lookupSplit(key string, s *splitToken) (Entry, bool, erro
 	}
 	sum := sha256.Sum256([]byte(accessToken.String()))
 	if hex.EncodeToString(sum[:]) != s.AccessTokenSHA256 {
-		return Entry{Token: &t}, false, nil
+		return e, false, nil
 	}
 	t.AccessToken = accessToken.String()
-	return Entry{Token: &t}, true, nil
+	return e, true, nil
 }
 
 // accessTokenPartKey returns the key of the i-th access token part of the

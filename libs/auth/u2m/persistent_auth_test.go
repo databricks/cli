@@ -493,7 +493,8 @@ func TestToken_RefreshesTokenWithoutAccessToken(t *testing.T) {
 
 // accessTokenPartFailingStore stands in for the keyring store when it fails
 // to write a part of a split access token: the entry keeps the new refresh
-// token but not the access token, and Put returns err.
+// token but not the access token, and Put returns err wrapped in
+// storage.ErrAccessTokenNotStored.
 type accessTokenPartFailingStore struct {
 	storage.Store
 	err error
@@ -508,7 +509,7 @@ func (s *accessTokenPartFailingStore) Put(key string, e storage.Entry) error {
 	if err := s.Store.Put(key, storage.Entry{Token: &rest}); err != nil {
 		return err
 	}
-	return s.err
+	return fmt.Errorf("%w: %w", storage.ErrAccessTokenNotStored, s.err)
 }
 
 // A refresh whose access token cannot be stored still succeeds, because the

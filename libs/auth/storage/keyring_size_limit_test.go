@@ -98,9 +98,10 @@ func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
 	}
 }
 
-// darwinCommandTooBig lets the store skip go-keyring on macOS, so it must only
-// reject a secret that go-keyring rejects too. It leaves out the shell quotes
-// that go-keyring adds, so it is exact for an account that needs none.
+// TestDarwinCommandTooBig pins that the macOS size check, which lets the store
+// skip go-keyring, only rejects a secret that go-keyring rejects too. The check
+// leaves out the shell quotes that go-keyring adds, so it is exact for an
+// account that needs none.
 func TestDarwinCommandTooBig(t *testing.T) {
 	accounts := []string{
 		"my-profile",

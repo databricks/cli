@@ -397,12 +397,6 @@ func isFreshReplacement(old, candidate, cached *oauth2.Token) bool {
 
 // recoverStoreUpdate checks whether a concurrent store update completed.
 // Retrying reads instead of writes avoids recreating the write race.
-//
-// It also accepts this update if the store kept candidate's refresh token but
-// not its access token, as the keyring store does when it stores the entry of
-// a split token but not all of its access token parts. The refresh token is
-// what the next command needs; without the access token it only refreshes
-// again.
 func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth2.Token {
 	delay := storeUpdateRecoveryInitialDelay
 	for attempt := range storeUpdateRecoveryAttempts {
@@ -418,14 +412,8 @@ func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth
 		}
 
 		cached, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
-		if err != nil || cached.Token == nil {
-			continue
-		}
-		if isFreshReplacement(old, candidate, cached.Token) {
+		if err == nil && cached.Token != nil && isFreshReplacement(old, candidate, cached.Token) {
 			return cached.Token
-		}
-		if cached.Token.AccessToken == "" && candidate.RefreshToken != "" && cached.Token.RefreshToken == candidate.RefreshToken {
-			return candidate
 		}
 	}
 	return nil
@@ -468,6 +456,12 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 		return nil, oauthError(err)
 	}
 	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
+	if errors.Is(err, storage.ErrAccessTokenNotStored) {
+		// The new refresh token is stored, which is what the next command
+		// needs. Without the access token, it refreshes again.
+		logger.Debugf(a.ctx, "token refresh: %v", err)
+		return t, nil
+	}
 	if err != nil {
 		if cached := a.recoverStoreUpdate(oldToken, t); cached != nil {
 			return cached, nil

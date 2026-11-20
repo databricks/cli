@@ -494,6 +494,22 @@ func TestKeyringStore_Put_SplitEntryGivesOlderVersionsNoCredentials(t *testing.T
 	assert.Empty(t, old.Token.RefreshToken)
 }
 
+// Entry holds only a token and a pending login today, and the two never come
+// together. The pending login stands in for fields that Entry may get later:
+// a split token must keep them, as a token that fits does.
+func TestKeyringStore_SplitEntryKeepsOtherEntryFields(t *testing.T) {
+	c, _ := newLimitedTestStore()
+	pending := &PendingLogin{DeviceCode: "device-code", UserCode: "WDJBMJHT"}
+	tok := testToken(issue7707LargeAccessTokenBytes)
+
+	require.NoError(t, c.Put("my-profile", Entry{Token: tok, PendingLogin: pending}))
+
+	got, err := c.Lookup("my-profile")
+	require.NoError(t, err)
+	assert.Equal(t, tok.AccessToken, got.Token.AccessToken)
+	assert.Equal(t, pending, got.PendingLogin)
+}
+
 // The entry is written before the access token parts because it holds the
 // refresh token, which the server replaces on every refresh. When a part write
 // fails, whatever the key held before, the new refresh token is stored and
@@ -524,6 +540,7 @@ func TestKeyringStore_Put_StoresRefreshTokenBeforeAccessToken(t *testing.T) {
 
 				err := c.Put("my-profile", Entry{Token: tok})
 				require.ErrorIs(t, err, boom)
+				assert.ErrorIs(t, err, ErrAccessTokenNotStored)
 
 				got, err := c.Lookup("my-profile")
 				require.NoError(t, err)
@@ -560,6 +577,7 @@ func TestKeyringStore_Put_SplitsOnlyTheAccessToken(t *testing.T) {
 
 			err := c.Put(tc.key, tc.entry)
 			assert.ErrorIs(t, err, keyring.ErrSetDataTooBig)
+			assert.NotErrorIs(t, err, ErrAccessTokenNotStored)
 			assert.Empty(t, backend.items)
 		})
 	}

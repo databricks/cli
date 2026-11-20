@@ -15,6 +15,32 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+// TestZalandoBackend_Set_RejectsLargeSecretWithoutSecurityProcess pins that
+// zalandoBackend rejects a secret that is too big on macOS without calling
+// go-keyring, which would start `security -i` and leave its stdin pipe open in
+// this process. Nothing reaches the keychain either way, so it runs outside CI
+// too. It comes first in this file because TestKeyringSet_RejectsLargeSecret
+// calls go-keyring directly and leaves such a pipe, which a finalizer could
+// close between the two counts.
+func TestZalandoBackend_Set_RejectsLargeSecretWithoutSecurityProcess(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("only go-keyring's macOS backend starts a process for a secret it rejects")
+	}
+	before := openFileCount(t)
+
+	err := zalandoBackend{}.Set(keyringServiceName, keyringProbeAccountPrefix+uuid.New().String(), strings.Repeat("a", 5000))
+	require.ErrorIs(t, err, keyring.ErrSetDataTooBig)
+	assert.Equal(t, before, openFileCount(t), "go-keyring started `security -i`, which keeps a pipe open")
+}
+
+// openFileCount returns the number of files this process has open.
+func openFileCount(t *testing.T) int {
+	t.Helper()
+	entries, err := os.ReadDir("/dev/fd")
+	require.NoError(t, err)
+	return len(entries)
+}
+
 // TestKeyringSet_RejectsLargeSecret pins that the go-keyring
 // release in go.mod rejects a 3250-byte secret on macOS and Windows,
 // which is the behavior fakeBackend's caps in keyring_size_limit_test.go
@@ -47,29 +73,6 @@ func TestKeyringSet_RejectsLargeSecret(t *testing.T) {
 	require.ErrorIs(t, err, keyring.ErrSetDataTooBig,
 		"go-keyring accepted a %d-byte secret; the OS caps modeled in fakeBackend are stale, re-verify them against the new backend",
 		issue7707LargeAccessTokenBytes)
-}
-
-// go-keyring's macOS backend starts `security -i` before it rejects a secret
-// as too big, and leaves the process with its stdin pipe open in this one.
-// zalandoBackend rejects such a secret without calling go-keyring, so no file
-// is opened. Nothing reaches the keychain either way, so the test runs
-// outside CI too.
-func TestZalandoBackend_Set_RejectsLargeSecretWithoutSecurityProcess(t *testing.T) {
-	if runtime.GOOS != "darwin" {
-		t.Skip("only go-keyring's macOS backend starts a process for a secret it rejects")
-	}
-	openFiles := func() int {
-		entries, err := os.ReadDir("/dev/fd")
-		require.NoError(t, err)
-		return len(entries)
-	}
-	// Let finalizers close pipes that earlier tests left open.
-	runtime.GC()
-	before := openFiles()
-
-	err := zalandoBackend{}.Set(keyringServiceName, keyringProbeAccountPrefix+uuid.New().String(), strings.Repeat("a", 5000))
-	require.ErrorIs(t, err, keyring.ErrSetDataTooBig)
-	assert.LessOrEqual(t, openFiles(), before, "go-keyring started `security -i`, which keeps a pipe open")
 }
 
 // newRealKeyringStore returns a store on the real OS keyring and a key that no
