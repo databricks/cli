@@ -1,0 +1,14 @@
+bundle:
+  name: name-prefix-existing-schema
+
+resources:
+  schemas:
+    qc:
+      name: qc
+      catalog_name: main
+
+targets:
+  existing:
+    default: true
+    presets:
+      name_prefix: my_user
