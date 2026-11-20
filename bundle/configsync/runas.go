@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/log"
@@ -81,9 +79,9 @@ func remoteRunAs(remote any) (jobs.JobRunAs, bool) {
 
 // jobOwners returns, keyed by plan key, the owner of each job with a remote
 // run_as the config does not set: the principal the job runs as without one.
-// A job whose ACL could not be read is left out. unmanaged holds the ACLs read
-// by readUnmanagedPermissions.
-func jobOwners(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, unmanaged map[string][]dresources.StatePermission) map[string]string {
+// A job whose ACL could not be read is left out. remote holds the ACLs read
+// by readRemotePermissions.
+func jobOwners(ctx context.Context, plan *deployplan.Plan, remote map[string][]dresources.StatePermission) map[string]string {
 	owners := make(map[string]string)
 	for resourceKey, entry := range plan.Plan {
 		job, ok := entry.RemoteState.(*dresources.JobRemote)
@@ -91,7 +89,7 @@ func jobOwners(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, unm
 		if !ok || job == nil || cd == nil || cd.New != nil || cd.Remote == nil {
 			continue
 		}
-		acl, err := jobACL(ctx, b, plan, resourceKey, unmanaged)
+		acl, err := jobACL(plan, resourceKey, remote)
 		if err != nil {
 			log.Debugf(ctx, "config-remote-sync: not syncing the run_as of %s, its owner is unknown: %v", resourceKey, err)
 			continue
@@ -101,27 +99,20 @@ func jobOwners(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, unm
 	return owners
 }
 
-// jobACL returns a job's remote ACL. Permissions that the config declares but
-// were never deployed have no remote state in the plan, so they are read here.
-func jobACL(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, resourceKey string, unmanaged map[string][]dresources.StatePermission) ([]dresources.StatePermission, error) {
-	permissionsKey := resourceKey + ".permissions"
-	entry := plan.Plan[permissionsKey]
-	if entry == nil {
-		// Read with the unmanaged permissions; missing if that read failed.
-		acl, ok := unmanaged[resourceKey]
-		if !ok {
-			return nil, errPermissionsNotRead
+// jobACL returns a job's remote ACL: the plan's remote state of its permissions
+// or, where the plan does not read them, the ACL readRemotePermissions read.
+func jobACL(plan *deployplan.Plan, resourceKey string, remote map[string][]dresources.StatePermission) ([]dresources.StatePermission, error) {
+	if entry := plan.Plan[resourceKey+".permissions"]; entry != nil {
+		if state, ok := entry.RemoteState.(*dresources.PermissionsState); ok && state != nil {
+			return state.EmbeddedSlice, nil
 		}
-		return acl, nil
 	}
-	if state, ok := entry.RemoteState.(*dresources.PermissionsState); ok && state != nil {
-		return state.EmbeddedSlice, nil
-	}
-	adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]
-	if adapter == nil {
+	// Missing if that read failed.
+	acl, ok := remote[resourceKey]
+	if !ok {
 		return nil, errPermissionsNotRead
 	}
-	return readPermissions(ctx, b, adapter, resourceKey)
+	return acl, nil
 }
 
 // jobOwner returns the principal a job without run_as runs as: the IS_OWNER
