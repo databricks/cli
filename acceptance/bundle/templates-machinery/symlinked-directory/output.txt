@@ -1,0 +1,5 @@
+
+>>> musterr [CLI] bundle init . --config-file input.json --output-dir output
+Error: symlinked directories are not supported in templates: linked_dir
+
+>>> find.py ^output/linked_dir --expect 0
