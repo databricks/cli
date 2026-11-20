@@ -267,7 +267,7 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 	}
 	rel, err := filepath.Rel(bundleAbs, root)
 	if err != nil || !filepath.IsLocal(rel) {
-		return "", codeOutsideBundleError(snap, root, bundleDir)
+		return "", codeOutsideBundleError(snap, root, bundleDir, cfg.ExperimentName)
 	}
 	return localBundlePath(filepath.ToSlash(rel)), nil
 }
@@ -278,12 +278,15 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 // directory would each be sent there and replace one another's bundle. As in
 // codeArtifactFor, a git snapshot is not offered a parent, which may be outside the
 // repository.
-func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir string) error {
+func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir, experimentName string) error {
 	remedy := "move the code inside the bundle directory"
 	if snap.Git == nil {
 		parent := filepath.Dir(root)
 		if name := bundleFileIn(parent); name != "" {
 			remedy = fmt.Sprintf("%s already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", quotedPath(parent), name, remedy)
+			if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok && isWorkloadBundle(parent, experimentName) {
+				remedy = fmt.Sprintf("pass --output-dir %s --force to replace this workload's bundle, or move the code inside the bundle directory", quoted)
+			}
 		} else if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok {
 			remedy = fmt.Sprintf("pass --output-dir %s to write the bundle to the code directory's parent, or %s", quoted, remedy)
 		} else {
@@ -291,6 +294,17 @@ func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir string) 
 		}
 	}
 	return fmt.Errorf("code_source root_path %q (%s) is not inside the bundle directory %q, and convert-to-dabs can package only code inside the bundle directory; %s", snap.RootPath, quotedPath(root), bundleDir, remedy)
+}
+
+// writeBundle replaces databricks.yml only. An alternate or ambiguous root
+// cannot be safely regenerated even if one configuration names the workload.
+func isWorkloadBundle(dir, experimentName string) bool {
+	path, err := config.FileNames.FindInPath(dir)
+	if err != nil || filepath.Base(path) != "databricks.yml" || experimentName == "" {
+		return false
+	}
+	existing, diags := config.Load(path)
+	return !diags.HasError() && existing.Bundle.Name == experimentName
 }
 
 // quotedPath quotes a local path the way the --output-dir suggestion does, so a
