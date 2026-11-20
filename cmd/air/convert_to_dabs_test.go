@@ -52,6 +52,34 @@ func TestConvertToDabsForceOverwrite(t *testing.T) {
 	assert.Contains(t, string(regenerated), "ai_runtime_task")
 }
 
+func TestConvertToDabsExistingBundleRoot(t *testing.T) {
+	for _, name := range config.FileNames {
+		t.Run(name, func(t *testing.T) {
+			path := writeConfigFile(t, "run.yaml", minimalConfig+"code_source:\n  root_path: ./src\n")
+			dir := filepath.Dir(path)
+			require.NoError(t, os.Mkdir(filepath.Join(dir, "src"), 0o700))
+			loaded, err := loadRunConfig(path)
+			require.NoError(t, err)
+			existing := filepath.Join(dir, name)
+			edited := []byte("# hand-edited\n")
+			require.NoError(t, os.WriteFile(existing, edited, 0o600))
+
+			_, err = writeBundle(t.Context(), loaded, path, dir, false)
+			want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", name, dir)
+			if name == "databricks.yml" {
+				want = fmt.Sprintf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
+			}
+			require.EqualError(t, err, want)
+			found, err := config.FileNames.FindInPath(dir)
+			require.NoError(t, err)
+			assert.Equal(t, existing, found)
+			kept, err := os.ReadFile(existing)
+			require.NoError(t, err)
+			assert.Equal(t, edited, kept)
+		})
+	}
+}
+
 // command.sh is the user's command copied verbatim — convert injects no cd. The
 // launcher exports $CODE_SOURCE_PATH and runs the command in the launch dir without
 // cd-ing, so (as under air run) the command owns its own cd; convert must not add one,

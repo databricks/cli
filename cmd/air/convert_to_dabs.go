@@ -631,10 +631,14 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 		return os.WriteFile(target, data, 0o600)
 	}
 
-	bundlePath := filepath.Join(dir, "databricks.yml")
+	const bundleFileName = "databricks.yml"
+	bundlePath := filepath.Join(dir, bundleFileName)
 	if !force {
-		if _, err := os.Stat(bundlePath); err == nil {
-			return nil, fmt.Errorf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
+		if name := bundleFileIn(dir); name != "" {
+			if name == bundleFileName {
+				return nil, fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", name, dir)
+			}
+			return nil, fmt.Errorf("%s already exists in %s; move or remove it before converting", name, dir)
 		}
 	}
 	// SaveAsYAML's force arg is passed true unconditionally: the collision check
@@ -645,7 +649,7 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	if err := quoteJobKey(bundlePath, bundleResourceKey(cfg.ExperimentName)); err != nil {
 		return nil, err
 	}
-	written := []string{"databricks.yml"}
+	written := []string{bundleFileName}
 
 	// Launch artifacts (command.sh + sidecars) under generated_artifacts/.
 	for _, item := range artifacts {
