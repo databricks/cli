@@ -5,10 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/shellquote"
@@ -50,6 +52,73 @@ func TestConvertToDabsForceOverwrite(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEqual(t, edited, regenerated)
 	assert.Contains(t, string(regenerated), "ai_runtime_task")
+}
+
+func TestConvertToDabsExistingBundleRoot(t *testing.T) {
+	for _, name := range config.FileNames {
+		t.Run(name, func(t *testing.T) {
+			path := writeConfigFile(t, "run.yaml", minimalConfig+"code_source:\n  root_path: ./src\n")
+			dir := filepath.Dir(path)
+			require.NoError(t, os.Mkdir(filepath.Join(dir, "src"), 0o700))
+			loaded, err := loadRunConfig(path)
+			require.NoError(t, err)
+			existing := filepath.Join(dir, name)
+			edited := []byte("# hand-edited\n")
+			require.NoError(t, os.WriteFile(existing, edited, 0o600))
+
+			_, err = writeBundle(t.Context(), loaded, path, dir, false)
+			want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", name, dir)
+			if name == "databricks.yml" {
+				want = fmt.Sprintf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
+			}
+			require.EqualError(t, err, want)
+			found, err := config.FileNames.FindInPath(dir)
+			require.NoError(t, err)
+			assert.Equal(t, existing, found)
+			kept, err := os.ReadFile(existing)
+			require.NoError(t, err)
+			assert.Equal(t, edited, kept)
+		})
+	}
+}
+
+func TestConvertToDabsRejectsAlternateRoot(t *testing.T) {
+	const canonical = "databricks.yml"
+	script := filepath.Join(generatedArtifactsDir, commandScriptName)
+	for _, alias := range config.FileNames {
+		if alias == canonical {
+			continue
+		}
+		for _, tc := range []struct {
+			name  string
+			force bool
+			files []string
+		}{
+			{"force", true, []string{alias}},
+			{"force-with-canonical", true, []string{canonical, alias, script}},
+			{"with-canonical", false, []string{canonical, alias}},
+		} {
+			t.Run(alias+"/"+tc.name, func(t *testing.T) {
+				dir := t.TempDir()
+				cfg, path := rayLayoutConfig(t, dir, "core")
+				for _, name := range tc.files {
+					testutil.WriteFile(t, filepath.Join(dir, name), name)
+				}
+
+				_, err := writeBundle(t.Context(), cfg, path, dir, tc.force)
+				assert.EqualError(t, err, fmt.Sprintf("%s already exists in %s; move or remove it before converting", alias, dir))
+				for _, name := range tc.files {
+					assert.Equal(t, name, testutil.ReadFile(t, filepath.Join(dir, name)))
+				}
+				if !slices.Contains(tc.files, canonical) {
+					assert.NoFileExists(t, filepath.Join(dir, canonical))
+				}
+				if !slices.Contains(tc.files, script) {
+					assert.NoDirExists(t, filepath.Join(dir, generatedArtifactsDir))
+				}
+			})
+		}
+	}
 }
 
 // command.sh is the user's command copied verbatim — convert injects no cd. The

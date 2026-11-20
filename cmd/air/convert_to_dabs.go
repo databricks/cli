@@ -282,7 +282,7 @@ func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir, experim
 	remedy := "move the code inside the bundle directory"
 	if snap.Git == nil {
 		parent := filepath.Dir(root)
-		if name := bundleFileIn(parent); name != "" {
+		if name := bundleFileIn(parent, ""); name != "" {
 			remedy = fmt.Sprintf("%s already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", quotedPath(parent), name, remedy)
 			if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok && isWorkloadBundle(parent, experimentName) {
 				remedy = fmt.Sprintf("pass --output-dir %s --force to replace this workload's bundle, or move the code inside the bundle directory", quoted)
@@ -317,10 +317,13 @@ func quotedPath(path string) string {
 	return fmt.Sprintf("%q", path)
 }
 
-// bundleFileIn returns the name of the bundle configuration file in dir, or "" when
-// it has none.
-func bundleFileIn(dir string) string {
+// bundleFileIn returns the first existing bundle filename in dir other than skip,
+// or "" if none exists.
+func bundleFileIn(dir, skip string) string {
 	for _, name := range config.FileNames {
+		if name == skip {
+			continue
+		}
 		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
 			return name
 		}
@@ -619,6 +622,18 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 		return nil, err
 	}
 
+	// Check alternate roots first so --force is suggested only when it can resolve the collision.
+	const bundleFileName = "databricks.yml"
+	if name := bundleFileIn(dir, bundleFileName); name != "" {
+		return nil, fmt.Errorf("%s already exists in %s; move or remove it before converting", name, dir)
+	}
+	bundlePath := filepath.Join(dir, bundleFileName)
+	if !force {
+		if _, err := os.Stat(bundlePath); err == nil {
+			return nil, fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", bundleFileName, dir)
+		}
+	}
+
 	// Restrict perms: the bundle carries env_vars.json (literal env var values), so
 	// keep the dir owner-only rather than world-readable.
 	if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -644,12 +659,6 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 		return os.WriteFile(target, data, 0o600)
 	}
 
-	bundlePath := filepath.Join(dir, "databricks.yml")
-	if !force {
-		if _, err := os.Stat(bundlePath); err == nil {
-			return nil, fmt.Errorf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
-		}
-	}
 	// SaveAsYAML's force arg is passed true unconditionally: the collision check
 	// above already decided whether overwriting is allowed.
 	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, true); err != nil {
@@ -658,7 +667,7 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	if err := quoteJobKey(bundlePath, bundleResourceKey(cfg.ExperimentName)); err != nil {
 		return nil, err
 	}
-	written := []string{"databricks.yml"}
+	written := []string{bundleFileName}
 
 	// Launch artifacts (command.sh + sidecars) under generated_artifacts/.
 	for _, item := range artifacts {
