@@ -205,7 +205,7 @@ func decode(data []byte) (*decoded, error) {
 	}
 	for _, p := range d.profiles {
 		for i, l := range p.files {
-			if l >= len(d.layouts) || p.index[i] >= len(d.bitmaps[l]) {
+			if l < 0 || l >= len(d.layouts) || p.index[i] < 0 || p.index[i] >= len(d.bitmaps[l]) {
 				return nil, errMalformed
 			}
 		}

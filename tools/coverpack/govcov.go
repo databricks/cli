@@ -206,6 +206,10 @@ func readPackage(b []byte, cache map[[16]byte]*pkgMeta) (*pkgMeta, error) {
 		return strs[i]
 	}
 
+	// The seek past the function offsets above bounds numFuncs by the file size.
+	if c.err != nil {
+		return nil, c.err
+	}
 	p := &pkgMeta{path: str(uint64(pathIndex)), module: str(uint64(moduleIndex)), funcs: make([][]block, numFuncs)}
 	for f := range p.funcs {
 		c.seek(metaSymbolHeaderSize + 4*f)
@@ -277,6 +281,9 @@ func readCounters(data []byte, visit func(metaHash [16]byte, pkg, fn uint32, cou
 
 	counters := make([]uint32, 0, 1024)
 	for range segments {
+		if c.err != nil {
+			break
+		}
 		funcs := c.u64()
 		strTabLen, argsLen := c.u32(), c.u32()
 		c.take(int(strTabLen) + int(argsLen)) // the args (os.Args, GOOS, GOARCH) are not needed
