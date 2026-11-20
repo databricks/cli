@@ -232,6 +232,20 @@ type requestRecorder struct {
 	entries map[*testserver.Request]string
 	// failed counts the entries answered with a transient error and not repeated yet.
 	failed map[string]int
+	// createLookups maps the path of a resource that a create request answered with a transient
+	// error names (the request path plus one of its query values, e.g. /api/2.0/postgres/projects
+	// with project_id=p names /api/2.0/postgres/projects/p) to that request's entry.
+	createLookups map[string]string
+	// lookups holds, per failed create entry, the GETs of its resource answered with 404 since. The
+	// CLI makes them to check whether the failed request created the resource before it repeats
+	// the request, so they go together with the failed attempt.
+	lookups map[string][]recordedLookup
+}
+
+// recordedLookup is a GET answered with 404 that a repeated create makes redundant.
+type recordedLookup struct {
+	path  string
+	entry string
 }
 
 func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string, dropRetried bool) *requestRecorder {
@@ -243,6 +257,8 @@ func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string,
 	if dropRetried {
 		r.entries = map[*testserver.Request]string{}
 		r.failed = map[string]int{}
+		r.createLookups = map[string]string{}
+		r.lookups = map[string][]recordedLookup{}
 	}
 	return r
 }
@@ -262,7 +278,22 @@ func (r *requestRecorder) record(request *testserver.Request) {
 
 	if r.failed[entry] > 0 {
 		r.failed[entry]--
-		r.dropFailedAttempt(request, entry)
+		lookups := r.lookups[entry]
+		delete(r.lookups, entry)
+		r.forgetCreateLookups(entry)
+		entries := []string{entry}
+		for _, lookup := range lookups {
+			entries = append(entries, lookup.entry)
+		}
+		dropped := r.dropEntries(entries)
+		if dropped[0] {
+			r.t.Logf("Dropped from out.requests.txt, repeated after a transient error: %s %s", request.Method, request.URL.Path)
+		}
+		for i, lookup := range lookups {
+			if dropped[i+1] {
+				r.t.Logf("Dropped from out.requests.txt, a lookup before a repeated create: GET %s", lookup.path)
+			}
+		}
 	}
 
 	f, err := os.OpenFile(r.path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
@@ -276,23 +307,39 @@ func (r *requestRecorder) record(request *testserver.Request) {
 	}
 }
 
-// dropFailedAttempt removes the last copy of entry from out.requests.txt: the attempt that
-// request repeats.
-func (r *requestRecorder) dropFailedAttempt(request *testserver.Request, entry string) {
+// dropEntries removes the last copy of each entry from out.requests.txt and reports which ones it
+// found.
+func (r *requestRecorder) dropEntries(entries []string) []bool {
+	dropped := make([]bool, len(entries))
 	data, err := os.ReadFile(r.path())
 	if errors.Is(err, os.ErrNotExist) {
-		// The script consumed the file since the failed attempt.
-		return
+		// The script consumed the file since the entries were written.
+		return dropped
 	}
 	require.NoError(r.t, err)
 
-	i := strings.LastIndex(string(data), entry)
-	if i < 0 {
-		return
+	for n, entry := range entries {
+		i := strings.LastIndex(string(data), entry)
+		if i < 0 {
+			continue
+		}
+		data = append(data[:i:i], data[i+len(entry):]...)
+		dropped[n] = true
 	}
-	data = append(data[:i:i], data[i+len(entry):]...)
-	require.NoError(r.t, os.WriteFile(r.path(), data, 0o644))
-	r.t.Logf("Dropped from out.requests.txt, repeated after a transient error: %s %s", request.Method, request.URL.Path)
+	if slices.Contains(dropped, true) {
+		require.NoError(r.t, os.WriteFile(r.path(), data, 0o644))
+	}
+	return dropped
+}
+
+// forgetCreateLookups stops treating reads as lookups for the failed create entry: the CLI
+// repeated the create or found the resource, so its recovery is over.
+func (r *requestRecorder) forgetCreateLookups(create string) {
+	for path, entry := range r.createLookups {
+		if entry == create {
+			delete(r.createLookups, path)
+		}
+	}
 }
 
 // isTransientStatus reports whether a response status is one the CLI may repeat a request after
@@ -304,17 +351,53 @@ func isTransientStatus(status int) bool {
 // noteResponse remembers a request answered with a transient error, so that if the CLI repeats
 // it, the failed attempt is dropped from out.requests.txt. A real workspace answers with such
 // errors now and then, so recording both attempts makes request goldens flaky. A request that is
-// not repeated stays recorded. Only the proxy uses this: the testserver answers with an error only
-// when a test injects one, and its goldens show that.
+// not repeated stays recorded. Before it repeats a failed create, the CLI reads the resource to
+// see whether the request created it anyway; a read answered with 404 is dropped with the failed
+// attempt. A read that finds the resource stays recorded, since no repeat follows, and ends the
+// recovery. Only the proxy uses this: the testserver answers with an error only when a test
+// injects one, and its goldens show that.
 func (r *requestRecorder) noteResponse(request *testserver.Request, response *testserver.EncodedResponse) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	entry, ok := r.entries[request]
 	delete(r.entries, request)
-	if ok && isTransientStatus(response.StatusCode) {
-		r.failed[entry]++
+	if !ok {
+		return
 	}
+	if isTransientStatus(response.StatusCode) {
+		r.failed[entry]++
+		if request.Method == http.MethodPost {
+			// The id of the resource a create names travels in a query parameter such as project_id.
+			for key, values := range request.URL.Query() {
+				if !strings.HasSuffix(key, "_id") {
+					continue
+				}
+				for _, value := range values {
+					if value != "" && !strings.Contains(value, "/") {
+						r.createLookups[request.URL.Path+"/"+value] = entry
+					}
+				}
+			}
+		}
+		return
+	}
+	if request.Method != http.MethodGet {
+		return
+	}
+	create, found := r.createLookups[request.URL.Path]
+	if !found || r.failed[create] == 0 {
+		return
+	}
+	if response.StatusCode == http.StatusNotFound {
+		r.lookups[create] = append(r.lookups[create], recordedLookup{path: request.URL.Path, entry: entry})
+		return
+	}
+	// The failed create did create the resource, so the CLI uses it and does not repeat the create:
+	// the failed attempt stands for the create, and later reads of the resource are not lookups.
+	r.failed[create]--
+	delete(r.lookups, create)
+	r.forgetCreateLookups(create)
 }
 
 func logResponseCallback(t *testing.T) func(request *testserver.Request, response *testserver.EncodedResponse) {
