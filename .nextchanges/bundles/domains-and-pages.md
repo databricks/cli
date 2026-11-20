@@ -1,0 +1,1 @@
+* Add the `domains` and `pages` resources, to manage Unity Catalog Discover domains and pages, and the `domain` lookup variable. A page takes its Markdown body inline or from a file in the repository. ([#7854](https://github.com/databricks/cli/pull/7854))
