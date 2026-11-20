@@ -142,8 +142,8 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, []SkippedChange, error) {
 	changes := make(Changes)
 	// Read first: a job's ACL names the owner that skipJobRunAs compares run_as to.
-	unmanaged, skipped := readUnmanagedPermissions(ctx, b, plan)
-	owners := jobOwners(ctx, b, plan, unmanaged)
+	remote, skipped := readRemotePermissions(ctx, b, plan)
+	owners := jobOwners(ctx, plan, remote)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
@@ -177,7 +177,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
-	if err := addPermissionsChanges(changes, b, plan, unmanaged); err != nil {
+	if err := addPermissionsChanges(changes, b, plan, remote); err != nil {
 		return nil, nil, err
 	}
 

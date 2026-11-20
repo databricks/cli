@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -420,29 +421,86 @@ func TestPermissionsReadSkip(t *testing.T) {
 	}, permissionsReadSkip("resources.jobs.my_job", errors.New("unexpected object_id")))
 }
 
-func TestUnmanagedPermissionsAdapters(t *testing.T) {
+func TestUnreadPermissionsAdapters(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 	b := &bundle.Bundle{}
 	b.DeploymentBundle.Adapters = adapters
 
 	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
-		"resources.jobs.unmanaged":            {Action: deployplan.Skip},
-		"resources.jobs.declared":             {Action: deployplan.Skip},
-		"resources.jobs.declared.permissions": {Action: deployplan.Skip},
-		"resources.jobs.removed":              {Action: deployplan.Update},
-		"resources.jobs.removed.permissions":  {Action: deployplan.Delete},
-		"resources.jobs.not_deployed":         {Action: deployplan.Create},
-		"resources.pipelines.unmanaged":       {Action: deployplan.Skip},
-		"resources.secret_scopes.scope":       {Action: deployplan.Skip},
-		"resources.schemas.schema":            {Action: deployplan.Skip},
-		"resources.schemas.schema.grants":     {Action: deployplan.Skip},
+		"resources.jobs.unmanaged":                {Action: deployplan.Skip},
+		"resources.jobs.declared":                 {Action: deployplan.Skip},
+		"resources.jobs.declared.permissions":     {Action: deployplan.Skip},
+		"resources.jobs.removed":                  {Action: deployplan.Update},
+		"resources.jobs.removed.permissions":      {Action: deployplan.Delete},
+		"resources.jobs.undeployed":               {Action: deployplan.Skip},
+		"resources.jobs.undeployed.permissions":   {Action: deployplan.Create},
+		"resources.jobs.not_deployed":             {Action: deployplan.Create},
+		"resources.jobs.not_deployed.permissions": {Action: deployplan.Create},
+		"resources.pipelines.unmanaged":           {Action: deployplan.Skip},
+		"resources.secret_scopes.scope":           {Action: deployplan.Skip},
+		"resources.schemas.schema":                {Action: deployplan.Skip},
+		"resources.schemas.schema.grants":         {Action: deployplan.Skip},
 	}}
 
 	assert.ElementsMatch(t,
-		[]string{"resources.jobs.unmanaged", "resources.jobs.removed", "resources.pipelines.unmanaged"},
-		slices.Collect(maps.Keys(unmanagedPermissionsAdapters(b, plan))),
+		[]string{"resources.jobs.unmanaged", "resources.jobs.removed", "resources.jobs.undeployed", "resources.pipelines.unmanaged"},
+		slices.Collect(maps.Keys(unreadPermissionsAdapters(b, plan))),
 	)
+}
+
+func TestAddUndeployedPermissionsChanges(t *testing.T) {
+	value, err := yamlloader.LoadYAML("databricks.yml", strings.NewReader(`
+resources:
+  jobs:
+    my_job:
+      permissions:
+        - level: CAN_MANAGE
+          user_name: viewer@example.com
+        - level: CAN_VIEW
+          user_name: gone@example.com
+        - level: CAN_VIEW
+          group_name: users
+`))
+	require.NoError(t, err)
+	// FixPermissions adds the current user's entry, with no location.
+	value, err = dyn.Set(value, "resources.jobs.my_job.permissions", dyn.V(append(
+		value.Get("resources").Get("jobs").Get("my_job").Get("permissions").MustSequence(),
+		dyn.V(map[string]dyn.Value{"level": dyn.V("IS_OWNER"), "user_name": dyn.V("me@example.com")}),
+	)))
+	require.NoError(t, err)
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	b := &bundle.Bundle{}
+	require.NoError(t, b.Config.Mutate(func(dyn.Value) (dyn.Value, error) { return value, nil }))
+	b.DeploymentBundle.Adapters = adapters
+	b.DeploymentBundle.StateCache.Store("resources.jobs.my_job.permissions", &structvar.StructVar{
+		Value: &dresources.PermissionsState{EmbeddedSlice: []dresources.StatePermission{
+			{Level: iam.PermissionLevelCanManage, UserName: "viewer@example.com"},
+			{Level: iam.PermissionLevelCanView, UserName: "gone@example.com"},
+			{Level: iam.PermissionLevelCanView, GroupName: "users"},
+			{Level: iam.PermissionLevelIsOwner, UserName: "me@example.com"},
+		}},
+	})
+
+	changes := make(Changes)
+	err = addUndeployedPermissionsChanges(changes, b, "resources.jobs.my_job", []dresources.StatePermission{
+		{Level: iam.PermissionLevelCanManage, UserName: "me@example.com"},
+		{Level: iam.PermissionLevelCanView, UserName: "viewer@example.com"},
+		{Level: iam.PermissionLevelCanView, GroupName: "users"},
+		{Level: iam.PermissionLevelCanManageRun, UserName: "late@example.com"},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, Changes{
+		"resources.jobs.my_job": {
+			"permissions[user_name='viewer@example.com'].level": {Operation: OperationReplace, Value: "CAN_VIEW", LocalEdit: true},
+			"permissions[user_name='gone@example.com']":         {Operation: OperationRemove, LocalEdit: true},
+			"permissions[user_name='late@example.com']": {
+				Operation: OperationAdd,
+				Value:     map[string]any{"level": "CAN_MANAGE_RUN", "user_name": "late@example.com"},
+			},
+		},
+	}, changes)
 }
 
 func TestLookupDeployedFieldReadsRemoteState(t *testing.T) {
