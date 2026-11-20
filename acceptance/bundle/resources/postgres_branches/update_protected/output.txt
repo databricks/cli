@@ -27,7 +27,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-branch [DEV_BRANCH_ID]
+>>> retry [CLI] postgres get-branch [DEV_BRANCH_ID]
 {
   "branch_id": "dev-branch",
   "name": "[DEV_BRANCH_ID]",
@@ -104,7 +104,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-branch [DEV_BRANCH_ID]
+>>> retry [CLI] postgres get-branch [DEV_BRANCH_ID]
 {
   "branch_id": "dev-branch",
   "name": "[DEV_BRANCH_ID]",
@@ -141,7 +141,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-branch [DEV_BRANCH_ID]
+>>> retry [CLI] postgres get-branch [DEV_BRANCH_ID]
 {
   "branch_id": "dev-branch",
   "name": "[DEV_BRANCH_ID]",
