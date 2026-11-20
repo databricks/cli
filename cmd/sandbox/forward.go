@@ -178,6 +178,9 @@ func newForwardTransport(cfg *config.Config) (http.RoundTripper, error) {
 		return clientCfg.Transport, nil
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// A non-nil empty TLSNextProto turns HTTP/2 off. Over HTTP/2, concurrent
+	// forwarded requests share one TCP connection and its throughput.
+	transport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
 	if clientCfg.InsecureSkipVerify {
 		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
