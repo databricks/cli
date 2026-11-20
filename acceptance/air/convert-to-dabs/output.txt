@@ -191,18 +191,26 @@ Workspace:
 
 Validation OK!
 
-=== databricks_ai versions use a base environment
+=== --force does not replace a different workload's bundle
 
 >>> [CLI] air convert-to-dabs databricks-ai.yaml --force
-Wrote a Databricks Asset Bundle to .:
+Error: databricks.yml in . belongs to bundle "torchrun-a10-smoke-test", not to this workload's bundle "databricks-ai-v5-smoke-test"; pass --output-dir with another directory that contains the code directory, or remove it
+
+Exit code: 1
+
+=== databricks_ai versions use a base environment
+
+>>> [CLI] air convert-to-dabs databricks-ai.yaml --output-dir generated-databricks-ai
+Wrote a Databricks Asset Bundle to generated-databricks-ai:
   databricks.yml
   generated_artifacts/training_config.yaml
   generated_artifacts/command.sh
 
 To deploy and run this workload as a bundle:
-  1. [CLI] bundle validate
-  2. [CLI] bundle deploy
-  3. [CLI] bundle run databricks-ai-v5-smoke-test --no-wait
+  1. cd generated-databricks-ai
+  2. [CLI] bundle validate
+  3. [CLI] bundle deploy
+  4. [CLI] bundle run databricks-ai-v5-smoke-test --no-wait
 
 bundle deploy uploads the code source and launch scripts automatically.
 To see what it deployed and where: [CLI] bundle summary
@@ -215,7 +223,7 @@ job and its uploaded files with:
 Note: the YAML does not set max_retries, so the job uses the `air run` default
 (max_retries: 3, retry_on_timeout: true). Edit databricks.yml to change it.
 
->>> grep -E environment_version|base_environment databricks.yml
+>>> grep -E environment_version|base_environment generated-databricks-ai/databricks.yml
             base_environment: workspace-base-environments/databricks_ai_v5
 
 === the Databricks AI bundle validates
