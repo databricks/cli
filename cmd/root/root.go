@@ -227,24 +227,31 @@ Stack Trace:
 		}
 	}
 
-	commandStr := commandString(cmd)
 	ctx = cmd.Context()
 
-	telemetryErr := telemetry.Upload(cmd.Context(), protos.ExecutionContext{
-		CmdExecID:        cmdctx.ExecId(ctx),
-		StateLineageHash: telemetry.StateLineageHash(ctx),
-		Version:          build.GetInfo().Version,
-		Command:          commandStr,
-		OperatingSystem:  runtime.GOOS,
-		DbrVersion:       dbr.RuntimeVersion(ctx).String(),
-		ExecutionTimeMs:  time.Since(startTime).Milliseconds(),
-		ExitCode:         int64(exitCode),
-	})
+	telemetryErr := telemetry.Upload(cmd.Context(), TelemetryExecutionContext(cmd, startTime, exitCode))
 	if telemetryErr != nil {
 		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)
 	}
 
 	return err
+}
+
+// TelemetryExecutionContext returns the execution context that a telemetry upload of cmd's run carries. start is when the
+// run started, and exitCode is its exit status, 0 for a run that is still going. Execute uploads with it at exit, and a
+// command that uploads before it exits uses it too.
+func TelemetryExecutionContext(cmd *cobra.Command, start time.Time, exitCode int) protos.ExecutionContext {
+	ctx := cmd.Context()
+	return protos.ExecutionContext{
+		CmdExecID:        cmdctx.ExecId(ctx),
+		StateLineageHash: telemetry.StateLineageHash(ctx),
+		Version:          build.GetInfo().Version,
+		Command:          commandString(cmd),
+		OperatingSystem:  runtime.GOOS,
+		DbrVersion:       dbr.RuntimeVersion(ctx).String(),
+		ExecutionTimeMs:  time.Since(start).Milliseconds(),
+		ExitCode:         int64(exitCode),
+	}
 }
 
 // This function is used to report an unknown subcommand.
