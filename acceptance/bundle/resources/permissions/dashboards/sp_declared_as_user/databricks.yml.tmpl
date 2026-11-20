@@ -1,0 +1,18 @@
+bundle:
+  name: dashboard-sp-perm-$UNIQUE_NAME
+
+resources:
+  dashboards:
+    foo:
+      display_name: test-dashboard-$UNIQUE_NAME
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      serialized_dashboard: '{"pages":[{"name":"page1","displayName":"Page 1"}]}'
+      permissions:
+        # A service principal declared under user_name using its application-ID UUID.
+        # The Permissions API resolves the UUID to a service principal and returns it
+        # as service_principal_name on GET, so desired (user_name) and remote
+        # (service_principal_name) name the same principal under different fields. The
+        # plan matches the entry by value and treats that field difference as no
+        # change, so the deploy converges instead of reporting a perpetual update.
+        - level: CAN_MANAGE
+          user_name: aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee
