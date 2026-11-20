@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,6 +50,9 @@ func TestAutoInstallPrompt(t *testing.T) {
 		installState string
 		// env is set on top of a terminal with color.
 		env map[string]string
+		// agent is a coding agent's env var, set to 1: the run is that
+		// agent's call.
+		agent string
 		// stdinPiped, stdoutRedirected and stderrRedirected make that
 		// stream not a terminal.
 		stdinPiped       bool
@@ -154,7 +158,16 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantState:        autoinstall.State{ID: "treatment-machine"},
 		},
 		{
-			name:             "no terminal at all installs without asking",
+			// ssh, nohup, cron or an IDE extension: nobody sees the question.
+			name:             "no terminal at all skips without installing",
+			stdinPiped:       true,
+			stdoutRedirected: true,
+			stderrRedirected: true,
+			wantState:        autoinstall.State{ID: "treatment-machine"},
+		},
+		{
+			name:             "a coding agent with no terminal installs without asking",
+			agent:            "CLAUDECODE",
 			stdinPiped:       true,
 			stdoutRedirected: true,
 			stderrRedirected: true,
@@ -162,6 +175,15 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantSkills:       true,
 			wantState:        autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
 			wantOutcome:      protos.AitoolsAutoInstallOutcomeInstalled,
+		},
+		{
+			name:        "a coding agent in a terminal installs without asking",
+			agent:       "CURSOR_AGENT",
+			input:       "n\n",
+			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
+			wantSkills:  true,
+			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
 			name:        "a retry after yes is not asked again",
@@ -217,6 +239,9 @@ func TestAutoInstallPrompt(t *testing.T) {
 			for k, v := range tc.env {
 				t.Setenv(k, v)
 			}
+			if tc.agent != "" {
+				setCodingAgent(t, tc.agent)
+			}
 			var stdout, stderr bytes.Buffer
 			outW, errW := cmdio.FakeTTY(&stdout), cmdio.FakeTTY(&stderr)
 			if tc.stdoutRedirected {
@@ -250,7 +275,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			for _, e := range telemetry.BufferedEvents(ctx) {
 				if e := e.AitoolsAutoInstallEvent; e != nil {
 					outcomes = append(outcomes, e.Outcome)
-					assert.Equal(t, !tc.stdinPiped || !tc.stdoutRedirected || !tc.stderrRedirected, e.Interactive)
+					assert.Equal(t, tc.agent == "" && (!tc.stdinPiped || !tc.stdoutRedirected || !tc.stderrRedirected), e.Interactive)
 					assert.Equal(t, protos.AitoolsHoldoutArmTreatment, e.HoldoutArm)
 				}
 			}
@@ -290,6 +315,7 @@ func TestAutoInstallKeepsTheIDWhenItCannotAsk(t *testing.T) {
 // after one command of a version, not after each of them.
 func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
 	setupAutoInstallHome(t, "")
+	setCodingAgent(t, "CLAUDECODE")
 	lookups := 0
 	t.Cleanup(func() { gateOn = autoinstall.GateOn })
 	gateOn = func(context.Context, string) (bool, error) {
@@ -320,6 +346,7 @@ func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
 // the gate on. The run stops instead of installing.
 func TestAutoInstallStopsWhenTheGateLookupIsInterrupted(t *testing.T) {
 	home := setupAutoInstallHome(t, "")
+	setCodingAgent(t, "CLAUDECODE")
 	var interrupt context.CancelFunc
 	t.Cleanup(func() {
 		gateOn = autoinstall.GateOn
@@ -350,6 +377,7 @@ func TestAutoInstallStopsWhenTheGateLookupIsInterrupted(t *testing.T) {
 // gate up.
 func TestAutoInstallSkipsTheGateLookupWithoutAgents(t *testing.T) {
 	home := setupAutoInstallHome(t, "")
+	setCodingAgent(t, "CLAUDECODE")
 	require.NoError(t, os.RemoveAll(filepath.Join(home, ".cursor")))
 	t.Cleanup(func() { gateOn = autoinstall.GateOn })
 	gateOn = func(context.Context, string) (bool, error) {
@@ -391,6 +419,9 @@ func TestAutoInstallSkipsRootInAUserHome(t *testing.T) {
 // when rootInHome is set, and counts the gate lookups.
 func runRootInUserHome(t *testing.T, rootInHome bool) (ctx context.Context, home string, lookups *int) {
 	home = setupAutoInstallHome(t, "")
+	// A coding agent's call installs without a question, so the user's run
+	// needs no terminal.
+	setCodingAgent(t, "CLAUDECODE")
 	if rootInHome {
 		// The state the setup seeds would hide a state file or lock file
 		// the run creates.
@@ -408,6 +439,25 @@ func runRootInUserHome(t *testing.T, rootInHome bool) (ctx context.Context, home
 	ctx = telemetry.WithNewLogger(ctx)
 	runAutoInstallHook(ctx)
 	return ctx, home, lookups
+}
+
+// A run with no terminal and no coding agent cannot ask, so it skips before the
+// gate lookup: a cron job or a job pod does not wait for it on every run.
+func TestAutoInstallSkipsTheGateLookupWhenItCannotAsk(t *testing.T) {
+	home := setupAutoInstallHome(t, "")
+	t.Cleanup(func() { gateOn = autoinstall.GateOn })
+	gateOn = func(context.Context, string) (bool, error) {
+		t.Error("the gate was looked up")
+		return true, nil
+	}
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	runAutoInstallHook(ctx)
+	assert.Empty(t, telemetry.BufferedEvents(ctx))
+	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.State{ID: "treatment-machine"}, state, "the version is not settled")
 }
 
 func TestToolsPlanNewAgents(t *testing.T) {
@@ -436,6 +486,13 @@ func runAutoInstallHook(ctx context.Context) {
 	jobs.AddCommand(list)
 	list.SetContext(ctx)
 	AutoInstall(list)
+}
+
+// setCodingAgent makes the run the call of the coding agent whose env var is
+// name. setupAutoInstallHome resets the SDK's cached agent after the test.
+func setCodingAgent(t *testing.T, name string) {
+	t.Setenv(name, "1")
+	useragent.ClearCache()
 }
 
 // setupAutoInstallHome gives the run a clean environment with Cursor's config

@@ -1,0 +1,1 @@
+* Automatic installation of Databricks AI tools no longer installs without asking when the CLI runs with no terminal (ssh without a terminal, nohup, cron, an IDE extension); it waits for a run that can ask first. Coding agents still get the tools without a question.
