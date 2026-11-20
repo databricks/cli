@@ -1,0 +1,33 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"   # drop create requests; capture only the recreate below
+
+# pg_version is spec:immutable, so a bump recreates the project. project_id (hence the project
+# name "projects/{project_id}") is unchanged, so my_catalog.branch -- built from
+# ${my_project.name} -- resolves to the same value: the catalog does not change.
+title "Bump pg_version: recreates the project; project_id and name are unchanged"
+trace update_file.py databricks.yml "pg_version: 16" "pg_version: 17"
+
+# PLANNED: the direct engine cannot resolve ${my_project.name} for a project being recreated
+# (a recreate does not preserve the id), so it diffs the saved branch against the literal
+# "${...}" placeholder and plans a spurious recreate of the catalog alongside the project. The
+# catalog's branch value never actually changes.
+title "Plan"
+trace $CLI bundle plan
+
+# WHAT ACTUALLY HAPPENED: the direct engine performs a real delete + create of the catalog.
+# Deploy stdout goes to LOG.deploy (parallel completion order is nondeterministic, so it is not
+# a golden); the API calls are recorded below. out.requests.txt shows the DELETE + POST
+# issued against the catalog with an identical, unchanged spec -- a destructive recreate of a
+# resource that did not change.
+title "Deploy the recreate and record the requests (see out.requests.txt)"
+$CLI bundle deploy --auto-approve &> LOG.deploy
+trace print_requests.py --sort '//postgres' > out.requests.txt
