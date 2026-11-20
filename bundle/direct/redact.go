@@ -13,10 +13,11 @@ import (
 
 const sensitiveRedactedValue = "[redacted]"
 
-// sensitivePaths parses the sensitive field paths of the adapter.
-func sensitivePaths(adapter *dresources.Adapter) ([]*structpath.PathNode, error) {
+// sensitivePaths parses the sensitive field rules of a resource type.
+func sensitivePaths(rules []dresources.FieldRule) ([]*structpath.PathNode, error) {
 	var paths []*structpath.PathNode
-	for _, field := range adapter.GetSensitiveFields() {
+	for _, rule := range rules {
+		field := rule.Field.String()
 		path, err := structpath.ParsePath(field)
 		if err != nil {
 			return nil, fmt.Errorf("parsing sensitive field path %q: %w", field, err)
@@ -34,7 +35,7 @@ func redactSensitiveFields(adapter *dresources.Adapter, s any, replacement strin
 		return nil
 	}
 
-	paths, err := sensitivePaths(adapter)
+	paths, err := sensitivePaths(adapter.ResourceConfig().SensitiveFields)
 	if err != nil {
 		return err
 	}
@@ -147,13 +148,13 @@ func sensitiveConfigValue(root *config.Root, resourceKey string, path *structpat
 	if rc == nil {
 		return "", fmt.Errorf("resource %s is not in the config; run 'bundle plan' again", resourceKey)
 	}
-	return "", fmt.Errorf("resource %s: the config has no value for sensitive field %s; pass the value", resourceKey, path)
+	return "", fmt.Errorf("resource %s: the config has no value for sensitive field %s; set the variable it uses with --var or BUNDLE_VAR_<name>", resourceKey, path)
 }
 
 // restoreSensitiveFields replaces the sensitive values in s, a saved plan's state, with the values
 // the current config sets. CheckSensitivePlanValues runs the same rule before the plan is approved.
 func restoreSensitiveFields(adapter *dresources.Adapter, resourceKey string, s any, root *config.Root) error {
-	paths, err := sensitivePaths(adapter)
+	paths, err := sensitivePaths(adapter.ResourceConfig().SensitiveFields)
 	if err != nil {
 		return err
 	}

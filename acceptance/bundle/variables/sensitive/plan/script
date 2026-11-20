@@ -10,12 +10,8 @@ title "bundle plan -o json, saved to a file"
 $CLI bundle plan -o json | contains.py "${SECRETS[@]}" > .databricks/plan.json
 trace jq -S '.plan | map_values(.new_state)' .databricks/plan.json
 
-# A variable file supplies a value, but a saved plan only accepts --var and BUNDLE_VAR_.
-title "deploy from the saved plan with the sensitive variable only in a variable file"
-mkdir -p .databricks/bundle/default
-echo '{"api_header": "dummy-header"}' > .databricks/bundle/default/variable-overrides.json
+title "deploy from the saved plan without the sensitive variable"
 musterr trace env -u BUNDLE_VAR_api_header $CLI bundle deploy --plan .databricks/plan.json
-rm .databricks/bundle/default/variable-overrides.json
 
 # An empty value counts as missing. The deploy reads the workspace before the check, and the number of
 # those reads differs per DMS variant, so only the state-changing requests are counted.

@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -93,10 +92,8 @@ func secretRoot(t *testing.T, value string, variables map[string]*variable.Varia
 }
 
 const (
-	msgValueMissing      = "resource resources.secrets.s: the config has no value for sensitive field value; pass the value"
-	msgNotInConfig       = "resource resources.secrets.gone is not in the config; run 'bundle plan' again"
-	msgCredentialMissing = "sensitive variable api_credential has no value; pass it with --var api_credential=... or BUNDLE_VAR_api_credential when deploying from a saved plan (the variable-overrides file is not read for sensitive variables)"
-	msgVarsMissing       = "sensitive variables api_credential, api_header have no value; pass each with --var NAME=... or BUNDLE_VAR_NAME when deploying from a saved plan (the variable-overrides file is not read for sensitive variables)"
+	msgValueMissing = "resource resources.secrets.s: the config has no value for sensitive field value; set the variable it uses with --var or BUNDLE_VAR_<name>"
+	msgNotInConfig  = "resource resources.secrets.gone is not in the config; run 'bundle plan' again"
 )
 
 func TestRestoreSensitiveFields(t *testing.T) {
@@ -185,12 +182,9 @@ func TestSensitiveConfigValueNestedField(t *testing.T) {
 
 func TestCheckSensitivePlanValues(t *testing.T) {
 	sensitive := true
-	variables := func() map[string]*variable.Variable {
-		return map[string]*variable.Variable{
-			"api_credential": {Sensitive: &sensitive},
-			"api_header":     {Sensitive: &sensitive},
-			"target_schema":  {},
-		}
+	variables := map[string]*variable.Variable{
+		"api_credential": {Sensitive: &sensitive},
+		"target_schema":  {},
 	}
 	secretPlan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
 		"resources.secrets.s": {NewState: &structvar.StructVarJSON{Value: []byte(`{"name":"s","value":"[redacted]"}`)}},
@@ -206,69 +200,62 @@ func TestCheckSensitivePlanValues(t *testing.T) {
 		name    string
 		root    *config.Root
 		plan    *deployplan.Plan
-		flags   []string
-		env     map[string]string
 		wantErr string
 	}{
 		{
 			name: "plan without sensitive resources needs nothing",
-			root: secretRoot(t, secretLiteral, variables()),
+			root: secretRoot(t, "", variables),
 			plan: jobsPlan,
 		},
 		{
-			name:    "missing variables are named",
-			root:    secretRoot(t, secretLiteral, variables()),
+			name: "sensitive value set in the config passes",
+			root: secretRoot(t, secretLiteral, variables),
+			plan: secretPlan,
+		},
+		{
+			name: "zero in the plan and set in the config passes",
+			root: secretRoot(t, secretLiteral, variables),
+			plan: zeroPlan,
+		},
+		{
+			name:    "empty config value is reported",
+			root:    secretRoot(t, "", variables),
 			plan:    secretPlan,
-			wantErr: msgVarsMissing,
-		},
-		{
-			name:    "empty flag counts as missing even when the environment is set",
-			root:    secretRoot(t, secretLiteral, variables()),
-			plan:    secretPlan,
-			flags:   []string{"api_credential="},
-			env:     map[string]string{"BUNDLE_VAR_api_credential": "y", "BUNDLE_VAR_api_header": "y"},
-			wantErr: msgCredentialMissing,
-		},
-		{
-			name:  "environment supplies both variables",
-			root:  secretRoot(t, secretLiteral, variables()),
-			plan:  secretPlan,
-			flags: []string{"api_credential=x"},
-			env:   map[string]string{"BUNDLE_VAR_api_header": "y"},
-		},
-		{
-			name:  "zero in the plan and set in the config passes",
-			root:  secretRoot(t, secretLiteral, variables()),
-			plan:  zeroPlan,
-			flags: []string{"api_credential=x", "api_header=y"},
-		},
-		{
-			name:    "empty config value",
-			root:    secretRoot(t, "", variables()),
-			plan:    secretPlan,
-			flags:   []string{"api_credential=x", "api_header=y"},
 			wantErr: msgValueMissing,
-		},
-		{
-			name:    "resource problem comes before the variable problem",
-			root:    secretRoot(t, "", variables()),
-			plan:    secretPlan,
-			wantErr: msgValueMissing + "; " + msgVarsMissing,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := t.Context()
-			for k, v := range tc.env {
-				ctx = env.Set(ctx, k, v) //nolint:fatcontext // the variables accumulate on one context by design
-			}
-			err := CheckSensitivePlanValues(ctx, tc.root, tc.plan, tc.flags)
+			errs := CheckSensitivePlanValues(tc.root, tc.plan)
 			if tc.wantErr == "" {
-				assert.NoError(t, err)
+				assert.Empty(t, errs)
 				return
 			}
-			assert.EqualError(t, err, tc.wantErr)
+			require.Len(t, errs, 1)
+			assert.EqualError(t, errs[0], tc.wantErr)
 		})
 	}
+}
+
+// TestCheckSensitivePlanValuesOneErrorPerProblem checks that each resource with a missing value gets its
+// own error, and that a resource missing from the config is reported once, not once per sensitive field.
+func TestCheckSensitivePlanValuesOneErrorPerProblem(t *testing.T) {
+	root := syncedRoot(t, &config.Root{Resources: config.Resources{
+		Secrets: map[string]*resources.Secret{
+			"a": {Secret: catalog.Secret{Name: "a"}},
+			"b": {Secret: catalog.Secret{Name: "b"}},
+		},
+	}})
+	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
+		"resources.secrets.a":    {NewState: &structvar.StructVarJSON{Value: []byte(`{"name":"a","value":"[redacted]"}`)}},
+		"resources.secrets.b":    {NewState: &structvar.StructVarJSON{Value: []byte(`{"name":"b","value":"[redacted]"}`)}},
+		"resources.secrets.gone": {NewState: &structvar.StructVarJSON{Value: []byte(`{"name":"gone","value":"[redacted]"}`)}},
+	}}
+
+	errs := CheckSensitivePlanValues(root, plan)
+	require.Len(t, errs, 3)
+	assert.EqualError(t, errs[0], "resource resources.secrets.a: the config has no value for sensitive field value; set the variable it uses with --var or BUNDLE_VAR_<name>")
+	assert.EqualError(t, errs[1], "resource resources.secrets.b: the config has no value for sensitive field value; set the variable it uses with --var or BUNDLE_VAR_<name>")
+	assert.EqualError(t, errs[2], msgNotInConfig)
 }

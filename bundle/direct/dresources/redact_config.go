@@ -60,6 +60,11 @@ func redactSensitiveVariables(root *config.Root) {
 	}
 }
 
+// SensitiveFieldRules returns the sensitive fields of a resource type without building its adapter.
+func SensitiveFieldRules(resourceType string) []FieldRule {
+	return getSensitiveFields()[resourceType]
+}
+
 // getSensitiveFields returns the map of resource type to list of sensitive fields.
 func getSensitiveFields() map[string][]FieldRule {
 	cfg := MustLoadConfig()

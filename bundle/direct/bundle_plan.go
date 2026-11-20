@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/retry"
@@ -70,40 +69,48 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	return nil
 }
 
-// CheckSensitivePlanValues rejects a saved plan that cannot be applied until its sensitive values are
-// supplied again, and returns one error that lists every problem. When the plan has a sensitive
-// resource, every sensitive variable of the bundle must be set with --var or BUNDLE_VAR_<name>, since
-// telling used variables from unused ones needs reference resolution.
-func CheckSensitivePlanValues(ctx context.Context, root *config.Root, plan *deployplan.Plan, flagVars []string) error {
-	adapters, err := dresources.InitAll(nil)
-	if err != nil {
-		return err
+// CheckSensitivePlanValues returns one error per problem that stops a saved plan from being applied:
+// a sensitive field the plan sets whose resolved config value is empty. The resolved config holds the
+// values from --var, BUNDLE_VAR_, defaults, targets and the variable-overrides file alike, so any of
+// them supplies a value. Sensitive variables the plan does not use need no value.
+func CheckSensitivePlanValues(root *config.Root, plan *deployplan.Plan) []error {
+	var problems []error
+	seen := make(map[string]bool)
+	addProblem := func(err error) {
+		if !seen[err.Error()] {
+			seen[err.Error()] = true
+			problems = append(problems, err)
+		}
 	}
 
-	var problems []string
-	needsValues := false
 	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
 		entry := plan.Plan[resourceKey]
 		if entry.NewState == nil {
 			continue
 		}
-		adapter, ok := adapters[config.GetResourceTypeFromKey(resourceKey)]
+		resourceType := config.GetResourceTypeFromKey(resourceKey)
+		typedNil, ok := dresources.SupportedResources[resourceType]
 		if !ok {
-			problems = append(problems, fmt.Sprintf("resource %s: unknown resource type", resourceKey))
+			addProblem(fmt.Errorf("resource %s: unknown resource type", resourceKey))
 			continue
 		}
-		if len(adapter.GetSensitiveFields()) == 0 {
+		rules := dresources.SensitiveFieldRules(resourceType)
+		if len(rules) == 0 {
 			continue
 		}
-		needsValues = true
+		adapter, err := dresources.NewAdapter(typedNil, resourceType, nil)
+		if err != nil {
+			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
+			continue
+		}
 		sv, err := entry.NewState.ToStructVar(adapter.StateType())
 		if err != nil {
-			problems = append(problems, fmt.Sprintf("resource %s: %s", resourceKey, err))
+			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
 			continue
 		}
-		paths, err := sensitivePaths(adapter)
+		paths, err := sensitivePaths(rules)
 		if err != nil {
-			problems = append(problems, fmt.Sprintf("resource %s: %s", resourceKey, err))
+			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
 			continue
 		}
 		for _, path := range paths {
@@ -112,57 +119,11 @@ func CheckSensitivePlanValues(ctx context.Context, root *config.Root, plan *depl
 				continue
 			}
 			if _, err := sensitiveConfigValue(root, resourceKey, path, planned); err != nil {
-				problems = append(problems, err.Error())
+				addProblem(err)
 			}
 		}
 	}
-
-	var missing []string
-	if needsValues {
-		for name, v := range root.Variables {
-			if v == nil || !config.IsExplicitlyEnabled(v.Sensitive) || variableSupplied(ctx, name, flagVars) {
-				continue
-			}
-			missing = append(missing, name)
-		}
-		slices.Sort(missing)
-	}
-	if len(missing) > 0 {
-		problems = append(problems, missingVariablesError(missing))
-	}
-
-	if len(problems) == 0 {
-		return nil
-	}
-	return errors.New(strings.Join(problems, "; "))
-}
-
-// missingVariablesError names the sensitive variables that have no --var or BUNDLE_VAR_ value.
-func missingVariablesError(missing []string) string {
-	const overrides = "the variable-overrides file is not read for sensitive variables"
-	if len(missing) == 1 {
-		name := missing[0]
-		return fmt.Sprintf("sensitive variable %s has no value; pass it with --var %s=... or BUNDLE_VAR_%s when deploying from a saved plan (%s)", name, name, name, overrides)
-	}
-	return fmt.Sprintf("sensitive variables %s have no value; pass each with --var NAME=... or BUNDLE_VAR_NAME when deploying from a saved plan (%s)", strings.Join(missing, ", "), overrides)
-}
-
-// variableSupplied reports whether a sensitive variable has a value from --var or BUNDLE_VAR_<name>.
-// The resolved value also carries values from the variable-overrides file, so the check reads only
-// flags and the environment. A --var given with an empty value wins over the environment.
-func variableSupplied(ctx context.Context, name string, flagVars []string) bool {
-	flagged, found := "", false
-	for _, assignment := range flagVars {
-		key, value, _ := strings.Cut(assignment, "=")
-		if key == name {
-			flagged, found = value, true
-		}
-	}
-	if found {
-		return flagged != ""
-	}
-	value, _ := env.Lookup(ctx, "BUNDLE_VAR_"+name)
-	return value != ""
+	return problems
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan. The sensitive

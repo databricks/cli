@@ -35,16 +35,16 @@ Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
   }
 }
 
-=== deploy from the saved plan with the sensitive variable only in a variable file
+=== deploy from the saved plan without the sensitive variable
 
 >>> env -u BUNDLE_VAR_api_header [CLI] bundle deploy --plan .databricks/plan.json
-Error: sensitive variable api_header has no value; pass it with --var api_header=... or BUNDLE_VAR_api_header when deploying from a saved plan (the variable-overrides file is not read for sensitive variables)
+Error: no value assigned to required variable api_header. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_api_header environment variable, or .databricks/bundle/<target>/variable-overrides.json
 
 
 === deploy from the saved plan with an empty sensitive variable
 
 >>> env BUNDLE_VAR_api_credential= [CLI] bundle deploy --plan .databricks/plan.json
-Error: resource resources.secrets.ref_secret: the config has no value for sensitive field value; pass the value; sensitive variable api_credential has no value; pass it with --var api_credential=... or BUNDLE_VAR_api_credential when deploying from a saved plan (the variable-overrides file is not read for sensitive variables)
+Error: resource resources.secrets.ref_secret: the config has no value for sensitive field value; set the variable it uses with --var or BUNDLE_VAR_<name>
 
 state-changing requests sent by the failed deploy: 0
 

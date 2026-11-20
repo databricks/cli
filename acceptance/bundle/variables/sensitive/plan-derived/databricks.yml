@@ -1,0 +1,34 @@
+bundle:
+  name: sensitive-variables
+
+# Sensitive variables that no resource uses need no value for a saved plan to apply. A variable used as a
+# secret value cannot have a default or a target value, so the other sensitive variables are unused.
+variables:
+  api_credential:
+    description: Credential for the external API, passed via the variable-overrides file.
+    sensitive: true
+  api_header:
+    description: Sensitive, derived from another sensitive variable, and not used by a resource.
+    sensitive: true
+    default: "Bearer ${var.api_credential}"
+  api_literal:
+    description: Sensitive with a literal default, and not used by a resource.
+    sensitive: true
+    default: dummy-literal
+  api_token:
+    description: Sensitive, not used by a resource, and set only for the dev target.
+    sensitive: true
+
+targets:
+  dev:
+    default: true
+    variables:
+      api_token: dummy-target
+
+resources:
+  secrets:
+    credential_secret:
+      name: credential_secret
+      catalog_name: main
+      schema_name: default
+      value: ${var.api_credential}

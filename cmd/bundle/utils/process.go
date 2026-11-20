@@ -496,8 +496,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 
-			if err := direct.CheckSensitivePlanValues(ctx, &b.Config, plan, variables); err != nil {
-				logdiag.LogError(ctx, err)
+			if errs := direct.CheckSensitivePlanValues(&b.Config, plan); len(errs) > 0 {
+				for _, err := range errs {
+					logdiag.LogError(ctx, err)
+				}
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
