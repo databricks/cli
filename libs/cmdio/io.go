@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/databricks/cli/libs/flags"
 )
 
@@ -81,7 +82,13 @@ func (c *cmdIO) stderrWriter(ctx context.Context) io.Writer {
 	c.errWriterMu.Lock()
 	defer c.errWriterMu.Unlock()
 	if c.errWriter == nil {
-		r, _ := NewRenderer(ctx, c.err)
+		r, color := NewRenderer(ctx, c.err)
+		if color {
+			// The color helpers emit basic ANSI whenever color is on, even
+			// where termenv's profile is Ascii (CI, CLICOLOR=0), and v1 passed
+			// them through. Downsampling to Ascii would strip them.
+			r.profile = max(r.profile, colorprofile.ANSI)
+		}
 		c.errWriter = r.Writer(c.err)
 	}
 	return c.errWriter
