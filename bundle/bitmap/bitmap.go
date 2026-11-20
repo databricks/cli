@@ -410,9 +410,10 @@ func joinField(pattern, key string) string {
 // that is not set. A bool with "P" alone holds an unresolved variable
 // reference; one with both "T" and "F" has both values under a wildcard. Unset
 // fields are omitted. bits may be shorter than schema (a bitmap from an older
-// CLI) but not longer.
+// CLI) or longer (a newer CLI): a set bit past the schema is a "P" line named
+// by futureField.
 func Text(schema []string, bits []bool, context uint16) []string {
-	schema = schema[:len(bits)]
+	schema = schema[:min(len(bits), len(schema))]
 	index := indexSchema(schema)
 	lines := []string{fmt.Sprintf("size=%d context=%d", len(bits), context)}
 	for i, p := range schema {
@@ -426,7 +427,18 @@ func Text(schema []string, bits []bool, context uint16) []string {
 		}
 		lines = append(lines, fmt.Sprintf("%c%c%c %s", letter(bits[i], 'P'), letter(isTrue, 'T'), letter(isFalse, 'F'), p))
 	}
+	for i := len(schema); i < len(bits); i++ {
+		if bits[i] {
+			lines = append(lines, "P   "+futureField(i))
+		}
+	}
 	return lines
+}
+
+// futureField names a set bit past the end of the schema, a field that only a
+// newer CLI can name. Whether it is a field or the value of a bool is unknown.
+func futureField(bit int) string {
+	return fmt.Sprintf("future #%d", bit)
 }
 
 // letter returns c if set, and a space otherwise, so that Text's flags stay aligned.
@@ -451,7 +463,8 @@ type JSON struct {
 	False    map[string]any `json:"false"`
 }
 
-// ToJSON renders bits as JSON. bits may be shorter than schema but not longer.
+// ToJSON renders bits as JSON. bits may be shorter than schema or longer: a set
+// bit past the schema is a top-level Presence entry named by futureField.
 func ToJSON(schema []string, bits []bool, context uint16) JSON {
 	out := JSON{
 		Size:     len(bits),
@@ -460,7 +473,8 @@ func ToJSON(schema []string, bits []bool, context uint16) JSON {
 		True:     map[string]any{},
 		False:    map[string]any{},
 	}
-	for i, p := range schema[:len(bits)] {
+	known := min(len(bits), len(schema))
+	for i, p := range schema[:known] {
 		if !bits[i] {
 			continue
 		}
@@ -471,6 +485,11 @@ func ToJSON(schema []string, bits []bool, context uint16) JSON {
 			tree, p = out.False, field
 		}
 		insertPath(tree, strings.Split(p, "."))
+	}
+	for i := known; i < len(bits); i++ {
+		if bits[i] {
+			out.Presence[futureField(i)] = true
+		}
 	}
 	return out
 }

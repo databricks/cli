@@ -1,6 +1,7 @@
 # The size grows with every field appended to the schema; replacing it keeps these goldens
 # stable while still asserting that the bitmap covers the whole schema (../full records it).
-add_repl "$($CLI bundle bitmap schema | wc -l | tr -d ' ')" SCHEMA_SIZE
+schema_size=$($CLI bundle bitmap schema | wc -l | tr -d ' ')
+add_repl "$schema_size" SCHEMA_SIZE
 
 # One "PTF <field>" line per set field (P present, T/F the values a bool held) after a
 # size/context header.
@@ -27,6 +28,20 @@ trace diff.py out.bitmap.json decoded-python.json
 # record what the config sets, not how a variable got its value.
 trace $CLI bundle bitmap bitmap -o text --var off_flag=false > var-flag.txt
 trace diff.py out.bitmap.txt var-flag.txt
+
+title "A bitmap from a newer CLI decodes, with a placeholder for the field this schema lacks\n"
+# future.py re-encodes the bitmap with two more fields, the last one set.
+add_repl "$((schema_size + 2))" FUTURE_SIZE
+add_repl "$((schema_size + 1))" FUTURE_BIT
+python3 future.py < out.bitmap.b64 > LOG.future.b64
+trace $CLI bundle bitmap decode < LOG.future.b64 > LOG.future.txt
+trace $CLI bundle bitmap decode -o json < LOG.future.b64 > LOG.future.json
+trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap < LOG.future.b64 > LOG.future-python.txt
+trace uv run --isolated --no-project --reinstall-package databricks-bundles --with "$DATABRICKS_BUNDLES_WHEEL" -q python -m databricks.bundles._bitmap -o json < LOG.future.b64 > LOG.future-python.json
+trace diff.py LOG.future.txt LOG.future-python.txt
+trace diff.py LOG.future.json LOG.future-python.json
+grep -E '^size=|future' LOG.future.txt
+jq '.presence | with_entries(select(.key | startswith("future")))' LOG.future.json
 
 trace $CLI bundle bitmap update-schema --validate
 

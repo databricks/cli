@@ -500,6 +500,10 @@ func TestText(t *testing.T) {
 
 	// A bitmap from an older CLI has fewer bits; the rest of the schema is unset.
 	assert.Equal(t, []string{"size=1 context=7", "P   bundle"}, Text(schema, []bool{true}, 7))
+
+	// A bitmap from a newer CLI has more bits; a set one past the schema is a placeholder.
+	newer := append(bitsFor(schema, []string{"bundle"}), false, true)
+	assert.Equal(t, []string{"size=14 context=0", "P   bundle", "P   future #13"}, Text(schema, newer, ContextFullBundle))
 }
 
 func TestToJSON(t *testing.T) {
@@ -562,6 +566,10 @@ func TestToJSON(t *testing.T) {
 	// A bitmap from an older CLI has fewer bits; the rest of the schema is unset.
 	got := ToJSON(schema, []bool{true}, 7)
 	assert.Equal(t, JSON{Size: 1, Context: 7, Presence: map[string]any{"bundle": true}, True: map[string]any{}, False: map[string]any{}}, got)
+
+	// A bitmap from a newer CLI has more bits; a set one past the schema is a placeholder.
+	got = ToJSON(schema, append(bitsFor(schema, []string{"bundle"}), false, true), ContextFullBundle)
+	assert.Equal(t, JSON{Size: len(schema) + 2, Presence: map[string]any{"bundle": true, "future #11": true}, True: map[string]any{}, False: map[string]any{}}, got)
 
 	// The list field's leaf is left out whichever of the two comes first.
 	got = ToJSON([]string{"x[*]", "x"}, []bool{true, true}, ContextFullBundle)

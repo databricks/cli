@@ -108,6 +108,16 @@ def test_text_older_bitmap():
     assert text(SCHEMA_FOR_TEXT, [True], 7) == ["size=1 context=7", "P   bundle"]
 
 
+def test_text_newer_bitmap():
+    bits = [path == "bundle" for path in SCHEMA_FOR_TEXT] + [False, True]
+    n = len(SCHEMA_FOR_TEXT)
+    assert text(SCHEMA_FOR_TEXT, bits, 0) == [
+        f"size={n + 2} context=0",
+        "P   bundle",
+        f"P   future #{n + 1}",
+    ]
+
+
 def test_decode():
     bits = [path in ("bundle", "bundle.name") for path in SCHEMA]
     assert decode(_encode(_payload(bits))) == [
@@ -123,10 +133,23 @@ def test_decode_rejects_unknown_context(decoder):
         decoder(_encode(_payload([], context=1)))
 
 
-@pytest.mark.parametrize("decoder", [decode, decode_json])
-def test_decode_rejects_newer_bitmap(decoder):
-    with pytest.raises(ValueError, match="decode it with a newer databricks-bundles"):
-        decoder(_encode(_payload([False] * (len(SCHEMA) + 1))))
+def test_decode_newer_bitmap():
+    # A newer CLI's bitmap has fields past the embedded schema; a set one is a placeholder.
+    bits = [path == "bundle" for path in SCHEMA] + [False, True]
+    encoded = _encode(_payload(bits))
+    future = f"future #{len(SCHEMA) + 1}"
+    assert decode(encoded) == [
+        f"size={len(SCHEMA) + 2} context=0",
+        "P   bundle",
+        f"P   {future}",
+    ]
+    assert decode_json(encoded) == {
+        "size": len(SCHEMA) + 2,
+        "context": 0,
+        "presence": {"bundle": True, future: True},
+        "true": {},
+        "false": {},
+    }
 
 
 SCHEMA_FOR_JSON = [

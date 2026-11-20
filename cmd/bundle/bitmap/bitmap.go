@@ -154,12 +154,8 @@ func newDecodeCommand() *cobra.Command {
 			return fmt.Errorf("unsupported bitmap context %d", context)
 		}
 		// The schema is append-only, so an older bitmap decodes against a prefix of
-		// it; a newer one has bits this binary cannot name.
-		schema := bundlebitmap.EmbeddedSchema()
-		if len(bits) > len(schema) {
-			return fmt.Errorf("bitmap has %d bits but the schema has %d fields; decode it with a newer CLI", len(bits), len(schema))
-		}
-		return render(cmd.OutOrStdout(), output, schema, bits, context)
+		// it; a newer one has bits this binary cannot name, shown as placeholders.
+		return render(cmd.OutOrStdout(), output, bundlebitmap.EmbeddedSchema(), bits, context)
 	}
 	return cmd
 }
