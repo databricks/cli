@@ -3,10 +3,12 @@ package aircmd
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -106,7 +108,11 @@ func TestConvertToDabsRejectsAlternateRoot(t *testing.T) {
 				}
 
 				_, err := writeBundle(t.Context(), cfg, path, dir, tc.force)
-				assert.EqualError(t, err, fmt.Sprintf("%s already exists in %s; move or remove it before converting", alias, dir))
+				want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", alias, dir)
+				if !tc.force {
+					want = fmt.Sprintf("%s, %s already exist in %s; move or remove them before converting", canonical, alias, dir)
+				}
+				assert.EqualError(t, err, want)
 				for _, name := range tc.files {
 					assert.Equal(t, name, testutil.ReadFile(t, filepath.Join(dir, name)))
 				}
@@ -119,6 +125,164 @@ func TestConvertToDabsRejectsAlternateRoot(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestConvertToDabsPreflightsAllCollisions(t *testing.T) {
+	const canonical = "databricks.yml"
+	for _, tc := range []struct {
+		name     string
+		roots    []string
+		sidecars []string
+	}{
+		{"last sidecar", nil, []string{hyperparametersName}},
+		{"multiple sidecars", nil, []string{commandScriptName, hyperparametersName}},
+		{"root and sidecars", []string{canonical}, []string{trainingConfigName, commandScriptName}},
+		{"alternate roots and sidecar", []string{canonical, "bundle.yaml", "bundle.yml"}, []string{commandScriptName}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeConfig(t, minimalConfig+"parameters: {lr: 0.1}\n")
+			cfg, err := loadRunConfig(path)
+			require.NoError(t, err)
+			dir := filepath.Dir(path)
+			for _, name := range tc.roots {
+				testutil.WriteFile(t, filepath.Join(dir, name), name)
+			}
+			for _, name := range tc.sidecars {
+				testutil.WriteFile(t, filepath.Join(dir, generatedArtifactsDir, name), name)
+			}
+
+			_, err = writeBundle(t.Context(), cfg, path, dir, false)
+			require.Error(t, err)
+			for _, name := range tc.roots {
+				assert.Equal(t, 1, strings.Count(err.Error(), name), "%s in %s", name, err)
+				testutil.AssertFileContents(t, filepath.Join(dir, name), name)
+			}
+			if !slices.Contains(tc.roots, canonical) {
+				assert.NoFileExists(t, filepath.Join(dir, canonical))
+			}
+			for _, name := range []string{trainingConfigName, commandScriptName, hyperparametersName} {
+				file := filepath.Join(dir, generatedArtifactsDir, name)
+				if slices.Contains(tc.sidecars, name) {
+					assert.Equal(t, 1, strings.Count(err.Error(), name), "%s in %s", name, err)
+					testutil.AssertFileContents(t, file, name)
+				} else {
+					assert.NoFileExists(t, file)
+				}
+			}
+		})
+	}
+}
+
+func TestConvertToDabsPreflightsSidecarDirectory(t *testing.T) {
+	for _, force := range []bool{false, true} {
+		t.Run(fmt.Sprintf("force=%t", force), func(t *testing.T) {
+			path := writeConfig(t, minimalConfig)
+			cfg, err := loadRunConfig(path)
+			require.NoError(t, err)
+			dir := filepath.Dir(path)
+			artifactDir := filepath.Join(dir, generatedArtifactsDir)
+			commandDir := filepath.Join(artifactDir, commandScriptName)
+			require.NoError(t, os.MkdirAll(commandDir, 0o700))
+
+			_, err = writeBundle(t.Context(), cfg, path, dir, force)
+			require.ErrorContains(t, err, commandScriptName)
+			assert.NotContains(t, err.Error(), "pass --force to overwrite")
+			assert.DirExists(t, commandDir)
+			assert.NoFileExists(t, filepath.Join(dir, "databricks.yml"))
+			assert.NoFileExists(t, filepath.Join(artifactDir, trainingConfigName))
+		})
+	}
+}
+
+func TestConvertToDabsPreflightsDanglingSidecar(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need extra privileges on Windows")
+	}
+	path := writeConfig(t, minimalConfig)
+	cfg, err := loadRunConfig(path)
+	require.NoError(t, err)
+	dir := filepath.Dir(path)
+	artifactDir := filepath.Join(dir, generatedArtifactsDir)
+	require.NoError(t, os.Mkdir(artifactDir, 0o700))
+	link := filepath.Join(artifactDir, commandScriptName)
+	require.NoError(t, os.Symlink("missing", link))
+
+	_, err = writeBundle(t.Context(), cfg, path, dir, false)
+	assert.ErrorContains(t, err, commandScriptName)
+	target, err := os.Readlink(link)
+	require.NoError(t, err)
+	assert.Equal(t, "missing", target)
+	assert.NoFileExists(t, filepath.Join(artifactDir, target))
+	assert.NoFileExists(t, filepath.Join(artifactDir, trainingConfigName))
+	assert.NoFileExists(t, filepath.Join(dir, "databricks.yml"))
+}
+
+func TestConvertToDabsPreflightsSymlinkLookupErrors(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need extra privileges on Windows")
+	}
+	for _, tc := range []struct{ name, loop string }{
+		{"parent", generatedArtifactsDir},
+		{"sidecar", path.Join(generatedArtifactsDir, commandScriptName)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfgPath := writeConfig(t, minimalConfig)
+			cfg, err := loadRunConfig(cfgPath)
+			require.NoError(t, err)
+			dir := filepath.Dir(cfgPath)
+			files := []string{"databricks.yml"}
+			if tc.loop != generatedArtifactsDir {
+				files = append(files, path.Join(generatedArtifactsDir, trainingConfigName))
+			}
+			for _, name := range files {
+				testutil.WriteFile(t, filepath.Join(dir, name), name)
+			}
+			link := filepath.Join(dir, tc.loop)
+			require.NoError(t, os.Symlink(filepath.Base(link), link))
+
+			_, err = writeBundle(t.Context(), cfg, cfgPath, dir, false)
+			require.ErrorIs(t, err, syscall.ELOOP)
+			assert.Contains(t, err.Error(), "move or remove")
+			assert.NotContains(t, err.Error(), "--force")
+			assert.Equal(t, 1, strings.Count(err.Error(), tc.loop))
+			for _, name := range files {
+				assert.Equal(t, 1, strings.Count(err.Error(), name))
+				testutil.AssertFileContents(t, filepath.Join(dir, name), name)
+			}
+			target, err := os.Readlink(link)
+			require.NoError(t, err)
+			assert.Equal(t, filepath.Base(link), target)
+		})
+	}
+}
+
+func TestConvertToDabsPreflightsArtifactParent(t *testing.T) {
+	path := writeConfig(t, minimalConfig)
+	cfg, err := loadRunConfig(path)
+	require.NoError(t, err)
+	dir := filepath.Dir(path)
+	for _, name := range []string{"databricks.yml", generatedArtifactsDir} {
+		testutil.WriteFile(t, filepath.Join(dir, name), name)
+	}
+
+	_, err = writeBundle(t.Context(), cfg, path, dir, false)
+	require.EqualError(t, err, fmt.Sprintf("databricks.yml, generated_artifacts already exist in %s; move or remove them before converting", dir))
+	for _, name := range []string{"databricks.yml", generatedArtifactsDir} {
+		testutil.AssertFileContents(t, filepath.Join(dir, name), name)
+	}
+}
+
+func TestConvertToDabsPreflightsForcedRootDirectory(t *testing.T) {
+	path := writeConfig(t, minimalConfig)
+	cfg, err := loadRunConfig(path)
+	require.NoError(t, err)
+	dir := filepath.Dir(path)
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "databricks.yml"), 0o700))
+
+	_, err = writeBundle(t.Context(), cfg, path, dir, true)
+	require.ErrorContains(t, err, "databricks.yml")
+	assert.NotContains(t, err.Error(), "--force")
+	assert.NoDirExists(t, filepath.Join(dir, generatedArtifactsDir))
 }
 
 // command.sh is the user's command copied verbatim — convert injects no cd. The
