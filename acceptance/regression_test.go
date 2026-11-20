@@ -222,14 +222,19 @@ func formatCounts(counts map[string]int) string {
 func renderRegressionReport(selected string, columns []regrColumn) string {
 	branch, refs := columns[0], columns[1:]
 	tests := leafTests(branch.Results)
+	counts := countByCategory(tests, branch, refs)
+	status := statusPass
+	if counts[catFailing] > 0 {
+		status = statusFail
+	}
 
 	var b strings.Builder
-	b.WriteString("## Regression test report\n\n")
+	fmt.Fprintf(&b, "## Regression test report %s\n\n", statusMark(status))
 	fmt.Fprintf(&b, "%s\n\n", selected)
 
 	// The table has a row per test variant, often hundreds, so it is collapsed. The workflow
 	// that posts the report always keeps this first <details> block when it trims the comment.
-	fmt.Fprintf(&b, "<details>\n<summary>%d tests: %s</summary>\n\n", len(tests), formatCounts(countByCategory(tests, branch, refs)))
+	fmt.Fprintf(&b, "<details>\n<summary>%d tests: %s</summary>\n\n", len(tests), formatCounts(counts))
 	b.WriteString("| test | " + strings.Join(columnTitles(columns), " | ") + " |\n")
 	b.WriteString("|---|" + strings.Repeat("---|", len(columns)) + "\n")
 	for _, test := range tests {
