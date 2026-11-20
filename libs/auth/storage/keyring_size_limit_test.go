@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
 
@@ -58,25 +57,24 @@ func shellSafe(r rune) bool {
 	return strings.ContainsRune("_@%+=:,./-", r)
 }
 
-// TestKeyringStore_Put_OSSecretSizeCaps pins how the CLI's keyring envelope
-// fares against go-keyring's per-OS secret caps. The caps are modeled in
-// fakeBackend so the test is keychain-agnostic and runs on every OS;
-// TestKeyringStore_Put_RealBackendRejectsLargeToken in
-// keyring_size_limit_os_test.go checks the real library on CI and fails when
-// the modeled caps go stale. A fix for #7707 that changes what Put stores
-// must update this test on purpose.
-func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
-	cases := []struct {
-		name          string
-		secretTooBig  func(service, account, secret string) bool
-		largeRejected bool
-	}{
-		{name: "darwin security -i line", secretTooBig: darwinSecurityCommandTooBig, largeRejected: true},
-		{name: "windows credential blob", secretTooBig: windowsCredentialBlobTooBig, largeRejected: true},
-		{name: "linux secret service has no cap", secretTooBig: nil, largeRejected: false},
-	}
+// osSecretCaps are go-keyring's per-OS secret caps as fakeBackend models them.
+var osSecretCaps = []struct {
+	name         string
+	secretTooBig func(service, account, secret string) bool
+}{
+	{name: "darwin security -i line", secretTooBig: darwinSecurityCommandTooBig},
+	{name: "windows credential blob", secretTooBig: windowsCredentialBlobTooBig},
+	{name: "linux secret service has no cap", secretTooBig: nil},
+}
 
-	for _, tc := range cases {
+// TestKeyringStore_Put_OSSecretSizeCaps pins that the keyring store holds
+// both token sizes from #7707 under go-keyring's per-OS secret caps: the small
+// one in a single item, the large one split over several. The caps are modeled
+// in fakeBackend so the test is keychain-agnostic and runs on every OS;
+// TestZalandoBackend_Set_RejectsLargeSecret in keyring_size_limit_os_test.go
+// checks the real library on CI and fails when the modeled caps go stale.
+func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
+	for _, tc := range osSecretCaps {
 		t.Run(tc.name, func(t *testing.T) {
 			backend := newFakeBackend()
 			backend.secretTooBig = tc.secretTooBig
@@ -91,12 +89,10 @@ func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
 			// The access token alone exceeds both caps (macOS after base64,
 			// Windows raw), so no other token field is needed.
 			large := &oauth2.Token{AccessToken: strings.Repeat("a", issue7707LargeAccessTokenBytes)}
-			err = store.Put("my-profile", Entry{Token: large})
-			if tc.largeRejected {
-				require.ErrorIs(t, err, keyring.ErrSetDataTooBig)
-			} else {
-				require.NoError(t, err)
-			}
+			require.NoError(t, store.Put("my-profile", Entry{Token: large}))
+			got, err = store.Lookup("my-profile")
+			require.NoError(t, err)
+			assert.Equal(t, large.AccessToken, got.Token.AccessToken)
 		})
 	}
 }

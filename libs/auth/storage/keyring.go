@@ -2,9 +2,14 @@ package storage
 
 import (
 	"cmp"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 	"time"
 	"uuid"
 
@@ -16,6 +21,21 @@ import (
 // to the OS-native secure store. The account field carries the per-entry
 // cache key the U2M manager passes through Store.Put / Lookup.
 const keyringServiceName = "databricks-cli"
+
+// AccessTokenPartMarker separates a cache key from the index of one of its
+// access token parts, the items that hold the access token of an entry too
+// large for one item. A cache key must not contain it, or the entry would
+// share its account with a part of another entry.
+const AccessTokenPartMarker = "#access-token-"
+
+// accessTokenPartSize is how many bytes of an access token go into one part.
+// It stays under the smallest backend limit. Windows Credential Manager caps
+// a credential at 2560 bytes. go-keyring's macOS backend base64-encodes the
+// secret into one command line for `security -i`, which reads at most 4096
+// bytes per line, so about 3000 bytes fit.
+// https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentialw
+// https://github.com/zalando/go-keyring/blob/v0.2.8/keyring_darwin.go#L86-L89
+const accessTokenPartSize = 2048
 
 // keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
 // the account name ProbeKeyring writes and deletes. A fixed name like
@@ -49,6 +69,26 @@ type keyringBackend interface {
 type keyringEntry struct {
 	Token        *oauth2.Token `json:"token"`
 	PendingLogin *PendingLogin `json:"pending_login,omitempty"`
+
+	// Split is set for a token that is too large for one keyring item. CLI
+	// versions that predate it still read the entry, so Token is then empty
+	// rather than nil, which releases before v1.24 dereference. It must not
+	// carry the refresh token either: they would rotate it and then fail to
+	// store the oversized result.
+	Split *splitToken `json:"split,omitempty"`
+}
+
+// splitToken is the part of an oversized token that stays in its entry.
+type splitToken struct {
+	// Token is the token without its access token.
+	Token oauth2.Token `json:"token"`
+
+	// AccessTokenParts is the number of parts that hold the access token and
+	// AccessTokenSHA256 is its hex digest. The parts are written one at a
+	// time, so only the digest tells a complete access token from one that
+	// another process is still writing or has since replaced.
+	AccessTokenParts  int    `json:"access_token_parts"`
+	AccessTokenSHA256 string `json:"access_token_sha256"`
 }
 
 // zalandoBackend delegates to the process-wide zalando/go-keyring provider.
@@ -147,37 +187,73 @@ func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
 
 // Put implements the Store interface.
 func (k *keyringStore) Put(key string, e Entry) error {
-	raw, err := json.Marshal(keyringEntry(e))
+	raw, err := json.Marshal(keyringEntry{Token: e.Token, PendingLogin: e.PendingLogin})
 	if err != nil {
 		return fmt.Errorf("marshal token: %w", err)
 	}
-	return k.withTimeout("set", func() error {
-		return k.backend.Set(k.keyringSvcName, key, string(raw))
+	err = k.set(key, string(raw))
+	if e.Token != nil && errors.Is(err, keyring.ErrSetDataTooBig) {
+		return k.putSplit(key, e.Token)
+	}
+	return err
+}
+
+// putSplit stores a token that is too large for one keyring item. The entry
+// under key keeps everything but the access token, which goes into parts next
+// to it.
+//
+// The entry is written first because it holds the refresh token. The server
+// rotates the refresh token on every refresh, so losing the new one logs the
+// user out, while losing the access token only costs another refresh.
+func (k *keyringStore) putSplit(key string, t *oauth2.Token) error {
+	sum := sha256.Sum256([]byte(t.AccessToken))
+	parts := slices.Collect(slices.Chunk([]byte(t.AccessToken), accessTokenPartSize))
+	rest := *t
+	rest.AccessToken = ""
+	raw, err := json.Marshal(keyringEntry{
+		Token: &oauth2.Token{},
+		Split: &splitToken{
+			Token:             rest,
+			AccessTokenParts:  len(parts),
+			AccessTokenSHA256: hex.EncodeToString(sum[:]),
+		},
 	})
+	if err != nil {
+		return fmt.Errorf("marshal token: %w", err)
+	}
+	if err := k.set(key, string(raw)); err != nil {
+		return err
+	}
+	for i, part := range parts {
+		if err := k.set(accessTokenPartKey(key, i), string(part)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Delete implements the Store interface. Removing a missing entry is a no-op.
 func (k *keyringStore) Delete(key string) error {
-	return k.withTimeout("delete", func() error {
-		err := k.backend.Delete(k.keyringSvcName, key)
+	err := k.remove(key)
+	if err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		return err
+	}
+	// A token that fits in one item can replace a split one without touching
+	// its access token parts, so the entry does not say how many there are.
+	for i := 0; ; i++ {
+		err := k.remove(accessTokenPartKey(key, i))
 		if errors.Is(err, keyring.ErrNotFound) {
 			return nil
 		}
-		return err
-	})
+		if err != nil {
+			return err
+		}
+	}
 }
 
 // Lookup implements the Store interface, returning ErrNotFound on a miss.
 func (k *keyringStore) Lookup(key string) (Entry, error) {
-	var raw string
-	err := k.withTimeout("get", func() error {
-		got, gerr := k.backend.Get(k.keyringSvcName, key)
-		if gerr != nil {
-			return gerr
-		}
-		raw = got
-		return nil
-	})
+	raw, err := k.get(key)
 	if errors.Is(err, keyring.ErrNotFound) {
 		return Entry{}, ErrNotFound
 	}
@@ -189,7 +265,69 @@ func (k *keyringStore) Lookup(key string) (Entry, error) {
 	if err := json.Unmarshal([]byte(raw), &entry); err != nil {
 		return Entry{}, fmt.Errorf("unmarshal token: %w", err)
 	}
-	return Entry(entry), nil
+	if entry.Split != nil {
+		return k.lookupSplit(key, entry.Split)
+	}
+	return Entry{Token: entry.Token, PendingLogin: entry.PendingLogin}, nil
+}
+
+// lookupSplit assembles a token stored by putSplit. When the access token
+// parts are missing or do not match the entry, because a write was interrupted
+// or another process is writing, the token is returned without an access token
+// so that the caller refreshes it.
+func (k *keyringStore) lookupSplit(key string, s *splitToken) (Entry, error) {
+	t := s.Token
+	var accessToken strings.Builder
+	for i := range s.AccessTokenParts {
+		part, err := k.get(accessTokenPartKey(key, i))
+		if errors.Is(err, keyring.ErrNotFound) {
+			return Entry{Token: &t}, nil
+		}
+		if err != nil {
+			return Entry{}, wrapKeyringUnreachable(err)
+		}
+		accessToken.WriteString(part)
+	}
+	sum := sha256.Sum256([]byte(accessToken.String()))
+	if hex.EncodeToString(sum[:]) == s.AccessTokenSHA256 {
+		t.AccessToken = accessToken.String()
+	}
+	return Entry{Token: &t}, nil
+}
+
+// accessTokenPartKey returns the key of the i-th access token part of the
+// entry stored under key.
+func accessTokenPartKey(key string, i int) string {
+	return key + AccessTokenPartMarker + strconv.Itoa(i)
+}
+
+func (k *keyringStore) set(key, secret string) error {
+	return k.withTimeout("set", func() error {
+		return k.backend.Set(k.keyringSvcName, key, secret)
+	})
+}
+
+func (k *keyringStore) get(key string) (string, error) {
+	var secret string
+	err := k.withTimeout("get", func() error {
+		got, gerr := k.backend.Get(k.keyringSvcName, key)
+		if gerr != nil {
+			return gerr
+		}
+		secret = got
+		return nil
+	})
+	// After a timeout the goroutine may still be writing secret.
+	if err != nil {
+		return "", err
+	}
+	return secret, nil
+}
+
+func (k *keyringStore) remove(key string) error {
+	return k.withTimeout("delete", func() error {
+		return k.backend.Delete(k.keyringSvcName, key)
+	})
 }
 
 // wrapKeyringUnreachable wraps a non-ErrNotFound keyring error with
