@@ -150,7 +150,6 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 		FullName:                  state.FullName,
 		Changes:                   buildGrantChanges(state.EmbeddedSlice, remoteGrantPrivileges(entry)),
 		OmitPermissionsInResponse: false,
-		ForceSendFields:           nil,
 	})
 	return nil, err
 }
@@ -166,10 +165,9 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, remote 
 	for _, ga := range desiredAssignments {
 		desiredPrincipals[ga.Principal] = struct{}{}
 		changes = append(changes, catalog.PermissionsChange{
-			Principal:       ga.Principal,
-			Add:             ga.Privileges,
-			Remove:          grantRemovals(ga.Privileges, remote[ga.Principal]),
-			ForceSendFields: nil,
+			Principal: ga.Principal,
+			Add:       ga.Privileges,
+			Remove:    grantRemovals(ga.Privileges, remote[ga.Principal]),
 		})
 	}
 
@@ -183,10 +181,9 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, remote 
 	slices.Sort(removedPrincipals)
 	for _, principal := range removedPrincipals {
 		changes = append(changes, catalog.PermissionsChange{
-			Principal:       principal,
-			Add:             nil,
-			Remove:          grantRemovals(nil, remote[principal]),
-			ForceSendFields: nil,
+			Principal: principal,
+			Add:       nil,
+			Remove:    grantRemovals(nil, remote[principal]),
 		})
 	}
 	return changes
@@ -244,12 +241,11 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 	pageToken := ""
 	for {
 		resp, err := r.client.Grants.Get(ctx, catalog.GetGrantRequest{
-			FullName:        fullName,
-			MaxResults:      0,
-			PageToken:       pageToken,
-			Principal:       "",
-			SecurableType:   securableType,
-			ForceSendFields: nil,
+			FullName:      fullName,
+			MaxResults:    0,
+			PageToken:     pageToken,
+			Principal:     "",
+			SecurableType: securableType,
 		})
 		if err != nil {
 			return nil, err
@@ -259,9 +255,8 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 				continue
 			}
 			assignments = append(assignments, catalog.PrivilegeAssignment{
-				Principal:       assignment.Principal,
-				Privileges:      assignment.Privileges,
-				ForceSendFields: nil,
+				Principal:  assignment.Principal,
+				Privileges: assignment.Privileges,
 			})
 		}
 		if resp.NextPageToken == "" {

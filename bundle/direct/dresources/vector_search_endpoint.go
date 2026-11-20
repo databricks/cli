@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
@@ -63,15 +62,11 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 	return &input.CreateEndpoint
 }
 
+// UsagePolicyId is missing in remote.
+var toCreateVectorSearchEndpoint = newCopier[VectorSearchEndpointRemote, vectorsearch.CreateEndpoint]()
+
 func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
-	return &vectorsearch.CreateEndpoint{
-		Name:            remote.Name,
-		EndpointType:    remote.EndpointType,
-		BudgetPolicyId:  remote.BudgetPolicyId,
-		UsagePolicyId:   "", // Missing in remote
-		TargetQps:       remote.TargetQps,
-		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields, "UsagePolicyId"),
-	}
+	return toCreateVectorSearchEndpoint.Copy(remote)
 }
 
 func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*VectorSearchEndpointRemote, error) {
@@ -142,9 +137,8 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 
 	if entry.Changes.HasChange(pathTargetQps) {
 		_, err := r.client.VectorSearchEndpoints.PatchEndpoint(ctx, vectorsearch.PatchEndpointRequest{
-			EndpointName:    id,
-			TargetQps:       config.TargetQps,
-			ForceSendFields: nil,
+			EndpointName: id,
+			TargetQps:    config.TargetQps,
 		})
 		if err != nil {
 			return nil, err

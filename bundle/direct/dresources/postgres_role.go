@@ -134,16 +134,14 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			Spec: &config.RoleRoleSpec,
 
 			// Output-only fields.
-			RoleId:          "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			RoleId:     "",
+			CreateTime: nil,
+			Name:       "",
+			Parent:     "",
+			Status:     nil,
+			UpdateTime: nil,
 		},
 		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
-		ForceSendFields: nil,
 	}
 	start := time.Now()
 	waiter, err := r.client.Postgres.CreateRole(ctx, req)
@@ -212,13 +210,12 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 			Spec: &config.RoleRoleSpec,
 
 			// Output-only fields.
-			RoleId:          "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			RoleId:     "",
+			CreateTime: nil,
+			Name:       "",
+			Parent:     "",
+			Status:     nil,
+			UpdateTime: nil,
 		},
 		UpdateMask: fieldmask.FieldMask{
 			Paths: fieldPaths,
@@ -243,7 +240,6 @@ func (r *ResourcePostgresRole) DoDelete(ctx context.Context, id string, _ *Postg
 		// user-facing config we don't expose, and it would spin up compute to
 		// run reassignment SQL.
 		ReassignOwnedTo: "",
-		ForceSendFields: nil,
 	})
 	if err != nil {
 		return err

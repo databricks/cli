@@ -105,12 +105,11 @@ func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *Post
 			Spec: &config.SyncedTableSyncedTableSpec,
 
 			// Output-only fields.
-			SyncedTableId:   "",
-			CreateTime:      nil,
-			Name:            "",
-			Status:          nil,
-			Uid:             "",
-			ForceSendFields: nil,
+			SyncedTableId: "",
+			CreateTime:    nil,
+			Name:          "",
+			Status:        nil,
+			Uid:           "",
 		},
 	})
 	if err != nil {

@@ -59,9 +59,8 @@ func (*ResourcePostgresSnapshotSchedule) PrepareState(input *resources.PostgresS
 
 func (*ResourcePostgresSnapshotSchedule) RemapState(remote *PostgresSnapshotScheduleRemote) *PostgresSnapshotScheduleState {
 	return &PostgresSnapshotScheduleState{
-		Branch:          remote.Branch,
-		Schedule:        remote.Schedule,
-		ForceSendFields: nil,
+		Branch:   remote.Branch,
+		Schedule: remote.Schedule,
 	}
 }
 
@@ -96,8 +95,7 @@ func (r *ResourcePostgresSnapshotSchedule) updateSnapshotSchedule(ctx context.Co
 			Schedule: cadences,
 
 			// Name is carried in the request's Name field, not the body.
-			Name:            "",
-			ForceSendFields: nil,
+			Name: "",
 		},
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"schedule"},

@@ -2,11 +2,11 @@ package dresources
 
 import (
 	"context"
-	"slices"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -59,17 +59,18 @@ func (r *ResourceFeature) DoCreate(ctx context.Context, config *ml.Feature) (str
 // field is excluded at plan level in configs/features.yml and features.generated.yml.
 const featureUpdateMask = "description"
 
+// The whole feature goes in the body, with the mask limiting what is applied: full_name,
+// function and source have no omitempty, so a body built from just the updatable fields would
+// send them blanked out. Description is forced so clearing it sends "" rather than omitting it.
+var toUpdateFeature = newCopier[ml.Feature, ml.Feature](structcopy.ForceSend("Description"))
+
 func (r *ResourceFeature) DoUpdate(ctx context.Context, id string, config *ml.Feature, _ *PlanEntry) (*ml.Feature, error) {
-	// The whole feature goes in the body, with the mask limiting what is applied: full_name,
-	// function and source have no omitempty, so a body built from just the updatable fields would
-	// send them blanked out. Description is forced so clearing it sends "" rather than omitting it.
-	update := *config
+	update := toUpdateFeature.Copy(config)
 	update.FullName = id
-	update.ForceSendFields = append(slices.Clone(config.ForceSendFields), "Description")
 
 	return r.client.FeatureEngineering.UpdateFeature(ctx, ml.UpdateFeatureRequest{
 		FullName:   id,
-		Feature:    update,
+		Feature:    *update,
 		UpdateMask: featureUpdateMask,
 	})
 }

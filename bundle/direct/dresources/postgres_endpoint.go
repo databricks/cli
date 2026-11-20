@@ -145,17 +145,15 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 			Spec: &config.EndpointSpec,
 
 			// Output-only fields.
-			EndpointId:      "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			EndpointId: "",
+			CreateTime: nil,
+			Name:       "",
+			Parent:     "",
+			Status:     nil,
+			Uid:        "",
+			UpdateTime: nil,
 		},
 		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
-		ForceSendFields: nil,
 	})
 	if err != nil {
 		return "", nil, err
@@ -195,14 +193,13 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 			Spec: &config.EndpointSpec,
 
 			// Output-only fields.
-			EndpointId:      "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			EndpointId: "",
+			CreateTime: nil,
+			Name:       "",
+			Parent:     "",
+			Status:     nil,
+			Uid:        "",
+			UpdateTime: nil,
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{

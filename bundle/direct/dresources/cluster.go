@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -102,50 +101,12 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 	return s
 }
 
+var toClusterState = newCopier[ClusterRemote, ClusterState]()
+
 // RemapState maps the remote ClusterRemote to ClusterState for diff comparison.
 // Started is derived from cluster state so the planner can detect start/stop changes.
 func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
-	spec := &ClusterState{
-		ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
-		Autoscale:                  input.Autoscale,
-		AutoterminationMinutes:     input.AutoterminationMinutes,
-		AwsAttributes:              input.AwsAttributes,
-		AzureAttributes:            input.AzureAttributes,
-		ClusterLogConf:             input.ClusterLogConf,
-		ClusterName:                input.ClusterName,
-		CustomTags:                 input.CustomTags,
-		DataSecurityMode:           input.DataSecurityMode,
-		DependencyMode:             input.DependencyMode,
-		DockerImage:                input.DockerImage,
-		DriverInstancePoolId:       input.DriverInstancePoolId,
-		DriverNodeTypeId:           input.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  input.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          input.EnableElasticDisk,
-		EnableLocalDiskEncryption:  input.EnableLocalDiskEncryption,
-		GcpAttributes:              input.GcpAttributes,
-		InitScripts:                input.InitScripts,
-		InstancePoolId:             input.InstancePoolId,
-		IsSingleNode:               input.IsSingleNode,
-		Kind:                       input.Kind,
-		NodeTypeId:                 input.NodeTypeId,
-		NumWorkers:                 input.NumWorkers,
-		PolicyId:                   input.PolicyId,
-		RemoteDiskThroughput:       input.RemoteDiskThroughput,
-		RuntimeEngine:              input.RuntimeEngine,
-		SingleUserName:             input.SingleUserName,
-		SparkConf:                  input.SparkConf,
-		SparkEnvVars:               input.SparkEnvVars,
-		SparkVersion:               input.SparkVersion,
-		SshPublicKeys:              input.SshPublicKeys,
-		TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               input.UseMlRuntime,
-		WorkloadType:               input.WorkloadType,
-		WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
-		Lifecycle:                  input.Lifecycle,
-		Libraries:                  input.Libraries,
-	}
-	return spec
+	return toClusterState.Copy(input)
 }
 
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
@@ -349,12 +310,9 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 }
 
 func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) error {
-	_, err := r.client.Clusters.Resize(ctx, compute.ResizeCluster{
-		ClusterId:       id,
-		NumWorkers:      config.NumWorkers,
-		Autoscale:       config.Autoscale,
-		ForceSendFields: utils.FilterFields[compute.ResizeCluster](config.ForceSendFields),
-	})
+	resize := toResizeCluster.Copy(config)
+	resize.ClusterId = id
+	_, err := r.client.Clusters.Resize(ctx, *resize)
 	if err == nil {
 		return nil
 	}
@@ -427,46 +385,16 @@ func remoteClusterIsRunning(entry *PlanEntry) bool {
 	return remote.State == compute.StateRunning
 }
 
+// CreateCluster.CloneFrom stays empty: it is not supported by DABs.
+var toCreateCluster = newCopier[compute.ClusterSpec, compute.CreateCluster]()
+
+var (
+	toEditCluster   = newCopier[compute.ClusterSpec, compute.EditCluster]()
+	toResizeCluster = newCopier[ClusterState, compute.ResizeCluster]()
+)
+
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
-	create := compute.CreateCluster{
-		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
-		Autoscale:                  config.Autoscale,
-		AutoterminationMinutes:     config.AutoterminationMinutes,
-		AwsAttributes:              config.AwsAttributes,
-		AzureAttributes:            config.AzureAttributes,
-		ClusterLogConf:             config.ClusterLogConf,
-		ClusterName:                config.ClusterName,
-		CloneFrom:                  nil, // Not supported by DABs
-		CustomTags:                 config.CustomTags,
-		DataSecurityMode:           config.DataSecurityMode,
-		DependencyMode:             config.DependencyMode,
-		DockerImage:                config.DockerImage,
-		DriverInstancePoolId:       config.DriverInstancePoolId,
-		DriverNodeTypeId:           config.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  config.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          config.EnableElasticDisk,
-		EnableLocalDiskEncryption:  config.EnableLocalDiskEncryption,
-		GcpAttributes:              config.GcpAttributes,
-		InitScripts:                config.InitScripts,
-		InstancePoolId:             config.InstancePoolId,
-		IsSingleNode:               config.IsSingleNode,
-		Kind:                       config.Kind,
-		NodeTypeId:                 config.NodeTypeId,
-		NumWorkers:                 config.NumWorkers,
-		PolicyId:                   config.PolicyId,
-		RemoteDiskThroughput:       config.RemoteDiskThroughput,
-		RuntimeEngine:              config.RuntimeEngine,
-		SingleUserName:             config.SingleUserName,
-		SparkConf:                  config.SparkConf,
-		SparkEnvVars:               config.SparkEnvVars,
-		SparkVersion:               config.SparkVersion,
-		SshPublicKeys:              config.SshPublicKeys,
-		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               config.UseMlRuntime,
-		WorkloadType:               config.WorkloadType,
-		WorkerNodeTypeFlexibility:  config.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.CreateCluster](config.ForceSendFields),
-	}
+	create := toCreateCluster.Copy(config)
 
 	// If autoscale is not set, we need to send NumWorkers because one of them is required.
 	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
@@ -474,49 +402,12 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		create.ForceSendFields = append(create.ForceSendFields, "NumWorkers")
 	}
 
-	return create
+	return *create
 }
 
 func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
-	edit := compute.EditCluster{
-		ClusterId:                  id,
-		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
-		Autoscale:                  config.Autoscale,
-		AutoterminationMinutes:     config.AutoterminationMinutes,
-		AwsAttributes:              config.AwsAttributes,
-		AzureAttributes:            config.AzureAttributes,
-		ClusterLogConf:             config.ClusterLogConf,
-		ClusterName:                config.ClusterName,
-		CustomTags:                 config.CustomTags,
-		DataSecurityMode:           config.DataSecurityMode,
-		DependencyMode:             config.DependencyMode,
-		DockerImage:                config.DockerImage,
-		DriverInstancePoolId:       config.DriverInstancePoolId,
-		DriverNodeTypeId:           config.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  config.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          config.EnableElasticDisk,
-		EnableLocalDiskEncryption:  config.EnableLocalDiskEncryption,
-		GcpAttributes:              config.GcpAttributes,
-		InitScripts:                config.InitScripts,
-		InstancePoolId:             config.InstancePoolId,
-		IsSingleNode:               config.IsSingleNode,
-		Kind:                       config.Kind,
-		NodeTypeId:                 config.NodeTypeId,
-		NumWorkers:                 config.NumWorkers,
-		PolicyId:                   config.PolicyId,
-		RemoteDiskThroughput:       config.RemoteDiskThroughput,
-		RuntimeEngine:              config.RuntimeEngine,
-		SingleUserName:             config.SingleUserName,
-		SparkConf:                  config.SparkConf,
-		SparkEnvVars:               config.SparkEnvVars,
-		SparkVersion:               config.SparkVersion,
-		SshPublicKeys:              config.SshPublicKeys,
-		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               config.UseMlRuntime,
-		WorkloadType:               config.WorkloadType,
-		WorkerNodeTypeFlexibility:  config.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.EditCluster](config.ForceSendFields),
-	}
+	edit := toEditCluster.Copy(config)
+	edit.ClusterId = id
 
 	// If autoscale is not set, we need to send NumWorkers because one of them is required.
 	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
@@ -524,7 +415,7 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		edit.ForceSendFields = append(edit.ForceSendFields, "NumWorkers")
 	}
 
-	return edit
+	return *edit
 }
 
 // librariesPath is the ClusterState path of the libraries slice, used to detect library changes.

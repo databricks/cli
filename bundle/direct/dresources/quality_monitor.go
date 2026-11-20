@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -41,28 +41,18 @@ func (*ResourceQualityMonitor) PrepareState(input *resources.QualityMonitor) *Qu
 	}
 }
 
+var (
+	toQualityMonitorState = newCopier[catalog.MonitorInfo, QualityMonitorState]()
+
+	// TableName addresses the monitor, so it is the id. latest_monitor_failure_msg is the
+	// backend's latest error message, which the update API ignores.
+	toUpdateMonitor = newCopier[QualityMonitorState, catalog.UpdateMonitor](
+		structcopy.Skip("TableName", "LatestMonitorFailureMsg"),
+	)
+)
+
 func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMonitorState {
-	return &QualityMonitorState{
-		CreateMonitor: catalog.CreateMonitor{
-			AssetsDir:                info.AssetsDir,
-			BaselineTableName:        info.BaselineTableName,
-			CustomMetrics:            info.CustomMetrics,
-			DataClassificationConfig: info.DataClassificationConfig,
-			InferenceLog:             info.InferenceLog,
-			LatestMonitorFailureMsg:  info.LatestMonitorFailureMsg,
-			Notifications:            info.Notifications,
-			OutputSchemaName:         info.OutputSchemaName,
-			Schedule:                 info.Schedule,
-			SkipBuiltinDashboard:     false,
-			SlicingExprs:             info.SlicingExprs,
-			Snapshot:                 info.Snapshot,
-			TableName:                info.TableName,
-			TimeSeries:               info.TimeSeries,
-			WarehouseId:              "",
-			ForceSendFields:          utils.FilterFields[catalog.CreateMonitor](info.ForceSendFields),
-		},
-		TableName: info.TableName,
-	}
+	return toQualityMonitorState.Copy(info)
 }
 
 func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalog.MonitorInfo, error) {
@@ -84,25 +74,11 @@ func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMo
 }
 
 func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config *QualityMonitorState, _ *PlanEntry) (*catalog.MonitorInfo, error) {
-	updateRequest := catalog.UpdateMonitor{
-		TableName:                id,
-		BaselineTableName:        config.BaselineTableName,
-		CustomMetrics:            config.CustomMetrics,
-		DashboardId:              "",
-		DataClassificationConfig: config.DataClassificationConfig,
-		InferenceLog:             config.InferenceLog,
-		LatestMonitorFailureMsg:  "",
-		Notifications:            config.Notifications,
-		OutputSchemaName:         config.OutputSchemaName,
-		Schedule:                 config.Schedule,
-		SlicingExprs:             config.SlicingExprs,
-		Snapshot:                 config.Snapshot,
-		TimeSeries:               config.TimeSeries,
-		ForceSendFields:          utils.FilterFields[catalog.UpdateMonitor](config.ForceSendFields),
-	}
+	updateRequest := toUpdateMonitor.Copy(config)
+	updateRequest.TableName = id
 
 	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
-	response, err := r.client.QualityMonitors.Update(ctx, updateRequest)
+	response, err := r.client.QualityMonitors.Update(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}

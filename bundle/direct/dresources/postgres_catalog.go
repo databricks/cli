@@ -102,13 +102,12 @@ func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *Postgres
 			Spec: &config.CatalogCatalogSpec,
 
 			// Output-only fields.
-			CatalogId:       "",
-			CreateTime:      nil,
-			Name:            "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			CatalogId:  "",
+			CreateTime: nil,
+			Name:       "",
+			Status:     nil,
+			Uid:        "",
+			UpdateTime: nil,
 		},
 	}
 	start := time.Now()

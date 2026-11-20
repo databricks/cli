@@ -1031,8 +1031,9 @@ tasks:
   # then refresh the acceptance goldens. generate-clijson-post runs it last;
   # run it directly to redo it, e.g. after hand fixes. generate-refschema and
   # test-update build the CLI, so it fails while the bump breaks compilation
-  # (code using a removed SDK field). Those fixes, exhaustruct wiring and the
-  # changelog PR link stay manual (.agents/skills/bump-sdk).
+  # (code using a removed SDK field). Those fixes, exhaustruct wiring of the
+  # struct literals that are built by hand and the changelog PR link stay
+  # manual (.agents/skills/bump-sdk).
   bump-sdk-post:
     desc: Regenerate everything downstream of an SDK bump and refresh acceptance goldens
     cmds:
@@ -1101,13 +1102,14 @@ tasks:
       - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
 
   generate-direct:
-    desc: Generate direct engine config (apitypes + resources)
-    # Depend only on generate-direct-resources; it already pulls in
-    # generate-direct-apitypes transitively. Listing both as parallel deps
-    # races: resources reads apitypes.generated.yml while the apitypes step's
-    # `>` redirect is truncating it, silently dropping every resource whose
-    # type comes from that file. Keep this chain linear.
-    deps: ['generate-direct-resources']
+    desc: Generate direct engine config (apitypes + resources) and field copy listing
+    # Depend only on generate-direct-copies; it already pulls in
+    # generate-direct-resources and generate-direct-apitypes transitively.
+    # Listing them as parallel deps races: resources reads
+    # apitypes.generated.yml while the apitypes step's `>` redirect is
+    # truncating it, silently dropping every resource whose type comes from
+    # that file. Keep this chain linear.
+    deps: ['generate-direct-copies']
 
   generate-direct-apitypes:
     desc: Generate direct engine API types YAML
@@ -1133,6 +1135,25 @@ tasks:
       - bundle/direct/dresources/configs/*.generated.yml
     cmds:
       - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/output bundle/direct/dresources/configs"
+
+  # Refreshes the listing of what every structcopy.Copier of the direct engine
+  # does with each field of the two structs it copies between (see
+  # TestFieldCopies). An SDK bump (go.mod / go.sum) that adds a field to one of
+  # them changes it. Runs after generate-direct-resources, whose output the
+  # package embeds.
+  generate-direct-copies:
+    desc: Regenerate bundle/direct/dresources/testdata/field_copies.txt
+    deps: ['generate-direct-resources']
+    sources:
+      - bundle/direct/dresources/**/*.go
+      - bundle/direct/dresources/configs/*.yml
+      - libs/structs/structcopy/*.go
+      - go.mod
+      - go.sum
+    generates:
+      - bundle/direct/dresources/testdata/field_copies.txt
+    cmds:
+      - go test ./bundle/direct/dresources -run '^TestFieldCopies$' -update
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 

@@ -183,7 +183,6 @@ func (r *ResourceMaterializationSet) DoCreate(ctx context.Context, config *ml.Ma
 	operation, err := r.client.FeatureEngineering.CreateMaterializationSet(ctx, ml.CreateMaterializationSetRequest{
 		MaterializationSet: withLowercaseFeatureNames(*config),
 		RequestId:          uuid.New().String(),
-		ForceSendFields:    nil,
 	})
 	if err != nil {
 		return "", nil, err
@@ -266,7 +265,6 @@ func (r *ResourceMaterializationSet) DoUpdate(ctx context.Context, id string, co
 		MaterializationSet:   update,
 		UpdateMask:           *fieldmask.New([]string{"*"}),
 		RequestId:            uuid.New().String(),
-		ForceSendFields:      nil,
 	})
 	if err != nil {
 		return nil, err
@@ -286,7 +284,6 @@ func (r *ResourceMaterializationSet) DoDelete(ctx context.Context, id string, _ 
 		MaterializationSetId: id,
 		RequestId:            uuid.New().String(),
 		AllowMissing:         false,
-		ForceSendFields:      nil,
 	})
 	if err != nil {
 		return err

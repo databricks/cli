@@ -2,10 +2,9 @@ package dresources
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -22,23 +21,12 @@ func (*ResourceExternalLocation) PrepareState(input *resources.ExternalLocation)
 	return &input.CreateExternalLocation
 }
 
+// The output-only effective_* fields are mirrored into state to avoid churn in remapped config.
+// SkipValidation is an input-only parameter, never returned by the API.
+var toCreateExternalLocation = newCopier[catalog.ExternalLocationInfo, catalog.CreateExternalLocation]()
+
 func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) *catalog.CreateExternalLocation {
-	return &catalog.CreateExternalLocation{
-		Comment:        info.Comment,
-		CredentialName: info.CredentialName,
-		// Output-only fields mirrored into state to avoid churn in remapped config.
-		EffectiveEnableFileEvents: info.EffectiveEnableFileEvents,
-		EffectiveFileEventQueue:   info.EffectiveFileEventQueue,
-		EnableFileEvents:          info.EnableFileEvents,
-		EncryptionDetails:         info.EncryptionDetails,
-		Fallback:                  info.Fallback,
-		FileEventQueue:            info.FileEventQueue,
-		Name:                      info.Name,
-		ReadOnly:                  info.ReadOnly,
-		SkipValidation:            false, // This is an input-only parameter, never returned by API
-		Url:                       info.Url,
-		ForceSendFields:           utils.FilterFields[catalog.CreateExternalLocation](info.ForceSendFields),
-	}
+	return toCreateExternalLocation.Copy(info)
 }
 
 func (r *ResourceExternalLocation) DoRead(ctx context.Context, id string) (*catalog.ExternalLocationInfo, error) {
@@ -60,58 +48,32 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 // {"comment": ""}; re-probe before adding anything else.
 var externalLocationForceSend = []string{"Comment"}
 
+// The effective_* fields are output-only, so they are never sent in an update. Name addresses
+// the location, so it is the id; the name in the config goes in NewName when it differs.
+// IsolationMode and Owner are not supported by DABs.
+var toUpdateExternalLocation = newCopier[catalog.CreateExternalLocation, catalog.UpdateExternalLocation](
+	structcopy.Skip("EffectiveEnableFileEvents", "EffectiveFileEventQueue", "Name"),
+	structcopy.ForceSend(externalLocationForceSend...),
+)
+
 // DoUpdate updates the external location in place and returns remote state.
 func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (*catalog.ExternalLocationInfo, error) {
-	updateRequest := catalog.UpdateExternalLocation{
-		Comment:                   config.Comment,
-		CredentialName:            config.CredentialName,
-		EffectiveEnableFileEvents: false, // Output-only field; never sent in update payload.
-		EffectiveFileEventQueue:   nil,
-		EnableFileEvents:          config.EnableFileEvents,
-		EncryptionDetails:         config.EncryptionDetails,
-		Fallback:                  config.Fallback,
-		FileEventQueue:            config.FileEventQueue,
-		Force:                     false,
-		IsolationMode:             "", // Not supported by DABs
-		Name:                      id,
-		NewName:                   "", // Only set if name actually changes (see DoUpdateWithID)
-		Owner:                     "", // Not supported by DABs
-		ReadOnly:                  config.ReadOnly,
-		SkipValidation:            config.SkipValidation,
-		Url:                       config.Url,
-		ForceSendFields:           utils.FilterFields[catalog.UpdateExternalLocation](append(slices.Clone(externalLocationForceSend), config.ForceSendFields...), "IsolationMode", "Owner"),
-	}
+	updateRequest := toUpdateExternalLocation.Copy(config)
+	updateRequest.Name = id
 
-	return r.client.ExternalLocations.Update(ctx, updateRequest)
+	return r.client.ExternalLocations.Update(ctx, *updateRequest)
 }
 
 // DoUpdateWithID updates the external location and returns the new ID if the name changes.
 func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (string, *catalog.ExternalLocationInfo, error) {
-	updateRequest := catalog.UpdateExternalLocation{
-		Comment:                   config.Comment,
-		CredentialName:            config.CredentialName,
-		EffectiveEnableFileEvents: false, // Output-only field; never sent in update payload.
-		EffectiveFileEventQueue:   nil,
-		EnableFileEvents:          config.EnableFileEvents,
-		EncryptionDetails:         config.EncryptionDetails,
-		Fallback:                  config.Fallback,
-		FileEventQueue:            config.FileEventQueue,
-		Force:                     false,
-		IsolationMode:             "", // Not supported by DABs
-		Name:                      id,
-		NewName:                   "", // Initialized below if needed
-		Owner:                     "", // Not supported by DABs
-		ReadOnly:                  config.ReadOnly,
-		SkipValidation:            config.SkipValidation,
-		Url:                       config.Url,
-		ForceSendFields:           utils.FilterFields[catalog.UpdateExternalLocation](append(slices.Clone(externalLocationForceSend), config.ForceSendFields...), "IsolationMode", "Owner"),
-	}
+	updateRequest := toUpdateExternalLocation.Copy(config)
+	updateRequest.Name = id
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name
 	}
 
-	response, err := r.client.ExternalLocations.Update(ctx, updateRequest)
+	response, err := r.client.ExternalLocations.Update(ctx, *updateRequest)
 	if err != nil {
 		return "", nil, err
 	}
@@ -127,8 +89,7 @@ func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string
 
 func (r *ResourceExternalLocation) DoDelete(ctx context.Context, id string, _ *catalog.CreateExternalLocation) error {
 	return r.client.ExternalLocations.Delete(ctx, catalog.DeleteExternalLocationRequest{
-		Name:            id,
-		Force:           true,
-		ForceSendFields: nil,
+		Name:  id,
+		Force: true,
 	})
 }

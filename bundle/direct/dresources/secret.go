@@ -2,13 +2,12 @@ package dresources
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -26,22 +25,21 @@ func (*ResourceSecret) New(client *databricks.WorkspaceClient) *ResourceSecret {
 
 func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 	return &catalog.Secret{
-		CatalogName:     input.CatalogName,
-		SchemaName:      input.SchemaName,
-		Name:            input.Name,
-		Value:           input.Value,
-		Comment:         input.Comment,
-		ExpireTime:      input.ExpireTime,
-		Owner:           "",
-		CreateTime:      nil,
-		CreatedBy:       "",
-		EffectiveOwner:  "",
-		EffectiveValue:  "",
-		FullName:        "",
-		MetastoreId:     "",
-		UpdateTime:      nil,
-		UpdatedBy:       "",
-		ForceSendFields: utils.FilterFields[catalog.Secret](nil),
+		CatalogName:    input.CatalogName,
+		SchemaName:     input.SchemaName,
+		Name:           input.Name,
+		Value:          input.Value,
+		Comment:        input.Comment,
+		ExpireTime:     input.ExpireTime,
+		Owner:          "",
+		CreateTime:     nil,
+		CreatedBy:      "",
+		EffectiveOwner: "",
+		EffectiveValue: "",
+		FullName:       "",
+		MetastoreId:    "",
+		UpdateTime:     nil,
+		UpdatedBy:      "",
 	}
 }
 
@@ -61,9 +59,8 @@ func remapSecretRemote(remote *catalog.Secret) *catalog.Secret {
 // recover the stored value from EffectiveValue.
 func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
 	remote, err := r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
-		FullName:        id,
-		IncludeValue:    true,
-		ForceSendFields: nil,
+		FullName:     id,
+		IncludeValue: true,
 	})
 	if err != nil {
 		return nil, err
@@ -87,13 +84,13 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 // body and the old value would drift back. Verified against a real workspace: {"comment": ""} clears it.
 var secretForceSend = []string{"Comment"}
 
+var toUpdateSecret = newCopier[catalog.Secret, catalog.Secret](structcopy.ForceSend(secretForceSend...))
+
 // DoUpdate updates the secret in place and returns remote state.
 func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog.Secret, _ *PlanEntry) (*catalog.Secret, error) {
-	secret := *state
-	secret.ForceSendFields = utils.FilterFields[catalog.Secret](append(slices.Clone(secretForceSend), state.ForceSendFields...))
 	response, err := r.client.SecretsUc.UpdateSecret(ctx, catalog.UpdateSecretRequest{
 		FullName: id,
-		Secret:   secret,
+		Secret:   *toUpdateSecret.Copy(state),
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"*"},
 		},

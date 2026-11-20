@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -23,23 +22,13 @@ func (*ResourceExperiment) New(client *databricks.WorkspaceClient) *ResourceExpe
 }
 
 func (*ResourceExperiment) PrepareState(input *resources.MlflowExperiment) *ml.CreateExperiment {
-	return &ml.CreateExperiment{
-		Name:             input.Name,
-		ArtifactLocation: input.ArtifactLocation,
-		Tags:             input.Tags,
-		TraceLocation:    input.TraceLocation,
-		ForceSendFields:  utils.FilterFields[ml.CreateExperiment](input.ForceSendFields),
-	}
+	return &input.CreateExperiment
 }
 
+var toCreateExperiment = newCopier[ml.Experiment, ml.CreateExperiment]()
+
 func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExperiment {
-	return &ml.CreateExperiment{
-		Name:             experiment.Name,
-		ArtifactLocation: experiment.ArtifactLocation,
-		Tags:             experiment.Tags,
-		TraceLocation:    experiment.TraceLocation,
-		ForceSendFields:  utils.FilterFields[ml.CreateExperiment](experiment.ForceSendFields),
-	}
+	return toCreateExperiment.Copy(experiment)
 }
 
 func (r *ResourceExperiment) DoRead(ctx context.Context, id string) (*ml.Experiment, error) {
@@ -62,9 +51,8 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 
 func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ *PlanEntry) (*ml.Experiment, error) {
 	updateReq := ml.UpdateExperiment{
-		ExperimentId:    id,
-		NewName:         config.Name,
-		ForceSendFields: utils.FilterFields[ml.UpdateExperiment](config.ForceSendFields),
+		ExperimentId: id,
+		NewName:      config.Name,
 	}
 
 	return nil, r.client.Experiments.UpdateExperiment(ctx, updateReq)

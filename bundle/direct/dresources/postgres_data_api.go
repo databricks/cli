@@ -123,12 +123,11 @@ func (r *ResourcePostgresDataApi) DoCreate(ctx context.Context, config *Postgres
 			Spec: &config.DataApiDataApiSpec,
 
 			// Output-only fields; the parent is carried in the request path.
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			CreateTime: nil,
+			Name:       "",
+			Parent:     "",
+			Status:     nil,
+			UpdateTime: nil,
 		},
 	})
 	if err != nil {
@@ -151,12 +150,11 @@ func (r *ResourcePostgresDataApi) DoUpdate(ctx context.Context, id string, confi
 			Spec: &config.DataApiDataApiSpec,
 
 			// Output-only fields; the name is carried in the request path.
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			CreateTime: nil,
+			Name:       "",
+			Parent:     "",
+			Status:     nil,
+			UpdateTime: nil,
 		},
 		UpdateMask: fieldmask.FieldMask{
 			Paths: dataApiUpdateMask,

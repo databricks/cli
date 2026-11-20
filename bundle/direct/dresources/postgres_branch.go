@@ -116,17 +116,15 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 			Spec: &config.BranchSpec,
 
 			// Output-only fields.
-			BranchId:        "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			BranchId:   "",
+			CreateTime: nil,
+			Name:       "",
+			Parent:     "",
+			Status:     nil,
+			Uid:        "",
+			UpdateTime: nil,
 		},
 		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
-		ForceSendFields: nil,
 	}
 	start := time.Now()
 	waiter, err := r.client.Postgres.CreateBranch(ctx, req)
@@ -284,14 +282,13 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 			Spec: &config.BranchSpec,
 
 			// Output-only fields.
-			BranchId:        "",
-			CreateTime:      nil,
-			Name:            "",
-			Parent:          "",
-			Status:          nil,
-			Uid:             "",
-			UpdateTime:      nil,
-			ForceSendFields: nil,
+			BranchId:   "",
+			CreateTime: nil,
+			Name:       "",
+			Parent:     "",
+			Status:     nil,
+			Uid:        "",
+			UpdateTime: nil,
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
@@ -312,9 +309,8 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, state *PostgresBranchState) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
-		Name:            id,
-		Purge:           state.PurgeOnDelete != nil && *state.PurgeOnDelete,
-		ForceSendFields: nil,
+		Name:  id,
+		Purge: state.PurgeOnDelete != nil && *state.PurgeOnDelete,
 	})
 	if err != nil {
 		return err

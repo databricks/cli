@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
@@ -21,28 +20,15 @@ func (*ResourceInstancePool) PrepareState(input *resources.InstancePool) *comput
 	return &input.CreateInstancePool
 }
 
+var (
+	toCreateInstancePool = newCopier[compute.GetInstancePool, compute.CreateInstancePool]()
+	toEditInstancePool   = newCopier[compute.CreateInstancePool, compute.EditInstancePool]()
+)
+
 // RemapState copies the config fields shared by GetInstancePool and CreateInstancePool;
 // output-only fields (state, stats, default_tags, instance_pool_id) are not in the state.
 func (*ResourceInstancePool) RemapState(remote *compute.GetInstancePool) *compute.CreateInstancePool {
-	return &compute.CreateInstancePool{
-		AwsAttributes:                      remote.AwsAttributes,
-		AzureAttributes:                    remote.AzureAttributes,
-		CustomTags:                         remote.CustomTags,
-		DiskSpec:                           remote.DiskSpec,
-		EnableElasticDisk:                  remote.EnableElasticDisk,
-		GcpAttributes:                      remote.GcpAttributes,
-		IdleInstanceAutoterminationMinutes: remote.IdleInstanceAutoterminationMinutes,
-		InstancePoolName:                   remote.InstancePoolName,
-		MaxCapacity:                        remote.MaxCapacity,
-		MinIdleInstances:                   remote.MinIdleInstances,
-		NodeTypeFlexibility:                remote.NodeTypeFlexibility,
-		NodeTypeId:                         remote.NodeTypeId,
-		PreloadedDockerImages:              remote.PreloadedDockerImages,
-		PreloadedSparkVersions:             remote.PreloadedSparkVersions,
-		RemoteDiskThroughput:               remote.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize:         remote.TotalInitialRemoteDiskSize,
-		ForceSendFields:                    utils.FilterFields[compute.CreateInstancePool](remote.ForceSendFields),
-	}
+	return toCreateInstancePool.Copy(remote)
 }
 
 func (r *ResourceInstancePool) DoRead(ctx context.Context, id string) (*compute.GetInstancePool, error) {
@@ -58,18 +44,9 @@ func (r *ResourceInstancePool) DoCreate(ctx context.Context, config *compute.Cre
 }
 
 func (r *ResourceInstancePool) DoUpdate(ctx context.Context, id string, config *compute.CreateInstancePool, _ *PlanEntry) (*compute.GetInstancePool, error) {
-	return nil, r.client.InstancePools.Edit(ctx, compute.EditInstancePool{
-		InstancePoolId:                     id,
-		InstancePoolName:                   config.InstancePoolName,
-		NodeTypeId:                         config.NodeTypeId,
-		MinIdleInstances:                   config.MinIdleInstances,
-		MaxCapacity:                        config.MaxCapacity,
-		IdleInstanceAutoterminationMinutes: config.IdleInstanceAutoterminationMinutes,
-		CustomTags:                         config.CustomTags,
-		RemoteDiskThroughput:               config.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize:         config.TotalInitialRemoteDiskSize,
-		ForceSendFields:                    utils.FilterFields[compute.EditInstancePool](config.ForceSendFields),
-	})
+	edit := toEditInstancePool.Copy(config)
+	edit.InstancePoolId = id
+	return nil, r.client.InstancePools.Edit(ctx, *edit)
 }
 
 func (r *ResourceInstancePool) DoDelete(ctx context.Context, id string, _ *compute.CreateInstancePool) error {

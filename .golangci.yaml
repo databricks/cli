@@ -224,6 +224,11 @@ linters:
         - encoded-compare # Always replaces Equal() with JSONEq, but sometimes exact string match is wanted for JSON
     exhaustive:
       default-signifies-exhaustive: true
+    exhaustruct_v5:
+      # A struct that copies another one gets its ForceSendFields from
+      # structcopy, and any other literal lists it only to force a zero value.
+      optional-patterns:
+        - '.*#ForceSendFields$'
   exclusions:
     generated: lax
     presets:

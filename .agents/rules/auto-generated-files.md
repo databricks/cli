@@ -14,6 +14,7 @@ globs:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/configs/*.generated.yml"
+  - "bundle/direct/dresources/testdata/field_copies.txt"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "python/databricks/bundles/version.py"
@@ -33,6 +34,7 @@ paths:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/configs/*.generated.yml"
+  - "bundle/direct/dresources/testdata/field_copies.txt"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "python/databricks/bundles/version.py"
@@ -63,8 +65,8 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
 - OpenAPI SDK/CLI command stubs and related generated artifacts:
   - `./task generate-cligen` — regenerates `cmd/account/**`, `cmd/workspace/**` and `.gitattributes` from the checked-in `.codegen/cli.json`.
   - `./task generate-clijson` — refreshes `.codegen/cli.json` from the OpenAPI spec via genkit (requires universe repo); also updates `internal/genkit/tagging.py`.
-- Direct engine generated YAML:
-  - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`)
+- Direct engine generated YAML and field copy listing:
+  - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`, `./task generate-direct-copies`)
 - Bundle schemas:
   - `./task generate-schema`
   - Rewrites `bundle/internal/schema/annotations.yml` in place: upstream docs are sourced from `.codegen/cli.json` at generation time, and the file is synced with the config structure (placeholders added, stale entries dropped).

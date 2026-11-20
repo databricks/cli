@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -55,18 +54,13 @@ func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretSc
 		ScopeBackendType:       input.BackendType,
 		BackendAzureKeyvault:   input.KeyvaultMetadata,
 		InitialManagePrincipal: "",
-		ForceSendFields:        nil,
 	}
 }
 
+var toSecretScopeConfig = newCopier[SecretScopeRemote, SecretScopeConfig]()
+
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
-	return &SecretScopeConfig{
-		Scope:                  remote.Scope,
-		ScopeBackendType:       remote.ScopeBackendType,
-		BackendAzureKeyvault:   remote.BackendAzureKeyvault,
-		InitialManagePrincipal: "",
-		ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
-	}
+	return toSecretScopeConfig.Copy(remote)
 }
 
 // DoRead fetches the secret scope by name. Since the Secrets API does not provide
@@ -85,7 +79,6 @@ func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*SecretSco
 				Scope:                scope.Name,
 				ScopeBackendType:     scope.BackendType,
 				BackendAzureKeyvault: scope.KeyvaultMetadata,
-				ForceSendFields:      nil,
 			}, nil
 		}
 	}
