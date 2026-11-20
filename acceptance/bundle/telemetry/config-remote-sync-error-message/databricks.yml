@@ -16,3 +16,6 @@ targets:
       host: https://other.test
     variables:
       undefined_var: value
+  auth-error:
+    workspace:
+      client_id: x

@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -307,6 +308,11 @@ func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profile, target stri
 	if cmdctx.HasConfigUsed(ctx) || telemetry.Disabled(ctx) {
 		return ctx
 	}
+	// With the target selected, only the bundle's own auth can have failed, and
+	// auth errors are not reported.
+	if b != nil && b.Config.Bundle.Target != "" {
+		return ctx
+	}
 	profile = cmp.Or(profile, env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"))
 	if profile == "" {
 		return ctx
@@ -318,30 +324,44 @@ func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profile, target stri
 	}
 	// As in bundle auth, a profile for another host than the bundle's is rejected.
 	if b != nil {
-		if target == "" {
-			target, _ = bundleenv.Target(ctx)
+		host := b.Config.Workspace.Host
+		// The target was not merged, so its own host is not in the root config yet.
+		if t := b.Config.Targets[selectedTarget(ctx, b, target)]; t != nil && t.Workspace != nil && t.Workspace.Host != "" {
+			host = t.Workspace.Host
 		}
-		hosts := []string{b.Config.Workspace.Host}
-		// Targets are only left when merging the target failed, so its host is not
-		// in the root config yet. Without a named target, the default can be any.
-		for name, t := range b.Config.Targets {
-			if (target == "" || name == target) && t != nil && t.Workspace != nil {
-				hosts = append(hosts, t.Workspace.Host)
-			}
-		}
-		for _, host := range hosts {
-			if host != "" && (&sdkconfig.Config{Host: host}).CanonicalHostName() != cfg.CanonicalHostName() {
-				log.Debugf(ctx, "config-remote-sync telemetry skipped: profile %s is for another host than the bundle's %s", profile, host)
-				return ctx
-			}
+		if host != "" && (&sdkconfig.Config{Host: host}).CanonicalHostName() != cfg.CanonicalHostName() {
+			log.Debugf(ctx, "config-remote-sync telemetry skipped: profile %s is for another host than the bundle's %s", profile, host)
+			return ctx
 		}
 	}
 	return cmdctx.SetConfigUsed(ctx, cfg)
 }
 
+// selectedTarget returns the target loading the bundle selects: the named one,
+// else DATABRICKS_BUNDLE_TARGET, else the only target or the one marked default.
+func selectedTarget(ctx context.Context, b *bundle.Bundle, name string) string {
+	if name == "" {
+		name, _ = bundleenv.Target(ctx)
+	}
+	if name != "" {
+		return name
+	}
+	var defaults []string
+	for n, t := range b.Config.Targets {
+		if len(b.Config.Targets) == 1 || (t != nil && config.IsExplicitlyEnabled(t.Default)) {
+			defaults = append(defaults, n)
+		}
+	}
+	if len(defaults) != 1 {
+		return ""
+	}
+	return defaults[0]
+}
+
 // resolveProfile resolves the profile within profileAuthBudget. The SDK fetches
 // host metadata without a context, so a resolution past the budget is left to
-// finish in the background.
+// finish in the background. The upload may be cut off at exit, so its auth never
+// refreshes an OAuth token.
 func resolveProfile(ctx context.Context, profile string) (*sdkconfig.Config, error) {
 	type result struct {
 		cfg *sdkconfig.Config
@@ -349,13 +369,18 @@ func resolveProfile(ctx context.Context, profile string) (*sdkconfig.Config, err
 	}
 	done := make(chan result, 1)
 	go func() {
-		defer recoverTelemetry(ctx)
+		defer func() {
+			if r := recover(); r != nil {
+				done <- result{err: fmt.Errorf("panic: %v", r)}
+			}
+		}()
 		w := config.Workspace{Profile: profile}
 		client, err := w.Client(ctx)
 		if err != nil {
 			done <- result{err: err}
 			return
 		}
+		client.Config.Credentials = auth.CredentialsWithoutRefresh()
 		done <- result{cfg: client.Config}
 	}()
 	select {

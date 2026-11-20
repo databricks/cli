@@ -27,9 +27,25 @@ Error: failed to perform target override for target=bad: variable undefined_var 
 Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
 
 
+>>> musterr [CLI] bundle config-remote-sync -t own-host -p myprofile
+Error: failed to perform target override for target=own-host: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -p myprofile
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
 >>> print_requests.py //telemetry-ext
 {
   "error_message": "failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+{
+  "error_message": "failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+{
+  "error_message": "failed to perform target override for target=own-host: variable undefined_var is not defined but is assigned a value",
   "error_category": "BUNDLE_LOAD_FAILED"
 }
 {
@@ -63,6 +79,10 @@ Error: failed to perform target override for target=bad: variable undefined_var 
 
 >>> musterr [CLI] bundle config-remote-sync -t other -p myprofile
 Error: failed to perform target override for target=other: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t auth-error -p myprofile
+Error: cannot resolve bundle auth configuration: validate: more than one authorization method configured: oauth and pat. Config: host=[DATABRICKS_URL], token=***, profile=myprofile, config_file=[TEST_TMP_DIR]/.databrickscfg, client_id=x, databricks_cli_path=[CLI]. Env: DATABRICKS_HOST, DATABRICKS_TOKEN, DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
 
 
 >>> errcode print_requests.py //telemetry-ext
