@@ -17,11 +17,13 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	aircmd "github.com/databricks/cli/cmd/air"
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
@@ -155,11 +157,6 @@ type ClientOptions struct {
 	KeepDetachedProcesses bool
 }
 
-// Serverless GPU accelerator types follow the GPU_<count>x<model> wire format (GPU_1xA10,
-// GPU_8xH100, GPU_1xRTX6000, ...). The workspace rejects a type it does not offer, so the
-// client only checks the shape rather than pinning a list that lags new hardware.
-var acceleratorRegex = regexp.MustCompile(`^GPU_[0-9]+x[A-Za-z0-9]+$`)
-
 func (o *ClientOptions) Validate() error {
 	if !o.ProxyMode && o.ClusterID == "" && o.ConnectionName == "" {
 		return errors.New("please provide --cluster flag with the cluster ID, or --name flag with the connection name (for serverless compute)")
@@ -170,8 +167,9 @@ func (o *ClientOptions) Validate() error {
 	if o.UsagePolicyID != "" && o.ClusterID != "" {
 		return errors.New("--usage-policy-id flag can only be used with serverless compute (--name flag)")
 	}
-	if o.Accelerator != "" && !acceleratorRegex.MatchString(o.Accelerator) {
-		return fmt.Errorf("invalid accelerator value: %q, expected a serverless GPU type such as %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
+	// The same GPU types `databricks air` accepts; the workspace still decides which it offers.
+	if o.Accelerator != "" && !slices.Contains(aircmd.KnownGPUTypes(), o.Accelerator) {
+		return fmt.Errorf("invalid accelerator value: %q, expected one of %s", o.Accelerator, strings.Join(aircmd.KnownGPUTypes(), ", "))
 	}
 	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
 		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)

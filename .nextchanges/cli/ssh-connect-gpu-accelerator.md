@@ -1,1 +1,1 @@
-* `databricks ssh connect --accelerator` now accepts any serverless GPU type such as `GPU_1xRTX6000`, not only `GPU_1xA10` and `GPU_8xH100`. ([#7833](https://github.com/databricks/cli/pull/7833))
+* `databricks ssh connect --accelerator` now accepts every AI Runtime GPU type the CLI knows, including `GPU_1xH100`, `GPU_8xB300` and `GPU_1xRTX6000`. ([#7833](https://github.com/databricks/cli/pull/7833))

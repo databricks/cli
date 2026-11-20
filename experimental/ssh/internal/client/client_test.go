@@ -63,9 +63,14 @@ func TestValidate(t *testing.T) {
 			opts: client.ClientOptions{ConnectionName: "my-conn_1", Accelerator: "GPU_1xRTX6000"},
 		},
 		{
+			name:    "well-formed but unknown accelerator value",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_2xA10"},
+			wantErr: `invalid accelerator value: "GPU_2xA10", expected one of GPU_1xA10, GPU_1xH100, GPU_8xH100, GPU_8xB300, GPU_1xRTX6000`,
+		},
+		{
 			name:    "invalid accelerator value",
 			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "CPU_1x"},
-			wantErr: `invalid accelerator value: "CPU_1x", expected a serverless GPU type such as "GPU_1xA10" or "GPU_8xH100"`,
+			wantErr: `invalid accelerator value: "CPU_1x", expected one of GPU_1xA10, GPU_1xH100, GPU_8xH100, GPU_8xB300, GPU_1xRTX6000`,
 		},
 		{
 			name: "both cluster ID and connection name",
