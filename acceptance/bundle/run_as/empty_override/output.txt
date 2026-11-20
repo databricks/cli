@@ -1,2 +1,10 @@
+Warning: run_as identity "my_user_name" is not in bundle top-level permissions
+  in databricks.yml:5:3
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - user_name: my_user_name
+      level: CAN_VIEW
+
         "run_as": {
   "run_as": {

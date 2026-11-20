@@ -4,6 +4,14 @@
 >>> print_requests.py //pipelines
 
 >>> print_state.py
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
+  in databricks.yml:22:7
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - service_principal_name: [UUID]
+      level: CAN_VIEW
+
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -21,6 +29,14 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
 >>> [CLI] pipelines get [UUID]
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deployment migrate
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
+  in databricks.yml:22:7
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - service_principal_name: [UUID]
+      level: CAN_VIEW
+
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -45,6 +61,14 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/production/resou
 >>> print_state.py
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
+  in databricks.yml:22:7
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - service_principal_name: [UUID]
+      level: CAN_VIEW
+
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -60,6 +84,14 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
+  in databricks.yml:22:7
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - service_principal_name: [UUID]
+      level: CAN_VIEW
+
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -74,6 +106,14 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
 
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle destroy --auto-approve
+Warning: run_as identity "[UUID]" is not in bundle top-level permissions
+  in databricks.yml:22:7
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - service_principal_name: [UUID]
+      level: CAN_VIEW
+
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 

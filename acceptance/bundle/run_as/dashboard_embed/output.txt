@@ -1,12 +1,20 @@
 
 >>> errcode [CLI] bundle validate --var embed=false
+Warning: run_as identity "sp-name" is not in bundle top-level permissions
+  in databricks.yml:5:3
+
+Add a top-level permission so this identity can access deployed files and resources:
+  permissions:
+    - service_principal_name: sp-name
+      level: CAN_VIEW
+
 Name: dashboard_embed
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/dashboard_embed/default
 
-Validation OK!
+Found 1 warning
 
 >>> errcode [CLI] bundle validate --var embed=true
 Error: dashboards with embed_credentials set to true do not support a setting a run_as user that is different from the owner.
