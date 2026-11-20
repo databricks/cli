@@ -9,7 +9,7 @@ Created postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+>>> retry [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
 {
   "endpoint_id": "my-endpoint",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
@@ -37,7 +37,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
+>>> retry [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint
 {
   "endpoint_id": "my-endpoint",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
