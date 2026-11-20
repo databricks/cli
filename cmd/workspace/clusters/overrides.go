@@ -1,9 +1,12 @@
 package clusters
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -93,8 +96,29 @@ func sparkVersionsOverride(sparkVersionsCmd *cobra.Command) {
 	`)
 }
 
+// The generated "start" command errors out (INVALID_STATE) if the cluster is
+// already RUNNING, PENDING, RESTARTING or RESIZING, even though the command's
+// own help text says "If the cluster is not currently in a TERMINATED state,
+// nothing will happen." This override makes the command match that
+// documented behavior instead of surfacing the API error.
+func startOverride(startCmd *cobra.Command, startReq *compute.StartCluster) {
+	originalRunE := startCmd.RunE
+	startCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := originalRunE(cmd, args)
+
+		apiErr, ok := errors.AsType[*apierr.APIError](err)
+		if ok && apiErr.ErrorCode == "INVALID_STATE" {
+			fmt.Fprintf(cmd.OutOrStdout(), "Cluster %s is not in a TERMINATED state, nothing to do.\n", startReq.ClusterId)
+			return nil
+		}
+
+		return err
+	}
+}
+
 func init() {
 	listOverrides = append(listOverrides, listOverride)
 	listNodeTypesOverrides = append(listNodeTypesOverrides, listNodeTypesOverride)
 	sparkVersionsOverrides = append(sparkVersionsOverrides, sparkVersionsOverride)
+	startOverrides = append(startOverrides, startOverride)
 }
