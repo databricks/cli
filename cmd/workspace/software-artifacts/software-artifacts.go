@@ -3,6 +3,7 @@
 package software_artifacts
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,20 +21,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "software-artifacts",
-		Short: `*Public Preview* Manage software artifacts and their versions in Unity Catalog.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "software-artifacts",
+	Short:   `*Public Preview* Manage software artifacts and their versions in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
 
-Manage software artifacts and their versions in Unity Catalog.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Manage software artifacts and their versions in Unity Catalog.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetSoftwareArtifact())
@@ -47,8 +52,6 @@ Manage software artifacts and their versions in Unity Catalog.`,
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-software-artifact command
@@ -71,7 +74,8 @@ func newGetSoftwareArtifact() *cobra.Command {
 
 Get a software artifact.
 
-  Gets a software artifact.
+  Gets a software artifact by its resource name. Returns NOT_FOUND if the
+  artifact does not exist.
 
   Arguments:
     NAME: Resource name of the artifact, of the form
@@ -133,11 +137,13 @@ func newGetSoftwareArtifactVersion() *cobra.Command {
 
 Get a software artifact version.
 
-  Gets a software artifact version.
+  Gets a software artifact version by its resource name. Returns NOT_FOUND if
+  the version does not exist.
 
   Arguments:
     NAME: Resource name of the version, of the form
-      software-artifacts/{catalog}.{schema}.{artifact}/versions/{version}.`
+      software-artifacts/{catalog}.{schema}.{artifact}/versions/{version},
+      where {version} is the version's content digest.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -354,11 +360,15 @@ func newResolveSoftwareArtifactVersion() *cobra.Command {
 
 Resolve a software artifact version.
 
-  Resolves a software artifact version from its tag alias.
+  Resolves a software artifact version from its tag alias. Returns NOT_FOUND
+  if the artifact or the alias does not exist.
 
   Arguments:
-    PARENT: Resource name of the software artifact containing the alias.
-    ALIAS: Image tag alias selecting the version.`
+    PARENT: Resource name of the software artifact containing the alias, of the form
+      software-artifacts/{catalog}.{schema}.{artifact}.
+    ALIAS: Image tag alias selecting the version. The alias must be a valid OCI image
+      tag of at most 128 characters, made of letters, digits, underscores,
+      periods, and hyphens, and must not start with a period or hyphen.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -437,7 +447,7 @@ func newUpdateSoftwareArtifact() *cobra.Command {
 	cmd.Flags().Var(&updateSoftwareArtifactJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateSoftwareArtifactReq.SoftwareArtifact.Name, "name", updateSoftwareArtifactReq.SoftwareArtifact.Name, `Resource name of the artifact, of the form software-artifacts/{catalog}.{schema}.{artifact}.`)
-	cmd.Flags().StringVar(&updateSoftwareArtifactReq.SoftwareArtifact.Owner, "owner", updateSoftwareArtifactReq.SoftwareArtifact.Owner, `Principal name (a user, service principal, or group) that owns this artifact.`)
+	cmd.Flags().StringVar(&updateSoftwareArtifactReq.SoftwareArtifact.Owner, "owner", updateSoftwareArtifactReq.SoftwareArtifact.Owner, `Principal that owns the artifact, given as a user's email address, a service principal's application ID, or a group name.`)
 
 	cmd.Use = "update-software-artifact NAME UPDATE_MASK"
 	cmd.Short = `*Public Preview* Update a software artifact.`

@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
@@ -133,7 +134,16 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	// Without WithTokenStore, u2m.NewPersistentAuth falls back to an in-memory
 	// store. Every workspace client built through this strategy would then miss
 	// the token persisted by login and fail with "cache: token not found".
-	tokenStore, mode, err := storage.ResolveStore(ctx, "")
+	//
+	// The storage mode is read from [__settings__] in the file the profile was
+	// loaded from. ResolveStore would otherwise read DATABRICKS_CONFIG_FILE,
+	// which can name a different file. An empty cfg.ConfigFile keeps that
+	// lookup unchanged.
+	storeCtx := ctx
+	if cfg.ConfigFile != "" {
+		storeCtx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", cfg.ConfigFile)
+	}
+	tokenStore, mode, err := storage.ResolveStore(storeCtx, "")
 	if err != nil {
 		return nil, err
 	}

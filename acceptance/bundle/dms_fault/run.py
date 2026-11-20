@@ -29,7 +29,7 @@ def main():
         "create_deployment": "POST /api/2.0/bundle/deployments",
         "create_version": "POST /api/2.0/bundle/deployments/{id}/versions",
         "delete_deployment": "DELETE /api/2.0/bundle/deployments/{id}",
-        # Keep failing lookups even if the CLI registers a replacement deployment.
+        # Any id: the lookup after the rejected re-create fails too, so nothing is adopted.
         "get_deployment": "GET /api/2.0/bundle/deployments/*",
         "get_operation": "GET /api/2.0/bundle/deployments/{id}/versions/*/operations/*",
         "get_resource": "GET /api/2.0/bundle/deployments/{id}/resources/*",
@@ -125,6 +125,7 @@ def main():
                 run(cwd, "workspace", "get-status", root + "/state/resources.deployment.json", "-o", "json").stdout
             )
             deployment = str(node["object_id"])
+            add_repl(deployment, "DEPLOYMENT_ID")
         pattern = PATTERNS[API].format(id=deployment)
         fault(pattern, True)
         print(f"\n=== {cwd.name}: {API} fault enabled", flush=True)

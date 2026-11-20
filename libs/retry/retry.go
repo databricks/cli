@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -102,19 +103,27 @@ func IsTransientRead(ctx context.Context, err error) bool {
 
 // With retries fn while check returns true for the error, up to MaxRetries times.
 func With[T any](ctx context.Context, check func(context.Context, error) bool, fn func() (T, error)) (T, error) {
-	wait := interval(ctx)
 	for attempt := 0; ; attempt++ {
 		result, err := fn()
 		if err == nil || attempt >= MaxRetries || !check(ctx, err) {
 			return result, err
 		}
-		log.Warnf(ctx, "%s", retryMessage(err))
-		select {
-		case <-ctx.Done():
+		if err := Pause(ctx, err); err != nil {
 			var zero T
-			return zero, ctx.Err()
-		case <-time.After(wait):
+			return zero, err
 		}
+	}
+}
+
+// Pause reports that the call that failed with err is retried and waits out the pause between
+// attempts, for callers that run their own retry loop. It returns ctx.Err() if ctx is done first.
+func Pause(ctx context.Context, err error) error {
+	log.Warnf(ctx, "%s", retryMessage(err))
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(interval(ctx)):
+		return nil
 	}
 }
 
@@ -124,11 +133,11 @@ func retryMessage(err error) string {
 	msg := "retrying after " + err.Error()
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
 		endpoint := ""
-		if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
-			req := rw.Response.Request
-			endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
+		if e := diag.FormatAPIErrorEndpoint(apiErr); e != "" {
+			endpoint = " from " + e
 		}
-		msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
+		status := diag.FormatAPIErrorStatus(apiErr)
+		msg = fmt.Sprintf("retrying after %s%s", status, endpoint)
 		// Include the context the caller added to the error, e.g. the path of the file being written.
 		if err.Error() != apiErr.Error() {
 			msg += ": " + err.Error()

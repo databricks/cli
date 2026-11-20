@@ -3,6 +3,7 @@
 package vector_search_endpoints
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,18 +20,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "vector-search-endpoints",
-		Short:   `**Endpoint**: Represents the compute resources to host AI Search indexes.`,
-		Long:    `**Endpoint**: Represents the compute resources to host AI Search indexes.`,
-		GroupID: "vectorsearch",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "vector-search-endpoints",
+	Short:   `**Endpoint**: Represents the compute resources to host AI Search indexes.`,
+	GroupID: "vectorsearch",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `**Endpoint**: Represents the compute resources to host AI Search indexes.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateEndpoint())
@@ -52,8 +57,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-endpoint command
@@ -584,20 +587,22 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
 
 	cmd.Flags().Var(&retrieveUserVisibleMetricsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.EndTime, "end-time", retrieveUserVisibleMetricsReq.EndTime, `End time for metrics query.`)
-	cmd.Flags().IntVar(&retrieveUserVisibleMetricsReq.GranularityInSeconds, "granularity-in-seconds", retrieveUserVisibleMetricsReq.GranularityInSeconds, `Granularity in seconds.`)
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.EndTime, "end-time", retrieveUserVisibleMetricsReq.EndTime, `End of the time range.`)
+	cmd.Flags().IntVar(&retrieveUserVisibleMetricsReq.GranularityInSeconds, "granularity-in-seconds", retrieveUserVisibleMetricsReq.GranularityInSeconds, `Requested interval between data points, in seconds.`)
 	// TODO: array: metrics
-	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.PageToken, "page-token", retrieveUserVisibleMetricsReq.PageToken, `Token for pagination.`)
-	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.StartTime, "start-time", retrieveUserVisibleMetricsReq.StartTime, `Start time for metrics query.`)
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.PageToken, "page-token", retrieveUserVisibleMetricsReq.PageToken, `Not used.`)
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.StartTime, "start-time", retrieveUserVisibleMetricsReq.StartTime, `Start of the time range.`)
 
 	cmd.Use = "retrieve-user-visible-metrics NAME"
 	cmd.Short = `Retrieve user-visible metrics for an endpoint.`
 	cmd.Long = `Retrieve user-visible metrics for an endpoint.
 
-  Retrieve user-visible metrics for an endpoint
+  Retrieve time series of usage and health metrics for an endpoint and its
+  indexes, such as request counts, request latency percentiles and endpoint
+  utilization.
 
   Arguments:
-    NAME: AI Search endpoint name`
+    NAME: Name of the endpoint whose metrics to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

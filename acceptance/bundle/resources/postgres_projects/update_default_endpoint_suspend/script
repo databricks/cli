@@ -16,7 +16,7 @@ project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 title "Initial deployment"
 trace $CLI bundle deploy
 rm -f "$OUT_REQUESTS"
-trace $CLI postgres get-project "${project_name}" | project_fields
+trace retry $CLI postgres get-project "${project_name}" | project_fields
 
 title "Change default_endpoint_settings.suspend_timeout_duration and re-deploy"
 trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
@@ -29,4 +29,4 @@ trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_project
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
-trace $CLI postgres get-project "${project_name}" | project_fields
+trace retry $CLI postgres get-project "${project_name}" | project_fields

@@ -42,7 +42,7 @@ Updated postgres_data_apis.data_api1
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
->>> [CLI] postgres get-data-api projects/test-project/branches/production/databases/test-database/data-api
+>>> retry [CLI] postgres get-data-api projects/test-project/branches/production/databases/test-database/data-api
 {
   "name": "projects/test-project/branches/production/databases/test-database/data-api",
   "status": {
@@ -71,7 +71,7 @@ Resources:
     data_api1:
       Name: 
 
->>> [CLI] postgres get-data-api projects/test-project/branches/production/databases/test-database/data-api
+>>> retry [CLI] postgres get-data-api projects/test-project/branches/production/databases/test-database/data-api
 {
   "name": "projects/test-project/branches/production/databases/test-database/data-api"
 }
@@ -93,7 +93,7 @@ Destroy: 1 deleted
 >>> musterr [CLI] postgres get-data-api projects/test-project/branches/production/databases/test-database/data-api
 Error: Data API is not enabled for this database
 
->>> [CLI] postgres get-database projects/test-project/branches/production/databases/test-database
+>>> retry [CLI] postgres get-database projects/test-project/branches/production/databases/test-database
 {
   "name": "projects/test-project/branches/production/databases/test-database"
 }

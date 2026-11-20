@@ -3,6 +3,7 @@
 package connections
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "connections",
-		Short: `A connection represents an external data source for use within Databricks.`,
-		Long: `A connection represents an external data source for use within Databricks.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "connections",
+	Short:   `A connection represents an external data source for use within Databricks.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A connection represents an external data source for use within Databricks.
 
   Creating a connection object is the first step to managing external data
   sources within Unity Catalog. The second step is creating a data object
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   connection can be written to or read from similar to other Unity Catalog data
   objects based on cloud storage. You can create different types of connections,
   and each connection has a unique set of configuration options to support
-  credential management and other settings.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  credential management and other settings.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -50,8 +55,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

@@ -6,3 +6,7 @@ New = 'TEST_TMP_DIR]/app-tip'
 [[Repls]]
 Old = 'TEST_TMP_DIR]\\app-plugin'
 New = 'TEST_TMP_DIR]/app-plugin'
+
+[[Repls]]
+Old = 'TEST_TMP_DIR]\\app-recorded'
+New = 'TEST_TMP_DIR]/app-recorded'

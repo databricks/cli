@@ -102,6 +102,42 @@ func TestRouterFirstRegistrationWins(t *testing.T) {
 	})
 }
 
+func TestRouterFallback(t *testing.T) {
+	t.Run("served when nothing else matches", func(t *testing.T) {
+		r, c := newRouter(t)
+		r.HandleFallback("GET", "/foo", handlerNamed("fallback"))
+
+		r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/foo", nil))
+		assert.Equal(t, "fallback", c.handler)
+	})
+
+	t.Run("exact registered later wins", func(t *testing.T) {
+		r, c := newRouter(t)
+		r.HandleFallback("GET", "/foo", handlerNamed("fallback"))
+		r.Handle("GET", "/foo", handlerNamed("exact"))
+
+		r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/foo", nil))
+		assert.Equal(t, "exact", c.handler)
+	})
+
+	t.Run("wildcard registered later wins", func(t *testing.T) {
+		r, c := newRouter(t)
+		r.HandleFallback("GET", "/items/42", handlerNamed("fallback"))
+		r.Handle("GET", "/items/{id}", handlerNamed("wildcard"))
+
+		r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/items/42", nil))
+		assert.Equal(t, "wildcard", c.handler)
+	})
+
+	t.Run("other methods are not found", func(t *testing.T) {
+		r, c := newRouter(t)
+		r.HandleFallback("GET", "/foo", handlerNamed("fallback"))
+
+		r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/foo", nil))
+		assert.True(t, c.notFound)
+	})
+}
+
 func TestRouterNotFound(t *testing.T) {
 	r, c := newRouter(t)
 	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/missing", nil))

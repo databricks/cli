@@ -3,6 +3,7 @@
 package agent_kit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,21 +21,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "agent-kit",
-		Short: `*Beta* APIs for managing agent memory and durable session state.`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "agent-kit",
+	Short:   `*Beta* APIs for managing agent memory and durable session state.`,
+	GroupID: "agentbricks",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
 
 APIs for managing agent memory and durable session state. This interface is
-  under active development and may change.`,
-		GroupID: "agentbricks",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  under active development and may change.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAppendSessionItems())
@@ -77,8 +82,6 @@ APIs for managing agent memory and durable session state. This interface is
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start append-session-items command
@@ -358,12 +361,14 @@ func newCreateMemoryStore() *cobra.Command {
 
 Create a memory store.
 
-  Creates a memory store in the caller's workspace.
+  Creates a memory store in the caller's workspace. Returns ALREADY_EXISTS
+  when a store with the requested ID already exists.
 
   Arguments:
     MANAGED_MEMORY_STORE_ID: Caller-provided, workspace-unique memory store ID. It must be 3-56
       characters, begin with a lowercase letter, contain only lowercase letters,
-      digits, and hyphens, and end with a letter or digit.`
+      digits, and hyphens, and end with a letter or digit. It becomes the last
+      segment of the store's name and cannot be changed after creation.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -676,8 +681,9 @@ func newDeleteMemoryStore() *cobra.Command {
 
 Delete a memory store by resource name.
 
-  Deletes a memory store by resource name. Returns NOT_FOUND when the store
-  does not exist in the caller's workspace.
+  Deletes a memory store by resource name. Deleting a store also deletes all of
+  its memory entries, and its ID becomes available for reuse. Returns
+  NOT_FOUND when the store does not exist in the caller's workspace.
 
   Arguments:
     NAME: Resource name in the form memory-stores/{managed_memory_store_id}.`
@@ -2588,8 +2594,9 @@ Update a memory store.
 
   Arguments:
     NAME: Resource name in the form memory-stores/{managed_memory_store_id}.
-    UPDATE_MASK: Only description and metadata may be updated. Selecting metadata
-      replaces the entire map.`
+    UPDATE_MASK: Only description and metadata may be updated. Selecting description
+      while leaving it unset clears it. Selecting metadata replaces the entire
+      map.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

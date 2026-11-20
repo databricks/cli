@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -18,6 +19,12 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
+)
+
+// Prompt text shared by install, uninstall and the mcp commands.
+const (
+	// cancelledMessage is printed when the user declines at a prompt, and the command ends without a change.
+	cancelledMessage = "Cancelled."
 )
 
 // Package-level seams for testability. Tests override these via helpers in
@@ -518,13 +525,9 @@ func defaultPromptAgentSelection(_ context.Context, scope string, choices []agen
 	}
 
 	var selected []string
-	err := huh.NewMultiSelect[string]().
-		Title(agentPickerTitle(scope)).
-		Description("space to toggle, enter to install").
-		Options(options...).
-		Value(&selected).
-		Run()
-	if err != nil {
+	field := agentPickerField(scope, options, &selected)
+	form := huh.NewForm(huh.NewGroup(field)).WithShowHelp(false)
+	if err := runPicker(newPicker(form, field.GetFiltering)); err != nil {
 		return nil, promptError(err)
 	}
 	if len(selected) == 0 {
@@ -536,6 +539,88 @@ func defaultPromptAgentSelection(_ context.Context, scope string, choices []agen
 		result = append(result, byName[name])
 	}
 	return result, nil
+}
+
+// agentPickerHelp is the help line of the agent picker. Enter installs the
+// selected agents: install runs the plan straight after the picker.
+const agentPickerHelp = "space to toggle, enter to install, esc to cancel"
+
+func agentPickerField(scope string, options []huh.Option[string], selected *[]string) *huh.MultiSelect[string] {
+	return huh.NewMultiSelect[string]().
+		Title(agentPickerTitle(scope)).
+		Description(agentPickerHelp).
+		Options(options...).
+		Value(selected)
+}
+
+// pickerModel runs a form as huh's Run does, except that Esc cancels it too.
+// The install and mcp pickers share it.
+type pickerModel struct {
+	form *huh.Form
+	// searching reports whether a multi-select in the form is searching. Esc
+	// then belongs to the form, which leaves the search. Nil for a form with no
+	// search.
+	searching func() bool
+	// onKey runs after each message the form takes; nil when nothing depends on
+	// the keys.
+	onKey     func()
+	cancelled bool
+}
+
+func (p *pickerModel) Init() tea.Cmd { return p.form.Init() }
+
+func (p *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok && key.Type == tea.KeyEsc && (p.searching == nil || !p.searching()) {
+		p.cancelled = true
+		return p, tea.Quit
+	}
+	next, cmd := p.form.Update(msg)
+	p.form = next.(*huh.Form)
+	if p.onKey != nil {
+		p.onKey()
+		// The form renders its fields as it takes a message, so an empty one
+		// shows what onKey set.
+		next, refresh := p.form.Update(nil)
+		p.form = next.(*huh.Form)
+		return p, tea.Batch(cmd, refresh)
+	}
+	return p, cmd
+}
+
+// View draws nothing once Esc cancelled the picker, so Esc leaves no picker on screen. Ctrl+C interrupts the program,
+// which keeps the last frame, as huh's Run does.
+func (p *pickerModel) View() string {
+	if p.cancelled {
+		return ""
+	}
+	return p.form.View()
+}
+
+// newPicker returns the program of form, whose search searching reports (nil for
+// none). Run sets the commands that submit and cancel a form, and newPicker sets
+// them too, since it runs the form without Run.
+func newPicker(form *huh.Form, searching func() bool) *pickerModel {
+	form.SubmitCmd = tea.Quit
+	form.CancelCmd = tea.Interrupt
+	return &pickerModel{form: form, searching: searching}
+}
+
+// runPicker runs the picker p and returns huh.ErrUserAborted when the user
+// cancels it, with Esc or Ctrl+C. It takes the program options huh's Run sets:
+// the picker draws on stderr, so a redirected stdout gets none of it, and
+// reports focus.
+func runPicker(p *pickerModel) error {
+	_, err := tea.NewProgram(p, tea.WithOutput(os.Stderr), tea.WithReportFocus()).Run()
+	return pickerError(p.cancelled, err)
+}
+
+// pickerError is the result of a picker's program: a cancel, by Esc or Ctrl+C,
+// is huh.ErrUserAborted, as huh's Run returns it.
+func pickerError(cancelled bool, err error) error {
+	if cancelled || errors.Is(err, tea.ErrInterrupted) {
+		return huh.ErrUserAborted
+	}
+	return err
 }
 
 // buildPlan resolves the per-agent delivery and scope. Plugin-first: an agent
@@ -758,14 +843,25 @@ func forgetStalePluginRecords(ctx context.Context, scope string, items []agentPl
 	}
 }
 
-// topLevelFailure returns the run error when it has no per-agent entry, or nil
-// when the failure is already reported per agent — so a per-agent failure is not
-// duplicated in the top-level error/errorCategory fields.
+// topLevelFailure returns the errors of runErr that have no per-agent entry, joined, or nil when every
+// error is a per-agent failure. A per-agent failure is reported in its agent entry and is not repeated in the
+// top-level error and errorCategory fields.
 func topLevelFailure(runErr error) error {
-	if _, ok := errors.AsType[*agentErrors](runErr); ok {
+	if _, ok := errors.AsType[*agentErrors](runErr); !ok {
+		return runErr
+	}
+	// A run error that joins per-agent failures with others keeps the others.
+	joined, ok := runErr.(interface{ Unwrap() []error })
+	if !ok {
 		return nil
 	}
-	return runErr
+	var others []error
+	for _, err := range joined.Unwrap() {
+		if _, ok := errors.AsType[*agentErrors](err); !ok {
+			others = append(others, err)
+		}
+	}
+	return errors.Join(others...)
 }
 
 // executePlan carries out the plan and returns each agent's outcome. Skills

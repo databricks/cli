@@ -19,12 +19,12 @@ class ExperimentTag:
 
     key: VariableOrOptional[str] = None
     """
-    The tag key.
+    The tag key. Keys are at most 255 characters long.
     """
 
     value: VariableOrOptional[str] = None
     """
-    The tag value.
+    The tag value. Values are at most 65535 characters long.
     """
 
     @classmethod
@@ -40,12 +40,12 @@ class ExperimentTagDict(TypedDict, total=False):
 
     key: VariableOrOptional[str]
     """
-    The tag key.
+    The tag key. Keys are at most 255 characters long.
     """
 
     value: VariableOrOptional[str]
     """
-    The tag value.
+    The tag value. Values are at most 65535 characters long.
     """
 
 

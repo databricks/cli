@@ -3,6 +3,7 @@
 package network_connectivity
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,11 +21,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "network-connectivity",
-		Short: `These APIs provide configurations for the network connectivity of your workspaces for serverless compute resources.`,
-		Long: `These APIs provide configurations for the network connectivity of your
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "network-connectivity",
+	Short:   `These APIs provide configurations for the network connectivity of your workspaces for serverless compute resources.`,
+	GroupID: "settings",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs provide configurations for the network connectivity of your
   workspaces for serverless compute resources. This API provides stable subnets
   for your workspace so that you can configure your firewalls on your Azure
   Storage accounts to allow access from Databricks. You can also use the API to
@@ -32,14 +38,13 @@ func New() *cobra.Command {
   compute resources to your Azure resources using Azure Private Link. See
   [configure serverless secure connectivity].
 
-  [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security`,
-		GroupID: "settings",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateNetworkConnectivityConfiguration())
@@ -57,8 +62,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-network-connectivity-configuration command

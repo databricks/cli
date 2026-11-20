@@ -81,7 +81,7 @@ func TestRunSubmitTextOutput(t *testing.T) {
 	assert.Contains(t, out, "/jobs/runs/555")
 	assert.Contains(t, out, "Tip: use --watch when submitting a run to stream logs to your terminal.")
 	assert.Contains(t, out, "Stream logs after submission using:")
-	assert.Contains(t, out, "databricks air logs 555")
+	assert.Contains(t, out, "databricks air logs 555 --follow")
 	assert.NotContains(t, out, "View MLflow run at:")
 	assert.Zero(t, counts.runGet.Load(), "bare submission must not poll runs/get")
 	assert.Zero(t, counts.runGetOutput.Load(), "bare submission must not poll runs/get-output")
@@ -104,13 +104,13 @@ func TestRunSubmitTextOutputIncludesProfileInLogsCommand(t *testing.T) {
 	err := runSubmitCmdWithProfile(t, flags.OutputText, &buf, srv.URL, "team profile")
 	require.NoError(t, err)
 
-	assert.Contains(t, buf.String(), "databricks air logs 555 -p 'team profile'")
+	assert.Contains(t, buf.String(), "databricks air logs 555 --follow -p 'team profile'")
 }
 
 func TestAirLogsCommand(t *testing.T) {
-	assert.Equal(t, "databricks air logs 123", airLogsCommand("", "123"))
-	assert.Equal(t, "databricks air logs 123 -p profile-name", airLogsCommand("profile-name", "123"))
-	assert.Equal(t, "databricks air logs 123 -p 'team profile'", airLogsCommand("team profile", "123"))
+	assert.Equal(t, "databricks air logs 123 --follow", airLogsCommand("", "123"))
+	assert.Equal(t, "databricks air logs 123 --follow -p profile-name", airLogsCommand("profile-name", "123"))
+	assert.Equal(t, "databricks air logs 123 --follow -p 'team profile'", airLogsCommand("team profile", "123"))
 }
 
 func TestAirGetCommand(t *testing.T) {

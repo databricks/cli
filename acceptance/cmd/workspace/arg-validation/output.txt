@@ -11,7 +11,7 @@ Flags:
       --apply-policy-default-values[=true|false]    When set to true, fixed and default values from the policy will be used for fields that are omitted.
       --autotermination-minutes int                 Automatically terminates the cluster after it is inactive for this time in minutes.
       --cluster-name string                         Cluster name requested by the user.
-      --data-security-mode DataSecurityMode         Supported values: [
+      --data-security-mode DataSecurityMode         Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
                                                       DATA_SECURITY_MODE_AUTO,
                                                       DATA_SECURITY_MODE_DEDICATED,
                                                       DATA_SECURITY_MODE_STANDARD,
@@ -32,7 +32,7 @@ Flags:
       --instance-pool-id string                     The optional ID of the instance pool to which the cluster belongs.
       --is-single-node[=true|false]                 This field can only be used when kind = CLASSIC_PREVIEW.
       --json JSON                                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
-      --kind Kind                                   Supported values: [CLASSIC_PREVIEW]
+      --kind Kind                                   The kind of compute described by this compute specification. Supported values: [CLASSIC_PREVIEW]
       --no-wait[=true|false]                        do not wait to reach RUNNING state
       --node-type-id string                         This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.
       --num-workers int                             Number of worker nodes that this cluster should have.
