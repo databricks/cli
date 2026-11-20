@@ -1,0 +1,33 @@
+P   bundle
+P   bundle.name
+P   bundle.uuid
+P   resources
+P   resources.jobs
+P   resources.jobs.*
+P   resources.jobs.*.name
+P   resources.pipelines
+P   resources.pipelines.*
+P   resources.pipelines.*.name
+P   sync
+P   sync.paths
+P   sync.paths[*]
+P F telemetry.PythonWheelWrapperIsSet
+P F telemetry.PresetsNamePrefixIsSet
+P F telemetry.DeploymentHistoryEnabled
+P F telemetry.ImmutableSnapshotUsed
+P F telemetry.StatePathIsShared
+PT  telemetry.DMSCompatAuto
+P F telemetry.PermissionsSectionSet
+PT  telemetry.StatePathInDeployerHome
+P F telemetry.StatePathInOtherUserHome
+P F telemetry.StatePathOther
+P F telemetry.DMSUndeclaredDeployingUser
+P F telemetry.DMSUndeclaredOtherUser
+P F telemetry.DMSUndeclaredServicePrincipal
+P F telemetry.DMSUndeclaredGroup
+P F telemetry.SkipArtifactCleanup
+P F telemetry.UseLegacyRunAs
+P F telemetry.RunAsSet
+P F telemetry.HasServerlessCompute
+P F telemetry.HasClassicJobCompute
+P F telemetry.HasClassicInteractiveCompute

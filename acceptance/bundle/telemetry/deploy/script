@@ -24,6 +24,11 @@ cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources
 title "Assert the terraform engine opt-in is reported"
 cat telemetry.json | jq '[.entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values[] | select(.key | startswith("engine_terraform_"))]' > out.engine.txt
 
+# The bundle bitmap that the deploy sends, decoded: the config fields the bundle sets and the telemetry
+# flags measured, including those only a deploy measures. The encoded form and the size header grow
+# with the schema, so they are left out.
+cat telemetry.json | jq -r '.entry.databricks_cli_log.bundle_deploy_event.bundle_bitmap' | $CLI bundle bitmap decode | tail -n +2 > out.bitmap.txt
+
 # bundle_mutator_execution_time_ms can have variable number of entries depending upon the runtime of the mutators. Thus we omit it from
 # being asserted here.
 #
@@ -32,7 +37,7 @@ cat telemetry.json | jq '[.entry.databricks_cli_log.bundle_deploy_event.experime
 # The resource ids are listed in creation order, which varies because resources are created in
 # parallel. Sort them by resource key so the order is stable.
 ids=$($CLI bundle summary -o json | jq '[.resources[] | to_entries[] | {key: (.value.id | tostring), value: .key}] | from_entries')
-cat telemetry.json | jq --argjson ids "$ids" 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata) | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values |= map(select(.key | startswith("engine_terraform_") | not)) | .entry.databricks_cli_log.bundle_deploy_event |= (.resource_job_ids |= sort_by($ids[.]) | .resource_pipeline_ids |= sort_by($ids[.]))' > out.telemetry.txt
+cat telemetry.json | jq --argjson ids "$ids" 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata, .entry.databricks_cli_log.bundle_deploy_event.bundle_bitmap) | .entry.databricks_cli_log.bundle_deploy_event.experimental.bool_values |= map(select(.key | startswith("engine_terraform_") | not)) | .entry.databricks_cli_log.bundle_deploy_event |= (.resource_job_ids |= sort_by($ids[.]) | .resource_pipeline_ids |= sort_by($ids[.]))' > out.telemetry.txt
 
 cmd_exec_id=$(extract_command_exec_id.py)
 deployment_id=$(cat .databricks/bundle/default/deployment.json | jq -r .id)

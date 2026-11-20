@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -465,6 +466,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			Git:                 bundleGitInfo(b),
 			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
 			InGitRepo:           b.InGitRepo,
+			BundleBitmap:        bundleBitmap(ctx, b),
 
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
@@ -482,4 +484,24 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			},
 		},
 	})
+}
+
+// bundleBitmap encodes the bundle bitmap with the telemetry flags measured so
+// far. Loading starts the bitmap once the target is selected, so it is nil when
+// loading failed before that; deploy telemetry is logged on that path too.
+func bundleBitmap(ctx context.Context, b *bundle.Bundle) string {
+	if b.Bitmap == nil {
+		return ""
+	}
+	bits, err := b.Bitmap.Bits(b.Telemetry)
+	if err != nil {
+		log.Debugf(ctx, "failed to compute the bundle bitmap: %s", err)
+		return ""
+	}
+	encoded, err := bitmap.Encode(bits, bitmap.ContextFullBundle)
+	if err != nil {
+		log.Debugf(ctx, "failed to encode the bundle bitmap: %s", err)
+		return ""
+	}
+	return encoded
 }
