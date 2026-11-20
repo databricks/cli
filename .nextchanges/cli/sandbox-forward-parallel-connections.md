@@ -1,0 +1,1 @@
+* Fix `databricks sandbox forward` sending concurrent requests over one shared connection, which capped parallel downloads at that connection's throughput. ([#7836](https://github.com/databricks/cli/pull/7836))
