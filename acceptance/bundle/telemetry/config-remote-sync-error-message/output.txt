@@ -90,3 +90,6 @@ Error: cannot resolve bundle auth configuration: validate: more than one authori
 
 
 >>> errcode print_requests.py //telemetry-ext
+File [OUTPUT_DIR]/out.requests.txt not found
+
+Exit code: 1
