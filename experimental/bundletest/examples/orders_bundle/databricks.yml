@@ -1,0 +1,38 @@
+# Minimal illustrative bundle. The local backend runs a job's real sql_task artifact
+# against DuckDB; the cloud backend (follow-up PR) deploys and runs it on a real workspace.
+bundle:
+  name: orders
+
+resources:
+  jobs:
+    # SQL job — runnable on the local backend.
+    transform_orders:
+      name: transform_orders
+      tasks:
+        - task_key: transform
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: src/transform_orders.sql
+
+    # SQL job — the second hop: silver -> gold. Chains after transform_orders.
+    aggregate_orders:
+      name: aggregate_orders
+      tasks:
+        - task_key: aggregate
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: src/aggregate_orders.sql
+
+    # Notebook job — NOT runnable locally; used to demonstrate the loud skip.
+    score_model:
+      name: score_model
+      tasks:
+        - task_key: score
+          notebook_task:
+            notebook_path: src/score_model
+
+variables:
+  warehouse_id:
+    description: SQL warehouse the transform runs on
