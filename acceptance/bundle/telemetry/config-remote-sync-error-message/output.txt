@@ -35,6 +35,10 @@ Error: failed to perform target override for target=bad: variable undefined_var 
 Error: failed to perform target override for target=own-host: variable undefined_var is not defined but is assigned a value
 
 
+>>> musterr [CLI] bundle config-remote-sync -t profile-workspace -p workspace2222
+Error: failed to perform target override for target=profile-workspace: variable undefined_var is not defined but is assigned a value
+
+
 >>> musterr [CLI] bundle config-remote-sync -p myprofile
 Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
 
@@ -54,6 +58,10 @@ Error: failed to perform target override for target=bad: variable undefined_var 
 }
 {
   "error_message": "failed to perform target override for target=own-host: variable undefined_var is not defined but is assigned a value",
+  "error_category": "BUNDLE_LOAD_FAILED"
+}
+{
+  "error_message": "failed to perform target override for target=profile-workspace: variable undefined_var is not defined but is assigned a value",
   "error_category": "BUNDLE_LOAD_FAILED"
 }
 {
@@ -82,6 +90,10 @@ Error: failed to perform target override for target=bad: variable undefined_var 
 
 
 >>> musterr [CLI] bundle config-remote-sync -t bad -p myprofile
+Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
+
+
+>>> musterr [CLI] bundle config-remote-sync -t bad -p workspace2222
 Error: failed to perform target override for target=bad: variable undefined_var is not defined but is assigned a value
 
 

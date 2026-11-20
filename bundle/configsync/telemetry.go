@@ -323,15 +323,18 @@ func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profileName, target 
 		log.Debugf(ctx, "config-remote-sync telemetry skipped: profile %s not found", profileName)
 		return ctx
 	}
-	// As in bundle auth, a profile for another host than the bundle's is rejected.
+	// As in bundle auth, a profile for another host than the bundle's is rejected,
+	// and so is one for another workspace on the same unified host.
 	if b != nil {
-		host := b.Config.Workspace.Host
-		// The target was not merged, so its own host is not in the root config yet.
-		if t := b.Config.Targets[selectedTarget(ctx, b, target)]; t != nil && t.Workspace != nil && t.Workspace.Host != "" {
-			host = t.Workspace.Host
+		host, id := b.Config.Workspace.Host, b.Config.Workspace.WorkspaceID
+		// The target was not merged, so its own workspace is not in the root config yet.
+		if t := b.Config.Targets[selectedTarget(ctx, b, target)]; t != nil && t.Workspace != nil {
+			host, id = cmp.Or(t.Workspace.Host, host), cmp.Or(t.Workspace.WorkspaceID, id)
 		}
-		if host != "" && canonicalHost(host) != canonicalHost(profiles[0].Host) {
-			log.Debugf(ctx, "config-remote-sync telemetry skipped: profile %s is for another host than the bundle's %s", profileName, host)
+		p := profiles[0]
+		bundleID, profileID := workspaceID(host, id), workspaceID(p.Host, p.WorkspaceID)
+		if host != "" && canonicalHost(host) != canonicalHost(p.Host) || bundleID != "" && profileID != "" && bundleID != profileID {
+			log.Debugf(ctx, "config-remote-sync telemetry skipped: profile %s is for another workspace than the bundle's %s", profileName, host)
 			return ctx
 		}
 	}
@@ -341,6 +344,11 @@ func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profileName, target 
 	cfg.Loaders = databrickscfg.ProfileAuthLoaders
 	cfg.Credentials = auth.CredentialsWithoutRefresh()
 	return cmdctx.SetConfigUsed(ctx, cfg)
+}
+
+// workspaceID returns the explicit workspace ID, else the one in the host URL.
+func workspaceID(host, id string) string {
+	return cmp.Or(id, auth.ExtractHostQueryParams(host).WorkspaceID)
 }
 
 func canonicalHost(host string) string {
