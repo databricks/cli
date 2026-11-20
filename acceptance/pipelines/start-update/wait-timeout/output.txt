@@ -1,0 +1,8 @@
+
+=== --timeout stops waiting and leaves the update running
+
+>>> musterr [CLI] pipelines start-update [UUID][0] --wait --timeout 2s
+{
+  "update_id": "[UUID][1]"
+}
+Error: update [UUID][1] did not complete within 2s; it keeps running

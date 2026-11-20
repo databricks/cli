@@ -1,0 +1,17 @@
+
+=== Without --wait, start-update returns the update ID right away
+
+>>> [CLI] pipelines start-update [UUID][0]
+{
+  "update_id": "[UUID][1]"
+}
+
+=== --timeout requires --wait
+
+>>> musterr [CLI] pipelines start-update [UUID][0] --timeout 5m
+Error: --timeout requires --wait
+
+=== --timeout must not be negative
+
+>>> musterr [CLI] pipelines start-update [UUID][0] --wait --timeout=-1s
+Error: --timeout must not be negative

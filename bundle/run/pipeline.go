@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,7 @@ func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) [
 	return result
 }
 
-func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineEvent) {
+func logEvent(ctx context.Context, event pipelines.PipelineEvent) {
 	var sb strings.Builder
 	if event.Message != "" {
 		fmt.Fprintf(&sb, " %s\n", event.Message)
@@ -47,9 +48,7 @@ func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineE
 	}
 }
 
-func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId string) error {
-	w := r.bundle.WorkspaceClient(ctx)
-
+func logErrorEvent(ctx context.Context, w *databricks.WorkspaceClient, pipelineId, updateId string) error {
 	// Note: For a 100 percent correct and complete solution we should use the
 	// w.Pipelines.ListPipelineEventsAll method to find all relevant events. However the
 	// probablity of the relevant last error event not being present in the most
@@ -72,7 +71,7 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId
 	updateEvents := filterEventsByUpdateId(events, updateId)
 	// The events API returns most recent events first.
 	for _, event := range slices.Backward(updateEvents) {
-		r.logEvent(ctx, event)
+		logEvent(ctx, event)
 	}
 	return nil
 }
@@ -132,9 +131,6 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 	updateID := res.UpdateId
 
-	// setup progress logger and tracker to query events
-	updateTracker := progress.NewUpdateTracker(pipelineID, updateID, w)
-
 	// Log the pipeline update URL as soon as it is available.
 	cmdio.Log(ctx, progress.NewPipelineUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
 
@@ -144,13 +140,29 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		}, nil
 	}
 
+	err = WaitForPipelineUpdate(ctx, w, pipelineID, updateID)
+	if err != nil {
+		return nil, err
+	}
+	return &output.PipelineOutput{
+		UpdateId: updateID,
+	}, nil
+}
+
+// WaitForPipelineUpdate polls the update until it ends and logs its progress events.
+// It returns an error if the update fails or is canceled, after logging the error
+// events of a failed update.
+func WaitForPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string) error {
+	// setup progress logger and tracker to query events
+	updateTracker := progress.NewUpdateTracker(pipelineID, updateID, w)
+
 	// Poll update for completion and post status.
 	// Note: there is no "StartUpdateAndWait" wrapper for this API.
 	var prevState *pipelines.UpdateInfoState
 	for {
 		events, err := updateTracker.Events(ctx)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, event := range events {
 			cmdio.Log(ctx, &event)
@@ -161,7 +173,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			return w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		// Log only if the current state is different from the previous state.
@@ -173,21 +185,19 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 		if state == pipelines.UpdateInfoStateCanceled {
 			log.Infof(ctx, "Update was cancelled!")
-			return nil, errors.New("update cancelled")
+			return errors.New("update cancelled")
 		}
 		if state == pipelines.UpdateInfoStateFailed {
 			log.Infof(ctx, "Update has failed!")
-			err := r.logErrorEvent(ctx, pipelineID, updateID)
+			err := logErrorEvent(ctx, w, pipelineID, updateID)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			return nil, errors.New("update failed")
+			return errors.New("update failed")
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
 			log.Infof(ctx, "Update has completed successfully!")
-			return &output.PipelineOutput{
-				UpdateId: updateID,
-			}, nil
+			return nil
 		}
 
 		time.Sleep(time.Second)

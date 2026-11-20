@@ -1,0 +1,2 @@
+title "--wait prints the update ID, logs progress and returns when the update completes"
+trace $CLI pipelines start-update $pipeline_id --wait

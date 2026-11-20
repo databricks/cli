@@ -1,10 +1,17 @@
 package pipelines
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"regexp"
 	"slices"
+	"time"
 
+	"github.com/databricks/cli/bundle/run"
 	pipelinesCli "github.com/databricks/cli/cmd/pipelines"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -69,6 +76,75 @@ If there is only one pipeline in the bundle, KEY is optional.
 
 With a PIPELINE_ID: Stops the pipeline identified by the UUID using the API.`
 	})
+
+	startUpdateOverrides = append(startUpdateOverrides, startUpdateOverride)
+}
+
+// startUpdateOverride adds --wait, which blocks until the started update ends and
+// returns an error if the update fails or is canceled.
+func startUpdateOverride(cmd *cobra.Command, req *pipelines.StartUpdate) {
+	var wait bool
+	var timeout time.Duration
+	cmd.Flags().BoolVar(&wait, "wait", false, "Wait for the update to complete. Fails if the update fails or is canceled.")
+	cmd.Flags().DurationVar(&timeout, "timeout", 0, "With --wait, stop waiting after this duration, for example 30m. The update keeps running.")
+
+	originalRunE := cmd.RunE
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if timeout < 0 {
+			return errors.New("--timeout must not be negative")
+		}
+		if !wait {
+			if cmd.Flags().Changed("timeout") {
+				return errors.New("--timeout requires --wait")
+			}
+			return originalRunE(cmd, args)
+		}
+
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+		recorder := &startUpdateRecorder{PipelinesInterface: w.Pipelines}
+		w.Pipelines = recorder
+		err := originalRunE(cmd, args)
+		if err != nil {
+			return err
+		}
+		return waitForStartedUpdate(ctx, w, req.PipelineId, recorder.updateID, timeout)
+	}
+}
+
+// startUpdateRecorder records the ID of the update that the generated command starts,
+// so that --wait keeps the generated request handling and output.
+type startUpdateRecorder struct {
+	pipelines.PipelinesInterface
+	updateID string
+}
+
+func (r *startUpdateRecorder) StartUpdate(ctx context.Context, req pipelines.StartUpdate) (*pipelines.StartUpdateResponse, error) {
+	res, err := r.PipelinesInterface.StartUpdate(ctx, req)
+	if err == nil {
+		r.updateID = res.UpdateId
+	}
+	return res, err
+}
+
+var errStartUpdateTimeout = errors.New("start-update wait timed out")
+
+// waitForStartedUpdate waits for the update to end. The timeout cancels the wait instead of
+// setting a context deadline, because the SDK rate limiter fails a request that would wait
+// past a deadline with an error that does not name the timeout.
+func waitForStartedUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string, timeout time.Duration) error {
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	if timeout > 0 {
+		timer := time.AfterFunc(timeout, func() { cancel(errStartUpdateTimeout) })
+		defer timer.Stop()
+	}
+
+	err := run.WaitForPipelineUpdate(ctx, w, pipelineID, updateID)
+	if err != nil && errors.Is(context.Cause(ctx), errStartUpdateTimeout) {
+		return fmt.Errorf("update %s did not complete within %s; it keeps running", updateID, timeout)
+	}
+	return err
 }
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)

@@ -1,0 +1,8 @@
+title "Without --wait, start-update returns the update ID right away"
+trace $CLI pipelines start-update $pipeline_id
+
+title "--timeout requires --wait"
+trace musterr $CLI pipelines start-update $pipeline_id --timeout 5m
+
+title "--timeout must not be negative"
+trace musterr $CLI pipelines start-update $pipeline_id --wait --timeout=-1s
