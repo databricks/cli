@@ -57,40 +57,66 @@ func TestWithProcessGroupReapsGrandchild(t *testing.T) {
 // SIGTERM from Cancel does nothing, so WaitDelay expires and Go SIGKILLs the
 // leader PID only — leaving the grandchild that this option exists to reap. The
 // post-Wait group sweep (reapProcessGroup) must SIGKILL the whole group so the
-// grandchild does not survive.
+// grandchild does not survive. It runs for a child that leads its own process
+// group (Setpgid) and for one that leads its own session (Setsid, through
+// BackgroundInGroup).
 func TestWithProcessGroupReapsGrandchildAfterEscalation(t *testing.T) {
-	// Shorten the grace period so the WaitDelay escalation fires quickly.
-	orig := processGroupGracePeriod
-	processGroupGracePeriod = 500 * time.Millisecond
-	t.Cleanup(func() { processGroupGracePeriod = orig })
-
-	ctx, cancel := context.WithCancel(t.Context())
-
-	pidFile := filepath.Join(t.TempDir(), "grandchild.pid")
-	// The leader ignores SIGTERM, so only the escalation can stop it; the sleep
-	// grandchild inherits the group but not the trap.
-	script := []string{"sh", "-c", `trap '' TERM; sleep 300 & echo $! > "$1"; wait`, "sh", pidFile}
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		_, _ = Background(ctx, script, WithProcessGroup())
-	}()
-
-	grandchildPid := waitForPid(t, pidFile)
-
-	cancel()
-
-	select {
-	case <-done:
-	case <-time.After(processGroupGracePeriod + 10*time.Second):
-		t.Fatal("Background did not return after escalation")
+	tests := []struct {
+		name string
+		run  func(ctx context.Context, args []string) (string, error)
+	}{
+		{
+			name: "process group",
+			run: func(ctx context.Context, args []string) (string, error) {
+				return Background(ctx, args, WithProcessGroup())
+			},
+		},
+		{
+			name: "session",
+			run: func(ctx context.Context, args []string) (string, error) {
+				return BackgroundInGroup(ctx, args)
+			},
+		},
 	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Shorten the grace period so the WaitDelay escalation fires quickly.
+			orig := processGroupGracePeriod
+			processGroupGracePeriod = 500 * time.Millisecond
+			t.Cleanup(func() { processGroupGracePeriod = orig })
 
-	assert.Eventually(t, func() bool {
-		return errors.Is(syscall.Kill(grandchildPid, 0), syscall.ESRCH)
-	}, 5*time.Second, 20*time.Millisecond,
-		"grandchild %d survived the SIGKILL escalation (re-orphaned)", grandchildPid)
+			ctx, cancel := context.WithCancel(t.Context())
+
+			pidFile := filepath.Join(t.TempDir(), "grandchild.pid")
+			// The leader ignores SIGTERM, so only the escalation can stop it. The sleep
+			// grandchild inherits the group and the ignored SIGTERM, so only the group
+			// sweep can stop it.
+			script := []string{"sh", "-c", `trap '' TERM; sleep 300 & echo $! > "$1"; wait`, "sh", pidFile}
+
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				_, _ = tc.run(ctx, script)
+			}()
+
+			grandchildPid := waitForPid(t, pidFile)
+			// Do not leave the grandchild running for 5 minutes if the sweep fails.
+			t.Cleanup(func() { _ = syscall.Kill(grandchildPid, syscall.SIGKILL) })
+
+			cancel()
+
+			select {
+			case <-done:
+			case <-time.After(processGroupGracePeriod + 10*time.Second):
+				t.Fatal("the runner did not return after escalation")
+			}
+
+			assert.Eventually(t, func() bool {
+				return errors.Is(syscall.Kill(grandchildPid, 0), syscall.ESRCH)
+			}, 5*time.Second, 20*time.Millisecond,
+				"grandchild %d survived the SIGKILL escalation (re-orphaned)", grandchildPid)
+		})
+	}
 }
 
 // waitForPid waits for the shell to write the grandchild PID and returns it.
