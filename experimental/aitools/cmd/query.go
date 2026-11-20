@@ -175,7 +175,10 @@ multi-query mode, the same parameter set is applied to every statement.`,
 				return renderCSV(cmd.OutOrStdout(), columns, rows)
 			}
 
-			if len(columns) == 0 && len(rows) == 0 {
+			// A statement without a result set may still carry a schema: CTAS
+			// and other DML report num_affected_rows/num_inserted_rows columns
+			// with no rows, which JSON mode would otherwise print as "[]".
+			if len(rows) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "Query executed successfully (no results)")
 				return nil
 			}

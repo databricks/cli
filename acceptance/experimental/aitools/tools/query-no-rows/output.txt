@@ -1,0 +1,9 @@
+
+>>> [CLI] experimental aitools tools query CREATE OR REPLACE TABLE main.default.trips AS SELECT * FROM samples.nyctaxi.trips LIMIT 10
+Query executed successfully (no results)
+
+>>> [CLI] experimental aitools tools query --file setup.sql
+Query executed successfully (no results)
+
+>>> [CLI] experimental aitools tools query --output json --file setup.sql
+Query executed successfully (no results)

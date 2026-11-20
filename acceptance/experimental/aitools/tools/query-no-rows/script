@@ -1,0 +1,7 @@
+export DATABRICKS_WAREHOUSE_ID=$TEST_DEFAULT_WAREHOUSE_ID
+
+# The stub mirrors a real CTAS response: a two-column manifest and no rows.
+# Inline and --file must print the same confirmation, not "[]".
+trace $CLI experimental aitools tools query "CREATE OR REPLACE TABLE main.default.trips AS SELECT * FROM samples.nyctaxi.trips LIMIT 10"
+trace $CLI experimental aitools tools query --file setup.sql
+trace $CLI experimental aitools tools query --output json --file setup.sql
