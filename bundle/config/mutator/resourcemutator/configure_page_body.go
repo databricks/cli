@@ -3,6 +3,7 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -54,7 +55,13 @@ func (c configurePageBody) Apply(_ context.Context, b *bundle.Bundle) diag.Diagn
 			if err != nil {
 				return dyn.InvalidValue, fmt.Errorf("failed to read page body from file_path %s: %w", filePath, err)
 			}
-			return dyn.Set(v, pageBodyFieldName, dyn.V(string(contents)))
+
+			// Git checks a text file out with CRLF line endings on Windows by default.
+			// Without this the same repository would deploy a different body from
+			// Windows than from Linux or macOS, and each deploy would undo the other.
+			// Line endings carry no meaning in Markdown.
+			body = dyn.V(strings.ReplaceAll(string(contents), "\r\n", "\n"))
+			return dyn.Set(v, pageBodyFieldName, body)
 		})
 	})
 

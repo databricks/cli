@@ -20,11 +20,15 @@ func TestConfigurePageBody(t *testing.T) {
 	// Markdown is whitespace sensitive, so the file is used as is: no trimming, and no
 	// newline added or removed at the end.
 	const fileContents = "# Chargeback\n\n    indented code\n\nNo newline at the end"
+	// Except for line endings, which differ between a checkout on Windows and one on
+	// Linux or macOS.
+	const fileContentsCRLF = "# Chargeback\r\n\r\n    indented code\r\n\r\nNo newline at the end"
 
 	tests := []struct {
 		name      string
 		filePath  string
 		body      string
+		contents  string
 		writeFile bool
 		wantBody  string
 		wantErr   string
@@ -32,6 +36,14 @@ func TestConfigurePageBody(t *testing.T) {
 		{
 			name:      "file_path only loads the file",
 			filePath:  fileName,
+			contents:  fileContents,
+			writeFile: true,
+			wantBody:  fileContents,
+		},
+		{
+			name:      "CRLF line endings are normalized",
+			filePath:  fileName,
+			contents:  fileContentsCRLF,
 			writeFile: true,
 			wantBody:  fileContents,
 		},
@@ -48,6 +60,7 @@ func TestConfigurePageBody(t *testing.T) {
 			name:      "both is an error",
 			filePath:  fileName,
 			body:      "inline",
+			contents:  fileContents,
 			writeFile: true,
 			wantErr:   "both file_path and body are set; specify only one",
 		},
@@ -62,7 +75,7 @@ func TestConfigurePageBody(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
 			if tt.writeFile {
-				require.NoError(t, os.WriteFile(filepath.Join(dir, fileName), []byte(fileContents), 0o600))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, fileName), []byte(tt.contents), 0o600))
 			}
 
 			b := &bundle.Bundle{

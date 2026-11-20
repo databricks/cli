@@ -2333,7 +2333,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "file_path": {
-                        "description": "Local path to a Markdown file holding the body of the page. The contents are inlined into `body` at deploy time. Mutually exclusive with an inline `body`.",
+                        "description": "Local path to a Markdown file holding the body of the page. The contents are inlined into `body` at deploy time, with Windows line endings converted to Unix line endings. Mutually exclusive with an inline `body`.",
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {

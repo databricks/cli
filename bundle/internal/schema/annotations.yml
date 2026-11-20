@@ -1345,7 +1345,7 @@ resources:
             The resource name of the domain the page belongs to, in the form `domains/{domain_id}`.
         "file_path":
           "description": |-
-            Local path to a Markdown file holding the body of the page. The contents are inlined into `body` at deploy time. Mutually exclusive with an inline `body`.
+            Local path to a Markdown file holding the body of the page. The contents are inlined into `body` at deploy time, with Windows line endings converted to Unix line endings. Mutually exclusive with an inline `body`.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
