@@ -54,6 +54,62 @@ func TestConvertToDabsForceOverwrite(t *testing.T) {
 	assert.Contains(t, string(regenerated), "ai_runtime_task")
 }
 
+// sharedCodeWorkload writes a workload YAML in dir that points at dir/src, so two
+// workloads can be converted into the same directory.
+func sharedCodeWorkload(t *testing.T, dir, name, extra string) (*runConfig, string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
+	cfg := "experiment_name: " + name + "\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n" + extra
+	path := filepath.Join(dir, name+".yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+	return loaded, path
+}
+
+const sidecarsConfig = "env_variables: {FOO: bar}\nsecrets: {TOKEN: scope/key}\nparameters: {lr: 0.1}\n"
+
+// --force re-converts the same workload only: a databricks.yml that names a different
+// bundle is left alone, together with its sidecars, and the error names both bundles.
+func TestConvertToDabsForceRefusesDifferentBundle(t *testing.T) {
+	dir := t.TempDir()
+	cfgA, pathA := sharedCodeWorkload(t, dir, "exp-a", sidecarsConfig)
+	_, err := writeBundle(t.Context(), cfgA, pathA, dir, false)
+	require.NoError(t, err)
+	bundleA := testutil.ReadFile(t, filepath.Join(dir, "databricks.yml"))
+
+	cfgB, pathB := sharedCodeWorkload(t, dir, "exp-b", "")
+	_, err = writeBundle(t.Context(), cfgB, pathB, dir, true)
+	require.EqualError(t, err, fmt.Sprintf("databricks.yml in %s belongs to bundle \"exp-a\", not to this workload's bundle \"exp-b\"; pass --output-dir with another directory that contains the code directory, or remove it", dir))
+	assert.Equal(t, bundleA, testutil.ReadFile(t, filepath.Join(dir, "databricks.yml")))
+	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, envVarsName))
+	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, secretEnvVarsName))
+	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, hyperparametersName))
+
+	// Without --force the generic hint still applies.
+	_, err = writeBundle(t.Context(), cfgB, pathB, dir, false)
+	require.ErrorContains(t, err, "pass --force to overwrite")
+}
+
+// Re-converting the same workload with --force removes the sidecars the previous
+// conversion wrote and this one does not, so sync.paths does not upload stale ones.
+func TestConvertToDabsForceRemovesStaleSidecars(t *testing.T) {
+	dir := t.TempDir()
+	cfg, path := sharedCodeWorkload(t, dir, "exp-a", sidecarsConfig)
+	_, err := writeBundle(t.Context(), cfg, path, dir, false)
+	require.NoError(t, err)
+
+	cfg, path = sharedCodeWorkload(t, dir, "exp-a", "")
+	_, err = writeBundle(t.Context(), cfg, path, dir, true)
+	require.NoError(t, err)
+	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, commandScriptName))
+	assert.NoFileExists(t, filepath.Join(dir, generatedArtifactsDir, envVarsName))
+	assert.NoFileExists(t, filepath.Join(dir, generatedArtifactsDir, secretEnvVarsName))
+	assert.NoFileExists(t, filepath.Join(dir, generatedArtifactsDir, hyperparametersName))
+}
+
 func TestConvertToDabsExistingBundleRoot(t *testing.T) {
 	for _, name := range config.FileNames {
 		t.Run(name, func(t *testing.T) {

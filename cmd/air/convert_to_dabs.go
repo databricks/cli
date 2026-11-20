@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -302,8 +303,17 @@ func isWorkloadBundle(dir, experimentName string) bool {
 	if err != nil || filepath.Base(path) != "databricks.yml" || experimentName == "" {
 		return false
 	}
+	return existingBundleName(path) == experimentName
+}
+
+// existingBundleName returns the bundle.name declared by the bundle file at path, or
+// "" when it declares none or does not load (such as a hand-edited stub).
+func existingBundleName(path string) string {
 	existing, diags := config.Load(path)
-	return !diags.HasError() && existing.Bundle.Name == experimentName
+	if diags.HasError() {
+		return ""
+	}
+	return existing.Bundle.Name
 }
 
 // quotedPath quotes a local path the way the --output-dir suggestion does, so a
@@ -628,9 +638,14 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 		return nil, fmt.Errorf("%s already exists in %s; move or remove it before converting", name, dir)
 	}
 	bundlePath := filepath.Join(dir, bundleFileName)
-	if !force {
-		if _, err := os.Stat(bundlePath); err == nil {
+	if _, err := os.Stat(bundlePath); err == nil {
+		if !force {
 			return nil, fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", bundleFileName, dir)
+		}
+		// --force re-converts this workload; it must not replace a sibling workload's
+		// bundle, whose job the shared .databricks/ state would then plan to delete.
+		if name := existingBundleName(bundlePath); name != "" && name != cfg.ExperimentName {
+			return nil, fmt.Errorf("%s in %s belongs to bundle %q, not to this workload's bundle %q; pass --output-dir with another directory that contains the code directory, or remove it", bundleFileName, dir, name, cfg.ExperimentName)
 		}
 	}
 
@@ -675,6 +690,20 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 			return nil, fmt.Errorf("failed to write %s: %w", item.name, err)
 		}
 		written = append(written, path.Join(generatedArtifactsDir, item.name))
+	}
+
+	// A forced re-conversion may write fewer sidecars than the previous one (for
+	// example after dropping env_variables). sync.paths uploads the whole directory,
+	// so remove the generated names it no longer writes rather than ship stale ones.
+	if force {
+		for _, name := range []string{commandScriptName, hyperparametersName, envVarsName, secretEnvVarsName} {
+			if slices.ContainsFunc(artifacts, func(item uploadItem) bool { return item.name == name }) {
+				continue
+			}
+			if err := os.Remove(filepath.Join(artifactDir, name)); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("failed to remove stale %s: %w", name, err)
+			}
+		}
 	}
 
 	return written, nil
