@@ -6,7 +6,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 )
 
 // Configuration describes the installed helper and the Docker configuration it updated.
@@ -19,6 +21,7 @@ type Configuration struct {
 type Status struct {
 	Host       string `json:"host"`
 	Configured bool   `json:"configured"`
+	Profile    string `json:"profile,omitempty"`
 }
 
 // Configure installs the helper before selecting it in Docker's configuration.
@@ -37,8 +40,11 @@ func Configure(ctx context.Context, executable, registryHost string) (Configurat
 	return Configuration{ConfigPath: configPath, Shim: shim}, nil
 }
 
-// Inspect checks the helper selection and executable availability without modifying Docker's configuration.
-func Inspect(ctx context.Context, registryHost string) (Status, error) {
+// Inspect reports the profile the credential helper uses for registry and
+// whether Docker uses the helper with profileName, without modifying any
+// configuration.
+func Inspect(ctx context.Context, profiler profile.Profiler, registry Registry, recorded, profileName string) (Status, error) {
+	registryHost := registry.Host
 	configPath, err := ConfigPath(ctx)
 	if err != nil {
 		return Status{}, err
@@ -51,7 +57,15 @@ func Inspect(ctx context.Context, registryHost string) (Status, error) {
 		_, err := exec.LookPath("docker-credential-" + HelperName)
 		configured = err == nil
 	}
-	return Status{Host: registryHost, Configured: configured}, nil
+	status := Status{Host: registryHost}
+	selected, err := ProfileForRegistry(ctx, profiler, registry, recorded)
+	if err != nil {
+		log.Debugf(ctx, "Docker credential helper cannot resolve %s to a profile: %v", registryHost, err)
+	} else {
+		status.Profile = selected.Name
+	}
+	status.Configured = configured && status.Profile == profileName
+	return status, nil
 }
 
 // ConfigPath resolves Docker's configuration path using DOCKER_CONFIG or the user's home directory.

@@ -235,6 +235,11 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		if err != nil {
 			return fmt.Errorf("profile deleted, but failed to clear default profile setting: %w", err)
 		}
+
+		err = databrickscfg.ClearDockerProfiles(ctx, args.profileName, args.configFilePath)
+		if err != nil {
+			return fmt.Errorf("profile deleted, but failed to clear Docker credential helper settings: %w", err)
+		}
 	}
 
 	if isCreatedByLogin && args.deleteProfile {

@@ -23,6 +23,7 @@ const (
 	databricksSettingsSection = "__settings__"
 	defaultProfileKey         = "default_profile"
 	authStorageKey            = "auth_storage"
+	dockerProfileKeyPrefix    = "docker_profile."
 )
 
 // GetConfiguredDefaultProfile returns the explicitly configured default profile
@@ -271,6 +272,36 @@ func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) 
 	return writeConfigFile(ctx, configFile)
 }
 
+// GetDockerProfile returns the profile recorded for the Docker registry host,
+// or "" if none is recorded.
+func GetDockerProfile(ctx context.Context, registryHost, configFilePath string) (string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+	if configFile == nil {
+		return "", nil
+	}
+	return configFile.Section(databricksSettingsSection).Key(dockerProfileKeyPrefix + registryHost).String(), nil
+}
+
+// SetDockerProfile records profileName for the Docker registry host and returns
+// the profile recorded before, or "" if none was.
+func SetDockerProfile(ctx context.Context, registryHost, profileName, configFilePath string) (string, error) {
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	key := configFile.Section(databricksSettingsSection).Key(dockerProfileKeyPrefix + registryHost)
+	previous := key.String()
+	if previous == profileName {
+		return previous, nil
+	}
+	key.SetValue(profileName)
+	return previous, writeConfigFile(ctx, configFile)
+}
+
 // SetConfiguredAuthStorage writes the auth_storage key to the [__settings__]
 // section. Used by auth login to persist a plaintext fallback when the OS
 // keyring is unreachable, so subsequent commands skip the keyring probe and
@@ -343,6 +374,35 @@ func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string
 	}
 
 	section.DeleteKey(defaultProfileKey)
+	return writeConfigFile(ctx, configFile)
+}
+
+// ClearDockerProfiles removes the Docker registry entries from the
+// [__settings__] section that record the given profile name.
+func ClearDockerProfiles(ctx context.Context, profileName, configFilePath string) error {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+	if configFile == nil {
+		return nil
+	}
+
+	section, err := configFile.GetSection(databricksSettingsSection)
+	if err != nil {
+		return nil //nolint:nilerr // no settings section means no Docker entries to clear
+	}
+
+	cleared := false
+	for _, key := range section.Keys() {
+		if strings.HasPrefix(key.Name(), dockerProfileKeyPrefix) && key.Value() == profileName {
+			section.DeleteKey(key.Name())
+			cleared = true
+		}
+	}
+	if !cleared {
+		return nil
+	}
 	return writeConfigFile(ctx, configFile)
 }
 
