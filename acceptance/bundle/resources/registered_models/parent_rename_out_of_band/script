@@ -24,6 +24,6 @@ trace update_file.py databricks.yml test-schema- test-schema-renamed-
 trace $CLI bundle plan
 
 title "The create fails: the model is already there"
-trace errcode $CLI bundle deploy
+trace musterr $CLI bundle deploy
 trace print_requests.py //unity-catalog
 trace $CLI registered-models get "$NEW_SCHEMA.mymodel" | jq '{full_name}'
