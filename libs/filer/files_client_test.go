@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/sdk-go/core/apierr"
 	"github.com/databricks/sdk-go/core/ops"
 	files "github.com/databricks/sdk-go/files/v2"
 	"github.com/stretchr/testify/assert"
@@ -412,4 +414,84 @@ func TestFilesClientStopsRetryingAfterLimit(t *testing.T) {
 	err := f.deleteFile(ctx, "hello")
 	assert.ErrorContains(t, err, "AWS S3 is throttling requests")
 	assert.Equal(t, filesMaxRetries+1, requests)
+}
+
+// failing wraps a handler so that its first n requests fail with status and no
+// body, as a failed HEAD (or a proxy error page) does.
+func failing(n, status int, handler func(req testserver.Request) any) func(req testserver.Request) any {
+	var mu sync.Mutex
+	count := 0
+	return func(req testserver.Request) any {
+		mu.Lock()
+		count++
+		fail := count <= n
+		mu.Unlock()
+		if fail {
+			return testserver.Response{StatusCode: status, Body: []byte{}}
+		}
+		return handler(req)
+	}
+}
+
+func TestFilesClientRetriesReadOnlyCallsOn500(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path...}", failing(2, 500, ok))
+	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", failing(2, 500, ok))
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", ok)
+	server.Handle("GET", "/api/2.0/fs/files/{path...}", failing(2, 500, func(testserver.Request) any {
+		return testserver.Response{Body: []byte("abc")}
+	}))
+	f := newFilesClientWithFastRetries(t, server)
+
+	// Write checks that the parent directory exists with a HEAD.
+	require.NoError(t, f.Write(ctx, "hello", strings.NewReader("abc")))
+
+	_, err := f.statFile(ctx, "hello")
+	require.NoError(t, err)
+
+	r, err := f.Read(ctx, "hello")
+	require.NoError(t, err)
+	data, err := io.ReadAll(r)
+	require.NoError(t, err)
+	assert.Equal(t, "abc", string(data))
+	require.NoError(t, r.Close())
+}
+
+func TestFilesClientDoesNotRetryDeleteOn500(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	requests := 0
+	server.Handle("DELETE", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		requests++
+		return testserver.Response{StatusCode: 500, Body: []byte{}}
+	})
+	f := newFilesClientWithFastRetries(t, server)
+
+	err := f.deleteFile(ctx, "hello")
+	assert.EqualError(t, err, "delete /Volumes/main/schema/vol/hello: Files API returned HTTP 500 Internal Server Error")
+	assert.Equal(t, 1, requests)
+}
+
+func TestFilesClientDescribesErrorWithoutMessage(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path...}", failing(filesMaxRetries+1, 403, ok))
+	f := newFilesClientWithFastRetries(t, server)
+
+	_, err := f.Stat(ctx, "dir")
+	assert.EqualError(t, err, "stat /Volumes/main/schema/vol/dir: Files API returned HTTP 403 Forbidden")
+	// The status stays available to callers that map errors by it.
+	assert.Equal(t, http.StatusForbidden, httpStatus(err))
+}
+
+func TestDescribeFilesErrorLeavesOtherErrors(t *testing.T) {
+	withMessage := apierr.FromHTTPError(500, nil, []byte(`{"error_code":"INTERNAL_ERROR","message":"boom"}`))
+	assert.Equal(t, "databricks-api error: boom", describeFilesError(withMessage, "stat", "/p").Error())
+
+	// A wrapped error already has context from its wrapper.
+	wrapped := fmt.Errorf("context: %w", apierr.FromHTTPError(500, nil, nil))
+	assert.Equal(t, wrapped, describeFilesError(wrapped, "stat", "/p"))
+
+	assert.NoError(t, describeFilesError(nil, "stat", "/p"))
 }
