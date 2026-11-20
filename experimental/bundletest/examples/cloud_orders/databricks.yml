@@ -1,0 +1,51 @@
+# A deployable bundle for the cloud backend's own end-to-end validation.
+#
+# Unlike examples/orders_bundle (a static-config gallery the LOCAL backend only reads), this
+# one is actually `databricks bundle deploy`-ed to a real workspace, so it declares only
+# resources that deploy and run: two SQL jobs, a managed volume, and a file_path dashboard
+# (whose serialized form the cloud backend must hydrate from the workspace). Everything lives
+# under main.bundletest_cloud; the test fixture creates that schema and drops it (CASCADE)
+# after the run. The tests here are collected only when BUNDLETEST_BACKEND=cloud.
+bundle:
+  name: bundletest-cloud
+
+variables:
+  warehouse_id:
+    description: SQL warehouse the sql_task jobs and the dashboard run on
+
+resources:
+  volumes:
+    raw_data:
+      name: raw_data
+      catalog_name: main
+      schema_name: bundletest_cloud
+      volume_type: MANAGED
+
+  jobs:
+    # bronze -> silver: dedupe + pin price to a fixed decimal.
+    transform_orders:
+      name: transform_orders
+      tasks:
+        - task_key: transform
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: src/transform_orders.sql
+
+    # silver -> gold: one summary row.
+    aggregate_orders:
+      name: aggregate_orders
+      tasks:
+        - task_key: aggregate
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: src/aggregate_orders.sql
+
+  dashboards:
+    # Defined by file_path (not inline), so get_resource must read the rendered
+    # serialized_dashboard back from the deployed dashboard for source_tables() to work.
+    orders_overview:
+      display_name: Orders Overview (bundletest-cloud)
+      warehouse_id: ${var.warehouse_id}
+      file_path: dashboards/orders_overview.lvdash.json
