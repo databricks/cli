@@ -14,6 +14,8 @@ import (
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
@@ -49,15 +51,11 @@ func TestToken_RefreshesLargeTokenInOSKeyring(t *testing.T) {
 		RefreshToken: "first",
 		Expiry:       time.Now().Add(-time.Minute),
 	}})
-	if err != nil {
-		t.Fatalf("Put(): want no error, got %v", err)
-	}
+	require.NoError(t, err)
 
 	refreshed := strings.Repeat("b", accessTokenSize)
 	arg, err := NewProfileWorkspaceOAuthArgument("https://keyring-refresh.cloud.databricks.test", profile)
-	if err != nil {
-		t.Fatalf("NewProfileWorkspaceOAuthArgument(): want no error, got %v", err)
-	}
+	require.NoError(t, err)
 	p, err := NewPersistentAuth(
 		t.Context(),
 		WithTokenStore(tokenStore),
@@ -77,30 +75,17 @@ func TestToken_RefreshesLargeTokenInOSKeyring(t *testing.T) {
 		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
 		WithOAuthArgument(arg),
 	)
-	if err != nil {
-		t.Fatalf("NewPersistentAuth(): want no error, got %v", err)
-	}
+	require.NoError(t, err)
 	defer p.Close()
 
 	tok, err := p.Token()
-	if err != nil {
-		t.Fatalf("p.Token(): want no error, got %v", err)
-	}
-	if tok.AccessToken != refreshed {
-		t.Errorf("p.Token(): want the refreshed access token, got %d bytes", len(tok.AccessToken))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, refreshed, tok.AccessToken)
 
-	if _, err := keyring.Get(service, profile+storage.AccessTokenPartMarker+"1"); err != nil {
-		t.Errorf("the refreshed token was not split: %v", err)
-	}
+	_, err = keyring.Get(service, profile+storage.AccessTokenPartMarker+"1")
+	assert.NoError(t, err, "the refreshed token was not split")
 	stored, err := storage.NewKeyringStore().Lookup(profile)
-	if err != nil {
-		t.Fatalf("Lookup(): want no error, got %v", err)
-	}
-	if stored.Token.AccessToken != refreshed {
-		t.Errorf("Lookup(): want the refreshed access token, got %d bytes", len(stored.Token.AccessToken))
-	}
-	if stored.Token.RefreshToken != "second" {
-		t.Errorf("Lookup(): want refresh token 'second', got %q", stored.Token.RefreshToken)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, refreshed, stored.Token.AccessToken)
+	assert.Equal(t, "second", stored.Token.RefreshToken)
 }
