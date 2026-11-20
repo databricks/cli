@@ -1,8 +1,9 @@
 // Package bitmap encodes the presence of every bundle configuration field as a
 // single bit. The schema (the ordered list of field paths) is derived by
-// reflecting over config.Root and recorded in schema.txt, which is embedded into
-// the binary. The schema is append-only so that bit positions stay stable across
-// releases: a newer binary can decode an older bitmap and vice versa.
+// reflecting over config.Root and recorded in schema.deflate, which is embedded
+// into the binary (acceptance/bundle/bitmap/full lists it). The schema is
+// append-only so that bit positions stay stable across releases: a newer binary
+// can decode an older bitmap and vice versa.
 //
 // The bits describe the configuration as the user wrote it, not the result of
 // Initialize, so defaults the CLI fills in are not counted (see Builder).
@@ -42,7 +43,30 @@ const headerSize = 10
 
 // EmbeddedSchema returns the schema baked into the binary at build time.
 func EmbeddedSchema() []string {
-	return parseSchema(schemaBytes)
+	text, err := io.ReadAll(flate.NewReader(bytes.NewReader(schemaDeflate)))
+	if err != nil {
+		// schema.deflate is generated and checked by TestEmbeddedSchemaIsCompleteAndUnique.
+		panic(fmt.Sprintf("bitmap: corrupt embedded schema: %s", err))
+	}
+	return parseSchema(text)
+}
+
+// CompressSchema encodes schema text, one field path per line, the way
+// schema.deflate stores it: raw DEFLATE. compress/flate gives the same bytes on
+// every platform, so the generated file does not depend on who generated it.
+func CompressSchema(text []byte) ([]byte, error) {
+	var out bytes.Buffer
+	w, err := flate.NewWriter(&out, flate.BestCompression)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := w.Write(text); err != nil {
+		return nil, err
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
 }
 
 // telemetryPrefix namespaces the internal telemetry struct's fields in the
@@ -65,7 +89,7 @@ const listSuffix = "[*]"
 // rendered as ".*" and slice elements as "[*]", and a "=true" and "=false"
 // entry after each bool field. The telemetry struct's fields are namespaced
 // under "telemetry.". This is the freshly computed schema; the
-// committed schema.txt is a prefix of it plus any fields since removed.
+// committed schema.deflate is a prefix of it plus any fields since removed.
 //
 // telemetryType is the internal telemetry struct type (bundle.Telemetry),
 // passed in so this package does not import the bundle package.
