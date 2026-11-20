@@ -21,7 +21,7 @@ title "Recreate writes state twice - the entry is dropped, then the new resource
 # save if the drop has not been sent yet, so --fold-pending prints the same either way.
 # Unity Catalog has no catalog called "other", so make one to move the schema into.
 other_catalog="dms_other_${UNIQUE_NAME}"
-$CLI catalogs create "$other_catalog" &> LOG.catalog
+dms_create_catalog "$other_catalog" &> LOG.catalog
 trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1' EXIT
 trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
 trace $CLI bundle deploy --auto-approve
