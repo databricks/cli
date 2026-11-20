@@ -1,0 +1,39 @@
+bundle:
+  name: pipeline-serverless-clusters
+
+targets:
+  invalid:
+    resources:
+      pipelines:
+        my_pipeline:
+          name: my-pipeline
+          serverless: true
+          clusters:
+            - label: default
+              num_workers: 1
+
+  classic:
+    resources:
+      pipelines:
+        explicit:
+          name: explicit-classic
+          serverless: false
+          clusters:
+            - label: default
+              num_workers: 1
+        implicit:
+          name: implicit-classic
+          clusters:
+            - label: default
+              num_workers: 1
+
+  serverless:
+    resources:
+      pipelines:
+        omitted_clusters:
+          name: omitted-clusters
+          serverless: true
+        empty_clusters:
+          name: empty-clusters
+          serverless: true
+          clusters: []
