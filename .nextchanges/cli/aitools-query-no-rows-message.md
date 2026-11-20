@@ -1,0 +1,1 @@
+* `databricks experimental aitools tools query` now prints "Query executed successfully (no results)" for statements that return a schema but no rows, such as `CREATE TABLE ... AS SELECT`, instead of `[]`. ([#7858](https://github.com/databricks/cli/pull/7858))
