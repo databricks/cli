@@ -33,6 +33,9 @@ import (
 
 const magic = "CLICOV1\n"
 
+// maxDecodedBlocks bounds what decode allocates for a file from elsewhere; the CLI has about 130k.
+const maxDecodedBlocks = 2_000_000
+
 const (
 	kindAll  = 0
 	kindUnit = 1
@@ -166,11 +169,15 @@ func decode(data []byte) (*decoded, error) {
 	str := func() []byte { return c.take(c.count()) }
 	d := &decoded{meta: str()}
 	d.layouts = make([]*layout, c.count())
+	blocks := 0
 	for i := range d.layouts {
 		l := &layout{path: string(str())}
 		copy(l.sha[:], c.take(20))
 		l.lines = int(c.uleb128())
 		l.blocks = make([]block, c.count())
+		if blocks += len(l.blocks); blocks > maxDecodedBlocks {
+			return nil, errMalformed
+		}
 		sl := uint32(0)
 		for j := range l.blocks {
 			sl += uint32(c.uleb128())
