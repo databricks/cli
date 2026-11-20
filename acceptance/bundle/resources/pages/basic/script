@@ -6,7 +6,7 @@ trace $CLI bundle summary
 
 title "Verify deployment (a page is a draft unless the config says otherwise)"
 PAGE_ID=$($CLI bundle summary -o json | jq -r .resources.pages.chargeback.id)
-trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{name, display_name, description, synonyms, state, owner_ids, body}'
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{name, display_name, description, synonyms, state, owner_ids, body}'
 
 title "A second plan has no changes"
 trace $CLI bundle plan
@@ -17,18 +17,18 @@ trace update_file.py databricks.yml "description: A reversal of a card payment."
 trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests.py //knowledge
-trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{description, state, body}'
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{description, state, body}'
 
 title "Publish the page"
 trace update_file.py databricks.yml "display_name: Chargeback" "display_name: Chargeback
       state: PUBLISHED"
 trace $CLI bundle deploy
 trace print_requests.py //knowledge
-trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{state}'
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{state}'
 trace $CLI bundle plan
 
 title "A change made outside of the bundle shows up in the plan"
-trace $CLI api patch "/api/2.0/knowledge/pages/$PAGE_ID?update_mask=body" --json '{"body": "edited in the UI"}' | jq '{body}'
+MSYS_NO_PATHCONV=1 trace $CLI api patch "/api/2.0/knowledge/pages/$PAGE_ID?update_mask=body" --json '{"body": "edited in the UI"}' | jq '{body}'
 trace $CLI bundle plan
 print_requests.py > /dev/null
 

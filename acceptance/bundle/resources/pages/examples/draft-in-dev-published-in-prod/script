@@ -4,12 +4,12 @@ $CLI domains create-domain Payments > /dev/null
 title "In development the page is a draft, and its title carries the name of the developer"
 trace $CLI bundle deploy
 PAGE_ID=$($CLI bundle summary -o json | jq -r .resources.pages.chargeback.id)
-trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, state}'
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, state}'
 
 title "In production the page is published"
 trace $CLI bundle deploy -t prod
 PAGE_ID=$($CLI bundle summary -t prod -o json | jq -r .resources.pages.chargeback.id)
-trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, state}'
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, state}'
 
 trace $CLI bundle destroy --auto-approve
 trace $CLI bundle destroy -t prod --auto-approve

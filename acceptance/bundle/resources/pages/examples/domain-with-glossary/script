@@ -7,7 +7,7 @@ title "Each page is in the domain it references"
 FRAUD_ID=$($CLI bundle summary -o json | jq -r .resources.domains.fraud.id)
 PAGE_ID=$($CLI bundle summary -o json | jq -r .resources.pages.false_positive.id)
 trace $CLI domains get-domain domains/$FRAUD_ID | jq '{name, tag_key, parent_domain_id}'
-trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, domain, state}'
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, domain, state}'
 
 trace $CLI bundle destroy --auto-approve
 

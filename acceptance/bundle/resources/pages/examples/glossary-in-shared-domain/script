@@ -8,7 +8,7 @@ trace $CLI bundle summary
 title "The pages are published in the domain"
 for page in chargeback refund; do
   PAGE_ID=$($CLI bundle summary -o json | jq -r .resources.pages.$page.id)
-  $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, synonyms, state}'
+  MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, synonyms, state}'
 done
 
 trace $CLI bundle destroy --auto-approve
