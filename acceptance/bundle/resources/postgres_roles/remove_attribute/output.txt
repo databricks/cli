@@ -1,0 +1,39 @@
+
+=== Initial deployment
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/remove-attribute-[UNIQUE_NAME]/default/files...
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_roles.my_role
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
+{
+  "attributes": {
+    "bypassrls": false,
+    "createdb": true,
+    "createrole": true
+  }
+}
+
+=== Remove attributes.createdb: true, keeping createrole
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.my_role
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/remove-attribute-[UNIQUE_NAME]/default
+
+Destroy: 3 deleted

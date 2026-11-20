@@ -1,0 +1,16 @@
+{
+  "action": "update",
+  "changes": {
+    "default_endpoint_settings.pg_settings['lock_timeout']": {
+      "action": "update",
+      "old": "5000",
+      "remote": "5000"
+    },
+    "pg_version": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": 16,
+      "new": 16
+    }
+  }
+}

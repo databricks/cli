@@ -1,0 +1,10 @@
+{
+  "action": "update",
+  "changes": {
+    "is_protected": {
+      "action": "update",
+      "old": true,
+      "remote": true
+    }
+  }
+}

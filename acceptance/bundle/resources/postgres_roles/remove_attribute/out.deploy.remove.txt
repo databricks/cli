@@ -1,0 +1,11 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/remove-attribute-[UNIQUE_NAME]/default/files...
+Error: cannot update resources.postgres_roles.my_role: updating id=projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role: Field 'spec.attributes.createdb' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role?update_mask=spec.attributes.createdb
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Field 'spec.attributes.createdb' is in update_mask but not provided in request
+
+Files: 0 uploaded, 0 deleted
+
+Exit code: 1

@@ -1,0 +1,4 @@
+# Verified against a real workspace on 2026-11-19: the direct engine masks spec.disabled and omits it from
+# the body, and the API rejects a masked scalar with no value. The old value stays in state, so
+# out.plan.after_remove.json shows the removal pending again and every later deploy fails the same way.
+Badness = "Removing disabled fails: the field is named in update_mask but omitted from the body, which the API rejects"

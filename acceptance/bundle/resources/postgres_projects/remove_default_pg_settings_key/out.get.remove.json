@@ -1,0 +1,5 @@
+{
+  "pg_settings": {
+    "statement_timeout": "8000"
+  }
+}
