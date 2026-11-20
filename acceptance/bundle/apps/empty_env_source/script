@@ -1,0 +1,2 @@
+trace musterr $CLI bundle validate
+trace $CLI bundle validate --var warehouse=provided

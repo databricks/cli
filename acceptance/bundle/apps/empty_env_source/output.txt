@@ -1,0 +1,22 @@
+
+>>> musterr [CLI] bundle validate
+Error: app environment variable "WAREHOUSE_ID" requires a non-empty value or value_from
+  at resources.apps.myapp.config.env[0]
+  in databricks.yml:15:13
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+>>> [CLI] bundle validate --var warehouse=provided
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!

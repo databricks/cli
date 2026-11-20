@@ -157,6 +157,32 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
+// The Apps API needs a source for every environment variable. Empty optional
+// strings are omitted when building the deployment request.
+func errorForMissingAppEnvSources(b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("apps"), dyn.AnyKey(), dyn.Key("config"), dyn.Key("env"), dyn.AnyIndex()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			if v.Kind() == dyn.KindMap && isMissingOrEmptyString(v.Get("value")) && isMissingOrEmptyString(v.Get("value_from")) {
+				name, _ := v.Get("name").AsString()
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("app environment variable %q requires a non-empty value or value_from", name),
+					Locations: v.Locations(),
+					Paths:     dyn.ToStructPaths(p),
+				})
+			}
+			return v, nil
+		})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	sortDiagnostics(diags)
+	return diags
+}
+
 // errorForInvalidGrants errors for grants the backend rejects or that never converge:
 // a missing principal is rejected, and an empty privileges list re-plans forever because
 // the backend drops principals with no privileges. Erroring here (rather than warning)
@@ -250,6 +276,7 @@ func isMissingOrEmptySequence(v dyn.Value) bool {
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
+	diags = diags.Extend(errorForMissingAppEnvSources(b))
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
 	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
 	if diags.HasError() {
