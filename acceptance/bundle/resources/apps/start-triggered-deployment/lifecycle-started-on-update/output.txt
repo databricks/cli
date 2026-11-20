@@ -1,0 +1,45 @@
+
+=== Deploy with lifecycle.started=false: the app is created stopped and nothing is deployed to it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/start-deployment-on-update-[UNIQUE_NAME]/default/files...
+Created apps.myapp
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Deploy with lifecycle.started=true: the compute is started and the source is deployed with the inline config
+
+>>> update_file.py databricks.yml started: false started: true
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/start-deployment-on-update-[UNIQUE_NAME]/default/files...
+Updated apps.myapp
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] apps get [UNIQUE_NAME]
+{
+  "active_deployment": {
+    "command": [
+      "flask",
+      "--app",
+      "app",
+      "run"
+    ],
+    "env_vars": [
+      {
+        "name": "FROM_BUNDLE_CONFIG"
+      }
+    ],
+    "state": "SUCCEEDED"
+  },
+  "pending_deployment": null
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/start-deployment-on-update-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

@@ -1,0 +1,5 @@
+# app_deployments projects `apps get` to the deployments on the app. source_code_path is left
+# out because a real workspace reports a per-deployment snapshot path there.
+app_deployments() {
+    jq '{active_deployment, pending_deployment} | map_values(if . == null then null else {command, env_vars, state: .status.state} | with_entries(select(.value != null)) end)'
+}
