@@ -16,10 +16,12 @@ trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
 trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
 
 # So is one with the profile from DATABRICKS_CONFIG_PROFILE, one where the bundle's or the target's host is the
-# profile's, and a default target next to a target on another host.
+# profile's (also to the profile's host when DATABRICKS_HOST names another), and a default target next to a target
+# on another host.
 DATABRICKS_CONFIG_PROFILE=myprofile trace musterr $CLI bundle config-remote-sync -t bad
 envsubst < same-host/databricks.yml > out && mv out same-host/databricks.yml
 withdir same-host trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
+DATABRICKS_HOST=https://other.test withdir same-host trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
 envsubst < conflict/databricks.yml > out && mv out conflict/databricks.yml
 withdir conflict trace musterr $CLI bundle config-remote-sync -t own-host -p myprofile
 withdir default-target trace musterr $CLI bundle config-remote-sync -p myprofile

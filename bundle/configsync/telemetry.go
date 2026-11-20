@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -329,14 +330,15 @@ func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profileName, target 
 		if t := b.Config.Targets[selectedTarget(ctx, b, target)]; t != nil && t.Workspace != nil && t.Workspace.Host != "" {
 			host = t.Workspace.Host
 		}
-		// DATABRICKS_HOST takes precedence over the profile's host when the config resolves.
-		profileHost := cmp.Or(env.Get(ctx, "DATABRICKS_HOST"), profiles[0].Host)
-		if host != "" && canonicalHost(host) != canonicalHost(profileHost) {
+		if host != "" && canonicalHost(host) != canonicalHost(profiles[0].Host) {
 			log.Debugf(ctx, "config-remote-sync telemetry skipped: profile %s is for another host than the bundle's %s", profileName, host)
 			return ctx
 		}
 	}
 	cfg := (&config.Workspace{Profile: profileName}).Config(ctx)
+	// As for a bundle's own profile, the profile wins over auth env vars, so the
+	// upload goes to the host checked above.
+	cfg.Loaders = databrickscfg.ProfileAuthLoaders
 	cfg.Credentials = auth.CredentialsWithoutRefresh()
 	return cmdctx.SetConfigUsed(ctx, cfg)
 }
