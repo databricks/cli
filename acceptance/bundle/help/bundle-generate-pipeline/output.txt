@@ -27,6 +27,9 @@ like catalogs, schemas, and compute configurations per target.
 Usage:
   databricks bundle generate pipeline [flags]
 
+Aliases:
+  pipeline, pipelines
+
 Flags:
   -d, --config-dir string             Dir path where the output config will be stored (default "resources")
       --existing-pipeline-id string   ID of the pipeline to generate config for

@@ -1,0 +1,10 @@
+$CLI catalogs create my_catalog --comment "primary catalog" > /dev/null
+
+trace $CLI bundle generate catalog --existing-id my_catalog
+
+trace cat resources/my_catalog.catalog.yml
+
+# The generated configuration loads as part of the bundle.
+trace $CLI bundle validate
+
+rm -r resources
