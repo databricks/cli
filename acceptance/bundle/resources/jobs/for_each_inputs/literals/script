@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle validate -o json | jq '.resources.jobs.fan.tasks | map({task_key, inputs: .for_each_task.inputs})'
+
+trace $CLI bundle deploy
+trace print_requests.py //jobs --nostamp
+
+trace $CLI bundle validate -o json -t override | jq '.resources.jobs.fan.tasks | map({task_key, inputs: .for_each_task.inputs})'
+
+trace $CLI bundle deploy -t override
+trace print_requests.py //jobs --nostamp
+
+trace $CLI bundle destroy --auto-approve -t override
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

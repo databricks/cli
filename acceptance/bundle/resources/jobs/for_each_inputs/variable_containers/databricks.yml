@@ -1,0 +1,56 @@
+bundle:
+  name: for_each_inputs_variable_containers
+
+variables:
+  each:
+    type: complex
+    default:
+      inputs: '["from_each"]'
+      task:
+        task_key: inner
+        notebook_task:
+          notebook_path: /notebook
+  task:
+    type: complex
+    default:
+      task_key: fan
+      for_each_task:
+        inputs: '["from_task"]'
+        task:
+          task_key: inner
+          notebook_task:
+            notebook_path: /notebook
+  tasks:
+    type: complex
+    default:
+      - task_key: fan
+        for_each_task:
+          inputs: '["from_tasks"]'
+          task:
+            task_key: inner
+            notebook_task:
+              notebook_path: /notebook
+  job:
+    type: complex
+    default:
+      tasks:
+        - task_key: fan
+          for_each_task:
+            inputs: '["from_job"]'
+            task:
+              task_key: inner
+              notebook_task:
+                notebook_path: /notebook
+
+resources:
+  jobs:
+    each:
+      tasks:
+        - task_key: fan
+          for_each_task: ${var.each}
+    task:
+      tasks:
+        - ${var.task}
+    tasks:
+      tasks: ${var.tasks}
+    job: ${var.job}

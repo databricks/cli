@@ -1,0 +1,4 @@
+# Errors for invalid YAML print the full path of the file; normalize Windows separators.
+[[Repls]]
+Old = '\\'
+New = '/'

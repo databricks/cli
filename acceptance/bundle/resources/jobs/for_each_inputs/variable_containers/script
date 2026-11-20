@@ -1,0 +1,1 @@
+trace $CLI bundle validate -o json | jq '[.resources.jobs | to_entries[] | {job: .key, inputs: .value.tasks[0].for_each_task.inputs}] | sort_by(.job)'
