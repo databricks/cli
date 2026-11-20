@@ -88,8 +88,9 @@ func TestWithProcessGroupReapsGrandchildAfterEscalation(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 
 			pidFile := filepath.Join(t.TempDir(), "grandchild.pid")
-			// The leader ignores SIGTERM, so only the escalation can stop it; the sleep
-			// grandchild inherits the group but not the trap.
+			// The leader ignores SIGTERM, so only the escalation can stop it. The sleep
+			// grandchild inherits the group and the ignored SIGTERM, so only the group
+			// sweep can stop it.
 			script := []string{"sh", "-c", `trap '' TERM; sleep 300 & echo $! > "$1"; wait`, "sh", pidFile}
 
 			done := make(chan struct{})
@@ -99,6 +100,8 @@ func TestWithProcessGroupReapsGrandchildAfterEscalation(t *testing.T) {
 			}()
 
 			grandchildPid := waitForPid(t, pidFile)
+			// Do not leave the grandchild running for 5 minutes if the sweep fails.
+			t.Cleanup(func() { _ = syscall.Kill(grandchildPid, syscall.SIGKILL) })
 
 			cancel()
 

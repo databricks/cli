@@ -1,6 +1,7 @@
 package process
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -48,12 +49,43 @@ func TestBackgroundInGroupInterruptChildReadsTerminal(t *testing.T) {
 	// Like a CLI started from a shell, the helper is in the foreground group of
 	// its controlling terminal.
 	helper.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: true, Ctty: 0}
-	require.NoError(t, helper.Start())
-	require.NoError(t, tty.Close())
-	// Drain the terminal so the helper never blocks writing to it.
-	go func() { _, _ = io.Copy(io.Discard, ptmx) }()
 
-	waitForPid(t, pidFile)
+	// Read the terminal so the helper never blocks writing to it, and keep what
+	// it wrote to report it if the test fails. The copy ends once the helper
+	// exits and the terminal has no other process left.
+	var out bytes.Buffer
+	outDone := make(chan struct{})
+	go func() {
+		defer close(outDone)
+		_, _ = io.Copy(&out, ptmx)
+	}()
+	output := func() string {
+		select {
+		case <-outDone:
+			return out.String()
+		case <-time.After(time.Second):
+			return "(the helper's terminal is still open)"
+		}
+	}
+
+	require.NoError(t, helper.Start())
+	// The helper leads its own session; kill it if the test fails before it ends.
+	t.Cleanup(func() {
+		_ = syscall.Kill(-helper.Process.Pid, syscall.SIGKILL)
+		if t.Failed() {
+			t.Logf("helper output:\n%s", output())
+		}
+	})
+	require.NoError(t, tty.Close())
+
+	grandchildPid := waitForPid(t, pidFile)
+	// The child of BackgroundInGroup leads a session of its own, so killing the
+	// helper does not stop it; kill its group if the test fails before it ends.
+	childPgid, err := syscall.Getpgid(grandchildPid)
+	require.NoError(t, err)
+	require.NotEqual(t, syscall.Getpgrp(), childPgid, "the child must not share the test's process group")
+	t.Cleanup(func() { _ = syscall.Kill(-childPgid, syscall.SIGKILL) })
+
 	require.NoError(t, helper.Process.Signal(os.Interrupt))
 
 	waitErr := make(chan error, 1)
@@ -68,9 +100,12 @@ func TestBackgroundInGroupInterruptChildReadsTerminal(t *testing.T) {
 		assert.True(t, status.Signaled(), "the helper must end as the interrupt would have, got %v", err)
 		assert.Equal(t, syscall.SIGINT, status.Signal())
 	case <-time.After(processGroupGracePeriod / 2):
-		_ = helper.Process.Kill()
 		t.Fatal("the interrupt did not end the helper before the grace period")
 	}
+
+	assert.Eventually(t, func() bool {
+		return errors.Is(syscall.Kill(grandchildPid, 0), syscall.ESRCH)
+	}, 5*time.Second, 20*time.Millisecond, "grandchild %d outlived the interrupt", grandchildPid)
 }
 
 // openPty opens a pseudo-terminal and returns its master and slave ends.
