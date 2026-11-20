@@ -66,3 +66,8 @@ func completionProfile(cmd *cobra.Command, args []string) string {
 	}
 	return cacheProfile(cmdctx.WorkspaceClient(cmd.Context()))
 }
+
+// CompleteSandboxIDs completes sandbox selections without making API requests.
+func CompleteSandboxIDs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return completeSandboxIDs(cmd, args, toComplete)
+}
