@@ -11,3 +11,8 @@ targets:
   bad:
     variables:
       undefined_var: value
+  other:
+    workspace:
+      host: https://other.test
+    variables:
+      undefined_var: value

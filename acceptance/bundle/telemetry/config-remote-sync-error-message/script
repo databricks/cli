@@ -15,14 +15,22 @@ trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
 
 trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
 
+# So is one with the profile from DATABRICKS_CONFIG_PROFILE, and one where the bundle's host is the profile's.
+DATABRICKS_CONFIG_PROFILE=myprofile trace musterr $CLI bundle config-remote-sync -t bad
+envsubst < same-host/databricks.yml > out && mv out same-host/databricks.yml
+withdir same-host trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
+
+trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
+
 # So is a bundle that is not found at all.
 DATABRICKS_BUNDLE_ROOT=missing trace musterr $CLI bundle config-remote-sync -p myprofile
 
 trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
 
-# Without a profile, with one that does not resolve, or with one for another host than the bundle's, nothing is sent.
+# Without a profile, with one that does not resolve, or with one for another host than the bundle's or the target's, nothing is sent.
 trace musterr $CLI bundle config-remote-sync -t bad
 trace musterr $CLI bundle config-remote-sync -t bad -p missing
 withdir conflict trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
+trace musterr $CLI bundle config-remote-sync -t other -p myprofile
 
 trace errcode print_requests.py //telemetry-ext
