@@ -139,53 +139,53 @@ func TestBitsBoolValues(t *testing.T) {
 		want []string
 	}{
 		{
-			"bool true",
-			"resources: {jobs: {j: {tasks: [{disable_auto_optimization: true}]}}}",
-			[]string{
+			name: "bool true",
+			yaml: "resources: {jobs: {j: {tasks: [{disable_auto_optimization: true}]}}}",
+			want: []string{
 				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]",
 				"resources.jobs.*.tasks[*].disable_auto_optimization", "resources.jobs.*.tasks[*].disable_auto_optimization=true",
 			},
 		},
 		{
-			"bool with omitempty, false",
-			"resources: {jobs: {j: {tasks: [{disable_auto_optimization: false}]}}}",
-			[]string{
+			name: "bool with omitempty, false",
+			yaml: "resources: {jobs: {j: {tasks: [{disable_auto_optimization: false}]}}}",
+			want: []string{
 				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]",
 				"resources.jobs.*.tasks[*].disable_auto_optimization", "resources.jobs.*.tasks[*].disable_auto_optimization=false",
 			},
 		},
 		{
-			"bool without omitempty, false",
-			"resources: {jobs: {j: {queue: {enabled: false}}}}",
-			[]string{
+			name: "bool without omitempty, false",
+			yaml: "resources: {jobs: {j: {queue: {enabled: false}}}}",
+			want: []string{
 				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.queue",
 				"resources.jobs.*.queue.enabled", "resources.jobs.*.queue.enabled=false",
 			},
 		},
 		{
-			"*bool true",
-			"presets: {pipelines_development: true}",
-			[]string{"presets", "presets.pipelines_development", "presets.pipelines_development=true"},
+			name: "*bool true",
+			yaml: "presets: {pipelines_development: true}",
+			want: []string{"presets", "presets.pipelines_development", "presets.pipelines_development=true"},
 		},
 		{
-			"*bool false",
-			"presets: {pipelines_development: false}",
-			[]string{"presets", "presets.pipelines_development", "presets.pipelines_development=false"},
+			name: "*bool false",
+			yaml: "presets: {pipelines_development: false}",
+			want: []string{"presets", "presets.pipelines_development", "presets.pipelines_development=false"},
 		},
 		{
-			"omitted",
-			"presets: {name_prefix: dev_}",
-			[]string{"presets", "presets.name_prefix"},
+			name: "omitted",
+			yaml: "presets: {name_prefix: dev_}",
+			want: []string{"presets", "presets.name_prefix"},
 		},
 		{
-			"unresolved reference has no value bit",
-			`presets: {pipelines_development: "${var.flag}"}`,
-			[]string{"presets", "presets.pipelines_development"},
+			name: "unresolved reference has no value bit",
+			yaml: `presets: {pipelines_development: "${var.flag}"}`,
+			want: []string{"presets", "presets.pipelines_development"},
 		},
 		{
-			"different values under a wildcard set both",
-			"resources: {jobs: {a: {queue: {enabled: true}}, b: {queue: {enabled: false}}}}",
-			[]string{
+			name: "different values under a wildcard set both",
+			yaml: "resources: {jobs: {a: {queue: {enabled: true}}, b: {queue: {enabled: false}}}}",
+			want: []string{
 				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.queue",
 				"resources.jobs.*.queue.enabled", "resources.jobs.*.queue.enabled=false", "resources.jobs.*.queue.enabled=true",
 			},
@@ -209,40 +209,40 @@ func TestBuilderMarkChanges(t *testing.T) {
 		want          []string
 	}{
 		{
-			"nothing changed",
-			`resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
-			`resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
-			nil,
+			name:   "nothing changed",
+			before: `resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
+			after:  `resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
+			want:   nil,
 		},
 		{
-			"a new resource is marked whole",
-			`resources: {jobs: {a: {name: x}}}`,
-			`resources: {jobs: {a: {name: x}, b: {name: y, max_concurrent_runs: 1}}}`,
-			append(slices.Clone(job), "resources.jobs.*.name", "resources.jobs.*.max_concurrent_runs"),
+			name:   "a new resource is marked whole",
+			before: `resources: {jobs: {a: {name: x}}}`,
+			after:  `resources: {jobs: {a: {name: x}, b: {name: y, max_concurrent_runs: 1}}}`,
+			want:   append(slices.Clone(job), "resources.jobs.*.name", "resources.jobs.*.max_concurrent_runs"),
 		},
 		{
-			"only the field added to an existing resource",
-			`resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
-			`resources: {jobs: {a: {name: x, max_concurrent_runs: 1, description: d}}}`,
-			append(slices.Clone(job), "resources.jobs.*.description"),
+			name:   "only the field added to an existing resource",
+			before: `resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
+			after:  `resources: {jobs: {a: {name: x, max_concurrent_runs: 1, description: d}}}`,
+			want:   append(slices.Clone(job), "resources.jobs.*.description"),
 		},
 		{
-			"a changed bool records its new value",
-			`resources: {jobs: {a: {queue: {enabled: true}}}}`,
-			`resources: {jobs: {a: {queue: {enabled: false}}}}`,
-			append(slices.Clone(job), "resources.jobs.*.queue", "resources.jobs.*.queue.enabled", "resources.jobs.*.queue.enabled=false"),
+			name:   "a changed bool records its new value",
+			before: `resources: {jobs: {a: {queue: {enabled: true}}}}`,
+			after:  `resources: {jobs: {a: {queue: {enabled: false}}}}`,
+			want:   append(slices.Clone(job), "resources.jobs.*.queue", "resources.jobs.*.queue.enabled", "resources.jobs.*.queue.enabled=false"),
 		},
 		{
-			"an entry added to a map",
-			`resources: {jobs: {a: {tags: {team: x}}}}`,
-			`resources: {jobs: {a: {tags: {team: x, cost: y}}}}`,
-			append(slices.Clone(job), "resources.jobs.*.tags", "resources.jobs.*.tags.*"),
+			name:   "an entry added to a map",
+			before: `resources: {jobs: {a: {tags: {team: x}}}}`,
+			after:  `resources: {jobs: {a: {tags: {team: x, cost: y}}}}`,
+			want:   append(slices.Clone(job), "resources.jobs.*.tags", "resources.jobs.*.tags.*"),
 		},
 		{
-			"list elements are compared by position",
-			`resources: {jobs: {a: {tasks: [{task_key: t1}]}}}`,
-			`resources: {jobs: {a: {tasks: [{task_key: t1, description: d}, {task_key: t2}]}}}`,
-			append(slices.Clone(job), "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]",
+			name:   "list elements are compared by position",
+			before: `resources: {jobs: {a: {tasks: [{task_key: t1}]}}}`,
+			after:  `resources: {jobs: {a: {tasks: [{task_key: t1, description: d}, {task_key: t2}]}}}`,
+			want: append(slices.Clone(job), "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]",
 				"resources.jobs.*.tasks[*].description", "resources.jobs.*.tasks[*].task_key"),
 		},
 	} {
@@ -278,62 +278,62 @@ func TestBuilderResolveVariables(t *testing.T) {
 		want      []string
 	}{
 		{
-			"bool from a variable",
-			`resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
-			`variables: {flag: {value: false}}`,
-			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
+			name:      "bool from a variable",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
+			variables: `variables: {flag: {value: false}}`,
+			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
 		},
 		{
-			"bool from a string value, as --var passes it",
-			`resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
-			`variables: {flag: {value: "true"}}`,
-			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=true"),
+			name:      "bool from a string value, as --var passes it",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
+			variables: `variables: {flag: {value: "true"}}`,
+			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=true"),
 		},
 		{
-			"bool from a field of a complex variable",
-			`resources: {jobs: {j: {queue: {enabled: "${var.settings.queue}"}}}}`,
-			`variables: {settings: {value: {queue: true}}}`,
-			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=true"),
+			name:      "bool from a field of a complex variable",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${var.settings.queue}"}}}}`,
+			variables: `variables: {settings: {value: {queue: true}}}`,
+			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=true"),
 		},
 		{
-			"bool from an element of a list variable",
-			`resources: {jobs: {j: {queue: {enabled: "${var.flags[1]}"}}}}`,
-			`variables: {flags: {value: [true, false]}}`,
-			append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
+			name:      "bool from an element of a list variable",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${var.flags[1]}"}}}}`,
+			variables: `variables: {flags: {value: [true, false]}}`,
+			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
 		},
 		{
-			"undefined variable keeps presence only",
-			`resources: {jobs: {j: {queue: {enabled: "${var.missing}"}}}}`,
-			`variables: {flag: {value: true}}`,
-			queue,
+			name:      "undefined variable keeps presence only",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${var.missing}"}}}}`,
+			variables: `variables: {flag: {value: true}}`,
+			want:      queue,
 		},
 		{
-			"value that is not a bool keeps presence only",
-			`resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
-			`variables: {flag: {value: "maybe"}}`,
-			queue,
+			name:      "value that is not a bool keeps presence only",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
+			variables: `variables: {flag: {value: "maybe"}}`,
+			want:      queue,
 		},
 		{
-			"other references are left alone",
-			`resources: {jobs: {j: {queue: {enabled: "${resources.jobs.other.queue.enabled}"}}}}`,
-			`resources: {jobs: {other: {queue: {enabled: true}}}}`,
-			queue,
+			name:      "other references are left alone",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${resources.jobs.other.queue.enabled}"}}}}`,
+			variables: `resources: {jobs: {other: {queue: {enabled: true}}}}`,
+			want:      queue,
 		},
 		{
-			"complex variable marks the fields inside it",
-			`resources: {jobs: {j: {job_clusters: "${var.clusters}"}}}`,
-			`variables: {clusters: {value: [{job_cluster_key: c, new_cluster: {num_workers: 1}}]}}`,
-			[]string{
+			name:      "complex variable marks the fields inside it",
+			config:    `resources: {jobs: {j: {job_clusters: "${var.clusters}"}}}`,
+			variables: `variables: {clusters: {value: [{job_cluster_key: c, new_cluster: {num_workers: 1}}]}}`,
+			want: []string{
 				"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.job_clusters", "resources.jobs.*.job_clusters[*]",
 				"resources.jobs.*.job_clusters[*].job_cluster_key", "resources.jobs.*.job_clusters[*].new_cluster",
 				"resources.jobs.*.job_clusters[*].new_cluster.num_workers",
 			},
 		},
 		{
-			"interpolated string is a plain string",
-			`resources: {jobs: {j: {name: "job-${var.suffix}"}}}`,
-			`variables: {suffix: {value: {queue: {enabled: true}}}}`,
-			[]string{"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.name"},
+			name:      "interpolated string is a plain string",
+			config:    `resources: {jobs: {j: {name: "job-${var.suffix}"}}}`,
+			variables: `variables: {suffix: {value: {queue: {enabled: true}}}}`,
+			want:      []string{"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.name"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -427,13 +427,41 @@ func TestDecodeErrors(t *testing.T) {
 		encoded string
 		err     string
 	}{
-		{"bad base64", "not-valid-base64!!!", "base64"},
-		{"not deflate", base64.StdEncoding.EncodeToString([]byte{0xff, 0xff}), "inflate"},
-		{"short header", deflateBase64(t, []byte("DBTB")), "payload too short"},
-		{"bad magic", deflateBase64(t, append(header("XXXX", 1), 0x80)), "bad magic"},
-		{"missing bitmap bytes", deflateBase64(t, header(magic, 9)), "payload size mismatch"},
-		{"extra bitmap bytes", deflateBase64(t, append(header(magic, 1), 0x80, 0x00)), "payload size mismatch"},
-		{"size near 2^32", deflateBase64(t, header(magic, 0xFFFFFFFF)), "payload size mismatch"},
+		{
+			name:    "bad base64",
+			encoded: "not-valid-base64!!!",
+			err:     "base64",
+		},
+		{
+			name:    "not deflate",
+			encoded: base64.StdEncoding.EncodeToString([]byte{0xff, 0xff}),
+			err:     "inflate",
+		},
+		{
+			name:    "short header",
+			encoded: deflateBase64(t, []byte("DBTB")),
+			err:     "payload too short",
+		},
+		{
+			name:    "bad magic",
+			encoded: deflateBase64(t, append(header("XXXX", 1), 0x80)),
+			err:     "bad magic",
+		},
+		{
+			name:    "missing bitmap bytes",
+			encoded: deflateBase64(t, header(magic, 9)),
+			err:     "payload size mismatch",
+		},
+		{
+			name:    "extra bitmap bytes",
+			encoded: deflateBase64(t, append(header(magic, 1), 0x80, 0x00)),
+			err:     "payload size mismatch",
+		},
+		{
+			name:    "size near 2^32",
+			encoded: deflateBase64(t, header(magic, 0xFFFFFFFF)),
+			err:     "payload size mismatch",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, _, err := Decode(tc.encoded)
@@ -484,13 +512,41 @@ func TestText(t *testing.T) {
 		set  []string
 		want []string
 	}{
-		{"nothing set", nil, nil},
-		{"field", []string{"bundle", "bundle.name"}, []string{"P   bundle", "P   bundle.name"}},
-		{"bool true", []string{"flag", "flag=true"}, []string{"PT  flag"}},
-		{"bool false", []string{"flag", "flag=false"}, []string{"P F flag"}},
-		{"both values under a wildcard", []string{"jobs.*.enabled", "jobs.*.enabled=true", "jobs.*.enabled=false"}, []string{"PTF jobs.*.enabled"}},
-		{"unresolved reference", []string{"ref"}, []string{"P   ref"}},
-		{"value without presence", []string{"flag=true"}, []string{" T  flag"}},
+		{
+			name: "nothing set",
+			set:  nil,
+			want: nil,
+		},
+		{
+			name: "field",
+			set:  []string{"bundle", "bundle.name"},
+			want: []string{"P   bundle", "P   bundle.name"},
+		},
+		{
+			name: "bool true",
+			set:  []string{"flag", "flag=true"},
+			want: []string{"PT  flag"},
+		},
+		{
+			name: "bool false",
+			set:  []string{"flag", "flag=false"},
+			want: []string{"P F flag"},
+		},
+		{
+			name: "both values under a wildcard",
+			set:  []string{"jobs.*.enabled", "jobs.*.enabled=true", "jobs.*.enabled=false"},
+			want: []string{"PTF jobs.*.enabled"},
+		},
+		{
+			name: "unresolved reference",
+			set:  []string{"ref"},
+			want: []string{"P   ref"},
+		},
+		{
+			name: "value without presence",
+			set:  []string{"flag=true"},
+			want: []string{" T  flag"},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			want := append([]string{"size=12 context=0"}, tc.want...)
@@ -522,39 +578,47 @@ func TestToJSON(t *testing.T) {
 		set                   []string
 		presence, isTrue, isF map[string]any
 	}{
-		{"nothing set", nil, map[string]any{}, map[string]any{}, map[string]any{}},
 		{
-			"a parent with set children is a subtree",
-			[]string{"bundle", "bundle.name"},
-			map[string]any{"bundle": map[string]any{"name": true}},
-			map[string]any{},
-			map[string]any{},
+			name:     "nothing set",
+			set:      nil,
+			presence: map[string]any{},
+			isTrue:   map[string]any{},
+			isF:      map[string]any{},
 		},
 		{
-			"a set field without set children is a leaf",
-			[]string{"jobs", "jobs.*", "jobs.*.tasks"},
-			job("tasks", true),
-			map[string]any{},
-			map[string]any{},
+			name:     "a parent with set children is a subtree",
+			set:      []string{"bundle", "bundle.name"},
+			presence: map[string]any{"bundle": map[string]any{"name": true}},
+			isTrue:   map[string]any{},
+			isF:      map[string]any{},
 		},
 		{
-			"a list's elements replace its leaf",
-			[]string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]"},
-			job("tasks[*]", true),
-			map[string]any{},
-			map[string]any{},
+			name:     "a set field without set children is a leaf",
+			set:      []string{"jobs", "jobs.*", "jobs.*.tasks"},
+			presence: job("tasks", true),
+			isTrue:   map[string]any{},
+			isF:      map[string]any{},
 		},
 		{
-			"bool false",
-			[]string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]", "jobs.*.tasks[*].enabled", "jobs.*.tasks[*].enabled=false"},
-			enabled,
-			map[string]any{},
-			enabled,
+			name:     "a list's elements replace its leaf",
+			set:      []string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]"},
+			presence: job("tasks[*]", true),
+			isTrue:   map[string]any{},
+			isF:      map[string]any{},
 		},
 		{
-			"both values under a wildcard",
-			[]string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]", "jobs.*.tasks[*].enabled", "jobs.*.tasks[*].enabled=true", "jobs.*.tasks[*].enabled=false"},
-			enabled, enabled, enabled,
+			name:     "bool false",
+			set:      []string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]", "jobs.*.tasks[*].enabled", "jobs.*.tasks[*].enabled=false"},
+			presence: enabled,
+			isTrue:   map[string]any{},
+			isF:      enabled,
+		},
+		{
+			name:     "both values under a wildcard",
+			set:      []string{"jobs", "jobs.*", "jobs.*.tasks", "jobs.*.tasks[*]", "jobs.*.tasks[*].enabled", "jobs.*.tasks[*].enabled=true", "jobs.*.tasks[*].enabled=false"},
+			presence: enabled,
+			isTrue:   enabled,
+			isF:      enabled,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

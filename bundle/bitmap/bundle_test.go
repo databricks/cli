@@ -82,19 +82,55 @@ func TestBitsTelemetry(t *testing.T) {
 		want []string
 	}{
 		// Every field of a zero struct is unmeasured; none may count as present.
-		{"zero value", bundle.Telemetry{}, nil},
-		{"bool false", bundle.Telemetry{SelectUsed: false}, nil},
-		{"bool true", bundle.Telemetry{SelectUsed: true}, []string{"telemetry.SelectUsed", "telemetry.SelectUsed=true"}},
-		{"*bool nil", bundle.Telemetry{RunAsSet: nil}, nil},
-		{"*bool false", bundle.Telemetry{RunAsSet: new(false)}, []string{"telemetry.RunAsSet", "telemetry.RunAsSet=false"}},
-		{"*bool true", bundle.Telemetry{RunAsSet: new(true)}, []string{"telemetry.RunAsSet", "telemetry.RunAsSet=true"}},
-		{"BoolSet unset", bundle.Telemetry{ArtifactFilesIsSet: boolSet()}, nil},
-		{"BoolSet true twice", bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, true)}, []string{
-			"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet=true",
-		}},
-		{"BoolSet both values", bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, false)}, []string{
-			"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet=false", "telemetry.ArtifactFilesIsSet=true",
-		}},
+		{
+			name: "zero value",
+			tm:   bundle.Telemetry{},
+			want: nil,
+		},
+		{
+			name: "bool false",
+			tm:   bundle.Telemetry{SelectUsed: false},
+			want: nil,
+		},
+		{
+			name: "bool true",
+			tm:   bundle.Telemetry{SelectUsed: true},
+			want: []string{"telemetry.SelectUsed", "telemetry.SelectUsed=true"},
+		},
+		{
+			name: "*bool nil",
+			tm:   bundle.Telemetry{RunAsSet: nil},
+			want: nil,
+		},
+		{
+			name: "*bool false",
+			tm:   bundle.Telemetry{RunAsSet: new(false)},
+			want: []string{"telemetry.RunAsSet", "telemetry.RunAsSet=false"},
+		},
+		{
+			name: "*bool true",
+			tm:   bundle.Telemetry{RunAsSet: new(true)},
+			want: []string{"telemetry.RunAsSet", "telemetry.RunAsSet=true"},
+		},
+		{
+			name: "BoolSet unset",
+			tm:   bundle.Telemetry{ArtifactFilesIsSet: boolSet()},
+			want: nil,
+		},
+		{
+			name: "BoolSet true twice",
+			tm:   bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, true)},
+			want: []string{
+				"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet=true",
+			},
+		},
+		{
+			name: "BoolSet both values",
+			tm:   bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, false)},
+			want: []string{
+				"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet=false", "telemetry.ArtifactFilesIsSet=true",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			bits, err := bitmap.NewBuilder(schema).Bits(tc.tm)
