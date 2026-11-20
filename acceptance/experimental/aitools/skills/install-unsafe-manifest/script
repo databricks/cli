@@ -1,0 +1,18 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "a manifest listing a file outside its skill directory fails before any file is written"
+musterr trace DATABRICKS_SKILLS_REF=unsafe-ref $CLI aitools install --skills-only --scope=global --agents=claude-code
+musterr trace DATABRICKS_SKILLS_REF=unsafe-ref $CLI aitools install --skills-only --scope=global --agents=claude-code --output json
+if [ -e "$HOME/.databricks/aitools/.bashrc" ] || [ -d "$HOME/.databricks/aitools/skills/test-stable" ]; then
+  echo "unexpected: a skill file was written"
+else
+  echo "no skill files were written"
+fi
+
+title "a skill with an unportable name is skipped and the others install"
+trace DATABRICKS_SKILLS_REF=unportable-ref $CLI aitools install --skills-only --scope=global --agents=claude-code
+ls "$HOME/.databricks/aitools/skills"
+
+title "naming the unportable skill with --skills fails"
+musterr trace DATABRICKS_SKILLS_REF=unportable-ref $CLI aitools install --skills-only --scope=global --agents=claude-code --skills=Test_Unportable --output json

@@ -1,13 +1,17 @@
 package aircmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
@@ -110,7 +114,7 @@ command: python train.py
 compute:
   accelerator_type: GPU_1xH100
   num_accelerators: 1
-  pool_id: capacity-1
+  accelerator_pool_id: capacity-1
 max_retries: 2
 timeout_minutes: 30
 mlflow_run_name: run-42
@@ -203,7 +207,7 @@ func TestConvertToDabsPreservesPoolPriorityAndUnityCatalogImage(t *testing.T) {
 			cfg := minimalConfig
 			var computeOptions string
 			if tc.poolID != "" {
-				computeOptions += "  pool_id: " + tc.poolID + "\n"
+				computeOptions += "  accelerator_pool_id: " + tc.poolID + "\n"
 			}
 			if tc.priorityClass != "" {
 				computeOptions += "  priority_class: " + tc.priorityClass + "\n"
@@ -728,4 +732,105 @@ func TestConvertToDabsRejectsUnsupported(t *testing.T) {
 		_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
 		require.ErrorContains(t, err, "usage_policy_name is not yet supported")
 	})
+}
+
+// rayLayoutConfig writes ray/<recipe>/workload.yaml under dir, snapshotting its parent
+// (root_path: ..) to include the shared ray/ray_bootstrap.sh, and loads it.
+func rayLayoutConfig(t *testing.T, dir, recipe string) (*runConfig, string) {
+	t.Helper()
+	recipeDir := filepath.Join(dir, "ray", recipe)
+	require.NoError(t, os.MkdirAll(recipeDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "ray", "ray_bootstrap.sh"), []byte("#!/bin/bash\n"), 0o600))
+	cfg := "experiment_name: ray-" + recipe + "\ncommand: bash ray_bootstrap.sh\n" +
+		"compute: {accelerator_type: GPU_1xA10, num_accelerators: 2}\n" +
+		"code_source:\n  root_path: ..\n  include_paths: [ray_bootstrap.sh, " + recipe + "]\n"
+	path := filepath.Join(recipeDir, "workload.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+	return loaded, path
+}
+
+// A workload whose root_path is its parent directory gets an --output-dir that
+// converts it, not advice to edit a databricks.yml that was never written.
+func TestConvertToDabsCodeOutsideBundleSuggestsOutputDir(t *testing.T) {
+	dir := t.TempDir()
+	loaded, path := rayLayoutConfig(t, dir, "core")
+
+	_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.ErrorContains(t, err, "not inside the bundle")
+	assert.Contains(t, err.Error(), "("+quotedPath(filepath.Join(dir, "ray"))+")")
+	assert.Contains(t, err.Error(), "convert-to-dabs can package only code inside the bundle directory")
+	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
+	require.True(t, ok)
+	assert.Contains(t, err.Error(), "--output-dir "+quoted+" ")
+	assert.Contains(t, err.Error(), "or move the code inside the bundle directory")
+	assert.NotContains(t, err.Error(), "sync.paths")
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+	assert.Equal(t, ".", get(t, root, "artifacts."+codeSourceArtifactKey+".path").MustString())
+	inc := get(t, root, "artifacts."+codeSourceArtifactKey+".include").MustSequence()
+	require.Len(t, inc, 2)
+	assert.Equal(t, "ray/ray_bootstrap.sh", inc[0].MustString())
+	assert.Equal(t, "ray/core", inc[1].MustString())
+}
+
+// Sibling workloads that share a code directory would all be sent to its parent, and
+// converting a second one there would replace the first bundle. Once the parent holds
+// a bundle, under any of the names DABs accepts, it is not suggested.
+func TestConvertToDabsCodeOutsideBundleSkipsParentWithBundle(t *testing.T) {
+	for _, name := range config.FileNames {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			rayLayoutConfig(t, dir, "core")
+			require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("bundle:\n  name: ray-core\n"), 0o600))
+			loaded, path := rayLayoutConfig(t, dir, "data")
+
+			_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+			require.ErrorContains(t, err, "not inside the bundle")
+			assert.Contains(t, err.Error(), fmt.Sprintf("%s already holds a bundle (%s)", quotedPath(dir), name))
+			assert.NotContains(t, err.Error(), "to write the bundle to the code directory's parent")
+		})
+	}
+}
+
+// The suggested directory is quoted for the user's shell, so a parent whose path
+// has a space pastes as one argument.
+func TestConvertToDabsCodeOutsideBundleQuotesOutputDir(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "my recipes")
+	loaded, path := rayLayoutConfig(t, dir, "core")
+
+	_, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.ErrorContains(t, err, "not inside the bundle")
+	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
+	require.True(t, ok)
+	require.NotEqual(t, dir, quoted)
+	assert.Contains(t, err.Error(), "--output-dir "+quoted+" ")
+}
+
+// Paths in the error keep their native separators, single backslashes on Windows,
+// and fall back to Go quoting when the shell can't quote them.
+func TestQuotedPath(t *testing.T) {
+	plain := filepath.Join("work", "ray")
+	assert.Equal(t, plain, quotedPath(plain))
+	assert.Equal(t, `"bad\nname"`, quotedPath("bad\nname"))
+}
+
+// A git-pinned snapshot is archived from the bundle root, and a parent of the code
+// directory may be outside the repository, so no parent is offered.
+func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
+	outside := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(outside, "src"), 0o700))
+	cfg := "experiment_name: outside\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  root_path: " + filepath.Join(outside, "src") + "\n  git:\n    commit: abc123\n"
+	path := writeConfigFile(t, "run.yaml", cfg)
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.ErrorContains(t, err, "not inside the bundle")
+	assert.Contains(t, err.Error(), "; move the code inside the bundle directory")
+	assert.NotContains(t, err.Error(), "--output-dir")
 }

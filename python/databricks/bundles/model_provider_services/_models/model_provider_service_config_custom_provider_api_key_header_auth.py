@@ -33,7 +33,7 @@ class ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth:
     api_key_value: VariableOrOptional[ModelProviderServiceConfigProviderSecret] = None
     """
     Secret value forwarded under the `api_key_name` header on outbound
-    requests. Supplied as inline plaintext via `ProviderSecret.plaintext`.
+    requests. Supply the value in `api_key_value.plaintext`.
     """
 
     @classmethod
@@ -61,7 +61,7 @@ class ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthDict(
     api_key_value: VariableOrOptional[ModelProviderServiceConfigProviderSecretParam]
     """
     Secret value forwarded under the `api_key_name` header on outbound
-    requests. Supplied as inline plaintext via `ProviderSecret.plaintext`.
+    requests. Supply the value in `api_key_value.plaintext`.
     """
 
 

@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,39 +13,84 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// putRow caches a single-row run, the common case in these tests.
+func putRow(ctx context.Context, c *cache.Cache, host string, runID int64, tasks []jobs.RunTask, submitTimeMs int64, row listRow, fields filterFields) {
+	putEntries(ctx, c, host, runID, []taskEntry{{entry: listedRun{row: row, tasks: tasks}, fields: fields}}, submitTimeMs)
+}
+
+// rawCached reads the persisted value for a run, to check what was stored.
+func rawCached(t *testing.T, ctx context.Context, c *cache.Cache, host string, runID int64) cachedRuns {
+	t.Helper()
+	got, ok := cache.Get[cachedRuns](ctx, c, listCacheKey{Host: host, RunID: runID})
+	require.True(t, ok)
+	return got
+}
+
 func TestListCacheRoundTrip(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 	ctx := t.Context()
 	c := newListCache(ctx)
 
-	_, _, _, ok := cachedRow(ctx, c, "https://host.test", 42)
+	_, ok := cachedEntries(ctx, c, "https://host.test", 42)
 	require.False(t, ok, "miss before write")
 
 	row := listRow{
-		RunID: "42", Status: "SUCCESS", ExperimentName: new("exp"), DurationSeconds: new(int64(12)),
+		RunID: "42", TaskKey: new("train"), Status: "SUCCESS", ExperimentName: new("exp"), DurationSeconds: new(int64(12)),
 		AcceleratorType: new("GPU_1xA10"), NumAccelerators: new(1), DashboardURL: "https://host.test/jobs/runs/42?o=1", Experiment: "exp",
 	}
 	fields := filterFields{Experiment: "exp", GPUType: "GPU_1xA10", GPUCount: 1}
 	tasks := []jobs.RunTask{{RunId: 420, TaskKey: "train"}, {RunId: 421, TaskKey: "train", AttemptNumber: 1}}
 	putRow(ctx, c, "https://host.test", 42, tasks, 1700000000000, row, fields)
 
-	got, gotFields, gotTasks, ok := cachedRow(ctx, c, "https://host.test", 42)
+	got, ok := cachedEntries(ctx, c, "https://host.test", 42)
 	require.True(t, ok, "hit after write")
-	assert.Equal(t, row, got)
-	assert.Equal(t, fields, gotFields)
+	require.Len(t, got, 1)
+	assert.Equal(t, row, got[0].entry.row)
+	assert.Equal(t, fields, got[0].fields)
+	assert.Equal(t, int64(42), got[0].entry.runID)
+	assert.True(t, got[0].entry.terminal)
+	assert.Equal(t, int64(1700000000000), rawCached(t, ctx, c, "https://host.test", 42).Rows[0].SubmitTimeMs)
+	gotTasks := got[0].entry.tasks
 	for i := range gotTasks {
 		gotTasks[i].ForceSendFields = nil // set by the JSON round trip
 	}
 	assert.Equal(t, tasks, gotTasks)
 
 	// Different host is a different key.
-	_, _, _, ok = cachedRow(ctx, c, "https://other.test", 42)
+	_, ok = cachedEntries(ctx, c, "https://other.test", 42)
 	assert.False(t, ok)
 
-	// Entries from previous cache formats have no task runs and must be refreshed.
+	// Entries from previous cache formats have no rows and must be refreshed.
 	cache.Put(ctx, c, listCacheKey{Host: "https://host.test", RunID: 43}, map[string]any{"run_id": "43", "task_run_id": 430})
-	_, _, _, ok = cachedRow(ctx, c, "https://host.test", 43)
+	_, ok = cachedEntries(ctx, c, "https://host.test", 43)
 	assert.False(t, ok)
+	cache.Put(ctx, c, listCacheKey{Host: "https://host.test", RunID: 44}, cachedRuns{Rows: []cachedRun{{RunID: "44"}}})
+	_, ok = cachedEntries(ctx, c, "https://host.test", 44)
+	assert.False(t, ok, "a row without task runs is a miss")
+}
+
+func TestListCacheKeepsOneRowPerAirTask(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx := t.Context()
+	c := newListCache(ctx)
+	host := "https://host.test"
+
+	putEntries(ctx, c, host, 42, []taskEntry{
+		{entry: listedRun{row: listRow{RunID: "42", TaskKey: new("train"), Experiment: "exp-a"}, tasks: []jobs.RunTask{{RunId: 420, TaskKey: "train"}}}, fields: filterFields{Experiment: "exp-a"}},
+		{entry: listedRun{row: listRow{RunID: "42", TaskKey: new("eval"), Experiment: "exp-b"}, tasks: []jobs.RunTask{{RunId: 421, TaskKey: "eval"}}}, fields: filterFields{Experiment: "exp-b"}},
+	}, 1000)
+
+	// The MLflow link of one task updates that row alone.
+	updateCachedRow(ctx, c, host, 42, "eval", listRow{RunID: "42", TaskKey: new("eval"), Experiment: "exp-b", MLflowURL: "https://host.test/ml/x"})
+	updateCachedRow(ctx, c, host, 42, "missing", listRow{RunID: "42", TaskKey: new("missing")})
+
+	got := rawCached(t, ctx, c, host, 42).Rows
+	require.Len(t, got, 2)
+	assert.Equal(t, "train", got[0].TaskKey)
+	assert.Empty(t, got[0].MLflowURL)
+	assert.Equal(t, "eval", got[1].TaskKey)
+	assert.Equal(t, "https://host.test/ml/x", got[1].MLflowURL)
+	assert.Equal(t, int64(1000), got[1].SubmitTimeMs, "cache metadata is preserved")
 }
 
 func TestIndexStrategyServesCachedRowWithoutFetch(t *testing.T) {

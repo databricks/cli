@@ -466,6 +466,30 @@ func AddDefaultHandlers(server *Server) {
 		return data
 	})
 
+	// Sandbox file APIs:
+	sandboxFiles := "/api/2.0/sandbox-files/sandboxes/{sandbox_id}"
+	server.Handle("PUT", sandboxFiles+"/content", func(req Request) any {
+		return req.Workspace.SandboxFilesUpload(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/content", func(req Request) any {
+		return req.Workspace.SandboxFilesDownload(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/paths:describe", func(req Request) any {
+		return req.Workspace.SandboxFilesGetMetadata(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/directory-entries", func(req Request) any {
+		return req.Workspace.SandboxFilesList(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/directories:make", func(req Request) any {
+		return req.Workspace.SandboxFilesMkdir(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/paths:remove", func(req Request) any {
+		return req.Workspace.SandboxFilesDelete(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/paths:rename", func(req Request) any {
+		return req.Workspace.SandboxFilesRename(req, req.Vars["sandbox_id"])
+	})
+
 	// DBFS (dbfs:/ paths):
 	server.Handle("GET", "/api/2.0/dbfs/get-status", func(req Request) any {
 		return req.Workspace.DbfsGetStatus(req)
@@ -607,6 +631,22 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/oidc/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/.well-known/oauth-authorization-server", func(req Request) any {
+		return server.fakeOidc.AccountOidcEndpoints(req.Vars["account_id"])
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/device/auth", func(req Request) any {
 		return server.fakeOidc.OidcDeviceAuth(req)
 	})
 
@@ -925,6 +965,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesCreate(req)
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services", func(req Request) any {
+		return req.Workspace.McpServicesList(req)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
 	})
@@ -933,8 +977,24 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesUpdate(req, req.Vars["name"])
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return req.Workspace.McpUserCredentialCreate(req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/ai-gateway/mcp-services/{name}", func(req Request) any {
+		return req.Workspace.McpEndpoint(req, req.Vars["name"])
 	})
 
 	// Feature Engineering features:
@@ -942,7 +1002,8 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.FeaturesCreate(req)
 	})
 	server.Handle("GET", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+		// Features are stored lowercased, and the cloud GET matches the name case-insensitively.
+		return MapGet(req.Workspace, req.Workspace.Features, strings.ToLower(req.Vars["full_name"]))
 	})
 	server.Handle("PATCH", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
 		return req.Workspace.FeaturesUpdate(req, req.Vars["full_name"])
@@ -1361,7 +1422,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+		return req.Workspace.DatabaseCatalogDelete(req.Vars["name"])
 	})
 
 	// Synced Database Tables:

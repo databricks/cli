@@ -8,7 +8,7 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID][0]?w=[WOR
 
 === Run all tests of the only pipeline
 
->>> [CLI] pipelines test
+>>> [CLI] pipelines test --no-wait
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -21,13 +21,14 @@ Update: [UUID][1]
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
-    "test_only": true
+    "test_only": true,
+    "test_options": {}
   }
 }
 
 === Select tests by relative path and test ID, with pytest arguments in both --pytest-arg forms
 
->>> MSYS_NO_PATHCONV=1 [CLI] pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/tests/test_other.py --pytest-arg=-k --pytest-arg=orders and not slow --pytest-arg -m --pytest-arg smoke,fast
+>>> MSYS_NO_PATHCONV=1 [CLI] pipelines test my_pipeline tests tests/test_orders.py::test_backfill /Workspace/Users/someone@example.com/tests/test_other.py --pytest-arg=-k --pytest-arg=orders and not slow --pytest-arg -m --pytest-arg smoke,fast --no-wait
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
@@ -42,16 +43,16 @@ Update: [UUID][2]
   "body": {
     "test_only": true,
     "test_options": {
-      "test_selection": [
-        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests",
-        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests/test_orders.py::test_backfill",
-        "/Workspace/Users/someone@example.com/tests/test_other.py"
-      ],
       "pytest_args": [
         "-k",
         "orders and not slow",
         "-m",
         "smoke,fast"
+      ],
+      "test_selection": [
+        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests",
+        "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-test-selection/default/files/tests/test_orders.py::test_backfill",
+        "/Workspace/Users/someone@example.com/tests/test_other.py"
       ]
     }
   }
@@ -59,7 +60,7 @@ Update: [UUID][2]
 
 === Relative paths resolve from the working directory
 
->>> [CLI] pipelines test my_pipeline test_orders.py::test_valid_order
+>>> [CLI] pipelines test my_pipeline test_orders.py::test_valid_order --no-wait
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.

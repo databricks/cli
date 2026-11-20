@@ -165,6 +165,10 @@ databricks-ai-runtime skill:
 			return err
 		}
 
+		if msg := missingTorchWarning(ctx, cfg, file); msg != "" {
+			cmdio.LogString(ctx, msg)
+		}
+
 		if dryRun {
 			// Local and credential-free, so it runs before workspace validation.
 			var snapshotFileCount *int
@@ -279,9 +283,9 @@ databricks-ai-runtime skill:
 		out := cmd.OutOrStdout()
 		printSubmittedEvent(out, runIDStr, dashboardURL)
 		grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
-		req.onStatusChange = func(current, previous string) {
+		req.onStatusChange = newStatusTransitionReporter(func(current, previous string) {
 			printStatusEvent(out, current, previous)
-		}
+		})
 		err = runLogs(watchCtx, cmd, req)
 
 		// Re-resolve the run for the closing envelope. STATUS events only fire on
@@ -320,7 +324,7 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 }
 
 func airLogsCommand(profile, runID string) string {
-	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID)}
+	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID), "--follow"}
 	if profile != "" {
 		args = append(args, "-p", shellquote.BashArg(profile))
 	}

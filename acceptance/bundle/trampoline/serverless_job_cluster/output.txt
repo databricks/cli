@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle validate
+Name: serverless_job_cluster
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/serverless_job_cluster/default
+
+Validation OK!

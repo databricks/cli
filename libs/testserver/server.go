@@ -315,8 +315,9 @@ Response.Body = '<response body here>'
 	// The SDK resolves this during config initialization (as of v0.126.0) to
 	// determine workspace/account IDs, cloud, and OIDC endpoints. Without this
 	// handler, any test that creates an SDK client against this server would fail
-	// with "No handler for URL: /.well-known/databricks-config".
-	s.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
+	// with "No handler for URL: /.well-known/databricks-config". It is a
+	// fallback so that test stubs can serve other host metadata.
+	s.HandleFallback("GET", "/.well-known/databricks-config", func(_ Request) any {
 		return map[string]any{
 			"oidc_endpoint": server.URL + "/oidc",
 			"workspace_id":  strconv.Itoa(TestWorkspaceID),

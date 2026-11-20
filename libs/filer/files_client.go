@@ -1,9 +1,12 @@
 package filer
 
 import (
+	"bufio"
+	"bytes"
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -282,7 +285,8 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	// upload engine, which sends small files in a single PUT and splits large ones
 	// into parts. Non-seekable streams and the flag-off case use the single-shot
 	// UploadFile endpoint below: the former to avoid buffering the whole stream in
-	// memory, the latter to keep the default behavior a plain PUT. The engine
+	// memory (uploadFile buffers only small ones, to retry them), the latter to
+	// keep the default behavior a plain PUT. The engine
 	// recovers an io.ReaderAt for concurrent positioned reads when the source
 	// provides one (a local file).
 	if MultipartUploadEnabled(ctx) && isSeekable(reader) {
@@ -312,24 +316,61 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	return err
 }
 
-// uploadFile sends reader in a single PUT. files/v2 rejects a retrier on this
-// call because it cannot replay a streamed body, so a seekable reader is rewound
-// to its starting offset and retried here. Other readers get one attempt; that
-// includes pipes, which are *os.File and so implement io.Seeker but fail Seek.
-func (w *FilesClient) uploadFile(ctx context.Context, absPath string, reader io.Reader, overwrite bool) error {
-	seeker, ok := reader.(io.Seeker)
-	if !ok {
-		return w.putFile(ctx, absPath, io.NopCloser(reader), overwrite)
+// filesReplayBufferSize is the largest non-seekable upload that is buffered in
+// memory so it can be retried. fs cp between remote paths (Volumes or DBFS to
+// Volumes) streams the source download into the upload, so without the buffer
+// a single 503 fails the copy. Larger streams get one attempt.
+//
+// 8 MiB is not an API limit; it caps memory. With fs cp's default concurrency
+// of 8, at most 64 MiB is buffered at once, and most files copied with fs cp
+// (code, notebooks, configs) are well below it. A variable so tests can lower it.
+var filesReplayBufferSize = 8 * 1024 * 1024 // 8 MiB
+
+// filesReplayReadSize is the size of the reads replayable makes from the
+// source. It matches the DBFS read limit: /api/2.0/dbfs/read returns at most
+// 1 MiB per call, and the SDK's DBFS read handle makes one call per Read.
+const filesReplayReadSize = 1024 * 1024 // 1 MiB
+
+// replayable returns a reader that can be rewound to start before each upload
+// attempt. A non-seekable reader (including a pipe, which is an *os.File whose
+// Seek fails) is read into memory if it is at most filesReplayBufferSize bytes;
+// otherwise stream holds the bytes read so far followed by the
+// rest of reader, to be sent once.
+func replayable(reader io.Reader) (rs io.ReadSeeker, start int64, stream io.Reader, err error) {
+	if s, ok := reader.(io.ReadSeeker); ok {
+		if start, err := s.Seek(0, io.SeekCurrent); err == nil {
+			return s, start, nil, nil
+		}
 	}
-	start, err := seeker.Seek(0, io.SeekCurrent)
+	// io.ReadAll asks for small, growing chunks; reading through
+	// filesReplayReadSize keeps a DBFS source to one API call per MiB.
+	br := bufio.NewReaderSize(reader, filesReplayReadSize)
+	head, err := io.ReadAll(io.LimitReader(br, int64(filesReplayBufferSize)+1))
 	if err != nil {
-		return w.putFile(ctx, absPath, io.NopCloser(reader), overwrite)
+		return nil, 0, nil, fmt.Errorf("reading upload body: %w", err)
+	}
+	if len(head) > filesReplayBufferSize {
+		return nil, 0, io.MultiReader(bytes.NewReader(head), br), nil
+	}
+	return bytes.NewReader(head), 0, nil, nil
+}
+
+// uploadFile sends reader in a single PUT. files/v2 rejects a retrier on this
+// call because it cannot replay a streamed body, so the filer retries it here
+// with a reader from replayable, rewound to its starting offset each attempt.
+func (w *FilesClient) uploadFile(ctx context.Context, absPath string, reader io.Reader, overwrite bool) error {
+	seeker, start, stream, err := replayable(reader)
+	if err != nil {
+		return err
+	}
+	if stream != nil {
+		return w.putFile(ctx, absPath, io.NopCloser(stream), overwrite)
 	}
 	return ops.Execute(ctx, func(ctx context.Context) error {
 		if _, err := seeker.Seek(start, io.SeekStart); err != nil {
 			return err
 		}
-		body := &attemptBody{r: reader}
+		body := &attemptBody{r: seeker}
 		err := w.putFile(ctx, absPath, body, overwrite)
 		body.Close()
 		return err

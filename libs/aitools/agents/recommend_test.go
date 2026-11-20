@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/telemetry"
@@ -39,7 +40,7 @@ func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 	defer func() { Registry = origRegistry }()
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	err := RecommendSkillsInstall(ctx, noopInstall)
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	assert.NoError(t, err)
 	assert.Empty(t, hintKinds(t, ctx))
 }
@@ -56,7 +57,23 @@ func TestRecommendSkillsInstallSkipsWhenPluginInstalled(t *testing.T) {
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	ctx = telemetry.WithNewLogger(ctx)
-	err := RecommendSkillsInstall(ctx, noopInstall)
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
+	assert.NoError(t, err)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
+func TestRecommendSkillsInstallSkipsWhenPluginRecorded(t *testing.T) {
+	home := t.TempDir()
+	testutil.SetAgentEnv(t, "HOME", home, "USERPROFILE", home)
+	t.Chdir(t.TempDir())
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".copilot"), 0o755))
+	recorded := func(context.Context) []string { return []string{NameCodex, NameCopilot} }
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	err := RecommendSkillsInstall(ctx, recorded, noopInstall)
 	assert.NoError(t, err)
 	assert.Empty(t, stderr.String())
 	assert.Empty(t, hintKinds(t, ctx))
@@ -72,7 +89,7 @@ func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
 	defer func() { Registry = origRegistry }()
 
 	ctx := cmdio.MockDiscard(t.Context())
-	err := RecommendSkillsInstall(ctx, noopInstall)
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	assert.NoError(t, err)
 }
 
@@ -93,13 +110,14 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	ctx = telemetry.WithNewLogger(ctx)
-	err := RecommendSkillsInstall(ctx, noopInstall)
+	err := RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	require.NoError(t, err)
 	assert.Contains(t, stderr.String(), "databricks aitools install")
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindAppsInitTip}, hintKinds(t, ctx))
 }
 
 func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
+	t.Cleanup(autoinstall.ResetDeclined)
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -119,11 +137,15 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	ctx = telemetry.WithNewLogger(ctx)
 
 	// Drain stderr so the prompt write doesn't block.
-	go func() { _, _ = io.Copy(io.Discard, testIO.Stderr) }()
+	stderr := make(chan string, 1)
+	go func() {
+		b, _ := io.ReadAll(testIO.Stderr)
+		stderr <- string(b)
+	}()
 
 	errc := make(chan error, 1)
 	go func() {
-		errc <- RecommendSkillsInstall(ctx, noopInstall)
+		errc <- RecommendSkillsInstall(ctx, noInstalledPlugins, noopInstall)
 	}()
 
 	_, err := testIO.Stdin.WriteString("n\n")
@@ -133,11 +155,19 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	assert.NoError(t, <-errc)
 	// The prompt is logged when shown, so a declined prompt still counts.
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindAppsInitPrompt}, hintKinds(t, ctx))
+	// The "no" also keeps the automatic install from installing.
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.True(t, state.OptedOut)
+	assert.True(t, autoinstall.Declined())
+	// The user is told that the answer also holds for later installs.
+	testIO.Done()
+	assert.Contains(t, <-stderr, "databricks aitools auto-install enable")
 }
 
 func TestMaybeVersionCheckTip(t *testing.T) {
 	noPlugins := func(context.Context) []string { return nil }
-	recordedCodexPlugin := func(context.Context) []string { return []string{"codex_0.2.6"} }
+	recordedCodexPlugin := func(context.Context) []string { return []string{NameCodex} }
 
 	for _, tc := range []struct {
 		name             string
@@ -162,6 +192,8 @@ func TestMaybeVersionCheckTip(t *testing.T) {
 		{name: "skills only in the agent's own skills dir", agentDirs: []string{".cursor"}, agentSkills: true, installedPlugins: noPlugins},
 		{name: "databricks runtime", agentDirs: []string{".codex"}, onDBR: true, installedPlugins: noPlugins},
 		{name: "claude code caller is left to MaybeHint", agentEnv: []string{"CLAUDECODE", "1"}, agentDirs: []string{".claude"}, installedPlugins: noPlugins},
+		{name: "codex caller is left to MaybeHint", agentEnv: []string{"CODEX_CI", "1"}, agentDirs: []string{".codex"}, installedPlugins: noPlugins},
+		{name: "several agents calling get the tip, since MaybeHint skips them", agentEnv: []string{"CLAUDECODE", "1", "CODEX_CI", "1"}, agentDirs: []string{".codex"}, installedPlugins: noPlugins, wantTip: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			home := t.TempDir()

@@ -28,3 +28,16 @@ Tip: coding agents detected without Databricks skills. Run 'databricks aitools i
 
 
 >>> print_telemetry
+
+=== codex and copilot plugins recorded by aitools install: no tip, no event
+
+>>> [CLI] apps init --template ./template --skip-install --name app-recorded
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-recorded
+  Files: 3
+
+
+>>> print_telemetry

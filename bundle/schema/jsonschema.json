@@ -127,7 +127,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "query_text": {
                         "description": "Text of the query to be run.",
@@ -234,7 +234,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "resources": {
                         "description": "Databricks resources the app depends on. Each entry grants the app's service principal the\nlisted permission on one resource and makes that resource available to the app under the\nentry's name.",
@@ -454,7 +454,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "autotermination_minutes": {
-                        "description": "Automatically terminates the cluster after it is inactive for this time in minutes. If not set,\nthis cluster will not be automatically terminated. If specified, the threshold must be between\n10 and 10000 minutes.\nUsers can also set this value to 0 to explicitly disable automatic termination.",
+                        "description": "Automatically terminates the cluster after it is inactive for this time in minutes. If not set,\nthis cluster will not be automatically terminated. If specified, the threshold must be between\n10 and 43200 minutes (30 days).\nUsers can also set this value to 0 to explicitly disable automatic termination.",
                         "$ref": "#/$defs/int",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -484,7 +484,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "data_security_mode": {
-                        "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
+                        "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn't have UC or passthrough enabled.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -494,7 +494,7 @@
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "docker_image": {
-                        "description": "Custom docker image BYOC",
+                        "description": "Custom Docker image for the cluster's nodes, used with\n[Databricks Container Services](https://docs.databricks.com/compute/custom-containers.html).",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DockerImage",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -544,7 +544,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "kind": {
-                        "description": "The kind of compute described by this compute specification.\n\nDepending on `kind`, different validations and default values will be applied.\n\nClusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.\n* [is_single_node](/api/workspace/clusters/create#is_single_node)\n* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)\n\nBy using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.",
+                        "description": "The kind of compute described by this compute specification.\n\nDepending on `kind`, different validations and default values will be applied.\n\nClusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.\n* [is_single_node](https://docs.databricks.com/api/workspace/clusters/create#is_single_node)\n* [use_ml_runtime](https://docs.databricks.com/api/workspace/clusters/create#use_ml_runtime)\n\nBy using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -569,7 +569,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "policy_id": {
                         "description": "The ID of the cluster policy used to create the cluster if applicable.",
@@ -627,7 +627,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "workload_type": {
-                        "description": "Cluster Attributes showing for clusters workload types.",
+                        "description": "Types of workloads that can use the cluster, such as notebooks or jobs.\nIf omitted, the cluster can be used for both notebooks and jobs.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType",
                         "x-databricks-launch-stage": "GA"
                       }
@@ -710,7 +710,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPolicyPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "policy_family_definition_overrides": {
                         "description": "Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).\nThe JSON document must be passed as a string and cannot be embedded in the requests.\n\nYou can use this to customize the policy definition inherited from the policy family.\nPolicy rules specified here are merged into the inherited policy definition.",
@@ -818,7 +818,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "serialized_dashboard": {
                         "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
@@ -978,7 +978,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "retention_window_in_days": {
                         "description": "[Public Preview] The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
@@ -1266,7 +1266,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "serialized_space": {
                         "description": "Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.",
@@ -1361,7 +1361,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.InstancePoolPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "preloaded_docker_images": {
                         "description": "Custom Docker Image BYOC",
@@ -1524,7 +1524,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "queue": {
                         "description": "The queue settings of the job.",
@@ -1653,7 +1653,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "job_parameters": {
-                        "description": "Job-level parameters used in the run. for example `\"param\": \"overriding_val\"`",
+                        "description": "Job-level parameters used in the run, for example `\"param\": \"overriding_val\"`.",
                         "$ref": "#/$defs/map/string",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -1908,7 +1908,7 @@
                     "type": "object",
                     "properties": {
                       "artifact_location": {
-                        "description": "Location where all artifacts for the experiment are stored.\nIf not provided, the remote server will select an appropriate default.",
+                        "description": "URI of the location where the artifacts of the experiment's runs are stored, such as a Unity\nCatalog volume path of the form `dbfs:/Volumes/\u003ccatalog\u003e/\u003cschema\u003e/\u003cvolume\u003e/\u003cpath\u003e`. The URI\nmust have a scheme other than `file` and must not point under the MLflow-managed prefix\n`dbfs:/databricks/mlflow-tracking`. If omitted, artifacts are stored in MLflow-managed\nstorage. See https://docs.databricks.com/aws/en/mlflow/experiments for the supported\nlocations.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -1917,17 +1917,17 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "Experiment name.",
+                        "description": "Name of the experiment, as an absolute path in the workspace. Experiments cannot be created\nunder `/Repos`.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "tags": {
-                        "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
+                        "description": "Tags to set on the new experiment, as key-value pairs. A request can include at most 100\ntags.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -2005,7 +2005,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowModelPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "tags": {
                         "description": "Additional metadata for registered model.",
@@ -2172,7 +2172,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "rate_limits": {
                         "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
@@ -2397,7 +2397,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
@@ -2748,7 +2748,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "role": {
-                        "description": "[Beta] The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nTo change the owner, pass valid existing Role name when updating the Database\n\nRequired when creating the Database.",
+                        "description": "[Beta] The name of the role that owns the database.\nFormat: projects/{project_id}/branches/{branch_id}/roles/{role_id}\n\nThe role must be in the same branch as the database.\nTo change the owner, pass valid existing Role name when updating the Database\n\nRequired when creating the Database.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       }
@@ -2892,7 +2892,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "pg_version": {
                         "description": "[Beta] The major Postgres version number. Defaults to 17 when omitted. The set of versions that new\nprojects can use may change over time.",
@@ -3025,7 +3025,7 @@
                         "doNotSuggest": true
                       },
                       "branch": {
-                        "description": "[Beta] The full resource name the branch associated with the table.\n\nFormat: \"projects/{project_id}/branches/{branch_id}\".",
+                        "description": "[Beta] The full resource name of the branch that contains the synced table.\n\nFormat: \"projects/{project_id}/branches/{branch_id}\".\n\nA value must be specified when creating a synced table inside a standard catalog. Inside a\nLakebase catalog it can be omitted, and if specified it must match the branch of that catalog.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
@@ -3035,7 +3035,7 @@
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "existing_pipeline_id": {
-                        "description": "[Beta] ID of an existing pipeline to bin-pack this synced table into.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
+                        "description": "[Beta] ID of an existing pipeline to bin-pack this synced table into. The pipeline must be a synced\ntable pipeline that runs continuously if and only if scheduling_policy is CONTINUOUS.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned in status.pipeline_id.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
@@ -3050,22 +3050,22 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "new_pipeline_spec": {
-                        "description": "[Beta] Specification for creating a new pipeline.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned via the top level pipeline_id attribute.",
+                        "description": "[Beta] Specification for creating a new pipeline.\nAt most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nThe pipeline used for the synced table is returned in status.pipeline_id.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.NewPipelineSpec",
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "postgres_database": {
-                        "description": "[Beta] The Postgres database name where the synced table will be created in.\n\nIf this synced table is created inside a Lakebase Catalog, this attribute can be omitted on creation and is inferred\nfrom the postgres_database associated with the Lakebase Catalog. If specified when inside a Lakebase Catalog, the value must match.\n\nA value must be specified when creating a synced table inside a Standard Catalog.",
+                        "description": "[Beta] The name of the Postgres database where the synced table is created. A value must be specified\non creation. If the synced table is created inside a Lakebase catalog, the value must match the\nPostgres database of that catalog.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "primary_key_columns": {
-                        "description": "[Beta] Primary Key columns to be used for data insert/update in the destination.",
+                        "description": "[Beta] Primary Key columns to be used for data insert/update in the destination. At least one column\nmust be specified.",
                         "$ref": "#/$defs/slice/string",
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "scheduling_policy": {
-                        "description": "[Beta] Scheduling policy of the underlying pipeline.",
+                        "description": "[Beta] Scheduling policy of the underlying pipeline. A value must be specified on creation. See\nhttps://docs.databricks.com/aws/en/oltp/projects/sync-tables for how to choose a sync mode.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy",
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
@@ -3303,7 +3303,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "custom_max_retention_hours": {
-                        "description": "[Public Preview] Custom maximum retention period in hours for the schema.",
+                        "description": "[Public Preview] Dropped objects in the schema remain recoverable for this number of hours before they are permanently\npurged. The value must be 0 or within the range allowed for the metastore. Schemas that do not set\ntheir own value inherit the parent catalog's value.",
                         "$ref": "#/$defs/int64",
                         "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                       },
@@ -3327,7 +3327,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "storage_root": {
-                        "description": "Storage root URL for managed tables within schema.",
+                        "description": "Managed tables and volumes in the schema are stored under this storage root URL. The path must be\ninside an external location on which the caller has the CREATE MANAGED STORAGE privilege. If omitted,\nmanaged data is stored under the parent catalog's storage root, or under the metastore's root storage\nlocation when the catalog has none. Schemas in Delta Sharing catalogs cannot have a storage root, and\nschemas in a federated Hive metastore catalog must set one.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       }
@@ -3431,7 +3431,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "description": "The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.",
+                        "description": "The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs. For the same principal, resource permissions take precedence over top-level or target permissions.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SecretScopePermission"
                       }
                     },
@@ -3502,7 +3502,7 @@
                     "description": "Creates a new SQL warehouse.",
                     "properties": {
                       "auto_stop_mins": {
-                        "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 10 mins\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
+                        "description": "The amount of time in minutes that a SQL warehouse must be idle (i.e., no\nRUNNING queries) before it is automatically stopped.\n\nSupported values:\n- Must be == 0 or \u003e= 1 min for serverless warehouses.\n- Must be == 0 or \u003e= 10 mins for classic and pro warehouses.\n- 0 indicates no autostop.\n\nDefaults to 120 mins",
                         "$ref": "#/$defs/int",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -3566,7 +3566,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "reyden_cluster_size_multiplier": {
                         "description": "[Private Preview] Cluster size multiplier for Reyden warehouses. Scales the effective compute\ncapacity relative to the nominal virtual cluster size. Only meaningful when\nthe warehouse is of Reyden type.\n\nAccepted range: 1.0 to the workspace-configured maximum (decimals\nallowed). The default maximum is 100.0.\n- Values below 1.0 are normalized to 1.0.\n- Values above the configured maximum are capped at that maximum.\n- When absent, the warehouse is treated as having a multiplier of 1.0.",
@@ -3580,9 +3580,9 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "statement_timeout": {
-                        "description": "[Beta] Warehouse statement timeout in seconds.",
+                        "description": "[Public Preview] Warehouse statement timeout in seconds.",
                         "$ref": "#/$defs/int",
-                        "x-databricks-launch-stage": "PUBLIC_BETA"
+                        "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                       },
                       "tags": {
                         "description": "A set of key-value pairs that will be tagged on all resources (e.g., AWS instances and EBS volumes) associated\nwith this SQL warehouse.\n\nSupported values:\n- Number of tags \u003c 45.",
@@ -3705,7 +3705,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission",
-                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "target_qps": {
                         "description": "Target queries per second (QPS) for the endpoint. Supported for STANDARD endpoints only.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
@@ -3791,7 +3791,7 @@
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "index_type": {
-                        "description": "There are 2 types of AI Search indexes:\n- `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.\n- `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.",
+                        "description": "Type of index to create, which determines which spec field is required.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -3800,12 +3800,12 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "Name of the index",
+                        "description": "Three-level Unity Catalog name of the index to create.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
                       "primary_key": {
-                        "description": "Primary key of the index",
+                        "description": "Name of the column that uniquely identifies each row. For a Delta Sync index it is a column of\nthe source table; for a Direct Vector Access index it must be declared in `schema_json`. It\ncannot be the embedding source or embedding vector column.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       }
@@ -6103,27 +6103,27 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "amazon_bedrock": {
-                      "description": "Amazon Bedrock provider configuration.",
+                      "description": "Configuration for Amazon Bedrock. Set this field when `provider_type` is\n`EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
                     "anthropic": {
-                      "description": "Anthropic provider configuration. Exactly one of `direct` or `relayed` must\nbe set on Create; the two are mutually exclusive.",
+                      "description": "Configuration for Anthropic. Set this field when `provider_type` is\n`EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAnthropicProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
                     "azure_openai": {
-                      "description": "Azure OpenAI provider configuration.",
+                      "description": "Configuration for Azure OpenAI. Set this field when `provider_type` is\n`EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAzureOpenAiProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
                     "bedrock_mantle": {
-                      "description": "Amazon Bedrock provider configuration.",
+                      "description": "Configuration for Amazon Bedrock Mantle, with the same fields as\n`amazon_bedrock`. Set this field when `provider_type` is\n`EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
                     "custom": {
-                      "description": "Custom OpenAI-compatible provider configuration.",
+                      "description": "Configuration for a custom OpenAI-compatible provider. Set this field when\n`provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigCustomProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -6143,7 +6143,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "gemini_enterprise": {
-                      "description": "Gemini Enterprise provider configuration.",
+                      "description": "Configuration for Google Gemini Enterprise. Set this field when\n`provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigGeminiEnterpriseProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -6153,12 +6153,12 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "microsoft_foundry": {
-                      "description": "Microsoft Foundry provider configuration.",
+                      "description": "Configuration for Microsoft Foundry. Set this field when\n`provider_type` is `EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigMicrosoftFoundryProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
                     "openai": {
-                      "description": "OpenAI provider configuration.",
+                      "description": "Configuration for OpenAI. Set this field when `provider_type` is\n`EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigOpenAiProviderConfig",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -6391,7 +6391,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "api_key_value": {
-                      "description": "Secret value forwarded under the `api_key_name` header on outbound\nrequests. Supplied as inline plaintext via `ProviderSecret.plaintext`.",
+                      "description": "Secret value forwarded under the `api_key_name` header on outbound\nrequests. Supply the value in `api_key_value.plaintext`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -6726,7 +6726,7 @@
                   "description": "A secret value supplied as part of an inline provider config. The caller\nsupplies the value as inline `plaintext` on writes; the platform stores it\nencrypted. The `plaintext` field is `INPUT_ONLY` and never round-trips on\nreads.",
                   "properties": {
                     "plaintext": {
-                      "description": "Inline plaintext credential. INPUT_ONLY: the value never round-trips on\nreads. Get and List responses omit `plaintext`; the enclosing secret\nobject remains present to indicate that a secret is configured.",
+                      "description": "Inline plaintext credential. The value is write-only and never\nround-trips on reads. Get and List responses omit `plaintext`; the\nenclosing secret object remains present to indicate that a secret is\nconfigured.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -7775,7 +7775,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "log_analytics_info": {
-                      "description": "Defines values necessary to configure and run Azure Log Analytics agent",
+                      "description": "Defines values necessary to configure and run Azure Log Analytics agent.\nBoth `log_analytics_workspace_id` and `log_analytics_primary_key` must be set, or neither.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -7913,7 +7913,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "autotermination_minutes": {
-                      "description": "Automatically terminates the cluster after it is inactive for this time in minutes. If not set,\nthis cluster will not be automatically terminated. If specified, the threshold must be between\n10 and 10000 minutes.\nUsers can also set this value to 0 to explicitly disable automatic termination.",
+                      "description": "Automatically terminates the cluster after it is inactive for this time in minutes. If not set,\nthis cluster will not be automatically terminated. If specified, the threshold must be between\n10 and 43200 minutes (30 days).\nUsers can also set this value to 0 to explicitly disable automatic termination.",
                       "$ref": "#/$defs/int",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -7943,7 +7943,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "data_security_mode": {
-                      "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
+                      "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn't have UC or passthrough enabled.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -7953,7 +7953,7 @@
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "docker_image": {
-                      "description": "Custom docker image BYOC",
+                      "description": "Custom Docker image for the cluster's nodes, used with\n[Databricks Container Services](https://docs.databricks.com/compute/custom-containers.html).",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DockerImage",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -8003,7 +8003,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "kind": {
-                      "description": "The kind of compute described by this compute specification.\n\nDepending on `kind`, different validations and default values will be applied.\n\nClusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.\n* [is_single_node](/api/workspace/clusters/create#is_single_node)\n* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)\n\nBy using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.",
+                      "description": "The kind of compute described by this compute specification.\n\nDepending on `kind`, different validations and default values will be applied.\n\nClusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.\n* [is_single_node](https://docs.databricks.com/api/workspace/clusters/create#is_single_node)\n* [use_ml_runtime](https://docs.databricks.com/api/workspace/clusters/create#use_ml_runtime)\n\nBy using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -8073,7 +8073,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "workload_type": {
-                      "description": "Cluster Attributes showing for clusters workload types.",
+                      "description": "Types of workloads that can use the cluster, such as notebooks or jobs.\nIf omitted, the cluster can be used for both notebooks and jobs.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -8290,12 +8290,12 @@
                   "type": "object",
                   "properties": {
                     "password": {
-                      "description": "Password of the user",
+                      "description": "Password for authenticating to the Docker registry that hosts the image.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "username": {
-                      "description": "Name of the user",
+                      "description": "User name for authenticating to the Docker registry that hosts the image.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -8736,14 +8736,15 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "A library to install on a cluster. Exactly one of the library-type fields must be set.",
                   "properties": {
                     "cran": {
-                      "description": "Specification of a CRAN library to be installed as part of the library",
+                      "description": "Specification of a CRAN library to be installed.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.RCranLibrary",
                       "x-databricks-launch-stage": "GA"
                     },
                     "egg": {
-                      "description": "Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.",
+                      "description": "Deprecated: Installing Python egg files is not supported in Databricks Runtime 14.0 and above.\nUse a wheel (`whl`) or a PyPI package (`pypi`) instead. The value is the URI of the egg file\nto install.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA",
                       "deprecationMessage": "This field is deprecated",
@@ -8760,12 +8761,12 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "pypi": {
-                      "description": "Specification of a PyPi library to be installed. For example:\n`{ \"package\": \"simplejson\" }`",
+                      "description": "Specification of a PyPI library to be installed. For example:\n`{ \"package\": \"simplejson\" }`",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.PythonPyPiLibrary",
                       "x-databricks-launch-stage": "GA"
                     },
                     "requirements": {
-                      "description": "URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.\nFor example: `{ \"requirements\": \"/Workspace/path/to/requirements.txt\" }` or `{ \"requirements\" : \"/Volumes/path/to/requirements.txt\" }`",
+                      "description": "URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.\nFor example: `{ \"requirements\": \"/Workspace/path/to/requirements.txt\" }` or `{ \"requirements\" : \"/Volumes/path/to/requirements.txt\" }`.\nInstalling a requirements file requires Databricks Runtime 15.0 or above.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -8840,7 +8841,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "exclusions": {
-                      "description": "List of dependences to exclude. For example: `[\"slf4j:slf4j\", \"*:hadoop-client\"]`.\n\nMaven dependency exclusions:\nhttps://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.",
+                      "description": "List of dependencies to exclude. For example: `[\"slf4j:slf4j\", \"*:hadoop-client\"]`.\n\nMaven dependency exclusions:\nhttps://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -8892,7 +8893,7 @@
                   "type": "object",
                   "properties": {
                     "package": {
-                      "description": "The name of the pypi package to install. An optional exact version specification is also\nsupported. Examples: \"simplejson\" and \"simplejson==3.8.0\".",
+                      "description": "The name of the PyPI package to install. An optional exact version specification is also\nsupported. Examples: \"simplejson\" and \"simplejson==3.8.0\".",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -11264,6 +11265,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "sparse_checkout": {
+                      "description": "Sparse checkout settings for the repository. When set, only the directories listed in `patterns` are checked out.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SparseCheckout",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -11400,7 +11402,7 @@
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "workspace_id": {
-                      "description": "[Beta] The ID of the workspace containing the upstream job.\nThis can differ from the caller's workspace and downstream services enforce\ncorrect entitlements and CAN_VIEW permissions for the user + job combination.\nSDR: https://databricks.atlassian.net/browse/SDR-5267",
+                      "description": "[Beta] The ID of the workspace containing the upstream job.\nThis can differ from the caller's workspace and downstream services enforce\ncorrect entitlements and CAN_VIEW permissions for the user + job combination.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     }
@@ -11551,7 +11553,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "spec": {
-                      "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and SDP's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip and java dependencies are supported.",
+                      "description": "The environment specification, including the environment version and the dependencies to install before a task runs.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Environment",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -11859,6 +11861,7 @@
                   "description": "An optional set of health rules that can be defined for this job.",
                   "properties": {
                     "rules": {
+                      "description": "The health rules to evaluate for each run.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -12663,7 +12666,7 @@
                   "type": "object",
                   "properties": {
                     "patterns": {
-                      "description": "List of patterns to include for sparse checkout.",
+                      "description": "List of patterns to include for sparse checkout. Each pattern is the path of a directory relative to the repository root.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -12682,7 +12685,7 @@
                   "type": "object",
                   "properties": {
                     "sql_query_id": {
-                      "description": "[Beta] The ID of the SQL query to evaluate as the trigger condition.",
+                      "description": "[Beta] The ID of the SQL query to evaluate as the trigger condition.\nExactly one of `sql_query_id` or `file` must be set.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
@@ -12699,7 +12702,6 @@
                   },
                   "additionalProperties": false,
                   "required": [
-                    "sql_query_id",
                     "warehouse_id"
                   ]
                 },
@@ -13291,7 +13293,7 @@
                       "doNotSuggest": true
                     },
                     "health": {
-                      "description": "An optional set of health rules that can be defined for this job.",
+                      "description": "An optional set of health rules that can be defined for this task.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -13641,6 +13643,7 @@
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "table_update": {
+                      "description": "Table update trigger settings.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -13682,6 +13685,7 @@
                   "type": "object",
                   "properties": {
                     "id": {
+                      "description": "The ID of the notification destination to call. Must be a UUID.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -14350,12 +14354,12 @@
                   "description": "A tag for an experiment.",
                   "properties": {
                     "key": {
-                      "description": "The tag key.",
+                      "description": "The tag key. Keys are at most 255 characters long.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "value": {
-                      "description": "The tag value.",
+                      "description": "The tag value. Values are at most 65535 characters long.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -15291,6 +15295,19 @@
                   "required": [
                     "feature_name"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "ml.MaterializedFeatureOperations": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "References to operations on a materialized feature.",
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -16431,9 +16448,9 @@
                       "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     },
                     "tiktok_ads_options": {
-                      "description": "[Beta] TikTok Ads specific options for ingestion",
+                      "description": "[Public Preview] TikTok Ads specific options for ingestion",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptions",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     },
                     "zendesk_support_options": {
                       "description": "[Public Preview] Zendesk Support specific options for ingestion",
@@ -17261,6 +17278,7 @@
                     "JIRA",
                     "CONFLUENCE",
                     "META_MARKETING",
+                    "GOOGLE_ADS",
                     "TIKTOK_ADS",
                     "ZENDESK",
                     "SMARTSHEET",
@@ -17287,7 +17305,8 @@
                     "[Beta]",
                     "[Public Preview]",
                     "[Beta]",
-                    "[Beta]",
+                    "[Private Preview]",
+                    "[Public Preview]",
                     "[Public Preview]",
                     "[Public Preview]",
                     "[Beta]",
@@ -19038,49 +19057,49 @@
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
                     "data_level": {
-                      "description": "[Beta] Deprecated. Use custom_report_options.data_level instead.",
+                      "description": "[Public Preview] Deprecated. Use custom_report_options.data_level instead.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokDataLevel",
-                      "x-databricks-launch-stage": "PUBLIC_BETA",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                       "deprecationMessage": "This field is deprecated",
                       "deprecated": true
                     },
                     "dimensions": {
-                      "description": "[Beta] Deprecated. Use custom_report_options.dimensions instead.",
+                      "description": "[Public Preview] Deprecated. Use custom_report_options.dimensions instead.",
                       "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PUBLIC_BETA",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                       "deprecationMessage": "This field is deprecated",
                       "deprecated": true
                     },
                     "lookback_window_days": {
-                      "description": "[Beta] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.",
+                      "description": "[Public Preview] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.",
                       "$ref": "#/$defs/int",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     },
                     "metrics": {
-                      "description": "[Beta] Deprecated. Use custom_report_options.metrics instead.",
+                      "description": "[Public Preview] Deprecated. Use custom_report_options.metrics instead.",
                       "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PUBLIC_BETA",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                       "deprecationMessage": "This field is deprecated",
                       "deprecated": true
                     },
                     "query_lifetime": {
-                      "description": "[Beta] Deprecated. Use custom_report_options.query_lifetime instead.",
+                      "description": "[Public Preview] Deprecated. Use custom_report_options.query_lifetime instead.",
                       "$ref": "#/$defs/bool",
-                      "x-databricks-launch-stage": "PUBLIC_BETA",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                       "deprecationMessage": "This field is deprecated",
                       "deprecated": true
                     },
                     "report_type": {
-                      "description": "[Beta] Deprecated. Use custom_report_options.report_type instead.",
+                      "description": "[Public Preview] Deprecated. Use custom_report_options.report_type instead.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokReportType",
-                      "x-databricks-launch-stage": "PUBLIC_BETA",
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                       "deprecationMessage": "This field is deprecated",
                       "deprecated": true
                     },
                     "sync_start_date": {
-                      "description": "[Beta] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.",
+                      "description": "[Public Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                     }
                   },
                   "additionalProperties": false
@@ -19143,10 +19162,10 @@
                     "AUCTION_AD"
                   ],
                   "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -19169,12 +19188,12 @@
                     "GMV_MAX"
                   ],
                   "enumDescriptions": [
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]",
-                    "[Beta]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -21798,12 +21817,12 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "embedding_source_columns": {
-                      "description": "The columns that contain the embedding source.",
+                      "description": "The source table column whose text Databricks embeds, together with the embedding model\nendpoint to use. Set this for an index with Databricks-managed embeddings. Exactly one of\n`embedding_source_columns` or `embedding_vector_columns` must be specified unless the index\nsubtype is `FULL_TEXT`, and only one column is supported.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn",
                       "x-databricks-launch-stage": "GA"
                     },
                     "embedding_vector_columns": {
-                      "description": "The columns that contain the embedding vectors.",
+                      "description": "The source table column that contains precomputed embedding vectors. Set this instead of\n`embedding_source_columns` for an index with self-managed embeddings.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -21818,7 +21837,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "source_table": {
-                      "description": "The name of the source table.",
+                      "description": "Three-level Unity Catalog name of the source table that the index is synced from.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21837,17 +21856,17 @@
                   "type": "object",
                   "properties": {
                     "embedding_source_columns": {
-                      "description": "The columns that contain the embedding source. The format should be array[double].",
+                      "description": "Embedding source configuration used to embed `query_text` when the index is queried with text,\nnaming the embedding model endpoint to use. The index stores the vectors you supply through\nupsert; this setting never computes embeddings for them.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn",
                       "x-databricks-launch-stage": "GA"
                     },
                     "embedding_vector_columns": {
-                      "description": "The columns that contain the embedding vectors. The format should be array[double].",
+                      "description": "The column that holds the embedding vectors you write to the index. Exactly one column must be\nspecified, and `schema_json` must declare it as `array\u003cfloat\u003e` or `array\u003cdouble\u003e`.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn",
                       "x-databricks-launch-stage": "GA"
                     },
                     "schema_json": {
-                      "description": "The schema of the index in JSON format.\nSupported types are `integer`, `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.\nSupported types for vector column: `array\u003cfloat\u003e`, `array\u003cdouble\u003e`,`.",
+                      "description": "JSON object that maps each column name of the index to its type, serialized to a string. The\nprimary key and the embedding vector column must be present.\nSupported types are `integer`, `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.\nSupported types for vector column: `array\u003cfloat\u003e`, `array\u003cdouble\u003e`.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21876,7 +21895,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "name": {
-                      "description": "Name of the column",
+                      "description": "Name of the column that contains the text to embed.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21900,7 +21919,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "name": {
-                      "description": "Name of the column",
+                      "description": "Name of the column that contains the embedding vectors.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }

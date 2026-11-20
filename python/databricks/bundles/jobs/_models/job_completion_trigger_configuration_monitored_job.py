@@ -31,7 +31,6 @@ class JobCompletionTriggerConfigurationMonitoredJob:
     [Beta] The ID of the workspace containing the upstream job.
     This can differ from the caller's workspace and downstream services enforce
     correct entitlements and CAN_VIEW permissions for the user + job combination.
-    SDR: https://databricks.atlassian.net/browse/SDR-5267
     """
 
     @classmethod
@@ -61,7 +60,6 @@ class JobCompletionTriggerConfigurationMonitoredJobDict(TypedDict, total=False):
     [Beta] The ID of the workspace containing the upstream job.
     This can differ from the caller's workspace and downstream services enforce
     correct entitlements and CAN_VIEW permissions for the user + job combination.
-    SDR: https://databricks.atlassian.net/browse/SDR-5267
     """
 
 

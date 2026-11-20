@@ -15,7 +15,11 @@ title "Inject GET failure so the migration plan check fails: migration hard-erro
 fault.py "GET /api/2.2/jobs/get*" 403 0 1
 trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle deploy
 trace print_migration_telemetry
-rm -f "$OUT_REQUESTS"
+# A failed migration is fatal, so the deploy could only have run on the direct engine: every
+# request it made, including those before the failure and the telemetry upload, is tagged
+# engine/direct. An untagged request would show up as MISSING. print_engines also clears
+# the recorded requests for the next step.
+trace print_engines
 
 title "Local state was NOT rewritten (still terraform)"
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'

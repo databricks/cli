@@ -26,7 +26,7 @@ class MavenLibrary:
 
     exclusions: VariableOrList[str] = field(default_factory=list)
     """
-    List of dependences to exclude. For example: `["slf4j:slf4j", "*:hadoop-client"]`.
+    List of dependencies to exclude. For example: `["slf4j:slf4j", "*:hadoop-client"]`.
     
     Maven dependency exclusions:
     https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.
@@ -56,7 +56,7 @@ class MavenLibraryDict(TypedDict, total=False):
 
     exclusions: VariableOrList[str]
     """
-    List of dependences to exclude. For example: `["slf4j:slf4j", "*:hadoop-client"]`.
+    List of dependencies to exclude. For example: `["slf4j:slf4j", "*:hadoop-client"]`.
     
     Maven dependency exclusions:
     https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html.

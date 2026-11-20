@@ -96,7 +96,7 @@ Examples:
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				detected, err := configsync.ExtractChanges(ctx, b, plan)
+				detected, permissionsSkipped, err := configsync.ExtractChanges(ctx, b, plan)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
@@ -129,6 +129,9 @@ Examples:
 						return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
 					}
 					detected = configsync.FilterChanges(detected, selected)
+					permissionsSkipped = slices.DeleteFunc(permissionsSkipped, func(skip configsync.SkippedChange) bool {
+						return !slices.Contains(selected, skip.ResourceKey)
+					})
 				}
 
 				detected, policySkipped, err := configsync.FilterClusterPolicyValues(ctx, b, plan, detected)
@@ -170,7 +173,7 @@ Examples:
 
 				files = applied
 				changes = detected
-				skippedChanges = policySkipped
+				skippedChanges = append(policySkipped, permissionsSkipped...)
 				return nil
 			},
 		})

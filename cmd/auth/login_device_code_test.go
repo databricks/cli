@@ -59,26 +59,12 @@ func TestValidateDeviceCodeLogin(t *testing.T) {
 			flagVal: "https://workspace.test/ai-gateway/mcp-services/system.ai.github",
 			wantErr: "--use-device-code cannot be combined with --resource",
 		},
-		{
-			name:    "skip-workspace is incompatible",
-			envVal:  "1",
-			setFlag: "skip-workspace",
-			flagVal: "true",
-			wantErr: "--use-device-code cannot be combined with --skip-workspace",
-		},
-		{
-			name:    "skip-workspace set to its default",
-			envVal:  "1",
-			setFlag: "skip-workspace",
-			flagVal: "false",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := env.Set(t.Context(), deviceCodeEnvVar, tt.envVal)
 			cmd := &cobra.Command{}
 			cmd.Flags().StringArray("resource", nil, "")
-			cmd.Flags().Bool("skip-workspace", false, "")
 			if tt.setFlag != "" {
 				require.NoError(t, cmd.Flags().Set(tt.setFlag, tt.flagVal))
 			}
@@ -210,44 +196,6 @@ func TestFormatCode(t *testing.T) {
 	assert.Equal(t, "ABC", formatCode("ABC"))
 }
 
-func TestIsDeviceCodeSupportedForHost(t *testing.T) {
-	workspace := newDiscoveryServer(t, map[string]any{
-		"account_id":    "acct-123",
-		"workspace_id":  "12345",
-		"oidc_endpoint": "https://workspace.test/oidc",
-	})
-	unified := newDiscoveryServer(t, map[string]any{
-		"account_id":    "acct-123",
-		"oidc_endpoint": "https://spog.test/oidc/accounts/acct-123",
-	})
-	// Without an account ID, host discovery cannot fill in the placeholder
-	// and does not resolve the account-scoped discovery URL.
-	unifiedWithoutAccountID := newDiscoveryServer(t, map[string]any{
-		"oidc_endpoint": "https://spog.test/oidc/accounts/{account_id}",
-	})
-
-	tests := []struct {
-		name string
-		args auth.AuthArguments
-		want bool
-	}{
-		{name: "workspace host", args: auth.AuthArguments{Host: workspace.URL}, want: true},
-		{name: "workspace host with query params", args: auth.AuthArguments{Host: workspace.URL + "?o=12345"}, want: true},
-		{name: "classic account host", args: auth.AuthArguments{Host: "https://accounts.cloud.databricks.test"}},
-		{name: "unified host", args: auth.AuthArguments{Host: unified.URL}},
-		{name: "unified host with query params", args: auth.AuthArguments{Host: unified.URL + "?o=12345"}},
-		{name: "unified host with account ID in query params", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL + "?a=acct-123"}},
-		{name: "unified host with account ID flag", args: auth.AuthArguments{Host: unifiedWithoutAccountID.URL, AccountID: "acct-123"}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := tt.args
-			require.NoError(t, setHost(t.Context(), nil, &args, nil))
-			assert.Equal(t, tt.want, isDeviceCodeSupportedForHost(args.Host, args.DiscoveryURL))
-		})
-	}
-}
-
 // setUpLogin isolates the environment of a login, using config as the contents
 // of .databrickscfg.
 func setUpLogin(t *testing.T, config string) {
@@ -337,8 +285,9 @@ func TestLoginDeviceCodeCreateNewProfileRejectsHiddenProfileName(t *testing.T) {
 		t.Skip("bubbletea cannot cancel reads on non-console input on Windows")
 	}
 	tm := startDeviceCodeLogin(t, `[DEFAULT]
-host = https://accounts.cloud.databricks.test
-account_id = acct-123
+host = https://workspace.test
+auth_type = databricks-cli
+resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 `)
 	tm.WaitFor(profilePickerCreateNewLabel)
 	tm.Type(termtest.KeyEnter)
@@ -378,10 +327,9 @@ func TestMatchDeviceCodeProfiles(t *testing.T) {
 		want    bool
 	}{
 		{name: "workspace host", profile: profile.Profile{Host: "https://workspace.test"}, want: true},
-		// setHost prompts for the host of a profile without one.
+		// setHostAndAccountId prompts for the host of a profile without one.
 		{name: "no host", profile: profile.Profile{}, want: true},
-		{name: "classic account host", profile: profile.Profile{Host: "https://accounts.cloud.databricks.test", AccountID: "acct-123"}},
-		{name: "classic account host for DoD", profile: profile.Profile{Host: "https://accounts-dod.cloud.databricks.test", AccountID: "acct-123"}},
+		{name: "classic account host", profile: profile.Profile{Host: "https://accounts.cloud.databricks.test", AccountID: "acct-123"}, want: true},
 		{
 			name:    "scoped to resources",
 			profile: profile.Profile{Host: "https://workspace.test", AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp-services/system.ai.github"},
@@ -416,7 +364,7 @@ resources = https://workspace.test/ai-gateway/mcp-services/system.ai.github
 	tm.WaitFor(profilePickerEnterHostLabel)
 	screen := tm.Snapshot()
 	assert.Contains(t, screen, "workspace-prof")
-	assert.NotContains(t, screen, "account-prof")
+	assert.Contains(t, screen, "account-prof")
 	assert.NotContains(t, screen, "scoped-prof")
 	tm.Type(termtest.KeyCtrlC)
 	_, err := tm.Result()
@@ -472,6 +420,19 @@ func TestSameCode(t *testing.T) {
 func newDeviceCodeServer(t *testing.T) *testserver.Server {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
+	return server
+}
+
+// newUnifiedDeviceCodeServer returns a server for a unified host of account
+// spog-acct-123.
+func newUnifiedDeviceCodeServer(t *testing.T) *testserver.Server {
+	server := newDeviceCodeServer(t)
+	server.Handle("GET", "/.well-known/databricks-config", func(_ testserver.Request) any {
+		return map[string]any{
+			"account_id":    "spog-acct-123",
+			"oidc_endpoint": server.URL + "/oidc/accounts/spog-acct-123",
+		}
+	})
 	return server
 }
 
@@ -562,6 +523,30 @@ func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
 	assert.Empty(t, profiles)
 }
 
+// The second step of an account-level login on a unified host does not open
+// the workspace picker, even in a terminal.
+func TestLoginDeviceCodeCompletionInTerminalSkipsWorkspacePicker(t *testing.T) {
+	server := newUnifiedDeviceCodeServer(t)
+	var workspaceRequests atomic.Int32
+	server.RequestCallback = func(req *testserver.Request) {
+		if strings.HasSuffix(req.URL.Path, "/workspaces") {
+			workspaceRequests.Add(1)
+		}
+	}
+	setUpDeviceCodeLogin(t, "")
+	host := server.URL + "?a=spog-acct-123"
+	ctx := cmdio.MockDiscard(t.Context())
+	require.NoError(t, runDeviceCodeLogin(ctx, "--host", host, "--profile", "account"))
+
+	tm := termtest.Run(t, func(ctx context.Context) (struct{}, error) {
+		return struct{}{}, runDeviceCodeLogin(ctx, "--host", host, "--profile", "account", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY")
+	})
+	tm.WaitFor("set workspace_id in your profile")
+	_, err := tm.Result()
+	require.NoError(t, err)
+	assert.Zero(t, workspaceRequests.Load())
+}
+
 // A user code that does not match the pending login fails before the token
 // exchange, so the confirmation code is not sent with the device code of
 // another login.
@@ -595,12 +580,24 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 		completeArgs []string
 		// completeOnOtherHost completes the login on a second server.
 		completeOnOtherHost bool
-		wantChanged         string
+		// unifiedHost makes the server a unified host of an account.
+		unifiedHost bool
+		// startQuery and completeQuery are added to the host of each step.
+		startQuery    string
+		completeQuery string
+		wantChanged   string
 	}{
 		{
 			name:                "host",
 			completeOnOtherHost: true,
 			wantChanged:         "a different host",
+		},
+		{
+			name:          "account ID",
+			unifiedHost:   true,
+			startQuery:    "?a=spog-acct-123",
+			completeQuery: "?a=other-acct",
+			wantChanged:   "a different account ID",
 		},
 		{
 			name:         "client ID",
@@ -621,15 +618,18 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := newDeviceCodeServer(t)
+			if tt.unifiedHost {
+				server = newUnifiedDeviceCodeServer(t)
+			}
 			var tokenRequests atomic.Int32
 			server.RequestCallback = func(req *testserver.Request) {
-				if req.URL.Path == "/oidc/v1/token" {
+				if strings.HasSuffix(req.URL.Path, "/v1/token") {
 					tokenRequests.Add(1)
 				}
 			}
 			setUpDeviceCodeLogin(t, "")
 			ctx := cmdio.MockDiscard(t.Context())
-			require.NoError(t, runDeviceCodeLogin(ctx, append([]string{"--host", server.URL, "--profile", "test"}, tt.startArgs...)...))
+			require.NoError(t, runDeviceCodeLogin(ctx, append([]string{"--host", server.URL + tt.startQuery, "--profile", "test"}, tt.startArgs...)...))
 
 			host := server.URL
 			if tt.completeOnOtherHost {
@@ -637,10 +637,34 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 				other.RequestCallback = server.RequestCallback
 				host = other.URL
 			}
-			args := append([]string{"--host", host, "--profile", "test", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY"}, tt.completeArgs...)
+			args := append([]string{"--host", host + tt.completeQuery, "--profile", "test", "--user-code", "WDJB-0001", "--confirmation-code", "FTFA-QQKY"}, tt.completeArgs...)
 			err := runDeviceCodeLogin(ctx, args...)
 			assert.EqualError(t, err, "the login for profile test was started with "+tt.wantChanged+". Complete it with the same command that started it. "+startNewLoginHint)
 			assert.Zero(t, tokenRequests.Load())
+		})
+	}
+}
+
+func TestOAuthAccountID(t *testing.T) {
+	workspace, err := u2m.NewBasicWorkspaceOAuthArgument("https://workspace.cloud.databricks.test")
+	require.NoError(t, err)
+	account, err := u2m.NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "acct-1")
+	require.NoError(t, err)
+	unified, err := u2m.NewBasicUnifiedOAuthArgument("https://unified.cloud.databricks.test", "acct-2")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name string
+		arg  u2m.OAuthArgument
+		want string
+	}{
+		{name: "workspace", arg: workspace, want: ""},
+		{name: "account", arg: account, want: "acct-1"},
+		{name: "unified", arg: unified, want: "acct-2"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, oauthAccountID(tt.arg))
 		})
 	}
 }

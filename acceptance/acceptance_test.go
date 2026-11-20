@@ -190,6 +190,7 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 		"TEST_DEFAULT_WAREHOUSE_ID",
 		"TEST_DEFAULT_CLUSTER_ID",
 		"TEST_INSTANCE_POOL_ID",
+		"TEST_SANDBOX_ID",
 	}
 	for _, envVar := range envVars {
 		if value := os.Getenv(envVar); value != "" {
@@ -236,8 +237,9 @@ func requirePrerequisites(t *testing.T) bool {
 
 // selectedTests, when non-empty, limits the run to those test directories.
 // skipToolBuilds skips building the tools that the selected tests do not use
-// (the databricks-bundles wheel, yamlfmt); it must stay false for a
-// full run.
+// (the databricks-bundles wheel, yamlfmt) and the agent CLI stand-ins. Tests
+// under acceptance/cmd/aitools then stop at script.prepare, so it must stay
+// false for a full run.
 func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipToolBuilds bool) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
@@ -255,7 +257,8 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// enough: the SDK (since v0.132.0) treats empty values as a truthy
 	// signal because os.LookupEnv reports them as present.
 	// Keep this list in sync with listKnownAgents() in
-	// github.com/databricks/databricks-sdk-go/useragent/agent.go
+	// github.com/databricks/databricks-sdk-go/useragent/agent.go and
+	// listKnownMetaHarnesses() in useragent/meta_harness.go,
 	// plus the AGENT and AI_AGENT generic fallbacks and the CLI's own
 	// AIDEVKIT_HOME detection override.
 	for _, v := range []string{
@@ -273,6 +276,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		"GEMINI_CLI",
 		"GOOSE_TERMINAL",
 		"KIRO",
+		"OMNIGENT",
 		"OPENCLAW_SHELL",
 		"OPENCODE",
 		"PI_CODING_AGENT",
@@ -282,9 +286,17 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
+	// Claude Code sets this in the commands it runs; it enables the native
+	// <claude-code-hint> line, so a host Claude Code session must not leak it.
+	os.Unsetenv("CLAUDE_CODE_CHILD_SESSION") //nolint:usetesting // t.Setenv cannot unset
+
 	// environments setup-local follows uv's UV_PROJECT_ENVIRONMENT, so a value
 	// from the host shell would move the venv the localenv tests expect.
 	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset
+
+	// Agent skills set DATABRICKS_SKILLS_INVOKED (experimental skill tracking),
+	// so a host value would add skill/ pairs to recorded user agents.
+	os.Unsetenv("DATABRICKS_SKILLS_INVOKED") //nolint:usetesting // t.Setenv cannot unset
 
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
@@ -297,21 +309,29 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
-	// Download old CLI versions in parallel, overlapping with the builds below.
+	// Download old CLI versions and build the agent CLI stand-ins in parallel, overlapping with the builds below.
 	var cli293Path, cli18Path, cli1161Path string
-	var oldCLIs errgroup.Group
+	var setup errgroup.Group
 	if !inprocessMode {
-		oldCLIs.Go(func() (err error) {
+		setup.Go(func() (err error) {
 			cli293Path, err = downloadCLI(buildDir, "0.293.0")
 			return err
 		})
-		oldCLIs.Go(func() (err error) {
+		setup.Go(func() (err error) {
 			cli18Path, err = downloadCLI(buildDir, "1.8.0")
 			return err
 		})
 		// CLI version that predates the hashed_fields feature. Used by acceptance/bundle/hashing
-		oldCLIs.Go(func() (err error) {
+		setup.Go(func() (err error) {
 			cli1161Path, err = downloadCLI(buildDir, "1.16.1")
+			return err
+		})
+	}
+	// The stand-ins for the agent CLIs go first on PATH in every test under acceptance/cmd/aitools (see script.prepare there).
+	var fakeAgentDir string
+	if !skipToolBuilds {
+		setup.Go(func() (err error) {
+			fakeAgentDir, err = buildFakeAgentCLIs(buildDir)
 			return err
 		})
 	}
@@ -370,7 +390,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				version = resolveLatestVersion(t, buildDir)
 			}
 			// Wait for the old CLI downloads so the same version isn't downloaded concurrently.
-			require.NoError(t, oldCLIs.Wait())
+			require.NoError(t, setup.Wait())
 			execPath = DownloadCLI(t, buildDir, version)
 			// For a downloaded release the version string is already known.
 			cliVersion = version
@@ -402,9 +422,12 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	t.Setenv("SELECTION", selectionPath)
 	repls.SetPath(selectionPath, "[SELECTION]")
 
-	if !inprocessMode {
-		require.NoError(t, oldCLIs.Wait())
+	require.NoError(t, setup.Wait())
+	if !skipToolBuilds {
+		t.Setenv("FAKE_AGENT_DIR", fakeAgentDir)
+	}
 
+	if !inprocessMode {
 		t.Setenv("CLI_293", cli293Path)
 		repls.SetPath(cli293Path, "[CLI_293]")
 
@@ -448,6 +471,9 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		}
 		if os.Getenv("TEST_INSTANCE_POOL_ID") == "" {
 			t.Setenv("TEST_INSTANCE_POOL_ID", testserver.TestDefaultInstancePoolId)
+		}
+		if os.Getenv("TEST_SANDBOX_ID") == "" {
+			t.Setenv("TEST_SANDBOX_ID", testserver.TestDefaultSandboxId)
 		}
 	}
 
@@ -1496,6 +1522,43 @@ func buildSelectionCmd(t *testing.T, buildDir string) string {
 	RunCommand(t, args, ".", nil)
 
 	return execPath
+}
+
+// buildFakeAgentCLIs builds the stand-in for the claude, codex, gemini and copilot CLIs once, and copies it under each
+// name, since a PATH lookup finds a binary by name. It returns the directory that holds them. It takes no *testing.T,
+// so that it can run in the errgroup of the builds.
+func buildFakeAgentCLIs(buildDir string) (string, error) {
+	dir := filepath.Join(buildDir, "agent-clis")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	built := filepath.Join(dir, "fakeagent"+exeSuffix)
+	args := []string{"go", "build", "-o", built}
+	if runtime.GOOS == "windows" {
+		// See BuildCLI: VCS stamping fails on Windows.
+		args = append(args, "-buildvcs=false")
+	}
+	// The package path goes last: go build reads anything after it as another package.
+	args = append(args, "./internal/fakeagent")
+	if out, err := exec.Command(args[0], args[1:]...).CombinedOutput(); err != nil {
+		return "", fmt.Errorf("building the agent CLI stand-in failed: %w\n%s", err, out)
+	}
+
+	data, err := os.ReadFile(built)
+	if err != nil {
+		return "", err
+	}
+	for _, name := range []string{"claude", "codex", "gemini", "copilot"} {
+		// Rename over the old file: rewriting an executable in place keeps its inode, which macOS may kill on exec.
+		path := filepath.Join(dir, name+exeSuffix)
+		if err := os.WriteFile(path+".tmp", data, 0o755); err != nil {
+			return "", err
+		}
+		if err := os.Rename(path+".tmp", path); err != nil {
+			return "", err
+		}
+	}
+	return dir, nil
 }
 
 // readGOFIPS140 returns the GOFIPS140 version the Taskfile pins for `task`
