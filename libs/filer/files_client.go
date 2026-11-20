@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -64,6 +65,10 @@ var filesRetryStatusCodes = []int{
 // retried on 500 because the failed attempt may have been applied.
 var filesReadRetryStatusCodes = append(slices.Clone(filesRetryStatusCodes), http.StatusInternalServerError)
 
+// filesMaxServerErrorRetries bounds the retries on 500 within one call, so a
+// 500 that does not clear (e.g. on one broken path) still fails in seconds.
+const filesMaxServerErrorRetries = 3
+
 // filesMaxRetries bounds the retries of one call. Non-streaming files/v2 calls
 // also have a 5 minute SDK timeout, but the single-shot upload retried by the
 // filer itself does not.
@@ -84,6 +89,23 @@ func (r *cappedRetrier) IsRetriable(err error) (time.Duration, bool) {
 	}
 	r.retries++
 	return r.Retrier.IsRetriable(err)
+}
+
+// readRetrier is a cappedRetrier that also stops after
+// filesMaxServerErrorRetries retries on 500.
+type readRetrier struct {
+	cappedRetrier
+	serverErrors int
+}
+
+func (r *readRetrier) IsRetriable(err error) (time.Duration, bool) {
+	if httpStatus(err) == http.StatusInternalServerError {
+		if r.serverErrors >= filesMaxServerErrorRetries {
+			return 0, false
+		}
+		r.serverErrors++
+	}
+	return r.cappedRetrier.IsRetriable(err)
 }
 
 // As of 19th Feb 2024, the Files API backend has a rate limit of 10 concurrent
@@ -207,11 +229,12 @@ type FilesClient struct {
 }
 
 func (w *FilesClient) newRetrier() ops.Retrier {
-	return w.newRetrierFor(filesRetryStatusCodes)
+	return &cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesRetryStatusCodes})}
 }
 
-func (w *FilesClient) newRetrierFor(statusCodes []int) ops.Retrier {
-	return &cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: statusCodes})}
+func (w *FilesClient) newReadRetrier() ops.Retrier {
+	inner := apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesReadRetryStatusCodes})
+	return &readRetrier{Retrier: inner}
 }
 
 // retry is the call option that retries a files/v2 call on throttling.
@@ -221,7 +244,7 @@ func (w *FilesClient) retry() call.Option {
 
 // readRetry is retry for read-only calls, which are also retried on 500.
 func (w *FilesClient) readRetry() call.Option {
-	return call.WithRetrier(func() ops.Retrier { return w.newRetrierFor(filesReadRetryStatusCodes) })
+	return call.WithRetrier(w.newReadRetrier)
 }
 
 // filesAPIError describes a Files API error that carries no message. The files/v2
@@ -236,7 +259,19 @@ type filesAPIError struct {
 
 func (e filesAPIError) Error() string {
 	status := e.err.HTTPStatusCode()
-	return fmt.Sprintf("%s %s: Files API returned HTTP %d %s", e.op, e.absPath, status, http.StatusText(status))
+	msg := fmt.Sprintf("%s %s: Files API returned HTTP %d", e.op, e.absPath, status)
+	// Non-standard codes such as 520 have no status text.
+	if text := http.StatusText(status); text != "" {
+		msg += " " + text
+	}
+	// A JSON body can carry an error_code without a message.
+	var body struct {
+		ErrorCode string `json:"error_code"`
+	}
+	if json.Unmarshal(e.err.HTTPBody(), &body) == nil && body.ErrorCode != "" {
+		msg += " (" + body.ErrorCode + ")"
+	}
+	return msg
 }
 
 func (e filesAPIError) Unwrap() error {
@@ -346,7 +381,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 			opts = append(opts, files.WithProgress(fn))
 		}
 		_, uerr := w.client.Upload(ctx, absPath, reader, opts...)
-		return mapUploadError(uerr, absPath)
+		return describeFilesError(mapUploadError(uerr, absPath), "write", absPath)
 	}
 
 	err = w.uploadFile(ctx, absPath, reader, overwrite)

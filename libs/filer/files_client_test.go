@@ -234,15 +234,20 @@ var throttledResponse = testserver.Response{
 
 // throttled wraps a handler so that its first n requests are throttled.
 func throttled(n int, handler func(req testserver.Request) any) func(req testserver.Request) any {
+	return failFirst(n, throttledResponse, handler)
+}
+
+// failFirst wraps a handler so that its first n requests get resp.
+func failFirst(n int, resp testserver.Response, handler func(req testserver.Request) any) func(req testserver.Request) any {
 	var mu sync.Mutex
 	count := 0
 	return func(req testserver.Request) any {
 		mu.Lock()
 		count++
-		throttle := count <= n
+		fail := count <= n
 		mu.Unlock()
-		if throttle {
-			return throttledResponse
+		if fail {
+			return resp
 		}
 		return handler(req)
 	}
@@ -419,18 +424,7 @@ func TestFilesClientStopsRetryingAfterLimit(t *testing.T) {
 // failing wraps a handler so that its first n requests fail with status and no
 // body, as a failed HEAD (or a proxy error page) does.
 func failing(n, status int, handler func(req testserver.Request) any) func(req testserver.Request) any {
-	var mu sync.Mutex
-	count := 0
-	return func(req testserver.Request) any {
-		mu.Lock()
-		count++
-		fail := count <= n
-		mu.Unlock()
-		if fail {
-			return testserver.Response{StatusCode: status, Body: []byte{}}
-		}
-		return handler(req)
-	}
+	return failFirst(n, testserver.Response{StatusCode: status, Body: []byte{}}, handler)
 }
 
 func TestFilesClientRetriesReadOnlyCallsOn500(t *testing.T) {
@@ -494,4 +488,28 @@ func TestDescribeFilesErrorLeavesOtherErrors(t *testing.T) {
 	assert.Equal(t, wrapped, describeFilesError(wrapped, "stat", "/p"))
 
 	assert.NoError(t, describeFilesError(nil, "stat", "/p"))
+}
+
+func TestFilesClientStopsRetrying500(t *testing.T) {
+	ctx := t.Context()
+	server := testserver.New(t)
+	requests := 0
+	head := failing(filesMaxServerErrorRetries+1, 500, ok)
+	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req testserver.Request) any {
+		requests++
+		return head(req)
+	})
+	f := newFilesClientWithFastRetries(t, server)
+
+	_, err := f.statFile(ctx, "hello")
+	assert.EqualError(t, err, "stat /Volumes/main/schema/vol/hello: Files API returned HTTP 500 Internal Server Error")
+	assert.Equal(t, filesMaxServerErrorRetries+1, requests)
+}
+
+func TestFilesAPIErrorText(t *testing.T) {
+	errorCodeOnly := apierr.FromHTTPError(403, nil, []byte(`{"error_code":"PERMISSION_DENIED"}`))
+	assert.EqualError(t, describeFilesError(errorCodeOnly, "read", "/p"), "read /p: Files API returned HTTP 403 Forbidden (PERMISSION_DENIED)")
+
+	nonStandard := apierr.FromHTTPError(520, nil, []byte("<html>oops</html>"))
+	assert.EqualError(t, describeFilesError(nonStandard, "read", "/p"), "read /p: Files API returned HTTP 520")
 }

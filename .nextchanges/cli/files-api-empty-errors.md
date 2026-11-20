@@ -1,1 +1,1 @@
-* Retry read-only Files API calls (stat, read, list) on UC Volumes on HTTP 500, and show the HTTP status and path for Files API errors that have no message instead of an empty `databricks-api error:`.
+* Retry read-only Files API calls (stat, read, list) on UC Volumes on HTTP 500, and show the HTTP status and path for Files API errors that have no message instead of an empty `databricks-api error:`. ([#7839](https://github.com/databricks/cli/pull/7839))
