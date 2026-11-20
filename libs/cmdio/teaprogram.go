@@ -58,6 +58,7 @@ type replyGuard struct {
 	waiting  bool
 	released bool
 	quit     tea.Msg
+	timeout  *time.Timer
 }
 
 // replyGuardTimeout ends the wait when the terminal doesn't answer.
@@ -73,12 +74,13 @@ func (g *replyGuard) filter(_ tea.Model, msg tea.Msg) tea.Msg {
 			g.waiting = true
 			g.quit = msg
 			go g.send(tea.RequestCursorPosition())
-			time.AfterFunc(g.wait, func() { g.send(replyGuardTimeout{}) })
+			g.timeout = time.AfterFunc(g.wait, func() { g.send(replyGuardTimeout{}) })
 		}
 		return nil
 	case tea.CursorPositionMsg, replyGuardTimeout:
 		if g.waiting && !g.released {
 			g.released = true
+			g.timeout.Stop()
 			go g.send(g.quit)
 			return nil
 		}

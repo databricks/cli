@@ -36,26 +36,24 @@ func TestReplyGuardDefersQuitUntilCursorReport(t *testing.T) {
 	assert.NotNil(t, g.filter(nil, tea.WindowSizeMsg{}), "other messages still reach the program")
 
 	assert.Nil(t, g.filter(nil, tea.CursorPositionMsg{}), "the report is consumed")
+	assert.False(t, g.timeout.Stop(), "the report stops the timeout")
 	require.Eventually(t, func() bool { return len(sentMsgs()) == 2 }, time.Second, time.Millisecond)
 	assert.Equal(t, tea.QuitMsg{}, sentMsgs()[1])
 	assert.Equal(t, tea.QuitMsg{}, g.filter(nil, tea.QuitMsg{}), "the resent quit goes through")
 }
 
 func TestReplyGuardQuitsWhenTerminalDoesNotAnswer(t *testing.T) {
-	quit := make(chan tea.Msg, 4)
-	g := &replyGuard{wait: time.Millisecond}
-	g.send = func(m tea.Msg) {
-		if m == (replyGuardTimeout{}) {
-			m = g.filter(nil, m)
-		}
-		if m != nil {
-			quit <- m
-		}
-	}
+	// sent stands in for the program's event loop, the only caller of filter.
+	sent := make(chan tea.Msg, 4)
+	g := &replyGuard{wait: time.Millisecond, send: func(m tea.Msg) { sent <- m }}
 	assert.Nil(t, g.filter(nil, tea.InterruptMsg{}))
-	// The cursor position request, then the held interrupt after the timeout.
-	assert.Equal(t, tea.RequestCursorPosition(), <-quit)
-	assert.Equal(t, tea.InterruptMsg{}, <-quit)
+
+	// The cursor position request and the timeout race each other.
+	got := []tea.Msg{<-sent, <-sent}
+	assert.ElementsMatch(t, []tea.Msg{tea.RequestCursorPosition(), replyGuardTimeout{}}, got)
+
+	assert.Nil(t, g.filter(nil, replyGuardTimeout{}), "the timeout is consumed")
+	assert.Equal(t, tea.InterruptMsg{}, <-sent, "the held interrupt is resent")
 }
 
 type quitOnKeyModel struct{}
