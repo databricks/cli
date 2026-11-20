@@ -26,7 +26,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 === The create fails: the model is already there
 
->>> errcode [CLI] bundle deploy
+>>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Error: cannot create resources.registered_models.model1: Routine or Model 'mymodel' already exists (400 RESOURCE_ALREADY_EXISTS)
 
@@ -36,8 +36,6 @@ API error_code: RESOURCE_ALREADY_EXISTS
 API message: Routine or Model 'mymodel' already exists
 
 Files: 3 uploaded, 0 deleted
-
-Exit code: 1
 
 >>> print_requests.py //unity-catalog
 {
