@@ -29,6 +29,26 @@
 
 >>> diff.py out.bitmap.txt var-flag.txt
 
+=== A bitmap from a newer CLI decodes, with a placeholder for the field this schema lacks
+
+
+>>> [CLI] bundle bitmap decode
+
+>>> [CLI] bundle bitmap decode -o json
+
+>>> uv run --isolated --no-project --reinstall-package databricks-bundles --with [DATABRICKS_BUNDLES_WHEEL] -q python -m databricks.bundles._bitmap
+
+>>> uv run --isolated --no-project --reinstall-package databricks-bundles --with [DATABRICKS_BUNDLES_WHEEL] -q python -m databricks.bundles._bitmap -o json
+
+>>> diff.py LOG.future.txt LOG.future-python.txt
+
+>>> diff.py LOG.future.json LOG.future-python.json
+size=[FUTURE_SIZE] context=0
+P   future #[FUTURE_BIT]
+{
+  "future #[FUTURE_BIT]": true
+}
+
 >>> [CLI] bundle bitmap update-schema --validate
 
 === decode rejects input that is not an encoded bitmap

@@ -54,12 +54,7 @@ def _decode_bundle(encoded: str) -> tuple[list[bool], int]:
     if context != CONTEXT_FULL_BUNDLE:
         raise ValueError(f"unsupported bitmap context {context}")
     # The schema is append-only, so an older bitmap decodes against a prefix of
-    # it; a newer one has bits this package cannot name.
-    if len(bits) > len(SCHEMA):
-        raise ValueError(
-            f"bitmap has {len(bits)} bits but the schema has {len(SCHEMA)} fields; "
-            "decode it with a newer databricks-bundles"
-        )
+    # it; a newer one has bits this package cannot name, shown as placeholders.
     return bits, context
 
 
@@ -90,7 +85,8 @@ def text(schema: list[str], bits: list[bool], context: int) -> list[str]:
     false, and a space stands for each that is not set. A bool with ``P`` alone
     holds an unresolved variable reference; one with both ``T`` and ``F`` has both
     values under a wildcard. Unset fields are omitted. ``bits`` may be shorter
-    than ``schema`` but not longer.
+    than ``schema`` (an older bitmap) or longer (a newer one): a set bit past the
+    schema is a ``P`` line named by :func:`_future_field`.
     """
     schema = schema[: len(bits)]
     index = {path: i for i, path in enumerate(schema)}
@@ -105,7 +101,16 @@ def text(schema: list[str], bits: list[bool], context: int) -> list[str]:
         )
         if flags != "   ":
             lines.append(f"{flags} {path}")
+    for i in range(len(schema), len(bits)):
+        if bits[i]:
+            lines.append("P   " + _future_field(i))
     return lines
+
+
+def _future_field(bit: int) -> str:
+    # A set bit past the end of the schema, a field only a newer CLI can name.
+    # Whether it is a field or the value of a bool is unknown.
+    return f"future #{bit}"
 
 
 def _is_set(index: dict[str, int], bits: list[bool], path: str) -> bool:
@@ -122,12 +127,14 @@ def to_json(schema: list[str], bits: list[bool], context: int) -> dict[str, Any]
     the leaf of ``tasks``. A bool field is in ``presence`` and in the tree of each
     value it holds. Keys are in the CLI's order, so ``json.dumps(...,
     indent=2)`` prints what ``databricks bundle bitmap decode -o json`` prints.
-    ``bits`` may be shorter than ``schema`` but not longer.
+    ``bits`` may be shorter than ``schema`` or longer: a set bit past the schema
+    is a top-level ``presence`` entry named by :func:`_future_field`.
     """
     presence: dict[str, Any] = {}
     true_tree: dict[str, Any] = {}
     false_tree: dict[str, Any] = {}
-    for path, bit in zip(schema[: len(bits)], bits, strict=True):
+    known = min(len(bits), len(schema))
+    for path, bit in zip(schema[:known], bits[:known], strict=True):
         if not bit:
             continue
         tree = presence
@@ -136,6 +143,9 @@ def to_json(schema: list[str], bits: list[bool], context: int) -> dict[str, Any]
         elif path.endswith(_FALSE_SUFFIX):
             tree, path = false_tree, path[: -len(_FALSE_SUFFIX)]
         _insert(tree, path.split("."))
+    for i in range(known, len(bits)):
+        if bits[i]:
+            presence[_future_field(i)] = True
     return {
         "size": len(bits),
         "context": context,
