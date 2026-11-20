@@ -25,6 +25,9 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
+    # Bounded, as the build's artifacts are the PR author's.
+    timeout-minutes: 15
+
     permissions:
       actions: read
       contents: read

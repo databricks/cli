@@ -102,7 +102,7 @@ func TestCompare(t *testing.T) {
 	comment := string(data)
 
 	assert.True(t, strings.HasPrefix(comment, commentMarker+"\n"))
-	assert.Contains(t, comment, "Linux (direct), statements covered by the unit and the acceptance tests. PR: HEAD. Base: BASE.")
+	assert.Contains(t, comment, "Linux (`direct`), statements covered by the unit and the acceptance tests. PR: HEAD. Base: BASE.")
 	// Lines 7-11 are the added lines with code: 7-10 ran in the acceptance tests, 11 in nothing.
 	assert.Contains(t, comment, "| Combined | 80.0% (4 of 5) | 75.0% | -25.00 pp |")
 	assert.Contains(t, comment, "| Acceptance | 80.0% (4 of 5) | 75.0% | -25.00 pp |")
@@ -118,7 +118,7 @@ func TestCompare(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "| Combined | 80.0% (4 of 5) | 75.0% |\n")
 	assert.Contains(t, string(data), "No coverage of main was found")
-	assert.NotContains(t, string(data), "packages changed")
+	assert.NotContains(t, string(data), "changed packages")
 
 	// A build of another version of the file is left out of the changed lines.
 	headLayout.sha = [20]byte{}
@@ -132,26 +132,51 @@ func TestCompare(t *testing.T) {
 }
 
 func TestAddedLines(t *testing.T) {
+	// The hunk of x.go adds a line that looks like a header; old.go is deleted, new.go added.
 	diff := `diff --git a/x.go b/x.go
 --- a/x.go
 +++ b/x.go
-@@ -3 +3,2 @@ func f() {
+@@ -3 +3,3 @@ func f() {
 -a
 +b
+++++ b/fake.go
 +c
-@@ -10,2 +11,0 @@
+@@ -10,2 +12,0 @@
 -gone
+-gone too
 --- a/old.go
 +++ /dev/null
 @@ -1 +0,0 @@
 -x
+--- /dev/null
 +++ b/new.go
 @@ -0,0 +1 @@
 +package m
+\ No newline at end of file
 `
-	got, err := addedLines(strings.NewReader(diff))
+	added, touched, err := addedLines(strings.NewReader(diff))
 	require.NoError(t, err)
-	assert.Equal(t, map[string][]int{"x.go": {3, 4}, "new.go": {1}}, got)
+	assert.Equal(t, map[string][]int{"x.go": {3, 4, 5}, "new.go": {1}}, added)
+	assert.Equal(t, map[string]bool{"x.go": true, "old.go": true, "new.go": true}, touched)
+}
+
+func TestDecodeRejectsHostileBlocks(t *testing.T) {
+	// A block past the end of its file (compare would walk its lines), and a file without
+	// blocks that claims many bitmaps (they would take no bytes).
+	for _, l := range []*layout{
+		{path: "a.go", lines: 3, blocks: []block{{file: "a.go", sl: 1, sc: 1, el: 1 << 31, ec: 2, stmts: 1}}},
+	} {
+		data, _ := encode([]byte(`{}`), []*layout{l}, []profile{{kind: kindAll, files: []int{0}, bits: bitset{1}}})
+		_, err := decode(data)
+		assert.ErrorIs(t, err, errMalformed)
+	}
+	data := []byte(magic)
+	data = append(data, 0, 1, 1, 'a') // no meta, one layout "a"
+	data = append(data, make([]byte, 20)...)
+	data = append(data, 0, 0, 100) // no lines, no blocks, 100 bitmaps
+	data = append(data, make([]byte, 200)...)
+	_, err := decode(data)
+	assert.ErrorIs(t, err, errMalformed)
 }
 
 func TestRangesAndNames(t *testing.T) {

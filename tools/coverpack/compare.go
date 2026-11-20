@@ -32,6 +32,7 @@ const (
 	maxShownRanges  = 8        // ranges of lines listed per file
 	maxShownPackage = 25       // packages in the table of changed packages
 	commentMarker   = "<!-- coverage-report -->"
+	maxCells        = 8 // files of a build
 )
 
 // The measures of a comment, in the order of its table. Acceptance is the merged profile of
@@ -97,6 +98,9 @@ func readPacked(p string) (*decoded, error) {
 
 // loadBuild merges the cells of a build: a block is covered if any cell covered it.
 func loadBuild(paths []string) (buildCov, []map[string]any, error) {
+	if len(paths) > maxCells {
+		return nil, nil, fmt.Errorf("%d files: more than %d cells", len(paths), maxCells)
+	}
 	cov := buildCov{}
 	var metas []map[string]any
 	for _, p := range paths {
@@ -188,43 +192,75 @@ func total(pkgs map[string]counts) counts {
 }
 
 // addedLines reads a `git diff -U0`: the added lines of each file, by their number in the new
-// version.
-func addedLines(diff io.Reader) (map[string][]int, error) {
-	out := map[string][]int{}
+// version, and every file the diff touches. A hunk's body is skipped by its counts, so a line
+// of it that looks like a header is not read as one.
+func addedLines(diff io.Reader) (map[string][]int, map[string]bool, error) {
+	added, touched := map[string][]int{}, map[string]bool{}
 	var file string
+	body := 0 // lines left in the current hunk
+	afterOld := false
 	s := bufio.NewScanner(diff)
 	s.Buffer(nil, 16<<20)
 	for s.Scan() {
 		line := s.Text()
-		if p, ok := strings.CutPrefix(line, "+++ "); ok {
-			file, _ = strings.CutPrefix(p, "b/") // "/dev/null" (a deleted file) matches no file
+		if body > 0 {
+			if !strings.HasPrefix(line, `\`) { // "\ No newline at end of file"
+				body--
+			}
 			continue
 		}
-		rest, ok := strings.CutPrefix(line, "@@ ")
-		if !ok || file == "" {
-			continue
-		}
-		for field := range strings.FieldsSeq(rest) {
-			spec, ok := strings.CutPrefix(field, "+")
-			if !ok {
-				continue
+		wasOld := afterOld
+		afterOld = false
+		switch {
+		case strings.HasPrefix(line, "--- "):
+			afterOld = true
+			if p, ok := strings.CutPrefix(line[4:], "a/"); ok {
+				touched[p] = true
 			}
-			first, n, found := strings.Cut(spec, ",")
-			if !found {
-				n = "1"
+		case wasOld && strings.HasPrefix(line, "+++ "):
+			file = ""
+			if p, ok := strings.CutPrefix(line[4:], "b/"); ok {
+				file = p
+				touched[p] = true
 			}
-			start, err1 := strconv.Atoi(first)
-			count, err2 := strconv.Atoi(n)
-			if err := cmp.Or(err1, err2); err != nil {
-				return nil, fmt.Errorf("hunk %q: %w", line, err)
+		case strings.HasPrefix(line, "@@ "):
+			oldCount, start, count, err := hunk(line)
+			if err != nil {
+				return nil, nil, err
 			}
-			for l := start; l < start+count; l++ {
-				out[file] = append(out[file], l)
+			body = oldCount + count
+			for l := start; l < start+count && file != ""; l++ {
+				added[file] = append(added[file], l)
 			}
-			break
 		}
 	}
-	return out, s.Err()
+	return added, touched, s.Err()
+}
+
+// hunk reads "@@ -a,b +c,d @@": b, c and d (a count is 1 when left out).
+func hunk(line string) (oldCount, start, count int, err error) {
+	fields := strings.Fields(line)
+	if len(fields) < 3 || !strings.HasPrefix(fields[1], "-") || !strings.HasPrefix(fields[2], "+") {
+		return 0, 0, 0, fmt.Errorf("hunk %q", line)
+	}
+	span := func(spec string) (int, int, error) {
+		first, n, found := strings.Cut(spec, ",")
+		if !found {
+			n = "1"
+		}
+		a, err1 := strconv.Atoi(first)
+		b, err2 := strconv.Atoi(n)
+		if err := cmp.Or(err1, err2); err != nil || b < 0 || b > 1<<24 {
+			return 0, 0, fmt.Errorf("hunk %q", line)
+		}
+		return a, b, nil
+	}
+	_, oldCount, err = span(fields[1][1:])
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	start, count, err = span(fields[2][1:])
+	return oldCount, start, count, err
 }
 
 // lineStates is, per wanted line that has code, whether any of its code ran, per measure.
@@ -233,6 +269,7 @@ func lineStates(f *fileCov, wanted []int) map[int][measures]bool {
 	for _, l := range wanted {
 		want[l] = true
 	}
+	lo, hi := slices.Min(wanted), slices.Max(wanted)
 	out := map[int][measures]bool{}
 	for j, blk := range f.blocks {
 		if blk.stmts == 0 {
@@ -243,7 +280,7 @@ func lineStates(f *fileCov, wanted []int) map[int][measures]bool {
 			last-- // the block ends before the first byte of its last line
 		}
 		cov := f.covered(j)
-		for l := int(blk.sl); l <= last; l++ {
+		for l := max(int(blk.sl), lo); l <= min(last, hi); l++ {
 			if !want[l] {
 				continue
 			}
@@ -263,10 +300,11 @@ type patchFile struct {
 }
 
 type patch struct {
-	lines   int // changed lines that have code
-	covered [measures]int
-	files   []patchFile // with uncovered lines, the most first
-	skipped int         // changed files whose coverage is of another version of them
+	lines    int // changed lines that have code
+	covered  [measures]int
+	files    []patchFile     // with uncovered lines, the most first
+	skipped  int             // changed files whose coverage is of another version of them
+	packages map[string]bool // that the PR changes a Go file of
 }
 
 func git(repo string, args ...string) ([]byte, error) {
@@ -304,13 +342,17 @@ func blobs(repo, commit string) (map[string][20]byte, error) {
 
 func patchCoverage(head buildCov, o compareOptions) (patch, error) {
 	var p patch
-	diff, err := git(o.repo, "diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", "--src-prefix=a/", "--dst-prefix=b/", o.from, o.to, "--", "*.go")
+	diff, err := git(o.repo, "-c", "core.quotePath=false", "diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", "--src-prefix=a/", "--dst-prefix=b/", o.from, o.to, "--", "*.go")
 	if err != nil {
 		return p, err
 	}
-	added, err := addedLines(bytes.NewReader(diff))
+	added, touched, err := addedLines(bytes.NewReader(diff))
 	if err != nil {
 		return p, err
+	}
+	p.packages = map[string]bool{}
+	for file := range touched {
+		p.packages[path.Dir(file)] = true
 	}
 	shas, err := blobs(o.repo, o.to)
 	if err != nil {
@@ -408,22 +450,27 @@ func ranges(lines []int, limit int) string {
 	return strings.Join(parts, ", ")
 }
 
-func cells(metas []map[string]any) string {
+var cellName = regexp.MustCompile(`^[a-z0-9]{1,32}$`)
+
+// cells is the names of the cells of a build, sorted: "?" for one that is not a plain name.
+func cells(metas []map[string]any) []string {
 	var names []string
 	for _, m := range metas {
-		if c, ok := m["cell"].(string); ok {
-			names = append(names, safeName(c))
+		c, _ := m["cell"].(string)
+		if !cellName.MatchString(c) {
+			c = "?"
 		}
+		names = append(names, c)
 	}
 	slices.Sort(names)
-	return strings.Join(slices.Compact(names), ", ")
+	return names
 }
 
 func render(w io.Writer, o compareOptions, base, head map[string]counts, metas []map[string]any, p patch) {
 	fmt.Fprintln(w, commentMarker)
 	fmt.Fprintln(w, "### Coverage")
 	fmt.Fprintln(w)
-	fmt.Fprintf(w, "Linux (%s), statements covered by the unit and the acceptance tests. PR: %s.", cells(metas), o.headDesc)
+	fmt.Fprintf(w, "Linux (`%s`), statements covered by the unit and the acceptance tests. PR: %s.", strings.Join(cells(metas), "`, `"), o.headDesc)
 	if base != nil {
 		fmt.Fprintf(w, " Base: %s.", o.baseDesc)
 	}
@@ -472,7 +519,7 @@ func render(w io.Writer, o compareOptions, base, head map[string]counts, metas [
 	}
 
 	if base != nil {
-		renderPackages(w, base, head)
+		renderPackages(w, base, head, p.packages)
 	}
 }
 
@@ -483,9 +530,10 @@ func patchCell(p patch, m int) string {
 	return fmt.Sprintf("%s (%s of %s)", pct(p.covered[m], p.lines), thousands(p.covered[m]), thousands(p.lines))
 }
 
-// renderPackages lists the packages whose statements or combined coverage changed, the most
-// newly uncovered statements first.
-func renderPackages(w io.Writer, base, head map[string]counts) {
+// renderPackages lists the packages that the PR changes and whose statements or combined
+// coverage changed, the most newly uncovered statements first. Other packages can differ too,
+// from the commits of main that the base build lacks, but that is not the PR's doing.
+func renderPackages(w io.Writer, base, head map[string]counts, changed map[string]bool) {
 	type row struct {
 		name             string
 		base, head       counts
@@ -501,7 +549,7 @@ func renderPackages(w io.Writer, base, head map[string]counts) {
 		}
 	}
 	rows = slices.DeleteFunc(rows, func(r row) bool {
-		return r.base.stmts == r.head.stmts && r.base.covered[measureCombined] == r.head.covered[measureCombined]
+		return !changed[r.name] || r.base.stmts == r.head.stmts && r.base.covered[measureCombined] == r.head.covered[measureCombined]
 	})
 	if len(rows) == 0 {
 		return
@@ -513,7 +561,7 @@ func renderPackages(w io.Writer, base, head map[string]counts) {
 	slices.SortFunc(rows, func(a, b row) int {
 		return cmp.Or(cmp.Compare(max(b.uncoveredChanged, -b.uncoveredChanged), max(a.uncoveredChanged, -a.uncoveredChanged)), strings.Compare(a.name, b.name))
 	})
-	fmt.Fprintf(w, "<details><summary>%d packages changed</summary>\n\n", len(rows))
+	fmt.Fprintf(w, "<details><summary>%d changed packages</summary>\n\n", len(rows))
 	fmt.Fprintln(w, "| Package | Statements | Combined | Δ | Uncovered statements |")
 	fmt.Fprintln(w, "|---|---|---|---|---|")
 	for i, r := range rows {
@@ -552,9 +600,12 @@ func compare(o compareOptions) error {
 	}
 	var base map[string]counts
 	if len(o.base) > 0 {
-		b, _, err := loadBuild(o.base)
+		b, baseMetas, err := loadBuild(o.base)
 		if err != nil {
 			return err
+		}
+		if !slices.Equal(cells(baseMetas), cells(metas)) {
+			return fmt.Errorf("the base build has cells %v, the PR's %v", cells(baseMetas), cells(metas))
 		}
 		base = b.packages()
 	}

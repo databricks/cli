@@ -29,6 +29,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 )
 
 const magic = "CLICOV1\n"
@@ -174,30 +175,47 @@ func decode(data []byte) (*decoded, error) {
 		l := &layout{path: string(str())}
 		copy(l.sha[:], c.take(20))
 		l.lines = int(c.uleb128())
-		l.blocks = make([]block, c.count())
-		if blocks += len(l.blocks); blocks > maxDecodedBlocks {
+		n := c.count()
+		if blocks += n; blocks > maxDecodedBlocks {
 			return nil, errMalformed
 		}
-		sl := uint32(0)
+		l.blocks = make([]block, n)
+		sl := uint64(0)
 		for j := range l.blocks {
-			sl += uint32(c.uleb128())
-			b := block{file: l.path, sl: sl, sc: uint32(c.uleb128())}
-			b.el = sl + uint32(c.uleb128())
-			b.ec = uint32(c.uleb128())
-			b.stmts = uint32(c.uleb128())
-			l.blocks[j] = b
+			sl += c.uleb128()
+			sc := c.uleb128()
+			el := sl + c.uleb128()
+			ec, stmts := c.uleb128(), c.uleb128()
+			// The lines of a block are within its file, which compare walks (compare.go).
+			if c.err == nil && (el > math.MaxUint32 || l.lines > 0 && el > uint64(l.lines)) {
+				return nil, errMalformed
+			}
+			l.blocks[j] = block{file: l.path, sl: uint32(sl), sc: uint32(sc), el: uint32(el), ec: uint32(ec), stmts: uint32(stmts)}
 		}
 		d.layouts[i] = l
 	}
 	d.bitmaps = make([][][]byte, len(d.layouts))
 	for i, l := range d.layouts {
-		d.bitmaps[i] = make([][]byte, c.count())
+		n, size := c.count(), (len(l.blocks)+7)/8
+		// count bounds n by the bytes left, but a bitmap of a file without blocks has none.
+		if size == 0 && n > 1 || size > 0 && n > (len(c.b)-c.off)/size {
+			return nil, errMalformed
+		}
+		d.bitmaps[i] = make([][]byte, n)
 		for j := range d.bitmaps[i] {
-			d.bitmaps[i][j] = c.take((len(l.blocks) + 7) / 8)
+			d.bitmaps[i][j] = c.take(size)
 		}
 	}
-	d.profiles = make([]decodedProfile, c.count())
+	// A profile takes at least 3 bytes: its kind, the length of its name and its file count.
+	n := c.count()
+	if n > (len(c.b)-c.off)/3 {
+		return nil, errMalformed
+	}
+	d.profiles = make([]decodedProfile, n)
 	for i := range d.profiles {
+		if c.err != nil {
+			return nil, c.err
+		}
 		p := decodedProfile{kind: c.u8(), name: string(str())}
 		n, l := c.count(), 0
 		for range n {
