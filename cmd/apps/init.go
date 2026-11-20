@@ -1914,10 +1914,10 @@ func runCreate(ctx context.Context, opts createOptions) (runErr error) {
 	// Recommend skills installation if coding agents are detected without skills.
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
-		if !agents.HasDatabricksToolingInstalled(ctx) {
+		if !agents.HasDatabricksToolingInstalled(ctx, installer.InstalledPluginAgents) {
 			agents.PrintSkillsTip(ctx)
 		}
-	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
+	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstalledPluginAgents, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
 	}
 

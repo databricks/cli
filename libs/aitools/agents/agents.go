@@ -2,16 +2,30 @@ package agents
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/env"
+)
+
+// The words that the agent CLIs' MCP commands share. The user-scope commands name the user scope, since the default
+// scope of each of them is another one.
+const (
+	cliMCP        = "mcp"
+	cliAdd        = "add"
+	cliRemove     = "remove"
+	cliScopeFlag  = "--scope"
+	cliUserScope  = "user"
+	cliEndOfFlags = "--"
 )
 
 // PluginSpec describes the databricks plugin for an agent. A non-nil
@@ -63,6 +77,12 @@ type Agent struct {
 	// MCP describes where the agent keeps user-scope MCP server entries, or nil
 	// when this CLI does not write them (Pi, Goose, Kiro).
 	MCP *mcpconfig.Spec
+	// mcpHomeEnvs names the variables that move the MCP config file to another directory: CODEX_HOME for Codex
+	// (https://learn.chatgpt.com/docs/config-file/config-advanced), COPILOT_HOME for Copilot CLI
+	// (https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference),
+	// CLAUDE_CONFIG_DIR for Claude Code, GEMINI_CLI_HOME for Gemini CLI, and XDG_CONFIG_HOME for OpenCode. Empty when
+	// the file lives at a fixed path.
+	mcpHomeEnvs []string
 	// pluginInstalls reads the databricks plugin's install records from the
 	// agent's own plugin manifest. Each agent's manifest format differs, so it is
 	// set per agent (only for formats we have verified); when nil,
@@ -92,6 +112,69 @@ func (a *Agent) Detected(ctx context.Context) bool {
 	}
 	skillsDir, err := a.SkillsDir(ctx)
 	return err == nil && HasDatabricksSkillsIn(skillsDir)
+}
+
+// mcpHomeDefaults gives the directory that each variable in mcpHomeEnvs points to when it is unset, relative to the home
+// directory, as the agent's own path code resolves it. GEMINI_CLI_HOME's default is the home directory itself, since
+// geminiConfigDir appends .gemini to it. None of these path codes expands a leading "~", so the value is compared as it is.
+var mcpHomeDefaults = map[string]string{
+	claudeHomeEnv:     ".claude",
+	codexHomeEnv:      ".codex",
+	copilotHomeEnv:    ".copilot",
+	geminiHomeEnv:     "",
+	"XDG_CONFIG_HOME": ".config",
+}
+
+// mcpHomeMoved reports whether one of the variables in mcpHomeEnvs is set to a directory other than its default. A
+// variable set to its default leaves the MCP config where it is when unset, so the agent is detected as it is then.
+func (a *Agent) mcpHomeMoved(ctx context.Context) (bool, error) {
+	for _, name := range a.mcpHomeEnvs {
+		value := env.Get(ctx, name)
+		if value == "" {
+			continue
+		}
+		home, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return false, err
+		}
+		if filepath.Clean(value) != filepath.Join(home, mcpHomeDefaults[name]) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// InstalledForMCP reports whether the agent is installed for MCP servers. When one of mcpHomeEnvs is set to a directory
+// other than its default, the directory the MCP config file lives in is the only signal: the agent's own directory may
+// exist while that directory does not, and writing the MCP config would create it. That signal is the MandatoryFile
+// there, as Detected reads it, when the agent has one. Otherwise Detected, HasBinary, or the MCP config file counts.
+func (a *Agent) InstalledForMCP(ctx context.Context) (bool, error) {
+	moved, err := a.mcpHomeMoved(ctx)
+	if err != nil {
+		return false, err
+	}
+	if moved {
+		path, err := a.MCP.Path(ctx)
+		if err != nil {
+			return false, err
+		}
+		target := filepath.Dir(path)
+		if a.MandatoryFile != "" {
+			target = filepath.Join(target, a.MandatoryFile)
+		}
+		return linkExists(target)
+	}
+	if a.Detected(ctx) || a.HasBinary(ctx) {
+		return true, nil
+	}
+	if a.MCP == nil {
+		return false, nil
+	}
+	path, err := a.MCP.Path(ctx)
+	if err != nil {
+		return false, err
+	}
+	return linkExists(path)
 }
 
 // SkillsDir returns the full path to the agent's skills directory.
@@ -152,6 +235,9 @@ const (
 	// localServerType is the "type" of a local stdio server in Copilot and
 	// OpenCode. Claude Code writes "stdio" instead.
 	localServerType = "local"
+	// codexHomeEnv and copilotHomeEnv move the MCP config files of Codex and Copilot CLI.
+	codexHomeEnv   = "CODEX_HOME"
+	copilotHomeEnv = "COPILOT_HOME"
 )
 
 // Databricks plugin identity, shared across the agents that ship a plugin.
@@ -200,12 +286,16 @@ var Registry = []*Agent{
 		Plugin:               claudePlugin(),
 		pluginInstalls:       claudePluginInstalls,
 		MCP: &mcpconfig.Spec{
-			Path:   claudeMCPPath,
-			Format: mcpconfig.FormatJSON,
-			Root:   mcpServersKey,
-			Entry:  claudeMCPEntry,
-			Lock:   true,
+			Path:       claudeMCPPath,
+			Format:     mcpconfig.FormatJSON,
+			Root:       mcpServersKey,
+			Entry:      claudeMCPEntry,
+			Lock:       true,
+			AddArgs:    claudeMCPAddArgs,
+			RemoveArgs: claudeMCPRemoveArgs,
+			HomeEnv:    claudeHomeEnv,
 		},
+		mcpHomeEnvs: []string{claudeHomeEnv},
 	},
 	{
 		Name:        NameCursor,
@@ -237,6 +327,7 @@ var Registry = []*Agent{
 			Root:   "mcp_servers",
 			Entry:  stdioEntry,
 		},
+		mcpHomeEnvs: []string{codexHomeEnv},
 	},
 	{
 		Name:        NameOpenCode,
@@ -255,6 +346,7 @@ var Registry = []*Agent{
 			// https://opencode.ai/docs/migrate-v1/.
 			Legacy: true,
 		},
+		mcpHomeEnvs: []string{"XDG_CONFIG_HOME"},
 	},
 	{
 		Name:        NameCopilot,
@@ -263,11 +355,15 @@ var Registry = []*Agent{
 		Binary:      "copilot",
 		Plugin:      databricksPlugin(),
 		MCP: &mcpconfig.Spec{
-			Path:   copilotMCPPath,
-			Format: mcpconfig.FormatJSON,
-			Root:   mcpServersKey,
-			Entry:  copilotMCPEntry,
+			Path:       copilotMCPPath,
+			Format:     mcpconfig.FormatJSON,
+			Root:       mcpServersKey,
+			Entry:      copilotMCPEntry,
+			AddArgs:    copilotMCPAddArgs,
+			RemoveArgs: mcpRemoveArgs,
+			HomeEnv:    copilotHomeEnv,
 		},
+		mcpHomeEnvs: []string{copilotHomeEnv},
 	},
 	{
 		Name:         NameAntigravity,
@@ -305,11 +401,15 @@ var Registry = []*Agent{
 		// and installation_id is not reliable, so detection uses this Gemini-only file.
 		MandatoryFile: "projects.json",
 		MCP: &mcpconfig.Spec{
-			Path:   geminiMCPPath,
-			Format: mcpconfig.FormatJSON,
-			Root:   mcpServersKey,
-			Entry:  stdioEntry,
+			Path:       geminiMCPPath,
+			Format:     mcpconfig.FormatJSON,
+			Root:       mcpServersKey,
+			Entry:      stdioEntry,
+			AddArgs:    geminiMCPAddArgs,
+			RemoveArgs: geminiMCPRemoveArgs,
+			HomeEnv:    geminiHomeEnv,
 		},
+		mcpHomeEnvs: []string{geminiHomeEnv},
 	},
 	{
 		Name:                 NameGoose,
@@ -339,7 +439,7 @@ var Registry = []*Agent{
 // claudeConfigDir follows Claude Code's configuration directory override.
 // See https://code.claude.com/docs/en/env-vars for CLAUDE_CONFIG_DIR.
 func claudeConfigDir(ctx context.Context) (string, error) {
-	if dir := env.Get(ctx, "CLAUDE_CONFIG_DIR"); dir != "" {
+	if dir := env.Get(ctx, claudeHomeEnv); dir != "" {
 		return dir, nil
 	}
 	return homeSubdir(".claude")(ctx)
@@ -375,7 +475,7 @@ func piConfigDir(ctx context.Context) (string, error) {
 // reads them under a relocated home (e.g. ucode).
 // https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/configuration.md
 func geminiConfigDir(ctx context.Context) (string, error) {
-	root := env.Get(ctx, "GEMINI_CLI_HOME")
+	root := env.Get(ctx, geminiHomeEnv)
 	if root == "" {
 		home, err := env.UserHomeDir(ctx)
 		if err != nil {
@@ -463,7 +563,7 @@ func claudeMCPPath(ctx context.Context) (string, error) {
 // claudeGlobalConfig returns Claude Code's global config file: .claude.json in
 // CLAUDE_CONFIG_DIR when that is set, and in the home directory otherwise.
 func claudeGlobalConfig(ctx context.Context) (string, error) {
-	if dir := env.Get(ctx, "CLAUDE_CONFIG_DIR"); dir != "" {
+	if dir := env.Get(ctx, claudeHomeEnv); dir != "" {
 		return filepath.Join(dir, ".claude.json"), nil
 	}
 	return homeSubdir(".claude.json")(ctx)
@@ -499,10 +599,82 @@ func claudeMCPEntry(cmd string, args []string, vars map[string]string) map[strin
 	return map[string]any{"type": "stdio", "command": cmd, "args": args, "env": vars}
 }
 
+// claudeMCPAddArgs passes the entry as JSON to `claude mcp add-json`, so the entry Claude writes is the one
+// claudeMCPEntry builds. The command is described at https://code.claude.com/docs/en/mcp.
+func claudeMCPAddArgs(name, cmd string, args []string, vars map[string]string) []string {
+	// Cannot fail: the entry holds only strings and maps of strings.
+	raw, _ := json.Marshal(claudeMCPEntry(cmd, args, vars))
+	return []string{cliMCP, "add-json", cliScopeFlag, cliUserScope, name, string(raw)}
+}
+
+// claudeMCPRemoveArgs removes the server from the user scope, which the remove command does not default to.
+func claudeMCPRemoveArgs(name string) []string {
+	return []string{cliMCP, cliRemove, cliScopeFlag, cliUserScope, name}
+}
+
+// copilotMCPAddArgs follows `copilot mcp add <name> --tools * --env K=V -- <command> <args>`, the form in Copilot CLI's
+// documentation at https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers. The docs
+// name no scope flag. The config directory is COPILOT_HOME when it is set, as
+// https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference describes; copilotMCPPath
+// resolves the same, and the read-back after the add checks the file. The docs also make * the default; the flag names it,
+// so the tools of the entry do not depend on that default.
+func copilotMCPAddArgs(name, cmd string, args []string, vars map[string]string) []string {
+	return envFlagAddArgs(name, cmd, args, vars, "--tools", "*")
+}
+
+// mcpRemoveArgs removes server name from the user config, which is where Copilot CLI keeps the servers that the remove
+// command reads by default.
+func mcpRemoveArgs(name string) []string {
+	return []string{cliMCP, cliRemove, name}
+}
+
+// envFlagAddArgs is the `mcp add` argv of Copilot CLI: the name, then flags, one --env flag per
+// variable, then -- and the command line.
+func envFlagAddArgs(name, cmd string, args []string, vars map[string]string, flags ...string) []string {
+	argv := append([]string{cliMCP, cliAdd, name}, flags...)
+	for _, key := range slices.Sorted(maps.Keys(vars)) {
+		argv = append(argv, "--env", key+"="+vars[key])
+	}
+	argv = append(argv, cliEndOfFlags, cmd)
+	return append(argv, args...)
+}
+
+// geminiMCPAddArgs follows `gemini mcp add --scope user -e K=V <name> <command> -- <args>`, as the gemini-cli source
+// at https://github.com/google-gemini/gemini-cli/blob/main/packages/cli/src/commands/mcp/add.ts parses it, and the
+// command is described at https://geminicli.com/docs/tools/mcp-server/. Gemini adds to the project scope unless told
+// otherwise. The -- ends its option parsing, so an argument of the server that Gemini also knows, such as --help,
+// reaches the server. Its -e splits a value at every '=' and keeps two parts, so a value with '=' is refused: the argv
+// is nil, and the direct writer makes the change.
+func geminiMCPAddArgs(name, cmd string, args []string, vars map[string]string) []string {
+	argv := []string{cliMCP, cliAdd, cliScopeFlag, cliUserScope}
+	for _, key := range slices.Sorted(maps.Keys(vars)) {
+		if strings.Contains(vars[key], "=") {
+			return nil
+		}
+		argv = append(argv, "-e", key+"="+vars[key])
+	}
+	argv = append(argv, name, cmd, cliEndOfFlags)
+	return append(argv, args...)
+}
+
+// geminiMCPRemoveArgs removes the server from the user scope, because removing from the project scope is the default.
+func geminiMCPRemoveArgs(name string) []string {
+	return []string{cliMCP, cliRemove, cliScopeFlag, cliUserScope, name}
+}
+
+// The variables that move the Claude and Gemini config directories, outside ConfigDir. Codex and Copilot CLI keep their
+// MCP config files under the directories of codexHomeEnv and copilotHomeEnv above. See
+// https://learn.chatgpt.com/docs/config-file/config-advanced and
+// https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference.
+const (
+	claudeHomeEnv = "CLAUDE_CONFIG_DIR"
+	geminiHomeEnv = "GEMINI_CLI_HOME"
+)
+
 // codexMCPPath returns Codex's config.toml, which honors CODEX_HOME.
 // See https://learn.chatgpt.com/docs/config-file/config-advanced.
 func codexMCPPath(ctx context.Context) (string, error) {
-	if home := env.Get(ctx, "CODEX_HOME"); home != "" {
+	if home := env.Get(ctx, codexHomeEnv); home != "" {
 		return filepath.Join(home, "config.toml"), nil
 	}
 	return homeSubdir(".codex", "config.toml")(ctx)
@@ -569,7 +741,7 @@ func openCodeMCPEntry(cmd string, args []string, vars map[string]string) map[str
 // copilotMCPPath returns Copilot CLI's user config. COPILOT_HOME replaces ~/.copilot.
 // See https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference.
 func copilotMCPPath(ctx context.Context) (string, error) {
-	if home := env.Get(ctx, "COPILOT_HOME"); home != "" {
+	if home := env.Get(ctx, copilotHomeEnv); home != "" {
 		return filepath.Join(home, "mcp-config.json"), nil
 	}
 	return homeSubdir(".copilot", "mcp-config.json")(ctx)

@@ -162,7 +162,7 @@ func TestSubmitRun(t *testing.T) {
 				assert.EqualValues(t, 0, task["max_retries"])
 				airTask := task["ai_runtime_task"].(map[string]any)
 				// priority_class rides directly on the ai_runtime_task, next to
-				// provisioned_capacity_id on the deployment compute.
+				// accelerator_pool_id on the deployment compute.
 				if tc.priorityClass == "" {
 					assert.NotContains(t, airTask, "priority_class")
 				} else {
@@ -178,9 +178,9 @@ func TestSubmitRun(t *testing.T) {
 				deployment := deployments[0].(map[string]any)
 				compute := deployment["compute"].(map[string]any)
 				if tc.poolID == "" {
-					assert.NotContains(t, compute, "provisioned_capacity_id")
+					assert.NotContains(t, compute, "accelerator_pool_id")
 				} else {
-					assert.Equal(t, tc.poolID, compute["provisioned_capacity_id"])
+					assert.Equal(t, tc.poolID, compute["accelerator_pool_id"])
 				}
 				return jobs.SubmitRunResponse{RunId: 42}
 			})

@@ -8,8 +8,10 @@ import (
 	"io"
 	"time"
 
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -71,7 +73,11 @@ func dockerTokenProfile(ctx context.Context, input io.Reader) (profile.Profile, 
 	if err != nil {
 		return profile.Profile{}, err
 	}
-	return dockercredentials.ProfileForRegistry(ctx, profile.DefaultProfiler, registry)
+	recorded, err := databrickscfg.GetDockerProfile(ctx, registry.Host, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+	if err != nil {
+		return profile.Profile{}, err
+	}
+	return dockercredentials.ProfileForRegistry(ctx, profile.DefaultProfiler, registry, recorded)
 }
 
 func validateDockerTokenRequest(cmd *cobra.Command, args []string) error {

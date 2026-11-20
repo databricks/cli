@@ -172,7 +172,7 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 	status := projectRunStatus(run)
 
 	if req.nodeSet {
-		if numNodes, err := resolveNodeCount(run); err == nil {
+		if numNodes, err := nodeCountForRetry(run, req.attempt); err == nil {
 			if err := validateNodeIndex(req.node, numNodes); err != nil {
 				return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 			}

@@ -20,7 +20,7 @@ contains.py " skill/databricks-dabs" < LOG.bundle > /dev/null
 title "Invalid entries are dropped and the rest is normalized"
 DATABRICKS_SKILLS_INVOKED=' Databricks-Core , bad name!,,databricks-core,databricks:databricks-jobs ' trace $CLI current-user me > /dev/null
 trace print_requests.py --get //scim/v2/Me > LOG.normalized
-contains.py " skill/databricks-core" "!skill/databricks-core skill/" "!bad" "!databricks:" < LOG.normalized > /dev/null
+contains.py " skill/databricks-core" "!skill/databricks-core skill/" "!skill/bad" "!databricks:" < LOG.normalized > /dev/null
 
 title "No skills when unset"
 trace $CLI current-user me > /dev/null

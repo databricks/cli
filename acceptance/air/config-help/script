@@ -14,7 +14,7 @@ trace $CLI air run -h config.compute
 
 title "new submission fields are documented"
 trace $CLI air run -h config.mlflow_artifact_location
-trace $CLI air run -h config.compute.pool_id
+trace $CLI air run -h config.compute.accelerator_pool_id
 trace $CLI air run -h config.compute.priority_class
 trace $CLI air run -h config.environment.dependencies
 trace $CLI air run -h config.environment.version
@@ -39,3 +39,6 @@ trace $CLI air run -h config.compute.acclerator_type
 
 title "free-form map keys are not schema fields"
 trace $CLI air run -h config.parameters.learning_rate
+
+title "removed pool field is not in the schema"
+trace $CLI air run -h config.compute.pool_id

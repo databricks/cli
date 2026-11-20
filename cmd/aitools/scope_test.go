@@ -620,3 +620,18 @@ func TestResolveScopeForUpdateProjectFlagHintsUpdate(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "with --scope=global to update those")
 }
+
+// TestDetectInstalledScopesIgnoresMCPOnlyState checks that MCP records alone do not make a scope
+// installed.
+func TestDetectInstalledScopesIgnoresMCPOnlyState(t *testing.T) {
+	globalDir, projectDir := setupScopeTest(t)
+	require.NoError(t, installer.SaveMCPState(globalDir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}))
+
+	hasGlobal, hasProject, err := detectInstalledScopes(globalDir, projectDir)
+	require.NoError(t, err)
+	assert.False(t, hasGlobal)
+	assert.False(t, hasProject)
+
+	_, err = withExplicitScopeCheck(globalDir, installer.ScopeGlobal, "update", projectDir, false, false)
+	assert.Error(t, err)
+}

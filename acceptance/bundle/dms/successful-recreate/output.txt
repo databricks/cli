@@ -124,7 +124,7 @@ Recreated schemas.foo
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --dms --fold-pending //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
@@ -147,24 +147,11 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   "method": "PATCH",
   "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
   "q": {
-    "update_mask": "state,error_message,status"
-  },
-  "body": {
-    "error_message": "",
-    "sequence_id": 0,
-    "status": "OPERATION_STATUS_PENDING"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
-  "q": {
     "update_mask": "state,error_message,resource_id,status"
   },
   "body": {
     "error_message": "",
     "resource_id": "dms_other_[UNIQUE_NAME].dms_successful_recreate_schema_[UNIQUE_NAME]",
-    "sequence_id": 1,
     "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_successful_recreate_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][2]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }

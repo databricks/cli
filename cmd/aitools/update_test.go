@@ -616,3 +616,21 @@ func TestUpdateWithoutStateKeepsTheInstallGuidance(t *testing.T) {
 	err := cmd.Execute()
 	require.ErrorIs(t, err, installer.ErrNothingInstalled)
 }
+
+// TestUpdateMCPOnlyStateReachesSkillsUpdate checks that a state file holding only MCP records still
+// runs the skills update, which reports that nothing is installed.
+func TestUpdateMCPOnlyStateReachesSkillsUpdate(t *testing.T) {
+	home := setupTestAgents(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	calls := setupUpdateMock(t)
+
+	globalDir := filepath.Join(home, ".databricks", "aitools", "skills")
+	require.NoError(t, installer.SaveMCPState(globalDir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}))
+
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	cmd := NewUpdateCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--scope", "global", "--check"})
+	require.NoError(t, cmd.Execute())
+	assert.Len(t, *calls, 1)
+}

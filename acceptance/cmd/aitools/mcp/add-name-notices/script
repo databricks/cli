@@ -1,0 +1,19 @@
+# Isolate HOME so the agent config files and the state file land in this test directory.
+sethome home
+envsubst < .databrickscfg > out && mv out .databrickscfg
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+
+# The services of system.ai, created in the fake workspace.
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=genie_one_mcp" --profile dogfood --json '{"comment": "Ask questions about your data"}' &> LOG.create-genie_one_mcp-dogfood
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.1/unity-catalog/mcp-services?parent=schemas/system.ai&mcp_service_id=dbsql" --profile dogfood --json '{"comment": "Query your SQL warehouses"}' &> LOG.create-dbsql-dogfood
+
+# home/.cursor/mcp.json holds the user's own Cursor servers. Their names are the ones the CLI would generate or use.
+
+title "A generated name that an entry this CLI did not write holds gets a suffix, and the output says who holds the base name"
+trace $CLI aitools mcp add --profile dogfood --names genie_one_mcp --agents cursor
+
+title "--force replaces the user's own entry, and the output says so"
+trace $CLI aitools mcp add --profile dogfood --names dbsql --name user-server --agents cursor --force
+
+title "The user's entry that was not replaced is intact"
+trace jq '.mcpServers["genie_one_mcp-dogfood"]' home/.cursor/mcp.json

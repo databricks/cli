@@ -380,3 +380,105 @@ func TestListSelfUserFilterUsesIndex(t *testing.T) {
 	assert.Contains(t, stdout.String(), `"run_id": "7"`)
 	assert.Empty(t, warnings.String())
 }
+
+func TestIndexStrategyKeepsARunsRowsTogether(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	// Run 7's two AI Runtime tasks start before and after run 8. Sorting rows
+	// would split run 7 around run 8; sorting runs keeps its rows together, and
+	// --limit counts it once.
+	multi := indexRun(7, 3000_000)
+	train, eval := multi.Tasks[0], multi.Tasks[0]
+	train.TaskKey, train.RunId, train.StartTime = "train", 70, 1000_000
+	eval.TaskKey, eval.RunId, eval.StartTime = "eval", 71, 3000_000
+	multi.Tasks = []jobs.RunTask{train, eval}
+	refs := []workflowRef{{jobRunID: 7, submitTimeMs: 1000_000}, {jobRunID: 8, submitTimeMs: 2000_000}}
+	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.Run{7: multi, 8: indexRun(8, 2000_000)}, nil, nil)
+
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{currentUser: selfUser, limit: 10})
+	runs, err := f.nextRuns(10)
+	require.NoError(t, err)
+	got := make([][]string, len(runs))
+	for i, run := range runs {
+		for _, r := range run {
+			got[i] = append(got[i], r.RunID+"/"+r.taskKey())
+		}
+	}
+	assert.Equal(t, [][]string{{"8/"}, {"7/train", "7/eval"}}, got)
+}
+
+func TestIndexStrategyKeepsIndexOrderForARunWithNoStartedTask(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	// Run 9, the newest submission, failed in prep, so its AI Runtime task was
+	// skipped and has no start time. It must still list first, both on the first
+	// fetch and once it is served from the cache.
+	skipped := indexRun(9, 0)
+	skipped.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed}
+	train := skipped.Tasks[0]
+	train.TaskKey, train.RunId, train.StartTime, train.EndTime = "train", 91, 0, 0
+	train.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateSkipped, ResultState: jobs.RunResultStateUpstreamFailed}
+	prep := notebookTask("prep", 90)
+	prep.StartTime, prep.EndTime = 3000_000, 3001_000
+	prep.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed}
+	skipped.Tasks = []jobs.RunTask{prep, train}
+	refs := []workflowRef{{jobRunID: 8, submitTimeMs: 2000_000}, {jobRunID: 9, submitTimeMs: 3000_000}}
+	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.Run{9: skipped, 8: indexRun(8, 2000_000)}, nil, nil)
+
+	for _, pass := range []string{"fresh", "cached"} {
+		f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{currentUser: selfUser, limit: 10})
+		rows, err := f.next(10)
+		require.NoError(t, err)
+		ids := make([]string, len(rows))
+		for i, r := range rows {
+			ids[i] = r.RunID
+		}
+		assert.Equal(t, []string{"9", "8"}, ids, pass)
+		assert.Nil(t, rows[0].StartedAt, "%s: the skipped task reports no start", pass)
+	}
+}
+
+// indexOrder fetches one page through the index path and returns its run IDs.
+func indexOrder(t *testing.T, url string) []string {
+	t.Helper()
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, url), listQuery{currentUser: selfUser, limit: 10})
+	rows, err := f.next(10)
+	require.NoError(t, err)
+	ids := make([]string, len(rows))
+	for i, r := range rows {
+		ids[i] = r.RunID
+	}
+	return ids
+}
+
+func TestIndexStrategyListsANewActiveRunAboveCachedOlderOnes(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	// Runs 8 and 9 are terminal, so the first fetch caches them; run 10 is still
+	// running, so it is fetched every time. Cache hits are collected before the
+	// fetched runs, and the batch must still come back newest submission first.
+	active := indexRun(10, 4000_000)
+	active.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}
+	active.Tasks[0].EndTime = 0
+	refs := []workflowRef{{jobRunID: 8, submitTimeMs: 2000_000}, {jobRunID: 9, submitTimeMs: 3000_000}, {jobRunID: 10, submitTimeMs: 4000_000}}
+	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.Run{8: indexRun(8, 2000_000), 9: indexRun(9, 3000_000), 10: active}, nil, nil)
+
+	assert.Equal(t, []string{"10", "9", "8"}, indexOrder(t, srv.URL), "fresh")
+	assert.Equal(t, []string{"10", "9", "8"}, indexOrder(t, srv.URL), "8 and 9 from the cache")
+}
+
+func TestIndexStrategyListsARetriedRunBySubmission(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	// Run 7 was submitted before run 8 but its retry started after run 8. The
+	// index pages runs by submission time, so a batch keeps that order rather
+	// than moving run 7 up by its latest attempt's start.
+	retried := indexRun(7, 1000_000)
+	second := retried.Tasks[0]
+	second.RunId, second.AttemptNumber, second.StartTime, second.EndTime = 71, 1, 5000_000, 5001_000
+	retried.Tasks = append(retried.Tasks, second)
+	refs := []workflowRef{{jobRunID: 7, submitTimeMs: 1000_000}, {jobRunID: 8, submitTimeMs: 2000_000}}
+	srv, _ := indexAndGetServer(t, refs, map[int64]jobs.Run{7: retried, 8: indexRun(8, 2000_000)}, nil, nil)
+
+	assert.Equal(t, []string{"8", "7"}, indexOrder(t, srv.URL))
+}

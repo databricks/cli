@@ -65,10 +65,14 @@ host         = [DATABRICKS_URL]
 auth_type    = databricks-cli
 workspace_id = [WORKSPACE_ID]
 
+[__settings__]
+docker_profile.[WORKSPACE_ID].container.us-west-2.localhost = docker-test
+
 >>> databricks auth docker host --profile docker-test --output json
 {
   "host": "[WORKSPACE_ID].container.us-west-2.localhost",
-  "configured": true
+  "configured": true,
+  "profile": "docker-test"
 }
 
 >>> print_requests.py --get //api
@@ -154,3 +158,86 @@ Warning: ensure [TEST_TMP_DIR]/home/bin is on PATH before any other docker-crede
   "method": "GET",
   "path": "/api/2.1/unity-catalog/metastore_summary"
 }
+
+=== Profiles sharing the workspace
+
+>>> databricks auth docker configure shared
+Warning: Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost switched from profile docker-test to shared
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+
+>>> databricks auth docker host --profile docker-test
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
+Credential helper configured: NO
+Credential helper profile: shared
+
+>>> databricks auth docker host --profile shared
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
+Credential helper configured: YES
+Credential helper profile: shared
+
+>>> databricks auth docker configure docker-test
+Warning: Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost switched from profile shared to docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+
+>>> print_requests.py --get --oneline //api
+{"headers": {"X-Databricks-Workspace-Id": ["[WORKSPACE_ID]"]}, "method": "GET", "path": "/api/2.1/unity-catalog/metastore_summary"}
+{"headers": {"X-Databricks-Workspace-Id": ["[WORKSPACE_ID]"]}, "method": "GET", "path": "/api/2.1/unity-catalog/metastore_summary"}
+{"headers": {"X-Databricks-Workspace-Id": ["[WORKSPACE_ID]"]}, "method": "GET", "path": "/api/2.1/unity-catalog/metastore_summary"}
+{"headers": {"X-Databricks-Workspace-Id": ["[WORKSPACE_ID]"]}, "method": "GET", "path": "/api/2.1/unity-catalog/metastore_summary"}
+
+>>> cat [TEST_TMP_DIR]/home/.databrickscfg
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[docker-test]
+host         = [DATABRICKS_URL]
+auth_type    = databricks-cli
+workspace_id = [WORKSPACE_ID]
+
+[__settings__]
+docker_profile.[WORKSPACE_ID].container.us-west-2.localhost = docker-test
+
+[shared]
+host         = [DATABRICKS_URL]
+auth_type    = databricks-cli
+workspace_id = [WORKSPACE_ID]
+
+>>> docker-credential-databricks get
+{
+  "Secret": "oauth-token",
+  "Username": "oauthtoken"
+}
+
+=== Deleting the recorded profile clears its Docker selection
+
+>>> databricks auth logout --profile docker-test --delete --auto-approve
+Logged out of and deleted profile "docker-test".
+
+>>> cat [TEST_TMP_DIR]/home/.databrickscfg
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[__settings__]
+
+[shared]
+host         = [DATABRICKS_URL]
+auth_type    = databricks-cli
+workspace_id = [WORKSPACE_ID]
+
+>>> databricks auth docker host --profile shared
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
+Credential helper configured: YES
+Credential helper profile: shared
+
+=== Recorded profile that no longer exists
+
+>>> databricks auth docker host --profile shared
+Registry host: [WORKSPACE_ID].container.us-west-2.localhost
+Credential helper configured: NO
+
+>>> musterr docker-credential-databricks get
+Error: profile "gone" selected for Docker registry [WORKSPACE_ID].container.us-west-2.localhost is missing or no longer targets workspace ID [WORKSPACE_ID]. Select the profile for Docker with: databricks auth docker configure <profile-name>

@@ -14,6 +14,11 @@ import (
 // of those servers.
 const MCPServicesPathPrefix = "/ai-gateway/mcp-services/"
 
+// ConfigFileEnv is the environment variable that selects the Databricks config file. An agent
+// entry pins its value when this CLI sees it set, and the MCP binding reads the same variable.
+// A write that does not pin it removes it; other variables are the user's.
+const ConfigFileEnv = "DATABRICKS_CONFIG_FILE"
+
 // Format is the on-disk format of an agent's MCP config file.
 type Format int
 
@@ -42,6 +47,18 @@ type Spec struct {
 	// under the table that Root sits in, beside the key Root names. Writers
 	// refuse such a config.
 	Legacy bool
+	// AddArgs returns the arguments, without the program, of the agent CLI command that adds server name at user
+	// scope as the entry Entry(cmd, args, env) builds. The first two arguments are the subcommand words, such as "mcp"
+	// and "add-json". Nil when the agent has no non-interactive add. It returns nil too when the CLI cannot take these
+	// arguments, and the direct writer makes the change instead.
+	AddArgs func(name, cmd string, args []string, env map[string]string) []string
+	// RemoveArgs returns the arguments, without the program, of the agent CLI command that removes server name from
+	// user scope. Nil when the agent has no non-interactive remove. The first two arguments are the subcommand words,
+	// as for AddArgs.
+	RemoveArgs func(name string) []string
+	// HomeEnv is the variable that moves the agent's config directory, such as CODEX_HOME, or "" when none does. The
+	// CLI runs with it set to the cleaned absolute form of its value, or with it unset when the value is empty.
+	HomeEnv string
 }
 
 // Argv returns the command line of a stdio entry as argv[0] and its arguments.
@@ -79,6 +96,37 @@ func Argv(entry map[string]any) ([]string, bool) {
 	}
 }
 
+// ServeCommand is the argv that starts an MCP server, after the binary: `aitools mcp serve`. Entries carry it, and
+// IsDatabricksEntry recognizes it, so both sides share this definition.
+var ServeCommand = []string{"aitools", "mcp", "serve"}
+
+// ServeArgs returns the arguments that `aitools mcp serve` takes for the server service on profile, run for agent: the
+// flags that name the binding of an entry.
+func ServeArgs(profile, service, agent string) []string {
+	return append(slices.Clone(ServeCommand), ProfileFlag, profile, ServiceFlag, service, AgentFlag, agent)
+}
+
+// The flags that `aitools mcp serve` takes, which an entry carries to name its binding.
+const (
+	ServiceFlag = "--service"
+	ProfileFlag = "--profile"
+	AgentFlag   = "--agent"
+)
+
+// EnvKeys are the entry keys that hold environment variables: env for most agents, and environment for OpenCode.
+var EnvKeys = []string{"env", "environment"}
+
+// EntryEnv returns the environment variables of an entry, under the first of EnvKeys that holds an object. It returns
+// nil when the entry has none.
+func EntryEnv(entry map[string]any) map[string]any {
+	for _, key := range EnvKeys {
+		if vars, ok := entry[key].(map[string]any); ok {
+			return vars
+		}
+	}
+	return nil
+}
+
 // IsDatabricksEntry reports whether entry runs `databricks aitools mcp serve`,
 // which is how we recognize entries we wrote.
 func IsDatabricksEntry(entry map[string]any) bool {
@@ -88,7 +136,7 @@ func IsDatabricksEntry(entry map[string]any) bool {
 	}
 	args := argv[1:]
 	return IsDatabricksBinary(argv[0]) &&
-		len(args) >= 3 && args[0] == "aitools" && args[1] == "mcp" && args[2] == "serve"
+		len(args) >= len(ServeCommand) && slices.Equal(args[:len(ServeCommand)], ServeCommand)
 }
 
 // IsDatabricksBinary reports whether cmd names the databricks binary, as a bare

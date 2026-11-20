@@ -1,7 +1,8 @@
 // Package agentconfig reads and writes the user-scope MCP server entries of
-// coding agents. A write changes only the bytes of the one entry it is asked to
-// change, writes the file back atomically, and keeps comments and layout
-// elsewhere in the file.
+// coding agents. The direct writer changes only the bytes of the one entry it is
+// asked to change, writes the file back atomically, and keeps comments and layout
+// elsewhere in the file. An add or remove that the agent's own CLI makes (see
+// cli.go) leaves the file in the layout that the CLI writes.
 package agentconfig
 
 import (
@@ -36,7 +37,7 @@ const (
 
 var (
 	// ErrNotOwned means an entry with the name exists and was not written by
-	// this CLI. Upsert needs force to replace it, and Remove never deletes it.
+	// this CLI. Upsert needs force to replace it, and RemoveAt never deletes it.
 	ErrNotOwned = errors.New("entry was not written by databricks")
 	// ErrConfigInvalid means an agent config file exists but cannot be parsed.
 	// Such a file is never written to.
@@ -67,20 +68,11 @@ type document interface {
 // builder writes only some of them (see ownedKeys).
 var launchKeys = []string{"command", "args", "env", "environment", "type"}
 
-// envKeys are the entry keys that hold environment variables: env, and
-// environment in OpenCode.
-var envKeys = []string{"env", "environment"}
-
-// pinnedEnv is the environment variable that this CLI pins into an entry when it
-// is set in the caller's environment. A write that does not pin it removes it from
-// the entry. Other variables are the user's, and are kept.
-const pinnedEnv = "DATABRICKS_CONFIG_FILE"
-
 // ownedKeys returns the launch keys that the agent's builder writes. Upsert
 // updates these keys and keeps every other key of the entry. The probe passes a
 // variable, since a builder writes its env key only when it has variables.
 func ownedKeys(spec *mcpconfig.Spec) []string {
-	probe := spec.Entry("", nil, map[string]string{pinnedEnv: ""})
+	probe := spec.Entry("", nil, map[string]string{mcpconfig.ConfigFileEnv: ""})
 	var keys []string
 	for _, key := range launchKeys {
 		if _, ok := probe[key]; ok {
@@ -91,19 +83,21 @@ func ownedKeys(spec *mcpconfig.Spec) []string {
 }
 
 // Upsert writes a stdio server name for agent a, which runs cmd with args and
-// env. The only variable env may set is pinnedEnv, since other variables are the
+// env. The only variable env may set is mcpconfig.ConfigFileEnv, since other variables are the
 // user's and no later write could remove them. An entry this CLI wrote gets its
 // launch keys updated, and its other keys are kept. A foreign entry is replaced
 // only when force is set. The file is left alone when the entry already matches.
-// cmd must be the databricks binary, or the entry could never be recognized as
-// ours. It returns the config file path.
+// A new entry goes through the agent's own CLI when that CLI is on PATH (see
+// addViaCLI), and the file then has the CLI's layout. cmd must be the databricks
+// binary, or the entry could never be recognized as ours. It returns the config
+// file path.
 func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []string, env map[string]string, force bool) (string, Status, error) {
 	if err := checkName(name); err != nil {
 		return "", "", err
 	}
 	for _, k := range slices.Sorted(maps.Keys(env)) {
-		if k != pinnedEnv {
-			return "", "", fmt.Errorf("server %q: env may only set %s, got %q", name, pinnedEnv, k)
+		if k != mcpconfig.ConfigFileEnv {
+			return "", "", fmt.Errorf("server %q: env may only set %s, got %q", name, mcpconfig.ConfigFileEnv, k)
 		}
 	}
 	spec, err := specOf(a)
@@ -121,17 +115,12 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if !mcpconfig.IsDatabricksEntry(ours) {
 		return "", "", fmt.Errorf("server %q: args must start with aitools mcp serve", name)
 	}
-	path, err := spec.Path(ctx)
+	path, err := configPath(ctx, spec)
 	if err != nil {
 		return "", "", err
 	}
-	if spec.Lock {
-		release, err := lockConfig(path)
-		if err != nil {
-			return path, "", err
-		}
-		defer release()
-	}
+	// A new entry goes through the agent's own CLI, which takes the agent's own lock on the file, so this check runs, and
+	// the CLI is started, without that lock. The direct writer below takes it, and reads the file again under it.
 	doc, err := load(spec, path)
 	if err != nil {
 		return path, "", err
@@ -139,10 +128,45 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 	if err := checkLegacy(path, spec, doc); err != nil {
 		return path, "", err
 	}
+	if _, found, err := doc.entry(rootPath(spec), name); err != nil {
+		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	} else if !found {
+		// The agent's CLI writes the file itself, so a read-only file is refused before it runs too.
+		if err := checkWritable(path); err != nil {
+			return path, "", err
+		}
+		done, cliErr := addViaCLI(ctx, a, spec, path, name, cmd, args, env, ours)
+		if cliErr != nil {
+			return path, "", cliErr
+		}
+		if done {
+			return path, StatusAdded, nil
+		}
+	}
+	status, err := upsertDirect(spec, path, name, want, ours, force)
+	return path, status, err
+}
+
+// upsertDirect writes server name in the config file at path with the direct writer, under the agent's lock (see
+// lockFor): it adds want when there is no entry, replaces an entry this CLI did not write only when force is set, and
+// otherwise updates the launch keys of this CLI's entry to ours.
+func upsertDirect(spec *mcpconfig.Spec, path, name string, want, ours map[string]any, force bool) (Status, error) {
+	release, err := lockFor(spec, path)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+	doc, err := load(spec, path)
+	if err != nil {
+		return "", err
+	}
+	if err := checkLegacy(path, spec, doc); err != nil {
+		return "", err
+	}
 	root := rootPath(spec)
 	current, found, err := doc.entry(root, name)
 	if err != nil {
-		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+		return "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 
 	keys := ownedKeys(spec)
@@ -152,41 +176,54 @@ func Upsert(ctx context.Context, a *agents.Agent, name, cmd string, args []strin
 		status = StatusAdded
 		err = doc.put(root, name, want, nil)
 	case !mcpconfig.IsDatabricksEntry(current) && !force:
-		return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
+		return "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
 	case !mcpconfig.IsDatabricksEntry(current):
 		status = StatusUpdated
 		err = doc.put(root, name, want, nil)
 	default:
-		merged, mergeErr := keepUserKeys(current, ours, keys)
+		merged, changed, mergeErr := mergeLaunch(spec, current, ours)
 		if mergeErr != nil {
-			return path, "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, mergeErr)
+			return "", fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, mergeErr)
 		}
-		same, cmpErr := sameEntry(launchKeysOf(current, keys), launchKeysOf(merged, keys))
-		if cmpErr != nil {
-			return path, "", cmpErr
-		}
-		if same {
-			return path, StatusUnchanged, nil
+		if !changed {
+			return StatusUnchanged, nil
 		}
 		status = StatusUpdated
 		err = doc.put(root, name, merged, keys)
 	}
 	if err != nil {
-		return path, "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+		return "", fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
 	}
 	if err := checkWritable(path); err != nil {
-		return path, "", err
+		return "", err
 	}
 	if err := save(path, doc); err != nil {
-		return path, "", err
+		return "", err
 	}
-	return path, status, nil
+	return status, nil
 }
 
-// Remove deletes server name from agent a's config. It reports false, without
-// writing, when there is no such entry, and refuses an entry this CLI did not
-// write.
-func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
+// Changed reports whether current, an entry this CLI owns for agent a, differs from what Upsert writes now for a server
+// that runs cmd with args and env. Only the launch keys are compared, as Upsert compares them.
+func Changed(a *agents.Agent, current map[string]any, cmd string, args []string, env map[string]string) (bool, error) {
+	spec, err := specOf(a)
+	if err != nil {
+		return false, err
+	}
+	ours, err := normalize(spec.Entry(cmd, args, env))
+	if err != nil {
+		return false, err
+	}
+	_, changed, err := mergeLaunch(spec, current, ours)
+	return changed, err
+}
+
+// RemoveAt deletes server name from the config file at path, and refuses an entry this CLI did not write. It reports
+// false, without writing, when there is no such entry. The file need not be the one the spec names now: a record names
+// the file an entry was written to, and the agent's config may have moved since. A missing file has no entry. The
+// removal runs through the agent's own CLI when that CLI is on PATH and path is the file it reads now (see removeViaCLI);
+// otherwise, or when the CLI leaves the entry behind, the direct writer removes it.
+func RemoveAt(ctx context.Context, a *agents.Agent, path, name string) (bool, error) {
 	if err := checkName(name); err != nil {
 		return false, err
 	}
@@ -194,17 +231,57 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	path, err := spec.Path(ctx)
+	if spec.RemoveArgs == nil {
+		return removeDirect(a, spec, path, name)
+	}
+	current, found, err := entryAt(spec, path, name)
 	if err != nil {
 		return false, err
 	}
-	if spec.Lock {
-		release, err := lockConfig(path)
-		if err != nil {
-			return false, err
-		}
-		defer release()
+	if !found {
+		return false, nil
 	}
+	if !mcpconfig.IsDatabricksEntry(current) {
+		return false, fmt.Errorf("%s: server %q: %w", filepath.ToSlash(path), name, ErrNotOwned)
+	}
+	if err := checkWritable(path); err != nil {
+		return false, err
+	}
+	removed, err := removeViaCLI(ctx, a, spec, path, name)
+	if err != nil || removed {
+		return removed, err
+	}
+	return removeDirect(a, spec, path, name)
+}
+
+// putDirect writes entry as server name in the config file at path with the direct writer, under the agent's lock (see
+// lockFor). It reads the file again, since the agent's CLI may have changed it. Unlike removeDirect, it does not check who wrote the entry: it is used for
+// an entry that this run's CLI wrote.
+func putDirect(spec *mcpconfig.Spec, path, name string, entry map[string]any) error {
+	release, err := lockFor(spec, path)
+	if err != nil {
+		return err
+	}
+	defer release()
+	doc, err := load(spec, path)
+	if err != nil {
+		return err
+	}
+	if err := doc.put(rootPath(spec), name, entry, nil); err != nil {
+		return fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+	}
+	return save(path, doc)
+}
+
+// removeDirect deletes server name from the config file at path, with the direct writer, under the agent's lock (see
+// lockFor). It reads the file again, since the agent's CLI may have changed it, and it refuses an entry this CLI did not
+// write.
+func removeDirect(a *agents.Agent, spec *mcpconfig.Spec, path, name string) (bool, error) {
+	release, err := lockFor(spec, path)
+	if err != nil {
+		return false, err
+	}
+	defer release()
 	doc, err := load(spec, path)
 	if err != nil {
 		return false, err
@@ -235,14 +312,11 @@ func Remove(ctx context.Context, a *agents.Agent, name string) (bool, error) {
 	return true, nil
 }
 
-// Read returns every server entry in agent a's config, keyed by name. A missing
-// file has no entries.
-func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, error) {
+// ReadAt returns every server entry in the config file at path, keyed by name. A missing file has no entries. The file
+// need not be the one the spec names now: a record names the file an entry was written to, and the agent's config may
+// have moved since.
+func ReadAt(a *agents.Agent, path string) (map[string]map[string]any, error) {
 	spec, err := specOf(a)
-	if err != nil {
-		return nil, err
-	}
-	path, err := spec.Path(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +331,27 @@ func Read(ctx context.Context, a *agents.Agent) (map[string]map[string]any, erro
 	return entries, nil
 }
 
-// checkName refuses a name that no agent would accept. Upsert and Remove both
+// Path returns the absolute path of agent a's MCP config file, where Upsert writes. It does not read the file.
+func Path(ctx context.Context, a *agents.Agent) (string, error) {
+	spec, err := specOf(a)
+	if err != nil {
+		return "", err
+	}
+	return configPath(ctx, spec)
+}
+
+// configPath returns the absolute path of the config file of spec. A config dir set to a relative path is made absolute
+// here, not when the path is used, so that a record of the path works from any directory. The path is not cleaned, as
+// mcpconfig.AbsoluteAsWritten keeps it, so that a ".." after a symlink still resolves through the link.
+func configPath(ctx context.Context, spec *mcpconfig.Spec) (string, error) {
+	path, err := spec.Path(ctx)
+	if err != nil {
+		return "", err
+	}
+	return mcpconfig.AbsoluteAsWritten(path)
+}
+
+// checkName refuses a name that no agent would accept. Upsert and RemoveAt both
 // check it, so a name that cannot be written is never looked up either.
 func checkName(name string) error {
 	if !mcpconfig.ValidServerName(name) {
@@ -324,6 +418,16 @@ const (
 // the first attempt rather than failing it. A live holder keeps the lock for a
 // few milliseconds, since Claude Code only rereads and rewrites the file under it.
 var lockTimeout = 15 * time.Second
+
+// lockFor takes the lock on the config file at path when the agent of spec locks its config (see mcpconfig.Spec.Lock),
+// and returns the function that releases it. It takes no lock otherwise. Only the direct writer takes it: the agent's own
+// CLI takes the agent's lock itself, so the lock is never held while that CLI runs.
+func lockFor(spec *mcpconfig.Spec, path string) (func(), error) {
+	if !spec.Lock {
+		return func() {}, nil
+	}
+	return lockConfig(path)
+}
 
 // lockConfig takes the lock on the config file at path and returns the function
 // that releases it. The lock is held for a few milliseconds at most, so it is
@@ -461,7 +565,7 @@ func save(path string, doc document) error {
 	case err == nil:
 		target = resolved
 	case errors.Is(err, fs.ErrNotExist):
-		if info, lerr := os.Lstat(path); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
+		if isSymlink(path) {
 			return fmt.Errorf("%s is a symlink to a file that does not exist: %w", filepath.ToSlash(path), err)
 		}
 	default:
@@ -497,6 +601,21 @@ func launchKeysOf(entry map[string]any, keys []string) map[string]any {
 	return out
 }
 
+// mergeLaunch returns current with the launch keys of want written over it, and whether that changes the launch keys of
+// current. The other keys of current are kept, so they are not compared.
+func mergeLaunch(spec *mcpconfig.Spec, current, want map[string]any) (map[string]any, bool, error) {
+	keys := ownedKeys(spec)
+	merged, err := keepUserKeys(current, want, keys)
+	if err != nil {
+		return nil, false, err
+	}
+	same, err := sameEntry(launchOf(current, keys), launchOf(merged, keys))
+	if err != nil {
+		return nil, false, err
+	}
+	return merged, !same, nil
+}
+
 // keepUserKeys returns current with the keys listed in keys set to those of want,
 // and every other key of current kept. A listed key that want lacks is removed.
 // The env tables are merged by mergeEnv.
@@ -504,7 +623,7 @@ func keepUserKeys(current, want map[string]any, keys []string) (map[string]any, 
 	out := maps.Clone(current)
 	for _, key := range keys {
 		value, ok := want[key]
-		if slices.Contains(envKeys, key) {
+		if slices.Contains(mcpconfig.EnvKeys, key) {
 			var err error
 			value, ok, err = mergeEnv(current[key], value, ok)
 			if err != nil {
@@ -521,8 +640,8 @@ func keepUserKeys(current, want map[string]any, keys []string) (map[string]any, 
 }
 
 // mergeEnv returns the env table after a write. It holds the variables of want,
-// and the variables of have other than pinnedEnv. It reports false when the table
-// is absent: want lacks it and no variable is left.
+// and the variables of have other than the pinned config file variable. It
+// reports false when the table is absent: want lacks it and no variable is left.
 func mergeEnv(have, want any, inWant bool) (any, bool, error) {
 	haveEnv, err := envTable(have)
 	if err != nil {
@@ -531,7 +650,7 @@ func mergeEnv(have, want any, inWant bool) (any, bool, error) {
 	wantEnv, _ := want.(map[string]any)
 	out := map[string]any{}
 	for k, v := range haveEnv {
-		if k != pinnedEnv {
+		if k != mcpconfig.ConfigFileEnv {
 			out[k] = v
 		}
 	}

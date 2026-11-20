@@ -328,7 +328,8 @@ func TestDisplayCancelPreview(t *testing.T) {
 		{RunID: "111", Experiment: "exp-a", StartedAt: &started},
 		{RunID: "222"}, // no experiment or start time -> N/A
 	}
-	displayCancelPreview(ctx, rows, "https://my-workspace.cloud.databricks.test")
+	taskKeys := map[string][]string{"111": {"train", "eval"}}
+	displayCancelPreview(ctx, rows, taskKeys, "https://my-workspace.cloud.databricks.test")
 
 	out := buf.String()
 	assert.Contains(t, out, "Workspace: https://my-workspace.cloud.databricks.test")
@@ -336,6 +337,44 @@ func TestDisplayCancelPreview(t *testing.T) {
 	assert.Contains(t, out, "Run ID")
 	assert.Contains(t, out, "111")
 	assert.Contains(t, out, "exp-a")
+	assert.Contains(t, out, "AI Runtime tasks")
+	assert.Contains(t, out, "train, eval")
 	assert.Contains(t, out, "222")
 	assert.Contains(t, out, na)
+}
+
+func TestCancelAllCancelsAMultiTaskRunOnce(t *testing.T) {
+	// Run 111 has two AI Runtime tasks after a notebook, so air list shows it as
+	// two rows; cancel --all must cancel it once and name both tasks.
+	multi := airBaseRun(111, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a")
+	multi.Tasks = []jobs.RunTask{
+		notebookTask("prep", 1110),
+		aiRuntimeTask("train", 1111, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 1112, "/Users/me@example.com/exp-b", "GPU_1xA10", 1),
+	}
+	single := airBaseRun(222, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-c")
+	list := runsListBody(t, "", multi, single)
+	var cancelled []int64
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/list":
+			_, _ = w.Write([]byte(list))
+		case "/api/2.2/jobs/runs/cancel":
+			var req jobs.CancelRun
+			assert.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+			cancelled = append(cancelled, req.RunId)
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	require.NoError(t, runCancelAll(t, newTestWorkspaceClient(t, srv.URL), flags.OutputText, strings.NewReader("y\n"), &buf))
+	out := buf.String()
+	assert.Contains(t, out, "Found 2 active run(s) to cancel:")
+	assert.Contains(t, out, "train, eval")
+	assert.Contains(t, out, "Cancel 2 run(s)")
+	assert.ElementsMatch(t, []int64{111, 222}, cancelled, "each run is cancelled exactly once")
 }

@@ -75,10 +75,24 @@ func (f *fakeBackend) Delete(service, account string) error {
 	return nil
 }
 
+// testTimeout bounds calls that fakeBackend answers at once. It is long
+// because a loaded CI runner (seen on Windows) can take over 100ms to
+// run the withTimeout goroutine, which failed tests with a spurious
+// TimeoutError. Tests whose backend blocks forever use blockedTimeout
+// so they still finish quickly.
+const (
+	testTimeout    = time.Minute
+	blockedTimeout = 100 * time.Millisecond
+)
+
 func newTestStore(backend keyringBackend) *keyringStore {
+	return newTestStoreWithTimeout(backend, testTimeout)
+}
+
+func newTestStoreWithTimeout(backend keyringBackend, timeout time.Duration) *keyringStore {
 	return &keyringStore{
 		backend:        backend,
-		timeout:        100 * time.Millisecond,
+		timeout:        timeout,
 		keyringSvcName: "databricks-cli",
 	}
 }
@@ -221,7 +235,7 @@ func TestKeyringStore_StoreNil_PropagatesOtherDeleteErrors(t *testing.T) {
 func TestKeyringStore_Store_TimesOut(t *testing.T) {
 	backend := newFakeBackend()
 	backend.setBlock = true
-	c := newTestStore(backend) // 100ms timeout from newTestStore
+	c := newTestStoreWithTimeout(backend, blockedTimeout)
 
 	start := time.Now()
 	err := c.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "x"}})
@@ -235,7 +249,7 @@ func TestKeyringStore_Store_TimesOut(t *testing.T) {
 func TestKeyringStore_Lookup_TimesOut(t *testing.T) {
 	backend := newFakeBackend()
 	backend.getBlock = true
-	c := newTestStore(backend)
+	c := newTestStoreWithTimeout(backend, blockedTimeout)
 
 	_, err := c.Lookup("my-profile")
 	require.Error(t, err)
@@ -247,7 +261,7 @@ func TestKeyringStore_Lookup_TimesOut(t *testing.T) {
 func TestKeyringStore_StoreNil_TimesOut(t *testing.T) {
 	backend := newFakeBackend()
 	backend.deleteBlock = true
-	c := newTestStore(backend)
+	c := newTestStoreWithTimeout(backend, blockedTimeout)
 
 	err := c.Delete("my-profile")
 	require.Error(t, err)
@@ -269,24 +283,24 @@ func TestProbeKeyring(t *testing.T) {
 	}{
 		{
 			name:    "success leaves no entry",
-			timeout: 100 * time.Millisecond,
+			timeout: testTimeout,
 		},
 		{
 			name:    "set error propagates",
 			setErr:  boom,
-			timeout: 100 * time.Millisecond,
+			timeout: testTimeout,
 			wantErr: boom,
 		},
 		{
 			name:        "set times out",
 			setBlock:    true,
-			timeout:     50 * time.Millisecond,
+			timeout:     blockedTimeout,
 			wantTimeout: true,
 		},
 		{
 			name:      "delete error propagates",
 			deleteErr: boom,
-			timeout:   100 * time.Millisecond,
+			timeout:   testTimeout,
 			wantErr:   boom,
 		},
 	}
@@ -332,18 +346,18 @@ func TestProbeKeyringRead(t *testing.T) {
 			// which means it is reachable.
 			name:    "ErrNotFound counts as reachable",
 			getErr:  keyring.ErrNotFound,
-			timeout: 100 * time.Millisecond,
+			timeout: testTimeout,
 		},
 		{
 			name:    "other backend error propagates",
 			getErr:  boom,
-			timeout: 100 * time.Millisecond,
+			timeout: testTimeout,
 			wantErr: boom,
 		},
 		{
 			name:        "get times out",
 			getBlock:    true,
-			timeout:     50 * time.Millisecond,
+			timeout:     blockedTimeout,
 			wantTimeout: true,
 		},
 	}
