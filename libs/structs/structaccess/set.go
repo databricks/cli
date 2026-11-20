@@ -70,9 +70,15 @@ func setValueAtNode(parentVal reflect.Value, node *structpath.PathNode, value an
 	// Dereference parent if it's a pointer
 	for parentVal.Kind() == reflect.Pointer {
 		if parentVal.IsNil() {
-			return errors.New("parent is nil pointer")
+			return nilParentError(node)
 		}
 		parentVal = parentVal.Elem()
+	}
+
+	// getValue returns an invalid value for a nil parent omitted via json omitempty.
+	// Writing into a nil map would panic.
+	if !parentVal.IsValid() || ((parentVal.Kind() == reflect.Map || parentVal.Kind() == reflect.Slice) && parentVal.IsNil()) {
+		return nilParentError(node)
 	}
 
 	valueVal := reflect.ValueOf(value)
@@ -99,6 +105,11 @@ func setValueAtNode(parentVal reflect.Value, node *structpath.PathNode, value an
 	}
 
 	return errors.New("unsupported path node type")
+}
+
+// nilParentError reports that the parent of node is nil. Missing parents are not allocated.
+func nilParentError(node *structpath.PathNode) error {
+	return fmt.Errorf("cannot set %s: parent %s is nil", node.String(), node.Parent().String())
 }
 
 // setArrayElement sets an element in an array or slice
