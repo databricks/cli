@@ -1,0 +1,2 @@
+# The include list keeps the include section of an included file, which is not loaded.
+trace $CLI bundle validate -o json | jq .include

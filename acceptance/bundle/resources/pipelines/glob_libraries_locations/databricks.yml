@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    p:
+      name: p
+      libraries:
+        - notebook:
+            path: ./nbs/*.py
+          maven:
+            repo: https://repo.example.test

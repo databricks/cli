@@ -1,0 +1,3 @@
+variables:
+  from_c:
+    default: loaded
