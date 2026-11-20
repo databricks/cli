@@ -1,0 +1,23 @@
+version: 1.1
+
+source: main.sales.orders
+dimensions:
+  - name: month
+    expr: MONTH(o_orderdate)
+    display_name: "Order Month"
+    synonyms: ["order_month", "month_of_order"]
+    format:
+      type: date
+      date_format: locale_short_month
+measures:
+  - name: total_revenue
+    expr: SUM(o_totalprice)
+    display_name: "Total Revenue"
+    synonyms: ["revenue", "total_sales"]
+    format:
+      type: currency
+      currency_code: USD
+      decimal_places:
+        type: exact
+        places: 2
+      abbreviation: compact

@@ -1,0 +1,11 @@
+version: 1.1
+
+source: main.sales.orders
+dimensions:
+  - name: month
+    expr: MONTH(o_orderdate)
+    display_name: "Order Month"
+measures:
+  - name: count_orders
+    expr: COUNT(*)
+    display_name: "Total Orders"

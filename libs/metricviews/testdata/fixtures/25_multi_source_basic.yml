@@ -1,0 +1,22 @@
+version: "1.1"
+view_type: "MULTI_SOURCE"
+sources:
+  - name: orders
+    from: main.sales.orders
+    primary_key:
+      - o_orderkey
+  - name: lineitem
+    from: main.sales.lineitem
+    relationships:
+      - ref: orders
+        foreign_key:
+          - l_orderkey
+dimensions:
+  - name: order_year
+    expr: YEAR(orders.o_orderdate)
+measures:
+  - name: total_quantity
+    expr: SUM(lineitem.l_quantity)
+  - name: order_count
+    expr: COUNT(DISTINCT orders.o_orderkey)
+comment: "Multi-source metric view joining orders and lineitem"

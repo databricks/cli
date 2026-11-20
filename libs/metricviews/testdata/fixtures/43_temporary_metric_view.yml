@@ -1,0 +1,5 @@
+version: 1.0
+source: SELECT 'Hello World!'
+dimensions:
+  - name: dummy_field
+    expr: 1

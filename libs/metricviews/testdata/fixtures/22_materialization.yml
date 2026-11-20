@@ -1,0 +1,22 @@
+version: 1.1
+
+source: main.sales.orders
+filter: region = 'WEST'
+dimensions:
+  - name: month
+    expr: MONTH(o_orderdate)
+measures:
+  - name: count_orders
+    expr: COUNT(*)
+materialization:
+  schedule: EVERY 1 HOUR
+  mode: fresh
+  materialized_views:
+    - name: baseline
+      type: unaggregated
+    - name: revenue_breakdown
+      type: aggregated
+      dimensions:
+        - month
+      measures:
+        - count_orders
