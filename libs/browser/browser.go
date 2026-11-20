@@ -31,17 +31,24 @@ import (
 // Callers that want to override the "none" message should branch on IsDisabled
 // before calling Open.
 func Open(ctx context.Context, url string) error {
-	return openURL(ctx, url, false)
+	return openURL(ctx, url, false, false)
 }
 
 // OpenOutputToStderr is Open for a caller whose stdout is a document, such as `--output json`. The output of the
 // browser command goes to stderr, as its error output does. The other behaviors are Open's.
 func OpenOutputToStderr(ctx context.Context, url string) error {
-	return openURL(ctx, url, true)
+	return openURL(ctx, url, true, false)
 }
 
-// openURL implements Open and OpenOutputToStderr. stdoutToStderr sends the output of the browser to stderr.
-func openURL(ctx context.Context, url string, stdoutToStderr bool) error {
+// OpenOutputToStderrWithoutStdin is OpenOutputToStderr for a caller whose stdin is a protocol stream, such as the stdin of
+// an MCP server. A browser command gets no stdin, so it cannot read that stream. The other behaviors are OpenOutputToStderr's.
+func OpenOutputToStderrWithoutStdin(ctx context.Context, url string) error {
+	return openURL(ctx, url, true, true)
+}
+
+// openURL implements the exported openers. stdoutToStderr sends the output of the browser to stderr, and noStdin gives a
+// browser command no stdin. The default opener has no stdin to give up.
+func openURL(ctx context.Context, url string, stdoutToStderr, noStdin bool) error {
 	browserCmd := env.Get(ctx, "BROWSER")
 	switch browserCmd {
 	case "":
@@ -50,7 +57,7 @@ func openURL(ctx context.Context, url string, stdoutToStderr bool) error {
 		cmdio.LogString(ctx, "Open this URL in your browser:\n"+url)
 		return nil
 	default:
-		return openWithCommand(ctx, browserCmd, url, stdoutToStderr)
+		return openWithCommand(ctx, browserCmd, url, stdoutToStderr, noStdin)
 	}
 }
 
@@ -98,8 +105,8 @@ func openDefault(url string, stdoutToStderr bool) error {
 }
 
 // openWithCommand runs browserCmd with url as its argument, through libs/exec, and waits for it to exit. Its output goes
-// to stdout, or to stderr when stdoutToStderr is set.
-func openWithCommand(ctx context.Context, browserCmd, url string, stdoutToStderr bool) error {
+// to stdout, or to stderr when stdoutToStderr is set. It reads no stdin when noStdin is set.
+func openWithCommand(ctx context.Context, browserCmd, url string, stdoutToStderr, noStdin bool) error {
 	e, err := exec.NewCommandExecutor(".")
 	if err != nil {
 		return err
@@ -108,6 +115,9 @@ func openWithCommand(ctx context.Context, browserCmd, url string, stdoutToStderr
 		e.WithInheritOutputToStderr()
 	} else {
 		e.WithInheritOutput()
+	}
+	if noStdin {
+		e.WithoutStdin()
 	}
 	cmd, err := e.StartCommand(ctx, fmt.Sprintf("%q %q", browserCmd, url))
 	if err != nil {

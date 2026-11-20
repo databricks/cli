@@ -25,7 +25,7 @@ Package and deploy:
   images          Push container images for custom environments
 
 Provisioned capacity:
-  pools           View provisioned GPU pools, if any (not required to run)
+  pools           View provisioned GPU Pools, if any (not required to run)
 
 Flags:
   -h, --help[=true|false]   help for air
@@ -77,7 +77,7 @@ Flags:
       --all-users[=true|false]    Show runs from all users
       --filter stringArray        Filter runs by KEY=VALUE (repeatable)
   -h, --help[=true|false]         help for list
-      --limit int                 Maximum number of runs to show (default 20)
+      --limit int                 Maximum number of runs to show; a run with several AI Runtime tasks shows one row per task (default 20)
 
 Global Flags:
       --debug[=true|false]   enable debug logging
@@ -92,12 +92,20 @@ Show a run's status, configuration, and timing.
 
 JOB_RUN_ID is the job run ID returned by "databricks air run".
 
+A job may run other tasks around its AI Runtime task (for example a notebook
+that prepares data first); the view shows the first AI Runtime task in task
+order. When a job has several AI Runtime tasks, pass --task-key to show another
+one. The status is that task's own, except that a task whose latest attempt
+failed shows RUNNING while another task of the run is still active, since it
+may yet be retried.
+
 Usage:
   databricks air get JOB_RUN_ID [flags]
 
 Flags:
   -h, --help[=true|false]             help for get
       --include-config[=true|false]   Include stored config in JSON (downloads over 1 MiB are omitted; may contain plaintext env_variables and parameters)
+      --task-key string               Show this AI Runtime task of the run (default: the first in task order)
 
 Global Flags:
       --debug[=true|false]   enable debug logging
@@ -108,19 +116,19 @@ Global Flags:
 === pools help
 
 >>> [CLI] air pools --help
-View GPU pools provisioned for your workspace.
+View GPU Pools provisioned for your workspace.
 
-A GPU pool is dedicated accelerator capacity that your Databricks account team
+A GPU Pool is dedicated accelerator capacity that your Databricks account team
 provisions. Pools are optional: a run uses one only when its YAML sets
-compute.pool_id.
+compute.accelerator_pool_id.
 
 Usage:
   databricks air pools [flags]
   databricks air pools [command]
 
 Available Commands:
-  get         Show a GPU pool and its accelerator usage
-  list        List the GPU pools available to the current workspace
+  get         Show a GPU Pool and its accelerator usage
+  list        List the GPU Pools available to the current workspace
 
 Flags:
   -h, --help[=true|false]   help for pools
@@ -229,6 +237,9 @@ Global Flags:
 >>> [CLI] air cancel --help
 Cancel one or more runs by job run ID, or use --all to cancel
 all active runs submitted by the current user.
+
+Cancelling a run stops all of its tasks: every AI Runtime task in the job, and
+any other task such as a notebook that prepares data.
 
 --all prompts for confirmation. Use --yes to skip the prompt.
 

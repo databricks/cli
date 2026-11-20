@@ -20,7 +20,7 @@ import (
 )
 
 // removeFlagsHint is the error for a run that names no servers. Tests check it too.
-const removeFlagsHint = "pass --names, --profile or --all; interactive selection is not available yet"
+const removeFlagsHint = "pass --names, --profile or --all so the command runs without interactive prompts"
 
 type mcpRemoveFlags struct {
 	names  string
@@ -86,7 +86,8 @@ Choose servers with --names (server names as listed by 'aitools mcp list', or se
 last part of a service name, such as github, is enough when only one schema has it), --profile
 (every server of one profile), or --all. --profile also narrows --names or --all to one profile, and
 --agents narrows any of them to some agents.
-Interactive selection is not available yet, so one of --names, --profile or --all is required.
+In a terminal, with none of --names, --profile or --all, the command shows the installed servers to
+choose from. Without a terminal, one of them is required.
 With --profile or --all and nothing installed to remove, the command succeeds and removes nothing.
 
 Only entries this CLI wrote are removed. An entry that this CLI did not write, and that is not a Databricks
@@ -145,7 +146,8 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	if cmd.Flags().Changed("agents") && len(agentNames) == 0 {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--agents names no agent; pass one or more of: %s", strings.Join(mcpAgentNames(), ", "))
 	}
-	if err := validateMCPRemoveFlags(f.all, names, profileName); err != nil {
+	interactive := !jsonMode && installPromptsSupported(ctx)
+	if err := validateMCPRemoveFlags(f.all, names, profileName, interactive); err != nil {
 		return err
 	}
 
@@ -163,12 +165,41 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	if err != nil {
 		return err
 	}
-	selected, err := selectInstalls(state, names, profileName)
-	if err != nil {
-		return withAdoptHint(ctx, err, state)
-	}
-	if err := checkTargetsInstalled(selected, targets); err != nil {
-		return err
+	var selected []mcp.Entry
+	if interactive && !f.all && len(names) == 0 && profileName == "" {
+		// An agent with no installed server is refused as it is without a terminal, before the picker offers nothing for it.
+		if err := checkTargetsInstalled(state.Servers, targets); err != nil {
+			return err
+		}
+		var offered bool
+		selected, offered, err = chooseRemovals(state, targets)
+		if err != nil {
+			return err
+		}
+		if offered && len(selected) == 0 {
+			cmdio.LogString(ctx, "No servers selected; nothing removed.")
+			return nil
+		}
+		if offered {
+			// The picker chose the servers, so the removal is confirmed, as add confirms its plan and uninstall its removal.
+			printRemovePlan(ctx, selected, targets)
+			proceed, err := promptMCPProceed()
+			if err != nil {
+				return err
+			}
+			if !proceed {
+				cmdio.LogString(ctx, cancelledMessage)
+				return nil
+			}
+		}
+	} else {
+		selected, err = selectInstalls(state, names, profileName)
+		if err != nil {
+			return withAdoptHint(ctx, err, state)
+		}
+		if err := checkTargetsInstalled(selected, targets); err != nil {
+			return err
+		}
 	}
 	if len(names) > 0 {
 		if err := checkNamedInstalled(selected, targets); err != nil {
@@ -263,11 +294,12 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 }
 
 // validateMCPRemoveFlags rejects a choice of servers that cannot run, before anything is read or written.
-func validateMCPRemoveFlags(all bool, names []string, profileName string) error {
+// Without a choice, a terminal run shows the picker; any other run needs one.
+func validateMCPRemoveFlags(all bool, names []string, profileName string, interactive bool) error {
 	if all && len(names) > 0 {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--all cannot be combined with --names")
 	}
-	if !all && len(names) == 0 && profileName == "" {
+	if !all && len(names) == 0 && profileName == "" && !interactive {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "%s", removeFlagsHint)
 	}
 	return nil
@@ -479,7 +511,7 @@ func removeFromAgent(ctx context.Context, files *agentFiles, e mcp.Entry, a *age
 		return plan, nil
 	}
 	for _, path := range plan.paths {
-		if _, err := agentconfig.RemoveAt(a, path, e.Name); err != nil {
+		if _, err := agentconfig.RemoveAt(ctx, a, path, e.Name); err != nil {
 			return agentRemoval{}, removeAgentError(err, a.Name, explicit)
 		}
 	}
@@ -634,6 +666,34 @@ func dropRecords(ctx context.Context, drops []recordDrop, selected []mcp.Entry) 
 		return touched[e.Name] && len(e.Agents) == 0
 	})
 	return saveMCPState(ctx, state)
+}
+
+// printRemovePlan lists what the picked servers are removed from, before the confirm of an interactive remove.
+func printRemovePlan(ctx context.Context, selected []mcp.Entry, targets []*agents.Agent) {
+	cmdio.LogString(ctx, "")
+	for _, line := range removePlanLines(selected, targets) {
+		cmdio.LogString(ctx, line)
+	}
+	cmdio.LogString(ctx, "")
+}
+
+// removePlanLines returns the plan of a remove: one line per agent, with the servers removed from it. Only the agents
+// named with --agents, when it is set, get a line.
+func removePlanLines(selected []mcp.Entry, targets []*agents.Agent) []string {
+	servers := map[string][]string{}
+	for _, e := range selected {
+		for name := range e.Agents {
+			if targets != nil && !slices.ContainsFunc(targets, func(a *agents.Agent) bool { return a.Name == name }) {
+				continue
+			}
+			servers[name] = append(servers[name], e.Name)
+		}
+	}
+	lines := []string{"Plan:"}
+	for _, name := range slices.Sorted(maps.Keys(servers)) {
+		lines = append(lines, fmt.Sprintf("  %-14s remove %s", agentDisplayName(name), strings.Join(servers[name], ", ")))
+	}
+	return lines
 }
 
 // printRemoveResults writes the text result: each removed server, then each skipped entry with its reason.

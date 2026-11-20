@@ -9,14 +9,14 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 )
 
-// signInPath is the page where a user signs in to a sign-in-required service.
-const signInPath = "/mcp-service-login"
-
 // ServiceURL returns the streamable-HTTP endpoint of an MCP service. host is the workspace
 // URL with its scheme, as config.Config.Host holds it.
 func ServiceURL(host, fullName string) string {
 	return host + mcpconfig.MCPServicesPathPrefix + url.PathEscape(fullName)
 }
+
+// SignInPath is the path of the page where a user signs in to a sign-in-required service, on the workspace host.
+const SignInPath = "/mcp-service-login"
 
 // SignInURL returns the page where a user signs in to a sign-in-required service. The page is
 // chosen by workspace ID, so an empty ID or profile.WorkspaceIDNone is an error. A numeric ID is
@@ -30,5 +30,5 @@ func SignInURL(host, fullName, workspaceID string) (string, error) {
 		key = "w"
 	}
 	query := url.Values{"name": {fullName}, key: {workspaceID}}
-	return host + signInPath + "?" + query.Encode(), nil
+	return host + SignInPath + "?" + query.Encode(), nil
 }

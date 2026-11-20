@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
@@ -30,14 +33,14 @@ const localCopyWarning = "plugin came from its local copy and may be out of date
 
 func stubAgentLookPath(t *testing.T, found bool) {
 	t.Helper()
-	orig := lookPath
-	lookPath = func(name string) (string, error) {
+	orig := agents.LookPath
+	agents.LookPath = func(name string) (string, error) {
 		if found {
 			return filepath.Join("/usr/bin", name), nil
 		}
 		return "", exec.ErrNotFound
 	}
-	t.Cleanup(func() { lookPath = orig })
+	t.Cleanup(func() { agents.LookPath = orig })
 }
 
 func pluginAgent(name, display, binary string) *agents.Agent {
@@ -950,9 +953,9 @@ func TestProbeWindowsShimPrintedHelp(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			origLook := lookPath
-			t.Cleanup(func() { lookPath = origLook })
-			lookPath = func(string) (string, error) { return tc.bin, nil }
+			origLook := agents.LookPath
+			t.Cleanup(func() { agents.LookPath = origLook })
+			agents.LookPath = func(string) (string, error) { return tc.bin, nil }
 
 			ctx, stub := process.WithStub(t.Context())
 			stub.WithCallback(func(*exec.Cmd) error { return nil })
@@ -990,4 +993,34 @@ func TestWindowsShimPrintedHelpRejectsTimeout(t *testing.T) {
 	assert.Same(t, perr, got)
 	_, ok = windowsShimPrintedHelp(bin, &agentCmdTimeoutError{timeout: time.Second, err: perr})
 	assert.False(t, ok)
+}
+
+// stderrCLIEnv tells TestStderrThenSleep to print and then block, so that the timeout test can run it as a child process.
+const stderrCLIEnv = "AGENTS_TEST_STDERR_SLEEP"
+
+// TestStderrOfKeepsStderrOnTimeout checks that a CLI killed by the timeout still reports what it printed: stderrOf
+// returns the captured stderr, which is what the installer shows.
+func TestStderrOfKeepsStderrOnTimeout(t *testing.T) {
+	ctx, cancel := context.WithTimeout(env.Set(t.Context(), stderrCLIEnv, "1"), 2*time.Second)
+	defer cancel()
+	argv := []string{os.Args[0], "-test.run=^TestStderrThenSleep$"}
+
+	_, err := process.Background(ctx, argv)
+	require.Error(t, err)
+	assert.Contains(t, stderrOf(err), "partial output")
+}
+
+// TestStderrThenSleep is the child process of TestStderrOfKeepsStderrOnTimeout. It prints, then blocks.
+func TestStderrThenSleep(t *testing.T) {
+	if os.Getenv(stderrCLIEnv) == "" {
+		t.Skip("runs only as the child process of TestStderrOfKeepsStderrOnTimeout")
+	}
+	fmt.Fprint(os.Stderr, "partial output")
+	time.Sleep(time.Minute)
+}
+
+func TestStderrOf(t *testing.T) {
+	failed := &process.ProcessError{Command: "claude", Err: exec.ErrNotFound, Stderr: " boom \n"}
+	assert.Equal(t, "boom", stderrOf(failed))
+	assert.Equal(t, exec.ErrNotFound.Error(), stderrOf(exec.ErrNotFound))
 }

@@ -205,8 +205,6 @@ func newService(svc *catalog.McpService) Service {
 		Comment:       svc.Comment,
 		OAuthProvider: provider,
 	}
-	if known, ok := knownSystemAI[leaf]; ok && inSystemAI(fullName) {
-		s.Known = &known
-	}
+	s.Known = KnownOf(fullName)
 	return s
 }

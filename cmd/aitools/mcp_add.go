@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
@@ -25,6 +27,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
 
@@ -46,6 +49,7 @@ type mcpAddFlags struct {
 	name     string
 	force    bool
 	login    bool
+	noLogin  bool
 }
 
 // addOutput is the `mcp add --output json` document.
@@ -92,15 +96,30 @@ type addAgentOutput struct {
 }
 
 // addPlan is one service to install for the profile. failed holds the agents that cannot take the server, with the
-// reason; they are not written. note explains the name when it got a suffix. replaced holds the agents whose entry
-// --force replaces.
+// reason; they are not written.
 type addPlan struct {
-	service  mcp.Service
-	name     string
-	failed   map[*agents.Agent]error
-	note     string
+	service mcp.Service
+	name    string
+	failed  map[*agents.Agent]error
+	// note explains the name when it got a suffix.
+	note string
+	// reasserted holds the agents whose config already has this server as the write would leave it.
+	reasserted map[*agents.Agent]bool
+	// updated holds the agents whose config has a Databricks entry for this server under its name that the write changes.
+	updated map[*agents.Agent]bool
+	// replaced holds the agents whose config has an entry under this name that this CLI did not write. Under --force
+	// the write replaces it.
 	replaced map[*agents.Agent]bool
 }
+
+// agentSource says where the agents of an add came from. It is shown in the header.
+type agentSource string
+
+const (
+	agentsNamed    agentSource = "named with --agents"
+	agentsDetected agentSource = "detected"
+	agentsPicked   agentSource = "selected"
+)
 
 // addRequest is what one `mcp add` run applies to every server.
 type addRequest struct {
@@ -110,7 +129,7 @@ type addRequest struct {
 	host        string
 	workspaceID string
 	agents      []*agents.Agent
-	explicit    bool
+	agentSource agentSource
 	force       bool
 	binary      string
 	// configFile is the resolved config file that the servers bind to.
@@ -119,11 +138,12 @@ type addRequest struct {
 	pinned string
 	// env is the entry env: DATABRICKS_CONFIG_FILE when it was set.
 	env map[string]string
-	// refused holds the agents named with --agents that are not installed, with the reason. Their
-	// config is not written.
+	// refused holds the agents that are not installed or whose config cannot be read, with the reason. Their config is not written.
 	refused map[*agents.Agent]error
 	// login signs in to the sign-in-required servers after they are installed.
 	login bool
+	// askLogin asks, per sign-in-required server, whether to sign in after it is installed.
+	askLogin bool
 }
 
 // slashPaths rewrites the agent config paths of the document to forward slashes, as the text output
@@ -148,10 +168,12 @@ Each server runs through 'databricks aitools mcp serve' with that profile's cred
 
 Services come from --names: full names such as system.ai.github, or leaf names such as github. Leaf names
 resolve in --location, which defaults to system.ai, or to the one schema that the full names in --names share when there are no leaf names.
-Agents come from --agents. Without it, every detected MCP-capable agent is used.
+Agents come from --agents.
 
-Interactive selection is not available yet: in a terminal, pass both --names and --agents.
-With --output json, both are required.
+In a terminal, the command asks for whatever is not given: the profile, the servers and the agents (detected
+agents are pre-checked). It confirms the plan when it asked for any of them, and it asks before each sign-in unless
+--login or --no-login is given. Without a terminal, --names is required and the agents default to every detected
+MCP-capable agent. With --output json, --names and --agents are required.
 
 Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 		Example: `  # Install GitHub and web search for Claude Code and Cursor, bound to the dogfood profile
@@ -188,22 +210,29 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 
 	cmd.Flags().StringVar(&f.names, "names", "", "Services to install: full names (system.ai.github) or leaf names (github), comma-separated")
 	cmd.Flags().StringVar(&f.location, "location", "", "Schema to resolve leaf names in, as <catalog>.<schema> (default: system.ai, or the one schema that the full names in --names share when there are no leaf names)")
-	cmd.Flags().StringVar(&f.agents, "agents", "", "Agents to install for, comma-separated (default: every detected MCP-capable agent)")
+	cmd.Flags().StringVar(&f.agents, "agents", "", "Agents to install for, comma-separated (default: a picker in a terminal; otherwise every detected MCP-capable agent)")
 	cmd.Flags().StringVar(&f.name, "name", "", "Server name to use instead of the generated one; only with exactly one service")
 	cmd.Flags().BoolVar(&f.force, "force", false, "Overwrite an existing server with the same name that this CLI did not write")
 	cmd.Flags().BoolVar(&f.login, "login", false, "Sign in to each sign-in-required server that was installed, after the installs")
+	cmd.Flags().BoolVar(&f.noLogin, "no-login", false, "Do not sign in; print the login commands for sign-in-required servers (default without a terminal; in a terminal, the default asks for each one)")
 	return cmd
 }
 
-// runMcpAdd installs the requested servers and fills out. Refusals that need no request come before the first one.
-// Named agents' failures are returned as agentErrors; detected agents only report theirs. A server that reaches no agent
-// fails the run.
+// runMcpAdd installs the requested servers and fills out. Every refusal that needs no request comes before
+// the first one: the flags, the agents named with --agents, the binary name, the binding of each service that a
+// recorded entry holds, and the server names. A server that no agent can take is refused the same way, unless a
+// detected or picked agent can take it. A failure of an agent named with --agents is returned as an agentErrors;
+// detected and picked agents only report theirs. A server that reaches no agent fails the run.
+//
+// Without --names, in a terminal, the services are picked from the workspace, so the workspace is read before the
+// plan. The services named with --names are planned first, and the workspace is read after that.
 func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode bool, out *addOutput) error {
 	names := splitAndTrim(f.names)
 	agentNames := splitAndTrim(f.agents)
 	if err := validateMCPAddFlags(ctx, f, names, agentNames, jsonMode); err != nil {
 		return err
 	}
+	interactive := !jsonMode && installPromptsSupported(ctx)
 	location, fullNames, err := resolveServices(f.location, names)
 	if err != nil {
 		return err
@@ -211,36 +240,41 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if f.name != "" && len(fullNames) != 1 {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--name needs exactly one service in --names")
 	}
-	targets, explicit, detectErrs, err := targetAgents(ctx, agentNames)
-	if err != nil {
-		return err
+	var named []*agents.Agent
+	if len(agentNames) > 0 {
+		if named, err = resolveMCPAgents(agentNames); err != nil {
+			return err
+		}
+	}
+	// Without a terminal the agents are chosen before the binary and the profile are checked, so that a run with no
+	// agent reports that first. A terminal chooses them once the profile is known.
+	var targets []*agents.Agent
+	var source agentSource
+	var detectErrs map[*agents.Agent]error
+	if !interactive {
+		if targets, source, detectErrs, err = chooseAgents(ctx, named, false); err != nil {
+			return err
+		}
 	}
 	binary, absolute := mcpBinaryPath()
 	if !mcpconfig.IsDatabricksBinary(binary) {
 		return failure(protos.AitoolsErrorCategoryUncategorized, "%s is not the databricks binary; coding agents start MCP servers with databricks or databricks.exe", filepath.ToSlash(binary))
 	}
-	held, unreadable := readAgentEntries(ctx, targets)
-	var refused map[*agents.Agent]error
-	if explicit {
-		refused = refusedAgents(ctx, targets)
+	// A named agent that is not installed, and a detected agent whose detection failed, are refused before any request.
+	// Nothing can be written when every agent is refused, so the refusals end the run. A terminal that picks its agents
+	// checks them once the pick is made.
+	refused := map[*agents.Agent]error{}
+	if len(named) > 0 {
+		refused = refusedAgents(ctx, named)
 	}
-	for a, err := range unreadable {
-		if refused == nil {
-			refused = map[*agents.Agent]error{}
-		}
-		refused[a] = err
+	maps.Copy(refused, detectErrs)
+	checked := targets
+	if len(named) > 0 {
+		checked = named
 	}
-	for a, err := range detectErrs {
-		if refused == nil {
-			refused = map[*agents.Agent]error{}
-		}
-		refused[a] = err
-	}
-	// Nothing can be written when every agent is refused, so the refusals end the run before any request. Detected
-	// agents are refused only for an unreadable config, and that ends the run the same way.
-	if len(refused) == len(targets) {
+	if len(checked) > 0 && len(refused) == len(checked) {
 		var errs []error
-		for _, a := range targets {
+		for _, a := range checked {
 			errs = append(errs, refused[a])
 		}
 		return withCategory(errors.Join(errs...), errorCategory(errs[0]))
@@ -253,7 +287,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		return err
 	}
 	ctx = env.Set(ctx, mcpconfig.ConfigFileEnv, configFile)
-	profileName, err := resolveProfile(ctx, profileFlag(cmd))
+	profileName, profilePicked, err := chooseProfile(ctx, profileFlag(cmd), interactive)
 	if err != nil {
 		return err
 	}
@@ -263,19 +297,62 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err != nil {
 		return err
 	}
-	for _, name := range fullNames {
-		if _, err := mcp.CheckBinding(ctx, state, name, profileName, configFile); err != nil {
+	// Until the services are known, nothing reaches the workspace. A run that picks its services checks the profile here,
+	// and the agents are chosen before the first request.
+	pickingServices := len(names) == 0
+	var w *databricks.WorkspaceClient
+	var workspaceID string
+	var picked []mcp.Service
+	if pickingServices {
+		if err := mcp.CheckProfile(profileName, configFile); err != nil {
 			return withExistingProfiles(ctx, state, profileName, err)
+		}
+	} else if err := checkBindings(ctx, state, fullNames, profileName, configFile); err != nil {
+		return withExistingProfiles(ctx, state, profileName, err)
+	}
+	if interactive {
+		if targets, source, _, err = chooseAgents(ctx, named, true); err != nil {
+			return err
+		}
+	}
+	held, unreadable := readAgentEntries(ctx, targets)
+	maps.Copy(refused, unreadable)
+	// Nothing can be written when every agent is refused, so the refusals end the run before any request.
+	if len(refused) == len(targets) {
+		var errs []error
+		for _, a := range targets {
+			errs = append(errs, refused[a])
+		}
+		return withCategory(errors.Join(errs...), errorCategory(errs[0]))
+	}
+	// Without --names the services are picked from the workspace, and then checked like the named ones.
+	if pickingServices {
+		w, workspaceID, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
+		if err != nil {
+			return err
+		}
+		if picked, err = chooseServices(ctx, w, addBinding{profile: profileName, configFile: configFile}, pinned, location, state); err != nil {
+			return err
+		}
+		if len(picked) == 0 {
+			cmdio.LogString(ctx, "No servers selected.")
+			return nil
+		}
+		fullNames = serviceFullNames(picked)
+		if err := checkBindings(ctx, state, fullNames, profileName, configFile); err != nil {
+			return err
 		}
 	}
 	in := planInput{
 		binding:  addBinding{profile: profileName, configFile: configFile},
 		nameFlag: f.name,
 		force:    f.force,
-		explicit: explicit,
+		explicit: source == agentsNamed,
 		targets:  targets,
 		held:     held,
 		refused:  refused,
+		binary:   binary,
+		env:      pinnedEnv(pinned),
 	}
 	plans, err := planAdds(ctx, in, state, fullNames)
 	if err != nil {
@@ -285,23 +362,18 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		return err
 	}
 
-	w, err := profileClient(ctx, profileName, configFile, pinned)
-	if err != nil {
-		return err
-	}
-	out.Host = w.Config.Host
-	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
-	if err != nil {
-		return describeRequestError(profileName, pinned, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
-	}
-
-	services, err := mcp.Discover(ctx, w, location)
-	if err != nil {
-		return describeRequestError(profileName, pinned, err)
-	}
-	picked, err := pickServices(location, fullNames, services)
-	if err != nil {
-		return err
+	if !pickingServices {
+		w, workspaceID, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
+		if err != nil {
+			return err
+		}
+		services, err := mcp.Discover(ctx, w, location)
+		if err != nil {
+			return describeRequestError(profileName, pinned, err)
+		}
+		if picked, err = pickServices(location, fullNames, services); err != nil {
+			return err
+		}
 	}
 	for i := range plans {
 		plans[i].service = picked[i]
@@ -313,22 +385,34 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		host:        w.Config.Host,
 		workspaceID: workspaceID,
 		agents:      targets,
-		explicit:    explicit,
+		agentSource: source,
 		force:       f.force,
 		binary:      binary,
 		configFile:  configFile,
 		pinned:      pinned,
 		refused:     refused,
 		login:       f.login,
-	}
-	if pinned != "" {
-		req.env = map[string]string{mcpconfig.ConfigFileEnv: pinned}
+		askLogin:    interactive && !f.login && !f.noLogin,
+		env:         pinnedEnv(pinned),
 	}
 	if !absolute && !jsonMode {
 		cmdio.LogString(ctx, "Note: databricks is not an absolute path; coding agents must find it on PATH to start the MCP servers.")
 	}
 
 	printAddHeader(ctx, req)
+	// A run that names everything asks no question, except the sign-in question of a sign-in-required server.
+	// The plan is confirmed only when a picker made one of the choices.
+	if interactive && (profilePicked || pickingServices || source == agentsPicked) {
+		printAddPlan(ctx, req, plans)
+		proceed, err := promptMCPProceed()
+		if err != nil {
+			return err
+		}
+		if !proceed {
+			cmdio.LogString(ctx, cancelledMessage)
+			return nil
+		}
+	}
 	servers := make([]addServerOutput, 0, len(plans))
 	for _, plan := range plans {
 		servers = append(servers, installServer(ctx, req, plan))
@@ -340,10 +424,56 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	recordErr := recordInstalls(ctx, req, plans, servers)
 	printAddResults(ctx, req, servers)
 	var signErr error
-	if req.login {
+	if req.login || req.askLogin {
 		signErr = signInInstalled(ctx, cmd.ErrOrStderr(), w, req, plans, servers)
 	}
 	return errors.Join(recordErr, signErr, agentFailureError(req, servers))
+}
+
+// serviceFullNames returns the full names of services, in order.
+func serviceFullNames(services []mcp.Service) []string {
+	names := make([]string, 0, len(services))
+	for _, s := range services {
+		names = append(names, s.FullName)
+	}
+	return names
+}
+
+// connectWorkspace returns a client for the profile and the ID of its workspace, and sets the host in out.
+func connectWorkspace(ctx context.Context, out *addOutput, profileName, configFile, pinned string) (*databricks.WorkspaceClient, string, error) {
+	w, err := profileClient(ctx, profileName, configFile, pinned)
+	if err != nil {
+		return nil, "", err
+	}
+	out.Host = w.Config.Host
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
+	if err != nil {
+		return nil, "", describeRequestError(profileName, pinned, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
+	}
+	return w, workspaceID, nil
+}
+
+// checkBindings returns the first failure of CheckBinding for the services, which makes no request.
+func checkBindings(ctx context.Context, state *mcp.State, fullNames []string, profileName, configFile string) error {
+	for _, name := range fullNames {
+		if _, err := mcp.CheckBinding(ctx, state, name, profileName, configFile); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// chooseServices returns the services the user checks in the picker, from the services of location. The services
+// the profile already has are rows marked installed, unchecked, so that they can be added to another agent.
+func chooseServices(ctx context.Context, w *databricks.WorkspaceClient, b addBinding, pinned, location string, state *mcp.State) ([]mcp.Service, error) {
+	list := func(ctx context.Context, location string) ([]mcp.Service, error) {
+		services, err := mcp.Discover(ctx, w, location)
+		if err != nil {
+			return nil, describeRequestError(b.profile, pinned, err)
+		}
+		return services, nil
+	}
+	return pickServicesInteractively(ctx, b, location, state, list)
 }
 
 // validateMCPAddFlags rejects flag combinations that cannot run, before anything is read or written.
@@ -351,6 +481,9 @@ func validateMCPAddFlags(ctx context.Context, f mcpAddFlags, names, agentNames [
 	// A value that names no agent, such as ",", must not fall back to every detected agent.
 	if f.agents != "" && len(agentNames) == 0 {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--agents names no agent; pass one or more of: %s", strings.Join(mcpAgentNames(), ", "))
+	}
+	if f.login && f.noLogin {
+		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--login and --no-login cannot be used together")
 	}
 	if f.name != "" {
 		// A name must come out of mcp.Sanitize unchanged, so that mcp__<name>__<tool> splits the same way as
@@ -377,14 +510,12 @@ func validateMCPAddFlags(ctx context.Context, f mcpAddFlags, names, agentNames [
 		}
 		return nil
 	}
-	if cmdio.IsPromptSupported(ctx) {
-		if len(names) == 0 || len(agentNames) == 0 {
-			return failure(protos.AitoolsErrorCategoryInvalidFlags, "interactive selection is not available yet; pass --names and --agents")
-		}
-		return nil
-	}
-	if len(names) == 0 {
+	if len(names) == 0 && !installPromptsSupported(ctx) {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--names is required so the command runs without interactive prompts")
+	}
+	// The picker chooses services in a terminal, and --name needs exactly one of them, which only --names can give.
+	if f.name != "" && len(names) == 0 {
+		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--name needs exactly one service; leave out --name to pick services in the picker")
 	}
 	return nil
 }
@@ -496,13 +627,24 @@ func describeListError(profileName string, err error) error {
 	return withCategory(fmt.Errorf("profile %s: %w", profileName, listErr), category)
 }
 
-// targetAgents returns the agents named by --agents, or else every detected MCP-capable agent.
-// explicit reports whether the names were given.
-// detectErrs holds the agents whose detection failed. They are not written, and each reports its failure.
-func targetAgents(ctx context.Context, names []string) ([]*agents.Agent, bool, map[*agents.Agent]error, error) {
-	if len(names) > 0 {
-		list, err := resolveMCPAgents(names)
-		return list, true, nil, err
+// chooseAgents returns the agents to install for: the ones named with --agents, else the ones the user checks in the
+// picker when the session is interactive, else every detected MCP-capable agent. In a terminal with no agent installed
+// for MCP, the run is refused here, with the agents that were not found, before any request. detectErrs holds the agents
+// whose detection failed. They are not written, and each reports its failure.
+func chooseAgents(ctx context.Context, named []*agents.Agent, interactive bool) ([]*agents.Agent, agentSource, map[*agents.Agent]error, error) {
+	if len(named) > 0 {
+		return named, agentsNamed, nil, nil
+	}
+	if interactive {
+		choices, notFound := mcpAgentChoices(ctx)
+		if len(notFound) > 0 {
+			cmdio.LogString(ctx, "Not found: "+strings.Join(notFound, ", "))
+		}
+		if len(choices) == 0 {
+			return nil, "", nil, noAgentsError()
+		}
+		picked, err := promptMCPAgents(ctx, installer.ScopeGlobal, choices)
+		return picked, agentsPicked, nil, err
 	}
 	var detected []*agents.Agent
 	var detectErrs map[*agents.Agent]error
@@ -520,9 +662,14 @@ func targetAgents(ctx context.Context, names []string) ([]*agents.Agent, bool, m
 		}
 	}
 	if len(detected) == 0 {
-		return nil, false, nil, failure(protos.AitoolsErrorCategoryUnknownAgent, "no MCP-capable coding agents detected; pass --agents with one of: %s", strings.Join(mcpAgentNames(), ", "))
+		return nil, "", nil, noAgentsError()
 	}
-	return detected, false, detectErrs, nil
+	return detected, agentsDetected, detectErrs, nil
+}
+
+// noAgentsError is the refusal of a run that finds no MCP-capable agent to install for.
+func noAgentsError() error {
+	return failure(protos.AitoolsErrorCategoryUnknownAgent, "no MCP-capable coding agents detected; pass --agents with one of: %s", strings.Join(mcpAgentNames(), ", "))
 }
 
 // resolveMCPAgents maps --agents names to MCP-capable agents. Unknown and non-MCP agents are errors.
@@ -683,24 +830,29 @@ type addBinding struct {
 // config cannot be read has none here: its write reports the failure.
 type agentEntries map[*agents.Agent]map[string]map[string]any
 
-// readAgentEntries returns the entries of each target agent's config. An agent whose config cannot be read is
-// returned in unreadable, and has no entries here.
+// readAgentEntries returns the server entries of each target agent, and the agents whose config could not be read, with
+// the reason.
 func readAgentEntries(ctx context.Context, targets []*agents.Agent) (agentEntries, map[*agents.Agent]error) {
 	held := make(agentEntries, len(targets))
-	var unreadable map[*agents.Agent]error
+	unreadable := map[*agents.Agent]error{}
 	files := newAgentFiles()
 	for _, a := range targets {
 		cfg := files.current(ctx, a)
 		if cfg.err != nil {
-			if unreadable == nil {
-				unreadable = map[*agents.Agent]error{}
-			}
 			unreadable[a] = cfg.err
 			continue
 		}
 		held[a] = cfg.entries
 	}
 	return held, unreadable
+}
+
+// pinnedEnv returns the entry env that pins the config file, or nil when it is not pinned.
+func pinnedEnv(pinned string) map[string]string {
+	if pinned == "" {
+		return nil
+	}
+	return map[string]string{mcpconfig.ConfigFileEnv: pinned}
 }
 
 // planInput is what planAdds plans the servers of one run against.
@@ -715,6 +867,9 @@ type planInput struct {
 	held     agentEntries
 	// refused are the agents that will not be written, so a conflict in them does not refuse the run.
 	refused map[*agents.Agent]error
+	// binary and env are the command and env of the entries the write makes.
+	binary string
+	env    map[string]string
 }
 
 // planAdds chooses the server name of each service before anything is written, and refuses what would overwrite
@@ -744,7 +899,39 @@ func planAdds(ctx context.Context, in planInput, state *mcp.State, fullNames []s
 		}
 		chosen[name] = true
 		taken[name] = true
-		plans = append(plans, addPlan{service: mcp.Service{FullName: fullName}, name: name, failed: failed, note: note, replaced: replacedByForce(in, name)})
+		plan := addPlan{
+			service:    mcp.Service{FullName: fullName},
+			name:       name,
+			failed:     failed,
+			note:       note,
+			reasserted: map[*agents.Agent]bool{},
+			updated:    map[*agents.Agent]bool{},
+			replaced:   map[*agents.Agent]bool{},
+		}
+		for _, a := range in.targets {
+			entry, held := in.held[a][name]
+			if !held || failed[a] != nil {
+				continue
+			}
+			// A foreign entry is replaced. A Databricks entry is re-asserted when the write leaves it as it is, and updated
+			// when the write changes it.
+			if !mcpconfig.IsDatabricksEntry(entry) {
+				plan.replaced[a] = true
+				continue
+			}
+			changed, err := agentconfig.Changed(a, entry, in.binary, mcpconfig.ServeArgs(in.binding.profile, fullName, a.Name), in.env)
+			if err != nil {
+				// The write reports a bad entry with its file, so the plan only has to show that it changes.
+				plan.updated[a] = true
+				continue
+			}
+			if !changed {
+				plan.reasserted[a] = true
+			} else {
+				plan.updated[a] = true
+			}
+		}
+		plans = append(plans, plan)
 	}
 	return plans, nil
 }
@@ -835,20 +1022,6 @@ func suffixNote(in planInput, base, name string) string {
 		return fmt.Sprintf("%s is taken by another installed server; using %s", base, name)
 	}
 	return fmt.Sprintf("%s is taken in %s; using %s", base, strings.Join(holders, ", "), name)
-}
-
-// replacedByForce returns the target agents that hold name as an entry this CLI did not write, which --force replaces.
-func replacedByForce(in planInput, name string) map[*agents.Agent]bool {
-	replaced := map[*agents.Agent]bool{}
-	if !in.force {
-		return replaced
-	}
-	for _, a := range in.targets {
-		if entry, ok := in.held[a][name]; ok && !mcpconfig.IsDatabricksEntry(entry) {
-			replaced[a] = true
-		}
-	}
-	return replaced
 }
 
 // stateHolds reports whether a state entry other than self holds name. self is nil when no entry is excluded.
@@ -981,7 +1154,7 @@ func installServer(ctx context.Context, req addRequest, plan addPlan) addServerO
 			args := mcpconfig.ServeArgs(req.profile, plan.service.FullName, a.Name)
 			path, status, err = agentconfig.Upsert(ctx, a, plan.name, req.binary, args, req.env, req.force)
 			// A detected agent was not named, so --agents is no way out for it.
-			if req.explicit {
+			if req.agentSource == agentsNamed {
 				err = withAgentsHint(err, a.Name)
 			}
 		}
@@ -1018,11 +1191,11 @@ func installServer(ctx context.Context, req addRequest, plan addPlan) addServerO
 	return out
 }
 
-// refusedAgents returns the agents named with --agents that are not installed, with the reason for each.
-// It runs once, before any request, so each service reports the same refusal without another check.
-func refusedAgents(ctx context.Context, targets []*agents.Agent) map[*agents.Agent]error {
+// refusedAgents returns the agents of named, the ones given with --agents, that are not installed, with the reason for
+// each. It runs once, before any request, so each service reports the same refusal without another check.
+func refusedAgents(ctx context.Context, named []*agents.Agent) map[*agents.Agent]error {
 	refused := map[*agents.Agent]error{}
-	for _, a := range targets {
+	for _, a := range named {
 		if err := requireInstalled(ctx, a); err != nil {
 			refused[a] = err
 		}
@@ -1030,8 +1203,8 @@ func refusedAgents(ctx context.Context, targets []*agents.Agent) map[*agents.Age
 	return refused
 }
 
-// requireInstalled fails when an agent named with --agents is not installed. Writing its config would create
-// the agent's directory, so the agent is refused instead.
+// requireInstalled fails when an agent is not installed. Writing its config would create the agent's
+// directory, so the agent is refused instead.
 func requireInstalled(ctx context.Context, a *agents.Agent) error {
 	installed, err := a.InstalledForMCP(ctx)
 	if err != nil {
@@ -1040,13 +1213,19 @@ func requireInstalled(ctx context.Context, a *agents.Agent) error {
 	if installed {
 		return nil
 	}
-	return failure(protos.AitoolsErrorCategoryUnknownAgent, "%s is not installed; install it first or leave it out of --agents", a.DisplayName)
+	return failureWithCause(protos.AitoolsErrorCategoryUnknownAgent, errNotInstalled, "%s is not installed; install it first or leave it out of --agents", a.DisplayName)
 }
 
+// errNotInstalled is the cause of the refusal of an agent that is not installed. A failed check has another cause.
+var errNotInstalled = errors.New("agent is not installed")
+
 // signInInstalled signs in to each sign-in-required server that reached an agent, in order, and records the sign-in of
-// each server that reached an agent in servers. A failure does not stop the others, and the failures are joined. The
-// servers are installed either way. A failure names the command to run next when a sign-in can fix it, as the timeout
-// and failed errors do. Other failures get no hint, since logging in again would not fix them.
+// each server that reached an agent in servers. A sign-in failure does not stop the others: the failures are joined, and
+// the servers are installed either way. An abort at a question (Ctrl+C) stops the rest. The servers from the one asked
+// about on get their login hint, which the results did not print, and the abort is returned.
+//
+// In a terminal without --login, each server that is not already signed in is asked about first; a declined one gets
+// the login command.
 func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.WorkspaceClient, req addRequest, plans []addPlan, servers []addServerOutput) error {
 	var errs []error
 	for i := range servers {
@@ -1066,10 +1245,28 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			}
 			break
 		}
+		if req.askLogin {
+			// A caller already signed in is recorded as such, with no question and no second read of the credential.
+			if signedIn(ctx, w, plans[i].service.FullName) {
+				server.SignIn = &addSignInOutput{State: signInStateActive}
+				reportSignedIn(errOut, plans[i].service, req.profile, true)
+				continue
+			}
+			yes, err := promptSignInNow(server.Service)
+			if err != nil {
+				errs = append(errs, err)
+				printSignInHints(ctx, req, servers[i:])
+				break
+			}
+			if !yes {
+				cmdio.LogString(ctx, signInHint(server.Service, req.profile, req.pinned))
+				continue
+			}
+		}
 		var state string
 		url, err := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
 		if err == nil {
-			state, _, err = signIn(ctx, errOut, w, req.profile, req.pinned, url, plans[i].service)
+			state, _, _, err = signIn(ctx, errOut, w, req.pinned, url, plans[i].service, signInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
 		}
 		server.SignIn = &addSignInOutput{State: state}
 		if err != nil {
@@ -1079,6 +1276,27 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// signedIn reports whether the caller's sign-in to service is ACTIVE, so that no question is asked about it. The read is
+// bounded by profileCheckTimeout, as the --check reads are. A read that fails or times out does not count as signed in;
+// the sign-in reads it again and reports the failure.
+func signedIn(ctx context.Context, w *databricks.WorkspaceClient, service string) bool {
+	ctx, cancel := context.WithTimeout(ctx, profileCheckTimeout)
+	defer cancel()
+	state, err := mcp.CredentialState(ctx, w, service)
+	return err == nil && state == catalog.ProvisioningInfoStateActive
+}
+
+// printSignInHints prints the login hint of each server from the given one on that needs sign-in and reached an agent.
+// It runs when an abort ends the sign-ins. It makes no request, since a credential read can wait out the SDK's retries
+// and hold up the abort. So a server that is already signed in can get the hint too.
+func printSignInHints(ctx context.Context, req addRequest, servers []addServerOutput) {
+	for i := range servers {
+		if servers[i].SignInRequired && installedAnywhere(servers[i]) {
+			cmdio.LogString(ctx, signInHint(servers[i].Service, req.profile, req.pinned))
+		}
+	}
 }
 
 // signInHint returns the sentence that says a sign-in-required service needs sign-in, with the command that signs the
@@ -1169,7 +1387,7 @@ func recordServer(ctx context.Context, state *mcp.State, req addRequest, plan ad
 // service is reported once.
 func agentFailureError(req addRequest, servers []addServerOutput) error {
 	var errs []error
-	fail := req.explicit
+	fail := req.agentSource == agentsNamed
 	for _, server := range servers {
 		for _, a := range server.Agents {
 			if a.err != nil {
@@ -1196,11 +1414,66 @@ func printAddHeader(ctx context.Context, req addRequest) {
 	for _, a := range req.agents {
 		names = append(names, a.Name)
 	}
-	source := "named with --agents"
-	if !req.explicit {
-		source = "detected"
+	cmdio.LogString(ctx, fmt.Sprintf("Agents (%s): %s", req.agentSource, strings.Join(names, ", ")))
+}
+
+// printAddPlan lists what each agent gets, before the confirm of an interactive add.
+func printAddPlan(ctx context.Context, req addRequest, plans []addPlan) {
+	cmdio.LogString(ctx, "")
+	for _, line := range addPlanLines(req, plans) {
+		cmdio.LogString(ctx, line)
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Agents (%s): %s", source, strings.Join(names, ", ")))
+	cmdio.LogString(ctx, "")
+}
+
+// addPlanLines returns the plan: one line per agent, with the servers it gets as new entries, the servers it already
+// has as the write would leave them (re-asserted), the Databricks entries the write changes (updated), the foreign
+// entries it replaces, and the servers it cannot take. An agent whose config cannot be read gets one line saying so.
+func addPlanLines(req addRequest, plans []addPlan) []string {
+	lines := []string{"Plan (profile " + req.profile + "):"}
+	for _, a := range req.agents {
+		if err := req.refused[a]; err != nil {
+			reason := "not installed"
+			if !errors.Is(err, errNotInstalled) {
+				reason = "cannot be checked: " + err.Error()
+			}
+			lines = append(lines, fmt.Sprintf("  %-14s %s; skipped", a.DisplayName, reason))
+			continue
+		}
+		var added, reasserted, updated, replaced, skipped []string
+		for _, p := range plans {
+			switch {
+			case p.failed[a] != nil:
+				skipped = append(skipped, p.name)
+			case p.reasserted[a]:
+				reasserted = append(reasserted, p.name)
+			case p.updated[a]:
+				updated = append(updated, p.name)
+			case p.replaced[a]:
+				replaced = append(replaced, p.name)
+			default:
+				added = append(added, p.name)
+			}
+		}
+		var parts []string
+		if len(added) > 0 {
+			parts = append(parts, "add "+strings.Join(added, ", "))
+		}
+		if len(reasserted) > 0 {
+			parts = append(parts, "re-assert "+strings.Join(reasserted, ", "))
+		}
+		if len(updated) > 0 {
+			parts = append(parts, "update "+strings.Join(updated, ", "))
+		}
+		if len(replaced) > 0 {
+			parts = append(parts, "replace "+strings.Join(replaced, ", "))
+		}
+		if len(skipped) > 0 {
+			parts = append(parts, "skip "+strings.Join(skipped, ", "))
+		}
+		lines = append(lines, fmt.Sprintf("  %-14s %s", a.DisplayName, strings.Join(parts, "; ")))
+	}
+	return lines
 }
 
 // printAddResults prints each server, its agents, and the follow-up steps the server needs. The Cursor approval
@@ -1222,7 +1495,7 @@ func printAddResults(ctx context.Context, req addRequest, servers []addServerOut
 				cursorServers = append(cursorServers, server.Name)
 			}
 		}
-		if server.SignInRequired && installedAnywhere(server) && !req.login {
+		if server.SignInRequired && installedAnywhere(server) && !req.login && !req.askLogin {
 			cmdio.LogString(ctx, "  "+signInHint(server.Service, req.profile, req.pinned))
 		}
 		if server.note != "" && installedAnywhere(server) {

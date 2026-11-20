@@ -48,7 +48,8 @@ Choose servers with --names (server names as listed by 'aitools mcp list', or se
 last part of a service name, such as github, is enough when only one schema has it), --profile
 (every server of one profile), or --all. --profile also narrows --names or --all to one profile, and
 --agents narrows any of them to some agents.
-Interactive selection is not available yet, so one of --names, --profile or --all is required.
+In a terminal, with none of --names, --profile or --all, the command shows the installed servers to
+choose from. Without a terminal, one of them is required.
 With --profile or --all and nothing installed to remove, the command succeeds and removes nothing.
 
 Only entries this CLI wrote are removed. An entry that this CLI did not write, and that is not a Databricks
