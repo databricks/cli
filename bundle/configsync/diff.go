@@ -143,7 +143,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 	changes := make(Changes)
 	// Read first: a job's ACL names the owner that skipJobRunAs compares run_as to.
 	remote, skipped := readRemotePermissions(ctx, b, plan)
-	owners := jobOwners(ctx, b, plan, remote)
+	owners := jobOwners(ctx, plan, remote)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
