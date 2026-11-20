@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle validate -t one_warning
+Warning: the bundle root path /Workspace/Shared/test-bundle/one is writable by all workspace users
+
+The bundle root path is in /Workspace/Shared, giving read/write access to all workspace users that is not reflected in the permissions section. If this is intentional, add CAN_MANAGE for 'group_name: users' to your bundle permissions. Otherwise, move the bundle to a restricted path such as /Workspace/Users/<username>.
+
+Name: test-bundle
+Target: one_warning
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Shared/test-bundle/one
+
+Found 1 warning
+
+>>> [CLI] bundle validate -t two_warnings
+Warning: the bundle root path /Workspace/Shared/test-bundle/two is writable by all workspace users
+
+The bundle root path is in /Workspace/Shared, giving read/write access to all workspace users that is not reflected in the permissions section. If this is intentional, add CAN_MANAGE for 'group_name: users' to your bundle permissions. Otherwise, move the bundle to a restricted path such as /Workspace/Users/<username>.
+
+Warning: the bundle state path /Workspace/Shared/test-bundle-state is writable by all workspace users
+
+The bundle state path is in /Workspace/Shared, giving read/write access to all workspace users that is not reflected in the permissions section. If this is intentional, add CAN_MANAGE for 'group_name: users' to your bundle permissions. Otherwise, move the state path to a restricted location such as /Workspace/Users/<username>.
+
+Name: test-bundle
+Target: two_warnings
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Shared/test-bundle/two
+
+Found 2 warnings

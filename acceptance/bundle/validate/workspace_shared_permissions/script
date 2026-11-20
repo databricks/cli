@@ -1,0 +1,2 @@
+trace $CLI bundle validate -t one_warning
+trace $CLI bundle validate -t two_warnings
