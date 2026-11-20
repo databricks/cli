@@ -243,6 +243,11 @@ resources:
 		return v, nil
 	})
 	assert.NoError(t, err)
+
+	// The field the mutator set on a YAML resource is recorded in the bitmap.
+	bits, err := b.Bitmap.Bits(struct{}{})
+	require.NoError(t, err)
+	assert.Contains(t, bitmap.Text(bitmap.EmbeddedSchema(), bits, bitmap.ContextFullBundle), "P   resources.jobs.*.description")
 }
 
 func TestPythonConfigSection(t *testing.T) {

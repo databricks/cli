@@ -266,6 +266,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
 	var result applyPythonOutputResult
+	var before, after dyn.Value
 	mutateDiagsHasError := errors.New("unexpected error")
 
 	err = b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
@@ -297,6 +298,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("internal error when merging output of Python mutator: %w", err)
 		}
+		before, after = leftRoot, newRoot
 
 		for _, resourceKey := range result.AddedResources.ToArray() {
 			log.Debugf(ctx, "added resource at 'resources.%s.%s'", resourceKey.Type, resourceKey.Name)
@@ -351,10 +353,11 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return mutateDiags
 	}
 
-	// Record the Python resources as written, before their defaults are filled in.
-	if err := markUserResources(b, result.AddedResources); err != nil {
-		return mutateDiags.Extend(diag.FromErr(err))
-	}
+	// Record what Python wrote, before the defaults of added resources are filled in:
+	// the resources it added, and the fields it set or changed on existing ones.
+	// Comparing with the config Python received leaves out the defaults those
+	// already had.
+	b.Bitmap.MarkChanges(before, after)
 
 	resourcemutator.NormalizeAndInitializeResources(ctx, b, result.AddedResources)
 	if logdiag.HasError(ctx) {
@@ -363,23 +366,6 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources)
 	return mutateDiags
-}
-
-// markUserResources records the resources added by Python in the bundle
-// bitmap, as Python wrote them.
-func markUserResources(b *bundle.Bundle, added resourcemutator.ResourceKeySet) error {
-	for _, key := range added.ToArray() {
-		v, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key(key.Type), dyn.Key(key.Name)))
-		if err != nil {
-			return err
-		}
-		b.Bitmap.Mark(dyn.V(map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				key.Type: dyn.V(map[string]dyn.Value{key.Name: v}),
-			}),
-		}))
-	}
-	return nil
 }
 
 // createCacheDir returns the directory for input/output files of the Python subprocess, and a cleanup function.
