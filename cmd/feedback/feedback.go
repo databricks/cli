@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -14,13 +13,10 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
@@ -33,6 +29,9 @@ const (
 
 	defaultComponent = "DeveloperEcosystem.DatabricksCLI"
 	runIDKey         = "run-id"
+
+	legacyConfirmationFlag        = "yes"
+	legacyConfirmationDeprecation = "omit this flag when sending feedback; skip the feedback command when declining"
 )
 
 var productComponents = map[string]string{
@@ -59,7 +58,6 @@ type options struct {
 // mistake is reported without a login prompt or a network call.
 type submission struct {
 	text           string
-	command        string
 	component      string
 	origin         string
 	runID          string
@@ -84,14 +82,15 @@ reaches the team that owns it.
 The message is sent with the workspace and user you are authenticated as and
 the CLI user agent, which includes the CLI version, operating system and, if
 detected, the AI agent running the CLI. No logs, files or transcripts are
-collected. Do not include credentials or sensitive data. Follow-up contact is
-opt-in with --can-be-contacted. Feedback is sent even when
-DATABRICKS_CLI_DISABLE_TELEMETRY is set, because you asked to send it.
+collected. Do not include customer content, personally identifiable information
+(PII), credentials or other sensitive data. Follow-up contact is opt-in with
+--can-be-contacted. Feedback is sent even when DATABRICKS_CLI_DISABLE_TELEMETRY
+is set, because this command explicitly submits feedback.
 
-AI agents: submit feedback only with the user's approval. When an agent is
-detected, the command asks for confirmation, or requires --yes when no terminal
-is attached. Show the user the exact message and the flags you pass with it,
-such as --can-be-contacted, and pass --yes only after the user approves it.`
+AI agents can submit feedback directly without asking the user for approval.
+Use --can-be-contacted only if the user explicitly agrees to be contacted.
+After a successful submission, tell the user that feedback was sent and include
+the reference ID.`
 	cmd.Example = `  databricks feedback --command "bundle deploy" "deploy should print which resources changed"
   databricks feedback --command "air run" --run-id 123 "logs omitted the failure reason"`
 
@@ -99,7 +98,8 @@ such as --can-be-contacted, and pass --yes only after the user approves it.`
 	cmd.Flags().StringVar(&opts.command, "command", "", `CLI command the feedback is about, for example "bundle deploy"`)
 	cmd.Flags().StringVar(&opts.runID, "run-id", "", "ID of the job run the feedback is about")
 	cmd.Flags().BoolVar(&opts.canBeContacted, "can-be-contacted", false, "Allow Databricks to contact you about this feedback")
-	cmd.Flags().BoolVarP(&opts.yes, "yes", "y", false, "Confirm sending feedback written by an AI agent")
+	cmd.Flags().BoolVarP(&opts.yes, legacyConfirmationFlag, "y", false, "Deprecated; "+legacyConfirmationDeprecation)
+	cmd.Flags().MarkDeprecated(legacyConfirmationFlag, legacyConfirmationDeprecation)
 
 	cmd.Args = checkArgs
 
@@ -110,14 +110,14 @@ such as --can-be-contacted, and pass --yes only after the user approves it.`
 		if err != nil {
 			return err
 		}
-		if err := checkApproval(cmd.Context(), opts.yes); err != nil {
-			return err
+		if cmd.Flags().Changed(legacyConfirmationFlag) && !opts.yes && useragent.AgentProvider() != "" {
+			return errors.New("feedback was not sent because --yes=false")
 		}
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
 		return root.MustWorkspaceClient(cmd, args)
 	}
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return send(cmd.Context(), s, opts.yes)
+		return send(cmd.Context(), s)
 	}
 }
 
@@ -152,7 +152,6 @@ func newSubmission(cmd *cobra.Command, message string, opts *options) (submissio
 	}
 	s := submission{
 		text:           text,
-		command:        strings.Join(strings.Fields(opts.command), " "),
 		component:      component,
 		origin:         origin,
 		canBeContacted: opts.canBeContacted,
@@ -167,7 +166,7 @@ func newSubmission(cmd *cobra.Command, message string, opts *options) (submissio
 	return s, nil
 }
 
-func send(ctx context.Context, s submission, yes bool) error {
+func send(ctx context.Context, s submission) error {
 	if s.runID != "" {
 		ctx = useragent.InContext(ctx, runIDKey, s.runID)
 	}
@@ -177,17 +176,6 @@ func send(ctx context.Context, s submission, yes bool) error {
 		ctx = useragent.InContext(ctx, useragent.AgentKey, provider)
 	}
 	cfg := cmdctx.WorkspaceClient(ctx).Config
-	if needsApproval(yes) {
-		confirmed, err := confirm(ctx, s, workspaceLabel(cfg))
-		if err != nil {
-			return err
-		}
-		if !confirmed {
-			// confirm told the user; the exit code tells the agent that ran the
-			// command that nothing was sent.
-			return root.ErrAlreadyPrinted
-		}
-	}
 
 	id := uuid.New().String()
 	sendCtx, cancel := context.WithTimeout(ctx, sendTimeout)
@@ -229,9 +217,8 @@ func validateMessage(message string) (string, error) {
 // resolveCommand returns the component and origin for --command. The first word
 // picks the owning team. The command is not looked up, which would mean
 // building the command tree; its words are only limited to command-name
-// characters, which keeps flags, paths and control sequences out of origin and
-// the approval prompt. The origin joins the words with underscores, as in
-// bundle_deploy.
+// characters, which keeps flags, paths and control sequences out of origin.
+// The origin joins the words with underscores, as in bundle_deploy.
 func resolveCommand(command string) (string, string, error) {
 	words := strings.Fields(command)
 	if len(words) == 0 {
@@ -261,90 +248,6 @@ func isCommandWord(word string) bool {
 		}
 	}
 	return true
-}
-
-// needsApproval reports whether the user must approve the feedback before it is
-// sent: an AI agent is running the CLI and did not pass --yes.
-func needsApproval(yes bool) bool {
-	return useragent.AgentProvider() != "" && !yes
-}
-
-// checkApproval returns an error when the user must approve the feedback but
-// there is no terminal to ask in. It needs only the terminal, so it runs before
-// authenticating. confirm shows the summary on stderr and reads a plain line
-// from stdin, so it works where cmdio.IsPromptSupported says no (TERM=dumb,
-// MSYS2 pipes).
-func checkApproval(ctx context.Context, yes bool) error {
-	if !needsApproval(yes) || (cmdio.IsInputTTY(ctx) && cmdio.IsErrorTTY(ctx)) {
-		return nil
-	}
-	return errors.New("feedback from an AI agent must be confirmed by the user; run with --yes once the user approves the message\n\n" +
-		agent.AgentNote("show the user the exact feedback message and the flags you pass with it, such as --can-be-contacted, and pass --yes only after the user approves sending it"))
-}
-
-// confirm asks the user to approve feedback an AI agent is about to send. It
-// returns false without error if the user declines.
-func confirm(ctx context.Context, s submission, workspace string) (bool, error) {
-	cmdio.LogString(ctx, "The following feedback will be sent to Databricks:\n\n"+summary(s, workspace))
-	confirmed, err := cmdio.AskYesOrNo(ctx, "Send this feedback?")
-	switch {
-	case errors.Is(err, io.EOF):
-		// Ctrl-D ends the input without an answer or a newline.
-		cmdio.LogString(ctx, "\nFeedback not sent.")
-		return false, nil
-	case err != nil:
-		return false, err
-	case !confirmed:
-		cmdio.LogString(ctx, "Feedback not sent.")
-	}
-	return confirmed, nil
-}
-
-// workspaceLabel names the workspace feedback is filed in. A unified host
-// serves several workspaces, so there the host alone does not identify it.
-func workspaceLabel(cfg *config.Config) string {
-	if id := cfg.WorkspaceID; id != "" && id != profile.WorkspaceIDNone {
-		return fmt.Sprintf("%s (workspace ID %s)", cfg.Host, id)
-	}
-	return cfg.Host
-}
-
-// summary returns the message, the workspace it is filed in and the choices
-// sent with it, for the user to approve.
-func summary(s submission, workspace string) string {
-	var b strings.Builder
-	// Indent the message so that none of its lines can pass for one of the
-	// fields below it.
-	b.WriteString("  " + strings.ReplaceAll(escapeInvisible(s.text), "\n", "\n  "))
-	b.WriteString("\n\n")
-	fmt.Fprintf(&b, "Workspace: %s\n", workspace)
-	if s.command != "" {
-		fmt.Fprintf(&b, "Command: %s\n", s.command)
-	}
-	if s.runID != "" {
-		fmt.Fprintf(&b, "Run ID: %s\n", s.runID)
-	}
-	contact := "no"
-	if s.canBeContacted {
-		contact = "yes"
-	}
-	fmt.Fprintf(&b, "Databricks may contact you: %s\n", contact)
-	return b.String()
-}
-
-// escapeInvisible escapes the runes that invisible reports, so none of them can
-// hide, reorder or overwrite part of the message in the terminal.
-func escapeInvisible(text string) string {
-	var b strings.Builder
-	for _, r := range text {
-		if invisible(r) {
-			quoted := strconv.QuoteRuneToASCII(r)
-			b.WriteString(quoted[1 : len(quoted)-1])
-			continue
-		}
-		b.WriteRune(r)
-	}
-	return b.String()
 }
 
 // invisible reports whether a terminal would not show r as written, other than

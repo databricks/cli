@@ -30,7 +30,7 @@ Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 
 === Confirm the role is under management again
 
->>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
+>>> retry [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",

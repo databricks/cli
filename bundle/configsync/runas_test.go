@@ -3,7 +3,6 @@ package configsync
 import (
 	"testing"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -83,16 +82,16 @@ func TestJobOwners(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		plan      map[string]*deployplan.PlanEntry
-		unmanaged map[string][]dresources.StatePermission
-		want      map[string]string
+		name   string
+		plan   map[string]*deployplan.PlanEntry
+		remote map[string][]dresources.StatePermission
+		want   map[string]string
 	}{
 		{
-			name:      "owner from the unmanaged ACL",
-			plan:      map[string]*deployplan.PlanEntry{jobKey: job},
-			unmanaged: map[string][]dresources.StatePermission{jobKey: acl},
-			want:      map[string]string{jobKey: testSPID},
+			name:   "owner from the unmanaged ACL",
+			plan:   map[string]*deployplan.PlanEntry{jobKey: job},
+			remote: map[string][]dresources.StatePermission{jobKey: acl},
+			want:   map[string]string{jobKey: testSPID},
 		},
 		{
 			name: "owner from the declared permissions",
@@ -103,10 +102,19 @@ func TestJobOwners(t *testing.T) {
 			want: map[string]string{jobKey: testSPID},
 		},
 		{
-			name:      "creator when the ACL has no owner",
-			plan:      map[string]*deployplan.PlanEntry{jobKey: job},
-			unmanaged: map[string][]dresources.StatePermission{jobKey: acl[:1]},
-			want:      map[string]string{jobKey: "creator@example.com"},
+			name: "owner from the undeployed permissions",
+			plan: map[string]*deployplan.PlanEntry{
+				jobKey:                  job,
+				jobKey + ".permissions": {Action: deployplan.Create},
+			},
+			remote: map[string][]dresources.StatePermission{jobKey: acl},
+			want:   map[string]string{jobKey: testSPID},
+		},
+		{
+			name:   "creator when the ACL has no owner",
+			plan:   map[string]*deployplan.PlanEntry{jobKey: job},
+			remote: map[string][]dresources.StatePermission{jobKey: acl[:1]},
+			want:   map[string]string{jobKey: "creator@example.com"},
 		},
 		{
 			name: "unknown when the ACL was not read",
@@ -134,7 +142,7 @@ func TestJobOwners(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, jobOwners(t.Context(), &bundle.Bundle{}, &deployplan.Plan{Plan: tt.plan}, tt.unmanaged))
+			assert.Equal(t, tt.want, jobOwners(t.Context(), &deployplan.Plan{Plan: tt.plan}, tt.remote))
 		})
 	}
 }
