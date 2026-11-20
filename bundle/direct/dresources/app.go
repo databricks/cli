@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -206,6 +209,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 }
 
 func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) error {
+	alreadyStarted := remoteIsStarted(entry)
 	// git_source is sent as part of the App body (in the update mask). source_code_path and
 	// config (command/env) are deploy-only on update and applied via manageLifecycle; see
 	// appUpdateBody.
@@ -216,9 +220,18 @@ func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState,
 			AppName:    id,
 			UpdateMask: appUpdateMask(&app),
 		}
-		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
+		var updateWaiter *apps.WaitGetUpdateAppSucceeded[apps.AppUpdate]
+		settled, err := r.retryWhileComputeSettles(ctx, id, func() error {
+			var err error
+			updateWaiter, err = r.client.Apps.CreateUpdate(ctx, request)
+			return err
+		})
 		if err != nil {
 			return err
+		}
+		// The plan-time compute state is stale if the compute moved while we waited.
+		if settled != nil {
+			alreadyStarted = !isComputeStopped(settled)
 		}
 
 		response, err := updateWaiter.Get()
@@ -231,7 +244,7 @@ func (r *ResourceApp) doUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
-	return r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
+	return r.manageLifecycle(ctx, id, config, alreadyStarted)
 }
 
 // missingServicePrincipalMessage is part of the backend error for an app whose service
@@ -358,8 +371,107 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 }
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
-	_, err := r.client.Apps.DeleteByName(ctx, id)
+	_, err := r.retryWhileComputeSettles(ctx, id, func() error {
+		_, err := r.client.Apps.DeleteByName(ctx, id)
+		return err
+	})
+	if errors.Is(err, errAppGoneWhileSettling) {
+		return nil
+	}
 	return err
+}
+
+// computeUpdatingErrorMessages are the 400 BAD_REQUEST messages the Apps API returns for an
+// update or delete while the compute is UPDATING, as seen in cloud test runs:
+//   - "Cannot update app X as its compute is in UPDATING state. App compute needs to be ACTIVE or STOPPED to update."
+//   - "Cannot delete app X as it is not terminal with state UPDATING, and was updated less than 20 minutes ago. ..."
+//
+// The DELETING variant of the delete message is left out: IsGone and deleteConfirmedGone
+// handle a delete of a DELETING app, and waiting would not help.
+var computeUpdatingErrorMessages = []string{
+	"compute is in UPDATING state",
+	"not terminal with state UPDATING,",
+}
+
+func isComputeUpdatingError(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.StatusCode != http.StatusBadRequest {
+		return false
+	}
+	return slices.ContainsFunc(computeUpdatingErrorMessages, func(m string) bool {
+		return strings.Contains(apiErr.Message, m)
+	})
+}
+
+// errAppGoneWhileSettling reports that the app disappeared while waiting for its compute.
+var errAppGoneWhileSettling = errors.New("app is gone")
+
+// computeSettleTimeout bounds one wait for the app compute to leave a transitional state.
+const computeSettleTimeout = 20 * time.Minute
+
+// retryWhileComputeSettles calls fn and, if the Apps API rejected it because the compute is
+// UPDATING, waits for the compute to settle and calls fn again (see retry.With for the attempt
+// limit and the pause between attempts). The compute can enter UPDATING on its own shortly
+// after a create or update returned. It returns the app as last read while waiting, or nil if
+// it did not wait, so a caller can refresh what it knew about the compute state.
+//
+// If the wait itself fails, the error stays the API's 400 for callers that classify it (for
+// example retry.IsTransient in apply.go), with the wait failure only in the text. If the app
+// is gone, the error wraps errAppGoneWhileSettling and the 404.
+func (r *ResourceApp) retryWhileComputeSettles(ctx context.Context, name string, fn func() error) (*apps.App, error) {
+	var settled *apps.App
+	var waitErr error
+	_, err := retry.With(ctx, func(ctx context.Context, err error) bool {
+		if !isComputeUpdatingError(err) {
+			return false
+		}
+		log.Warnf(ctx, "%s", computeUpdatingRetryMessage(name))
+		settled, waitErr = r.waitForComputeToSettle(ctx, name)
+		return waitErr == nil
+	}, func() (struct{}, error) {
+		return struct{}{}, fn()
+	})
+	if err != nil && waitErr != nil {
+		if apierr.IsMissing(waitErr) {
+			return nil, fmt.Errorf("%w: %w", errAppGoneWhileSettling, waitErr)
+		}
+		return nil, fmt.Errorf("%w (waiting for the app compute to settle failed: %s)", err, waitErr.Error())
+	}
+	return settled, err
+}
+
+// computeUpdatingRetryMessage is the warning logged before waiting for the compute. Like
+// libs/retry, it says "retrying after" so that acceptance tests suppress it
+// (SuppressLines.warn_retry): whether a cloud run hits the race is timing dependent.
+func computeUpdatingRetryMessage(name string) string {
+	return fmt.Sprintf("app %s compute is UPDATING: retrying after it settles (waiting up to %s)", name, computeSettleTimeout)
+}
+
+func isComputeTransitional(app *apps.App) bool {
+	if app.ComputeStatus == nil {
+		return false
+	}
+	switch app.ComputeStatus.State {
+	case apps.ComputeStateUpdating, apps.ComputeStateStarting, apps.ComputeStateStopping:
+		return true
+	default:
+		return false
+	}
+}
+
+// waitForComputeToSettle polls the app until its compute leaves a transitional state.
+func (r *ResourceApp) waitForComputeToSettle(ctx context.Context, name string) (*apps.App, error) {
+	retrier := retries.New[apps.App](retries.WithTimeout(computeSettleTimeout), retries.WithRetryFunc(shouldRetry))
+	return retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+		app, err := r.client.Apps.GetByName(ctx, name)
+		if err != nil {
+			return nil, retries.Halt(err)
+		}
+		if isComputeTransitional(app) {
+			return nil, retries.Continues(fmt.Sprintf("app compute is %s", app.ComputeStatus.State))
+		}
+		return app, nil
+	})
 }
 
 // IsGone treats a DELETING app as already-deleted. The Apps DELETE is

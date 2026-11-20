@@ -54,7 +54,7 @@ sequenceDiagram
 
 `databricks auth login --use-device-code` logs in from a machine without a browser.
 It is experimental: the flag is hidden and requires
-`DATABRICKS_CLI_DEVICE_CODE=true`. Only workspace hosts are supported. See
+`DATABRICKS_CLI_DEVICE_CODE=true`. See
 [docs/device-code-login.md](../../docs/device-code-login.md) for the user guide.
 
 Databricks implements a variant of [RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628):
@@ -88,9 +88,12 @@ sequenceDiagram
 Notes on the server behavior the CLI relies on:
 
 - Workspaces advertise `device_authorization_endpoint` in
-  `/oidc/.well-known/oauth-authorization-server` only when device code login
-  is enabled for them. The CLI fails before requesting a device code if it is
-  missing.
+  `/oidc/.well-known/oauth-authorization-server`, and accounts in
+  `/oidc/accounts/<account-id>/.well-known/oauth-authorization-server`, only
+  when device code login is enabled for them. The CLI fails before requesting
+  a device code if it is missing. Classic account hosts otherwise build their
+  OAuth endpoints without this document, so device code login fetches it for
+  them.
 - The token request carries the confirmation code in the `confirmation_code`
   form parameter. A wrong confirmation code does not consume the device code;
   a successful exchange does. The server answers a wrong confirmation code
@@ -148,7 +151,7 @@ of the profile, and the one of its host when it deletes the host's token. A
 pending login for a profile that was never saved, or for a host that no profile
 uses, stays until a new login for it replaces it.
 
-The second step also checks the host, client ID and scopes that the pending
-login stores: the device code only works with the same host and client, and the
-token gets the scopes of the device authorization, so a profile saved with
-other settings would not match its token.
+The second step also checks the host, account ID, client ID and scopes that the
+pending login stores: the device code only works with the same host, account
+and client, and the token gets the scopes of the device authorization, so a
+profile saved with other settings would not match its token.

@@ -141,6 +141,9 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 // plan, and the resources whose remote permissions could not be read.
 func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, []SkippedChange, error) {
 	changes := make(Changes)
+	// Read first: a job's ACL names the owner that skipJobRunAs compares run_as to.
+	remote, skipped := readRemotePermissions(ctx, b, plan)
+	owners := jobOwners(ctx, plan, remote)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
@@ -157,7 +160,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				change, err := convertPlanChange(resourceKey, path, changeDesc, b.Config.Presets.NamePrefix)
+				change, err := convertPlanChange(resourceKey, path, changeDesc, owners[resourceKey], b.Config.Presets.NamePrefix)
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
@@ -174,8 +177,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 		log.Debugf(ctx, "Resource %s has %d changes", resourceKey, len(resourceChanges))
 	}
 
-	skipped, err := addPermissionsChanges(ctx, changes, b, plan)
-	if err != nil {
+	if err := addPermissionsChanges(changes, b, plan, remote); err != nil {
 		return nil, nil, err
 	}
 
@@ -183,11 +185,15 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 }
 
 // convertPlanChange converts a plan change at path in resourceKey, returning nil when there is
-// nothing to write back.
-func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, namePrefix string) (*ConfigChangeDesc, error) {
+// nothing to write back. owner is the principal the resource runs as by default, if it is a job.
+func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, owner, namePrefix string) (*ConfigChangeDesc, error) {
 	fullPath := resourceKey + "." + path
 	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
 		!keepSkippedRunAsChange(fullPath, changeDesc) {
+		return nil, nil
+	}
+	// Runs before applyLifecycle, which lets every whole run_as through.
+	if skipJobRunAs(fullPath, changeDesc, owner) {
 		return nil, nil
 	}
 	synced, err := applyLifecycle(resourceKey, path, changeDesc)

@@ -514,3 +514,16 @@ func TestDownloadLogsAllNodesFailedIsNotReportedAsNoLogs(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to download logs from any of 2 node(s)")
 	assert.NotContains(t, stdout.String(), "No logs available")
 }
+
+func TestResolveNodeCountReadsTheTaskTheLogsComeFrom(t *testing.T) {
+	// A 1-node train before a 2-node eval: the logs come from eval, the last
+	// task, so the node count must too.
+	run := &jobs.Run{RunId: 1, Tasks: []jobs.RunTask{
+		aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 12, "e", "GPU_1xA10", 2),
+	}}
+	n, err := nodeCountForRetry(run, -1)
+	require.NoError(t, err)
+	assert.Equal(t, 2, n)
+	assert.NoError(t, validateNodeIndex(1, n), "--node 1 is a valid eval node")
+}

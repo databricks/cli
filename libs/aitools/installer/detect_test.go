@@ -171,7 +171,7 @@ func savePluginState(t *testing.T, dirFn func(context.Context) (string, error), 
 	dir, err := dirFn(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, SaveState(dir, &InstallState{
-		SchemaVersion: schemaVersionV2,
+		SchemaVersion: CurrentSchemaVersion,
 		Plugins:       plugins,
 	}))
 }

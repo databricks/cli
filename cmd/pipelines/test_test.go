@@ -3,7 +3,9 @@ package pipelines
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -81,7 +83,12 @@ func TestResolveTestSelections(t *testing.T) {
 }
 
 func TestNewStartTestUpdateRequest(t *testing.T) {
-	assert.Equal(t, pipelines.StartUpdate{TestOnly: true}, newStartTestUpdateRequest(nil, nil))
+	all := newStartTestUpdateRequest(nil, nil)
+	assert.Equal(t, pipelines.StartUpdate{TestOnly: true, TestOptions: &pipelines.PipelineTestOptions{}}, all)
+	// An empty test_options must reach the service, where it is rejected if the testing API is off.
+	body, err := json.Marshal(all)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"test_only": true, "test_options": {}}`, string(body))
 	assert.Equal(t, pipelines.StartUpdate{
 		TestOnly:    true,
 		TestOptions: &pipelines.PipelineTestOptions{TestSelection: []string{"/Workspace/tests"}, PytestArgs: []string{"-k", "orders"}},
@@ -135,6 +142,23 @@ func TestNotPipelineKeyError(t *testing.T) {
 
 	err = notPipelineKeyError(cmd, &bundle.Bundle{}, "tests", []string{"tests"})
 	assert.EqualError(t, err, `"tests" is not a pipeline in this bundle, and the bundle has no pipelines`)
+}
+
+func TestWithDeployHint(t *testing.T) {
+	parent := &cobra.Command{Use: "pipelines"}
+	cmd := &cobra.Command{Use: "test"}
+	parent.AddCommand(cmd)
+	noSources := &apierr.APIError{ErrorCode: "INVALID_PARAMETER_VALUE", Message: "[PIPELINE_TEST_NO_TEST_SOURCES] The pipeline has no test sources."}
+	withTesting := testTarget{key: "orders", bundleHasTesting: true}
+
+	err := withDeployHint(cmd, withTesting, noSources)
+	assert.ErrorIs(t, err, noSources)
+	assert.EqualError(t, err, "[PIPELINE_TEST_NO_TEST_SOURCES] The pipeline has no test sources.\nThe bundle sets testing for orders, but the deployed pipeline has none. Run 'pipelines deploy' first")
+
+	// No hint without testing in the bundle, or for another error.
+	assert.Same(t, error(noSources), withDeployHint(cmd, testTarget{key: "orders"}, noSources))
+	conflict := &apierr.APIError{ErrorCode: "RESOURCE_CONFLICT", Message: "An active update already exists."}
+	assert.Same(t, error(conflict), withDeployHint(cmd, withTesting, conflict))
 }
 
 func TestTestRunError(t *testing.T) {
@@ -316,6 +340,34 @@ func TestWaitForTestUpdateTimeout(t *testing.T) {
 	printer := &testProgressPrinter{out: &bytes.Buffer{}, shortID: func(id string) string { return id }}
 	_, err = waitForTestUpdate(ctx, w, "p1", "u1", newTestRun(), printer)
 	assert.ErrorIs(t, err, errTestWaitTimeout)
+}
+
+// A timeout that passes between reads fails the next read in the SDK rate limiter, with a bare
+// context error; the wait still reports the timeout.
+func TestWaitForTestUpdateTimeoutBeforeRead(t *testing.T) {
+	server := testserver.New(t)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cancel(errTestWaitTimeout)
+	printer := &testProgressPrinter{out: &bytes.Buffer{}, shortID: func(id string) string { return id }}
+	_, err = waitForTestUpdate(ctx, w, "p1", "u1", newTestRun(), printer)
+	assert.ErrorIs(t, err, errTestWaitTimeout)
+}
+
+func TestWaitReadError(t *testing.T) {
+	ctx, cancel := context.WithCancelCause(t.Context())
+	readErr := errors.New("403 forbidden")
+	// A real error is kept even if ctx is canceled by now.
+	cancel(errTestWaitTimeout)
+	assert.Equal(t, readErr, waitReadError(ctx, readErr))
+
+	// A context error gets the cause, and keeps the read's own message.
+	canceled := fmt.Errorf("failed to fetch pipeline events: failed in rate limiter: %w", context.Canceled)
+	err := waitReadError(ctx, canceled)
+	assert.ErrorIs(t, err, errTestWaitTimeout)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.Contains(t, err.Error(), "failed to fetch pipeline events")
 }
 
 // The timeout also interrupts a read in flight, so an update that ends after it is not reported.

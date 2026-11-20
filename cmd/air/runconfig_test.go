@@ -808,6 +808,11 @@ func TestResolveConfigField_Errors(t *testing.T) {
 			wantParts: []string{`unknown config field "config.compute.acclerator_type"`, `did you mean "accelerator_type"?`, "accelerator_type, num_accelerators"},
 		},
 		{
+			name:      "removed pool selector suggests new name",
+			path:      "config.compute.pool_id",
+			wantParts: []string{`unknown config field "config.compute.pool_id"`, `did you mean "accelerator_pool_id"?`},
+		},
+		{
 			name:      "unknown top-level field lists siblings",
 			path:      "config.bogus",
 			wantParts: []string{`unknown config field "config.bogus"`, "experiment_name"},
@@ -905,12 +910,13 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	// Pool fields are set apart from the fields every run needs.
 	var compute strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&compute, "config.compute"))
-	fields, capacity, found := strings.Cut(compute.String(), "  Provisioned capacity (optional):\n")
+	fields, capacity, found := strings.Cut(compute.String(), "  GPU Pools (optional):\n")
 	require.True(t, found)
-	assert.Contains(t, fields, "  Fields:\n    num_accelerators  (required) ")
-	assert.Contains(t, fields, "    accelerator_type  (required) ")
+	assert.Contains(t, fields, "  Fields:\n    num_accelerators     (required) ")
+	assert.Contains(t, fields, "    accelerator_type     (required) ")
 	assert.NotContains(t, fields, "pool_id")
-	assert.Contains(t, capacity, "    pool_id ")
+	assert.NotContains(t, capacity, "    pool_id ")
+	assert.Contains(t, capacity, "    accelerator_pool_id ")
 	assert.Contains(t, capacity, "    priority_class ")
 
 	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
@@ -1215,5 +1221,26 @@ func assertNoInlineDocsLinks(t *testing.T, f configField) {
 	assert.NotContains(t, f.help, "docs.databricks.com", "%s: use the docs tag instead of an inline link", f.path)
 	for _, c := range f.children {
 		assertNoInlineDocsLinks(t, c)
+	}
+}
+
+func TestLoadRunConfigAcceleratorPool(t *testing.T) {
+	for _, tc := range []struct {
+		name, fields, wantErr string
+	}{
+		{name: "explicit", fields: "  accelerator_pool_id: pool-1\n"},
+		{name: "legacy rejected", fields: "  pool_id: pool-1\n", wantErr: `unknown field "compute.pool_id"; did you mean "accelerator_pool_id"?`},
+		{name: "alias rejected alongside selector", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-1\n", wantErr: `unknown field "compute.pool_id"; did you mean "accelerator_pool_id"?`},
+		{name: "conflicting", fields: "  accelerator_pool_id: pool-1\n  pool_id: pool-2\n", wantErr: `unknown field "compute.pool_id"; did you mean "accelerator_pool_id"?`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg, err := loadRunConfig(writeConfig(t, minimalConfig+tc.fields))
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, new("pool-1"), cfg.Compute.AcceleratorPoolID)
+		})
 	}
 }

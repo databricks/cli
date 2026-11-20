@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	stdlog "log" //nolint:depguard // slog.SetDefault redirects the standard log package, and Execute restores it
 	"log/slog"
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,6 +53,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
 	initTargetFlag(cmd)
+	initSkillsInvokedFlag(cmd)
 
 	// Deprecated flag. Warn if it is specified.
 	initProgressLoggerFlag(cmd, logFlags)
@@ -67,7 +70,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 		}
 
 		// Configure default logger.
-		ctx, err = logFlags.initializeContext(ctx)
+		ctx, err = logFlags.initializeContext(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -77,7 +80,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
 
-		warnIfStaleVersion(ctx)
+		warnIfStaleVersion(ctx, cmd)
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
@@ -88,6 +91,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 		ctx = installer.WithAiDevKitInUserAgent(ctx)
 		ctx = installer.WithCallingAgentToolingInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
+		ctx = withSkillsInUserAgent(ctx, cmd)
 		cmd.SetContext(ctx)
 
 		// Recommend installing Databricks AI tooling to the calling coding agent
@@ -171,9 +175,24 @@ Stack Trace:
 
 	startTime := time.Now()
 
+	// initializeContext puts the log file it opens in this slot. It is closed when Execute returns, even on a panic, and
+	// the loggers are restored, so nothing writes to the closed file.
+	var logFile logFileSlot
+	ctx = context.WithValue(ctx, logFileKey{}, &logFile)
+	// slog.SetDefault also redirects the standard log package, so both are restored.
+	prevLogger := slog.Default()
+	prevLogWriter, prevLogFlags := stdlog.Writer(), stdlog.Flags()
+	defer func() {
+		logFile.close()
+		slog.SetDefault(prevLogger)
+		stdlog.SetOutput(prevLogWriter)
+		stdlog.SetFlags(prevLogFlags)
+	}()
+
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
+		err = describeEmptyAPIError(err)
 		if cmdctx.HasConfigUsed(cmd.Context()) {
 			cfg := cmdctx.ConfigUsed(cmd.Context())
 			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
@@ -187,6 +206,8 @@ Stack Trace:
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
+	exitCode := ExitStatus(err)
+
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
 	// context
@@ -196,19 +217,14 @@ Stack Trace:
 				slog.String("exit_code", "0"))
 		} else if errors.Is(err, ErrAlreadyPrinted) {
 			logger.Debug("failed execution",
-				slog.String("exit_code", "1"),
+				slog.String("exit_code", strconv.Itoa(exitCode)),
 			)
 		} else {
 			logger.Info("failed execution",
-				slog.String("exit_code", "1"),
+				slog.String("exit_code", strconv.Itoa(exitCode)),
 				slog.String("error", err.Error()),
 			)
 		}
-	}
-
-	exitCode := 0
-	if err != nil {
-		exitCode = 1
 	}
 
 	commandStr := commandString(cmd)

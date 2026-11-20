@@ -203,7 +203,7 @@ func newCreateGroupProxy() *cobra.Command {
 
 	cmd.Flags().StringVar(&createGroupProxyReq.Parent, "parent", createGroupProxyReq.Parent, `The resource name of the account to create the group in, in the format accounts/{account_id}.`)
 	cmd.Flags().StringVar(&createGroupProxyReq.Group.ExternalId, "external-id", createGroupProxyReq.Group.ExternalId, `The ID of the group in your identity provider (IdP).`)
-	cmd.Flags().StringVar(&createGroupProxyReq.Group.GroupName, "group-name", createGroupProxyReq.Group.GroupName, `The name of the group.`)
+	cmd.Flags().StringVar(&createGroupProxyReq.Group.GroupName, "group-name", createGroupProxyReq.Group.GroupName, `The display name of the group.`)
 	cmd.Flags().StringVar(&createGroupProxyReq.Group.Name, "name", createGroupProxyReq.Group.Name, `The resource name of the group, in one of these formats: - Account APIs: accounts/{account_id}/groups/{group_id} - Workspace APIs: groups/{group_id}.`)
 
 	cmd.Use = "create-group-proxy"
@@ -2538,7 +2538,7 @@ func newUpdateGroupProxy() *cobra.Command {
 	cmd.Flags().Var(&updateGroupProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateGroupProxyReq.Group.ExternalId, "external-id", updateGroupProxyReq.Group.ExternalId, `The ID of the group in your identity provider (IdP).`)
-	cmd.Flags().StringVar(&updateGroupProxyReq.Group.GroupName, "group-name", updateGroupProxyReq.Group.GroupName, `The name of the group.`)
+	cmd.Flags().StringVar(&updateGroupProxyReq.Group.GroupName, "group-name", updateGroupProxyReq.Group.GroupName, `The display name of the group.`)
 	cmd.Flags().StringVar(&updateGroupProxyReq.Group.Name, "name", updateGroupProxyReq.Group.Name, `The resource name of the group, in one of these formats: - Account APIs: accounts/{account_id}/groups/{group_id} - Workspace APIs: groups/{group_id}.`)
 
 	cmd.Use = "update-group-proxy NAME UPDATE_MASK"

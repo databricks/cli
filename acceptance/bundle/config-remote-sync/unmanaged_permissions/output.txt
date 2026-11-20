@@ -70,7 +70,30 @@ Resource: resources.pipelines.my_pipeline
 No changes detected.
 
 
-=== Deploy keeps the remote owner
+=== Grant access remotely before the saved permissions are deployed
+
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.pipelines.my_pipeline
+  permissions[user_name='late@example.com']: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -30,4 +30,6 @@
+         - group_name: users
+           level: CAN_VIEW
++        - level: CAN_RUN
++          user_name: late@example.com
+
+ targets:
+
+=== Deploy keeps the remote owner and grant
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.my_job.permissions
 Created pipelines.my_pipeline.permissions
@@ -78,7 +101,7 @@ Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> [CLI] permissions get pipelines [MY_PIPELINE_ID]
-[{"user_name":"owner@example.com","group_name":null,"level":"IS_OWNER"},{"user_name":null,"group_name":"users","level":"CAN_VIEW"},{"user_name":"[USERNAME]","group_name":null,"level":"CAN_MANAGE"}]
+[{"user_name":"owner@example.com","group_name":null,"level":"IS_OWNER"},{"user_name":null,"group_name":"users","level":"CAN_VIEW"},{"user_name":"late@example.com","group_name":null,"level":"CAN_RUN"},{"user_name":"[USERNAME]","group_name":null,"level":"CAN_MANAGE"}]
 
 === Change a level, add and remove principals remotely
 

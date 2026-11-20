@@ -214,7 +214,7 @@ func TestHandleWatchResultPrintsProfileAwareResumeCommand(t *testing.T) {
 	out := buf.String()
 	assert.Contains(t, out, "Streaming logs interrupted.")
 	assert.Contains(t, out, "To check status:\ndatabricks air get 777 -p 'team profile'")
-	assert.Contains(t, out, "To resume streaming logs:\ndatabricks air logs 777 -p 'team profile'")
+	assert.Contains(t, out, "To resume streaming logs:\ndatabricks air logs 777 --follow -p 'team profile'")
 	assert.NotContains(t, out, "The workload was not canceled")
 }
 

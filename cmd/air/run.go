@@ -324,7 +324,7 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 }
 
 func airLogsCommand(profile, runID string) string {
-	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID)}
+	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID), "--follow"}
 	if profile != "" {
 		args = append(args, "-p", shellquote.BashArg(profile))
 	}

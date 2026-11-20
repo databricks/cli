@@ -242,7 +242,7 @@ func TestBuildListRow(t *testing.T) {
 	body, err := json.Marshal(row)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
-		"run_id":"123","run_name":"run-123","user":"me@example.com","status":"SUCCESS",
+		"run_id":"123","task_key":null,"run_name":"run-123","user":"me@example.com","status":"SUCCESS",
 		"started_at":"2023-11-14T22:13:20+00:00","is_sweep":false,
 		"experiment_name":"exp","duration_seconds":12,
 		"accelerator_type":"GPU_8xH100","num_accelerators":8,
@@ -276,7 +276,7 @@ func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
 	assert.Equal(t, "PENDING", row.Status)
 	assert.Equal(t, listRowStatus(row), row.Status)
 	assert.JSONEq(t, `{
-		"run_id":"123","run_name":"run-123","user":"me@example.com","status":"PENDING",
+		"run_id":"123","task_key":null,"run_name":"run-123","user":"me@example.com","status":"PENDING",
 		"started_at":null,"is_sweep":false,"experiment_name":"exp","duration_seconds":null,
 		"accelerator_type":"GPU_8xH100","num_accelerators":8,
 		"dashboard_url":"https://example.test/jobs/runs/123?o=456"
@@ -298,7 +298,7 @@ func TestBuildListRowMissingValues(t *testing.T) {
 	body, err := json.Marshal(row)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
-		"run_id":"7","run_name":"","user":"","status":"UNKNOWN","started_at":null,"is_sweep":false,
+		"run_id":"7","task_key":null,"run_name":"","user":"","status":"UNKNOWN","started_at":null,"is_sweep":false,
 		"experiment_name":null,"duration_seconds":null,"accelerator_type":null,"num_accelerators":null,
 		"dashboard_url":"https://example.test/jobs/runs/7"
 	}`, string(body))
@@ -501,4 +501,126 @@ func TestListValidatesAcceleratorOnlyAfterNoMatches(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildTaskEntriesOnePerAirTask(t *testing.T) {
+	run := jobs.Run{RunId: 7, RunName: "dag", CreatorUserName: "me@example.com", Tasks: []jobs.RunTask{
+		notebookTask("prep", 71),
+		aiRuntimeTask("train", 72, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 73, "/Users/me@example.com/exp-b", "GPU_8xH100", 8),
+	}}
+
+	rows := buildTaskEntries(&run, "https://example.test", 0)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "7", rows[0].entry.row.RunID)
+	assert.Equal(t, "train", rows[0].entry.row.taskKey())
+	assert.Equal(t, "exp-a", rows[0].entry.row.Experiment)
+	assert.Equal(t, "1x A10", rows[0].entry.row.Accelerators)
+	assert.Equal(t, []int64{72}, taskRunIDs(rows[0].entry.tasks), "the row's MLflow lookup sees only its own task runs")
+	assert.Equal(t, "7", rows[1].entry.row.RunID)
+	assert.Equal(t, "eval", rows[1].entry.row.taskKey())
+	assert.Equal(t, "exp-b", rows[1].entry.row.Experiment)
+	assert.Equal(t, "8x H100", rows[1].entry.row.Accelerators)
+	assert.Equal(t, []int64{73}, taskRunIDs(rows[1].entry.tasks))
+}
+
+func taskRunIDs(tasks []jobs.RunTask) []int64 {
+	ids := make([]int64, len(tasks))
+	for i, t := range tasks {
+		ids[i] = t.RunId
+	}
+	return ids
+}
+
+func TestListAirRunsAirTaskAfterNotebook(t *testing.T) {
+	// The official multi-task DAB example: a notebook prep task, then the
+	// ai_runtime_task that depends on it.
+	dag := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/air-byot-multitask-dag")
+	dag.Tasks[0].TaskKey, dag.Tasks[0].RunId = "train", 12
+	dag.Tasks = []jobs.RunTask{notebookTask("prep", 11), dag.Tasks[0]}
+	srv := runsServer(t, runsListBody(t, "", dag))
+
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "1", rows[0].RunID)
+	assert.Equal(t, "train", rows[0].taskKey())
+	assert.Equal(t, "air-byot-multitask-dag", rows[0].Experiment)
+	assert.Equal(t, "1x A10", rows[0].Accelerators)
+}
+
+func TestListAirRunsOneRowPerAirTask(t *testing.T) {
+	two := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a")
+	two.Tasks = []jobs.RunTask{
+		aiRuntimeTask("a", 11, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("b", 12, "/Users/me@example.com/exp-b", "GPU_8xH100", 8),
+	}
+	srv := runsServer(t, runsListBody(t, "", two, airBaseRun(2, "me@example.com", "GPU_1xH100", 1, "/Users/me@example.com/exp-c")))
+
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		filters:    listFilters{Experiment: "exp-b"},
+	}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 1, "the task filter applies per AIR task")
+	assert.Equal(t, "1", rows[0].RunID)
+	assert.Equal(t, "b", rows[0].taskKey())
+
+	rows, err = newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 3)
+	assert.Equal(t, []string{"1", "1", "2"}, []string{rows[0].RunID, rows[1].RunID, rows[2].RunID})
+	assert.Equal(t, []string{"a", "b", ""}, []string{rows[0].taskKey(), rows[1].taskKey(), rows[2].taskKey()})
+}
+
+func TestListAirRunsLimitCountsRunsNotRows(t *testing.T) {
+	// The first run has two AI Runtime tasks, so it lists as two rows; --limit 1
+	// still shows that whole run, and --limit 2 also shows the next run.
+	two := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a")
+	two.Tasks = []jobs.RunTask{
+		aiRuntimeTask("a", 11, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("b", 12, "/Users/me@example.com/exp-b", "GPU_1xA10", 1),
+	}
+	body := runsListBody(t, "", two, airBaseRun(2, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-c"))
+
+	for _, tt := range []struct {
+		limit int
+		want  []string
+	}{
+		{1, []string{"1", "1"}},
+		{2, []string{"1", "1", "2"}},
+	} {
+		srv := runsServer(t, body)
+		rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(tt.limit)
+		require.NoError(t, err)
+		ids := make([]string, len(rows))
+		for i, r := range rows {
+			ids[i] = r.RunID
+		}
+		assert.Equal(t, tt.want, ids, "limit %d", tt.limit)
+	}
+}
+
+func TestListAirRunsMarksTheRowsOfAMultiTaskRun(t *testing.T) {
+	two := airBaseRun(1, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-a")
+	two.Tasks = []jobs.RunTask{
+		aiRuntimeTask("a", 11, "/Users/me@example.com/exp-a", "GPU_1xA10", 1),
+		aiRuntimeTask("b", 12, "/Users/me@example.com/exp-b", "GPU_1xA10", 1),
+	}
+	srv := runsServer(t, runsListBody(t, "", two, airBaseRun(2, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-c")))
+
+	rows, err := newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{activeOnly: true}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 3)
+	assert.Equal(t, []bool{true, true, false}, []bool{rows[0].ShowTask, rows[1].ShowTask, rows[2].ShowTask})
+
+	// A filter that leaves one of the two tasks still names it.
+	rows, err = newRunFetcher(t.Context(), newTestWorkspaceClient(t, srv.URL), listQuery{
+		activeOnly: true,
+		filters:    listFilters{Experiment: "exp-b"},
+	}).next(10)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.True(t, rows[0].ShowTask)
+	assert.Equal(t, "1 b", rows[0].runIDLabel())
 }

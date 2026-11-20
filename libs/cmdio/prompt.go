@@ -261,7 +261,7 @@ func (c *cmdIO) runPromptModel(m *promptModel) (string, error) {
 	pm := final.(*promptModel)
 	switch {
 	case pm.cancelled:
-		return "", errCtrlC
+		return "", ErrCtrlC
 	case pm.deleted:
 		return "", io.EOF
 	}

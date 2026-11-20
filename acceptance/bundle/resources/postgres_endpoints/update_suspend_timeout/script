@@ -16,7 +16,7 @@ endpoint_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/my-e
 title "Initial deployment with suspend_timeout_duration: 300s"
 trace $CLI bundle deploy
 rm -f "$OUT_REQUESTS"
-trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
+trace retry $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 
 title "Change suspend_timeout_duration to 600s"
 trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
@@ -33,4 +33,4 @@ trace $CLI bundle deploy
 # The update_mask each engine sends is the whole point of this test.
 trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
 
-trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
+trace retry $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields

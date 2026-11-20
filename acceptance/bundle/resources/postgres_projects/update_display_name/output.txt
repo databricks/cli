@@ -25,7 +25,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-project [MY_PROJECT_ID]
+>>> retry [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
@@ -100,7 +100,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-project [MY_PROJECT_ID]
+>>> retry [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",
@@ -142,7 +142,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-project [MY_PROJECT_ID]
+>>> retry [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
   "project_id": "test-pg-proj-[UNIQUE_NAME]",

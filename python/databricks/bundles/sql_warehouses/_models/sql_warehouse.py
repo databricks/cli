@@ -45,7 +45,8 @@ class SqlWarehouse(Resource):
     RUNNING queries) before it is automatically stopped.
     
     Supported values:
-    - Must be == 0 or >= 10 mins
+    - Must be == 0 or >= 1 min for serverless warehouses.
+    - Must be == 0 or >= 10 mins for classic and pro warehouses.
     - 0 indicates no autostop.
     
     Defaults to 120 mins
@@ -175,9 +176,7 @@ class SqlWarehouse(Resource):
 
     statement_timeout: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Warehouse statement timeout in seconds.
+    [Public Preview] Warehouse statement timeout in seconds.
     """
 
     tags: VariableOrOptional[EndpointTags] = None
@@ -212,7 +211,8 @@ class SqlWarehouseDict(TypedDict, total=False):
     RUNNING queries) before it is automatically stopped.
     
     Supported values:
-    - Must be == 0 or >= 10 mins
+    - Must be == 0 or >= 1 min for serverless warehouses.
+    - Must be == 0 or >= 10 mins for classic and pro warehouses.
     - 0 indicates no autostop.
     
     Defaults to 120 mins
@@ -342,9 +342,7 @@ class SqlWarehouseDict(TypedDict, total=False):
 
     statement_timeout: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Warehouse statement timeout in seconds.
+    [Public Preview] Warehouse statement timeout in seconds.
     """
 
     tags: VariableOrOptional[EndpointTagsParam]

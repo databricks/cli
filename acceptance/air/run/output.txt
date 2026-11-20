@@ -143,3 +143,27 @@ Exit code: 1
 Error: the AIR commands have moved out of experimental; use "databricks air" instead
 
 Exit code: 1
+
+=== removed pool field is rejected
+
+>>> [CLI] air run -f removed-pool.yaml --dry-run
+Error: invalid config removed-pool.yaml: line 6: unknown field "compute.pool_id"; did you mean "accelerator_pool_id"? Run "databricks air run -h config.compute" for the list of fields
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== unsupported priority is rejected
+
+>>> [CLI] air run -f invalid-priority.yaml --dry-run
+Error: compute.priority_class: invalid priority_class "HIGH": valid values are: NORMAL
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== priority without a pool is rejected
+
+>>> [CLI] air run -f priority-without-pool.yaml --dry-run
+Error: compute.priority_class requires compute.accelerator_pool_id — priority applies only within a GPU Pool
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …

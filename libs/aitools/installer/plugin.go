@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -16,10 +15,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 )
-
-// lookPath resolves a binary on PATH. It is a package-level var so tests can
-// inject a fake resolver without depending on the host PATH.
-var lookPath = exec.LookPath
 
 const (
 	// pluginProbeTimeout bounds the `<agent> plugin --help` capability check.
@@ -127,20 +122,6 @@ func stderrOf(err error) string {
 		return stderr
 	}
 	return err.Error()
-}
-
-// resolveAgentBinary resolves the agent's CLI binary to an absolute path.
-// It refuses a binary that resolves only relative to the current directory
-// (exec.ErrDot), so a malicious ./claude is never executed.
-func resolveAgentBinary(agent *agents.Agent) (string, error) {
-	if agent.Binary == "" {
-		return "", fmt.Errorf("%s has no CLI binary", agent.DisplayName)
-	}
-	path, err := lookPath(agent.Binary)
-	if err != nil {
-		return "", fmt.Errorf("could not resolve %s on PATH: %w", agent.Binary, err)
-	}
-	return path, nil
 }
 
 // installTarget is the `<plugin>@<marketplace>` argument the agent CLIs accept,
@@ -313,7 +294,7 @@ func appendScopeArg(args []string, scope string) []string {
 // plugin subcommand, so we don't register a marketplace on a CLI that can't
 // install plugins. Returns the resolved absolute path.
 func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
-	bin, err := resolveAgentBinary(agent)
+	bin, err := agents.ResolveBinary(agent)
 	if err != nil {
 		return "", &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
@@ -445,7 +426,7 @@ func UpdatePluginForAgent(ctx context.Context, agent *agents.Agent, rec PluginRe
 	if agent.Plugin == nil {
 		return nil, &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
-	bin, err := resolveAgentBinary(agent)
+	bin, err := agents.ResolveBinary(agent)
 	if err != nil {
 		return nil, &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
@@ -469,7 +450,7 @@ func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec Plugi
 	if agent.Plugin == nil {
 		return &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
-	bin, err := resolveAgentBinary(agent)
+	bin, err := agents.ResolveBinary(agent)
 	if err != nil {
 		return &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
@@ -512,7 +493,7 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		// Initialize all maps so a later skills install/update can assign into a
 		// plugin-only state without hitting a nil map.
 		state = &InstallState{
-			SchemaVersion: schemaVersionV2,
+			SchemaVersion: CurrentSchemaVersion,
 			Skills:        map[string]string{},
 			RepoDirs:      map[string]string{},
 			Files:         map[string]FileRecord{},

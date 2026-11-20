@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -1819,4 +1820,82 @@ func TestNoAgentsMessageMatchesTheDetection(t *testing.T) {
 	ctx, stderr = cmdio.NewTestContextWithStderr(t.Context())
 	printNoAgentsMessage(ctx, installInvocation{scope: installer.ScopeGlobal})
 	assert.Contains(t, stderr.String(), "No supported coding agents found on PATH.")
+}
+
+// Esc cancels the agent picker as Ctrl+C does, and both end the run with
+// huh.ErrUserAborted.
+func TestAgentPickerEscCancelsLikeCtrlC(t *testing.T) {
+	options := []huh.Option[string]{huh.NewOption("Cursor", "cursor")}
+
+	var selected []string
+	field := agentPickerField(installer.ScopeGlobal, options, &selected)
+	p := newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
+	p.Init()
+	p.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	assert.Contains(t, p.View(), agentPickerHelp)
+
+	_, cmd := p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	assert.True(t, p.cancelled)
+	assert.Equal(t, tea.QuitMsg{}, cmd())
+	assert.Empty(t, p.View(), "a cancelled picker leaves nothing on screen")
+	assert.ErrorIs(t, pickerError(p.cancelled, nil), huh.ErrUserAborted)
+
+	field = agentPickerField(installer.ScopeGlobal, options, &selected)
+	p = newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
+	p.Init()
+	_, cmd = p.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	assert.Equal(t, tea.InterruptMsg{}, cmd())
+	assert.ErrorIs(t, pickerError(false, tea.ErrInterrupted), huh.ErrUserAborted)
+}
+
+// While the agent picker searches, the first Esc only leaves the search.
+func TestAgentPickerEscLeavesSearchBeforeCancelling(t *testing.T) {
+	options := []huh.Option[string]{huh.NewOption("Cursor", "cursor"), huh.NewOption("Claude Code", "claude")}
+
+	var selected []string
+	field := agentPickerField(installer.ScopeGlobal, options, &selected)
+	p := newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
+	p.Init()
+	p.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	p.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
+	require.True(t, field.GetFiltering())
+
+	p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	assert.False(t, p.cancelled, "the first Esc leaves the search")
+	assert.False(t, field.GetFiltering())
+
+	p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	assert.True(t, p.cancelled, "Esc outside the search cancels the picker")
+}
+
+func TestPickerError(t *testing.T) {
+	boom := errors.New("boom")
+	tests := []struct {
+		name      string
+		cancelled bool
+		err       error
+		want      error
+	}{
+		{"completed", false, nil, nil},
+		{"esc", true, nil, huh.ErrUserAborted},
+		{"ctrl c", false, tea.ErrInterrupted, huh.ErrUserAborted},
+		{"program error", false, boom, boom},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, pickerError(tc.cancelled, tc.err))
+		})
+	}
+}
+
+// TestTopLevelFailureKeepsErrorsOutsideAgents checks that a run error which joins per-agent failures with another failure,
+// such as a sign-in that failed, keeps the other failure as the document's top-level error.
+func TestTopLevelFailureKeepsErrorsOutsideAgents(t *testing.T) {
+	signInErr := errors.New("sign-in failed")
+	agentErr := &agentErrors{err: errors.New("agent failed")}
+
+	assert.NoError(t, topLevelFailure(agentErr))
+	top := topLevelFailure(errors.Join(agentErr, signInErr))
+	require.ErrorIs(t, top, signInErr)
+	assert.Equal(t, signInErr.Error(), top.Error())
 }

@@ -1,0 +1,4 @@
+Warn: Could not enable deployment history for this deploy: failed to create deployment: 
+Warn: Could not enable deployment history for this deploy: failed to create deployment version: operations.resource_key must have a known resource type
+Warn: Failed to complete deployment history version: Internal error
+Error: cannot create resources.secrets.foo: response body: stream error: stream ID 73; INTERNAL_ERROR; received from peer

@@ -78,6 +78,9 @@ class TriggerSettings:
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
+    """
+    Table update trigger settings.
+    """
 
     @classmethod
     def from_dict(cls, value: "TriggerSettingsDict") -> "Self":
@@ -128,6 +131,9 @@ class TriggerSettingsDict(TypedDict, total=False):
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]
+    """
+    Table update trigger settings.
+    """
 
 
 TriggerSettingsParam = TriggerSettingsDict | TriggerSettings

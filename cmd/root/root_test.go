@@ -3,8 +3,13 @@ package root
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	stdlog "log" //nolint:depguard // checks the standard log package that slog.SetDefault redirects
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -195,4 +200,60 @@ func TestExecuteWithNilArgsRunsWithoutArgs(t *testing.T) {
 	require.NoError(t, execute(t.Context(), cmd, nil))
 	assert.NotNil(t, got, "RunE did not run")
 	assert.Empty(t, got)
+}
+
+func TestExecuteLogsExitStatus(t *testing.T) {
+	keepDefaultLogger(t)
+	logFile := filepath.Join(t.TempDir(), "run.log")
+	cmd := newRootCommand(t.Context())
+	cmd.AddCommand(&cobra.Command{
+		Use: "fail",
+		RunE: func(*cobra.Command, []string) error {
+			return &ExitStatusError{Status: 2, Err: errors.New("binding failed")}
+		},
+	})
+	cmd.SetErr(io.Discard)
+
+	err := execute(t.Context(), cmd, []string{"fail", "--log-file", logFile, "--log-level", "info", "--log-format", "json"})
+	require.Error(t, err)
+	assert.Equal(t, 2, ExitStatus(err))
+
+	content, readErr := os.ReadFile(logFile)
+	require.NoError(t, readErr)
+	var failed map[string]any
+	for line := range strings.SplitSeq(strings.TrimSpace(string(content)), "\n") {
+		var rec map[string]any
+		require.NoError(t, json.Unmarshal([]byte(line), &rec))
+		if rec["msg"] == "failed execution" {
+			failed = rec
+		}
+	}
+	require.NotNil(t, failed, "no failed execution record in %s", logFile)
+	assert.Equal(t, "2", failed["exit_code"])
+}
+
+// TestExecuteRestoresStdLogOutput checks that the standard log package writes where it did before Execute, not to the
+// log file that Execute closes. slog.SetDefault redirects the standard log package to a non-default handler.
+func TestExecuteRestoresStdLogOutput(t *testing.T) {
+	keepDefaultLogger(t)
+	var out bytes.Buffer
+	prevWriter, prevFlags := stdlog.Writer(), stdlog.Flags()
+	stdlog.SetOutput(&out)
+	t.Cleanup(func() {
+		stdlog.SetOutput(prevWriter)
+		stdlog.SetFlags(prevFlags)
+	})
+
+	logFile := filepath.Join(t.TempDir(), "run.log")
+	cmd := newRootCommand(t.Context())
+	cmd.AddCommand(&cobra.Command{
+		Use:  "ok",
+		RunE: func(*cobra.Command, []string) error { return nil },
+	})
+	cmd.SetErr(io.Discard)
+	require.NoError(t, execute(t.Context(), cmd, []string{"ok", "--log-file", logFile, "--log-level", "debug"}))
+
+	stdlog.Print("after execute")
+	assert.Equal(t, prevFlags, stdlog.Flags())
+	assert.Contains(t, out.String(), "after execute")
 }

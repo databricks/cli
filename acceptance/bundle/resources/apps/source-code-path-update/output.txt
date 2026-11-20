@@ -40,6 +40,11 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //apps
 
+=== The new source_code_path is still stored in the deployment state
+
+>>> print_state.py
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/app-source-code-path-update/default/files/app2"
+
 === Change description: App Update omits source_code_path from the body and the update mask
 
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION

@@ -33,7 +33,7 @@ func TestRunLogsSnapshotFailedRetryWithoutLogs(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	got, err := runLogsSnapshot(t.Context(), newTestWorkspaceClient(t, srv.URL), 123)
+	got, err := runLogsSnapshot(t.Context(), newTestWorkspaceClient(t, srv.URL), 123, "")
 	require.NoError(t, err)
 	assert.Equal(t, "No logs available for run 123. Run terminated in state FAILED: Out of capacity. "+
 		"Earlier retries may have logs; pass --retry N (0 through 1) to see them\n"+
@@ -83,9 +83,9 @@ func TestListRowAndPanesLinkTheSameOlderRetry(t *testing.T) {
 		currentUser: selfUser, limit: 10, fetchMLflow: true,
 	}).next(10)
 	require.NoError(t, err)
-	info, err := runDetailText(ctx, w, 7)
+	info, err := runDetailText(ctx, w, 7, "")
 	require.NoError(t, err)
-	logs, err := runLogsSnapshot(ctx, w, 7)
+	logs, err := runLogsSnapshot(ctx, w, 7, "")
 	require.NoError(t, err)
 
 	// Then each links retry 1's MLflow run and names that retry.
@@ -135,7 +135,7 @@ func TestUnnamedOlderRetryLabelFitsTheListColumnAndIsWholeInTheInfoPane(t *testi
 		currentUser: selfUser, limit: 10, fetchMLflow: true,
 	}).next(10)
 	require.NoError(t, err)
-	info, err := runDetailText(ctx, w, 7)
+	info, err := runDetailText(ctx, w, 7, "")
 	require.NoError(t, err)
 
 	// Then the list row keeps the end of the ID and the whole retry note within
@@ -184,7 +184,7 @@ func TestRunDetailTextReadsTheUploadedConfig(t *testing.T) {
 			t.Cleanup(srv.Close)
 
 			// When the list's info pane renders it.
-			got, err := runDetailText(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), 123)
+			got, err := runDetailText(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), 123, "")
 			require.NoError(t, err)
 
 			// Then it shows the same config box and limit as `air get`.
@@ -214,7 +214,7 @@ func TestRunDetailTextShowsEnvironmentAndLegacyConfig(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	got, err := runDetailText(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), 123)
+	got, err := runDetailText(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL), 123, "")
 	require.NoError(t, err)
 	assert.Contains(t, got, "command: echo legacy-command")
 	assert.Regexp(t, `Environment\s+4`, got)
@@ -253,7 +253,7 @@ func TestRunDetailTextShowsAiRuntimeTaskFields(t *testing.T) {
 	t.Cleanup(srv.Close)
 	ctx := cmdio.MockDiscard(t.Context())
 
-	info, err := runDetailText(ctx, newTestWorkspaceClient(t, srv.URL), 7)
+	info, err := runDetailText(ctx, newTestWorkspaceClient(t, srv.URL), 7, "")
 	require.NoError(t, err)
 
 	// The pane shows what the list row and `air get` show, with the experiment
@@ -262,4 +262,43 @@ func TestRunDetailTextShowsAiRuntimeTaskFields(t *testing.T) {
 	assert.Contains(t, info, "Experiment    "+experiment)
 	assert.Contains(t, info, "Accelerators  1x A10")
 	assert.Contains(t, info, "command: python train.py")
+}
+
+func TestRunDetailTextShowsTheSelectedAirTask(t *testing.T) {
+	run := jobs.Run{RunId: 7, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess}, Tasks: []jobs.RunTask{
+		notebookTask("prep", 71),
+		aiRuntimeTask("train", 72, "/Users/me@example.com/exp-train", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 73, "/Users/me@example.com/exp-eval", "GPU_8xH100", 8),
+	}}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.2/jobs/runs/get" {
+			_ = json.NewEncoder(w).Encode(run)
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+	ctx := cmdio.MockDiscard(t.Context())
+	w := newTestWorkspaceClient(t, srv.URL)
+
+	info, err := runDetailText(ctx, w, 7, "")
+	require.NoError(t, err)
+	assert.Contains(t, info, "Experiment    exp-train", "the default is the first AIR task, not the notebook")
+	assert.Contains(t, info, "Task          train")
+
+	info, err = runDetailText(ctx, w, 7, "eval")
+	require.NoError(t, err)
+	assert.Contains(t, info, "Experiment    exp-eval")
+	assert.Contains(t, info, "Accelerators  8x H100")
+	assert.Contains(t, info, "Task          eval")
+}
+
+func TestLogTaskNote(t *testing.T) {
+	run := &jobs.Run{RunId: 7, Tasks: []jobs.RunTask{
+		aiRuntimeTask("train", 71, "e", "GPU_1xA10", 1),
+		aiRuntimeTask("eval", 72, "e", "GPU_1xA10", 1),
+	}}
+	assert.Equal(t, `Note: these are the logs of task "eval", the run's latest task, not of the selected task "train". Logs are not yet available per task.`, logTaskNote(run, "train"))
+	assert.Empty(t, logTaskNote(run, "eval"), "the logs are the selected task's")
+	assert.Empty(t, logTaskNote(run, ""), "no task selected")
 }

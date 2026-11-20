@@ -5,8 +5,8 @@
 Run GPU workloads on Databricks serverless compute.
 
 Describe a workload in a YAML file and submit it with "databricks air run".
-Follow a run with "databricks air logs" and "databricks air get", or see your
-active runs with "databricks air list".
+Follow a run with "databricks air logs --follow" and "databricks air get", or
+see your active runs with "databricks air list".
 
 Usage:
   databricks air [command]
@@ -18,14 +18,14 @@ Manage runs:
   cancel          Cancel one or more runs
   get             Show a run's status, configuration, and timing
   list            List your active runs
-  logs            Stream or fetch a run's logs
+  logs            Print or follow a run's logs
 
 Package and deploy:
   convert-to-dabs Convert a workload YAML into a Databricks Asset Bundle
   images          Push container images for custom environments
 
 Provisioned capacity:
-  pools           View provisioned GPU pools, if any (not required to run)
+  pools           View provisioned GPU Pools, if any (not required to run)
 
 Flags:
   -h, --help[=true|false]   help for air
@@ -77,7 +77,7 @@ Flags:
       --all-users[=true|false]    Show runs from all users
       --filter stringArray        Filter runs by KEY=VALUE (repeatable)
   -h, --help[=true|false]         help for list
-      --limit int                 Maximum number of runs to show (default 20)
+      --limit int                 Maximum number of runs to show; a run with several AI Runtime tasks shows one row per task (default 20)
 
 Global Flags:
       --debug[=true|false]   enable debug logging
@@ -92,12 +92,20 @@ Show a run's status, configuration, and timing.
 
 JOB_RUN_ID is the job run ID returned by "databricks air run".
 
+A job may run other tasks around its AI Runtime task (for example a notebook
+that prepares data first); the view shows the first AI Runtime task in task
+order. When a job has several AI Runtime tasks, pass --task-key to show another
+one. The status is that task's own, except that a task whose latest attempt
+failed shows RUNNING while another task of the run is still active, since it
+may yet be retried.
+
 Usage:
   databricks air get JOB_RUN_ID [flags]
 
 Flags:
   -h, --help[=true|false]             help for get
       --include-config[=true|false]   Include stored config in JSON (downloads over 1 MiB are omitted; may contain plaintext env_variables and parameters)
+      --task-key string               Show this AI Runtime task of the run (default: the first in task order)
 
 Global Flags:
       --debug[=true|false]   enable debug logging
@@ -108,19 +116,19 @@ Global Flags:
 === pools help
 
 >>> [CLI] air pools --help
-View GPU pools provisioned for your workspace.
+View GPU Pools provisioned for your workspace.
 
-A GPU pool is dedicated accelerator capacity that your Databricks account team
+A GPU Pool is dedicated accelerator capacity that your Databricks account team
 provisions. Pools are optional: a run uses one only when its YAML sets
-compute.pool_id.
+compute.accelerator_pool_id.
 
 Usage:
   databricks air pools [flags]
   databricks air pools [command]
 
 Available Commands:
-  get         Show a GPU pool and its accelerator usage
-  list        List the GPU pools available to the current workspace
+  get         Show a GPU Pool and its accelerator usage
+  list        List the GPU Pools available to the current workspace
 
 Flags:
   -h, --help[=true|false]   help for pools
@@ -193,26 +201,30 @@ Global Flags:
 === logs help
 
 >>> [CLI] air logs --help
-Stream logs from an active run until it completes, or fetch logs from a
-completed run.
+Print a run's logs and exit, or follow an active run with --follow.
 
-JOB_RUN_ID is the job run ID returned by "databricks air run".
+JOB_RUN_ID is the job run ID returned by "databricks air run". By default this
+prints the logs available now: the last 10000 lines, or --tail N lines. With
+--follow it prints them and then streams new lines until the run completes.
 
 Usage:
   databricks air logs JOB_RUN_ID [flags]
 
 Examples:
   databricks air logs 123456789
+  databricks air logs 123456789 --tail 50
+  databricks air logs 123456789 --follow
   databricks air logs 123456789 --node 1 --retry 0
   databricks air logs 123456789 --download-to ./logs
 
 Flags:
-      --download-to string   Download all logs to this directory instead of printing; not combinable with --tail or --minutes
-  -h, --help[=true|false]    help for logs
-      --minutes int          Fetch only logs from the last N minutes
-      --node int             Fetch logs from this node
-      --retry int            View logs from a specific retry attempt; -1 means latest (default -1)
-      --tail int             Print the last N existing lines before following, or from a completed run (default 10000)
+      --download-to string    Download all logs to this directory instead of printing; not combinable with --tail, --minutes, or --follow
+  -f, --follow[=true|false]   Stream new lines until the run completes
+  -h, --help[=true|false]     help for logs
+      --minutes int           Fetch only logs from the last N minutes
+      --node int              Fetch logs from this node
+      --retry int             View logs from a specific retry attempt; -1 means latest (default -1)
+      --tail int              Print the last N lines (default 10000); with --follow, before streaming new ones
 
 Global Flags:
       --debug[=true|false]   enable debug logging
@@ -225,6 +237,9 @@ Global Flags:
 >>> [CLI] air cancel --help
 Cancel one or more runs by job run ID, or use --all to cancel
 all active runs submitted by the current user.
+
+Cancelling a run stops all of its tasks: every AI Runtime task in the job, and
+any other task such as a notebook that prepares data.
 
 --all prompts for confirmation. Use --yes to skip the prompt.
 
