@@ -149,6 +149,8 @@ type PlanEntry struct {
 	//   - an Update of an otherwise unchanged resource whose state lacks its internal ID (recorded
 	//     before the ID was, or by bind): applying it records the ID from the remote state. It is
 	//     likewise left out of the textual plan and counted as unchanged.
+	//   - an Update of the resource a bind plan records: applying it saves the config as the
+	//     resource's state at ID, which the state does not have yet.
 	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
