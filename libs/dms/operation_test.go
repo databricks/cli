@@ -23,14 +23,15 @@ func TestNewStateUpdateSizeLimit(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "above compressed storage limit", size: 80 * 1024},
-		{name: "at uncompressed limit", size: 10 * 1024 * 1024},
-		{name: "above uncompressed limit", size: 10*1024*1024 + 1, wantErr: true},
+		{name: "below client limit", size: 800*1024 - 1},
+		{name: "at client limit", size: 800 * 1024},
+		{name: "above client limit", size: 800*1024 + 1, wantErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			state := json.RawMessage(`{"state":"` + strings.Repeat("x", tc.size-len(`{"state":""}`)) + `"}`)
 			update, err := NewStateUpdate("job-123", state, false)
 			if tc.wantErr {
-				require.ErrorContains(t, err, "exceeds the 10485760 byte limit")
+				require.ErrorContains(t, err, "exceeds the 819200 byte limit")
 				return
 			}
 			require.NoError(t, err)

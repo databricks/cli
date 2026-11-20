@@ -13,9 +13,9 @@ import (
 // ("resources.jobs.foo" vs "jobs.foo"). Strip it when sending, add it back when reading.
 const StatePrefix = "resources."
 
-// maxStateSize matches DMS's 10 MiB uncompressed safety limit. The service compresses
+// maxStateSize caps the uncompressed state sent to DMS. The service compresses
 // the state and enforces a separate 64 KiB limit on the compressed bytes.
-const maxStateSize = 10 * 1024 * 1024
+const maxStateSize = 800 * 1024
 
 // maxErrorMessageSize is how much of a failure's message the service stores.
 const maxErrorMessageSize = 16 * 1024

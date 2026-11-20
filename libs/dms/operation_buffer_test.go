@@ -64,15 +64,14 @@ func TestBufferCoalescesWhileAKeyIsPending(t *testing.T) {
 }
 
 func TestBufferFailsOnOversizedState(t *testing.T) {
-	// The service will not take a state this large, so the resource cannot be recorded.
-	// Failing here says so, where reporting nothing would leave DMS without the resource
-	// and the next plan would create it again.
+	// State over the client limit is rejected before upload and counted as a recording
+	// failure rather than left pending.
 	s := queued()
 	s.stats.StagedOperationCount = 1
 
 	s.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(strings.Repeat("x", maxStateSize+1)))
 
-	assert.ErrorContains(t, s.Err(), "exceeds the 10485760 byte limit")
+	assert.ErrorContains(t, s.Err(), "exceeds the 819200 byte limit")
 	assert.Empty(t, s.queue)
 	assert.Empty(t, s.pending)
 	assert.Equal(t, 1, s.Stats().OperationRecordingFailureCount)
