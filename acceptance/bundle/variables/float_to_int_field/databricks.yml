@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+variables:
+  x:
+    default: 5.9
+
+resources:
+  jobs:
+    foo:
+      name: job foo
+      # Records current behaviour: a warning, the value is dropped and the default (1) applies.
+      max_concurrent_runs: ${var.x}
