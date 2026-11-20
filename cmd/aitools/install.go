@@ -417,10 +417,11 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 }
 
 // installOutputIsJSON reports whether --output json was requested. Unlike list,
-// install can run detached from root: the legacy `skills install` alias builds a
-// NewInstallCmd and executes it directly (see newLegacySkillsInstallCmd), so the
-// root-supplied --output flag may be absent. Treat a missing flag as text rather
-// than panicking the way root.OutputType would.
+// install can run detached from root: the legacy `skills install` alias builds an
+// install command with newInstallCmd and executes it directly (see
+// newLegacySkillsInstallCmd), so the root-supplied --output flag may be absent.
+// Treat a missing flag as text rather than panicking the way root.OutputType
+// would.
 func installOutputIsJSON(cmd *cobra.Command) bool {
 	f := cmd.Flag("output")
 	if f == nil {

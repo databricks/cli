@@ -354,6 +354,7 @@ func TestUninstallSelectiveAllRemovesStateFile(t *testing.T) {
 
 func TestUninstallTargetedAgentKeepsRemainingRawExposure(t *testing.T) {
 	tmp := setupTestHome(t)
+	clearAgentDirOverrides(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
@@ -389,6 +390,7 @@ func TestUninstallTargetedAgentKeepsRemainingRawExposure(t *testing.T) {
 // keeps the choice, and so does uninstalling another agent.
 func TestUninstallTargetedAgentForgetsSkillsOnlyChoice(t *testing.T) {
 	tmp := setupTestHome(t)
+	clearAgentDirOverrides(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
@@ -418,6 +420,70 @@ func TestUninstallTargetedAgentForgetsSkillsOnlyChoice(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, state)
 	assert.Equal(t, []string{agents.NameCodex}, state.SkillsOnlyAgents)
+}
+
+// A targeted uninstall that leaves one of the agent's skills in place keeps
+// the agent's --skills-only choice, since it still has skill files.
+func TestUninstallTargetedAgentFailureKeepsSkillsOnlyChoice(t *testing.T) {
+	tmp := setupTestHome(t)
+	clearAgentDirOverrides(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
+
+	claudeAgent := agents.ByName(agents.NameClaudeCode)
+	cursorAgent := agents.ByName(agents.NameCursor)
+	src := &mockManifestSource{manifest: testManifest()}
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{claudeAgent, cursorAgent}, InstallOptions{}))
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	state.SkillsOnlyAgents = []string{agents.NameClaudeCode}
+	require.NoError(t, SaveState(globalDir, state))
+
+	claudeSQL := filepath.Join(tmp, ".claude", "skills", "databricks-sql")
+	orig := removeAllFn
+	t.Cleanup(func() { removeAllFn = orig })
+	removeAllFn = func(path string) error {
+		if path == claudeSQL {
+			return fs.ErrPermission
+		}
+		return orig(path)
+	}
+
+	result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Agents: []string{agents.NameClaudeCode}})
+	require.NoError(t, err)
+	assert.NotEmpty(t, result.SkillFailures)
+	state, err = LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Equal(t, []string{agents.NameClaudeCode}, state.SkillsOnlyAgents)
+}
+
+// A plain uninstall removes every skill, so it ends every --skills-only
+// choice, also when the state file stays for a plugin it could not remove.
+func TestUninstallAllForgetsSkillsOnlyChoice(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := installTestSkills(t, tmp)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	state.Plugins = map[string]PluginRecord{"unknown-agent": {Marketplace: "databricks-agent-skills", Plugin: "databricks"}}
+	state.SkillsOnlyAgents = []string{agents.NameClaudeCode, agents.NameCodex}
+	require.NoError(t, SaveState(globalDir, state))
+
+	_, err = UninstallSkillsWithResult(ctx, UninstallOptions{})
+	require.NoError(t, err)
+	state, err = LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Contains(t, state.Plugins, "unknown-agent")
+	assert.Empty(t, state.Skills)
+	assert.Empty(t, state.SkillsOnlyAgents)
 }
 
 func TestUninstallTargetedAgentRemovesCanonicalWhenNoExposureRemains(t *testing.T) {

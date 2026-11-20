@@ -8,20 +8,29 @@ unset CLAUDE_CONFIG_DIR PI_CODING_AGENT_DIR GEMINI_CLI_HOME GOOSE_PATH_ROOT
 export XDG_CONFIG_HOME="${USERPROFILE:-$HOME}/.config"
 export APPDATA="${USERPROFILE:-$HOME}/AppData/Roaming"
 
+# The harness's agent CLI stand-ins (acceptance/internal/fakeagent), for the
+# runs below that need an agent CLI on PATH. They only accept the MCP commands,
+# so a plugin install through one of them fails. Without them those runs would
+# not test anything, so the test stops instead. Each stand-in appends its argv
+# to FAKE_AGENT_LOG; Go opens it, so on msys it is in the mixed form.
+if [[ -z "${FAKE_AGENT_DIR:-}" ]]; then
+  echo "FAKE_AGENT_DIR is empty: the agent CLI stand-ins were not built" >&2
+  exit 1
+fi
+export FAKE_AGENT_LOG="$PWD/agent-calls.log"
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+  fake_agent_path=$(cygpath -u "$FAKE_AGENT_DIR")
+  export FAKE_AGENT_LOG="$(cygpath -m "$FAKE_AGENT_LOG")"
+else
+  fake_agent_path=$FAKE_AGENT_DIR
+fi
+
 # Agents are also detected by their CLI binary on PATH, so drop every PATH entry
 # that holds one; otherwise the developer's own agents would join the run. That
 # can drop /usr/bin (and /bin on a merged-/usr system), so resolve the commands
 # the script runs first. Windows also finds a command under each PATHEXT
 # extension (e.g. claude.cmd), so check those names too.
 mkdir_bin=$(command -v mkdir)
-# The harness's agent CLI stand-ins (acceptance/internal/fakeagent), for the
-# runs below that need an agent CLI on PATH. They only accept the MCP commands,
-# so a plugin install through one of them fails.
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
-  fake_agent_path=$(cygpath -u "$FAKE_AGENT_DIR")
-else
-  fake_agent_path=$FAKE_AGENT_DIR
-fi
 rm_bin=$(command -v rm)
 cp_bin=$(command -v cp)
 exts=""
