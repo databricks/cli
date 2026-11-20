@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -161,7 +160,9 @@ func (b *DeploymentBundle) calculateBindPlan(ctx context.Context, client *databr
 	data.State[resourceKey] = dstate.ResourceEntry{ID: resourceID, State: json.RawMessage("{}")}
 
 	b.StateDB.OpenWithData(statePath, data)
-	fullPlan, err := b.CalculatePlan(ctx, client, configRoot)
+	b.bindResourceKey = resourceKey
+	plan, err := b.CalculatePlan(ctx, client, configRoot)
+	b.bindResourceKey = ""
 	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", ferr)
 	}
@@ -169,12 +170,20 @@ func (b *DeploymentBundle) calculateBindPlan(ctx context.Context, client *databr
 		return nil, err
 	}
 
-	entry := fullPlan.Plan[resourceKey]
-	// The resolved config, which the plan keeps even when it skips the entry.
-	sv, ok := b.StateCache.Load(resourceKey)
-	if entry == nil || !ok {
-		return nil, fmt.Errorf("internal error: %s: missing from the plan", resourceKey)
+	if err := plan.FilterToSelected(ctx, []string{strings.TrimPrefix(resourceKey, "resources.")}); err != nil {
+		return nil, err
 	}
+	for key, entry := range plan.Plan {
+		if key != resourceKey {
+			// Deployed, and recorded in the state, by the next deploy.
+			plan.Plan[key] = &deployplan.PlanEntry{DependsOn: entry.DependsOn, Action: deployplan.Skip}
+		}
+	}
+
+	entry := plan.Plan[resourceKey]
+	// References planning could not resolve point at resources whose values are only known after
+	// they are deployed. The state records them unresolved; the next deploy resolves them.
+	entry.NewState.Refs = nil
 
 	// Copy etag from remote state for resources that use etag-based drift
 	// detection (dashboards and genie spaces). The etag is not provided by the
@@ -184,52 +193,30 @@ func (b *DeploymentBundle) calculateBindPlan(ctx context.Context, client *databr
 		etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
 		if err == nil && etag != nil {
 			if etagStr, ok := etag.(string); ok && etagStr != "" {
-				_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
+				if err := b.setNewStateField(entry, resourceKey, "etag", etagStr); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
 
-	newState, err := sv.ToJSON()
+	return plan, nil
+}
+
+// setNewStateField sets field of the entry's new state, which the apply deploys and saves.
+func (b *DeploymentBundle) setNewStateField(entry *deployplan.PlanEntry, resourceKey, field string, value any) error {
+	adapter, err := b.getAdapterForKey(resourceKey)
 	if err != nil {
-		return nil, fmt.Errorf("%s: cannot serialize state: %w", resourceKey, err)
+		return err
 	}
-	// References planning could not resolve point at resources whose values are only known after
-	// they are deployed. The state records them unresolved; the next deploy resolves them.
-	newState.Refs = nil
-
-	bindPlan := deployplan.NewPlanDirect()
-	bindPlan.Lineage = fullPlan.Lineage
-	bindPlan.Serial = fullPlan.Serial
-	bindPlan.Features = fullPlan.Features
-	bindPlan.Plan[resourceKey] = &deployplan.PlanEntry{
-		// The state the plan is applied to does not have the resource yet.
-		ID:          resourceID,
-		DependsOn:   entry.DependsOn,
-		Action:      deployplan.Update,
-		StateOnly:   true,
-		NewState:    newState,
-		RemoteState: entry.RemoteState,
+	sv, err := entry.NewState.ToStructVar(adapter.StateType())
+	if err != nil {
+		return fmt.Errorf("%s: loading new state: %w", resourceKey, err)
 	}
-
-	queue := slices.Clone(entry.DependsOn)
-	for len(queue) > 0 {
-		dep := queue[0].Node
-		queue = queue[1:]
-		if bindPlan.Plan[dep] != nil {
-			continue
-		}
-		depEntry := fullPlan.Plan[dep]
-		if depEntry == nil {
-			return nil, fmt.Errorf("internal error: %s: dependency %s not in the plan", resourceKey, dep)
-		}
-		bindPlan.Plan[dep] = &deployplan.PlanEntry{
-			DependsOn: depEntry.DependsOn,
-			Action:    deployplan.Skip,
-		}
-		queue = append(queue, depEntry.DependsOn...)
+	if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, field), value); err != nil {
+		return fmt.Errorf("%s: setting %s: %w", resourceKey, field, err)
 	}
-
-	return bindPlan, nil
+	return sv.SyncToJSON(entry.NewState)
 }
 
 // applyBindPlan applies the bind plan to the state at statePath with the regular deploy apply.
