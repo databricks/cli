@@ -200,6 +200,74 @@ func TestBitsBoolValues(t *testing.T) {
 	}
 }
 
+func TestBuilderMarkChanges(t *testing.T) {
+	schema := EmbeddedSchema()
+	job := []string{"resources", "resources.jobs", "resources.jobs.*"}
+	for _, tc := range []struct {
+		name          string
+		before, after string
+		want          []string
+	}{
+		{
+			"nothing changed",
+			`resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
+			`resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
+			nil,
+		},
+		{
+			"a new resource is marked whole",
+			`resources: {jobs: {a: {name: x}}}`,
+			`resources: {jobs: {a: {name: x}, b: {name: y, max_concurrent_runs: 1}}}`,
+			append(slices.Clone(job), "resources.jobs.*.name", "resources.jobs.*.max_concurrent_runs"),
+		},
+		{
+			"only the field added to an existing resource",
+			`resources: {jobs: {a: {name: x, max_concurrent_runs: 1}}}`,
+			`resources: {jobs: {a: {name: x, max_concurrent_runs: 1, description: d}}}`,
+			append(slices.Clone(job), "resources.jobs.*.description"),
+		},
+		{
+			"a changed bool records its new value",
+			`resources: {jobs: {a: {queue: {enabled: true}}}}`,
+			`resources: {jobs: {a: {queue: {enabled: false}}}}`,
+			append(slices.Clone(job), "resources.jobs.*.queue", "resources.jobs.*.queue.enabled", "resources.jobs.*.queue.enabled=false"),
+		},
+		{
+			"an entry added to a map",
+			`resources: {jobs: {a: {tags: {team: x}}}}`,
+			`resources: {jobs: {a: {tags: {team: x, cost: y}}}}`,
+			append(slices.Clone(job), "resources.jobs.*.tags", "resources.jobs.*.tags.*"),
+		},
+		{
+			"list elements are compared by position",
+			`resources: {jobs: {a: {tasks: [{task_key: t1}]}}}`,
+			`resources: {jobs: {a: {tasks: [{task_key: t1, description: d}, {task_key: t2}]}}}`,
+			append(slices.Clone(job), "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]",
+				"resources.jobs.*.tasks[*].description", "resources.jobs.*.tasks[*].task_key"),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			b := NewBuilder(schema)
+			b.MarkChanges(loadValue(t, tc.before), loadValue(t, tc.after))
+			bits, err := b.Bits(struct{}{})
+			require.NoError(t, err)
+			want := slices.Clone(tc.want)
+			slices.Sort(want)
+			assert.Equal(t, want, setPaths(schema, bits))
+		})
+	}
+
+	// A field written out as null is not set.
+	before := loadValue(t, `resources: {jobs: {a: {name: x}}}`)
+	after, err := dyn.SetByPath(before, dyn.MustPathFromString("resources.jobs.a.description"), dyn.NilValue)
+	require.NoError(t, err)
+	b := NewBuilder(schema)
+	b.MarkChanges(before, after)
+	bits, err := b.Bits(struct{}{})
+	require.NoError(t, err)
+	assert.Empty(t, setPaths(schema, bits))
+}
+
 func TestBuilderResolveVariables(t *testing.T) {
 	schema := EmbeddedSchema()
 	queue := []string{"resources", "resources.jobs", "resources.jobs.*", "resources.jobs.*.queue", "resources.jobs.*.queue.enabled"}

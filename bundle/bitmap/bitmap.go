@@ -192,6 +192,13 @@ func (b *Builder) Mark(cfg dyn.Value) {
 	b.markChildren(cfg, "")
 }
 
+// MarkChanges sets the bits of what after holds that before does not: fields
+// before lacks, values that differ, and the fields on the way to them. Both are
+// rooted at the configuration root. List elements are compared by position.
+func (b *Builder) MarkChanges(before, after dyn.Value) {
+	b.markChangedChildren(before, after, "")
+}
+
 // ResolveVariables marks the values of the fields Mark found holding a
 // ${var.*} reference, reading each variable's value from cfg, the processed
 // configuration. The values are the ones the user supplied (default, --var,
@@ -284,11 +291,7 @@ func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
 func (b *Builder) markChildren(v dyn.Value, pattern string) {
 	if m, ok := v.AsMap(); ok {
 		for _, pair := range m.Pairs() {
-			child := joinField(pattern, pair.Key.MustString())
-			if _, ok := b.index[child]; !ok {
-				child = joinField(pattern, "*")
-			}
-			b.mark(pair.Value, child)
+			b.mark(pair.Value, b.childPattern(pattern, pair.Key.MustString()))
 		}
 	}
 	if s, ok := v.AsSequence(); ok {
@@ -296,6 +299,63 @@ func (b *Builder) markChildren(v dyn.Value, pattern string) {
 			b.mark(elem, pattern+listSuffix)
 		}
 	}
+}
+
+// childPattern returns the schema pattern of the map entry key under pattern:
+// the field of that name, or the ".*" wildcard of a map.
+func (b *Builder) childPattern(pattern, key string) string {
+	child := joinField(pattern, key)
+	if _, ok := b.index[child]; !ok {
+		child = joinField(pattern, "*")
+	}
+	return child
+}
+
+// markChanged marks after at pattern where it differs from before, and reports
+// whether it marked anything.
+func (b *Builder) markChanged(before, after dyn.Value, pattern string) bool {
+	if _, ok := b.index[pattern]; !ok || after.Kind() == dyn.KindNil {
+		return false
+	}
+	switch {
+	case before.Kind() != after.Kind():
+		b.mark(after, pattern)
+		return true
+	case after.Kind() == dyn.KindMap || after.Kind() == dyn.KindSequence:
+		if !b.markChangedChildren(before, after, pattern) {
+			return false
+		}
+		setBit(b.index, b.bits, pattern)
+		return true
+	case before.AsAny() == after.AsAny():
+		return false
+	default:
+		b.mark(after, pattern)
+		return true
+	}
+}
+
+// markChangedChildren is markChanged for the map entries and list elements of
+// after, and reports whether it marked any.
+func (b *Builder) markChangedChildren(before, after dyn.Value, pattern string) bool {
+	changed := false
+	if m, ok := after.AsMap(); ok {
+		for _, pair := range m.Pairs() {
+			key := pair.Key.MustString()
+			changed = b.markChanged(before.Get(key), pair.Value, b.childPattern(pattern, key)) || changed
+		}
+	}
+	if s, ok := after.AsSequence(); ok {
+		prev, _ := before.AsSequence()
+		for i, elem := range s {
+			old := dyn.InvalidValue
+			if i < len(prev) {
+				old = prev[i]
+			}
+			changed = b.markChanged(old, elem, pattern+listSuffix) || changed
+		}
+	}
+	return changed
 }
 
 // mark sets the bit for a present (non-null) value and recurses into it. A

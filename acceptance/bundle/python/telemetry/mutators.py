@@ -8,4 +8,4 @@ from databricks.bundles.jobs import Job
 def update_job(job: Job) -> Job:
     assert isinstance(job.name, str)
 
-    return replace(job, name=f"{job.name} (updated)")
+    return replace(job, name=f"{job.name} (updated)", description="set by a mutator")
