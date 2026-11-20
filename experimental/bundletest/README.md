@@ -2,6 +2,36 @@
 
 Experimental, pytest-style **isolation testing** for Databricks Asset Bundles (DABs).
 
+## Quick start
+
+Install the package in a bundle project, generate a starter test, and run locally:
+
+```sh
+uv pip install -e /path/to/cli/experimental/bundletest
+databricks bundle test init
+databricks bundle test --local
+```
+
+`bundletest init` finds the nearest `databricks.yml`, chooses a declared resource, and
+creates `tests/conftest.py` plus a marked `tests/test_bundle.py`. It refuses to overwrite
+either file unless `--force` is supplied.
+
+Every local run begins with a support report, so unsupported tasks are visible before
+pytest starts:
+
+```text
+bundletest local support: orders
+
+[LOCAL ] jobs.transform_orders/transform: runs src/transform_orders.sql
+[LOCAL ] jobs.aggregate_orders/aggregate: runs src/aggregate_orders.sql
+[CLOUD ] jobs.score_model/score: notebook_task requires a Databricks workspace
+[CONFIG] 33 non-job resources: configuration assertions only
+
+summary: 2 local, 1 cloud-only, 33 config-only
+```
+
+Use `databricks bundle test --support-only` for the report without a test run.
+
 Unit tests answer "does my function return the right value?" `bundletest` answers the
 next question up: **"does my deployed bundle resource actually produce the right table?"**
 That class of bug — a job wired to the wrong upstream, a renamed table, a transform
@@ -34,6 +64,25 @@ def test_transform_dedupes(env):
 We isolate by substituting the component's **data-boundary neighbors**, never by faking
 the component's own output — faking the thing under test is a tautology that catches
 nothing.
+
+Job runs are checked by default. A failed task raises an assertion with the resource,
+task, source file, backend, run ID when available, and the original error:
+
+```text
+bundle job 'transform_orders' failed
+  task: transform
+  source: src/transform_orders.sql
+  backend: local
+  error: Catalog Error: Table raw_orders does not exist
+  use check=False to inspect an expected failure
+```
+
+Expected-failure tests can opt out explicitly:
+
+```python
+result = env.run_job("transform_orders", check=False)
+assert not result.succeeded
+```
 
 ## Two backends, one seam
 
@@ -84,20 +133,48 @@ the CLI repo are required in addition to Python.
 ```sh
 uv venv --python 3.12
 uv pip install -e ".[dev]"
-uv run pytest -v
+databricks bundle test --bundle examples/orders_bundle --local -v
 ```
+
+Arguments that `bundletest` does not consume are passed to pytest, so `-k`, `-x`, `-v`,
+node IDs, and plugins continue to work normally. Use `--no-support-report` for compact CI
+output.
+
+### Run tests affected by a change
+
+Mark each test with the resources it exercises:
+
+```python
+@pytest.mark.bundle_resource("jobs.transform_orders")
+def test_transform_dedupes(env): ...
+```
+
+Then select tests from the Git diff:
+
+```sh
+databricks bundle test --local --changed --base origin/main
+```
+
+`bundletest` maps changed paths such as `src/transform_orders.sql` back to the bundle
+resources that reference them. It runs tests with matching `bundle_resource` markers and
+always includes changed test files. A YAML change runs the complete suite because it can
+alter resource wiring, variables, or targets. The selection includes committed, staged,
+unstaged, and untracked files.
 
 ### Run it on cloud
 
 The cloud backend deploys to a real workspace. Example fixture `examples/cloud_orders/` contains two SQL jobs, a managed volume, and a file_path dashboard under `main.bundletest_cloud`:
 
 ```sh
-export BUNDLETEST_BACKEND=cloud
-export BUNDLETEST_PROFILE=<profile>              # from ~/.databrickscfg
-export BUNDLETEST_WAREHOUSE_ID=<sql-warehouse-id>  # used for seeding + assertion queries
 export BUNDLE_VAR_warehouse_id=<sql-warehouse-id>
-uv run --extra dev pytest examples/cloud_orders
+databricks bundle test --cloud \
+  --bundle examples/cloud_orders \
+  --profile <profile> \
+  --warehouse-id <sql-warehouse-id>
 ```
+
+The command requires `--profile` for cloud runs; it never selects a Databricks profile
+implicitly. Add `--target <target>` when the bundle has a dedicated test target.
 
 (`examples/orders_bundle/` is local static-config only, not deployable to cloud.)
 

@@ -71,7 +71,15 @@ def test_wrong_table_name_fails_red(tmp_path):
         "CREATE OR REPLACE TABLE app.gold.out AS SELECT * FROM app.bronze.does_not_exist;",
     )
     with bundle_env(str(tmp_path), backend="local") as env:
-        # This job intentionally fails, so opt out of the raise-by-default and inspect it.
+        with pytest.raises(JobRunFailed) as failure:
+            env.run_job("j")
+        message = str(failure.value)
+        assert "bundle job 'j' failed" in message
+        assert "task: t" in message
+        assert "source: job.sql" in message
+        assert "backend: local" in message
+        assert "does_not_exist" in message
+
         result = env.run_job("j", check=False)
         assert not result.succeeded
         assert "does_not_exist" in result.error
