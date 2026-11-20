@@ -43,6 +43,16 @@ func reportRunAsNotSupported(resourceType string, location diag.Location, curren
 	}}
 }
 
+// Resource groups (by plural name) whose API does not support a run_as identity
+// different from the deploying user. Dashboards are not listed because only those
+// with embed_credentials set are affected; validateRunAs checks them individually.
+var runAsUnsupportedResources = []string{
+	"model_serving_endpoints",
+	"quality_monitors",
+	"data_quality_monitors",
+	"apps",
+}
+
 func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
@@ -82,55 +92,32 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		}
 	}
 
-	// Model serving endpoints do not support run_as in the API.
-	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"model_serving_endpoints",
-			b.Config.GetLocation("resources.model_serving_endpoints"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
+	// Iterate in AllResources order so diagnostics keep a stable order.
+	for _, group := range b.Config.Resources.AllResources() {
+		resourceType := group.Description.PluralName
 
-	// Monitors do not support run_as in the API.
-	if len(b.Config.Resources.QualityMonitors) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"quality_monitors",
-			b.Config.GetLocation("resources.quality_monitors"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
-	if len(b.Config.Resources.DataQualityMonitors) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"data_quality_monitors",
-			b.Config.GetLocation("resources.data_quality_monitors"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
-	// Dashboards do not support run_as in the API.
-	if len(b.Config.Resources.Dashboards) > 0 {
-		for key, dashboard := range b.Config.Resources.Dashboards {
-			if !dashboard.EmbedCredentials {
-				continue
+		// Dashboards only reject run_as when embed_credentials is set, so check each one.
+		if resourceType == "dashboards" {
+			for key, dashboard := range b.Config.Resources.Dashboards {
+				if !dashboard.EmbedCredentials {
+					continue
+				}
+				diags = diags.Extend(reportRunAsNotSupported(
+					"dashboards with embed_credentials set to true",
+					b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
+					b.Config.Workspace.CurrentUser.UserName,
+					identity,
+				))
 			}
-			diags = diags.Extend(reportRunAsNotSupported(
-				"dashboards with embed_credentials set to true",
-				b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
-				b.Config.Workspace.CurrentUser.UserName,
-				identity,
-			))
+			continue
 		}
-	}
 
-	// Apps do not support run_as in the API.
-	if len(b.Config.Resources.Apps) > 0 {
+		if len(group.Resources) == 0 || !slices.Contains(runAsUnsupportedResources, resourceType) {
+			continue
+		}
 		diags = diags.Extend(reportRunAsNotSupported(
-			"apps",
-			b.Config.GetLocation("resources.apps"),
+			resourceType,
+			b.Config.GetLocation("resources."+resourceType),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
 		))
