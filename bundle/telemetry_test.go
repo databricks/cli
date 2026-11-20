@@ -14,27 +14,57 @@ func TestTelemetryBoolValues(t *testing.T) {
 		tm   Telemetry
 		want []protos.BoolMapEntry
 	}{
-		{"zero value reports nothing", Telemetry{}, nil},
-		{"bool false is not reported", Telemetry{SelectUsed: false}, nil},
-		{"bool true", Telemetry{SelectUsed: true}, []protos.BoolMapEntry{
-			{Key: "select_used", Value: true},
-		}},
-		{"*bool nil is not reported", Telemetry{RunAsSet: nil}, nil},
-		{"*bool false", Telemetry{RunAsSet: new(false)}, []protos.BoolMapEntry{
-			{Key: "run_as_set", Value: false},
-		}},
-		{"*bool true", Telemetry{RunAsSet: new(true)}, []protos.BoolMapEntry{
-			{Key: "run_as_set", Value: true},
-		}},
-		{"BoolSet unset is not reported", Telemetry{ArtifactFilesIsSet: boolSet()}, nil},
-		{"BoolSet reports each value once, true first", Telemetry{ArtifactFilesIsSet: boolSet(false, true, false)}, []protos.BoolMapEntry{
-			{Key: "artifact_files_is_set", Value: true},
-			{Key: "artifact_files_is_set", Value: false},
-		}},
-		{"fields are reported in declaration order", Telemetry{RunAsSet: new(true), SelectUsed: true}, []protos.BoolMapEntry{
-			{Key: "select_used", Value: true},
-			{Key: "run_as_set", Value: true},
-		}},
+		{
+			name: "zero value reports nothing",
+			tm:   Telemetry{},
+			want: nil,
+		},
+		{
+			name: "bool false is not reported",
+			tm:   Telemetry{SelectUsed: false},
+			want: nil,
+		},
+		{
+			name: "bool true",
+			tm:   Telemetry{SelectUsed: true},
+			want: []protos.BoolMapEntry{{Key: "select_used", Value: true}},
+		},
+		{
+			name: "*bool nil is not reported",
+			tm:   Telemetry{RunAsSet: nil},
+			want: nil,
+		},
+		{
+			name: "*bool false",
+			tm:   Telemetry{RunAsSet: new(false)},
+			want: []protos.BoolMapEntry{{Key: "run_as_set", Value: false}},
+		},
+		{
+			name: "*bool true",
+			tm:   Telemetry{RunAsSet: new(true)},
+			want: []protos.BoolMapEntry{{Key: "run_as_set", Value: true}},
+		},
+		{
+			name: "BoolSet unset is not reported",
+			tm:   Telemetry{ArtifactFilesIsSet: boolSet()},
+			want: nil,
+		},
+		{
+			name: "BoolSet reports each value once, true first",
+			tm:   Telemetry{ArtifactFilesIsSet: boolSet(false, true, false)},
+			want: []protos.BoolMapEntry{
+				{Key: "artifact_files_is_set", Value: true},
+				{Key: "artifact_files_is_set", Value: false},
+			},
+		},
+		{
+			name: "fields are reported in declaration order",
+			tm:   Telemetry{RunAsSet: new(true), SelectUsed: true},
+			want: []protos.BoolMapEntry{
+				{Key: "select_used", Value: true},
+				{Key: "run_as_set", Value: true},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, tc.tm.BoolValues())
@@ -64,10 +94,26 @@ func TestBoolSet(t *testing.T) {
 		set  []bool
 		want []bool
 	}{
-		{"never set", nil, nil},
-		{"true", []bool{true, true}, []bool{true}},
-		{"false", []bool{false}, []bool{false}},
-		{"both, true first", []bool{false, true}, []bool{true, false}},
+		{
+			name: "never set",
+			set:  nil,
+			want: nil,
+		},
+		{
+			name: "true",
+			set:  []bool{true, true},
+			want: []bool{true},
+		},
+		{
+			name: "false",
+			set:  []bool{false},
+			want: []bool{false},
+		},
+		{
+			name: "both, true first",
+			set:  []bool{false, true},
+			want: []bool{true, false},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, boolSet(tc.set...).Values())
