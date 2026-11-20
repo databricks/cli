@@ -129,6 +129,8 @@ func newTestStoreWithTimeout(backend keyringBackend, timeout time.Duration) *key
 		backend:        backend,
 		timeout:        timeout,
 		keyringSvcName: "databricks-cli",
+		// Tests make their own concurrent writes, so Lookup need not wait.
+		retryDelay: time.Nanosecond,
 	}
 }
 
@@ -738,6 +740,22 @@ func TestKeyringStore_Lookup_GivesUpOnIncompleteSplitEntry(t *testing.T) {
 	assert.Empty(t, got.Token.AccessToken)
 	assert.Equal(t, tok.RefreshToken, got.Token.RefreshToken)
 	assert.Equal(t, splitLookupAttempts, entryReads)
+}
+
+// A store without a retry delay, as NewKeyringStore builds it, waits 25, 50,
+// 100 and 200 milliseconds between its reads of an incomplete split entry, to
+// give a concurrent writer time to finish.
+func TestKeyringStore_Lookup_WaitsBetweenReadsByDefault(t *testing.T) {
+	backend := newFakeBackend()
+	backend.secretTooBig = tooBigForAnyOS
+	c := &keyringStore{backend: backend, timeout: testTimeout, keyringSvcName: keyringServiceName}
+	require.NoError(t, c.Put("my-profile", Entry{Token: testToken(issue7707LargeAccessTokenBytes)}))
+	delete(backend.items, itemKey(keyringServiceName, "my-profile#access-token-1"))
+
+	start := time.Now()
+	_, err := c.Lookup("my-profile")
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, time.Since(start), 375*time.Millisecond)
 }
 
 func TestKeyringStore_Lookup_SplitEntryPropagatesAccessTokenErrors(t *testing.T) {

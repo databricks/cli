@@ -155,7 +155,7 @@ type keyringStore struct {
 	keyringSvcName string
 
 	// retryDelay is Lookup's first wait before it reads an incomplete split
-	// token again. It doubles on each attempt.
+	// token again, splitLookupDelay if zero. It doubles on each attempt.
 	retryDelay time.Duration
 }
 
@@ -166,7 +166,6 @@ func NewKeyringStore() Store {
 		backend:        zalandoBackend{},
 		timeout:        defaultKeyringTimeout,
 		keyringSvcName: keyringServiceName,
-		retryDelay:     splitLookupDelay,
 	}
 }
 
@@ -314,7 +313,7 @@ func (k *keyringStore) Delete(key string) error {
 // may be writing or deleting it: refreshing at once could spend a refresh
 // token that process replaced, or restore a login it deleted.
 func (k *keyringStore) Lookup(key string) (Entry, error) {
-	delay := k.retryDelay
+	delay := cmp.Or(k.retryDelay, splitLookupDelay)
 	for attempt := 1; ; attempt++ {
 		e, complete, err := k.lookup(key)
 		if err != nil || complete || attempt == splitLookupAttempts {

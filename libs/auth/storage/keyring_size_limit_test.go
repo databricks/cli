@@ -116,11 +116,9 @@ func TestDarwinCommandTooBig(t *testing.T) {
 			secret := strings.Repeat("a", n)
 			got := darwinCommandTooBig(keyringServiceName, account, secret)
 			want := darwinSecurityCommandTooBig(keyringServiceName, account, secret)
-			if got && !want {
-				t.Fatalf("account %q, %d-byte secret: rejected, but go-keyring stores it", account, n)
-			}
-			if !quoted && got != want {
-				t.Fatalf("account %q, %d-byte secret: rejected is %v, go-keyring rejects is %v", account, n, got, want)
+			require.False(t, got && !want, "account %q, %d-byte secret: rejected, but go-keyring stores it", account, n)
+			if !quoted {
+				require.Equal(t, want, got, "account %q, %d-byte secret", account, n)
 			}
 		}
 	}

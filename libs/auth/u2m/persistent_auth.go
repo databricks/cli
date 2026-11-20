@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/browser"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/logger"
 	"golang.org/x/oauth2"
@@ -459,7 +460,7 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	if errors.Is(err, storage.ErrAccessTokenNotStored) {
 		// The new refresh token is stored, which is what the next command
 		// needs. Without the access token, it refreshes again.
-		logger.Debugf(a.ctx, "token refresh: %v", err)
+		log.Debugf(a.ctx, "token refresh: %v", err)
 		return t, nil
 	}
 	if err != nil {
