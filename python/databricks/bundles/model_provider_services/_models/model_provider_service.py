@@ -43,6 +43,9 @@ class ModelProviderService(Resource):
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
     @classmethod
     def from_dict(cls, value: "ModelProviderServiceDict") -> "Self":
@@ -66,6 +69,9 @@ class ModelProviderServiceDict(TypedDict, total=False):
     grants: VariableOrList[PrivilegeAssignmentParam]
 
     lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    """
 
 
 ModelProviderServiceParam = ModelProviderServiceDict | ModelProviderService

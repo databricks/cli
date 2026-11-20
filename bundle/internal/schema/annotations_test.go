@@ -1,8 +1,11 @@
 package main
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -269,4 +272,24 @@ func TestBuildEnumDescriptions(t *testing.T) {
 		)
 		assert.Equal(t, []string{"[Public Preview]", "", "[Beta]"}, got)
 	})
+}
+
+// A new resource with no annotations gets the boilerplate descriptions for its
+// resource-level entry and its lifecycle field instead of the placeholder.
+func TestBoilerplateDescriptionsForNewResource(t *testing.T) {
+	h, err := newAnnotationHandler(annotation.File{}, annotation.File{})
+	require.NoError(t, err)
+
+	resourcesSchema := jsonschema.Schema{Properties: map[string]*jsonschema.Schema{"jobs": {}}}
+	h.addAnnotations(reflect.TypeFor[config.Resources](), resourcesSchema)
+	const jobsDescription = "The job definitions for the bundle, where each key is the name of the job."
+	assert.Equal(t, jobsDescription, resourcesSchema.Properties["jobs"].Description)
+	assert.Equal(t, jobsDescription, h.missingAnnotations[getPath(reflect.TypeFor[config.Resources]())].Fields["jobs"].Description)
+
+	jobSchema := jsonschema.Schema{Properties: map[string]*jsonschema.Schema{"lifecycle": {}, "name": {}}}
+	h.addAnnotations(reflect.TypeFor[resources.Job](), jobSchema)
+	jobPath := getPath(reflect.TypeFor[resources.Job]())
+	assert.Equal(t, resourceLifecycleDescription, h.missingAnnotations[jobPath].Fields["lifecycle"].Description)
+	// Fields without boilerplate keep the placeholder.
+	assert.Equal(t, annotation.Placeholder, h.missingAnnotations[jobPath].Fields["name"].Description)
 }
