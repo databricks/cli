@@ -311,10 +311,12 @@ func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profile, target stri
 	// With the target selected, only the bundle's own auth can have failed, and
 	// auth errors are not reported.
 	if b != nil && b.Config.Bundle.Target != "" {
+		log.Debugf(ctx, "config-remote-sync telemetry skipped: bundle auth failed")
 		return ctx
 	}
 	profile = cmp.Or(profile, env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"))
 	if profile == "" {
+		log.Debugf(ctx, "config-remote-sync telemetry skipped: no profile selected")
 		return ctx
 	}
 	cfg, err := resolveProfile(ctx, profile)
