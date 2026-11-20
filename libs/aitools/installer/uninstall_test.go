@@ -463,6 +463,55 @@ func TestUninstallTargetedAgentFailureKeepsSkillsOnlyChoice(t *testing.T) {
 	assert.Equal(t, []string{agents.NameClaudeCode}, state.SkillsOnlyAgents)
 }
 
+// With several --agents, a removal failure for one agent keeps only that
+// agent's --skills-only choice; the agents whose entries were all removed
+// lose theirs.
+func TestUninstallTargetedAgentsFailureKeepsOnlyFailedAgentChoice(t *testing.T) {
+	tmp := setupTestHome(t)
+	clearAgentDirOverrides(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".copilot"), 0o755))
+
+	// Copilot is not targeted and keeps the skills, so the state file stays.
+	claudeAgent := agents.ByName(agents.NameClaudeCode)
+	cursorAgent := agents.ByName(agents.NameCursor)
+	copilotAgent := agents.ByName(agents.NameCopilot)
+	src := &mockManifestSource{manifest: testManifest()}
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{claudeAgent, cursorAgent, copilotAgent}, InstallOptions{}))
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	state.SkillsOnlyAgents = []string{agents.NameClaudeCode, agents.NameCodex, agents.NameCursor}
+	require.NoError(t, SaveState(globalDir, state))
+
+	cursorSQL := filepath.Join(tmp, ".cursor", "skills", "databricks-sql")
+	_, err = os.Lstat(cursorSQL)
+	require.NoError(t, err)
+	orig := removeAllFn
+	t.Cleanup(func() { removeAllFn = orig })
+	removeAllFn = func(path string) error {
+		if path == cursorSQL {
+			return fs.ErrPermission
+		}
+		return orig(path)
+	}
+
+	result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Agents: []string{agents.NameClaudeCode, agents.NameCursor}})
+	require.NoError(t, err)
+	assert.NotEmpty(t, result.SkillFailures)
+	_, err = os.Lstat(filepath.Join(tmp, ".claude", "skills", "databricks-sql"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	state, err = LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Equal(t, []string{agents.NameCodex, agents.NameCursor}, state.SkillsOnlyAgents)
+}
+
 // A plain uninstall removes every skill, so it ends every --skills-only
 // choice, also when the state file stays for a plugin it could not remove.
 func TestUninstallAllForgetsSkillsOnlyChoice(t *testing.T) {

@@ -504,6 +504,7 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		state.Plugins = make(map[string]PluginRecord, len(records))
 	}
 	maps.Copy(state.Plugins, records)
+	// An agent with the plugin is no longer on raw skills by choice.
 	state.SkillsOnlyAgents = slices.DeleteFunc(state.SkillsOnlyAgents, func(name string) bool {
 		_, ok := records[name]
 		return ok
