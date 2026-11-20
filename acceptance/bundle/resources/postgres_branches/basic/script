@@ -16,7 +16,7 @@ trace $CLI bundle deploy
 # Get branch details
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
-trace $CLI postgres get-branch "${branch_name}" | branch_fields
+trace retry $CLI postgres get-branch "${branch_name}" | branch_fields
 
 trace $CLI bundle summary
 

@@ -37,7 +37,7 @@ title "Fetch endpoint and verify it exists after recreation"
 
 endpoint_id_2=`read_id.py my_endpoint`
 # Verify the endpoint was recreated (DELETE/POST in requests proves recreation)
-trace $CLI postgres get-endpoint $endpoint_id_2 | jq 'del(.create_time, .update_time)' | jq '.status.endpoint_type'
+trace retry $CLI postgres get-endpoint $endpoint_id_2 | jq 'del(.create_time, .update_time)' | jq '.status.endpoint_type'
 
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve

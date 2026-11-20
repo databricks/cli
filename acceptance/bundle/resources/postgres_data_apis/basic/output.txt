@@ -52,7 +52,7 @@ Created postgres_roles.owner
 Files: 0 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
+>>> retry [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database",
@@ -111,7 +111,7 @@ Resources: 0 created, 0 changed, 1 deleted, 4 unchanged
 >>> musterr [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 Error: Data API is not enabled for this database
 
->>> [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database
+>>> retry [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database"
 }

@@ -8,7 +8,7 @@ Created postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch
+>>> retry [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch
 {
   "branch_id": "dev-branch",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch",
@@ -46,7 +46,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch
+>>> retry [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch
 {
   "branch_id": "dev-branch",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch",
