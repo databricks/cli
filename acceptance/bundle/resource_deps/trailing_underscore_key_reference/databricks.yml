@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+# Reproduce: resource keys with a trailing underscore caused "cannot parse" on the
+# direct engine because the reference regex required segments to end with a letter or digit.
+resources:
+  jobs:
+    job_:
+      name: trailing underscore
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+    _job__:
+      name: leading and trailing underscores
+    ref:
+      name: "a=${resources.jobs.job_.id} b=${resources.jobs._job__.id}"
