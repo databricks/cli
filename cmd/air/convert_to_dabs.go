@@ -296,8 +296,7 @@ func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir, experim
 	return fmt.Errorf("code_source root_path %q (%s) is not inside the bundle directory %q, and convert-to-dabs can package only code inside the bundle directory; %s", snap.RootPath, quotedPath(root), bundleDir, remedy)
 }
 
-// writeBundle replaces databricks.yml only. An alternate or ambiguous root
-// cannot be safely regenerated even if one configuration names the workload.
+// isWorkloadBundle requires a single databricks.yml because writeBundle replaces only that file.
 func isWorkloadBundle(dir, experimentName string) bool {
 	path, err := config.FileNames.FindInPath(dir)
 	if err != nil || filepath.Base(path) != "databricks.yml" || experimentName == "" {

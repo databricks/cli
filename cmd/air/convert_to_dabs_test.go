@@ -835,24 +835,28 @@ func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
 	assert.NotContains(t, err.Error(), "--output-dir")
 }
 
+// reconvertSharedCode runs the conversion with the same arguments as a workload author.
+func reconvertSharedCode(t *testing.T, path string, flags ...string) error {
+	t.Helper()
+	cmd := newConvertToDabsCommand()
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	cmd.SetContext(ctx)
+	cmd.SetArgs(append(flags, path))
+	return cmd.Execute()
+}
+
 func TestConvertToDabsReconvertSharedCode(t *testing.T) {
 	dir := t.TempDir()
 	_, path := rayLayoutConfig(t, dir, "core")
-	run := func(flags ...string) error {
-		cmd := newConvertToDabsCommand()
-		ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
-		cmd.SetContext(ctx)
-		cmd.SetArgs(append(flags, path))
-		return cmd.Execute()
-	}
-	require.NoError(t, run("--output-dir", dir))
+
+	require.NoError(t, reconvertSharedCode(t, path, "--output-dir", dir))
 	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
 	require.True(t, ok)
-	require.ErrorContains(t, run(), "--output-dir "+quoted+" --force")
-	require.NoError(t, run("--output-dir", dir, "--force"))
+	require.ErrorContains(t, reconvertSharedCode(t, path), "--output-dir "+quoted+" --force")
+	require.NoError(t, reconvertSharedCode(t, path, "--output-dir", dir, "--force"))
 	for _, content := range []string{"bundle: {name: ray-data}", "bundle: {}", "bundle: ["} {
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte(content), 0o600))
-		err := run()
+		err := reconvertSharedCode(t, path)
 		require.ErrorContains(t, err, "already holds a bundle")
 		assert.NotContains(t, err.Error(), "--force")
 	}
@@ -864,7 +868,7 @@ func TestConvertToDabsReconvertSharedCode(t *testing.T) {
 		} else {
 			require.NoError(t, os.Remove(yml))
 		}
-		err := run()
+		err := reconvertSharedCode(t, path)
 		require.ErrorContains(t, err, "already holds a bundle")
 		assert.NotContains(t, err.Error(), "--force")
 	}
