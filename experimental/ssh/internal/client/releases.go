@@ -46,11 +46,37 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 		return fmt.Errorf("failed to create workspace files client: %w", err)
 	}
 
-	getRelease := getGithubRelease
+	getRelease := withPyPIFallback(getGithubRelease, getPyPIRelease)
 	if releasesDir != "" {
 		getRelease = getLocalRelease
 	}
 	return uploadReleases(ctx, workspaceFiler, getRelease, version, releasesDir)
+}
+
+// withPyPIFallback returns a provider that downloads the release from GitHub and, when that
+// fails, from the CLI's wheel on PyPI: networks that block GitHub often allow PyPI or point pip
+// at a mirror of it. Development versions are not published to PyPI, so their GitHub error is
+// returned as it is.
+func withPyPIFallback(github, pypi releaseProvider) releaseProvider {
+	return func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		release, githubErr := github(ctx, architecture, version, releasesDir)
+		if githubErr == nil || build.IsDevelopmentVersion(version) {
+			return release, githubErr
+		}
+		// Expected on networks that block GitHub, so not a warning. If PyPI fails too, the
+		// error below carries the GitHub failure.
+		log.Infof(ctx, "Failed to download the CLI release from GitHub, trying PyPI: %v", githubErr)
+		release, pypiErr := pypi(ctx, architecture, version, releasesDir)
+		if pypiErr != nil {
+			return nil, fmt.Errorf("%w\n\nDownloading it from PyPI failed too: %w\n\n"+
+				"The SSH tunnel uploads the Linux build of the Databricks CLI to your workspace. "+
+				"Allow access to GitHub (github.com, release-assets.githubusercontent.com) or PyPI "+
+				"(pypi.org, files.pythonhosted.org), or set PIP_INDEX_URL, or index-url in your per-user "+
+				"pip config, to a PyPI mirror that serves the databricks package",
+				githubErr, pypiErr)
+		}
+		return release, nil
+	}
 }
 
 // newHTTP11WorkspaceClient returns a workspace client that is identical to one

@@ -357,7 +357,7 @@ func (m *uvManager) pipSeedArgs(venvPython string) []string {
 // pipIndexURLRe matches `index-url = <url>` lines in pip.conf.
 var pipIndexURLRe = regexp.MustCompile(`(?i)^\s*index-url\s*=\s*(\S+)`)
 
-// pipConfIndexURL reads the user's pip config and returns the index-url value.
+// PipConfIndexURL reads the user's pip config and returns the index-url value.
 // uv ignores pip.conf; on Databricks-managed machines pypi.org is blocked and
 // the corporate PyPI proxy is declared via pip.conf. Bridging the value through
 // UV_INDEX_URL lets uv reach the proxy.
@@ -365,7 +365,7 @@ var pipIndexURLRe = regexp.MustCompile(`(?i)^\s*index-url\s*=\s*(\S+)`)
 // pip stores its per-user config in OS-specific locations, so we probe them in
 // order and return the first index-url found.
 // https://pip.pypa.io/en/stable/topics/configuration/#location
-func pipConfIndexURL(ctx context.Context) string {
+func PipConfIndexURL(ctx context.Context) string {
 	for _, confPath := range pipConfPaths(ctx) {
 		if url := indexURLFromFile(confPath); url != "" {
 			return url
@@ -433,7 +433,7 @@ func (m *uvManager) resolveIndexURL(ctx context.Context) string {
 		log.Debugf(ctx, "uv: UV_INDEX_URL already set in environment, not overriding")
 		return ""
 	}
-	url := pipConfIndexURL(ctx)
+	url := PipConfIndexURL(ctx)
 	if url != "" {
 		// Redact any embedded credentials: private PyPI proxies often carry
 		// userinfo (https://user:pass@host/simple) that must not reach debug logs.

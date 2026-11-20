@@ -225,3 +225,121 @@ func TestUploadReleasesSendsEachArchiveOnce(t *testing.T) {
 		})
 	}
 }
+
+func TestWithPyPIFallback(t *testing.T) {
+	errGithub := errors.New("dial tcp: lookup github.com: no such host")
+	errPyPI := errors.New("failed to fetch the databricks package from pypi.org: HTTP 403")
+
+	provider := func(name string, err error, calls *[]string) releaseProvider {
+		return func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+			*calls = append(*calls, name)
+			if err != nil {
+				return nil, err
+			}
+			return io.NopCloser(strings.NewReader(name)), nil
+		}
+	}
+
+	tests := []struct {
+		name      string
+		version   string
+		githubErr error
+		pypiErr   error
+		wantCalls []string
+		want      string
+		wantErrs  []error
+	}{
+		{
+			name:      "GitHub works",
+			version:   testWheelVersion,
+			wantCalls: []string{"github"},
+			want:      "github",
+		},
+		{
+			name:      "GitHub fails",
+			version:   testWheelVersion,
+			githubErr: errGithub,
+			wantCalls: []string{"github", "pypi"},
+			want:      "pypi",
+		},
+		{
+			name:      "both fail",
+			version:   testWheelVersion,
+			githubErr: errGithub,
+			pypiErr:   errPyPI,
+			wantCalls: []string{"github", "pypi"},
+			wantErrs:  []error{errGithub, errPyPI},
+		},
+		{
+			name:      "development versions are not on PyPI",
+			version:   "1.27.1-dev+abcdef123456",
+			githubErr: errGithub,
+			wantCalls: []string{"github"},
+			wantErrs:  []error{errGithub},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var calls []string
+			getRelease := withPyPIFallback(provider("github", tt.githubErr, &calls), provider("pypi", tt.pypiErr, &calls))
+
+			release, err := getRelease(t.Context(), "amd64", tt.version, "")
+			assert.Equal(t, tt.wantCalls, calls)
+			if tt.wantErrs != nil {
+				for _, wantErr := range tt.wantErrs {
+					assert.ErrorIs(t, err, wantErr)
+				}
+				return
+			}
+			require.NoError(t, err)
+			got, err := io.ReadAll(release)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, string(got))
+		})
+	}
+}
+
+func TestWithPyPIFallbackNamesWhatToAllow(t *testing.T) {
+	failing := func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		return nil, errors.New("blocked")
+	}
+	_, err := withPyPIFallback(failing, failing)(t.Context(), "amd64", testWheelVersion, "")
+	assert.ErrorContains(t, err, "Allow access to GitHub (github.com, release-assets.githubusercontent.com) or PyPI "+
+		"(pypi.org, files.pythonhosted.org), or set PIP_INDEX_URL, or index-url in your per-user pip config, to a PyPI mirror")
+}
+
+// TestUploadReleasesFromPyPI uploads the archives built from the wheels to the fake workspace,
+// which unpacks them as the import-file endpoint does, and reads back the binaries the
+// bootstrap runs.
+func TestUploadReleasesFromPyPI(t *testing.T) {
+	binaries := testBinaries()
+	index := newTestIndex(t, testIndexFiles(t, binaries), testIndexOptions{})
+	ctx := pipConfigContext(t, index.URL+"/simple", "")
+
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+	workspaceFiler, err := filer.NewWorkspaceFilesClient(client, "/Workspace/Users/tester@databricks.test/.databricks/ssh-tunnel/"+testWheelVersion)
+	require.NoError(t, err)
+
+	githubBlocked := func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		return nil, errors.New("failed to download: HTTP 403")
+	}
+	err = uploadReleases(ctx, workspaceFiler, withPyPIFallback(githubBlocked, getPyPIRelease), testWheelVersion, "")
+	require.NoError(t, err)
+
+	for arch, binary := range binaries {
+		remoteBinaryPath := path.Join(strings.TrimSuffix(getReleaseName(arch, testWheelVersion), ".zip"), "databricks")
+		r, err := workspaceFiler.Read(ctx, remoteBinaryPath)
+		require.NoError(t, err)
+		got, err := io.ReadAll(r)
+		require.NoError(t, err)
+		require.NoError(t, r.Close())
+		assert.Equal(t, binary, got, arch)
+	}
+}
