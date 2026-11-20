@@ -20,7 +20,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -195,6 +194,18 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
 		},
 		{
+			// The question was answered on an earlier run of this version.
+			name:             "a retry after yes with no terminal installs",
+			state:            `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 1, "accepted_version": "1.30.0"}`,
+			stdinPiped:       true,
+			stdoutRedirected: true,
+			stderrRedirected: true,
+			wantStderr:       []string{"Installed Databricks AI tools for Cursor."},
+			wantSkills:       true,
+			wantState:        autoinstall.State{LastVersion: "1.30.0", AcceptedVersion: "1.30.0", ID: "treatment-machine"},
+			wantOutcome:      protos.AitoolsAutoInstallOutcomeInstalled,
+		},
+		{
 			// A failed plan uses up an attempt without asking.
 			name:        "a retry that was never asked asks",
 			state:       `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 1}`,
@@ -228,7 +239,11 @@ func TestAutoInstallPrompt(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			home := setupAutoInstallHome(t, tc.state)
+			var agentEnv []string
+			if tc.agent != "" {
+				agentEnv = []string{tc.agent, "1"}
+			}
+			home := setupAutoInstallHome(t, tc.state, agentEnv...)
 			t.Cleanup(autoinstall.ResetDeclined)
 			if tc.installState != "" {
 				dir := filepath.Join(home, ".databricks", "aitools", "skills")
@@ -238,9 +253,6 @@ func TestAutoInstallPrompt(t *testing.T) {
 			t.Setenv("TERM", "xterm")
 			for k, v := range tc.env {
 				t.Setenv(k, v)
-			}
-			if tc.agent != "" {
-				setCodingAgent(t, tc.agent)
 			}
 			var stdout, stderr bytes.Buffer
 			outW, errW := cmdio.FakeTTY(&stdout), cmdio.FakeTTY(&stderr)
@@ -314,8 +326,7 @@ func TestAutoInstallKeepsTheIDWhenItCannotAsk(t *testing.T) {
 // A machine that cannot reach the compatibility manifest waits for the lookup
 // after one command of a version, not after each of them.
 func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
-	setupAutoInstallHome(t, "")
-	setCodingAgent(t, "CLAUDECODE")
+	setupAutoInstallHome(t, "", "CLAUDECODE", "1")
 	lookups := 0
 	t.Cleanup(func() { gateOn = autoinstall.GateOn })
 	gateOn = func(context.Context, string) (bool, error) {
@@ -345,8 +356,7 @@ func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
 // An interrupted lookup can still answer from a stale cached manifest that has
 // the gate on. The run stops instead of installing.
 func TestAutoInstallStopsWhenTheGateLookupIsInterrupted(t *testing.T) {
-	home := setupAutoInstallHome(t, "")
-	setCodingAgent(t, "CLAUDECODE")
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
 	var interrupt context.CancelFunc
 	t.Cleanup(func() {
 		gateOn = autoinstall.GateOn
@@ -373,24 +383,51 @@ func TestAutoInstallStopsWhenTheGateLookupIsInterrupted(t *testing.T) {
 	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}, state)
 }
 
-// A machine with no coding agent has nothing to install, so it never looks the
-// gate up.
-func TestAutoInstallSkipsTheGateLookupWithoutAgents(t *testing.T) {
-	home := setupAutoInstallHome(t, "")
-	setCodingAgent(t, "CLAUDECODE")
-	require.NoError(t, os.RemoveAll(filepath.Join(home, ".cursor")))
-	t.Cleanup(func() { gateOn = autoinstall.GateOn })
-	gateOn = func(context.Context, string) (bool, error) {
-		t.Error("the gate was looked up")
-		return false, nil
+// A run that has nothing to install or cannot ask skips before the gate
+// lookup, so a cron job or a job pod does not wait for it on every run. The
+// run has no terminal.
+func TestAutoInstallSkipsTheGateLookup(t *testing.T) {
+	tests := []struct {
+		name string
+		// agentEnv makes the run a coding agent's call, which installs
+		// without asking.
+		agentEnv []string
+		// noAgents removes Cursor's config dir: the machine has no agent
+		// to install for.
+		noAgents bool
+	}{
+		{
+			// The coding agent's call keeps the run off the cannot-ask skip,
+			// so the skip is the no-agents one.
+			name:     "a machine with no agent to install for",
+			agentEnv: []string{"CLAUDECODE", "1"},
+			noAgents: true,
+		},
+		{
+			name: "a run with no terminal and no coding agent cannot ask",
+		},
 	}
-	ctx := cmdio.MockDiscard(t.Context())
-	ctx = telemetry.WithNewLogger(ctx)
-	runAutoInstallHook(ctx)
-	assert.Empty(t, telemetry.BufferedEvents(ctx))
-	state, err := autoinstall.Load(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, autoinstall.State{ID: "treatment-machine"}, state, "the version is not settled")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			home := setupAutoInstallHome(t, "", tc.agentEnv...)
+			if tc.noAgents {
+				require.NoError(t, os.RemoveAll(filepath.Join(home, ".cursor")))
+			}
+			t.Cleanup(func() { gateOn = autoinstall.GateOn })
+			gateOn = func(context.Context, string) (bool, error) {
+				t.Error("the gate was looked up")
+				return true, nil
+			}
+			ctx := cmdio.MockDiscard(t.Context())
+			ctx = telemetry.WithNewLogger(ctx)
+			runAutoInstallHook(ctx)
+			assert.Empty(t, telemetry.BufferedEvents(ctx))
+			assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+			state, err := autoinstall.Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, autoinstall.State{ID: "treatment-machine"}, state, "the version is not settled")
+		})
+	}
 }
 
 // Root running in a user's home (sudo with HOME kept) leaves the home alone:
@@ -418,10 +455,9 @@ func TestAutoInstallSkipsRootInAUserHome(t *testing.T) {
 // runRootInUserHome runs the hook in a fresh home, as root in a user's home
 // when rootInHome is set, and counts the gate lookups.
 func runRootInUserHome(t *testing.T, rootInHome bool) (ctx context.Context, home string, lookups *int) {
-	home = setupAutoInstallHome(t, "")
 	// A coding agent's call installs without a question, so the user's run
 	// needs no terminal.
-	setCodingAgent(t, "CLAUDECODE")
+	home = setupAutoInstallHome(t, "", "CLAUDECODE", "1")
 	if rootInHome {
 		// The state the setup seeds would hide a state file or lock file
 		// the run creates.
@@ -439,25 +475,6 @@ func runRootInUserHome(t *testing.T, rootInHome bool) (ctx context.Context, home
 	ctx = telemetry.WithNewLogger(ctx)
 	runAutoInstallHook(ctx)
 	return ctx, home, lookups
-}
-
-// A run with no terminal and no coding agent cannot ask, so it skips before the
-// gate lookup: a cron job or a job pod does not wait for it on every run.
-func TestAutoInstallSkipsTheGateLookupWhenItCannotAsk(t *testing.T) {
-	home := setupAutoInstallHome(t, "")
-	t.Cleanup(func() { gateOn = autoinstall.GateOn })
-	gateOn = func(context.Context, string) (bool, error) {
-		t.Error("the gate was looked up")
-		return true, nil
-	}
-	ctx := cmdio.MockDiscard(t.Context())
-	ctx = telemetry.WithNewLogger(ctx)
-	runAutoInstallHook(ctx)
-	assert.Empty(t, telemetry.BufferedEvents(ctx))
-	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
-	state, err := autoinstall.Load(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, autoinstall.State{ID: "treatment-machine"}, state, "the version is not settled")
 }
 
 func TestToolsPlanNewAgents(t *testing.T) {
@@ -488,17 +505,11 @@ func runAutoInstallHook(ctx context.Context) {
 	AutoInstall(list)
 }
 
-// setCodingAgent makes the run the call of the coding agent whose env var is
-// name. setupAutoInstallHome resets the SDK's cached agent after the test.
-func setCodingAgent(t *testing.T, name string) {
-	t.Setenv(name, "1")
-	useragent.ClearCache()
-}
-
 // setupAutoInstallHome gives the run a clean environment with Cursor's config
 // dir, a skills server, the gate on and a released CLI version. state seeds
-// the auto-install state (a treatment-arm machine id by default).
-func setupAutoInstallHome(t *testing.T, state string) string {
+// the auto-install state (a treatment-arm machine id by default). env adds
+// key/value pairs to the environment, such as a coding agent's env var.
+func setupAutoInstallHome(t *testing.T, state string, env ...string) string {
 	t.Helper()
 	home := t.TempDir()
 	cacheDir := t.TempDir()
@@ -515,6 +526,7 @@ func setupAutoInstallHome(t *testing.T, state string) string {
 		"DATABRICKS_SKILLS_BASE_URL", url,
 		"DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.30.0",
 	}
+	kv = append(kv, env...)
 	// Windows sockets need SystemRoot.
 	if v, ok := os.LookupEnv("SystemRoot"); ok {
 		kv = append(kv, "SystemRoot", v)
