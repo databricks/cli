@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type applyPythonOutputTestCase struct {
@@ -179,6 +180,25 @@ func TestMergeOutput_disallowInsert(t *testing.T) {
 func TestMergeOutput_disallowUpdate(t *testing.T) {
 	output := mapOf("not_resource", dyn.V("value"))
 	input := mapOf("not_resource", dyn.V("new value"))
+
+	_, _, err := applyPythonOutput(input, output)
+
+	assert.EqualError(t, err, `unexpected change at "not_resource" (update)`)
+}
+
+func TestMergeOutput_wholeFloatAsInt(t *testing.T) {
+	input := mapOf("not_resource", dyn.V(1.0))
+	output := mapOf("not_resource", dyn.V(1))
+
+	merged, _, err := applyPythonOutput(input, output)
+
+	require.NoError(t, err)
+	assert.Equal(t, input.Get("not_resource"), merged.Get("not_resource"))
+}
+
+func TestMergeOutput_disallowFloatToDifferentInt(t *testing.T) {
+	input := mapOf("not_resource", dyn.V(1.5))
+	output := mapOf("not_resource", dyn.V(1))
 
 	_, _, err := applyPythonOutput(input, output)
 
