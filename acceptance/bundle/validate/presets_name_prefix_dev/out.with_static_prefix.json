@@ -78,6 +78,12 @@
           "value": "[USERNAME]"
         }
       ],
+      "groups": [
+        {
+          "display": "users",
+          "value": "1"
+        }
+      ],
       "id": "[USERID]",
       "short_name": "[USERNAME]",
       "userName": "[USERNAME]"

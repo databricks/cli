@@ -1,8 +1,6 @@
 
 >>> [CLI] api post /api/2.0/preview/scim/v2/Groups --json {"displayName": "admins", "members": [{"value": "[USERID]"}]}
 
->>> [CLI] api post /api/2.0/preview/scim/v2/Groups --json {"displayName": "users", "members": [{"value": "[USERID]"}]}
-
 >>> [CLI] bundle validate -o json
 [
   "admins",

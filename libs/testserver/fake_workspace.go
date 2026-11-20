@@ -52,10 +52,13 @@ const (
 	// (not yet visible), and a deleted synced table stays in DELETING instead of
 	// disappearing (so the direct engine's post-delete poll has a teardown to wait out).
 	EventualConsistencyTokenPrefix = "dbapi3"
-	UserID                         = "1000012345"
-	TestDefaultClusterId           = "0123-456789-cluster0"
-	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId      = "0123-456789-pool0"
+	// AssumedGroupTokenPrefix marks a caller authorized by an assumed group: identity/me
+	// returns that group as the principal.
+	AssumedGroupTokenPrefix   = "dbapi4"
+	UserID                    = "1000012345"
+	TestDefaultClusterId      = "0123-456789-cluster0"
+	TestDefaultWarehouseId    = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -103,9 +106,18 @@ func (s *FakeWorkspace) MeUser(token string) iam.User {
 	return user
 }
 
+// AssumedGroupId and AssumedGroupName identify the group an AssumedGroupTokenPrefix token acts as.
+const (
+	AssumedGroupId   = "42"
+	AssumedGroupName = "data-engineers"
+)
+
 // IdentityMe returns the GET /api/2.0/identity/me body for a token. It describes the
-// same identity as MeUser, as a user or a service principal.
+// same identity as MeUser, as a user, a service principal or an assumed group.
 func (s *FakeWorkspace) IdentityMe(token string) any {
+	if strings.HasPrefix(token, AssumedGroupTokenPrefix) {
+		return map[string]any{"group": map[string]any{"group_id": AssumedGroupId, "group_name": AssumedGroupName}}
+	}
 	me := s.MeUser(token)
 	if isServicePrincipalToken(token) {
 		return map[string]any{"service_principal": map[string]any{

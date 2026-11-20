@@ -97,18 +97,6 @@ state_path_is_shared false
 state_path_other true
 
 >>> [CLI] bundle deploy -t shared_users_can_manage
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - user_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:47:7
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_users_can_manage/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged

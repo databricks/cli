@@ -1,7 +1,5 @@
 ME=$($CLI current-user me | jq -r .id)
-for name in admins users; do
-    MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.0/preview/scim/v2/Groups --json "{\"displayName\": \"$name\", \"members\": [{\"value\": \"$ME\"}]}" > LOG.groups.$name
-done
+MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.0/preview/scim/v2/Groups --json "{\"displayName\": \"admins\", \"members\": [{\"value\": \"$ME\"}]}" > LOG.groups.admins
 
 trace $CLI bundle validate -o json | jq '.workspace.current_user.groups | map(.display)'
 trace print_requests.py --get //api/2.0/identity/me/transitive-parent-groups

@@ -148,7 +148,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
-	me, err := iamutil.GetCurrentUser(ctx, w)
+	me, err := iamutil.GetCurrentUserOnce(ctx, w)
 	if err == nil {
 		return successAuthStatus(ctx, cmd, w.Config, showSensitive, me.UserName, ""), nil
 	}

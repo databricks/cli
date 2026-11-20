@@ -89,7 +89,7 @@ any other task such as a notebook that prepares data.
 		if all {
 			data.All = true
 
-			me, err := iamutil.GetCurrentUser(ctx, w)
+			me, err := iamutil.GetUserPrincipal(ctx, w)
 			if err != nil {
 				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 					fmt.Errorf("failed to resolve current user: %w", err))

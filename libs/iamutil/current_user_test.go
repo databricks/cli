@@ -179,9 +179,10 @@ func TestCurrentUserGroupsResolvesNamesSorted(t *testing.T) {
 
 	groups, err := CurrentUserGroups(t.Context(), w)
 	require.NoError(t, err)
-	require.Len(t, groups, 2)
+	require.Len(t, groups, 3)
 	assert.Equal(t, "alpha", groups[0].Display)
-	assert.Equal(t, "zeta", groups[1].Display)
+	assert.Equal(t, "users", groups[1].Display)
+	assert.Equal(t, "zeta", groups[2].Display)
 	assert.NotEmpty(t, groups[0].Value)
 }
 
@@ -281,4 +282,52 @@ func TestGetCurrentUserOnceDoesNotRetryOn500(t *testing.T) {
 	_, err := GetCurrentUserOnce(t.Context(), w)
 	require.Error(t, err)
 	assert.Equal(t, int32(1), calls.Load())
+}
+
+func TestGetCurrentUserReportsIdentityMeNotEnabled(t *testing.T) {
+	tests := []struct {
+		name      string
+		status    int
+		errorCode string
+		wantIs    error
+	}{
+		{name: "not found", status: http.StatusNotFound, errorCode: "ENDPOINT_NOT_FOUND", wantIs: apierr.ErrNotFound},
+		{name: "not implemented", status: http.StatusNotImplemented, errorCode: "NOT_IMPLEMENTED", wantIs: apierr.ErrNotImplemented},
+		{name: "feature disabled", status: http.StatusBadRequest, errorCode: "FEATURE_DISABLED"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			w := newIdentityMeWorkspace(t, func(testserver.Request) testserver.Response {
+				return testserver.Response{StatusCode: tc.status, Body: map[string]any{"error_code": tc.errorCode, "message": "Me API is not enabled."}}
+			})
+
+			_, err := GetCurrentUser(t.Context(), w)
+			assert.ErrorContains(t, err, "the identity/me API is not enabled in this workspace")
+			assert.ErrorContains(t, err, "use an older Databricks CLI version")
+			assert.ErrorContains(t, err, "Me API is not enabled.")
+			if tc.wantIs != nil {
+				assert.ErrorIs(t, err, tc.wantIs)
+			}
+		})
+	}
+}
+
+func TestListCurrentUserParentGroupsRejectsRepeatedPageToken(t *testing.T) {
+	var calls atomic.Int32
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(req testserver.Request) any {
+		calls.Add(1)
+		// A server bug that keeps returning the same next page token must not loop forever.
+		return map[string]any{
+			"me_transitive_parent_groups": []map[string]any{{"group_id": "11", "group_name": "eng"}},
+			"next_page_token":             "page2",
+		}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	_, err = listCurrentUserParentGroups(t.Context(), w)
+	assert.ErrorContains(t, err, "repeated page token")
+	assert.Equal(t, int32(2), calls.Load())
 }

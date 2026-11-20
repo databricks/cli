@@ -355,7 +355,7 @@ func TestCancelAllCancelsAMultiTaskRunOnce(t *testing.T) {
 	single := airBaseRun(222, "me@example.com", "GPU_1xA10", 1, "/Users/me@example.com/exp-c")
 	list := runsListBody(t, "", multi, single)
 	var cancelled []int64
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/2.2/jobs/runs/list":
 			_, _ = w.Write([]byte(list))

@@ -41,7 +41,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 	}
 
 	// Without the groups, a grant through a group may already apply, so suggesting the
-	// identity could be wrong. The populate step has already warned about the groups.
+	// identity could be wrong. The populate step has already logged that the groups could not be read.
 	if b.CurrentUserGroupsUnknown {
 		return nil
 	}

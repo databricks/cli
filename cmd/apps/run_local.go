@@ -117,7 +117,7 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 		return err
 	}
 
-	me, err := iamutil.GetCurrentUser(ctx, w)
+	me, err := iamutil.GetUserPrincipal(ctx, w)
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package iamutil
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -25,7 +26,15 @@ const (
 	identityMeTransitiveParentGroupsPath = "/api/2.0/identity/me/transitive-parent-groups"
 )
 
-// ErrGroupPrincipal is returned by GetUserPrincipal when the current request is
+// ErrMeNotEnabled is wrapped by the identity/me errors of a workspace that does not serve the
+// API yet. Callers check it with errors.Is to show the message as the diagnostic.
+var ErrMeNotEnabled = errors.New("the identity/me API is not enabled in this workspace, so the current user cannot be read; use an older Databricks CLI version for now")
+
+// meNotEnabledCodes are the error codes identity/me returns in a workspace that does not serve
+// the API yet. The 404 and 501 statuses are matched through apierr.ErrNotFound and ErrNotImplemented.
+var meNotEnabledCodes = []string{"ENDPOINT_NOT_FOUND", "FEATURE_DISABLED", "NOT_IMPLEMENTED"}
+
+// ErrGroupPrincipal is returned by GetUserPrincipal and GetUserPrincipalOnce when the current request is
 // authorized by an assumed group, which has no user identity to deploy as.
 var ErrGroupPrincipal = errors.New("the current identity is an assumed group, but this command needs a user or service principal")
 
@@ -48,12 +57,8 @@ type currentPrincipal struct {
 // resolves an assumed group. Groups, Roles and Entitlements are not set; CurrentUserGroups
 // reads the groups.
 //
-// identity/me is a read-only endpoint, so retrying any 500 is safe. The Databricks SCIM
-// API intermittently returns "500 TEMPORARILY_UNAVAILABLE" (a condition it otherwise
-// serves as 503), and the SDK retries 503 but not 500 — see the "some API's recommend
-// retries on HTTP 500, but we'll add that later" comment on (*apierr.APIError).IsRetriable
-// in databricks-sdk-go/apierr. This call runs at the start of every bundle command, so an
-// unretried 500 fails the whole command; we close that gap here.
+// identity/me is read-only, so retrying a 500 is safe. The SDK retries 503 but not 500, and
+// this call runs at the start of every bundle command, so an unretried 500 would fail it.
 func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
 	p, err := pollIdentityMe(ctx, w)
 	if err != nil {
@@ -65,11 +70,7 @@ func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.Us
 // GetCurrentUserOnce is GetCurrentUser with a single attempt, for probes that should
 // fail fast rather than wait out transient 500s.
 func GetCurrentUserOnce(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	c, err := newIdentityClient(w)
-	if err != nil {
-		return nil, err
-	}
-	p, err := getIdentityMe(ctx, c)
+	p, err := getIdentityMeOnce(ctx, w)
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +91,19 @@ func GetUserPrincipal(ctx context.Context, w *databricks.WorkspaceClient) (*iam.
 	return p.user, nil
 }
 
+// GetUserPrincipalOnce is GetUserPrincipal with a single attempt, for probes that should
+// fail fast rather than wait out transient 500s.
+func GetUserPrincipalOnce(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
+	p, err := getIdentityMeOnce(ctx, w)
+	if err != nil {
+		return nil, err
+	}
+	if p.group {
+		return nil, ErrGroupPrincipal
+	}
+	return p.user, nil
+}
+
 // pollIdentityMe is getIdentityMe that retries HTTP 500 responses for meRetryTimeout.
 func pollIdentityMe(ctx context.Context, w *databricks.WorkspaceClient) (*currentPrincipal, error) {
 	c, err := newIdentityClient(w)
@@ -99,6 +113,15 @@ func pollIdentityMe(ctx context.Context, w *databricks.WorkspaceClient) (*curren
 	return retryOn500(ctx, func() (*currentPrincipal, error) {
 		return getIdentityMe(ctx, c)
 	})
+}
+
+// getIdentityMeOnce is getIdentityMe with a single attempt.
+func getIdentityMeOnce(ctx context.Context, w *databricks.WorkspaceClient) (*currentPrincipal, error) {
+	c, err := newIdentityClient(w)
+	if err != nil {
+		return nil, err
+	}
+	return getIdentityMe(ctx, c)
 }
 
 // retryOn500 runs get, retrying HTTP 500 responses for meRetryTimeout. Other errors fail at once.
@@ -118,6 +141,16 @@ func retryOn500[T any](ctx context.Context, get func() (T, error)) (T, error) {
 		return zero, err
 	}
 	return *res, nil
+}
+
+// meNotEnabled reports whether err means the workspace does not serve identity/me yet.
+func meNotEnabled(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
+		return false
+	}
+	return errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrNotImplemented) ||
+		slices.Contains(meNotEnabledCodes, apiErr.ErrorCode)
 }
 
 // identityClient sends GETs to the identity endpoints. Build one per command and reuse it
@@ -143,6 +176,9 @@ func (c *identityClient) get(ctx context.Context, path string, query map[string]
 func getIdentityMe(ctx context.Context, c *identityClient) (*currentPrincipal, error) {
 	var me identityMe
 	if err := c.get(ctx, identityMePath, nil, &me); err != nil {
+		if meNotEnabled(err) {
+			return nil, fmt.Errorf("%w: %w", ErrMeNotEnabled, err)
+		}
 		return nil, err
 	}
 	user, err := meToUser(&me)
@@ -212,6 +248,7 @@ func listCurrentUserParentGroups(ctx context.Context, w *databricks.WorkspaceCli
 	}
 	var groups []parentGroup
 	pageToken := ""
+	seenTokens := map[string]bool{}
 	for {
 		query := map[string]any{}
 		if pageToken != "" {
@@ -231,6 +268,11 @@ func listCurrentUserParentGroups(ctx context.Context, w *databricks.WorkspaceCli
 		if page.NextPageToken == "" {
 			return groups, nil
 		}
+		// Following a token the server already sent would loop until the context ends.
+		if seenTokens[page.NextPageToken] {
+			return nil, errors.New("identity/me returned a repeated page token for the parent groups")
+		}
+		seenTokens[page.NextPageToken] = true
 		pageToken = page.NextPageToken
 	}
 }

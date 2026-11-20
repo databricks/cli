@@ -90,7 +90,7 @@ Examples:
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Get current user to filter apps
-			me, err := iamutil.GetCurrentUser(ctx, w)
+			me, err := iamutil.GetUserPrincipal(ctx, w)
 			if err != nil {
 				return fmt.Errorf("failed to get current user: %w", err)
 			}

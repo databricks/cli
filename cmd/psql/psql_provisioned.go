@@ -27,7 +27,7 @@ func connectProvisioned(ctx context.Context, instanceName string, retryConfig li
 		return err
 	}
 
-	user, err := iamutil.GetCurrentUser(ctx, w)
+	user, err := iamutil.GetUserPrincipal(ctx, w)
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}

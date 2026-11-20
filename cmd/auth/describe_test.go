@@ -420,7 +420,7 @@ func describeVerifyServer(t *testing.T, accountID string, meStatus, listStatus i
 			w.Header().Set("Content-Type", "application/json")
 			if status != http.StatusOK {
 				w.WriteHeader(status)
-				okBody = map[string]any{"error_code": "TEST_ERROR", "message": "secondary check failed"}
+				okBody = map[string]any{"error_code": "TEST_ERROR", "message": r.URL.Path + " failed"}
 			}
 			require.NoError(t, json.NewEncoder(w).Encode(okBody))
 		}
@@ -480,7 +480,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 	tests := []struct {
 		name          string
 		isAccount     bool
-		primaryErr    *apierr.APIError // account branch only: the primary Workspaces.List error
+		primaryErr    *apierr.APIError // the primary check error that is reported when both checks fail
 		meStatus      int
 		listStatus    int
 		accountID     string
@@ -498,6 +498,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 		},
 		{
 			name:       "no second call without an account id",
+			primaryErr: &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "/api/2.0/identity/me failed"},
 			meStatus:   http.StatusBadRequest,
 			wantStatus: "error",
 		},
@@ -513,6 +514,7 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 		},
 		{
 			name:       "workspace branch, both checks fail",
+			primaryErr: &apierr.APIError{StatusCode: http.StatusNotFound, Message: "/api/2.0/identity/me failed"},
 			meStatus:   http.StatusNotFound,
 			listStatus: http.StatusUnauthorized,
 			accountID:  "test-acct",
@@ -555,7 +557,12 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 			assert.Equal(t, tc.wantUsername, status.Username)
 			assert.Equal(t, tc.wantAccountID, status.AccountID)
 			if tc.wantStatus == "error" && tc.primaryErr != nil {
-				assert.ErrorIs(t, status.Error, tc.primaryErr)
+				// The reported error is the primary one, found by status and message: an HTTP
+				// error from the server is a new value, so ErrorIs cannot match it by identity.
+				var apiErr *apierr.APIError
+				require.ErrorAs(t, status.Error, &apiErr)
+				assert.Equal(t, tc.primaryErr.StatusCode, apiErr.StatusCode)
+				assert.Equal(t, tc.primaryErr.Message, apiErr.Message)
 			}
 		})
 	}

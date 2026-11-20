@@ -37,15 +37,18 @@ func TestPopulateCurrentUserSetsGroups(t *testing.T) {
 
 	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
 	require.NoError(t, diags.Error())
-	require.Len(t, b.Config.Workspace.CurrentUser.Groups, 2)
-	assert.Equal(t, "alpha", b.Config.Workspace.CurrentUser.Groups[0].Display)
-	assert.Equal(t, "zeta", b.Config.Workspace.CurrentUser.Groups[1].Display)
+	var names []string
+	for _, g := range b.Config.Workspace.CurrentUser.Groups {
+		names = append(names, g.Display)
+	}
+	// The fake lists the built-in users group for every identity.
+	assert.Equal(t, []string{"alpha", "users", "zeta"}, names)
 }
 
 // Workspace-local groups are named by the parent-groups response, so admins and users
 // resolve like account groups.
 func TestPopulateCurrentUserSetsWorkspaceLocalGroups(t *testing.T) {
-	b := newPopulateBundle(t, testserver.New(t), "admins", "users")
+	b := newPopulateBundle(t, testserver.New(t), "admins")
 
 	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
 	require.NoError(t, diags.Error())
@@ -56,18 +59,18 @@ func TestPopulateCurrentUserSetsWorkspaceLocalGroups(t *testing.T) {
 	assert.Equal(t, []string{"admins", "users"}, names)
 }
 
-// A failed parent-groups read leaves the groups empty and warns, and the current user is still set.
-func TestPopulateCurrentUserWarnsWhenGroupsFail(t *testing.T) {
+// A failed parent-groups read leaves the groups empty and only logs, and the current user is still set.
+func TestPopulateCurrentUserSkipsGroupsWhenReadFails(t *testing.T) {
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(testserver.Request) any {
 		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "denied"}}
 	})
 	b := newPopulateBundle(t, server, "testgroup")
 
+	// The failure is logged, not a diagnostic, so `bundle validate --strict` still passes.
 	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
-	require.Len(t, diags, 1)
-	assert.Equal(t, diag.Warning, diags[0].Severity)
-	assert.Contains(t, diags[0].Summary, "Could not read the groups of the current user")
+	require.NoError(t, diags.Error())
+	assert.Empty(t, diags)
 	assert.Nil(t, b.Config.Workspace.CurrentUser.Groups)
 	assert.True(t, b.CurrentUserGroupsUnknown)
 	assert.Equal(t, "tester@databricks.com", b.Config.Workspace.CurrentUser.UserName)
@@ -100,8 +103,9 @@ func TestPopulateCurrentUserCachesGroupsWithPrincipal(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, int32(1), meCalls.Load())
 	assert.Equal(t, int32(1), parentCalls.Load())
-	require.Len(t, second.Config.Workspace.CurrentUser.Groups, 1)
+	require.Len(t, second.Config.Workspace.CurrentUser.Groups, 2)
 	assert.Equal(t, "alpha", second.Config.Workspace.CurrentUser.Groups[0].Display)
+	assert.Equal(t, "users", second.Config.Workspace.CurrentUser.Groups[1].Display)
 }
 
 // An assumed group is not a user: bundle commands that deploy as the current user fail
@@ -117,5 +121,19 @@ func TestPopulateCurrentUserRejectsGroupPrincipal(t *testing.T) {
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Error, diags[0].Severity)
 	assert.Equal(t, iamutil.ErrGroupPrincipal.Error(), diags[0].Summary)
+	assert.Nil(t, b.Config.Workspace.CurrentUser)
+}
+
+// A workspace without identity/me fails the command with the actionable message, not the raw server text.
+func TestPopulateCurrentUserReportsIdentityMeNotEnabled(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "Me API is not enabled."}}
+	})
+	b := newPopulateBundle(t, server, "testgroup")
+
+	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
+	require.Error(t, diags.Error())
+	assert.ErrorContains(t, diags.Error(), "the identity/me API is not enabled in this workspace")
 	assert.Nil(t, b.Config.Workspace.CurrentUser)
 }

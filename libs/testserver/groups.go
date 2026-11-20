@@ -48,13 +48,18 @@ func (s *FakeWorkspace) GroupsCreate(req Request) Response {
 	}
 }
 
+// usersGroupId is the workspace-local users group. Every workspace identity is a member of it,
+// so the fake lists it for every caller, as a real workspace does.
+const usersGroupId = "1"
+
 // IdentityMeTransitiveParentGroups answers GET /api/2.0/identity/me/transitive-parent-groups
 // with the groups the caller belongs to, named as the server names them.
 func (s *FakeWorkspace) IdentityMeTransitiveParentGroups() any {
 	defer s.LockUnlock()()
 
 	ids := slices.Sorted(maps.Keys(s.groupMembers))
-	parents := make([]map[string]any, 0, len(ids))
+	parents := make([]map[string]any, 0, len(ids)+1)
+	parents = append(parents, map[string]any{"group_id": usersGroupId, "group_name": "users"})
 	for _, id := range ids {
 		parents = append(parents, map[string]any{"group_id": id, "group_name": s.Groups[id].DisplayName})
 	}

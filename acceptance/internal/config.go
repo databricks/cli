@@ -59,6 +59,9 @@ type TestConfig struct {
 	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
 	IsServicePrincipal *bool
 
+	// If set, the caller is an assumed group: identity/me returns the group as the principal (default is false)
+	IsAssumedGroup *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement
