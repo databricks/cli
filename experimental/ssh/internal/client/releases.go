@@ -9,12 +9,12 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/releases"
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/filer"
@@ -176,39 +176,12 @@ func isProxyUploadError(err error) bool {
 	return strings.Contains(msg, "stream error") && strings.Contains(msg, "stream ID")
 }
 
-func getReleaseName(architecture, version string) string {
-	if strings.Contains(version, "dev") {
-		return fmt.Sprintf("databricks_cli_linux_%s.zip", architecture)
-	}
-	return fmt.Sprintf("databricks_cli_%s_linux_%s.zip", version, architecture)
-}
+func getReleaseName(architecture, version string) string { return releases.Name(architecture, version) }
 
 func getLocalRelease(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
-	log.Infof(ctx, "Looking for CLI releases in directory: %s", releasesDir)
-	releaseName := getReleaseName(architecture, version)
-	releasePath := filepath.Join(releasesDir, releaseName)
-	file, err := os.Open(releasePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %w", releasePath, err)
-	}
-	return file, nil
+	return releases.OpenLocal(ctx, architecture, version, releasesDir)
 }
 
 func getGithubRelease(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
-	// TODO: download and check databricks_cli_<version>_SHA256SUMS
-	fileName := getReleaseName(architecture, version)
-	downloadURL := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, fileName)
-	log.Infof(ctx, "Downloading %s from %s", fileName, downloadURL)
-
-	resp, err := http.Get(downloadURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download %s: %w", downloadURL, err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		return nil, fmt.Errorf("failed to download %s: HTTP %d", downloadURL, resp.StatusCode)
-	}
-
-	return resp.Body, nil
+	return releases.OpenPublished(ctx, architecture, version, releasesDir)
 }

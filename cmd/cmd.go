@@ -96,7 +96,7 @@ func sandboxSpec() root.CommandSpec {
 	spec := sandbox.Spec
 	spec.Build = func(ctx context.Context, cmd *cobra.Command) {
 		sandbox.Spec.Build(ctx, cmd)
-		cmd.AddCommand(sandboxssh.NewServerCommand())
+		cmd.AddCommand(sandboxssh.NewServerCommand(), sandboxssh.NewSSHCommand(sandboxssh.CommandDependencies{ResolveName: sandbox.ResolveSSHName, Complete: sandbox.CompleteSandboxIDs}))
 	}
 	return spec
 }
