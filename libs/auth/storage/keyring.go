@@ -3,11 +3,12 @@ package storage
 import (
 	"cmp"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -54,6 +55,15 @@ const keyringProbeAccountPrefix = "__probe_"
 // a GUI unlock prompt that no one answers in a headless session.
 const defaultKeyringTimeout = 3 * time.Second
 
+// splitLookupAttempts and splitLookupDelay bound how long Lookup waits for
+// another process to finish writing or deleting a split token: it reads the
+// entry again after 25, 50, 100 and 200 milliseconds, like the store update
+// recovery in u2m.
+const (
+	splitLookupAttempts = 5
+	splitLookupDelay    = 25 * time.Millisecond
+)
+
 // keyringBackend is the subset of zalando/go-keyring the cache depends on.
 // Extracted as an interface so tests can inject a fake.
 type keyringBackend interface {
@@ -67,15 +77,22 @@ type keyringBackend interface {
 // checksum, store time, ...) without breaking older CLI versions that read
 // the same entry.
 type keyringEntry struct {
-	Token        *oauth2.Token `json:"token"`
-	PendingLogin *PendingLogin `json:"pending_login,omitempty"`
+	entryFields
 
 	// Split is set for a token that is too large for one keyring item. CLI
 	// versions that predate it still read the entry, so Token is then empty
-	// rather than nil, which releases before v1.24 dereference. It must not
-	// carry the refresh token either: they would rotate it and then fail to
-	// store the oversized result.
+	// rather than nil, because releases before v1.24 dereference it. It must
+	// not carry the refresh token either: they would rotate it and then fail
+	// to store the oversized result.
 	Split *splitToken `json:"split,omitempty"`
+}
+
+// entryFields holds the fields of Entry. Entry converts to and from it, so a
+// field added to Entry but not here fails to compile instead of being dropped
+// by the keyring store.
+type entryFields struct {
+	Token        *oauth2.Token `json:"token"`
+	PendingLogin *PendingLogin `json:"pending_login,omitempty"`
 }
 
 // splitToken is the part of an oversized token that stays in its entry.
@@ -95,7 +112,24 @@ type splitToken struct {
 type zalandoBackend struct{}
 
 func (zalandoBackend) Set(service, account, secret string) error {
+	if runtime.GOOS == "darwin" && darwinCommandTooBig(service, account, secret) {
+		return keyring.ErrSetDataTooBig
+	}
 	return keyring.Set(service, account, secret)
+}
+
+// darwinCommandTooBig reports whether go-keyring's macOS backend is sure to
+// reject secret as too big. That backend starts `security -i` before it checks
+// the size and does not reap the process when it rejects the secret, so
+// without this check a long-running process would leave one behind on every
+// store of a split token. The command is counted without shell quotes, which
+// only make it longer, so this never rejects a secret that go-keyring would
+// store.
+// https://github.com/zalando/go-keyring/blob/v0.2.8/keyring_darwin.go#L82-L88
+func darwinCommandTooBig(service, account, secret string) bool {
+	password := "go-keyring-base64:" + base64.StdEncoding.EncodeToString([]byte(secret))
+	command := fmt.Sprintf("add-generic-password -U -s %s -a %s -w %s\n", service, account, password)
+	return len(command) > 4096
 }
 
 func (zalandoBackend) Get(service, account string) (string, error) {
@@ -116,6 +150,10 @@ type keyringStore struct {
 	backend        keyringBackend
 	timeout        time.Duration
 	keyringSvcName string
+
+	// retryDelay is how long Lookup first waits before it reads a split token
+	// with missing or mismatched parts again. It doubles on each attempt.
+	retryDelay time.Duration
 }
 
 // NewKeyringStore returns a Store backed by the OS-native secure store (via
@@ -125,6 +163,7 @@ func NewKeyringStore() Store {
 		backend:        zalandoBackend{},
 		timeout:        defaultKeyringTimeout,
 		keyringSvcName: keyringServiceName,
+		retryDelay:     splitLookupDelay,
 	}
 }
 
@@ -187,7 +226,7 @@ func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
 
 // Put implements the Store interface.
 func (k *keyringStore) Put(key string, e Entry) error {
-	raw, err := json.Marshal(keyringEntry{Token: e.Token, PendingLogin: e.PendingLogin})
+	raw, err := json.Marshal(keyringEntry{entryFields: entryFields(e)})
 	if err != nil {
 		return fmt.Errorf("marshal token: %w", err)
 	}
@@ -207,14 +246,14 @@ func (k *keyringStore) Put(key string, e Entry) error {
 // user out, while losing the access token only costs another refresh.
 func (k *keyringStore) putSplit(key string, t *oauth2.Token) error {
 	sum := sha256.Sum256([]byte(t.AccessToken))
-	parts := slices.Collect(slices.Chunk([]byte(t.AccessToken), accessTokenPartSize))
+	n := (len(t.AccessToken) + accessTokenPartSize - 1) / accessTokenPartSize
 	rest := *t
 	rest.AccessToken = ""
 	raw, err := json.Marshal(keyringEntry{
 		Token: &oauth2.Token{},
 		Split: &splitToken{
 			Token:             rest,
-			AccessTokenParts:  len(parts),
+			AccessTokenParts:  n,
 			AccessTokenSHA256: hex.EncodeToString(sum[:]),
 		},
 	})
@@ -224,8 +263,10 @@ func (k *keyringStore) putSplit(key string, t *oauth2.Token) error {
 	if err := k.set(key, string(raw)); err != nil {
 		return err
 	}
-	for i, part := range parts {
-		if err := k.set(accessTokenPartKey(key, i), string(part)); err != nil {
+	for i := range n {
+		start := i * accessTokenPartSize
+		part := t.AccessToken[start:min(start+accessTokenPartSize, len(t.AccessToken))]
+		if err := k.set(accessTokenPartKey(key, i), part); err != nil {
 			return err
 		}
 	}
@@ -240,59 +281,91 @@ func (k *keyringStore) Delete(key string) error {
 	}
 	// A token that fits in one item can replace a split one without touching
 	// its access token parts, so the entry does not say how many there are.
-	for i := 0; ; i++ {
-		err := k.remove(accessTokenPartKey(key, i))
+	// They are counted and then deleted from the last, so that a Delete that
+	// fails part way leaves parts that the next one still finds.
+	n := 0
+	for ; ; n++ {
+		_, err := k.get(accessTokenPartKey(key, n))
 		if errors.Is(err, keyring.ErrNotFound) {
-			return nil
+			break
 		}
 		if err != nil {
 			return err
 		}
 	}
+	for i := n - 1; i >= 0; i-- {
+		err := k.remove(accessTokenPartKey(key, i))
+		if err != nil && !errors.Is(err, keyring.ErrNotFound) {
+			return err
+		}
+	}
+	return nil
 }
 
 // Lookup implements the Store interface, returning ErrNotFound on a miss.
+//
+// A split token whose access token parts are missing or do not match is read
+// again a few times, because another process may be writing or deleting it.
+// Refreshing it at once could use up a refresh token that the other process
+// already replaced, or restore a login that was just deleted. If the parts
+// still do not match, the token is returned without its access token, so that
+// the caller refreshes it.
 func (k *keyringStore) Lookup(key string) (Entry, error) {
+	delay := k.retryDelay
+	for attempt := 1; ; attempt++ {
+		e, complete, err := k.lookup(key)
+		if err != nil || complete || attempt == splitLookupAttempts {
+			return e, err
+		}
+		time.Sleep(delay)
+		delay *= 2
+	}
+}
+
+// lookup reads the entry under key once. It reports whether the entry is
+// complete, which only a split token with missing or mismatched parts is not.
+func (k *keyringStore) lookup(key string) (Entry, bool, error) {
 	raw, err := k.get(key)
 	if errors.Is(err, keyring.ErrNotFound) {
-		return Entry{}, ErrNotFound
+		return Entry{}, false, ErrNotFound
 	}
 	if err != nil {
-		return Entry{}, wrapKeyringUnreachable(err)
+		return Entry{}, false, wrapKeyringUnreachable(err)
 	}
 
 	var entry keyringEntry
 	if err := json.Unmarshal([]byte(raw), &entry); err != nil {
-		return Entry{}, fmt.Errorf("unmarshal token: %w", err)
+		return Entry{}, false, fmt.Errorf("unmarshal token: %w", err)
 	}
 	if entry.Split != nil {
 		return k.lookupSplit(key, entry.Split)
 	}
-	return Entry{Token: entry.Token, PendingLogin: entry.PendingLogin}, nil
+	return Entry(entry.entryFields), true, nil
 }
 
 // lookupSplit assembles a token stored by putSplit. When the access token
 // parts are missing or do not match the entry, because a write was interrupted
-// or another process is writing, the token is returned without an access token
-// so that the caller refreshes it.
-func (k *keyringStore) lookupSplit(key string, s *splitToken) (Entry, error) {
+// or another process is writing, it returns the token without an access token
+// and reports it as incomplete.
+func (k *keyringStore) lookupSplit(key string, s *splitToken) (Entry, bool, error) {
 	t := s.Token
 	var accessToken strings.Builder
 	for i := range s.AccessTokenParts {
 		part, err := k.get(accessTokenPartKey(key, i))
 		if errors.Is(err, keyring.ErrNotFound) {
-			return Entry{Token: &t}, nil
+			return Entry{Token: &t}, false, nil
 		}
 		if err != nil {
-			return Entry{}, wrapKeyringUnreachable(err)
+			return Entry{}, false, wrapKeyringUnreachable(err)
 		}
 		accessToken.WriteString(part)
 	}
 	sum := sha256.Sum256([]byte(accessToken.String()))
-	if hex.EncodeToString(sum[:]) == s.AccessTokenSHA256 {
-		t.AccessToken = accessToken.String()
+	if hex.EncodeToString(sum[:]) != s.AccessTokenSHA256 {
+		return Entry{Token: &t}, false, nil
 	}
-	return Entry{Token: &t}, nil
+	t.AccessToken = accessToken.String()
+	return Entry{Token: &t}, true, nil
 }
 
 // accessTokenPartKey returns the key of the i-th access token part of the
@@ -301,12 +374,14 @@ func accessTokenPartKey(key string, i int) string {
 	return key + AccessTokenPartMarker + strconv.Itoa(i)
 }
 
+// set writes secret under key within the store's timeout.
 func (k *keyringStore) set(key, secret string) error {
 	return k.withTimeout("set", func() error {
 		return k.backend.Set(k.keyringSvcName, key, secret)
 	})
 }
 
+// get reads the secret under key within the store's timeout.
 func (k *keyringStore) get(key string) (string, error) {
 	var secret string
 	err := k.withTimeout("get", func() error {
@@ -324,6 +399,7 @@ func (k *keyringStore) get(key string) (string, error) {
 	return secret, nil
 }
 
+// remove deletes the item under key within the store's timeout.
 func (k *keyringStore) remove(key string) error {
 	return k.withTimeout("delete", func() error {
 		return k.backend.Delete(k.keyringSvcName, key)

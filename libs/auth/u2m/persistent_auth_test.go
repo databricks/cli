@@ -511,10 +511,10 @@ func (s *accessTokenPartFailingStore) Put(key string, e storage.Entry) error {
 	return s.err
 }
 
-// A refresh whose access token cannot be stored fails, but the new refresh
-// token was stored, and the next call refreshes with it. Refreshing with the
-// old one would fail, because the server replaces the refresh token on every
-// refresh.
+// A refresh whose access token cannot be stored still succeeds, because the
+// new refresh token was stored, and the next call refreshes with it.
+// Refreshing with the old one would fail, because the server replaces the
+// refresh token on every refresh.
 func TestToken_RefreshesWithRefreshTokenStoredByFailedStoreUpdate(t *testing.T) {
 	const key = "https://accounts.cloud.databricks.test/oidc/accounts/xyz"
 	memory := storage.NewMemoryStore()
@@ -562,12 +562,16 @@ func TestToken_RefreshesWithRefreshTokenStoredByFailedStoreUpdate(t *testing.T) 
 	}
 	defer p.Close()
 
-	if _, err := p.Token(); !errors.Is(err, storeErr) {
-		t.Fatalf("first p.Token(): want the store error, got %v", err)
+	tok, err := p.Token()
+	if err != nil {
+		t.Fatalf("first p.Token(): want no error, got %v", err)
+	}
+	if tok.AccessToken != "second-access" {
+		t.Errorf("first p.Token(): want access token 'second-access', got %q", tok.AccessToken)
 	}
 
 	tokenStore.err = nil
-	tok, err := p.Token()
+	tok, err = p.Token()
 	if err != nil {
 		t.Fatalf("second p.Token(): want no error, got %v", err)
 	}

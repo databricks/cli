@@ -861,6 +861,11 @@ func TestValidateLoginProfileName(t *testing.T) {
 			profile: "dev#access-token-0",
 			wantErr: `profile name "dev#access-token-0" must not contain #access-token-, which marks the parts of large access tokens`,
 		},
+		{
+			name:    "key of an access token part in another letter case",
+			profile: "dev#Access-Token-0",
+			wantErr: `profile name "dev#Access-Token-0" must not contain #access-token-, which marks the parts of large access tokens`,
+		},
 	}
 
 	for _, tc := range cases {

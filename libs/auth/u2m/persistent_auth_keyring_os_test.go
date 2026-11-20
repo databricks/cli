@@ -20,7 +20,9 @@ import (
 
 // TestToken_RefreshesLargeTokenInOSKeyring refreshes an expired token that the
 // real OS keyring holds in several items, because its access token is too
-// large for one, and reads the new access token and refresh token back.
+// large for one, and reads the new access token and refresh token back. It
+// uses the store that the CLI uses, with its 3-second timeout per keyring
+// operation.
 //
 // It writes to the real OS keyring and therefore runs on CI only (GitHub
 // Actions sets CI=true).

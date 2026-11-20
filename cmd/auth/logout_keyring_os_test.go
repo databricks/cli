@@ -19,7 +19,8 @@ import (
 
 // TestLogoutRemovesSplitTokenFromOSKeyring logs out of a profile whose token
 // the real OS keyring holds in several items, because it is too large for
-// one, and checks that none of them is left.
+// one, and checks that none of them is left. It uses the store that logout
+// uses, with its 3-second timeout per keyring operation.
 //
 // It writes to the real OS keyring and therefore runs on CI only (GitHub
 // Actions sets CI=true).

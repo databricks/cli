@@ -15,46 +15,68 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
-// TestZalandoBackend_Set_RejectsLargeSecret pins that the go-keyring release
-// in go.mod rejects a 3250-byte secret on macOS and Windows, which is the
-// behavior fakeBackend's caps in keyring_size_limit_test.go transcribe. It is
-// the only test here that observes the real library, so it is what fails when
-// a bumped or replaced keyring library accepts larger secrets and the modeled
-// caps go stale.
+// TestKeyringSet_RejectsLargeSecret pins that the go-keyring
+// release in go.mod rejects a 3250-byte secret on macOS and Windows,
+// which is the behavior fakeBackend's caps in keyring_size_limit_test.go
+// transcribe. It is the only test here that observes the real library reject
+// a secret, so it is what fails when a bumped or replaced keyring library
+// accepts larger secrets and the modeled caps go stale.
 //
-// It calls the backend rather than the store, which splits a token of this
-// size and so no longer surfaces the cap.
+// It calls go-keyring directly: the store splits a token of this size, and
+// zalandoBackend checks the size itself on macOS.
 //
 // It calls the real backend and therefore runs on CI only (GitHub Actions
 // sets CI=true). The library's size check fires before the OS keyring is
 // contacted, so on the expected path nothing is written. Only once the cap is
 // gone does the secret land in the runner's keyring, and then the cleanup
 // removes it.
-func TestZalandoBackend_Set_RejectsLargeSecret(t *testing.T) {
+func TestKeyringSet_RejectsLargeSecret(t *testing.T) {
 	if os.Getenv("CI") == "" {
 		t.Skip("touches the real OS keyring; runs on CI only")
 	}
 
-	backend := zalandoBackend{}
 	account := keyringProbeAccountPrefix + uuid.New().String()
 
 	// The secret alone exceeds both caps (macOS after base64, Windows raw).
 	secret := strings.Repeat("a", issue7707LargeAccessTokenBytes)
 
-	err := backend.Set(keyringServiceName, account, secret)
+	err := keyring.Set(keyringServiceName, account, secret)
 	if err == nil {
-		t.Cleanup(func() { _ = backend.Delete(keyringServiceName, account) })
+		t.Cleanup(func() { _ = keyring.Delete(keyringServiceName, account) })
 	}
 	require.ErrorIs(t, err, keyring.ErrSetDataTooBig,
 		"go-keyring accepted a %d-byte secret; the OS caps modeled in fakeBackend are stale, re-verify them against the new backend",
 		issue7707LargeAccessTokenBytes)
 }
 
+// go-keyring's macOS backend starts `security -i` before it rejects a secret
+// as too big, and leaves the process with its stdin pipe open in this one.
+// zalandoBackend rejects such a secret without calling go-keyring, so no file
+// is opened. Nothing reaches the keychain either way, so the test runs
+// outside CI too.
+func TestZalandoBackend_Set_RejectsLargeSecretWithoutSecurityProcess(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("only go-keyring's macOS backend starts a process for a secret it rejects")
+	}
+	openFiles := func() int {
+		entries, err := os.ReadDir("/dev/fd")
+		require.NoError(t, err)
+		return len(entries)
+	}
+	// Let finalizers close pipes that earlier tests left open.
+	runtime.GC()
+	before := openFiles()
+
+	err := zalandoBackend{}.Set(keyringServiceName, keyringProbeAccountPrefix+uuid.New().String(), strings.Repeat("a", 5000))
+	require.ErrorIs(t, err, keyring.ErrSetDataTooBig)
+	assert.LessOrEqual(t, openFiles(), before, "go-keyring started `security -i`, which keeps a pipe open")
+}
+
 // newRealKeyringStore returns a store on the real OS keyring and a key that no
-// other test or profile uses. The store has the test timeout, because a loaded
-// CI runner can take longer than the production timeout. The cleanup removes
-// the entry and its parts through the backend, so it does not depend on the
-// store's Delete and also runs when the test fails.
+// other test or profile uses. The store has the test timeout rather than the
+// 3-second production one, so that a slow runner cannot fail these tests. The
+// cleanup removes the entry and its parts through the backend, so it does not
+// depend on the store's Delete and also runs when the test fails.
 //
 // The tests that use it write to the real OS keyring and therefore run on CI
 // only (GitHub Actions sets CI=true).

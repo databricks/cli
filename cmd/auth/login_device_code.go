@@ -172,7 +172,10 @@ func validateLoginProfileName(name string) error {
 	if strings.HasSuffix(name, pendingLoginKeySuffix) {
 		return fmt.Errorf("profile name %q must not end with %s, which marks pending device code logins", name, pendingLoginKeySuffix)
 	}
-	if strings.Contains(name, storage.AccessTokenPartMarker) {
+	// Windows Credential Manager ignores case in credential names, so a
+	// profile named "dev#Access-Token-0" would share the item of a part of dev.
+	// https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentialw
+	if strings.Contains(strings.ToLower(name), storage.AccessTokenPartMarker) {
 		return fmt.Errorf("profile name %q must not contain %s, which marks the parts of large access tokens", name, storage.AccessTokenPartMarker)
 	}
 	return nil

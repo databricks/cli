@@ -36,6 +36,10 @@ type fakeBackend struct {
 	// secretTooBig, when set, mirrors an OS backend's size check: Set rejects
 	// the secret with keyring.ErrSetDataTooBig before storing anything.
 	secretTooBig func(service, account, secret string) bool
+
+	// afterGet, when set, runs after each Get has read the item, so that a
+	// test can change the items between two reads as another process would.
+	afterGet func(account string)
 }
 
 func newFakeBackend() *fakeBackend {
@@ -49,7 +53,7 @@ func itemKey(service, account string) string { return service + ":" + account }
 func (f *fakeBackend) accounts() []string {
 	var accounts []string
 	for k := range f.items {
-		if account, ok := strings.CutPrefix(k, itemKey("databricks-cli", "")); ok {
+		if account, ok := strings.CutPrefix(k, itemKey(keyringServiceName, "")); ok {
 			accounts = append(accounts, account)
 		}
 	}
@@ -81,6 +85,9 @@ func (f *fakeBackend) Get(service, account string) (string, error) {
 		return "", f.getErr
 	}
 	v, ok := f.items[itemKey(service, account)]
+	if f.afterGet != nil {
+		f.afterGet(account)
+	}
 	if !ok {
 		return "", keyring.ErrNotFound
 	}
@@ -309,6 +316,8 @@ func testAccessToken(n int) string {
 	return b.String()[:n]
 }
 
+// testToken returns a token with every field set and an access token of
+// accessTokenSize bytes.
 func testToken(accessTokenSize int) *oauth2.Token {
 	return &oauth2.Token{
 		AccessToken:  testAccessToken(accessTokenSize),
@@ -324,6 +333,8 @@ func tooBigForAnyOS(service, account, secret string) bool {
 	return darwinSecurityCommandTooBig(service, account, secret) || windowsCredentialBlobTooBig(service, account, secret)
 }
 
+// newLimitedTestStore returns a store on a fake backend that applies the
+// macOS and the Windows cap.
 func newLimitedTestStore() (*keyringStore, *fakeBackend) {
 	backend := newFakeBackend()
 	backend.secretTooBig = tooBigForAnyOS
@@ -391,7 +402,7 @@ func TestKeyringStore_Put_TokenThatFitsKeepsSingleItemFormat(t *testing.T) {
 			tok := testToken(issue7707SmallAccessTokenBytes)
 
 			require.NoError(t, c.Put("my-profile", Entry{Token: tok}))
-			assert.Equal(t, map[string]string{itemKey("databricks-cli", "my-profile"): releasedEntry(t, tok)}, backend.items)
+			assert.Equal(t, map[string]string{itemKey(keyringServiceName, "my-profile"): releasedEntry(t, tok)}, backend.items)
 		})
 	}
 }
@@ -422,7 +433,7 @@ func TestKeyringStore_Put_SplitsOnlyTokenThatDoesNotFit(t *testing.T) {
 
 				fits := testToken(n)
 				require.NoError(t, c.Put(k.key, Entry{Token: fits}))
-				assert.Equal(t, map[string]string{itemKey("databricks-cli", k.key): releasedEntry(t, fits)}, backend.items)
+				assert.Equal(t, map[string]string{itemKey(keyringServiceName, k.key): releasedEntry(t, fits)}, backend.items)
 
 				tooBig := testToken(n + 1)
 				require.NoError(t, c.Put(k.key, Entry{Token: tooBig}))
@@ -477,7 +488,7 @@ func TestKeyringStore_Put_SplitEntryGivesOlderVersionsNoCredentials(t *testing.T
 	var old struct {
 		Token *oauth2.Token `json:"token"`
 	}
-	require.NoError(t, json.Unmarshal([]byte(backend.items[itemKey("databricks-cli", "my-profile")]), &old))
+	require.NoError(t, json.Unmarshal([]byte(backend.items[itemKey(keyringServiceName, "my-profile")]), &old))
 	require.NotNil(t, old.Token)
 	assert.Empty(t, old.Token.AccessToken)
 	assert.Empty(t, old.Token.RefreshToken)
@@ -557,7 +568,7 @@ func TestKeyringStore_Put_SplitsOnlyTheAccessToken(t *testing.T) {
 // editSplitEntry rewrites the split entry under my-profile.
 func editSplitEntry(t *testing.T, backend *fakeBackend, edit func(*splitToken)) {
 	t.Helper()
-	k := itemKey("databricks-cli", "my-profile")
+	k := itemKey(keyringServiceName, "my-profile")
 	var e keyringEntry
 	require.NoError(t, json.Unmarshal([]byte(backend.items[k]), &e))
 	require.NotNil(t, e.Split)
@@ -571,7 +582,7 @@ func editSplitEntry(t *testing.T, backend *fakeBackend, edit func(*splitToken)) 
 // incomplete or belonging to another write. The refresh token is enough to
 // recover, so the lookup succeeds without an access token.
 func TestKeyringStore_Lookup_SplitEntryWithoutMatchingAccessToken(t *testing.T) {
-	second := itemKey("databricks-cli", "my-profile#access-token-1")
+	second := itemKey(keyringServiceName, "my-profile#access-token-1")
 	cases := []struct {
 		name   string
 		change func(t *testing.T, backend *fakeBackend)
@@ -627,6 +638,88 @@ func TestKeyringStore_Lookup_SplitEntryWithoutMatchingAccessToken(t *testing.T) 
 			assert.True(t, tok.Expiry.Equal(got.Token.Expiry))
 		})
 	}
+}
+
+// splitItems returns the items that the store writes for tok under
+// my-profile.
+func splitItems(t *testing.T, tok *oauth2.Token) map[string]string {
+	t.Helper()
+	c, backend := newLimitedTestStore()
+	require.NoError(t, c.Put("my-profile", Entry{Token: tok}))
+	return backend.items
+}
+
+// Another process can replace a split token while Lookup reads it. Here it
+// writes its entry and first part after Lookup read the old entry, and its
+// second part after Lookup read the old one. Lookup reads the entry again and
+// returns the new token, rather than the old refresh token, which the other
+// process has already used up.
+func TestKeyringStore_Lookup_WaitsForConcurrentWrite(t *testing.T) {
+	c, backend := newLimitedTestStore()
+	old := testToken(issue7707LargeAccessTokenBytes)
+	old.RefreshToken = "old-refresh-token"
+	require.NoError(t, c.Put("my-profile", Entry{Token: old}))
+
+	updated := testToken(issue7707LargeAccessTokenBytes)
+	updated.AccessToken = strings.ReplaceAll(updated.AccessToken, ".", "-")
+	updated.RefreshToken = "new-refresh-token"
+	written := splitItems(t, updated)
+	entry := itemKey(keyringServiceName, "my-profile")
+	part0 := itemKey(keyringServiceName, "my-profile#access-token-0")
+	part1 := itemKey(keyringServiceName, "my-profile#access-token-1")
+	reads := 0
+	backend.afterGet = func(string) {
+		reads++
+		switch reads {
+		case 1:
+			backend.items[entry] = written[entry]
+			backend.items[part0] = written[part0]
+		case 3:
+			backend.items[part1] = written[part1]
+		}
+	}
+
+	got, err := c.Lookup("my-profile")
+	require.NoError(t, err)
+	assert.Equal(t, updated.AccessToken, got.Token.AccessToken)
+	assert.Equal(t, updated.RefreshToken, got.Token.RefreshToken)
+}
+
+// auth logout can delete a split token while Lookup reads it. Lookup reads the
+// entry again and finds it gone, rather than returning the deleted refresh
+// token, which the caller would refresh and store again.
+func TestKeyringStore_Lookup_SplitEntryDeletedDuringLookup(t *testing.T) {
+	c, backend := newLimitedTestStore()
+	require.NoError(t, c.Put("my-profile", Entry{Token: testToken(issue7707LargeAccessTokenBytes)}))
+	backend.afterGet = func(account string) {
+		if account == "my-profile#access-token-0" {
+			clear(backend.items)
+		}
+	}
+
+	_, err := c.Lookup("my-profile")
+	assert.ErrorIs(t, err, ErrNotFound)
+}
+
+// A split entry whose parts stay incomplete, as after an interrupted write, is
+// read splitLookupAttempts times and then returned without its access token.
+func TestKeyringStore_Lookup_GivesUpOnIncompleteSplitEntry(t *testing.T) {
+	c, backend := newLimitedTestStore()
+	tok := testToken(issue7707LargeAccessTokenBytes)
+	require.NoError(t, c.Put("my-profile", Entry{Token: tok}))
+	delete(backend.items, itemKey(keyringServiceName, "my-profile#access-token-1"))
+	entryReads := 0
+	backend.afterGet = func(account string) {
+		if account == "my-profile" {
+			entryReads++
+		}
+	}
+
+	got, err := c.Lookup("my-profile")
+	require.NoError(t, err)
+	assert.Empty(t, got.Token.AccessToken)
+	assert.Equal(t, tok.RefreshToken, got.Token.RefreshToken)
+	assert.Equal(t, splitLookupAttempts, entryReads)
 }
 
 func TestKeyringStore_Lookup_SplitEntryPropagatesAccessTokenErrors(t *testing.T) {
@@ -747,7 +840,7 @@ func TestKeyringStore_TokenSizeTransitions(t *testing.T) {
 func TestKeyringStore_Delete_RemovesPartsWithoutEntry(t *testing.T) {
 	c, backend := newLimitedTestStore()
 	require.NoError(t, c.Put("my-profile", Entry{Token: testToken(5000)}))
-	delete(backend.items, itemKey("databricks-cli", "my-profile"))
+	delete(backend.items, itemKey(keyringServiceName, "my-profile"))
 
 	require.NoError(t, c.Delete("my-profile"))
 	assert.Empty(t, backend.items)
@@ -759,6 +852,21 @@ func TestKeyringStore_Delete_MissingEntryIsNoOp(t *testing.T) {
 
 	require.NoError(t, c.Delete("my-profile"))
 	assert.Equal(t, itemsOf("other-profile", 3), backend.accounts())
+}
+
+// A Delete that fails part way, here on the second of three parts, leaves
+// parts that the next Delete still finds, so a retried logout removes them.
+func TestKeyringStore_Delete_RetryAfterFailedPartDelete(t *testing.T) {
+	boom := errors.New("backend boom")
+	c, backend := newLimitedTestStore()
+	require.NoError(t, c.Put("my-profile", Entry{Token: testToken(5000)}))
+	backend.deleteErr = boom
+	backend.errAccount = accessTokenPartKey("my-profile", 1)
+	require.ErrorIs(t, c.Delete("my-profile"), boom)
+
+	backend.deleteErr = nil
+	require.NoError(t, c.Delete("my-profile"))
+	assert.Empty(t, backend.items)
 }
 
 func TestProbeKeyring(t *testing.T) {

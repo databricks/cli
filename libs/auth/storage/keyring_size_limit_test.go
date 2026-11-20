@@ -67,12 +67,13 @@ var osSecretCaps = []struct {
 	{name: "linux secret service has no cap", secretTooBig: nil},
 }
 
-// TestKeyringStore_Put_OSSecretSizeCaps pins that the keyring store holds
-// both token sizes from #7707 under go-keyring's per-OS secret caps: the small
-// one in a single item, the large one split over several. The caps are modeled
-// in fakeBackend so the test is keychain-agnostic and runs on every OS;
-// TestZalandoBackend_Set_RejectsLargeSecret in keyring_size_limit_os_test.go
-// checks the real library on CI and fails when the modeled caps go stale.
+// TestKeyringStore_Put_OSSecretSizeCaps pins how the CLI's keyring envelope
+// fares against go-keyring's per-OS secret caps. The caps are modeled in
+// fakeBackend so the test is keychain-agnostic and runs on every OS;
+// TestKeyringSet_RejectsLargeSecret in
+// keyring_size_limit_os_test.go checks the real library on CI and fails when
+// the modeled caps go stale. A fix for #7707 that changes what Put stores
+// must update this test on purpose.
 func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
 	for _, tc := range osSecretCaps {
 		t.Run(tc.name, func(t *testing.T) {
@@ -94,5 +95,32 @@ func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, large.AccessToken, got.Token.AccessToken)
 		})
+	}
+}
+
+// darwinCommandTooBig lets the store skip go-keyring on macOS, so it must only
+// reject a secret that go-keyring rejects too. It leaves out the shell quotes
+// that go-keyring adds, so it is exact for an account that needs none.
+func TestDarwinCommandTooBig(t *testing.T) {
+	accounts := []string{
+		"my-profile",
+		"https://accounts.cloud.databricks.test/oidc/accounts/968367da-7edd-44f7-9dea-3e0b20b0ec97",
+		// go-keyring quotes these.
+		"my profile",
+		"my-profile#access-token-0",
+	}
+	for _, account := range accounts {
+		quoted := shellQuote(account) != account
+		for n := 2800; n <= 3100; n++ {
+			secret := strings.Repeat("a", n)
+			got := darwinCommandTooBig(keyringServiceName, account, secret)
+			want := darwinSecurityCommandTooBig(keyringServiceName, account, secret)
+			if got && !want {
+				t.Fatalf("account %q, %d-byte secret: rejected, but go-keyring stores it", account, n)
+			}
+			if !quoted && got != want {
+				t.Fatalf("account %q, %d-byte secret: rejected is %v, go-keyring rejects is %v", account, n, got, want)
+			}
+		}
 	}
 }
