@@ -72,7 +72,7 @@ func TestBufferFailsOnOversizedState(t *testing.T) {
 
 	s.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(strings.Repeat("x", maxStateSize+1)))
 
-	assert.ErrorContains(t, s.Err(), "exceeds the 65536 byte limit")
+	assert.ErrorContains(t, s.Err(), "exceeds the 10485760 byte limit")
 	assert.Empty(t, s.queue)
 	assert.Empty(t, s.pending)
 	assert.Equal(t, 1, s.Stats().OperationRecordingFailureCount)
