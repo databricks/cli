@@ -9,6 +9,7 @@
 #   export CLI=databricks UNIQUE_NAME=$(date +%s)
 #   trace()   { echo "+ $*" >&2; "$@"; }
 #   errcode() { "$@" || echo "Exit code: $?"; }
+#   retry()   { "$@"; }
 #   title()   { printf '\n=== %s\n' "$*"; }
 #   project_fields()    { jq '{name, project_id, status}'; }
 #   print_requests.py() { :; }   # harness-only request recorder; no-op standalone
