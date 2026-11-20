@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  domains:
+    payments:
+      tag_key: Payments
+
+    finance:
+      tag_key: Finance
+
+  pages:
+    chargeback:
+      domain: ${resources.domains.payments.name}
+      display_name: Chargeback
+      body: A reversal of a card payment.

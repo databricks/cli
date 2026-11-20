@@ -1,0 +1,14 @@
+bundle:
+  name: test-bind-page
+
+variables:
+  payments_domain:
+    lookup:
+      domain: Payments
+
+resources:
+  pages:
+    chargeback:
+      domain: domains/${var.payments_domain}
+      display_name: Chargeback
+      body: A reversal of a card payment.

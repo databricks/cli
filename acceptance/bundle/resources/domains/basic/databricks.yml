@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+resources:
+  domains:
+    payments:
+      tag_key: Payments
+      subtitle: Payment processing data
+      description: Everything about payments.
+      icon:
+        name: BANK
+        color: "#1B5E20"
+
+    fraud:
+      tag_key: Payments/Fraud
+      parent_domain_id: ${resources.domains.payments.id}
+      subtitle: Fraud detection

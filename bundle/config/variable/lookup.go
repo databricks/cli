@@ -16,6 +16,8 @@ type Lookup struct {
 
 	Dashboard string `json:"dashboard,omitempty"`
 
+	Domain string `json:"domain,omitempty"`
+
 	InstancePool string `json:"instance_pool,omitempty"`
 
 	Job string `json:"job,omitempty"`
@@ -55,6 +57,9 @@ func (l *Lookup) constructResolver() (resolver, error) {
 	}
 	if l.Dashboard != "" {
 		resolvers = append(resolvers, resolveDashboard{name: l.Dashboard})
+	}
+	if l.Domain != "" {
+		resolvers = append(resolvers, resolveDomain{name: l.Domain})
 	}
 	if l.InstancePool != "" {
 		resolvers = append(resolvers, resolveInstancePool{name: l.InstancePool})

@@ -56,6 +56,8 @@ type Resources struct {
 	InstancePools             map[string]*resources.InstancePool             `json:"instance_pools,omitempty"`
 	Secrets                   map[string]*resources.Secret                   `json:"secrets,omitempty"`
 	ClusterPolicies           map[string]*resources.ClusterPolicy            `json:"cluster_policies,omitempty"`
+	Domains                   map[string]*resources.Domain                   `json:"domains,omitempty"`
+	Pages                     map[string]*resources.Page                     `json:"pages,omitempty"`
 
 	// Internal resources
 	Snapshots map[string]*resources.Snapshot `json:"internal_immutable_snapshots,omitempty" bundle:"internal"`
@@ -158,6 +160,8 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["internal_immutable_snapshots"], r.Snapshots),
 		collectResourceMap(descriptions["secrets"], r.Secrets),
 		collectResourceMap(descriptions["cluster_policies"], r.ClusterPolicies),
+		collectResourceMap(descriptions["domains"], r.Domains),
+		collectResourceMap(descriptions["pages"], r.Pages),
 	}
 }
 
@@ -268,5 +272,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"internal_immutable_snapshots": (&resources.Snapshot{}).ResourceDescription(),
 		"secrets":                      (&resources.Secret{}).ResourceDescription(),
 		"cluster_policies":             (&resources.ClusterPolicy{}).ResourceDescription(),
+		"domains":                      (&resources.Domain{}).ResourceDescription(),
+		"pages":                        (&resources.Page{}).ResourceDescription(),
 	}
 }

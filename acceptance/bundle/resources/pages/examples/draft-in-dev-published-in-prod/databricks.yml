@@ -1,0 +1,35 @@
+# The same pages as a draft during development and published in production.
+#
+# In the dev target each developer deploys a copy of the pages. The copies are drafts, and
+# their titles carry a prefix with the name of the developer. The prod target publishes
+# the pages.
+bundle:
+  name: payments_glossary
+
+variables:
+  payments_domain:
+    description: The ID of the domain that the pages belong to.
+    lookup:
+      domain: Payments
+
+  page_state:
+    description: The state to deploy the pages in.
+    default: DRAFT
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    variables:
+      page_state: PUBLISHED
+
+resources:
+  pages:
+    chargeback:
+      domain: domains/${var.payments_domain}
+      display_name: Chargeback
+      description: A reversal of a card payment, initiated by the bank of the cardholder.
+      state: ${var.page_state}
+      file_path: ./pages/chargeback.md

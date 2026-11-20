@@ -1,0 +1,15 @@
+trace $CLI bundle deploy
+DOMAIN_ID=$($CLI bundle summary -o json | jq -r .resources.domains.payments.id)
+
+title "Add a page to the domain outside of the bundle"
+MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.0/knowledge/pages --json "{\"domain\": \"domains/$DOMAIN_ID\", \"display_name\": \"Refund\"}" | jq '{display_name, state}'
+print_requests.py > /dev/null
+
+title "The page of the bundle is deleted before its domain. The API refuses to delete a domain that still has a page"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //knowledge //domains
+
+title "The domain and the page that is not part of the bundle are still there"
+trace $CLI domains get-domain domains/$DOMAIN_ID | jq '{tag_key}'
+
+rm -f out.requests.txt

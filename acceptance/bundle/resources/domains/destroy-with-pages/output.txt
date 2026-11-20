@@ -1,0 +1,52 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created domains.payments
+Created pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Add a page to the domain outside of the bundle
+
+>>> [CLI] api post /api/2.0/knowledge/pages --json {"domain": "domains/[UUID][0]", "display_name": "Refund"}
+{
+  "display_name": "Refund",
+  "state": "DRAFT"
+}
+
+=== The page of the bundle is deleted before its domain. The API refuses to delete a domain that still has a page
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.domains.payments
+  delete resources.pages.chargeback
+
+This action will result in the deletion of the following domains.
+Deleting a domain also deletes its subdomains. The governed tag of a domain and the tags
+on assets are kept:
+  delete resources.domains.payments
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.chargeback
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted
+
+>>> print_requests.py //knowledge //domains
+{
+  "method": "DELETE",
+  "path": "/api/2.0/knowledge/pages/[UUID][1]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/domains/[UUID][0]"
+}
+
+=== The domain and the page that is not part of the bundle are still there
+
+>>> [CLI] domains get-domain domains/[UUID][0]
+{
+  "tag_key": "Payments"
+}

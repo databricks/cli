@@ -1,0 +1,101 @@
+
+=== The body of the page is read from the file
+
+>>> [CLI] bundle validate -o json
+{
+  "file_path": "pages/chargeback.md",
+  "body": "# Chargeback\n\nA reversal of a card payment, initiated by the cardholder's bank.\n\n| Term | Meaning |\n| ---- | ------- |\n| Issuer | The bank of the cardholder |\n"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created domains.payments
+Created pages.chargeback
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //knowledge
+{
+  "method": "POST",
+  "path": "/api/2.0/knowledge/pages",
+  "q": {
+    "request_id": "[UUID][0]"
+  },
+  "body": {
+    "body": "# Chargeback\n\nA reversal of a card payment, initiated by the cardholder's bank.\n\n| Term | Meaning |\n| ---- | ------- |\n| Issuer | The bank of the cardholder |\n",
+    "display_name": "Chargeback",
+    "domain": "domains/[UUID][1]"
+  }
+}
+
+=== A second plan has no changes
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Editing the file updates the page
+
+>>> update_file.py pages/chargeback.md initiated by the cardholder's bank started by the bank of the cardholder
+
+>>> [CLI] bundle plan
+update pages.chargeback
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //knowledge
+{
+  "method": "PATCH",
+  "path": "/api/2.0/knowledge/pages/[UUID][2]",
+  "q": {
+    "update_mask": "display_name,body,synonyms,description"
+  },
+  "body": {
+    "body": "# Chargeback\n\nA reversal of a card payment, started by the bank of the cardholder.\n\n| Term | Meaning |\n| ---- | ------- |\n| Issuer | The bank of the cardholder |\n",
+    "description": "",
+    "display_name": "Chargeback",
+    "synonyms": []
+  }
+}
+
+=== Setting both file_path and body is an error
+
+>>> update_file.py databricks.yml file_path: ./pages/chargeback.md file_path: ./pages/chargeback.md
+      body: inline
+
+>>> musterr [CLI] bundle validate
+Error: both file_path and body are set; specify only one
+  in databricks.yml:14:13
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+>>> update_file.py databricks.yml       body: inline 
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.domains.payments
+  delete resources.pages.chargeback
+
+This action will result in the deletion of the following domains.
+Deleting a domain also deletes its subdomains. The governed tag of a domain and the tags
+on assets are kept:
+  delete resources.domains.payments
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.chargeback
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted

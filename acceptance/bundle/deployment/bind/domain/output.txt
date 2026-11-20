@@ -1,0 +1,70 @@
+
+=== Create the domain outside the bundle
+
+>>> [CLI] bundle deployment bind payments [UUID][0] --auto-approve
+Successfully bound domain with an id '[UUID][0]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bind-domain
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-domain/default
+Resources:
+  Domains:
+    payments:
+      Name: Payments
+      URL:  [DATABRICKS_URL]/discover/manage/domains/[UUID][0]?w=[WORKSPACE_ID]
+
+=== The bound domain differs from the config, so the deploy updates it in place
+
+>>> [CLI] bundle plan
+update domains.payments
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-domain/default/files...
+Updated domains.payments
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //domains
+{
+  "method": "PATCH",
+  "path": "/api/2.0/domains/[UUID][0]",
+  "q": {
+    "update_mask": "subtitle,description,icon,technical_owner_ids,business_owner_ids"
+  },
+  "body": {
+    "subtitle": "Payment processing data",
+    "tag_key": "Payments"
+  }
+}
+
+>>> [CLI] domains get-domain domains/[UUID][0]
+{
+  "tag_key": "Payments",
+  "subtitle": "Payment processing data"
+}
+
+=== Binding a domain that does not exist is an error
+
+>>> [CLI] bundle deployment unbind payments
+
+>>> musterr [CLI] bundle deployment bind payments [UUID][1] --auto-approve
+Error: domain with an id '[UUID][1]' is not found
+
+=== After unbind the domain is no longer part of the bundle, so destroy leaves it alone
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-domain/default
+
+Destroy: 0 deleted
+
+>>> [CLI] domains get-domain domains/[UUID][0]
+{
+  "tag_key": "Payments",
+  "subtitle": "Payment processing data"
+}

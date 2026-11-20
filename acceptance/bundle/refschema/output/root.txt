@@ -140,6 +140,7 @@ environments.*.variables.*.lookup.alert	string	INPUT
 environments.*.variables.*.lookup.cluster	string	INPUT
 environments.*.variables.*.lookup.cluster_policy	string	INPUT
 environments.*.variables.*.lookup.dashboard	string	INPUT
+environments.*.variables.*.lookup.domain	string	INPUT
 environments.*.variables.*.lookup.instance_pool	string	INPUT
 environments.*.variables.*.lookup.job	string	INPUT
 environments.*.variables.*.lookup.metastore	string	INPUT
@@ -357,6 +358,7 @@ targets.*.variables.*.lookup.alert	string	INPUT
 targets.*.variables.*.lookup.cluster	string	INPUT
 targets.*.variables.*.lookup.cluster_policy	string	INPUT
 targets.*.variables.*.lookup.dashboard	string	INPUT
+targets.*.variables.*.lookup.domain	string	INPUT
 targets.*.variables.*.lookup.instance_pool	string	INPUT
 targets.*.variables.*.lookup.job	string	INPUT
 targets.*.variables.*.lookup.metastore	string	INPUT
@@ -441,6 +443,7 @@ variables.*.lookup.alert	string	INPUT
 variables.*.lookup.cluster	string	INPUT
 variables.*.lookup.cluster_policy	string	INPUT
 variables.*.lookup.dashboard	string	INPUT
+variables.*.lookup.domain	string	INPUT
 variables.*.lookup.instance_pool	string	INPUT
 variables.*.lookup.job	string	INPUT
 variables.*.lookup.metastore	string	INPUT

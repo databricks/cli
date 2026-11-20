@@ -47,6 +47,7 @@ func allResourceTypes(t *testing.T) []string {
 			"data_quality_monitors",
 			"database_catalogs",
 			"database_instances",
+			"domains",
 			"experiments",
 			"external_locations",
 			"feature_specs",
@@ -62,6 +63,7 @@ func allResourceTypes(t *testing.T) []string {
 			"model_services",
 			"model_serving_endpoints",
 			"models",
+			"pages",
 			"pipelines",
 			"postgres_branches",
 			"postgres_catalogs",
@@ -182,6 +184,8 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // classification below. Model serving endpoints are excluded. Dashboards are
 // allowed when embed_credentials is false and rejected otherwise.
 var allowList = []string{
+	"domains",
+	"pages",
 	"alerts",
 	"catalogs",
 	"clusters",

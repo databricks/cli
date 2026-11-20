@@ -673,6 +673,13 @@ resources:
               - level: CAN_RUN
                 service_principal_name: 123456-abcdef
             ```
+    "domains":
+      "description": |-
+        The domain definitions for the bundle, where each key is the name of the domain. A domain groups data and AI assets on the Discover page by business area.
+      "$fields":
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "experiments":
       "description": |-
         The experiment definitions for the bundle, where each key is the name of the experiment.
@@ -1315,6 +1322,57 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
+    "pages":
+      "description": |-
+        The page definitions for the bundle, where each key is the name of the page. A page documents a business term or concept, written in Markdown, in a domain.
+      "$fields":
+        "body":
+          "description": |-
+            The Markdown body of the page. Mutually exclusive with `file_path`.
+        "create_time":
+          "description": |-
+            The time the page was created.
+          "x-databricks-field-behaviors_output_only": |-
+            true
+        "description":
+          "description": |-
+            A short description of the page.
+        "display_name":
+          "description": |-
+            The title of the page, 1 to 200 characters. The titles of the published pages of a domain must be unique.
+        "domain":
+          "description": |-
+            The resource name of the domain the page belongs to, in the form `domains/{domain_id}`.
+        "file_path":
+          "description": |-
+            Local path to a Markdown file holding the body of the page. The contents are inlined into `body` at deploy time, with Windows line endings converted to Unix line endings. Mutually exclusive with an inline `body`.
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "name":
+          "description": |-
+            The resource name of the page, in the form `pages/{page_id}`.
+          "x-databricks-field-behaviors_output_only": |-
+            true
+        "owner_ids":
+          "description": |-
+            The ID of the principal that owns the page: a user, group, or service principal. At most one. Defaults to the identity that deploys the bundle.
+        "state":
+          "description": |-
+            The lifecycle state of the page. A page is created as a draft unless the state is `PUBLISHED`.
+          "enum":
+            - |-
+              DRAFT
+            - |-
+              PUBLISHED
+        "synonyms":
+          "description": |-
+            Alternate names or abbreviations for the title of the page. At most 50, each 1 to 200 characters.
+        "update_time":
+          "description": |-
+            The time the page was last updated.
+          "x-databricks-field-behaviors_output_only": |-
+            true
     "pipelines":
       "description": |-
         The pipeline definitions for the bundle, where each key is the name of the pipeline.
@@ -2167,7 +2225,7 @@ targets:
             The description of the variable.
         "lookup":
           "description": |-
-            The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+            The name of the alert, cluster_policy, cluster, dashboard, domain, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
         "sensitive":
           "description": |-
             Whether the variable holds a secret. A variable used as the value of a secret is sensitive by default. The value of a sensitive variable is redacted in the output of `bundle validate -o json`, and the variable can only be used as the value of a sensitive resource field, such as the value of a secret, or in the definition of another sensitive variable.
@@ -2194,9 +2252,9 @@ variables:
         The description of the variable
     "lookup":
       "description": |-
-        The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+        The name of the alert, cluster_policy, cluster, dashboard, domain, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
       "markdown_description": |-
-        The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
+        The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `domain`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
       "$fields":
         "alert":
           "description": |-
@@ -2210,6 +2268,9 @@ variables:
         "dashboard":
           "description": |-
             The name of the dashboard for which to retrieve an ID.
+        "domain":
+          "description": |-
+            The governed tag key of the domain for which to retrieve an ID.
         "instance_pool":
           "description": |-
             The name of the instance_pool for which to retrieve an ID.

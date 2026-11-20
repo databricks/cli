@@ -1,0 +1,64 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created domains.finance
+Created domains.payments
+Created pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Moving the page to another domain updates it in place: the page keeps its ID
+
+>>> update_file.py databricks.yml domain: ${resources.domains.payments.name} domain: ${resources.domains.finance.name}
+
+>>> [CLI] bundle plan
+update pages.chargeback
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //knowledge
+{
+  "method": "PATCH",
+  "path": "/api/2.0/knowledge/pages/[UUID][0]",
+  "q": {
+    "update_mask": "display_name,body,synonyms,description,domain"
+  },
+  "body": {
+    "body": "A reversal of a card payment.",
+    "description": "",
+    "display_name": "Chargeback",
+    "domain": "domains/[UUID][1]",
+    "synonyms": []
+  }
+}
+The page has the same ID
+The page is in the Finance domain
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.domains.finance
+  delete resources.domains.payments
+  delete resources.pages.chargeback
+
+This action will result in the deletion of the following domains.
+Deleting a domain also deletes its subdomains. The governed tag of a domain and the tags
+on assets are kept:
+  delete resources.domains.finance
+  delete resources.domains.payments
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.chargeback
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 3 deleted

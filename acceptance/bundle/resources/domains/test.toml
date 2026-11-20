@@ -1,0 +1,11 @@
+# Creating a domain needs the Manage Discover permission and an existing governed tag,
+# which the test workspaces do not provide, so these tests only run against the fake server.
+Cloud = false
+
+Ignore = [
+    ".databricks",
+]
+
+# Deployment history has no "domains." resource-key prefix yet, so the deploy cannot record
+# history for it. See dmsResourceTypes in libs/testserver/bundledeployments.go.
+EnvMatrixExclude.no_domains_dms = ["DMS=true"]

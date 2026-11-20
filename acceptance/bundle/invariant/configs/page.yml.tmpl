@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  domains:
+    foo_domain:
+      tag_key: test-domain-$UNIQUE_NAME
+
+  pages:
+    foo:
+      domain: ${resources.domains.foo_domain.name}
+      display_name: Test page $UNIQUE_NAME
+      description: A test page.
+      synonyms:
+        - zeta
+        - alpha
+      state: PUBLISHED
+      body: |
+        # Test page
+
+        The body of the page.

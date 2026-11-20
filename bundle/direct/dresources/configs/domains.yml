@@ -1,0 +1,5 @@
+stable_output_fields:
+  # name ("domains/{domain_id}") and domain_id are backend-assigned at creation and
+  # immutable; see the stable_output_fields doc in config.go.
+  - field: name
+  - field: domain_id

@@ -21,6 +21,8 @@ import (
 // This list exists to ensure that this mutator is updated when new resource is added.
 // These resources are there because they use grants, not permissions:
 var unsupportedResources = []string{
+	"domains",
+	"pages",
 	"catalogs",
 	"external_locations",
 	"volumes",

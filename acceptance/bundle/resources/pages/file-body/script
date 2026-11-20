@@ -1,0 +1,24 @@
+title "The body of the page is read from the file"
+trace $CLI bundle validate -o json | jq '.resources.pages.chargeback | {file_path, body}'
+
+trace $CLI bundle deploy
+trace print_requests.py //knowledge
+
+title "A second plan has no changes"
+trace $CLI bundle plan
+
+title "Editing the file updates the page"
+trace update_file.py pages/chargeback.md "initiated by the cardholder's bank" "started by the bank of the cardholder"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //knowledge
+
+title "Setting both file_path and body is an error"
+trace update_file.py databricks.yml "file_path: ./pages/chargeback.md" "file_path: ./pages/chargeback.md
+      body: inline"
+trace musterr $CLI bundle validate
+trace update_file.py databricks.yml "      body: inline" ""
+
+trace $CLI bundle destroy --auto-approve
+
+rm -f out.requests.txt

@@ -45,6 +45,9 @@ EnvMatrixExclude.no_data_quality_monitor = ["INPUT_CONFIG=data_quality_monitor.y
 EnvMatrixExclude.no_feature = ["INPUT_CONFIG=feature.yml.tmpl"]
 # Feature specs are direct-only; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_feature_spec = ["INPUT_CONFIG=feature_spec.yml.tmpl"]
+# Domains and pages are direct-only; the terraform deploy that seeds the migration fails for them.
+EnvMatrixExclude.no_domain = ["INPUT_CONFIG=domain.yml.tmpl"]
+EnvMatrixExclude.no_page = ["INPUT_CONFIG=page.yml.tmpl"]
 # The Postgres Data API is direct-only; the terraform deploy that seeds the migration fails for it.
 EnvMatrixExclude.no_postgres_data_api = ["INPUT_CONFIG=postgres_data_api.yml.tmpl"]
 

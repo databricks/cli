@@ -1,0 +1,21 @@
+trace $CLI bundle deploy
+PAGE_ID=$($CLI bundle summary -o json | jq -r .resources.pages.chargeback.id)
+print_requests.py > /dev/null
+
+title "Moving the page to another domain updates it in place: the page keeps its ID"
+trace update_file.py databricks.yml 'domain: ${resources.domains.payments.name}' 'domain: ${resources.domains.finance.name}'
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //knowledge
+
+FINANCE_ID=$($CLI bundle summary -o json | jq -r .resources.domains.finance.id)
+NEW_PAGE_ID=$($CLI bundle summary -o json | jq -r .resources.pages.chargeback.id)
+PAGE_DOMAIN=$(MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq -r .domain)
+[ "$PAGE_ID" = "$NEW_PAGE_ID" ] && echo "The page has the same ID"
+[ "$PAGE_DOMAIN" = "domains/$FINANCE_ID" ] && echo "The page is in the Finance domain"
+
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+
+rm -f out.requests.txt

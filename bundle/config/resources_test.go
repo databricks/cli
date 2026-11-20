@@ -2,6 +2,8 @@ package config
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"strings"
@@ -19,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/workspaceurls"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -219,6 +222,12 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		ClusterPolicies: map[string]*resources.ClusterPolicy{
 			"my_cluster_policy": {},
+		},
+		Domains: map[string]*resources.Domain{
+			"my_domain": {},
+		},
+		Pages: map[string]*resources.Page{
+			"my_page": {},
 		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {},
@@ -430,6 +439,22 @@ func TestResourcesBindSupport(t *testing.T) {
 
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
+
+	// The Knowledge Pages API is not part of the SDK and so has no mock. Pages are
+	// looked up over HTTP instead.
+	pages := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The SDK also probes the host for its configuration.
+		if r.URL.Path != "/api/2.0/knowledge/pages/0" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"name": "pages/0"}`))
+	}))
+	t.Cleanup(pages.Close)
+	m.WorkspaceClient.Config = &sdkconfig.Config{Host: pages.URL, Token: "token"}
+
+	m.GetMockDomainsAPI().EXPECT().GetDomain(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)

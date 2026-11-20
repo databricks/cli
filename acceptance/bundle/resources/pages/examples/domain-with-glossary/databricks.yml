@@ -1,0 +1,46 @@
+# A domain, a subdomain and their glossary, owned by one team.
+#
+# A domain is built on a governed tag, which must exist before the bundle is deployed. The
+# key of a subdomain's governed tag is the key of its parent followed by a slash and a name.
+bundle:
+  name: payments_domain
+
+resources:
+  domains:
+    payments:
+      tag_key: Payments
+      subtitle: Card payments, refunds and settlement
+      description: |
+        Curated data about payments: transactions, refunds, chargebacks and settlement.
+
+        Ask in #payments-data to have an asset added to this domain.
+      icon:
+        name: BANK
+        color: "#1B5E20"
+
+    fraud:
+      tag_key: Payments/Fraud
+      parent_domain_id: ${resources.domains.payments.id}
+      subtitle: Fraud detection and chargebacks
+      icon:
+        name: SHIELD_CHECKERED
+        color: "#C83243"
+
+  pages:
+    settlement:
+      domain: ${resources.domains.payments.name}
+      display_name: Settlement
+      description: The transfer of the money of a payment to the merchant.
+      state: PUBLISHED
+      file_path: ./pages/settlement.md
+
+    false_positive:
+      domain: ${resources.domains.fraud.name}
+      display_name: False positive
+      description: A legitimate payment that was declined as fraud.
+      synonyms:
+        - false decline
+      state: PUBLISHED
+      body: |-
+        A **false positive** is a legitimate payment that the fraud model declined.
+        The false positive rate is the share of declined payments that were legitimate.

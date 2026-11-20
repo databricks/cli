@@ -32,6 +32,7 @@ from databricks.bundles.core._generated.database_instances import (
     _DatabaseInstanceResources,
     database_instance_mutator,
 )
+from databricks.bundles.core._generated.domains import _DomainResources, domain_mutator
 from databricks.bundles.core._generated.experiments import (
     _MlflowExperimentResources,
     mlflow_experiment_mutator,
@@ -136,6 +137,7 @@ __all__ = [
     "data_quality_monitor_mutator",
     "database_catalog_mutator",
     "database_instance_mutator",
+    "domain_mutator",
     "external_location_mutator",
     "feature_mutator",
     "feature_spec_mutator",
@@ -174,6 +176,7 @@ class _GeneratedResources(
     _DataQualityMonitorResources,
     _DatabaseCatalogResources,
     _DatabaseInstanceResources,
+    _DomainResources,
     _MlflowExperimentResources,
     _ExternalLocationResources,
     _FeatureSpecResources,
@@ -214,6 +217,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         data_quality_monitors,
         database_catalogs,
         database_instances,
+        domains,
         experiments,
         external_locations,
         feature_specs,
@@ -251,6 +255,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         data_quality_monitors._resource_type(),
         database_catalogs._resource_type(),
         database_instances._resource_type(),
+        domains._resource_type(),
         experiments._resource_type(),
         external_locations._resource_type(),
         feature_specs._resource_type(),

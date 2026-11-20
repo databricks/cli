@@ -1,0 +1,22 @@
+title "Create the domain and the page outside the bundle"
+DOMAIN_ID=$($CLI domains create-domain Payments | jq -r .domain_id)
+PAGE_ID=$(MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/knowledge/pages --json "{\"domain\": \"domains/$DOMAIN_ID\", \"display_name\": \"Chargeback\", \"body\": \"Written in the UI.\", \"state\": \"PUBLISHED\"}" | jq -r .name | cut -d/ -f2)
+print_requests.py > /dev/null
+
+trace $CLI bundle deployment bind chargeback $PAGE_ID --auto-approve
+trace $CLI bundle summary
+
+title "The body of the bound page differs from the config, so the deploy updates it in place"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //knowledge
+
+title "The page keeps the state it had: the config does not set one"
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name, body, state}'
+
+title "After unbind the page is no longer part of the bundle, so destroy leaves it alone"
+trace $CLI bundle deployment unbind chargeback
+trace $CLI bundle destroy --auto-approve
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/knowledge/pages/$PAGE_ID | jq '{display_name}'
+
+rm -f out.requests.txt
