@@ -17,13 +17,11 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
-	aircmd "github.com/databricks/cli/cmd/air"
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
@@ -64,7 +62,10 @@ var errPortForwardingDisabled = errors.New("port forwarding to serverless comput
 // connection, e.g. because an administrator disabled port forwarding to serverless compute.
 var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
 
-var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+var (
+	connectionNameRegex  = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+	acceleratorNameRegex = regexp.MustCompile(`^GPU_[A-Za-z0-9][A-Za-z0-9_-]*$`)
+)
 
 // DefaultEnvironmentVersion is the serverless environment version used when --environment-version is not set.
 const DefaultEnvironmentVersion = 4
@@ -167,9 +168,11 @@ func (o *ClientOptions) Validate() error {
 	if o.UsagePolicyID != "" && o.ClusterID != "" {
 		return errors.New("--usage-policy-id flag can only be used with serverless compute (--name flag)")
 	}
-	// The same GPU types `databricks air` accepts; the workspace still decides which it offers.
-	if o.Accelerator != "" && !slices.Contains(aircmd.KnownGPUTypes(), o.Accelerator) {
-		return fmt.Errorf("invalid accelerator value: %q, expected one of %s", o.Accelerator, strings.Join(aircmd.KnownGPUTypes(), ", "))
+	// The accelerator is interpolated into the ProxyCommand and connection name. Enforce
+	// a safe shape; the backend validates available GPU types and environment versions,
+	// so new GPU types need no CLI change.
+	if o.Accelerator != "" && !acceleratorNameRegex.MatchString(o.Accelerator) {
+		return fmt.Errorf("invalid accelerator value %q: expected a GPU type name such as GPU_1xA10 (letters, numbers, dashes and underscores)", o.Accelerator)
 	}
 	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
 		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)

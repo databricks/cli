@@ -1,10 +1,8 @@
 package ssh
 
 import (
-	"strings"
 	"time"
 
-	aircmd "github.com/databricks/cli/cmd/air"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -73,7 +71,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep the SSH server and detached processes (tmux, setsid, nohup) running while detached work remains, bounded by --server-timeout")
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
-	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type ("+strings.Join(aircmd.KnownGPUTypes(), ", ")+")")
+	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type, for example GPU_1xA10 or GPU_8xH100; the workspace decides which types and environment versions are available (list them with 'databricks air run -h config.compute.accelerator_type')")
 	cmd.Flags().StringVar(&ide, "ide", "", "Open remote IDE window (vscode or cursor)")
 	cmd.Flags().StringVar(&usagePolicyID, "usage-policy-id", "", "Usage policy ID for the serverless SSH server job (serverless only)")
 

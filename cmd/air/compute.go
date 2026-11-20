@@ -3,7 +3,6 @@ package aircmd
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 )
 
@@ -19,24 +18,12 @@ const (
 	gpuType1xRTX6000 gpuType = "GPU_1xRTX6000"
 )
 
-// KnownGPUTypes lists the accelerator types this CLI accepts, in the order they are shown
-// to users. `ssh connect --accelerator` validates against the same list, so the two entry
-// points to AI Runtime GPUs agree on the types they offer.
-func KnownGPUTypes() []string {
-	return []string{
-		string(gpuType1xA10),
-		string(gpuType1xH100),
-		string(gpuType8xH100),
-		string(gpuType8xB300),
-		string(gpuType1xRTX6000),
-	}
-}
-
 // parseGPUType resolves a YAML accelerator_type string to a gpuType. The match is
 // exact: the server's lookup is case-sensitive. The error lists no types because
 // which ones a workspace can use comes from the server, not this CLI.
 func parseGPUType(value string) (gpuType, error) {
-	if slices.Contains(KnownGPUTypes(), value) {
+	switch gpuType(value) {
+	case gpuType1xA10, gpuType8xH100, gpuType1xH100, gpuType8xB300, gpuType1xRTX6000:
 		return gpuType(value), nil
 	}
 	return "", fmt.Errorf("%q is not a recognized accelerator type", value)

@@ -63,14 +63,23 @@ func TestValidate(t *testing.T) {
 			opts: client.ClientOptions{ConnectionName: "my-conn_1", Accelerator: "GPU_1xRTX6000"},
 		},
 		{
-			name:    "well-formed but unknown accelerator value",
-			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_2xA10"},
-			wantErr: `invalid accelerator value: "GPU_2xA10", expected one of GPU_1xA10, GPU_1xH100, GPU_8xH100, GPU_8xB300, GPU_1xRTX6000`,
+			name: "well-formed but unknown accelerator value",
+			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_2xA10"},
 		},
 		{
 			name:    "invalid accelerator value",
 			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "CPU_1x"},
-			wantErr: `invalid accelerator value: "CPU_1x", expected one of GPU_1xA10, GPU_1xH100, GPU_8xH100, GPU_8xB300, GPU_1xRTX6000`,
+			wantErr: `invalid accelerator value "CPU_1x": expected a GPU type name such as GPU_1xA10 (letters, numbers, dashes and underscores)`,
+		},
+		{
+			name:    "accelerator with shell metacharacters",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10;id"},
+			wantErr: `invalid accelerator value "GPU_1xA10;id": expected a GPU type name such as GPU_1xA10 (letters, numbers, dashes and underscores)`,
+		},
+		{
+			name:    "accelerator with command substitution",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10$(id)"},
+			wantErr: `invalid accelerator value "GPU_1xA10$(id)": expected a GPU type name such as GPU_1xA10 (letters, numbers, dashes and underscores)`,
 		},
 		{
 			name: "both cluster ID and connection name",
