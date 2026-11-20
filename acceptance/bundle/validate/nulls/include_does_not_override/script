@@ -1,0 +1,2 @@
+# Null values in an included file leave the values from databricks.yml in place; null strings are reported.
+trace $CLI bundle validate -o json | jq '{cluster_id: .bundle.cluster_id, root_path: .workspace.root_path, presets, sync, permissions, variables, run_as, artifacts: (.artifacts | map_values({type, build}))}'

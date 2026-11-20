@@ -1,0 +1,26 @@
+
+>>> [CLI] bundle validate -o json -t dev
+{
+  "presets": {
+    "jobs_max_concurrent_runs": 0,
+    "name_prefix": "",
+    "pipelines_development": false
+  },
+  "sync": {
+    "include": [
+      "databricks.yml"
+    ],
+    "paths": [
+      "."
+    ]
+  },
+  "permissions": [
+    {
+      "level": "CAN_MANAGE",
+      "user_name": "[USERNAME]"
+    }
+  ],
+  "tags": {
+    "root": "1"
+  }
+}

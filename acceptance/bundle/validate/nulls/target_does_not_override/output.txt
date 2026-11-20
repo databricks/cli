@@ -1,0 +1,82 @@
+
+>>> [CLI] bundle validate -o json -t dev
+Warning: expected a string value, found null
+  at targets.dev.mode
+  in databricks.yml:43:11
+
+Warning: expected a string value, found null
+  at targets.dev.cluster_id
+  in databricks.yml:44:17
+
+Warning: expected a string value, found null
+  at targets.dev.bundle.cluster_id
+  in databricks.yml:48:19
+
+Warning: expected a string value, found null
+  at targets.dev.workspace.root_path
+  in databricks.yml:50:18
+
+Warning: expected a string value, found null
+  at targets.dev.presets.name_prefix
+  in databricks.yml:52:20
+
+Warning: expected a string value, found null
+  at targets.dev.presets.tags.root
+  in databricks.yml:54:15
+
+{
+  "bundle": {
+    "mode": "development",
+    "cluster_id": "root-cluster",
+    "git": {
+      "branch": "root-branch"
+    }
+  },
+  "root_path": "/Workspace/Users/[USERNAME]/root",
+  "presets": {
+    "name_prefix": "root-[USERNAME]-",
+    "tags": {
+      "dev": "[USERNAME]",
+      "root": "1"
+    }
+  },
+  "sync": {
+    "include": [
+      "databricks.yml"
+    ],
+    "paths": [
+      "."
+    ]
+  },
+  "permissions": [
+    {
+      "level": "CAN_MANAGE",
+      "user_name": "[USERNAME]"
+    }
+  ],
+  "variables": {
+    "scalar": {
+      "default": "root",
+      "value": "root"
+    },
+    "shorthand": {
+      "default": "root",
+      "value": "root"
+    },
+    "with_lookup": {
+      "lookup": {
+        "cluster": "some-test-cluster"
+      },
+      "value": "4321"
+    }
+  },
+  "run_as": {
+    "user_name": "root@example.com"
+  },
+  "artifacts": {
+    "whl": {
+      "type": "whl",
+      "build": "build-root"
+    }
+  }
+}

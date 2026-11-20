@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+include:
+  - z.yml
+  - "conf/*.yml"
+
+presets:
+  name_prefix: root-
+
+workspace:
+  root_path: /Workspace/root

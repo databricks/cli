@@ -1,0 +1,98 @@
+{
+  "bundle": {
+    "cluster_id": "override-cluster",
+    "git": {
+      "branch": "root-branch",
+      "origin_url": "https://override.example.com"
+    }
+  },
+  "workspace": {
+    "root_path": "/Workspace/override",
+    "file_path": "/Workspace/root/files"
+  },
+  "artifacts": {
+    "whl": {
+      "build": "build-override",
+      "files": [
+        {
+          "source": "[BUNDLE_ROOT]/root.whl"
+        },
+        {
+          "source": "[BUNDLE_ROOT]/override.whl"
+        }
+      ],
+      "path": "[BUNDLE_ROOT]",
+      "type": "whl"
+    }
+  },
+  "experimental": {
+    "python_wheel_wrapper": true,
+    "skip_name_prefix_for_schema": true
+  },
+  "presets": {
+    "name_prefix": "override-",
+    "tags": {
+      "override": "1",
+      "root": "1"
+    }
+  },
+  "sync": {
+    "include": [
+      "databricks.yml",
+      "*.yml"
+    ],
+    "paths": [
+      "."
+    ]
+  },
+  "permissions": [
+    {
+      "level": "CAN_MANAGE",
+      "user_name": "[USERNAME]"
+    },
+    {
+      "group_name": "viewers",
+      "level": "CAN_VIEW"
+    }
+  ],
+  "variables": {
+    "complex": {
+      "default": {
+        "list": [
+          "root",
+          "override"
+        ],
+        "override": "override",
+        "root": "root",
+        "shared": "override"
+      },
+      "type": "complex",
+      "value": {
+        "list": [
+          "root",
+          "override"
+        ],
+        "override": "override",
+        "root": "root",
+        "shared": "override"
+      }
+    },
+    "scalar": {
+      "default": "override",
+      "description": "from root",
+      "value": "override"
+    }
+  },
+  "scripts": {
+    "override_script": {
+      "content": "echo override"
+    },
+    "root_script": {
+      "content": "echo root"
+    }
+  },
+  "run_as": {
+    "service_principal_name": "override-sp",
+    "user_name": "root@example.com"
+  }
+}

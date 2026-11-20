@@ -1,0 +1,42 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo-root
+      description: root
+      tags:
+        root: "1"
+        shared: root
+      email_notifications:
+        on_failure:
+          - root@example.com
+      tasks:
+        - task_key: t1
+          notebook_task:
+            notebook_path: ./root.py
+          libraries:
+            - pypi:
+                package: root
+
+targets:
+  dev:
+    resources:
+      jobs:
+        foo:
+          name: foo-dev
+          tags:
+            dev: "1"
+            shared: dev
+          email_notifications:
+            on_failure:
+              - dev@example.com
+          tasks:
+            - task_key: t1
+              libraries:
+                - pypi:
+                    package: dev
+            - task_key: t2
+              notebook_task:
+                notebook_path: ./dev.py

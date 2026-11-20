@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle validate -o json
+Error: multiple resources or scripts have been defined with the same key: foo
+  at resources.jobs.foo
+  in a.yml:4:7
+     b.yml:4:7
+
+
+Exit code: 1
+{
+  "jobs": {
+    "foo": {
+      "description": "foo-b",
+      "name": "foo-a",
+      "tags": {
+        "a": "1",
+        "b": "1"
+      }
+    }
+  }
+}

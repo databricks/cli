@@ -1,0 +1,2 @@
+# Target mode, cluster_id and git apply to the bundle section; cluster_id wins over bundle.cluster_id in the same target.
+trace $CLI bundle validate -o json -t dev | jq '.bundle | {mode, cluster_id, git: (.git | {branch, origin_url})}'

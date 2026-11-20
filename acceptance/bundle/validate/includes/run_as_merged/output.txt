@@ -1,0 +1,11 @@
+
+>>> [CLI] bundle validate -o json
+Error: run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name
+  in databricks.yml:8:3
+
+
+Exit code: 1
+{
+  "service_principal_name": "override-sp",
+  "user_name": "root@example.com"
+}

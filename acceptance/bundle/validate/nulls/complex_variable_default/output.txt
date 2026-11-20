@@ -1,0 +1,11 @@
+
+>>> [CLI] bundle validate -o json -t dev
+{
+  "from_include": {
+    "key": "root",
+    "other": "root"
+  },
+  "from_target": {
+    "key": null
+  }
+}

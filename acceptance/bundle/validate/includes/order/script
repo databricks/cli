@@ -1,0 +1,2 @@
+# Includes override databricks.yml and each other in include order; matches of a glob are sorted.
+trace $CLI bundle validate -o json | jq '{include, name_prefix: .presets.name_prefix, root_path: .workspace.root_path}'

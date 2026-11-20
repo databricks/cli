@@ -1,0 +1,53 @@
+bundle:
+  name: test-bundle
+  cluster_id: root-cluster
+  git:
+    branch: root-branch
+
+workspace:
+  root_path: /Workspace/root
+  file_path: /Workspace/root/files
+
+artifacts:
+  whl:
+    type: whl
+    build: build-root
+    files:
+      - source: root.whl
+
+experimental:
+  skip_name_prefix_for_schema: true
+
+presets:
+  name_prefix: root-
+  tags:
+    root: "1"
+
+sync:
+  include:
+    - databricks.yml
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: ${workspace.current_user.userName}
+
+variables:
+  scalar:
+    description: from root
+    default: root
+  complex:
+    type: complex
+    default:
+      root: root
+      shared: root
+      list: [root]
+
+scripts:
+  root_script:
+    content: echo root
+
+run_as:
+  user_name: root@example.com
+
+include:
+  - override.yml

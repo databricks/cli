@@ -1,0 +1,66 @@
+
+>>> [CLI] bundle validate -o json
+Warning: expected a string value, found null
+  at bundle.cluster_id
+  in override.yml:2:15
+
+Warning: expected a string value, found null
+  at workspace.root_path
+  in override.yml:5:14
+
+Warning: expected a string value, found null
+  at presets.name_prefix
+  in override.yml:8:15
+
+Warning: expected a string value, found null
+  at presets.tags.root
+  in override.yml:10:11
+
+{
+  "cluster_id": "root-cluster",
+  "root_path": "/Workspace/root",
+  "presets": {
+    "name_prefix": "root-",
+    "tags": {
+      "root": "1"
+    }
+  },
+  "sync": {
+    "include": [
+      "databricks.yml"
+    ],
+    "paths": [
+      "."
+    ]
+  },
+  "permissions": [
+    {
+      "level": "CAN_MANAGE",
+      "user_name": "[USERNAME]"
+    }
+  ],
+  "variables": {
+    "complex": {
+      "default": {
+        "key": "root"
+      },
+      "type": "complex",
+      "value": {
+        "key": "root"
+      }
+    },
+    "scalar": {
+      "default": "root",
+      "value": "root"
+    }
+  },
+  "run_as": {
+    "user_name": "root@example.com"
+  },
+  "artifacts": {
+    "whl": {
+      "type": "whl",
+      "build": "build-root"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle validate -o json -t dev
+Warning: unknown field: experimental
+  at targets.dev
+  in databricks.yml:6:5
+
+Warning: unknown field: scripts
+  at targets.dev
+  in databricks.yml:8:5
+
+Warning: unknown field: python
+  at targets.dev
+  in databricks.yml:11:5
+
+Warning: unknown field: include
+  at targets.dev
+  in databricks.yml:13:5
+
+{
+  "experimental": null,
+  "scripts": null,
+  "python": null,
+  "include": null
+}
