@@ -6,6 +6,8 @@ workspace:
 
 permissions:
   - level: CAN_MANAGE
+    service_principal_name: ${workspace.current_user.userName}
+  - level: CAN_MANAGE
     user_name: $TEST_USER_EMAIL
 
 resources:

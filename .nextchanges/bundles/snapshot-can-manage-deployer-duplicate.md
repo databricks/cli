@@ -1,0 +1,1 @@
+* Immutable-folder snapshots no longer list the deploying identity twice in `can_manage_principals` when the top-level `permissions` section grants it `CAN_MANAGE`. Affected bundles upload their snapshot to a new path once on the next deploy. ([#7332](https://github.com/databricks/cli/pull/7332))
