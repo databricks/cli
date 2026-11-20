@@ -232,6 +232,20 @@ type requestRecorder struct {
 	entries map[*testserver.Request]string
 	// failed counts the entries answered with a transient error and not repeated yet.
 	failed map[string]int
+	// createLookups maps the path of a resource that a create request answered with a transient
+	// error names (the request path plus one of its query values, e.g. /api/2.0/postgres/projects
+	// with project_id=p names /api/2.0/postgres/projects/p) to that request's entry.
+	createLookups map[string]string
+	// lookups holds, per failed create entry, the GETs of its resource answered with 404 since. The
+	// CLI makes them to check whether the failed request created the resource before it repeats
+	// the request, so they go together with the failed attempt.
+	lookups map[string][]recordedLookup
+}
+
+// recordedLookup is a GET answered with 404 that a repeated create makes redundant.
+type recordedLookup struct {
+	path  string
+	entry string
 }
 
 func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string, dropRetried bool) *requestRecorder {
@@ -243,6 +257,8 @@ func newRequestRecorder(t *testing.T, includeHeaders []string, outputDir string,
 	if dropRetried {
 		r.entries = map[*testserver.Request]string{}
 		r.failed = map[string]int{}
+		r.createLookups = map[string]string{}
+		r.lookups = map[string][]recordedLookup{}
 	}
 	return r
 }
@@ -262,7 +278,15 @@ func (r *requestRecorder) record(request *testserver.Request) {
 
 	if r.failed[entry] > 0 {
 		r.failed[entry]--
-		r.dropFailedAttempt(request, entry)
+		if r.dropEntry(entry) {
+			r.t.Logf("Dropped from out.requests.txt, repeated after a transient error: %s %s", request.Method, request.URL.Path)
+		}
+		for _, lookup := range r.lookups[entry] {
+			if r.dropEntry(lookup.entry) {
+				r.t.Logf("Dropped from out.requests.txt, a lookup before a repeated create: GET %s", lookup.path)
+			}
+		}
+		delete(r.lookups, entry)
 	}
 
 	f, err := os.OpenFile(r.path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
@@ -276,23 +300,22 @@ func (r *requestRecorder) record(request *testserver.Request) {
 	}
 }
 
-// dropFailedAttempt removes the last copy of entry from out.requests.txt: the attempt that
-// request repeats.
-func (r *requestRecorder) dropFailedAttempt(request *testserver.Request, entry string) {
+// dropEntry removes the last copy of entry from out.requests.txt and reports whether it did.
+func (r *requestRecorder) dropEntry(entry string) bool {
 	data, err := os.ReadFile(r.path())
 	if errors.Is(err, os.ErrNotExist) {
-		// The script consumed the file since the failed attempt.
-		return
+		// The script consumed the file since the entry was written.
+		return false
 	}
 	require.NoError(r.t, err)
 
 	i := strings.LastIndex(string(data), entry)
 	if i < 0 {
-		return
+		return false
 	}
 	data = append(data[:i:i], data[i+len(entry):]...)
 	require.NoError(r.t, os.WriteFile(r.path(), data, 0o644))
-	r.t.Logf("Dropped from out.requests.txt, repeated after a transient error: %s %s", request.Method, request.URL.Path)
+	return true
 }
 
 // isTransientStatus reports whether a response status is one the CLI may repeat a request after
@@ -304,7 +327,9 @@ func isTransientStatus(status int) bool {
 // noteResponse remembers a request answered with a transient error, so that if the CLI repeats
 // it, the failed attempt is dropped from out.requests.txt. A real workspace answers with such
 // errors now and then, so recording both attempts makes request goldens flaky. A request that is
-// not repeated stays recorded. Only the proxy uses this: the testserver answers with an error only
+// not repeated stays recorded. Before it repeats a failed create, the CLI reads the resource to
+// see whether the request created it anyway; a read answered with 404 is dropped with the failed
+// attempt. A read that finds the resource stays recorded, since no repeat follows. Only the proxy uses this: the testserver answers with an error only
 // when a test injects one, and its goldens show that.
 func (r *requestRecorder) noteResponse(request *testserver.Request, response *testserver.EncodedResponse) {
 	r.mu.Lock()
@@ -312,8 +337,27 @@ func (r *requestRecorder) noteResponse(request *testserver.Request, response *te
 
 	entry, ok := r.entries[request]
 	delete(r.entries, request)
-	if ok && isTransientStatus(response.StatusCode) {
+	if !ok {
+		return
+	}
+	if isTransientStatus(response.StatusCode) {
 		r.failed[entry]++
+		if request.Method == http.MethodPost {
+			for _, values := range request.URL.Query() {
+				for _, value := range values {
+					if value != "" && !strings.Contains(value, "/") {
+						r.createLookups[request.URL.Path+"/"+value] = entry
+					}
+				}
+			}
+		}
+		return
+	}
+	if request.Method == http.MethodGet && response.StatusCode == http.StatusNotFound {
+		create, found := r.createLookups[request.URL.Path]
+		if found && r.failed[create] > 0 {
+			r.lookups[create] = append(r.lookups[create], recordedLookup{path: request.URL.Path, entry: entry})
+		}
 	}
 }
 
