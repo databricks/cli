@@ -9,15 +9,16 @@ Runs golangci-lint (which includes go vet's analyzers) and the unit tests of the
 aitools packages, and compiles the packages that import them, in parallel. It
 prints a summary for every step and detailed output for failed steps; file:line
 findings are captured when available. Packages changed on the branch (diff
-against the merge base with main, as tools/lintdiff.py does) are linted and
-tested too, so an edit to a shared package such as libs/telemetry runs that
+against the merge base with origin/main, or main when there is no origin/main,
+as tools/lintdiff.py computes it) are linted and tested too, so an edit to a shared package such as libs/telemetry runs that
 package's tests. Beyond that there is no package selection: Go's build and test
 caches re-run exactly the packages whose transitive inputs changed.
 
-The tests run in a sanitized test environment: the host's coding-agent variables
-and DATABRICKS_* variables are removed and HOME points at a dedicated directory.
-This prevents agent-detection variables from changing aitools behavior relative
-to CI.
+The unit tests run in a sanitized test environment: the host's coding-agent
+variables and DATABRICKS_* variables are removed and HOME points at a dedicated
+directory. This prevents agent-detection variables from changing aitools
+behavior relative to CI. The acceptance tests run with the host environment:
+the harness gives each test its own HOME and unsets the agent variables itself.
 
 With --full (`./task aitools-full`) it also runs the importers' unit tests, the
 acceptance tests that exercise aitools and the deadcode check: the slower tier to
@@ -38,11 +39,23 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+from lintdiff import changed_go_dirs, go_dirs
+
 PACKAGES = ["./cmd/aitools/...", "./libs/aitools/...", "./experimental/aitools/..."]
 
 # Packages outside aitools that import it. cmd/root calls aitools from the root
-# command's pre-run, so a change there can break every command.
-IMPORTERS = [".", "./cmd", "./cmd/air", "./cmd/apps", "./cmd/experimental", "./cmd/root", "./cmd/version"]
+# command's pre-run, so a change there can break every command. The fake agent
+# CLIs of the acceptance tests write agent config through aitools.
+IMPORTERS = [
+    ".",
+    "./acceptance/internal/fakeagent",
+    "./cmd",
+    "./cmd/air",
+    "./cmd/apps",
+    "./cmd/experimental",
+    "./cmd/root",
+    "./cmd/version",
+]
 
 # Acceptance tests that run aitools: its own directories, plus the goldens that
 # print aitools help or tips. The apps tests cover the `apps init` skills tip.
@@ -53,41 +66,26 @@ ACCEPTANCE = [
     "TestAccept/help$",
     "TestAccept/cmd/version",
     "TestAccept/quickstart",
-    "TestAccept/air/help",
-    "TestAccept/air/config-help",
+    # All of air: besides its help goldens, image-push records the aitools install hint.
+    "TestAccept/air",
 ]
 
-# Coding-agent detection variables (keep in sync with the list in
-# acceptance/acceptance_test.go) plus the agent config-dir overrides aitools reads.
-AGENT_ENV = {
-    "AGENT",
-    "AI_AGENT",
-    "AIDEVKIT_HOME",
-    "AMP_CURRENT_THREAD_ID",
-    "ANTIGRAVITY_AGENT",
-    "AUGMENT_AGENT",
-    "CLAUDECODE",
+# The agent variables aitools reads beyond the detection list in
+# acceptance/acceptance_test.go: Claude Code's child-session marker, which gates
+# the native hint, and the agent config-dir overrides.
+AGENT_EXTRA_ENV = {
+    "CLAUDE_CODE_CHILD_SESSION",
     "CLAUDE_CODE_SESSION_ID",
     "CLAUDE_CONFIG_DIR",
-    "CLINE_ACTIVE",
-    "CODEX_CI",
     "CODEX_HOME",
-    "COPILOT_CLI",
-    "CURSOR_AGENT",
-    "GEMINI_CLI",
+    "COPILOT_HOME",
     "GEMINI_CLI_HOME",
     "GOOSE_PATH_ROOT",
-    "GOOSE_TERMINAL",
-    "KIRO",
-    "OMNIGENT",
-    "OPENCLAW_SHELL",
-    "OPENCODE",
-    "PI_CODING_AGENT",
     "PI_CODING_AGENT_DIR",
-    "VSCODE_AGENT",
-    "WINDSURF_AGENT",
     "XDG_CONFIG_HOME",
 }
+
+MODULE = "github.com/databricks/cli"
 
 # file.go:line[:col]: message, as printed by the compiler, go vet and golangci-lint.
 FINDING = re.compile(r"^(?P<file>[^\s:][^:]*\.go):(?P<line>\d+)(?::(?P<col>\d+))?: (?P<msg>.+)$")
@@ -105,79 +103,140 @@ def run(name, cmd, env=None):
     }
 
 
-def findings(output):
-    """Return file:line findings from compiler, vet or lint output.
+def agent_env(src):
+    """Return the agent variables to remove: the ones the acceptance harness
+    unsets (read from its source, src, so the two lists can't drift) plus
+    AGENT_EXTRA_ENV.
+
+    >>> src = '// Unset AI-agent detection env vars\\nfor _, v := range []string{\\n\\t"AGENT",\\n\\t"KIRO",\\n} {'
+    >>> sorted(agent_env(src) - AGENT_EXTRA_ENV)
+    ['AGENT', 'KIRO']
+    """
+    m = re.search(r"Unset AI-agent detection env vars.*?range \[\]string\{(?P<list>.*?)\}", src, re.DOTALL)
+    if not m:
+        raise SystemExit("aitools-quick: cannot find the agent variable list in acceptance/acceptance_test.go")
+    return set(re.findall(r'"(\w+)"', m["list"])) | AGENT_EXTRA_ENV
+
+
+def findings(output, pkg_dir=""):
+    """Return file:line findings from compiler, vet, lint or test output.
+
+    Test logs name only the file, so a bare file name is joined to pkg_dir.
 
     >>> findings("# pkg\\ncmd/aitools/x.go:3:5: undefined: y\\nok")
     [{'file': 'cmd/aitools/x.go', 'line': 3, 'col': 5, 'message': 'undefined: y'}]
+    >>> findings("    hint_test.go:375: want x", "libs/aitools/agents")
+    [{'file': 'libs/aitools/agents/hint_test.go', 'line': 375, 'col': None, 'message': 'want x'}]
     """
     result = []
     for line in output.splitlines():
         m = FINDING.match(line.strip())
         if m:
             col = int(m["col"]) if m["col"] else None
-            result.append({"file": m["file"], "line": int(m["line"]), "col": col, "message": m["msg"]})
+            file = m["file"] if "/" in m["file"] else os.path.join(pkg_dir, m["file"]).replace(os.sep, "/")
+            result.append({"file": file, "line": int(m["line"]), "col": col, "message": m["msg"]})
     return result
+
+
+def package_dir(pkg):
+    """Return the repository directory of an import path.
+
+    >>> package_dir("github.com/databricks/cli/libs/aitools/agents")
+    'libs/aitools/agents'
+    >>> package_dir("github.com/databricks/cli")
+    ''
+    """
+    return pkg.removeprefix(MODULE).removeprefix("/")
 
 
 def test_failures(output):
     """Return failing tests and their output from `go test -json` output.
 
-    Build failures are reported as a pseudo-test named "(build)".
+    Build failures are reported as a pseudo-test named "(build)". A package that
+    fails with no failing test (a timeout, a panic in init, a TestMain exit) is
+    reported as a pseudo-test named "(package)" with the package's own output
+    and that of its tests that never finished, where a timeout's panic lands.
+
+    >>> out = '''{"Action":"output","Package":"p","Test":"TestOK","Output":"ok\\\\n"}
+    ... {"Action":"pass","Package":"p","Test":"TestOK"}
+    ... {"Action":"output","Package":"p","Test":"TestSlow","Output":"panic: test timed out\\\\n"}
+    ... {"Action":"output","Package":"p","Output":"FAIL p\\\\n"}
+    ... {"Action":"fail","Package":"p"}
+    ... {"Action":"output","Package":"q","Test":"TestA","Output":"bad\\\\n"}
+    ... {"Action":"fail","Package":"q","Test":"TestA"}
+    ... {"Action":"fail","Package":"q"}'''
+    >>> test_failures(out)
+    [{'package': 'p', 'test': '(package)', 'output': 'panic: test timed out\\nFAIL p\\n'}, {'package': 'q', 'test': 'TestA', 'output': 'bad\\n'}]
     """
     logs = {}
     failed = []
+    finished = set()
     for line in output.splitlines():
         try:
             ev = json.loads(line)
         except json.JSONDecodeError:
             continue
-        pkg = ev.get("Package", "") or ev.get("ImportPath", "")
-        key = (pkg, ev.get("Test") or "(build)")
-        if ev.get("Action") in ("output", "build-output"):
+        action = ev.get("Action")
+        if action in ("build-output", "build-fail"):
+            key = (ev.get("ImportPath", ""), "(build)")
+        else:
+            key = (ev.get("Package", ""), ev.get("Test") or "(package)")
+        if action in ("output", "build-output"):
             logs.setdefault(key, []).append(ev.get("Output", ""))
-        elif ev.get("Action") in ("fail", "build-fail") and (ev.get("Test") or ev.get("Action") == "build-fail"):
+        elif action == "build-fail" or (action == "fail" and not ev.get("FailedBuild")):
             failed.append(key)
-    # A failing subtest also fails its parent; report only the innermost test.
+        if action in ("pass", "fail", "skip"):
+            finished.add(key)
+    # A failing subtest also fails its parent, and a failing test also fails its
+    # package; report only the innermost test.
     names = {(p, t) for p, t in failed}
-    leaves = [(p, t) for p, t in failed if not any(q == p and u.startswith(t + "/") for q, u in names)]
-    return [{"package": p, "test": t, "output": "".join(logs.get((p, t), []))} for p, t in leaves]
+    leaves = [
+        (p, t)
+        for p, t in failed
+        if not any(q == p and (u.startswith(t + "/") or (t == "(package)" and u != t)) for q, u in names)
+    ]
+
+    def output(p, t):
+        if t != "(package)":
+            return "".join(logs.get((p, t), []))
+        keys = [k for k in logs if k[0] == p and k[1] != t and k not in finished] + [(p, t)]
+        return "".join(line for k in keys for line in logs.get(k, []))
+
+    return [{"package": p, "test": t, "output": output(p, t)} for p, t in leaves]
 
 
-def select_packages(paths):
-    """Return ./dir patterns for the Go packages among changed paths, outside PACKAGES.
+def select_packages(dirs):
+    """Return the ./dir package patterns among dirs outside PACKAGES.
 
     The acceptance package runs the whole acceptance suite and integration tests
     need a workspace, so both are left to aitools-full; tools/ is its own module.
 
-    >>> select_packages(["libs/telemetry/logger.go", "cmd/aitools/x_test.go", "acceptance/a/script",
-    ...                  "acceptance/acceptance_test.go", "tools/x.go", "README.md", "libs/x/testdata/a.go"])
+    >>> select_packages(["./libs/telemetry", "./cmd/aitools", "./acceptance", "./acceptance/internal",
+    ...                  "./integration/cmd", "./tools/testmask"])
     ['./libs/telemetry']
     """
-    dirs = set()
-    for path in paths:
-        if not path.endswith(".go") or "/testdata/" in path:
-            continue
-        d = os.path.dirname(path)
-        if d.split("/")[0] in ("acceptance", "integration", "tools") or any(
-            (d + "/").startswith(p.removeprefix("./").removesuffix("...")) for p in PACKAGES
-        ):
-            continue
-        dirs.add("./" + d)
-    return sorted(dirs)
+    return sorted(
+        d
+        for d in dirs
+        if d.removeprefix("./").split("/")[0] not in ("acceptance", "integration", "tools")
+        and not any((d + "/").startswith(p.removesuffix("...")) for p in PACKAGES)
+    )
+
+
+def default_ref():
+    """origin/main when it exists: a local main is not moved by `git fetch origin main`."""
+    found = subprocess.run(["git", "rev-parse", "--verify", "--quiet", "origin/main"], capture_output=True)
+    return "origin/main" if found.returncode == 0 else "main"
 
 
 def changed_packages(ref):
     """Packages with Go files changed since the merge base with ref, committed or not."""
-    diff = subprocess.run(
-        ["git", "diff", "--name-only", "--merge-base", ref, "--", "."], capture_output=True, text=True
-    )
-    if diff.returncode != 0:
+    dirs = changed_go_dirs(ref)
+    if dirs is None:
         print(f"aitools-quick: cannot diff against {ref}; checking the aitools packages only", file=sys.stderr)
         return []
     untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], capture_output=True, text=True)
-    paths = diff.stdout.split() + untracked.stdout.split()
-    return [d for d in select_packages(paths) if os.path.isdir(d)]
+    return select_packages(set(dirs) | set(go_dirs(untracked.stdout.split(), True)))
 
 
 def user_cache_dir():
@@ -193,7 +252,9 @@ def hermetic_env(home):
     keys = ["GOCACHE", "GOENV", "GOMODCACHE", "GOPATH", "GOTOOLCHAIN"]
     out = subprocess.run(["go", "env", "-json", *keys], capture_output=True, text=True, check=True)
     pinned = json.loads(out.stdout)
-    env = {k: v for k, v in os.environ.items() if k not in AGENT_ENV and not k.startswith("DATABRICKS_")}
+    with open("acceptance/acceptance_test.go") as f:
+        agent = agent_env(f.read())
+    env = {k: v for k, v in os.environ.items() if k not in agent and not k.startswith("DATABRICKS_")}
     # Pin the Go caches and the user's go env file (GOPROXY, GOFLAGS and the like
     # set with `go env -w`) before moving HOME: otherwise every run would start
     # cold and the tests would run under a different Go configuration than lint
@@ -207,7 +268,9 @@ def hermetic_env(home):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--json", metavar="PATH", help="also write a machine-readable report to PATH")
-    parser.add_argument("--ref", default="main", help="ref whose merge base defines the changed packages")
+    parser.add_argument(
+        "--ref", help="ref whose merge base defines the changed packages (default: origin/main, or main without it)"
+    )
     parser.add_argument(
         "--full", action="store_true", help="also run importer tests, aitools acceptance tests and deadcode"
     )
@@ -221,7 +284,7 @@ def main():
     home = os.path.join(user_cache_dir(), "databricks-cli", "aitools-quick-home")
     os.makedirs(home, mode=0o700, exist_ok=True)
 
-    packages = PACKAGES + changed_packages(args.ref)
+    packages = PACKAGES + changed_packages(args.ref or default_ref())
     lint = [
         "go",
         "tool",
@@ -233,10 +296,14 @@ def main():
         *packages,
     ]
     if args.full:
+        # The same timeout as the Taskfile's acceptance tasks.
+        timeout = "-timeout=" + os.environ.get("LOCAL_TIMEOUT", "60m")
         steps = [
             ("lint", lint, None),
-            ("test", ["go", "test", "-json", *packages, *IMPORTERS], hermetic_env(home)),
-            ("acceptance", ["go", "test", "-json", "./acceptance", "-run", "|".join(ACCEPTANCE)], hermetic_env(home)),
+            ("test", ["go", "test", "-json", timeout, *packages, *IMPORTERS], hermetic_env(home)),
+            # The harness isolates each test itself, and it locates uv's cache
+            # and managed Pythons from the real HOME.
+            ("acceptance", ["go", "test", "-json", timeout, "./acceptance", "-run", "|".join(ACCEPTANCE)], None),
             ("deadcode", ["uv", "run", "--script", "tools/check_deadcode.py"], None),
         ]
     else:
@@ -257,7 +324,7 @@ def main():
         if r["step"] in ("test", "acceptance"):
             r["failures"] = test_failures(r["output"])
             # A failing build is reported through the compiler's own file:line output.
-            r["findings"] = findings("".join(f["output"] for f in r["failures"]))
+            r["findings"] = [x for f in r["failures"] for x in findings(f["output"], package_dir(f["package"]))]
         else:
             r["findings"] = findings(r["output"])
 

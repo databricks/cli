@@ -10,9 +10,10 @@ the defects the full tier (`./task aitools-full`) catches it also catches.
             file per aitools package), run aitools-quick, restore the file.
             Reports p50/p95 wall time; --budget fails the run when p50 is over it.
     detect  Apply source mutants (flipped comparisons and booleans, swallowed
-            errors, removed calls, changed strings) one at a time, run both
-            tiers on each, and report the quick tier's share of the full tier's
-            kills. Slow: about a minute per mutant.
+            errors, removed calls, changed strings) one at a time, run the
+            quick tier on each and the full tier on the ones it misses, and
+            report the quick tier's share of the full tier's kills. Slow: about
+            a minute per mutant.
 
 Both modes edit files, so they run in a temporary git worktree of HEAD with the
 checkout's uncommitted and untracked files copied in; the checkout itself is
@@ -45,7 +46,12 @@ FULL = [*QUICK, "--full"]
 EDIT_TARGETS = [
     "cmd/aitools/version.go",
     "libs/aitools/agents/agents.go",
+    "libs/aitools/autoinstall/state.go",
     "libs/aitools/installer/state.go",
+    "libs/aitools/mcp/state.go",
+    "libs/aitools/mcp/agentconfig/writer.go",
+    "libs/aitools/mcp/proxy/run.go",
+    "libs/aitools/mcpconfig/spec.go",
     "experimental/aitools/cmd/aitools.go",
     "experimental/aitools/lib/middlewares/warehouse.go",
     "experimental/aitools/lib/session/session.go",
@@ -178,16 +184,25 @@ OPERATORS = [
 def mutants(seed, sample):
     found = []
     for root in MUTANT_DIRS:
-        for dirpath, _, files in os.walk(root):
+        for dirpath, dirnames, files in os.walk(root):
+            # Walk in a fixed order so a seed picks the same mutants on every machine.
+            dirnames.sort()
             for name in sorted(files):
                 if not name.endswith(".go") or name.endswith("_test.go"):
                     continue
                 path = os.path.join(dirpath, name)
                 with open(path) as f:
                     lines = f.read().split("\n")
+                in_import = False
                 for n, line in enumerate(lines):
                     masked = mask_strings(line)
                     stripped = masked.strip()
+                    # Mutants of import paths never compile.
+                    if stripped == "import (":
+                        in_import = True
+                    if in_import:
+                        in_import = stripped != ")"
+                        continue
                     if not stripped or stripped.startswith(("import", "package")):
                         continue
                     for op, pattern, repl in OPERATORS:
@@ -216,10 +231,10 @@ def apply_mutant(path, n, start, end, repl):
 
 
 def cmd_detect(args):
-    ok_full = subprocess.run(FULL, capture_output=True).returncode == 0
-    if not ok_full:
-        print("aitools-full fails on the unmodified tree; fix that first")
-        return 1
+    for name, cmd in (("aitools-quick", QUICK), ("aitools-full", FULL)):
+        if subprocess.run(cmd, capture_output=True).returncode != 0:
+            print(f"{name} fails on the unmodified tree; fix that first")
+            return 1
     rows = []
     for path, n, start, end, repl, op in mutants(args.seed, args.sample):
         original = apply_mutant(path, n, start, end, repl)
@@ -233,7 +248,8 @@ def cmd_detect(args):
             ):
                 continue  # Does not compile: both tiers catch it trivially.
             quick = subprocess.run(QUICK, capture_output=True).returncode != 0
-            full = subprocess.run(FULL, capture_output=True).returncode != 0
+            # The full tier runs everything the quick tier does, so it kills every mutant quick kills.
+            full = quick or subprocess.run(FULL, capture_output=True).returncode != 0
         finally:
             with open(path, "w") as f:
                 f.write(original)
@@ -256,7 +272,23 @@ def cmd_detect(args):
 def isolated_copy(root, copy):
     """Create a worktree of HEAD at copy with the uncommitted and untracked files of the checkout at root."""
     subprocess.run(["git", "-C", root, "worktree", "add", "--quiet", "--detach", copy, "HEAD"], check=True)
-    diff = subprocess.run(["git", "-C", root, "diff", "--binary", "HEAD"], capture_output=True, check=True).stdout
+    # Pin the diff format: user config such as diff.noprefix or color.diff=always would break git apply.
+    diff = subprocess.run(
+        [
+            "git",
+            "-C",
+            root,
+            "diff",
+            "--binary",
+            "--no-color",
+            "--no-ext-diff",
+            "--src-prefix=a/",
+            "--dst-prefix=b/",
+            "HEAD",
+        ],
+        capture_output=True,
+        check=True,
+    ).stdout
     if diff:
         subprocess.run(["git", "-C", copy, "apply", "--binary"], input=diff, check=True)
     untracked = subprocess.run(
@@ -283,6 +315,8 @@ def main():
     args = parser.parse_args()
     if args.cmd == "time" and args.rounds < 1:
         parser.error("--rounds must be at least 1")
+    if args.cmd == "time" and args.cold and (args.json or args.budget):
+        parser.error("--json and --budget do not apply to --cold, which measures a single run")
     if args.json:
         args.json = os.path.abspath(args.json)
 

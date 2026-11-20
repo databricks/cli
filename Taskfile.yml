@@ -92,6 +92,22 @@ tasks:
       - task: lint-q-go-root
       - task: lint-python
 
+  aitools-quick:
+    desc: Fast aitools check to run after every edit (lint and unit tests of aitools, build of its importers)
+    # No sources: Go's build and test caches decide what re-runs.
+    cmds:
+      - "uv run --script tools/aitools_quick.py {{.CLI_ARGS}}"
+
+  aitools-full:
+    desc: Full aitools tier to run before a PR (aitools-quick plus importer tests, aitools acceptance tests and deadcode)
+    cmds:
+      - "uv run --script tools/aitools_quick.py --full {{.CLI_ARGS}}"
+
+  aitools-quick-bench:
+    desc: Re-measure aitools-quick wall time after simulated edits (and, with `detect`, its detection rate)
+    cmds:
+      - "uv run --script tools/aitools_quick_bench.py {{.CLI_ARGS}}"
+
   lint-python:
     desc: Lint first-party Python scripts with ruff
     sources:
@@ -672,22 +688,6 @@ tasks:
   #   2. CI triggering — tools/testmask reads these sources to decide which CI jobs to run
   # Keep patterns narrow and specific. Changes to files outside these paths trigger the
   # generic `test` target (the catch-all) instead.
-
-  aitools-quick:
-    desc: Fast aitools check to run after every edit (lint and unit tests of aitools, build of its importers)
-    # No sources: Go's build and test caches decide what re-runs.
-    cmds:
-      - "uv run --script tools/aitools_quick.py {{.CLI_ARGS}}"
-
-  aitools-full:
-    desc: Full aitools tier to run before a PR (aitools-quick plus importer tests, aitools acceptance tests and deadcode)
-    cmds:
-      - "uv run --script tools/aitools_quick.py --full {{.CLI_ARGS}}"
-
-  aitools-quick-bench:
-    desc: Re-measure aitools-quick wall time after simulated edits (and, with `detect`, its detection rate)
-    cmds:
-      - "uv run --script tools/aitools_quick_bench.py {{.CLI_ARGS}}"
 
   test-exp-aitools:
     desc: Run aitools (top-level + experimental) unit and acceptance tests.
