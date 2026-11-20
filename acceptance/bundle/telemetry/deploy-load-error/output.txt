@@ -1,0 +1,4 @@
+
+>>> [CLI] bundle deploy
+Error: failed to load [TEST_TMP_DIR]/broken.yml: yaml: line 1: did not find expected node content
+
