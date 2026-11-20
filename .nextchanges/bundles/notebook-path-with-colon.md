@@ -1,0 +1,1 @@
+* Fix bundle commands failing on a notebook or file path with a colon in its first segment, such as the default workspace notebook name `New Notebook 2026-10-28 12:17:43.ipynb`. ([#7851](https://github.com/databricks/cli/pull/7851))
