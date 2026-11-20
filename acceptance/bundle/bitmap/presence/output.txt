@@ -7,15 +7,27 @@
 
 >>> [CLI] bundle bitmap decode
 
+>>> diff.py out.bitmap.txt decoded.txt
+
 >>> [CLI] bundle bitmap decode -o json
+
+>>> diff.py out.bitmap.json decoded.json
 
 >>> [CLI] bundle bitmap decode -o compressed
 
+>>> diff.py out.bitmap.b64 recoded.b64
+
 >>> uv run --isolated --no-project --reinstall-package databricks-bundles --with [DATABRICKS_BUNDLES_WHEEL] -q python -m databricks.bundles._bitmap
+
+>>> diff.py out.bitmap.txt decoded-python.txt
 
 >>> uv run --isolated --no-project --reinstall-package databricks-bundles --with [DATABRICKS_BUNDLES_WHEEL] -q python -m databricks.bundles._bitmap -o json
 
+>>> diff.py out.bitmap.json decoded-python.json
+
 >>> [CLI] bundle bitmap bitmap -o text --var off_flag=false
+
+>>> diff.py out.bitmap.txt var-flag.txt
 
 >>> [CLI] bundle bitmap update-schema --validate
 
