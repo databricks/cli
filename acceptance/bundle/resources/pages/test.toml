@@ -10,3 +10,7 @@ Ignore = [
 # Deployment history has no "pages." or "domains." resource-key prefix yet, so the deploy cannot record
 # history for it. See dmsResourceTypes in libs/testserver/bundledeployments.go.
 EnvMatrixExclude.no_pages_dms = ["DMS=true"]
+
+# The scripts pass API paths such as /api/2.0/knowledge/pages to the CLI. Without this, Git
+# Bash on Windows rewrites an argument that starts with a slash into a Windows path.
+Env.MSYS_NO_PATHCONV = "1"
