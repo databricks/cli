@@ -1,0 +1,51 @@
+
+>>> [CLI] genie-agents create-genie-agent --json {
+  "display_name": "bound-agent",
+  "warehouse_id": "test-warehouse-id",
+  "parent_path": "/Users/[USERNAME]",
+  "definition": {
+    "config": {
+      "sample_questions": [
+        {"id": "01f0a1b2c3d4e5f60718293a4b5c6d7f", "question": "What was the average trip distance last month?"}
+      ]
+    }
+  }
+} --genie-agent-id 01f0a1b2c3d4e5f60718293a4b5c6d7e
+{
+  "name": "agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "display_name": "bound-agent",
+  "warehouse_id": "test-warehouse-id"
+}
+
+>>> [CLI] bundle deployment bind agent1 01f0a1b2c3d4e5f60718293a4b5c6d7e --auto-approve
+Successfully bound genie_agent with an id '01f0a1b2c3d4e5f60718293a4b5c6d7e'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> [CLI] genie-agents get-genie-agent agents/01f0a1b2c3d4e5f60718293a4b5c6d7e
+{
+  "name": "agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "display_name": "bound-agent",
+  "warehouse_id": "test-warehouse-id"
+}
+
+>>> [CLI] bundle deployment unbind agent1
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 0 deleted
+
+>>> [CLI] genie-agents get-genie-agent agents/01f0a1b2c3d4e5f60718293a4b5c6d7e
+{
+  "name": "agents/01f0a1b2c3d4e5f60718293a4b5c6d7e",
+  "display_name": "bound-agent",
+  "warehouse_id": "test-warehouse-id"
+}

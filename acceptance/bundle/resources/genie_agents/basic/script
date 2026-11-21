@@ -1,0 +1,35 @@
+AGENT="agents/01f0a1b2c3d4e5f60718293a4b5c6d7e"
+
+title "Initial summary before deploy"
+trace $CLI bundle summary -o json | jq .resources.genie_agents.agent1
+
+title "Verify it does not exist yet"
+trace musterr $CLI genie-agents get-genie-agent "$AGENT"
+
+trace $CLI bundle deploy
+# The default parent_path (the bundle's resource folder) does not exist on a
+# first deploy: the create 404s, the adapter mkdirs and retries.
+trace print_requests.py //genie/agents //workspace/mkdirs
+
+title "Summary should show the id and the Genie room url"
+trace $CLI bundle summary -o json | jq ".resources.genie_agents.agent1 | {id, url}"
+
+title "Verify deployment"
+trace $CLI genie-agents get-genie-agent "$AGENT" | agent_fields
+
+title "Update description (should update in place, not recreate)"
+trace update_file.py databricks.yml COMMENT1 COMMENT2
+trace $CLI bundle deploy
+trace print_requests.py //genie/agents
+trace $CLI genie-agents get-genie-agent "$AGENT" | agent_fields
+
+title "Change the identity field (should plan a recreate)"
+trace update_file.py databricks.yml 01f0a1b2c3d4e5f60718293a4b5c6d7e 02f0a1b2c3d4e5f60718293a4b5c6d7e
+trace $CLI bundle plan
+
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //genie/agents
+
+title "Destroy"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //genie/agents

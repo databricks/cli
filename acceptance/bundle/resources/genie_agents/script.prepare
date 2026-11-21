@@ -1,0 +1,6 @@
+# Project a genie agent read to the fields the test asserts. The etag is
+# omitted: the backend bumps it on definition edits, so pinning it would not
+# survive a real workspace run.
+agent_fields() {
+    jq '{name, display_name, description, warehouse_id}'
+}

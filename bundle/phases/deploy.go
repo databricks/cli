@@ -40,6 +40,7 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
 	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
+	{group: "genie_agents", message: deleteOrRecreateGenieAgentMessage},
 	{group: "materialization_sets", message: deleteOrRecreateMaterializationSetMessage},
 	{group: "features", message: deleteOrRecreateFeatureMessage},
 	{group: "feature_specs", message: deleteOrRecreateFeatureSpecMessage},

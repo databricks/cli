@@ -31,6 +31,8 @@ EnvMatrixExclude.no_external_location = ["INPUT_CONFIG=external_location.yml.tmp
 EnvMatrixExclude.no_uc_trailing_slash = ["INPUT_CONFIG=uc_trailing_slash.yml.tmpl"]
 # Genie spaces are direct-only too; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]
+# Genie agents are direct-only too; the terraform deploy that seeds the migration fails for them.
+EnvMatrixExclude.no_genie_agent = ["INPUT_CONFIG=genie_agent.yml.tmpl"]
 # Instance pools are direct-only; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_instance_pool = ["INPUT_CONFIG=instance_pool.yml.tmpl"]
 # Cluster policies are direct-only; the terraform deploy that seeds the migration fails for them.

@@ -1,0 +1,16 @@
+provided_id_fields:
+  # genie_agent_id is the leaf of the server-derived resource name
+  # (agents/{genie_agent_id}), which is what the resource is fetched by. It is
+  # server-assigned when omitted on create; a local change recreates.
+  - field: genie_agent_id
+    reason: id_field
+stable_output_fields:
+  # name ("agents/{genie_agent_id}") is derived from the immutable ID, so it does
+  # not change on an in-place update; see the stable_output_fields doc in config.go.
+  - field: name
+
+ignore_remote_changes:
+  # name is derived server-side from genie_agent_id and is not user input, so it
+  # is not in the bundle schema and its remote value is never compared.
+  - field: name
+    reason: output_only
