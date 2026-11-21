@@ -56,6 +56,9 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 				_, err := io.WriteString(out, "image-id\n")
 				return err
 			case "image inspect":
+				if args[3] == "{{.Config.WorkingDir}}" {
+					return nil
+				}
 				_, err := io.WriteString(out, "linux/amd64\n")
 				return err
 			}
@@ -75,6 +78,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	assert.Equal(t, []recordedImageCommand{
 		{executable: "/usr/bin/docker", args: []string{"image", "ls", "--quiet", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", "nvidia/cuda:13.4.1"}},
+		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Config.WorkingDir}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
 	}, commands)
@@ -84,6 +88,42 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	)
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
+	assert.Contains(t, stderr.String(), "Pushed image")
+	assert.NotContains(t, stderr.String(), "WORKDIR")
+}
+
+func TestRunImagePushWarnsWhenImageSetsWorkingDir(t *testing.T) {
+	cmd, _, stderr := newImagePushTestCommand(t, "workspace")
+	deps := imagePushDeps{
+		configureDocker: func(context.Context, string) (string, error) {
+			return "123.container.us-west-2.cloud.databricks.test", nil
+		},
+		lookPath: func(string) (string, error) { return "docker", nil },
+		runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
+			switch {
+			case args[0] == "image" && args[1] == "ls":
+				_, err := io.WriteString(out, "image-id\n")
+				return err
+			case args[0] == "image" && args[1] == "inspect" && args[3] == "{{.Config.WorkingDir}}":
+				_, err := io.WriteString(out, "/app\n")
+				return err
+			case args[0] == "image" && args[1] == "inspect":
+				_, err := io.WriteString(out, "linux/amd64\n")
+				return err
+			}
+			return nil
+		},
+	}
+
+	err := runImagePush(cmd, &imagePushOptions{
+		source:   "example/trainer:v1",
+		catalog:  "main",
+		schema:   "training",
+		artifact: "trainer",
+	}, deps)
+	require.NoError(t, err)
+
+	assert.Contains(t, stderr.String(), "Warning: source image example/trainer:v1 sets WORKDIR /app, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts.")
 	assert.Contains(t, stderr.String(), "Pushed image")
 }
 
@@ -110,7 +150,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 		lookPath: func(string) (string, error) { return "docker", nil },
 		runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, executable string, args ...string) error {
 			commands = append(commands, recordedImageCommand{executable: executable, args: args})
-			if args[0] == "image" && args[1] == "inspect" {
+			if args[0] == "image" && args[1] == "inspect" && args[3] != "{{.Config.WorkingDir}}" {
 				_, err := io.WriteString(out, "linux/amd64\n")
 				return err
 			}
@@ -126,7 +166,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 	}, deps)
 	require.NoError(t, err)
 
-	require.Len(t, commands, 5)
+	require.Len(t, commands, 6)
 	assert.Equal(t, []string{"pull", "--platform", "linux/amd64", "example/image:v1"}, commands[1].args)
 }
 
