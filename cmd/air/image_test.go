@@ -56,10 +56,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 				_, err := io.WriteString(out, "image-id\n")
 				return err
 			case "image inspect":
-				if args[3] == "{{.Config.WorkingDir}}" {
-					return nil
-				}
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, "linux/amd64|\n")
 				return err
 			}
 			return nil
@@ -77,8 +74,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	target := "123.container.us-west-2.cloud.databricks.test/main.training.cuda:13.4.1"
 	assert.Equal(t, []recordedImageCommand{
 		{executable: "/usr/bin/docker", args: []string{"image", "ls", "--quiet", "nvidia/cuda:13.4.1"}},
-		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", "nvidia/cuda:13.4.1"}},
-		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Config.WorkingDir}}", "nvidia/cuda:13.4.1"}},
+		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
 	}, commands)
@@ -93,67 +89,51 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 }
 
 func TestRunImagePushWarnsWhenImageSetsWorkingDir(t *testing.T) {
-	cmd, _, stderr := newImagePushTestCommand(t, "workspace")
-	deps := imagePushDeps{
-		configureDocker: func(context.Context, string) (string, error) {
-			return "123.container.us-west-2.cloud.databricks.test", nil
-		},
-		lookPath: func(string) (string, error) { return "docker", nil },
-		runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
-			switch {
-			case args[0] == "image" && args[1] == "ls":
-				_, err := io.WriteString(out, "image-id\n")
-				return err
-			case args[0] == "image" && args[1] == "inspect" && args[3] == "{{.Config.WorkingDir}}":
-				_, err := io.WriteString(out, "/app\n")
-				return err
-			case args[0] == "image" && args[1] == "inspect":
-				_, err := io.WriteString(out, "linux/amd64\n")
-				return err
-			}
-			return nil
-		},
-	}
-
-	err := runImagePush(cmd, &imagePushOptions{
-		source:   "example/trainer:v1",
-		catalog:  "main",
-		schema:   "training",
-		artifact: "trainer",
-	}, deps)
-	require.NoError(t, err)
-
-	assert.Contains(t, stderr.String(), "Warning: source image example/trainer:v1 sets WORKDIR /app, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts.")
-	assert.Contains(t, stderr.String(), "Pushed image")
-}
-
-func TestWarnImageWorkingDir(t *testing.T) {
 	tests := []struct {
 		name       string
 		workingDir string
-		err        error
-		want       string
+		warn       bool
 	}{
-		{name: "unset", workingDir: "\n", want: ""},
-		{name: "root", workingDir: "/\n", want: ""},
-		{name: "set", workingDir: "/app\n", want: "sets WORKDIR /app"},
-		{name: "inspect fails", err: errors.New("daemon unavailable"), want: "Warning: couldn't read WORKDIR of source image example/trainer:v1: daemon unavailable"},
+		{name: "unset", workingDir: ""},
+		{name: "root", workingDir: "/"},
+		{name: "set", workingDir: "/app", warn: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stderr := &bytes.Buffer{}
-			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, stderr, "", ""))
-			run := func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
-				assert.Equal(t, []string{"image", "inspect", "--format", "{{.Config.WorkingDir}}", "example/trainer:v1"}, args)
-				_, _ = io.WriteString(out, tt.workingDir)
-				return tt.err
+			cmd, _, stderr := newImagePushTestCommand(t, "workspace")
+			deps := imagePushDeps{
+				configureDocker: func(context.Context, string) (string, error) {
+					return "123.container.us-west-2.cloud.databricks.test", nil
+				},
+				lookPath: func(string) (string, error) { return "docker", nil },
+				runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
+					switch strings.Join(args[:2], " ") {
+					case "image ls":
+						_, err := io.WriteString(out, "image-id\n")
+						return err
+					case "image inspect":
+						_, err := io.WriteString(out, "linux/amd64|"+tt.workingDir+"\n")
+						return err
+					}
+					return nil
+				},
 			}
-			warnImageWorkingDir(ctx, run, "docker", "example/trainer:v1", io.Discard)
-			if tt.want == "" {
-				assert.Empty(t, stderr.String())
+
+			err := runImagePush(cmd, &imagePushOptions{
+				source:   "example/trainer:v1",
+				catalog:  "main",
+				schema:   "training",
+				artifact: "trainer",
+			}, deps)
+			require.NoError(t, err)
+
+			warning := "Warning: source image example/trainer:v1 sets WORKDIR /app, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts."
+			if tt.warn {
+				assert.Contains(t, stderr.String(), warning)
 			} else {
-				assert.Contains(t, stderr.String(), tt.want)
+				assert.NotContains(t, stderr.String(), "WORKDIR")
 			}
+			assert.Contains(t, stderr.String(), "Pushed image")
 		})
 	}
 }
@@ -181,8 +161,8 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 		lookPath: func(string) (string, error) { return "docker", nil },
 		runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, executable string, args ...string) error {
 			commands = append(commands, recordedImageCommand{executable: executable, args: args})
-			if args[0] == "image" && args[1] == "inspect" && args[3] != "{{.Config.WorkingDir}}" {
-				_, err := io.WriteString(out, "linux/amd64\n")
+			if args[0] == "image" && args[1] == "inspect" {
+				_, err := io.WriteString(out, "linux/amd64|\n")
 				return err
 			}
 			return nil
@@ -197,7 +177,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 	}, deps)
 	require.NoError(t, err)
 
-	require.Len(t, commands, 6)
+	require.Len(t, commands, 5)
 	assert.Equal(t, []string{"pull", "--platform", "linux/amd64", "example/image:v1"}, commands[1].args)
 }
 

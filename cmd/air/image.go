@@ -198,14 +198,18 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 		cmdio.LogString(ctx, "Using local source image "+resolved.source)
 	}
 
-	var platform bytes.Buffer
-	if err := deps.runCommand(ctx, nil, &platform, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", resolved.source); err != nil {
+	var inspected bytes.Buffer
+	if err := deps.runCommand(ctx, nil, &inspected, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}}", resolved.source); err != nil {
 		return fmt.Errorf("inspect source image %s: %w", resolved.source, err)
 	}
-	if got := strings.TrimSpace(platform.String()); got != airImagePlatform {
-		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, got, airImagePlatform, airImagePlatform)
+	platform, workingDir, _ := strings.Cut(strings.TrimSpace(inspected.String()), "|")
+	if platform != airImagePlatform {
+		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
 	}
-	warnImageWorkingDir(ctx, deps.runCommand, dockerPath, resolved.source, cmd.ErrOrStderr())
+	// AIR ignores WORKDIR at runtime; / is Docker's default and cannot break relative paths.
+	if workingDir != "" && workingDir != "/" {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts.", resolved.source, workingDir))
+	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "tag", resolved.source, target); err != nil {
@@ -367,25 +371,6 @@ func imageExistsLocally(
 		return false, fmt.Errorf("check local source image %s (ensure Docker is running and accessible): %w", source, err)
 	}
 	return strings.TrimSpace(output.String()) != "", nil
-}
-
-// warnImageWorkingDir warns when the source image sets WORKDIR, which AIR ignores at runtime.
-// The check is advisory, so an inspect failure is reported but never blocks the push.
-func warnImageWorkingDir(
-	ctx context.Context,
-	runCommand func(context.Context, io.Reader, io.Writer, io.Writer, string, ...string) error,
-	dockerPath, source string,
-	errOut io.Writer,
-) {
-	var workingDir bytes.Buffer
-	if err := runCommand(ctx, nil, &workingDir, errOut, dockerPath, "image", "inspect", "--format", "{{.Config.WorkingDir}}", source); err != nil {
-		cmdio.LogString(ctx, fmt.Sprintf("Warning: couldn't read WORKDIR of source image %s: %v", source, err))
-		return
-	}
-	// WORKDIR / is Docker's default and cannot break relative paths.
-	if dir := strings.TrimSpace(workingDir.String()); dir != "" && dir != "/" {
-		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts.", source, dir))
-	}
 }
 
 // runImageCommand runs a subprocess with the supplied context and I/O streams.
