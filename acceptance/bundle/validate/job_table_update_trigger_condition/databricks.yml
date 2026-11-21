@@ -1,0 +1,29 @@
+bundle:
+  name: table_update_condition
+
+resources:
+  jobs:
+    my_job:
+      name: my_job
+      trigger:
+        table_update:
+          table_names:
+            - main.default.table_a
+            - main.default.table_b
+      triggers:
+        - table_update:
+            condition: ANY_UPDATED
+            table_names:
+              - main.default.table_a
+              - main.default.table_b
+        - table_update:
+            table_names:
+              - main.default.table_c
+        - table_update:
+            table_names:
+              - main.default.table_c
+              - main.default.table_d
+      tasks:
+        - task_key: t
+          notebook_task:
+            notebook_path: /Workspace/Shared/some_notebook
