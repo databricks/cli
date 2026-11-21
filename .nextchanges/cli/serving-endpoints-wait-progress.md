@@ -1,0 +1,1 @@
+* `serving-endpoints create` and `update-config` now show each served entity's deployment state (for example `Provisioning`) and the time waited while they wait for the endpoint, instead of only `IN_PROGRESS`. When stderr is not a terminal, each state change is printed as a line on stderr instead of printing nothing. ([#7659](https://github.com/databricks/cli/pull/7659))
