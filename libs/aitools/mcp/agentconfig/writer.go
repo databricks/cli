@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"maps"
 	"os"
@@ -492,21 +493,31 @@ func configLock(path string) (string, error) {
 	return abs + ".lock", nil
 }
 
-// readInUseTimeout bounds the retries of a read that fails because the file is in use (see readConfig).
-const readInUseTimeout = 2 * time.Second
+// openInUseTimeout bounds the retries of an open that fails because the file is in use (see openConfig).
+const openInUseTimeout = 2 * time.Second
 
-// readConfig reads the file at path. A read without the agent's lock can run while the agent renames a new version
-// over the file, as Claude Code does on every save; on Windows, opening the file then fails with a sharing violation
-// for as long as the rename takes, so the read is tried again.
-func readConfig(path string) ([]byte, error) {
-	deadline := time.Now().Add(readInUseTimeout)
+// openConfig opens the file at path with flag. An open without the agent's lock can run while the agent renames a new
+// version over the file, as Claude Code does on every save; on Windows, the open then fails with a sharing violation
+// for as long as the rename takes, so it is tried again.
+func openConfig(path string, flag int) (*os.File, error) {
+	deadline := time.Now().Add(openInUseTimeout)
 	for {
-		data, err := os.ReadFile(path)
+		f, err := os.OpenFile(path, flag, 0)
 		if err == nil || !fileInUse(err) || time.Now().After(deadline) {
-			return data, err
+			return f, err
 		}
 		time.Sleep(lockRetry)
 	}
+}
+
+// readConfig reads the file at path, opening it with openConfig.
+func readConfig(path string) ([]byte, error) {
+	f, err := openConfig(path, os.O_RDONLY)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return io.ReadAll(f)
 }
 
 // load reads and parses the config at path. A missing file is an empty document.
@@ -550,7 +561,7 @@ func (e *ReadOnlyError) Is(target error) bool { return target == ErrReadOnly }
 // directory, so a read-only file would be replaced anyway. A file the user made
 // read-only is one they mean to keep as it is. A missing file is not refused.
 func checkWritable(path string) error {
-	f, err := os.OpenFile(path, os.O_WRONLY, 0)
+	f, err := openConfig(path, os.O_WRONLY)
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		return nil
