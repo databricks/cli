@@ -1,0 +1,16 @@
+title "first submit with a key starts a run"
+trace $CLI air run -f run.yaml --idempotency-key flag-key
+add_repl.py "$($CLI air run -f run.yaml --idempotency-key flag-key -o json | jq -r .data.run_id)" FLAG_KEY_RUN_ID
+
+title "resubmitting with the same key returns the existing run"
+trace $CLI air run -f run.yaml --idempotency-key flag-key
+
+title "JSON output reports the existing run"
+trace $CLI air run -f run.yaml --idempotency-key flag-key -o json
+
+title "a different key starts a new run"
+trace $CLI air run -f run.yaml --idempotency-key other-key -o json | jq '.data.existing'
+
+title "a YAML idempotency_token is deduplicated the same way"
+add_repl.py "$($CLI air run -f run-token.yaml -o json | jq -r .data.run_id)" YAML_TOKEN_RUN_ID
+trace $CLI air run -f run-token.yaml

@@ -72,6 +72,31 @@ func TestJobsSubmit_DefaultsRunNameToUntitled(t *testing.T) {
 	assert.Equal(t, "Untitled", run.RunName)
 }
 
+func TestJobsSubmit_IdempotencyTokenReturnsExistingRun(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	task := func(commandPath string) []jobs.SubmitTask {
+		return []jobs.SubmitTask{{
+			TaskKey: "main",
+			AiRuntimeTask: &jobs.AiRuntimeTask{
+				Deployments: []jobs.DeploymentSpec{{CommandPath: commandPath}},
+			},
+		}}
+	}
+
+	first := submitRun(t, workspace, jobs.SubmitRun{IdempotencyToken: "token", Tasks: task("/first/command.sh")})
+	second := submitRun(t, workspace, jobs.SubmitRun{IdempotencyToken: "token", Tasks: task("/second/command.sh")})
+	untokened := submitRun(t, workspace, jobs.SubmitRun{Tasks: task("/third/command.sh")})
+
+	assert.Equal(t, first.RunId, second.RunId)
+	assert.NotEqual(t, first.RunId, untokened.RunId)
+
+	// The resent request must not overwrite the original run's spec.
+	run := getRun(t, workspace, first.RunId)
+	require.Len(t, run.Tasks, 1)
+	require.NotNil(t, run.Tasks[0].AiRuntimeTask)
+	assert.Equal(t, "/first/command.sh", run.Tasks[0].AiRuntimeTask.Deployments[0].CommandPath)
+}
+
 func TestJobsSubmit_RunReachesTerminalStateOnPoll(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
