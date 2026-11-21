@@ -1,8 +1,8 @@
 
 >>> musterr [CLI] fs ls /Volumes/main/default/vol
-Warn: /Volumes/main/default/vol has no scheme and is treated as a local path. For a Unity Catalog volume or skill use dbfs:/Volumes/main/default/vol
+Warn: /Volumes/main/default/vol has no scheme and is treated as a local path. For a Unity Catalog volume or skill, add the dbfs: scheme
 Error: no such directory: /Volumes/main/default/vol
 
 >>> musterr [CLI] fs ls /Skills/foo/bar
-Warn: /Skills/foo/bar has no scheme and is treated as a local path. For a Unity Catalog volume or skill use dbfs:/Skills/foo/bar
+Warn: /Skills/foo/bar has no scheme and is treated as a local path. For a Unity Catalog volume or skill, add the dbfs: scheme
 Error: no such directory: /Skills/foo/bar

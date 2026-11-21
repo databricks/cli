@@ -56,7 +56,7 @@ func TestFilerForPathForSchemelessUCPathStaysLocalWithWarning(t *testing.T) {
 			assert.Equal(t, path, got)
 			assert.IsType(t, &filer.LocalClient{}, f)
 			assert.Contains(t, logs.String(), "level=WARN")
-			assert.Contains(t, logs.String(), "use dbfs:"+path)
+			assert.Contains(t, logs.String(), "add the dbfs: scheme")
 		})
 	}
 }

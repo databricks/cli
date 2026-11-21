@@ -41,7 +41,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 		// scheme, but on macOS /Volumes/ is also the mount point for local drives.
 		// Keep it local and warn, so a forgotten scheme never acts on the laptop silently.
 		if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
-			log.Warnf(ctx, "%s has no scheme and is treated as a local path. For a Unity Catalog volume or skill use dbfs:%s", path, path)
+			log.Warnf(ctx, "%s has no scheme and is treated as a local path. For a Unity Catalog volume or skill, add the dbfs: scheme", path)
 		}
 		f, err := filer.NewLocalClient("")
 		return f, path, err
