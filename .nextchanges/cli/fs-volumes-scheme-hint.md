@@ -1,0 +1,1 @@
+* `databricks fs` commands now fail with a hint to use `dbfs:/Volumes/...` when a `/Volumes/` path is given without the `dbfs:` scheme, instead of treating it as a local path. `databricks fs cp --help` shows a UC Volume example. ([#7862](https://github.com/databricks/cli/pull/7862))
