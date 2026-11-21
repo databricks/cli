@@ -1,0 +1,2 @@
+title "A pipeline that refers to a job waits for the job's permissions"
+trace $CLI bundle plan -o json | jq '.plan | map_values(.depends_on)'

@@ -157,6 +157,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
+
+		// Reads (dynamic and typed): resources.*.** (searches for ${resources.*} references), resources.*.*.{grants,permissions,lifecycle.depends_on}
+		// Updates (typed): resources.pipelines.*.lifecycle.depends_on (adds the grants and permissions of the resources a pipeline depends on)
+		// Runs after all Python mutators so that it sees the final config, including pipelines and grants added from Python.
+		resourcemutator.CapturePipelineDependencies(),
 		// This is the last mutator that can change bundle resources.
 		//
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
