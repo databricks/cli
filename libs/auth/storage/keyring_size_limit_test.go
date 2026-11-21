@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
 
@@ -58,25 +57,25 @@ func shellSafe(r rune) bool {
 	return strings.ContainsRune("_@%+=:,./-", r)
 }
 
+// osSecretCaps are go-keyring's per-OS secret caps as fakeBackend models them.
+var osSecretCaps = []struct {
+	name         string
+	secretTooBig func(service, account, secret string) bool
+}{
+	{name: "darwin security -i line", secretTooBig: darwinSecurityCommandTooBig},
+	{name: "windows credential blob", secretTooBig: windowsCredentialBlobTooBig},
+	{name: "linux secret service has no cap", secretTooBig: nil},
+}
+
 // TestKeyringStore_Put_OSSecretSizeCaps pins how the CLI's keyring envelope
 // fares against go-keyring's per-OS secret caps. The caps are modeled in
 // fakeBackend so the test is keychain-agnostic and runs on every OS;
-// TestKeyringStore_Put_RealBackendRejectsLargeToken in
+// TestKeyringSet_RejectsLargeSecret in
 // keyring_size_limit_os_test.go checks the real library on CI and fails when
 // the modeled caps go stale. A fix for #7707 that changes what Put stores
 // must update this test on purpose.
 func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
-	cases := []struct {
-		name          string
-		secretTooBig  func(service, account, secret string) bool
-		largeRejected bool
-	}{
-		{name: "darwin security -i line", secretTooBig: darwinSecurityCommandTooBig, largeRejected: true},
-		{name: "windows credential blob", secretTooBig: windowsCredentialBlobTooBig, largeRejected: true},
-		{name: "linux secret service has no cap", secretTooBig: nil, largeRejected: false},
-	}
-
-	for _, tc := range cases {
+	for _, tc := range osSecretCaps {
 		t.Run(tc.name, func(t *testing.T) {
 			backend := newFakeBackend()
 			backend.secretTooBig = tc.secretTooBig
@@ -91,12 +90,36 @@ func TestKeyringStore_Put_OSSecretSizeCaps(t *testing.T) {
 			// The access token alone exceeds both caps (macOS after base64,
 			// Windows raw), so no other token field is needed.
 			large := &oauth2.Token{AccessToken: strings.Repeat("a", issue7707LargeAccessTokenBytes)}
-			err = store.Put("my-profile", Entry{Token: large})
-			if tc.largeRejected {
-				require.ErrorIs(t, err, keyring.ErrSetDataTooBig)
-			} else {
-				require.NoError(t, err)
-			}
+			require.NoError(t, store.Put("my-profile", Entry{Token: large}))
+			got, err = store.Lookup("my-profile")
+			require.NoError(t, err)
+			assert.Equal(t, large.AccessToken, got.Token.AccessToken)
 		})
+	}
+}
+
+// TestDarwinCommandTooBig pins that the macOS size check, which lets the store
+// skip go-keyring, only rejects a secret that go-keyring rejects too. The check
+// leaves out the shell quotes that go-keyring adds, so it is exact for an
+// account that needs none.
+func TestDarwinCommandTooBig(t *testing.T) {
+	accounts := []string{
+		"my-profile",
+		"https://accounts.cloud.databricks.test/oidc/accounts/968367da-7edd-44f7-9dea-3e0b20b0ec97",
+		// go-keyring quotes these.
+		"my profile",
+		"my-profile#access-token-0",
+	}
+	for _, account := range accounts {
+		quoted := shellQuote(account) != account
+		for n := 2800; n <= 3100; n++ {
+			secret := strings.Repeat("a", n)
+			got := darwinCommandTooBig(keyringServiceName, account, secret)
+			want := darwinSecurityCommandTooBig(keyringServiceName, account, secret)
+			require.False(t, got && !want, "account %q, %d-byte secret: rejected, but go-keyring stores it", account, n)
+			if !quoted {
+				require.Equal(t, want, got, "account %q, %d-byte secret", account, n)
+			}
+		}
 	}
 }
