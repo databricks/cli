@@ -213,7 +213,8 @@ func newCpCommand(filerForPath PathResolver) *cobra.Command {
 		Long: `Copy files and directories to and from any paths on DBFS, UC Volumes, UC Skills or your local filesystem.
 
 	  For paths in DBFS, UC Volumes and UC Skills, it is required that you specify the "dbfs" scheme.
-	  For example: dbfs:/foo/bar.
+	  For example: dbfs:/foo/bar, or dbfs:/Volumes/my_catalog/my_schema/my_volume/data.csv for a UC Volume.
+	  A path without a scheme, such as /Volumes/..., is a local path.
 
 	  Recursively copying a directory will copy all files inside directory
 	  at SOURCE_PATH to the directory at TARGET_PATH.

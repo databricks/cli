@@ -42,6 +42,13 @@ func TestFilerForPathForInvalidScheme(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid scheme")
 }
 
+func TestFilerForPathForSchemelessVolumesPath(t *testing.T) {
+	ctx := t.Context()
+
+	_, _, err := filerForPath(ctx, "/Volumes/main/default/vol/data.csv")
+	assert.ErrorContains(t, err, "did you mean dbfs:/Volumes/main/default/vol/data.csv?")
+}
+
 func TestFilerForPathForDbfsScheme(t *testing.T) {
 	tcases := []struct {
 		fullPath string
