@@ -191,7 +191,7 @@ func TestAppUpdateMask_ComputeSizeFollowsBody(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mask := strings.Split(appUpdateMask(&apps.App{ComputeSize: tt.computeSize}), ",")
+			mask := strings.Split(appUpdateMask(&apps.App{ComputeSize: tt.computeSize}, &PlanEntry{}), ",")
 			assert.Equal(t, tt.wantCompute, slices.Contains(mask, "compute_size"))
 			assert.Contains(t, mask, "description")
 			assert.Contains(t, mask, "compute_min_instances")

@@ -1,0 +1,1 @@
+* Do not send an app's `user_api_scopes` in update requests unless the bundle declares or removes them, so scopes added outside the bundle are not cleared. ([#7193](https://github.com/databricks/cli/pull/7193))
