@@ -26,12 +26,6 @@ import (
 // sleepingCLIEnv tells TestSleepingCLI to block, so that the timeout test can run it as a child process.
 const sleepingCLIEnv = "AGENTCONFIG_TEST_SLEEP"
 
-func TestMain(m *testing.M) {
-	// No agent CLI is on PATH unless a test puts one there, so no test runs a host CLI.
-	agents.LookPath = func(string) (string, error) { return "", exec.ErrNotFound }
-	m.Run()
-}
-
 // cliAgent is an agent whose config is the JSON file at path, and whose CLI has the add and remove commands of a
 // stand-in: `mcp add <name> -- <command> <args>` and `mcp remove <name>`.
 func cliAgent(path string) *agents.Agent {

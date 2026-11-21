@@ -706,6 +706,9 @@ tasks:
       # acceptance/cmd/aitools is not listed on purpose: a change there runs
       # `test`, which also runs on Windows. The -run pattern below still runs it.
       - acceptance/experimental/aitools/**
+      # Only aitools tests use hostenv, and its tests check that every aitools
+      # test package calls hostenv.Isolate.
+      - internal/testutil/hostenv/**
       - "{{.EMBED_SOURCES}}"
     cmds:
       # cmd/root runs aitools hooks on every command, cmd, cmd/apps and
@@ -719,7 +722,7 @@ tasks:
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/... ./cmd ./cmd/apps ./cmd/experimental ./cmd/root ./cmd/version ." \
+          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/... ./internal/testutil/hostenv/... ./cmd ./cmd/apps ./cmd/experimental ./cmd/root ./cmd/version ." \
           -- -timeout=${LOCAL_TIMEOUT:-60m}
       # The goldens of help, cmd/version, quickstart and air help print aitools text;
       # air/image-push runs a child process with the aitools self-exec environment.
