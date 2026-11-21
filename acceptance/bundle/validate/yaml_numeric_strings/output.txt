@@ -1,20 +1,20 @@
 
 >>> [CLI] bundle validate -o json
 {
-  "job_name": "7",
+  "job_name": "007",
   "job_tags": {
-    "big_int": "123456789012345680000000000000",
+    "big_int": "123456789012345678901234567890",
     "bool_title": "true",
     "date": "2024-01-01",
-    "exponent": "1000",
-    "float_int": "1",
-    "hex": "31",
-    "inf": "+Inf",
-    "leading_dot": "0.5",
-    "leading_zero": "42",
-    "nan": "NaN",
-    "octal": "15",
-    "plus_sign": "12",
+    "exponent": "1e3",
+    "float_int": "1.0",
+    "hex": "0x1F",
+    "inf": ".inf",
+    "leading_dot": ".5",
+    "leading_zero": "0042",
+    "nan": ".NaN",
+    "octal": "0o17",
+    "plus_sign": "+12",
     "q_big_int": "123456789012345678901234567890",
     "q_bool_title": "True",
     "q_date": "2024-01-01",
@@ -29,38 +29,38 @@
     "q_plus_sign": "+12",
     "q_trailing_zero": "1.10",
     "q_underscore": "1_000",
-    "trailing_zero": "1.1",
-    "underscore": "1000"
+    "trailing_zero": "1.10",
+    "underscore": "1_000"
   },
   "job_parameters": [
     {
-      "default": "1",
+      "default": "01",
       "name": "leading_zero"
     },
     {
-      "default": "3.1",
+      "default": "3.10",
       "name": "version"
     }
   ],
-  "git_commit": "123400000000000000000000000000000000000000000000000000000000",
+  "git_commit": "1234e56",
   "tasks": [
     {
       "new_cluster": {
         "custom_tags": {
-          "cost_center": "42"
+          "cost_center": "0042"
         },
-        "policy_id": "12345678901234",
+        "policy_id": "0012345678901234",
         "spark_conf": {
-          "spark.sql.shuffle.partitions": "200"
+          "spark.sql.shuffle.partitions": "0200"
         },
         "spark_env_vars": {
-          "PYTHON_VERSION": "3.1"
+          "PYTHON_VERSION": "3.10"
         },
-        "spark_version": "13.3"
+        "spark_version": "13.30"
       },
       "notebook_task": {
         "base_parameters": {
-          "leading_zero": "42",
+          "leading_zero": "0042",
           "q_leading_zero": "0042"
         },
         "source": "GIT"
@@ -69,7 +69,7 @@
     },
     {
       "new_cluster": {
-        "policy_id": "12345678901000000000000000000000000000000000000000000",
+        "policy_id": "12345678901E0042",
         "spark_version": "13.3.x-scala2.12"
       },
       "notebook_task": {
@@ -78,24 +78,24 @@
       "task_key": "cluster_policy_exponent"
     },
     {
-      "existing_cluster_id": "123",
+      "existing_cluster_id": "0123",
       "sql_task": {
         "query": {
-          "query_id": "100000"
+          "query_id": "1e5"
         },
-        "warehouse_id": "123456789012345"
+        "warehouse_id": "0123456789012345"
       },
       "task_key": "existing_cluster"
     }
   ],
   "pipeline": {
-    "catalog": "1",
+    "catalog": "0001",
     "schema": "2024",
     "configuration": {
-      "leading_zero": "42",
-      "version": "1.1"
+      "leading_zero": "0042",
+      "version": "1.10"
     },
-    "policy_id": "12345678901234"
+    "policy_id": "0012345678901234"
   },
-  "dashboard_warehouse_id": "123456789012345"
+  "dashboard_warehouse_id": "0123456789012345"
 }

@@ -1,0 +1,1 @@
+* Keep unquoted numbers such as `policy_id: 0012345678901234` or `version: 3.10` as written when used in string fields or `${var.x}` references. Previously they were reformatted (`12345678901234`, `3.1`); values like `1.0` or `1_000` in string fields may now deploy differently. ([#7814](https://github.com/databricks/cli/pull/7814))

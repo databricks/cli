@@ -572,6 +572,24 @@ func TestNormalizeStringFromFloat(t *testing.T) {
 	assert.Equal(t, dyn.NewValue("1.2", vin.Locations()), vout)
 }
 
+func TestNormalizeStringFromSourceText(t *testing.T) {
+	var typ string
+	vin := dyn.NewValue(1.1, []diag.Location{{File: "file", Line: 1, Column: 1}}).WithSourceText("1.10")
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.NewValue("1.10", vin.Locations()), vout)
+}
+
+func TestNormalizeIntIgnoresSourceText(t *testing.T) {
+	var typ int
+	vin := dyn.V(42).WithSourceText("0042")
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, int64(42), vout.MustInt())
+	_, ok := vout.SourceText()
+	assert.False(t, ok)
+}
+
 func TestNormalizeStringFromTime(t *testing.T) {
 	var typ string
 	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []diag.Location{{File: "file", Line: 1, Column: 1}})
