@@ -1,0 +1,25 @@
+
+=== bundle plan -o json, saved to a file
+
+>>> jq -S .plan | map_values(.new_state) .databricks/plan.json
+{
+  "resources.secrets.credential_secret": {
+    "value": {
+      "catalog_name": "main",
+      "name": "credential_secret",
+      "schema_name": "default",
+      "value": "[redacted]"
+    }
+  }
+}
+
+=== deploy from the saved plan with the credential in the variable-overrides file
+
+>>> env -u BUNDLE_VAR_api_credential [CLI] bundle deploy --plan .databricks/plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sensitive-variables/dev/files...
+Created secrets.credential_secret
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== requests carrying a secret literal: path, name and value
+{"path":"/api/2.1/unity-catalog/secrets","name":"credential_secret","value":"dummy-credential"}

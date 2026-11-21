@@ -1,0 +1,17 @@
+# The secret values must not appear in CLI output or the saved plan, only in the requests.
+SECRETS=('!dummy-credential' '!Bearer dummy-credential' '!dummy-literal' '!dummy-target')
+
+title "bundle plan -o json, saved to a file"
+mkdir -p .databricks
+$CLI bundle plan -o json | contains.py "${SECRETS[@]}" > .databricks/plan.json
+trace jq -S '.plan | map_values(.new_state)' .databricks/plan.json
+
+# The variable-overrides file supplies the credential, and the unused derived and literal variables need no value.
+title "deploy from the saved plan with the credential in the variable-overrides file"
+mkdir -p .databricks/bundle/dev
+echo '{"api_credential": "dummy-credential"}' > .databricks/bundle/dev/variable-overrides.json
+trace env -u BUNDLE_VAR_api_credential $CLI bundle deploy --plan .databricks/plan.json | contains.py "${SECRETS[@]}"
+rm .databricks/bundle/dev/variable-overrides.json
+
+title "requests carrying a secret literal: path, name and value"
+jq -c 'select(tostring | contains("dummy-credential")) | {path, name: .body.name, value: .body.value}' < "$OUT_REQUESTS" | sort

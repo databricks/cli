@@ -1,0 +1,26 @@
+bundle:
+  name: sensitive-variables
+
+variables:
+  api_credential:
+    description: Credential for the external API, passed via BUNDLE_VAR_api_credential.
+    sensitive: true
+  api_header:
+    description: Header value for the plain secret, passed via BUNDLE_VAR_api_header.
+    sensitive: true
+
+resources:
+  catalogs:
+    audit_catalog:
+      name: audit_catalog
+  secrets:
+    ref_secret:
+      name: ref_secret
+      catalog_name: ${resources.catalogs.audit_catalog.name}
+      schema_name: default
+      value: ${var.api_credential}
+    plain_secret:
+      name: plain_secret
+      catalog_name: main
+      schema_name: default
+      value: ${var.api_header}

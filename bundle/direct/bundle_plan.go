@@ -69,9 +69,67 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	return nil
 }
 
-// InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
+// CheckSensitivePlanValues returns one error per problem that stops a saved plan from being applied:
+// a sensitive field the plan sets whose resolved config value is empty. The resolved config holds the
+// values from --var, BUNDLE_VAR_, defaults, targets and the variable-overrides file alike, so any of
+// them supplies a value. Sensitive variables the plan does not use need no value.
+func CheckSensitivePlanValues(root *config.Root, plan *deployplan.Plan) []error {
+	var problems []error
+	seen := make(map[string]bool)
+	addProblem := func(err error) {
+		if !seen[err.Error()] {
+			seen[err.Error()] = true
+			problems = append(problems, err)
+		}
+	}
+
+	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
+		entry := plan.Plan[resourceKey]
+		if entry.NewState == nil {
+			continue
+		}
+		resourceType := config.GetResourceTypeFromKey(resourceKey)
+		typedNil, ok := dresources.SupportedResources[resourceType]
+		if !ok {
+			addProblem(fmt.Errorf("resource %s: unknown resource type", resourceKey))
+			continue
+		}
+		rules := dresources.SensitiveFieldRules(resourceType)
+		if len(rules) == 0 {
+			continue
+		}
+		adapter, err := dresources.NewAdapter(typedNil, resourceType, nil)
+		if err != nil {
+			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
+			continue
+		}
+		sv, err := entry.NewState.ToStructVar(adapter.StateType())
+		if err != nil {
+			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
+			continue
+		}
+		paths, err := sensitivePaths(rules)
+		if err != nil {
+			addProblem(fmt.Errorf("resource %s: %w", resourceKey, err))
+			continue
+		}
+		for _, path := range paths {
+			planned, err := structaccess.Get(sv.Value, path)
+			if err != nil {
+				continue
+			}
+			if _, err := sensitiveConfigValue(root, resourceKey, path, planned); err != nil {
+				addProblem(err)
+			}
+		}
+	}
+	return problems
+}
+
+// InitForApply initializes the DeploymentBundle for applying a pre-computed plan. The sensitive
+// values the plan redacted are restored from root, the current config.
 // StateDB must already be open for write before calling this function.
-func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
+func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, root *config.Root) error {
 	b.StateDB.AssertOpenedForWrite()
 
 	err := b.init(client)
@@ -101,6 +159,9 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			sv, err := entry.NewState.ToStructVar(adapter.StateType())
 			if err != nil {
 				return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+			}
+			if err := restoreSensitiveFields(adapter, resourceKey, sv.Value, root); err != nil {
+				return err
 			}
 			b.StateCache.Store(resourceKey, sv)
 		}
@@ -513,7 +574,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 			entry.Remote = ch.Old
 			if !structdiff.IsEqual(entry.New, ch.New) {
 				// this is not fatal (may result in unexpected drift or undetected change but not incorrect deploy), but good to log this
-				log.Warnf(ctx, "unexpected local and remote diffs (%T, %T); entry=%v ch=%v", entry.New, ch.New, entry, ch)
+				log.Warnf(ctx, "unexpected local and remote diffs at %s (%T, %T)", ch.Path, entry.New, ch.New)
 			}
 		}
 	}
@@ -1704,8 +1765,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		})
 
 		// Store an unredacted copy in the cache so Apply can deploy with the
-		// actual values. The original newStateConfig is redacted below and used
-		// only for the plan output.
+		// actual values. newStateConfig is serialised into the plan and redacted there.
 		stateType := adapter.StateType()
 		cacheCopyPtr := reflect.New(stateType.Elem())
 		cacheCopyPtr.Elem().Set(reflect.ValueOf(newStateConfig).Elem())
@@ -1714,20 +1774,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			Refs:  refs,
 		})
 
-		// Redact sensitive fields before serialising. Sensitive values always come
-		// from bundle variables (enforced by ValidateSecretValueIsVariable), which
-		// are resolved before plan time, so SyncToJSON (called when cross-resource
-		// refs are resolved during planNode) will never re-serialise these fields.
-		if err := redactStruct(adapter, newStateConfig); err != nil {
-			return nil, fmt.Errorf("%s: cannot redact state: %w", node, err)
-		}
-
 		newState := &structvar.StructVar{
 			Value: newStateConfig,
 			Refs:  refs,
 		}
 
-		// Convert to JSON for serialization in plan (values already redacted above).
+		// Convert to JSON for serialization in plan.
 		newStateJSON, err := newState.ToJSON()
 		if err != nil {
 			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
