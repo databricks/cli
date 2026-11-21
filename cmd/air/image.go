@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -24,6 +25,8 @@ const (
 	maxImageRepositoryLength = 255
 	maxImageTagLength        = 128
 	airImagePlatform         = "linux/amd64"
+	// AI Runtime rejects images over this many decimal gigabytes, the unit Docker reports sizes in.
+	maxImageSizeGB = 20
 )
 
 var (
@@ -204,6 +207,20 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	}
 	if got := strings.TrimSpace(platform.String()); got != airImagePlatform {
 		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, got, airImagePlatform, airImagePlatform)
+	}
+
+	var size bytes.Buffer
+	if err := deps.runCommand(ctx, nil, &size, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Size}}", resolved.source); err != nil {
+		return fmt.Errorf("inspect size of source image %s: %w", resolved.source, err)
+	}
+	sizeBytes, err := strconv.ParseInt(strings.TrimSpace(size.String()), 10, 64)
+	if err != nil {
+		return fmt.Errorf("parse size of source image %s: %w", resolved.source, err)
+	}
+	sizeGB := float64(sizeBytes) / 1e9
+	cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB; AI Runtime allows up to %d GB.", resolved.source, sizeGB, maxImageSizeGB))
+	if sizeGB > maxImageSizeGB {
+		return fmt.Errorf("image size (%.1fGB) exceeds maximum allowed size (%dGB): start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches", sizeGB, maxImageSizeGB)
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)

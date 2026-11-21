@@ -18,6 +18,15 @@ case "$1 $2" in
         printf 'Docker inspect failed\n' >&2
         exit 1
         ;;
+    esac
+    if [ "$4" = "{{.Size}}" ]; then
+      case "$DOCKER_TEST_MODE" in
+        oversized) printf '25300000000\n' ;;
+        *) printf '7140000000\n' ;;
+      esac
+      exit 0
+    fi
+    case "$DOCKER_TEST_MODE" in
       arm64) printf 'linux/arm64\n' ;;
       *) printf 'linux/amd64\n' ;;
     esac
