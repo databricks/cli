@@ -1,7 +1,9 @@
 package fs
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"runtime"
 	"strings"
 	"testing"
@@ -9,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	databrickscfg "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/spf13/cobra"
@@ -42,15 +45,18 @@ func TestFilerForPathForInvalidScheme(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid scheme")
 }
 
-func TestFilerForPathForSchemelessUCPathStaysLocal(t *testing.T) {
-	ctx := t.Context()
-
+func TestFilerForPathForSchemelessUCPathStaysLocalWithWarning(t *testing.T) {
 	for _, path := range []string{"/Volumes/main/default/vol/data.csv", "/Skills/foo/bar"} {
 		t.Run(path, func(t *testing.T) {
+			var logs bytes.Buffer
+			ctx := log.NewContext(t.Context(), slog.New(slog.NewTextHandler(&logs, nil)))
+
 			f, got, err := filerForPath(ctx, path)
 			require.NoError(t, err)
 			assert.Equal(t, path, got)
 			assert.IsType(t, &filer.LocalClient{}, f)
+			assert.Contains(t, logs.String(), "level=WARN")
+			assert.Contains(t, logs.String(), "use dbfs:"+path)
 		})
 	}
 }

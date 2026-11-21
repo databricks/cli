@@ -42,7 +42,7 @@ func newLsCommand(filerForPath PathResolver) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "ls DIR_PATH",
 		Short:   "Lists files.",
-		Long:    `Lists files in DBFS, UC Volumes and UC Skills.`,
+		Long:    `Lists files in DBFS, UC Volumes and UC Skills. Paths in DBFS, UC Volumes and UC Skills need the "dbfs" scheme, for example dbfs:/Volumes/my_catalog/my_schema/my_volume. A path without a scheme is a local path, even if it starts with /Volumes/ or /Skills/.`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
