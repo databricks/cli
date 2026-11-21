@@ -1,0 +1,60 @@
+# Variable defaults that YAML resolves to a number, referenced from string fields.
+bundle:
+  name: numeric-defaults
+
+variables:
+  # YAML resolves this to a float: with a leading "0" it is not a valid octal int (has 8, 9).
+  leading_zero:
+    default: 0012345678901234
+  # YAML resolves this to an int (valid octal digits only); the loader parses it as decimal 42.
+  leading_zero_int:
+    default: 0042
+  exponent:
+    default: 12345678901E0042
+  version:
+    default: 3.10
+  quoted:
+    default: "0012345678901234"
+  # Used in an int field, which must get the parsed number.
+  concurrency:
+    default: 010
+  # Overridden in the target below, see targets.dev.variables.
+  target_override:
+    default: "0012345678901234"
+  # Overridden with --var and BUNDLE_VAR_ in the script.
+  from_flag:
+    default: placeholder
+  from_env:
+    default: placeholder
+
+resources:
+  jobs:
+    job:
+      name: job
+      max_concurrent_runs: ${var.concurrency}
+      tasks:
+        - task_key: t
+          new_cluster:
+            policy_id: ${var.leading_zero}
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
+          notebook_task:
+            notebook_path: /Workspace/notebook
+            base_parameters:
+              leading_zero: ${var.leading_zero}
+              exponent: ${var.exponent}
+              version: ${var.version}
+              quoted: ${var.quoted}
+              target_override: ${var.target_override}
+              from_flag: ${var.from_flag}
+              from_env: ${var.from_env}
+              leading_zero_int: ${var.leading_zero_int}
+              interpolated: id-${var.leading_zero}
+              interpolated_int: id-${var.leading_zero_int}
+              interpolated_version: v${var.version}
+
+targets:
+  dev:
+    default: true
+    variables:
+      target_override: 0012345678901234
