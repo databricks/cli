@@ -36,10 +36,10 @@ func SplitPath(fullPath string) (scheme, name string) {
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 	scheme, path := SplitPath(fullPath)
 	if scheme == "" && path == fullPath {
-		// A scheme-less /Volumes/ path is a UC Volumes path missing its scheme.
+		// A scheme-less /Volumes/ or /Skills/ path is a UC path missing its scheme.
 		// Treating it as a local path would silently act on the wrong filesystem.
-		if strings.HasPrefix(path, "/Volumes/") {
-			return nil, "", fmt.Errorf("%s is a local path; did you mean dbfs:%s? Paths without the dbfs: scheme are local paths", path, path)
+		if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
+			return nil, "", fmt.Errorf("%s looks like a UC Volumes or UC Skills path missing the dbfs: scheme; did you mean dbfs:%s? Paths without a scheme are local paths", path, path)
 		}
 		f, err := filer.NewLocalClient("")
 		return f, path, err

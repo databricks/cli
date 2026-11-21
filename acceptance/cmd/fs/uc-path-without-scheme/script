@@ -1,0 +1,5 @@
+# A /Volumes/ or /Skills/ path without the dbfs: scheme would be a local path.
+# Refuse it with a hint instead of silently acting on the local filesystem.
+trace musterr $CLI fs cp hello.txt /Volumes/main/default/vol/
+trace musterr $CLI fs mkdirs /Volumes/main/default/vol/dir
+trace musterr $CLI fs ls /Skills/foo/bar

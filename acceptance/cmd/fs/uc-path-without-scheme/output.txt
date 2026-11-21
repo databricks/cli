@@ -1,0 +1,9 @@
+
+>>> musterr [CLI] fs cp hello.txt /Volumes/main/default/vol/
+Error: /Volumes/main/default/vol/ looks like a UC Volumes or UC Skills path missing the dbfs: scheme; did you mean dbfs:/Volumes/main/default/vol/? Paths without a scheme are local paths
+
+>>> musterr [CLI] fs mkdirs /Volumes/main/default/vol/dir
+Error: /Volumes/main/default/vol/dir looks like a UC Volumes or UC Skills path missing the dbfs: scheme; did you mean dbfs:/Volumes/main/default/vol/dir? Paths without a scheme are local paths
+
+>>> musterr [CLI] fs ls /Skills/foo/bar
+Error: /Skills/foo/bar looks like a UC Volumes or UC Skills path missing the dbfs: scheme; did you mean dbfs:/Skills/foo/bar? Paths without a scheme are local paths

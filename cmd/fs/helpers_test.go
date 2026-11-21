@@ -42,11 +42,15 @@ func TestFilerForPathForInvalidScheme(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid scheme")
 }
 
-func TestFilerForPathForSchemelessVolumesPath(t *testing.T) {
+func TestFilerForPathForSchemelessUCPath(t *testing.T) {
 	ctx := t.Context()
 
-	_, _, err := filerForPath(ctx, "/Volumes/main/default/vol/data.csv")
-	assert.ErrorContains(t, err, "did you mean dbfs:/Volumes/main/default/vol/data.csv?")
+	for _, path := range []string{"/Volumes/main/default/vol/data.csv", "/Skills/foo/bar"} {
+		t.Run(path, func(t *testing.T) {
+			_, _, err := filerForPath(ctx, path)
+			assert.ErrorContains(t, err, "did you mean dbfs:"+path+"?")
+		})
+	}
 }
 
 func TestFilerForPathForDbfsScheme(t *testing.T) {
