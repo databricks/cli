@@ -1,0 +1,12 @@
+export DATABRICKS_WAREHOUSE_ID=$TEST_DEFAULT_WAREHOUSE_ID
+
+# The fake answers a CTAS like the real API: a num_affected_rows/num_inserted_rows
+# schema and no rows. Inline and --file take the same path, and stdout is not a
+# terminal here, so every statement without rows prints the JSON empty array.
+# (In a terminal all three print "Query executed successfully (no results)".)
+trace $CLI experimental aitools tools query "CREATE OR REPLACE TABLE main.default.trips AS SELECT * FROM samples.nyctaxi.trips LIMIT 10"
+trace $CLI experimental aitools tools query --file setup.sql
+trace $CLI experimental aitools tools query "CREATE TABLE main.default.empty (id INT)"
+
+title "wire SQL"
+trace print_requests.py --sort //api/2.0/sql/statements | jq -r .body.statement
