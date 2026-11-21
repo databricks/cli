@@ -13,6 +13,8 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -220,9 +222,14 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) error {
+	oldID, err := d.followParentRename(ctx, db, oldID, newState, planEntry)
+	if err != nil {
+		return err
+	}
+
 	var newID string
 	var remoteState any
-	_, err := retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+	_, err = retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
 		var e error
 		newID, remoteState, e = d.Adapter.DoUpdateWithID(ctx, oldID, newState, planEntry)
 		return struct{}{}, e
@@ -265,6 +272,57 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 	}
 
 	return nil
+}
+
+// followParentRename records the resource at the ID its parent's rename moved it to, before the
+// update applies the resource's own changes there. The parent is applied first, so the move has
+// already happened: if the update then fails, or the deploy is interrupted, the state still points
+// at the resource. Without this, the next plan would find nothing at the old ID, and a resource
+// with no internal ID could not be found at its new one. It returns the ID to update at.
+func (d *DeploymentUnit) followParentRename(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) (string, error) {
+	var parentPaths []*structpath.PathNode
+	for pathString, ch := range planEntry.Changes {
+		if ch.Reason != deployplan.ReasonParentRenamed {
+			continue
+		}
+		path, err := structpath.ParsePath(pathString)
+		if err != nil {
+			return "", err
+		}
+		parentPaths = append(parentPaths, path)
+	}
+	if len(parentPaths) == 0 {
+		return oldID, nil
+	}
+
+	// The saved state with the parent fields of the new one: what the resource is after the move.
+	state, err := d.loadPersistedState(db)
+	if err != nil {
+		return "", err
+	}
+	for _, path := range parentPaths {
+		value, err := structaccess.Get(newState, path)
+		if err != nil {
+			return "", fmt.Errorf("reading %s: %w", path, err)
+		}
+		if err := structaccess.Set(state, path, value); err != nil {
+			return "", fmt.Errorf("setting %s: %w", path, err)
+		}
+	}
+	movedID, err := d.Adapter.IDFromState(state)
+	if err != nil {
+		return "", err
+	}
+	if movedID == oldID {
+		return oldID, nil
+	}
+
+	log.Infof(ctx, "Re-keyed %s id=%#v (previously %#v) after its parent's rename", d.ResourceKey, movedID, oldID)
+	err = d.saveState(ctx, db, movedID, state, d.DependsOn, planEntry.RemoteState)
+	if err != nil {
+		return "", fmt.Errorf("saving state id=%s: %w", movedID, err)
+	}
+	return movedID, nil
 }
 
 // Rekey records the resource under the ID its new state gives it, without calling the backend: a
