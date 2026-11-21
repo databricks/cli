@@ -4,7 +4,7 @@ from typing import Optional
 
 import pytest
 
-from databricks.bundles.core import Variable
+from databricks.bundles.core import Variable, VariableOrOptional
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 
 
@@ -19,6 +19,22 @@ class Fake:
     int_field: Optional[int] = None
     list_field: list[int] = field(default_factory=list)
     dict_field: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass
+class FakeNested:
+    int_field: Optional[int] = None
+
+
+@dataclass
+class FakeMarker:
+    pass
+
+
+@dataclass
+class FakeParent:
+    nested_field: VariableOrOptional[FakeNested] = None
+    marker_field: Optional[FakeMarker] = None
 
 
 @pytest.mark.parametrize(
@@ -36,6 +52,23 @@ class Fake:
             # empty lists, dicts and None is omitted
             Fake(),
             {},
+        ),
+        (
+            # empty dataclasses are kept
+            FakeParent(nested_field=FakeNested(), marker_field=FakeMarker()),
+            {"nested_field": {}, "marker_field": {}},
+        ),
+        (
+            FakeParent(nested_field=FakeNested(int_field=1)),
+            {"nested_field": {"int_field": 1}},
+        ),
+        (
+            FakeParent(),
+            {},
+        ),
+        (
+            FakeParent(nested_field=Variable(path="var.my_var", type=FakeNested)),
+            {"nested_field": "${var.my_var}"},
         ),
         (
             [{"a": Fake(enum_field=Color.RED)}],

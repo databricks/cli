@@ -289,6 +289,21 @@ def test_complex_cluster_spec_roundtrip():
     assert cluster_spec_dict == cluster_spec_dict_2
 
 
+def test_empty_dataclass_roundtrip():
+    @dataclass
+    class Nested:
+        field: Optional[int] = None
+
+    @dataclass
+    class Fake:
+        nested: Optional[Nested] = None
+
+    out = _transform(Fake, {"nested": {}})
+
+    assert out == Fake(nested=Nested())
+    assert _transform_to_json_object(out) == {"nested": {}}
+
+
 def test_cron_schedule():
     cron_schedule = _transform(
         CronSchedule,
