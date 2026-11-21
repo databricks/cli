@@ -212,7 +212,7 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	// Docker reports the uncompressed size while the registry measures compressed layers,
 	// so the size is advisory: an oversized or unreadable size never blocks the push.
 	if sizeBytes, err := strconv.ParseInt(size, 10, 64); err != nil {
-		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the size of source image %s: %v", resolved.source, err))
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the size of source image %s (got %q).", resolved.source, size))
 	} else {
 		sizeGB := float64(sizeBytes) / 1e9
 		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB uncompressed; Databricks Artifact Registry caps images at %d GB compressed.", resolved.source, sizeGB, maxImageSizeGB))

@@ -103,7 +103,7 @@ func TestRunImagePushWarnsAboutOversizedImage(t *testing.T) {
 	}{
 		{name: "at limit", sizeBytes: "30000000000"},
 		{name: "over limit", sizeBytes: "35300000000", warning: oversized},
-		{name: "unreadable", sizeBytes: "unknown", warning: "Warning: could not read the size of source image example/trainer:v1: strconv.ParseInt: parsing \"unknown\": invalid syntax"},
+		{name: "unreadable", sizeBytes: "unknown", warning: "Warning: could not read the size of source image example/trainer:v1 (got \"unknown\")."},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
