@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"syscall"
 	"testing"
@@ -31,16 +32,57 @@ func TestBackgroundInGroupInterruptHelper(t *testing.T) {
 	t.Fatal("the interrupt did not end the process")
 }
 
+// raiseHelperEnv makes TestMain raise SIGINT in a helper process, which exits
+// normally if Raise returns.
+const raiseHelperEnv = "PROCESS_TEST_RAISE_HELPER"
+
+// TestMain raises the signal when TestRaiseEndsTheProcessBySignal re-executes
+// the test binary as the helper.
+func TestMain(m *testing.M) {
+	if os.Getenv(raiseHelperEnv) == "" {
+		os.Exit(m.Run())
+	}
+	Raise(os.Interrupt)
+	os.Exit(0)
+}
+
+func TestRaiseEndsTheProcessBySignal(t *testing.T) {
+	helper := exec.Command(os.Args[0])
+	helper.Env = append(os.Environ(), raiseHelperEnv+"=1")
+	err := helper.Run()
+	exitErr, ok := errors.AsType[*exec.ExitError](err)
+	require.True(t, ok, "helper exited with %v", err)
+	status := exitErr.Sys().(syscall.WaitStatus)
+	assert.True(t, status.Signaled(), "the helper must end by the signal, got %v", err)
+	assert.Equal(t, syscall.SIGINT, status.Signal())
+}
+
+// A signal the process ignores does not end it, and Raise returns.
+func TestRaiseReturnsWhenTheSignalIsIgnored(t *testing.T) {
+	signal.Ignore(syscall.SIGUSR1)
+	t.Cleanup(func() { signal.Reset(syscall.SIGUSR1) })
+	Raise(syscall.SIGUSR1)
+}
+
 func TestBackgroundInGroupForwardsInterrupt(t *testing.T) {
+	for _, sig := range []syscall.Signal{syscall.SIGINT, syscall.SIGHUP} {
+		t.Run(sig.String(), func(t *testing.T) {
+			testBackgroundInGroupForwards(t, sig)
+		})
+	}
+}
+
+func testBackgroundInGroupForwards(t *testing.T, sig syscall.Signal) {
 	pidFile := filepath.Join(t.TempDir(), "grandchild.pid")
 	helper := exec.Command(os.Args[0], "-test.run=^TestBackgroundInGroupInterruptHelper$")
 	helper.Env = append(os.Environ(), interruptHelperEnv+"="+pidFile)
 	require.NoError(t, helper.Start())
 
 	grandchildPid := waitForPid(t, pidFile)
-	// A Ctrl-C in the terminal signals the helper, which is in the foreground
-	// group, but not the child, which has its own group.
-	require.NoError(t, helper.Process.Signal(os.Interrupt))
+	// A Ctrl-C in the terminal, or the terminal closing, signals the helper,
+	// which is in the foreground group, but not the child, which has its own
+	// group.
+	require.NoError(t, helper.Process.Signal(sig))
 
 	waitErr := make(chan error, 1)
 	go func() { waitErr <- helper.Wait() }()
@@ -50,7 +92,7 @@ func TestBackgroundInGroupForwardsInterrupt(t *testing.T) {
 		require.True(t, ok, "helper exited with %v", err)
 		status := exitErr.Sys().(syscall.WaitStatus)
 		assert.True(t, status.Signaled(), "the helper must end as the interrupt would have, got %v", err)
-		assert.Equal(t, syscall.SIGINT, status.Signal())
+		assert.Equal(t, sig, status.Signal())
 	case <-time.After(processGroupGracePeriod + 5*time.Second):
 		_ = helper.Process.Kill()
 		t.Fatal("the interrupt did not end the helper")

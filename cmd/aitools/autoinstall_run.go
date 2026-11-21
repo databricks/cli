@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/versioncheck"
@@ -52,11 +53,44 @@ var gateOn = autoinstall.GateOn
 // rootInUserHome is autoinstall.RootInUserHome; tests replace it.
 var rootInUserHome = autoinstall.RootInUserHome
 
-// notifyInterrupt returns a context that is canceled when the CLI receives
-// Ctrl+C or a request to terminate; tests replace it.
-var notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+// notifyInterrupt catches sigs: it returns a context that is canceled when
+// the CLI receives one of them, and a function that stops catching them and
+// returns the signal received, or nil. Tests replace it.
+var notifyInterrupt = func(ctx context.Context, sigs ...os.Signal) (context.Context, func() os.Signal) {
+	ctx, cancel := context.WithCancel(ctx)
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, sigs...)
+	var got os.Signal
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		select {
+		case got = <-ch:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, func() os.Signal {
+		signal.Stop(ch)
+		cancel()
+		<-done
+		if got != nil {
+			return got
+		}
+		// One that arrived after ctx ended.
+		select {
+		case sig := <-ch:
+			return sig
+		default:
+			return nil
+		}
+	}
 }
+
+// raise ends the CLI by a signal that auto-install caught, once it recorded
+// what it must, so that the shell stops the script, loop or command list that
+// ran the command, as it would have without auto-install; tests replace it.
+var raise = process.Raise
 
 // autoInstallDisable is the opt-out command named in the notice.
 const autoInstallDisable = "databricks aitools auto-install disable"
@@ -64,7 +98,8 @@ const autoInstallDisable = "databricks aitools auto-install disable"
 // AutoInstall installs Databricks AI tools for the coding agents on this
 // machine, or updates an existing installation, on the first run of a new CLI
 // version. The root command runs it after a command succeeded. It never fails
-// the command and never writes to stdout. On stderr it prints the install
+// the command, though a signal it catches still ends the CLI (see raise), and
+// never writes to stdout. On stderr it prints the install
 // prompt (in a terminal) and one line on what it did; why it skipped or failed
 // goes only to the debug log.
 func AutoInstall(cmd *cobra.Command) {
@@ -182,19 +217,20 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 	// what decides the run.
 	reason = autoinstall.Decide(in)
 	if reason == autoinstall.ReasonGateOff {
-		// Ctrl+C or a request to terminate ends the lookup instead of killing
-		// a command that succeeded.
-		sigCtx, stop := notifyInterrupt(ctx)
+		// Ctrl+C, a request to terminate or the terminal closing ends the
+		// lookup. The version is recorded as for a failed lookup, and then the
+		// CLI ends by the signal.
+		sigCtx, stop := notifyInterrupt(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 		gateCtx, cancel := context.WithTimeout(sigCtx, gateTimeout)
 		in.GateOn, err = gateOn(gateCtx, version)
-		if err == nil && sigCtx.Err() != nil {
+		cancel()
+		sig := stop()
+		if err == nil && sig != nil {
 			// An interrupted lookup can still answer, from a manifest cached
 			// earlier. The user asked the CLI to stop, so the run ends here
 			// like one whose lookup failed.
 			err = errors.New("interrupted")
 		}
-		cancel()
-		stop()
 		if err != nil {
 			// The gate is unknown. A machine that cannot reach the manifest
 			// (no route to GitHub) would wait for the lookup after every
@@ -204,6 +240,9 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 			log.Debugf(ctx, "auto-install: could not resolve the gate, not trying again for this version: %v", err)
 			if err := autoinstall.Record(ctx, version, autoinstall.MaxAttempts, id); err != nil {
 				log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+			}
+			if sig != nil {
+				raise(sig)
 			}
 			return
 		}
@@ -361,16 +400,23 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) bool {
 	}
 	actx, cancel := context.WithTimeout(ctx, promptTimeout)
 	defer cancel()
-	// Ctrl+C dismisses the question instead of killing a command that
-	// succeeded.
-	actx, stop := signal.NotifyContext(actx, os.Interrupt)
-	defer stop()
+	// Ctrl+C ends the question. The version is settled as unanswered, and
+	// then the CLI ends by the signal.
+	actx, stop := notifyInterrupt(actx, os.Interrupt)
 	ans, err := cmdio.AskCancellable(actx, "Install Databricks AI tools for "+strings.Join(names, ", ")+"? [Y/n]", "")
+	sig := stop()
+	if err == nil && sig != nil {
+		// Ctrl+C right after an answer: the user asked the CLI to stop.
+		err = errors.New("interrupted")
+	}
 	if err != nil {
 		log.Debugf(ctx, "auto-install: skipped: the prompt was not answered: %v", err)
 		// End the question's line.
 		cmdio.LogString(ctx, "")
 		r.settle(ctx, protos.AitoolsAutoInstallOutcomeUnanswered)
+		if sig != nil {
+			raise(sig)
+		}
 		return false
 	}
 	switch strings.ToLower(strings.TrimSpace(ans)) {
