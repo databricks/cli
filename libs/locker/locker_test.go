@@ -1,9 +1,12 @@
 package locker
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/url"
+	"path/filepath"
 	"testing"
 	"uuid"
 
@@ -40,6 +43,7 @@ func (f *eofFiler) Write(ctx context.Context, path string, reader io.Reader, mod
 func newTestLocker(t *testing.T, f filer.Filer) *Locker {
 	return &Locker{
 		filer:     f,
+		lockFiler: f,
 		TargetDir: t.TempDir(),
 		State:     &LockState{ID: uuid.New(), User: "tester"},
 	}
@@ -85,4 +89,98 @@ func TestLockFailsWhenEveryAttemptHitsUnexpectedEOF(t *testing.T) {
 	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
 	assert.False(t, locker.Active)
 	assert.Equal(t, 3, f.writes)
+}
+
+// lateFiler fails the first `failures` writes with the SDK's inactivity timeout without applying
+// them. applyLate then applies the first of them, as the server does with a request it was still
+// processing.
+type lateFiler struct {
+	filer.Filer
+	failures int
+	writes   int
+	stalled  []byte
+}
+
+func (f *lateFiler) Write(ctx context.Context, path string, reader io.Reader, mode ...filer.WriteMode) error {
+	f.writes++
+	if f.writes > f.failures {
+		return f.Filer.Write(ctx, path, reader, mode...)
+	}
+	if f.stalled == nil {
+		body, err := io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		f.stalled = body
+	}
+	return &url.Error{Op: "Post", URL: "https://example.com/" + path, Err: errors.New("request timed out after 1m30s of inactivity")}
+}
+
+func (f *lateFiler) applyLate(t *testing.T) {
+	require.NoError(t, f.Filer.Write(t.Context(), LockFileName, bytes.NewReader(f.stalled)))
+}
+
+func TestLockReplacesLockReleasedBeforeLateWrite(t *testing.T) {
+	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	released := filepath.Join(t.TempDir(), "released.json")
+
+	f := &lateFiler{Filer: local, failures: 1}
+	first := newTestLocker(t, f)
+	first.ReleasedLocksPath = released
+	require.NoError(t, first.Lock(ctx, false))
+	require.NoError(t, first.Unlock(ctx))
+	f.applyLate(t)
+
+	second := newTestLocker(t, local)
+	second.ReleasedLocksPath = released
+	require.NoError(t, second.Lock(ctx, false))
+	state, err := second.GetActiveLockState(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, second.State.ID, state.ID)
+}
+
+func TestLockReplacesLockLeftByFailedLock(t *testing.T) {
+	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	released := filepath.Join(t.TempDir(), "released.json")
+
+	// Every attempt times out; the first is applied after Lock gave up.
+	f := &lateFiler{Filer: local, failures: 3}
+	first := newTestLocker(t, f)
+	first.ReleasedLocksPath = released
+	require.Error(t, first.Lock(ctx, false))
+	f.applyLate(t)
+
+	second := newTestLocker(t, local)
+	second.ReleasedLocksPath = released
+	require.NoError(t, second.Lock(ctx, false))
+}
+
+func TestLockKeepsLockNotReleasedHere(t *testing.T) {
+	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	released := filepath.Join(t.TempDir(), "released.json")
+
+	// A lock released after an uncertain write is recorded, but a different, live lock is kept.
+	f := &lateFiler{Filer: local, failures: 1}
+	first := newTestLocker(t, f)
+	first.ReleasedLocksPath = released
+	require.NoError(t, first.Lock(ctx, false))
+	require.NoError(t, first.Unlock(ctx))
+
+	other := newTestLocker(t, local)
+	require.NoError(t, other.Lock(ctx, false))
+
+	second := newTestLocker(t, local)
+	second.ReleasedLocksPath = released
+	err = second.Lock(ctx, false)
+	require.ErrorContains(t, err, "deploy lock acquired by tester")
+	assert.True(t, other.Active)
+	state, err := second.GetActiveLockState(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, other.State.ID, state.ID)
 }
