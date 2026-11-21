@@ -1,0 +1,1 @@
+* Warn in `databricks air images push` when the source image sets `WORKDIR`, which AI Runtime does not honor at runtime, so commands should use absolute paths. ([#7867](https://github.com/databricks/cli/pull/7867))

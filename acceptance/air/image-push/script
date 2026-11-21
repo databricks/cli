@@ -28,6 +28,10 @@ trace databricks air images push -p docker-test -s example/image:v1 --catalog ma
 # Parsing the complete stdout fails if Docker progress or human-readable text leaks into it.
 trace jq -e '{v, data}' "$HOME/result.json"
 
+title "image with WORKDIR warns but is pushed"
+export DOCKER_TEST_MODE=workdir
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
 title "daemon failure must not pull"
 export DOCKER_TEST_MODE=daemon-error
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
