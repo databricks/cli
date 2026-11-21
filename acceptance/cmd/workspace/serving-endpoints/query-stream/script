@@ -1,0 +1,8 @@
+title "--stream prints one JSON chunk per line"
+trace $CLI serving-endpoints query chat-endpoint --stream --json '{"messages": [{"role": "user", "content": "hi"}]}'
+
+title "\"stream\": true in --json also streams"
+trace $CLI serving-endpoints query chat-endpoint --json '{"messages": [{"role": "user", "content": "hi"}], "stream": true}' | jq -rj '.choices[0].delta.content'
+echo
+
+trace print_requests.py //serving-endpoints

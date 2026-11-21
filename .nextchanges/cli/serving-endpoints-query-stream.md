@@ -1,0 +1,1 @@
+* `serving-endpoints query --stream` (or `"stream": true` in `--json`) now prints the streamed response as it arrives, one JSON chunk per line. It previously always failed with `failed to unmarshal response body`. ([#7660](https://github.com/databricks/cli/pull/7660))
