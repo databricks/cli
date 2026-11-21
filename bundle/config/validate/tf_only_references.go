@@ -47,7 +47,7 @@ func (m *tfOnlyReferences) Apply(_ context.Context, b *bundle.Bundle) diag.Diagn
 	})
 
 	if len(diags) > 0 {
-		b.Metrics.AddBoolValue("has_tf_only_references", true)
+		b.Telemetry.HasTfOnlyReferences = true
 	}
 
 	return diags

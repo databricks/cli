@@ -266,6 +266,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
 	var result applyPythonOutputResult
+	var before, after dyn.Value
 	mutateDiagsHasError := errors.New("unexpected error")
 
 	err = b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
@@ -297,6 +298,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("internal error when merging output of Python mutator: %w", err)
 		}
+		before, after = leftRoot, newRoot
 
 		for _, resourceKey := range result.AddedResources.ToArray() {
 			log.Debugf(ctx, "added resource at 'resources.%s.%s'", resourceKey.Type, resourceKey.Name)
@@ -350,6 +352,12 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	if logdiag.HasError(ctx) {
 		return mutateDiags
 	}
+
+	// Record what Python wrote, before the defaults of added resources are filled in:
+	// the resources it added, and the fields it set or changed on existing ones.
+	// Comparing with the config Python received leaves out the defaults those
+	// already had.
+	b.Bitmap.MarkChanges(before, after)
 
 	resourcemutator.NormalizeAndInitializeResources(ctx, b, result.AddedResources)
 	if logdiag.HasError(ctx) {

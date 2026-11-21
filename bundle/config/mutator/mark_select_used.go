@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -26,7 +25,7 @@ func (m *markSelectUsed) Name() string {
 
 func (m *markSelectUsed) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Select) > 0 {
-		b.Metrics.SetBoolValue(metrics.SelectUsed, true)
+		b.Telemetry.SelectUsed = true
 	}
 	return nil
 }

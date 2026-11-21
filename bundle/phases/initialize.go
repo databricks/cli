@@ -279,4 +279,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Executes the post_init script hook defined in the bundle configuration
 		scripts.Execute(config.ScriptPostInit),
 	)
+
+	// Variables have their final values now; record them for the fields that
+	// were set through a ${var.*} reference.
+	b.Bitmap.ResolveVariables(b.Config.Value())
 }

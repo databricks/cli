@@ -1,0 +1,623 @@
+// Package bitmap encodes the presence of every bundle configuration field as a
+// single bit. The schema (the ordered list of field paths) is derived by
+// reflecting over config.Root and recorded in schema.deflate, which is embedded
+// into the binary (acceptance/bundle/bitmap/full lists it). The schema is
+// append-only so that bit positions stay stable across releases: a newer binary
+// can decode an older bitmap and vice versa.
+//
+// The bits describe the configuration as the user wrote it, not the result of
+// Initialize, so defaults the CLI fills in are not counted (see Builder).
+package bitmap
+
+import (
+	"bytes"
+	"compress/flate"
+	"encoding/base64"
+	"encoding/binary"
+	"fmt"
+	"io"
+	"reflect"
+	"slices"
+	"strings"
+
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structwalk"
+)
+
+// magic identifies a bundle telemetry bitmap. The bytes are chosen so they do
+// not collide with the leading bytes of the compression formats we wrap the
+// payload in (gzip 0x1f 0x8b, zlib 0x78), so a decoder can tell a raw payload
+// from a compressed one.
+const magic = "DBTB"
+
+// ContextFullBundle marks a bitmap covering the whole user-authored config. Other
+// context values are reserved for narrower bitmaps in the future.
+const ContextFullBundle uint16 = 0
+
+// headerSize is the size of the fixed header: magic (4) + size (4) + context (2).
+const headerSize = 10
+
+// EmbeddedSchema returns the schema baked into the binary at build time.
+func EmbeddedSchema() []string {
+	text, err := io.ReadAll(flate.NewReader(bytes.NewReader(schemaDeflate)))
+	if err != nil {
+		// schema.deflate is generated and checked by TestEmbeddedSchemaIsCompleteAndUnique.
+		panic(fmt.Sprintf("bitmap: corrupt embedded schema: %s", err))
+	}
+	return parseSchema(text)
+}
+
+// CompressSchema encodes schema text, one field path per line, the way
+// schema.deflate stores it: raw DEFLATE. compress/flate gives the same bytes on
+// every platform, so the generated file does not depend on who generated it.
+func CompressSchema(text []byte) ([]byte, error) {
+	var out bytes.Buffer
+	w, err := flate.NewWriter(&out, flate.BestCompression)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := w.Write(text); err != nil {
+		return nil, err
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
+}
+
+// telemetryPrefix namespaces the internal telemetry struct's fields in the
+// schema so they never collide with config.Root paths.
+const telemetryPrefix = "telemetry"
+
+// Every bool field has two value entries after its presence entry, so the
+// bitmap records true and false apart. A present field with neither value bit
+// holds an unresolved variable reference.
+const (
+	trueSuffix  = "=true"
+	falseSuffix = "=false"
+)
+
+// listSuffix marks a list element in a schema path.
+const listSuffix = "[*]"
+
+// WalkSchema reflects over config.Root and the internal telemetry struct and
+// returns the ordered list of field paths, one per field, with map keys
+// rendered as ".*" and slice elements as "[*]", and a "=true" and "=false"
+// entry after each bool field. The telemetry struct's fields are namespaced
+// under "telemetry.". This is the freshly computed schema; the
+// committed schema.deflate is a prefix of it plus any fields since removed.
+//
+// telemetryType is the internal telemetry struct type (bundle.Telemetry),
+// passed in so this package does not import the bundle package.
+func WalkSchema(telemetryType reflect.Type) ([]string, error) {
+	paths, err := walkTypePaths(reflect.TypeFor[config.Root](), "", isPruned)
+	if err != nil {
+		return nil, err
+	}
+	tmPaths, err := walkTypePaths(telemetryType, telemetryPrefix+".", nil)
+	if err != nil {
+		return nil, err
+	}
+	// The walk visits some paths twice: a flattened embed at its parent's path,
+	// and a field together with an embedded field it shadows.
+	unique, _ := Merge(nil, append(paths, tmPaths...))
+	return unique, nil
+}
+
+// walkTypePaths walks a struct type and returns each field path, prefixed and
+// with pruned subtrees removed. prune may be nil.
+func walkTypePaths(t reflect.Type, prefix string, prune func(string) bool) ([]string, error) {
+	var paths []string
+	err := structwalk.WalkType(t, func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
+		if path == nil {
+			return true
+		}
+		p := path.String()
+		if prune != nil && prune(p) {
+			return false
+		}
+		paths = append(paths, prefix+p)
+		if typ.Kind() == reflect.Pointer {
+			typ = typ.Elem()
+		}
+		if typ.Kind() == reflect.Bool || typ.Implements(boolValuesType) {
+			paths = append(paths, prefix+p+trueSuffix, prefix+p+falseSuffix)
+		}
+		return true
+	})
+	if err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
+// isPruned reports whether a schema path should be excluded from the bitmap.
+func isPruned(p string) bool {
+	// targets/environments are per-target overrides that are merged away and set
+	// to nil by the SelectTarget mutator, so they are never present at deploy
+	// time and would only duplicate the merged tree. __locations is an
+	// output-only internal field.
+	switch {
+	case p == "targets" || strings.HasPrefix(p, "targets."):
+		return true
+	case p == "environments" || strings.HasPrefix(p, "environments."):
+		return true
+	case p == "__locations" || strings.HasPrefix(p, "__locations."):
+		return true
+	// Target selection sets these on every bundle; users do not write them.
+	case p == "bundle.target" || p == "bundle.environment":
+		return true
+	}
+	return false
+}
+
+// Merge appends to old any paths in fresh that are not already present, keeping
+// old's order intact. Paths removed from config.Root remain in the merged schema
+// so that existing bit positions never shift. It returns the merged schema and
+// the list of newly added paths.
+func Merge(old, fresh []string) (merged, added []string) {
+	seen := make(map[string]struct{}, len(old))
+	for _, p := range old {
+		seen[p] = struct{}{}
+	}
+	merged = append(merged, old...)
+	for _, p := range fresh {
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		merged = append(merged, p)
+		added = append(added, p)
+	}
+	return merged, added
+}
+
+// Builder computes the config bits of a bundle as the user wrote it. Mark runs
+// on the loaded configuration, and on the resources Python adds, before any
+// mutator fills in defaults. A field holding a ${var.*} reference has no value
+// yet at that point, so Mark keeps it aside, and ResolveVariables marks the
+// variable's value once it is known. Bits are only ever set, never cleared.
+type Builder struct {
+	index map[string]int
+	bits  []bool
+
+	// refs are the fields Mark found holding a pure ${var.*} reference.
+	refs map[varRef]struct{}
+}
+
+// varRef is a field that held a pure ${var.*} reference.
+type varRef struct {
+	pattern   string // the field's schema pattern
+	reference string // e.g. "${var.flag}"
+}
+
+// varPrefix is the first component of a variable reference: ${var.name}.
+var varPrefix = dyn.NewPath(dyn.Key("var"))
+
+// NewBuilder returns a Builder for schema with no bits set.
+func NewBuilder(schema []string) *Builder {
+	return &Builder{
+		index: indexSchema(schema),
+		bits:  make([]bool, len(schema)),
+		refs:  map[varRef]struct{}{},
+	}
+}
+
+// Mark sets the bits of the fields present in cfg, a configuration tree rooted
+// at the configuration root. The config is walked as its dyn.Value rather than
+// the typed struct so that presence is exactly what the config holds: an
+// interface-typed field (variables.*.default) or an empty container ({} or [])
+// counts, and a zero value counts only when it is written out.
+func (b *Builder) Mark(cfg dyn.Value) {
+	b.markChildren(cfg, "")
+}
+
+// MarkChanges sets the bits of what after holds that before does not: fields
+// before lacks, values that differ, and the fields on the way to them. Both are
+// rooted at the configuration root. List elements are compared by position.
+func (b *Builder) MarkChanges(before, after dyn.Value) {
+	b.markChangedChildren(before, after, "")
+}
+
+// ResolveVariables marks the values of the fields Mark found holding a
+// ${var.*} reference, reading each variable's value from cfg, the processed
+// configuration. The values are the ones the user supplied (default, --var,
+// environment or file), whatever mutators later do to the field. A reference
+// that does not resolve keeps only the presence bit Mark set.
+func (b *Builder) ResolveVariables(cfg dyn.Value) {
+	refs := b.refs
+	b.refs = map[varRef]struct{}{}
+	for ref := range refs {
+		v, err := dynvar.Resolve(dyn.V(ref.reference), func(p dyn.Path) (dyn.Value, error) {
+			return variableValue(cfg, p)
+		})
+		if err != nil {
+			continue
+		}
+		// A value from --var or the environment is a string; coerce it the way
+		// the loader does when it reaches a bool field.
+		if _, ok := b.index[ref.pattern+trueSuffix]; ok {
+			normalized, diags := convert.Normalize(false, v)
+			if diags.HasError() {
+				continue
+			}
+			v = normalized
+		}
+		b.mark(v, ref.pattern)
+	}
+}
+
+// variableValue looks up the value of a ${var.name...} reference in cfg, which
+// keeps it under variables.name.value.
+func variableValue(cfg dyn.Value, p dyn.Path) (dyn.Value, error) {
+	if len(p) < 2 || !p.HasPrefix(varPrefix) {
+		return dyn.InvalidValue, dynvar.ErrSkipResolution
+	}
+	path := append(dyn.NewPath(dyn.Key("variables"), p[1], dyn.Key("value")), p[2:]...)
+	return dyn.GetByPath(cfg, path)
+}
+
+// Bits returns a bit per schema entry: the bits Mark and ResolveVariables set,
+// together with those of the measured telemetry fields, namespaced under
+// "telemetry.". A "=true"/"=false" entry is set when the bool held that value.
+func (b *Builder) Bits(telemetry any) ([]bool, error) {
+	bits := slices.Clone(b.bits)
+	if err := markTelemetry(telemetry, b.index, bits); err != nil {
+		return nil, err
+	}
+	return bits, nil
+}
+
+// boolValues is implemented by bundle.BoolSet, a telemetry field that records
+// each value it took. It is matched by method so that this package does not
+// import the bundle package.
+type boolValues interface{ Values() []bool }
+
+var boolValuesType = reflect.TypeFor[boolValues]()
+
+// markTelemetry sets the bits of the measured telemetry fields: the presence
+// bit and the bit of each value taken. A bool counts only when true.
+func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
+	v := reflect.ValueOf(telemetry)
+	for i := range v.NumField() {
+		name := v.Type().Field(i).Name
+		var values []bool
+		switch f := v.Field(i).Interface().(type) {
+		case bool:
+			if f {
+				values = []bool{true}
+			}
+		case *bool:
+			if f != nil {
+				values = []bool{*f}
+			}
+		case boolValues:
+			values = f.Values()
+		default:
+			return fmt.Errorf("telemetry field %s has unsupported type %s", name, v.Field(i).Type())
+		}
+		path := joinField(telemetryPrefix, name)
+		for _, value := range values {
+			setBit(index, bits, path)
+			setBit(index, bits, path+valueSuffix(value))
+		}
+	}
+	return nil
+}
+
+// markChildren marks every child of v whose schema pattern is known. A map key
+// resolves to the struct field of that name when the schema has one and to the
+// ".*" wildcard otherwise; a sequence element resolves to "[*]".
+func (b *Builder) markChildren(v dyn.Value, pattern string) {
+	if m, ok := v.AsMap(); ok {
+		for _, pair := range m.Pairs() {
+			b.mark(pair.Value, b.childPattern(pattern, pair.Key.MustString()))
+		}
+	}
+	if s, ok := v.AsSequence(); ok {
+		for _, elem := range s {
+			b.mark(elem, pattern+listSuffix)
+		}
+	}
+}
+
+// childPattern returns the schema pattern of the map entry key under pattern:
+// the field of that name, or the ".*" wildcard of a map.
+func (b *Builder) childPattern(pattern, key string) string {
+	child := joinField(pattern, key)
+	if _, ok := b.index[child]; !ok {
+		child = joinField(pattern, "*")
+	}
+	return child
+}
+
+// markChanged marks after at pattern where it differs from before, and reports
+// whether it marked anything.
+func (b *Builder) markChanged(before, after dyn.Value, pattern string) bool {
+	if _, ok := b.index[pattern]; !ok || after.Kind() == dyn.KindNil {
+		return false
+	}
+	switch {
+	case before.Kind() != after.Kind():
+		b.mark(after, pattern)
+		return true
+	case after.Kind() == dyn.KindMap || after.Kind() == dyn.KindSequence:
+		if !b.markChangedChildren(before, after, pattern) {
+			return false
+		}
+		setBit(b.index, b.bits, pattern)
+		return true
+	case before.AsAny() == after.AsAny():
+		return false
+	default:
+		b.mark(after, pattern)
+		return true
+	}
+}
+
+// markChangedChildren is markChanged for the map entries and list elements of
+// after, and reports whether it marked any.
+func (b *Builder) markChangedChildren(before, after dyn.Value, pattern string) bool {
+	changed := false
+	if m, ok := after.AsMap(); ok {
+		for _, pair := range m.Pairs() {
+			key := pair.Key.MustString()
+			changed = b.markChanged(before.Get(key), pair.Value, b.childPattern(pattern, key)) || changed
+		}
+	}
+	if s, ok := after.AsSequence(); ok {
+		prev, _ := before.AsSequence()
+		for i, elem := range s {
+			old := dyn.InvalidValue
+			if i < len(prev) {
+				old = prev[i]
+			}
+			changed = b.markChanged(old, elem, pattern+listSuffix) || changed
+		}
+	}
+	return changed
+}
+
+// mark sets the bit for a present (non-null) value and recurses into it. A
+// pattern outside the schema is not descended into: that covers the pruned
+// subtrees and the contents of interface-typed fields, whose own bit is set.
+func (b *Builder) mark(v dyn.Value, pattern string) {
+	i, ok := b.index[pattern]
+	if !ok || v.Kind() == dyn.KindNil {
+		return
+	}
+	b.bits[i] = true
+	if value, ok := v.AsBool(); ok {
+		setBit(b.index, b.bits, pattern+valueSuffix(value))
+	}
+	if s, ok := v.AsString(); ok && isVariableReference(s) {
+		b.refs[varRef{pattern: pattern, reference: s}] = struct{}{}
+	}
+	b.markChildren(v, pattern)
+}
+
+// isVariableReference reports whether s is exactly one ${var.*} reference.
+func isVariableReference(s string) bool {
+	p, ok := dynvar.PureReferenceToPath(s)
+	return ok && p.HasPrefix(varPrefix)
+}
+
+// setBit sets the bit of schema path p, if the schema has it.
+func setBit(index map[string]int, bits []bool, p string) {
+	if i, ok := index[p]; ok {
+		bits[i] = true
+	}
+}
+
+// valueSuffix returns the suffix of the schema entry for a bool value.
+func valueSuffix(value bool) string {
+	if value {
+		return trueSuffix
+	}
+	return falseSuffix
+}
+
+func joinField(pattern, key string) string {
+	if pattern == "" {
+		return key
+	}
+	return pattern + "." + key
+}
+
+// Text renders the bitmap as a "size=N context=C" header followed by one
+// "PTF <path>" line per set field in schema order: "P" for a present field, "T"
+// and "F" for a bool field seen holding true and false, and a space for each
+// that is not set. A bool with "P" alone holds an unresolved variable
+// reference; one with both "T" and "F" has both values under a wildcard. Unset
+// fields are omitted. bits may be shorter than schema (a bitmap from an older
+// CLI) or longer (a newer CLI): a set bit past the schema is a "P" line named
+// by futureField.
+func Text(schema []string, bits []bool, context uint16) []string {
+	schema = schema[:min(len(bits), len(schema))]
+	index := indexSchema(schema)
+	lines := []string{fmt.Sprintf("size=%d context=%d", len(bits), context)}
+	for i, p := range schema {
+		if strings.HasSuffix(p, trueSuffix) || strings.HasSuffix(p, falseSuffix) {
+			continue
+		}
+		isTrue := isSet(index, bits, p+trueSuffix)
+		isFalse := isSet(index, bits, p+falseSuffix)
+		if !bits[i] && !isTrue && !isFalse {
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("%c%c%c %s", letter(bits[i], 'P'), letter(isTrue, 'T'), letter(isFalse, 'F'), p))
+	}
+	for i := len(schema); i < len(bits); i++ {
+		if bits[i] {
+			lines = append(lines, "P   "+futureField(i))
+		}
+	}
+	return lines
+}
+
+// futureField names a set bit past the end of the schema, a field that only a
+// newer CLI can name. Whether it is a field or the value of a bool is unknown.
+func futureField(bit int) string {
+	return fmt.Sprintf("future #%d", bit)
+}
+
+// letter returns c if set, and a space otherwise, so that Text's flags stay aligned.
+func letter(set bool, c byte) byte {
+	if set {
+		return c
+	}
+	return ' '
+}
+
+// JSON is the JSON rendering of a bitmap. Presence, True and False are trees
+// keyed by path segment ("*" for any map key, and a list field's name plus
+// "[*]" for its elements) with true leaves: Presence holds every set field,
+// True and False the bool fields seen with that value. A field with set
+// children is a subtree rather than a leaf, since a child is only set when its
+// parent is; likewise "tasks[*]" replaces the leaf of "tasks".
+type JSON struct {
+	Size     int            `json:"size"`
+	Context  uint16         `json:"context"`
+	Presence map[string]any `json:"presence"`
+	True     map[string]any `json:"true"`
+	False    map[string]any `json:"false"`
+}
+
+// ToJSON renders bits as JSON. bits may be shorter than schema or longer: a set
+// bit past the schema is a top-level Presence entry named by futureField.
+func ToJSON(schema []string, bits []bool, context uint16) JSON {
+	out := JSON{
+		Size:     len(bits),
+		Context:  context,
+		Presence: map[string]any{},
+		True:     map[string]any{},
+		False:    map[string]any{},
+	}
+	known := min(len(bits), len(schema))
+	for i, p := range schema[:known] {
+		if !bits[i] {
+			continue
+		}
+		tree := out.Presence
+		if field, ok := strings.CutSuffix(p, trueSuffix); ok {
+			tree, p = out.True, field
+		} else if field, ok := strings.CutSuffix(p, falseSuffix); ok {
+			tree, p = out.False, field
+		}
+		insertPath(tree, strings.Split(p, "."))
+	}
+	for i := known; i < len(bits); i++ {
+		if bits[i] {
+			out.Presence[futureField(i)] = true
+		}
+	}
+	return out
+}
+
+// insertPath adds a true leaf at keys, turning a leaf on the way into a
+// subtree. A "tasks[*]" key replaces the "tasks" leaf next to it, and a "tasks"
+// leaf is not added next to "tasks[*]".
+func insertPath(tree map[string]any, keys []string) {
+	for i, k := range keys {
+		if field, ok := strings.CutSuffix(k, listSuffix); ok {
+			delete(tree, field)
+		}
+		if i == len(keys)-1 {
+			if _, ok := tree[k]; !ok && tree[k+listSuffix] == nil {
+				tree[k] = true
+			}
+			return
+		}
+		child, ok := tree[k].(map[string]any)
+		if !ok {
+			child = map[string]any{}
+			tree[k] = child
+		}
+		tree = child
+	}
+}
+
+func isSet(index map[string]int, bits []bool, p string) bool {
+	i, ok := index[p]
+	return ok && bits[i]
+}
+
+// indexSchema maps each schema path to its bit position.
+func indexSchema(schema []string) map[string]int {
+	index := make(map[string]int, len(schema))
+	for i, p := range schema {
+		index[p] = i
+	}
+	return index
+}
+
+// Encode packs bits into the wire format (magic, size, context, bitmap),
+// compresses it with DEFLATE, and base64-encodes the result. DEFLATE is used
+// rather than gzip because it has no timestamp, keeping the output deterministic.
+func Encode(bits []bool, context uint16) (string, error) {
+	n := len(bits)
+	raw := make([]byte, headerSize+(n+7)/8)
+	copy(raw, magic)
+	binary.BigEndian.PutUint32(raw[4:], uint32(n))
+	binary.BigEndian.PutUint16(raw[8:], context)
+	for i, set := range bits {
+		if set {
+			raw[headerSize+i/8] |= 1 << uint(7-i%8)
+		}
+	}
+
+	var buf bytes.Buffer
+	w, err := flate.NewWriter(&buf, flate.BestCompression)
+	if err != nil {
+		return "", err
+	}
+	if _, err := w.Write(raw); err != nil {
+		return "", err
+	}
+	if err := w.Close(); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+}
+
+// Decode reverses Encode: it base64-decodes, inflates, validates the header, and
+// returns the bits and context.
+func Decode(encoded string) (bits []bool, context uint16, err error) {
+	compressed, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, 0, fmt.Errorf("base64: %w", err)
+	}
+	raw, err := io.ReadAll(flate.NewReader(bytes.NewReader(compressed)))
+	if err != nil {
+		return nil, 0, fmt.Errorf("inflate: %w", err)
+	}
+	if len(raw) < headerSize {
+		return nil, 0, fmt.Errorf("payload too short: %d bytes", len(raw))
+	}
+	if string(raw[:4]) != magic {
+		return nil, 0, fmt.Errorf("bad magic %q", raw[:4])
+	}
+	n := binary.BigEndian.Uint32(raw[4:])
+	context = binary.BigEndian.Uint16(raw[8:])
+	// Compare in uint64 so a corrupt size near 2^32 cannot overflow int on 32-bit platforms.
+	if uint64(len(raw)-headerSize) != (uint64(n)+7)/8 {
+		return nil, 0, fmt.Errorf("payload size mismatch: %d bits, %d bytes", n, len(raw))
+	}
+	bits = make([]bool, n)
+	for i := range bits {
+		bits[i] = raw[headerSize+i/8]&(1<<uint(7-i%8)) != 0
+	}
+	return bits, context, nil
+}
+
+// parseSchema splits schema bytes into field paths. Paths contain no
+// whitespace, so splitting on any whitespace also drops the CR of a CRLF
+// checkout (Windows) and blank lines, neither of which may become an entry that
+// shifts every following bit index.
+func parseSchema(b []byte) []string {
+	return strings.Fields(string(b))
+}

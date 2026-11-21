@@ -1,0 +1,4 @@
+# The two apps deploy in parallel and only the started one prints its deployment
+# message, which can land on either side of the stopped app's "Created" line.
+# Suppressing it leaves the "Created" lines adjacent, so deploy_actions sorts them.
+SuppressLines.app_deployment = '^✓ Deployment succeeded$'

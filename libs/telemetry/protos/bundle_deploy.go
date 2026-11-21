@@ -59,6 +59,14 @@ type BundleDeployEvent struct {
 	// the field is omitted only when git detection did not run or failed.
 	InGitRepo *bool `json:"in_git_repo,omitempty"`
 
+	// The bundle bitmap: one bit per field of the append-only schema in
+	// bundle/bitmap, set for each config field the bundle sets and each boolean
+	// telemetry flag measured, with the values of boolean fields. Base64 of raw
+	// DEFLATE; decode with 'databricks bundle bitmap decode' or the decoder in
+	// databricks-bundles. Field names, not values: map keys such as resource
+	// names are recorded as "*". Empty when the configuration did not load.
+	BundleBitmap string `json:"bundle_bitmap,omitempty"`
+
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
 }
 

@@ -70,3 +70,14 @@ Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
     "schemas"
   ]
 }
+
+=== Bitmap includes what Python wrote
+
+>>> uv run [UV_ARGS] -q [CLI] bundle bitmap bitmap -o text
+P   resources.jobs
+P   resources.jobs.*
+P   resources.jobs.*.description
+P   resources.jobs.*.name
+P   resources.pipelines
+P   resources.pipelines.*
+P   resources.pipelines.*.name

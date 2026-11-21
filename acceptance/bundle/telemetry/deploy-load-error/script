@@ -1,0 +1,5 @@
+# The include pattern in databricks.yml is not a valid glob, so loading stops before the bundle
+# bitmap is started.
+# Deploy telemetry is still assembled on this path (nothing is uploaded: there is no workspace
+# client yet), so the deploy must fail with the load error instead of crashing.
+musterr trace $CLI bundle deploy
