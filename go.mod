@@ -44,7 +44,7 @@ require (
 	golang.org/x/term v0.47.0 // BSD-3-Clause
 	golang.org/x/text v0.43.0 // BSD-3-Clause
 	google.golang.org/grpc v1.83.2 // Apache-2.0
-	google.golang.org/protobuf v1.36.11 // BSD-3-Clause
+	google.golang.org/protobuf v1.36.12 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
