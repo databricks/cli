@@ -100,6 +100,13 @@ Dry run: configuration for "smoke-test" is valid; not submitting.
 Dry run: code_source snapshot would include 1 file(s).
 Dry run: configuration for "smoke-test" is valid; not submitting.
 
+=== a script path relative to root_path warns to use CODE_SOURCE_PATH
+
+>>> [CLI] air run -f relative-script.yaml --dry-run
+Warning: command refers to "train.py", a path relative to code_source.root_path, but at runtime the working directory is not your code directory, so this run may fail with "No such file or directory". Use "$CODE_SOURCE_PATH/train.py".
+Dry run: code_source snapshot would include 1 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
 === git.remote is rejected
 
 >>> [CLI] air run -f git-remote.yaml --dry-run
