@@ -84,7 +84,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	)
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
-	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed; AI Runtime allows up to 20 GB compressed.")
+	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
 	assert.NotContains(t, stderr.String(), "Warning: source image")
 	assert.Contains(t, stderr.String(), "Pushed image")
 }
@@ -95,14 +95,14 @@ func fakeImageInspect(sizeBytes string) string {
 }
 
 func TestRunImagePushWarnsAboutOversizedImage(t *testing.T) {
-	oversized := "Warning: source image example/trainer:v1 exceeds 20 GB uncompressed, so the push may be rejected: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches."
+	oversized := "Warning: source image example/trainer:v1 exceeds 30 GB uncompressed, so Databricks Artifact Registry may reject the push: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches."
 	tests := []struct {
 		name      string
 		sizeBytes string
 		warning   string
 	}{
-		{name: "at limit", sizeBytes: "20000000000"},
-		{name: "over limit", sizeBytes: "25300000000", warning: oversized},
+		{name: "at limit", sizeBytes: "30000000000"},
+		{name: "over limit", sizeBytes: "35300000000", warning: oversized},
 		{name: "unreadable", sizeBytes: "unknown", warning: "Warning: could not read the size of source image example/trainer:v1: strconv.ParseInt: parsing \"unknown\": invalid syntax"},
 	}
 	for _, tt := range tests {
@@ -135,11 +135,11 @@ func TestRunImagePushWarnsAboutOversizedImage(t *testing.T) {
 			require.NoError(t, err)
 			switch tt.warning {
 			case "":
-				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 20.0 GB uncompressed; AI Runtime allows up to 20 GB compressed.")
+				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 30.0 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
 				assert.NotContains(t, stderr.String(), "Warning: source image")
 				assert.NotContains(t, stderr.String(), "could not read the size")
 			case oversized:
-				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 25.3 GB uncompressed; AI Runtime allows up to 20 GB compressed.")
+				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 35.3 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
 				assert.Contains(t, stderr.String(), oversized)
 			default:
 				assert.Contains(t, stderr.String(), tt.warning)
