@@ -1,0 +1,16 @@
+
+>>> musterr [CLI] fs ls /Volumes/main/default/vol
+Warn: Paths without a scheme are local paths: /Volumes/main/default/vol. For a Unity Catalog volume or skill, add the dbfs: scheme
+Error: no such directory: /Volumes/main/default/vol
+
+>>> musterr [CLI] fs ls /Skills/foo/bar
+Warn: Paths without a scheme are local paths: /Skills/foo/bar. For a Unity Catalog volume or skill, add the dbfs: scheme
+Error: no such directory: /Skills/foo/bar
+
+>>> musterr [CLI] fs cp /Volumes/main/default/vol/a.csv /Volumes/main/default/vol/b.csv
+Warn: Paths without a scheme are local paths: /Volumes/main/default/vol/a.csv, /Volumes/main/default/vol/b.csv. For a Unity Catalog volume or skill, add the dbfs: scheme
+Error: file does not exist: /Volumes/main/default/vol/a.csv
+
+>>> [CLI] __complete fs ls /Volumes/main/default/vol/
+:1
+Completion ended with directive: ShellCompDirectiveError

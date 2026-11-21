@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/filer/completer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/spf13/cobra"
 )
@@ -33,6 +34,29 @@ func SplitPath(fullPath string) (scheme, name string) {
 	return parts[0], parts[1]
 }
 
+// isUCPath reports whether a path without its scheme is a UC Volumes or UC Skills path.
+func isUCPath(path string) bool {
+	return strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/")
+}
+
+// warnSchemelessUCPaths warns once when any of the given paths starts with
+// /Volumes/ or /Skills/ without a scheme. Such a path is usually a UC path
+// missing its scheme, but on macOS /Volumes/ is also the mount point for local
+// drives, so it stays a local path. The warning makes sure a forgotten scheme
+// never acts on the local filesystem silently.
+func warnSchemelessUCPaths(ctx context.Context, fullPaths ...string) {
+	var local []string
+	for _, fullPath := range fullPaths {
+		if scheme, _ := SplitPath(fullPath); scheme == "" && isUCPath(fullPath) {
+			local = append(local, fullPath)
+		}
+	}
+	if len(local) == 0 {
+		return
+	}
+	log.Warnf(ctx, "Paths without a scheme are local paths: %s. For a Unity Catalog volume or skill, add the dbfs: scheme", strings.Join(local, ", "))
+}
+
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 	scheme, path := SplitPath(fullPath)
 	if scheme == "" && path == fullPath {
@@ -50,7 +74,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	// Otherwise the file is a dbfs file, and uses the DBFS APIs.
 	var f filer.Filer
 	var err error
-	if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
+	if isUCPath(path) {
 		f, err = filer.NewFilesClient(ctx, w, "/")
 	} else {
 		f, err = filer.NewDbfsClient(w, "/")

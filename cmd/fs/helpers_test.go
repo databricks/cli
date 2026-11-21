@@ -1,7 +1,9 @@
 package fs
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"runtime"
 	"strings"
 	"testing"
@@ -9,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	databrickscfg "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/spf13/cobra"
@@ -40,6 +43,35 @@ func TestFilerForPathForInvalidScheme(t *testing.T) {
 
 	_, _, err = filerForPath(ctx, "file:/a")
 	assert.ErrorContains(t, err, "invalid scheme")
+}
+
+func TestWarnSchemelessUCPaths(t *testing.T) {
+	tcases := []struct {
+		name  string
+		paths []string
+		want  string
+	}{
+		{"volume", []string{"/Volumes/main/default/vol/data.csv"}, "local paths: /Volumes/main/default/vol/data.csv."},
+		{"skill", []string{"/Skills/foo/bar"}, "local paths: /Skills/foo/bar."},
+		{"once per command", []string{"/Volumes/a", "/Volumes/b"}, "local paths: /Volumes/a, /Volumes/b."},
+		{"with scheme", []string{"dbfs:/Volumes/main/default/vol", "dbfs:/Skills/foo"}, ""},
+		{"other local", []string{"data.csv", "/tmp/Volumes/x"}, ""},
+	}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			var logs bytes.Buffer
+			ctx := log.NewContext(t.Context(), slog.New(slog.NewTextHandler(&logs, nil)))
+
+			warnSchemelessUCPaths(ctx, tc.paths...)
+			if tc.want == "" {
+				assert.Empty(t, logs.String())
+				return
+			}
+			assert.Contains(t, logs.String(), "level=WARN")
+			assert.Contains(t, logs.String(), tc.want)
+		})
+	}
 }
 
 func TestFilerForPathForDbfsScheme(t *testing.T) {

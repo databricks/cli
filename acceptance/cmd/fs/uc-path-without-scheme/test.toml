@@ -1,0 +1,7 @@
+# Git Bash would rewrite the leading-slash arguments into Windows paths before the CLI sees them.
+Env.MSYS_NO_PATHCONV = "1"
+
+# The local filer reports the missing directory with backslashes on Windows.
+[[Repls]]
+Old = '\\'
+New = '/'
