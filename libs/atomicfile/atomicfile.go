@@ -81,5 +81,3 @@ func Write(path string, data []byte, perm os.FileMode, opts ...Option) error {
 	}
 	return nil
 }
-
-// TEMP: trigger the full test matrix, to be reverted.
