@@ -23,7 +23,8 @@ class NotificationSettings:
 
     on_failure: VariableOrOptional[NotificationDestination] = None
     """
-    Destinations to send notifications on failure/timeout.
+    Recipients to notify when a refresh of the monitor fails or times out. Only supported on table
+    monitors, via `data_profiling_config`, and only `email_addresses` is accepted there.
     """
 
     on_unhealthy_table: VariableOrOptional[NotificationDestination] = None
@@ -46,7 +47,8 @@ class NotificationSettingsDict(TypedDict, total=False):
 
     on_failure: VariableOrOptional[NotificationDestinationParam]
     """
-    Destinations to send notifications on failure/timeout.
+    Recipients to notify when a refresh of the monitor fails or times out. Only supported on table
+    monitors, via `data_profiling_config`, and only `email_addresses` is accepted there.
     """
 
     on_unhealthy_table: VariableOrOptional[NotificationDestinationParam]

@@ -81,10 +81,11 @@ func newCreateCatalogConfig() *cobra.Command {
   Create Data Classification configuration for a catalog.
 
   Creates a new config resource, which enables Data Classification for the
-  specified catalog. - The config must not already exist for the catalog.
+  specified catalog. The catalog must not already have a config. Creating the
+  config starts a scan of the selected schemas and schedules recurring scans.
 
   Arguments:
-    PARENT: Parent resource in the format: catalogs/{catalog_name}`
+    PARENT: Name of the catalog to enable, in the format catalogs/{catalog_name}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -154,8 +155,12 @@ func newDeleteCatalogConfig() *cobra.Command {
 
   Delete Data Classification configuration for a catalog.
 
+  Deleting the config disables Data Classification for the catalog and stops its
+  scheduled scans. Tags that auto-tagging already applied to columns are not
+  removed. Deleting a config that does not exist succeeds.
+
   Arguments:
-    NAME: Resource name in the format: catalogs/{catalog_name}/config`
+    NAME: Resource name of the config, in the format catalogs/{catalog_name}/config.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -213,7 +218,7 @@ func newGetCatalogConfig() *cobra.Command {
   Get the Data Classification configuration for a catalog.
 
   Arguments:
-    NAME: Resource name in the format: catalogs/{catalog_name}/config`
+    NAME: Resource name of the config, in the format catalogs/{catalog_name}/config.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -278,13 +283,15 @@ func newUpdateCatalogConfig() *cobra.Command {
 	cmd.Short = `Update config for a catalog.`
 	cmd.Long = `Update config for a catalog.
 
-  Update the Data Classification configuration for a catalog. - The config must
-  already exist for the catalog. - Updates fields specified in the update_mask.
-  Use update_mask field to perform partial updates of the configuration.
+  Update the Data Classification configuration for a catalog.
+
+  The config must already exist for the catalog. Only the fields named in
+  update_mask change; the other fields keep their current values.
 
   Arguments:
     NAME: Resource name in the format: catalogs/{catalog_name}/config.
-    UPDATE_MASK: Field mask specifying which fields to update.`
+    UPDATE_MASK: Comma-separated list of the fields of catalog_config to update, for
+      example included_schemas or auto_tag_configs.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
