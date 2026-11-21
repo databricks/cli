@@ -31,7 +31,7 @@ Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.
 
 === docker commands
 image ls --quiet nvidia/cuda:13.4.1
-image inspect --format {{.Os}}/{{.Architecture}} nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} nvidia/cuda:13.4.1
 tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 
@@ -74,6 +74,22 @@ Pushed image.
     "registry_image": "[WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1"
   }
 }
+
+=== image with WORKDIR warns but is pushed
+
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Warning: source image example/image:v1 sets WORKDIR /app, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts.
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 === daemon failure must not pull
 
@@ -193,25 +209,29 @@ Error: invalid image repository name: catalog.schema.artifact must be 255 charac
 
 === all docker commands
 image ls --quiet nvidia/cuda:13.4.1
-image inspect --format {{.Os}}/{{.Architecture}} nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} nvidia/cuda:13.4.1
 tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 image ls --quiet example/image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
 pull --platform linux/amd64 example/image:v1
 
 === in a Claude Code session the auth docker configure child adds no install hint
