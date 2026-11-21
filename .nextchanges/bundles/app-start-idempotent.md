@@ -1,0 +1,1 @@
+* Treat starting an app whose compute is already active or starting as success in the direct deployment engine. A retried deploy after a transient error no longer fails with "Cannot start app ... as its compute is in ACTIVE state". ([#7709](https://github.com/databricks/cli/pull/7709))
