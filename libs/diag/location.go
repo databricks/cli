@@ -2,6 +2,7 @@ package diag
 
 import (
 	"fmt"
+	"path/filepath"
 )
 
 type Location struct {
@@ -11,5 +12,5 @@ type Location struct {
 }
 
 func (l Location) String() string {
-	return fmt.Sprintf("%s:%d:%d", l.File, l.Line, l.Column)
+	return fmt.Sprintf("%s:%d:%d", filepath.ToSlash(l.File), l.Line, l.Column)
 }

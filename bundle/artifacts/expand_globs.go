@@ -25,7 +25,7 @@ func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 
 	return diag.Diagnostic{
 		Severity:  diag.Error,
-		Summary:   fmt.Sprintf("%s: %s", source, message),
+		Summary:   fmt.Sprintf("%s: %s", filepath.ToSlash(source), message),
 		Locations: []diag.Location{v.Location()},
 		Paths:     dyn.ToStructPaths(p),
 	}

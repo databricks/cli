@@ -16,8 +16,8 @@ def main():
     patterns = compile_repls()
 
     if d1.is_dir() and d2.is_dir():
-        files1 = [str(p.relative_to(d1)) for p in d1.rglob("*") if p.is_file() and not p.name.startswith("LOG")]
-        files2 = [str(p.relative_to(d2)) for p in d2.rglob("*") if p.is_file() and not p.name.startswith("LOG")]
+        files1 = [p.relative_to(d1).as_posix() for p in d1.rglob("*") if p.is_file() and not p.name.startswith("LOG")]
+        files2 = [p.relative_to(d2).as_posix() for p in d2.rglob("*") if p.is_file() and not p.name.startswith("LOG")]
     else:
         assert d1.is_file(), d1
         assert d2.is_file(), d2
@@ -31,9 +31,9 @@ def main():
         p1 = d1 / f
         p2 = d2 / f
         if f not in set2:
-            print(f"Only in {d1}: {f}")
+            print(f"Only in {d1.as_posix()}: {f}")
         elif f not in set1:
-            print(f"Only in {d2}: {f}")
+            print(f"Only in {d2.as_posix()}: {f}")
         else:
             diff_files(patterns, p1, p2)
 

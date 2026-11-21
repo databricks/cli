@@ -42,10 +42,10 @@ To get started, refer to the project README.md file and the documentation at htt
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/my_default_python_etl/explorations/sample_exploration.ipynb
 +++ output/my_default_python/src/my_default_python_etl/explorations/sample_exploration.ipynb
 @@ -38,5 +38,5 @@
-     "# !!! Before performing any data analysis, make sure to run the pipeline to materialize the sample datasets. The tables referenced in this notebook depend on that step./n",
-     "/n",
--    "display(spark.sql(/"SELECT * FROM hive_metastore.[USERNAME].sample_trips_my_default_python/"))"
-+    "display(spark.sql(/"SELECT * FROM customcatalog.[USERNAME].sample_trips_my_default_python/"))"
+     "# !!! Before performing any data analysis, make sure to run the pipeline to materialize the sample datasets. The tables referenced in this notebook depend on that step.\n",
+     "\n",
+-    "display(spark.sql(\"SELECT * FROM hive_metastore.[USERNAME].sample_trips_my_default_python\"))"
++    "display(spark.sql(\"SELECT * FROM customcatalog.[USERNAME].sample_trips_my_default_python\"))"
     ]
    }
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/src/sample_notebook.ipynb

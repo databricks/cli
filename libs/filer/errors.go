@@ -1,6 +1,9 @@
 package filer
 
-import "io/fs"
+import (
+	"io/fs"
+	"path/filepath"
+)
 
 // fileAlreadyExistsError is returned when attempting to write a file at a path
 // that already exists, without using the OverwriteIfExists WriteMode flag.
@@ -9,7 +12,7 @@ type fileAlreadyExistsError struct {
 }
 
 func (err fileAlreadyExistsError) Error() string {
-	return "file already exists: " + err.path
+	return "file already exists: " + filepath.ToSlash(err.path)
 }
 
 func (err fileAlreadyExistsError) Is(other error) bool {
@@ -28,7 +31,7 @@ func (err fileDoesNotExistError) Is(other error) bool {
 }
 
 func (err fileDoesNotExistError) Error() string {
-	return "file does not exist: " + err.path
+	return "file does not exist: " + filepath.ToSlash(err.path)
 }
 
 // noSuchDirectoryError is returned when attempting to write a file to a path
@@ -39,7 +42,7 @@ type noSuchDirectoryError struct {
 }
 
 func (err noSuchDirectoryError) Error() string {
-	return "no such directory: " + err.path
+	return "no such directory: " + filepath.ToSlash(err.path)
 }
 
 func (err noSuchDirectoryError) Is(other error) bool {
@@ -53,7 +56,7 @@ type notADirectory struct {
 }
 
 func (err notADirectory) Error() string {
-	return "not a directory: " + err.path
+	return "not a directory: " + filepath.ToSlash(err.path)
 }
 
 func (err notADirectory) Is(other error) bool {
@@ -67,7 +70,7 @@ type notAFile struct {
 }
 
 func (err notAFile) Error() string {
-	return "not a file: " + err.path
+	return "not a file: " + filepath.ToSlash(err.path)
 }
 
 func (err notAFile) Is(other error) bool {
@@ -82,7 +85,7 @@ type directoryNotEmptyError struct {
 }
 
 func (err directoryNotEmptyError) Error() string {
-	return "directory not empty: " + err.path
+	return "directory not empty: " + filepath.ToSlash(err.path)
 }
 
 func (err directoryNotEmptyError) Is(other error) bool {
@@ -113,7 +116,7 @@ type permissionError struct {
 }
 
 func (err permissionError) Error() string {
-	return "access denied: " + err.path
+	return "access denied: " + filepath.ToSlash(err.path)
 }
 
 func (err permissionError) Is(other error) bool {
