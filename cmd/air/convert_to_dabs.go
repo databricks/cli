@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/spf13/cobra"
 )
@@ -48,6 +50,8 @@ const dabsTargetName = "dev"
 // The server derives the sidecar paths from command_path's parent, so they must
 // stay beside command.sh.
 const generatedArtifactsDir = "generated_artifacts"
+
+const bundleFileName = "databricks.yml"
 
 // codeSourceArtifactKey names the `tgz` artifact convert emits for a git/include
 // snapshot. codeSourceTgzArtifact is where DABs writes the built tarball — kept out of
@@ -282,7 +286,7 @@ func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir, experim
 	remedy := "move the code inside the bundle directory"
 	if snap.Git == nil {
 		parent := filepath.Dir(root)
-		if name := bundleFileIn(parent, ""); name != "" {
+		if name := bundleFileIn(parent); name != "" {
 			remedy = fmt.Sprintf("%s already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", quotedPath(parent), name, remedy)
 			if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok && isWorkloadBundle(parent, experimentName) {
 				remedy = fmt.Sprintf("pass --output-dir %s --force to replace this workload's bundle, or move the code inside the bundle directory", quoted)
@@ -299,7 +303,7 @@ func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir, experim
 // isWorkloadBundle requires a single databricks.yml because writeBundle replaces only that file.
 func isWorkloadBundle(dir, experimentName string) bool {
 	path, err := config.FileNames.FindInPath(dir)
-	if err != nil || filepath.Base(path) != "databricks.yml" || experimentName == "" {
+	if err != nil || filepath.Base(path) != bundleFileName || experimentName == "" {
 		return false
 	}
 	existing, diags := config.Load(path)
@@ -317,13 +321,9 @@ func quotedPath(path string) string {
 	return fmt.Sprintf("%q", path)
 }
 
-// bundleFileIn returns the first existing bundle filename in dir other than skip,
-// or "" if none exists.
-func bundleFileIn(dir, skip string) string {
+// bundleFileIn returns the first existing bundle filename in dir, or "" if none exists.
+func bundleFileIn(dir string) string {
 	for _, name := range config.FileNames {
-		if name == skip {
-			continue
-		}
 		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
 			return name
 		}
@@ -610,6 +610,87 @@ func buildPermissionsValue(perms []permission) dyn.Value {
 	return dyn.V(out)
 }
 
+func bundleLookupError(err error) error {
+	if pathErr, ok := errors.AsType[*os.PathError](err); ok {
+		return &os.PathError{Op: pathErr.Op, Path: filepath.ToSlash(pathErr.Path), Err: pathErr.Err}
+	}
+	return err
+}
+
+// A dangling symlink still occupies an output path. For a live link the target's
+// type determines whether it can serve as the artifact directory or a writable file.
+func existingBundlePath(name string) (os.FileInfo, error) {
+	info, err := os.Lstat(name)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, bundleLookupError(err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		return info, nil
+	}
+	target, err := os.Stat(name)
+	if errors.Is(err, os.ErrNotExist) {
+		return info, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("move or remove the symlink before converting: %w", bundleLookupError(err))
+	}
+	return target, nil
+}
+
+func checkBundleOutputPaths(dir string, artifacts []uploadItem, force bool) error {
+	var lookupErrors []error
+	parent, err := existingBundlePath(filepath.Join(dir, generatedArtifactsDir))
+	if err != nil {
+		lookupErrors = append(lookupErrors, err)
+	}
+	names := slices.Clone(config.FileNames)
+	if parent != nil && parent.IsDir() {
+		for _, item := range artifacts {
+			names = append(names, path.Join(generatedArtifactsDir, item.name))
+		}
+	}
+
+	var conflicts []string
+	canForce := true
+	for _, name := range names {
+		info, err := existingBundlePath(filepath.Join(dir, name))
+		if err != nil {
+			lookupErrors = append(lookupErrors, err)
+			continue
+		}
+		if info == nil {
+			continue
+		}
+		alternateRoot := name != bundleFileName && slices.Contains(config.FileNames, name)
+		replaceable := !alternateRoot && info.Mode().IsRegular()
+		if force && replaceable {
+			continue
+		}
+		conflicts = append(conflicts, name)
+		canForce = canForce && replaceable
+	}
+	if parent != nil && !parent.IsDir() {
+		conflicts = append(conflicts, generatedArtifactsDir)
+		canForce = false
+	}
+	if len(conflicts) == 0 {
+		return errors.Join(lookupErrors...)
+	}
+	verb, pronoun := "exist", "them"
+	if len(conflicts) == 1 {
+		verb, pronoun = "exists", "it"
+	}
+	hint := "move or remove " + pronoun + " before converting"
+	if canForce && len(lookupErrors) == 0 {
+		hint = "pass --force to overwrite or remove " + pronoun
+	}
+	collision := fmt.Errorf("%s already %s in %s; %s", strings.Join(conflicts, ", "), verb, filepath.ToSlash(dir), hint)
+	return errors.Join(append(lookupErrors, collision)...)
+}
+
 // writeBundle writes the bundle into dir: databricks.yml plus the loose launch
 // artifacts (command.sh + env/secret/param sidecars). It does not touch the code
 // source — the emitted `tgz` artifact packages it at deploy. Unless force is set
@@ -622,46 +703,17 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 		return nil, err
 	}
 
-	// Check alternate roots first so --force is suggested only when it can resolve the collision.
-	const bundleFileName = "databricks.yml"
-	if name := bundleFileIn(dir, bundleFileName); name != "" {
-		return nil, fmt.Errorf("%s already exists in %s; move or remove it before converting", name, dir)
-	}
-	bundlePath := filepath.Join(dir, bundleFileName)
-	if !force {
-		if _, err := os.Stat(bundlePath); err == nil {
-			return nil, fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", bundleFileName, dir)
-		}
-	}
-
-	// Restrict perms: the bundle carries env_vars.json (literal env var values), so
-	// keep the dir owner-only rather than world-readable.
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := checkBundleOutputPaths(dir, artifacts, force); err != nil {
 		return nil, err
 	}
 
-	// Refuse to clobber an existing file, with one consistent message. A user
-	// re-running convert into the same dir gets a clear error rather than a silent
-	// overwrite of edits they may have made. The hint names --force rather than
-	// --output-dir: a re-run is replacing a bundle that already sits where the
-	// code_source needs it, so writing a second copy elsewhere isn't what the user wants.
+	// The sidecars may contain literal environment variable values.
 	artifactDir := filepath.Join(dir, generatedArtifactsDir)
 	if err := os.MkdirAll(artifactDir, 0o700); err != nil {
 		return nil, err
 	}
-	writeFile := func(name string, data []byte) error {
-		target := filepath.Join(artifactDir, name)
-		if !force {
-			if _, err := os.Stat(target); err == nil {
-				return fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", name, artifactDir)
-			}
-		}
-		return os.WriteFile(target, data, 0o600)
-	}
-
-	// SaveAsYAML's force arg is passed true unconditionally: the collision check
-	// above already decided whether overwriting is allowed.
-	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, true); err != nil {
+	bundlePath := filepath.Join(dir, bundleFileName)
+	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, force); err != nil {
 		return nil, err
 	}
 	if err := quoteJobKey(bundlePath, bundleResourceKey(cfg.ExperimentName)); err != nil {
@@ -669,9 +721,17 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	}
 	written := []string{bundleFileName}
 
-	// Launch artifacts (command.sh + sidecars) under generated_artifacts/.
+	local, err := filer.NewLocalClient(artifactDir)
+	if err != nil {
+		return nil, err
+	}
+	// Only --force may overwrite a sidecar that appeared after the preflight.
+	modes := []filer.WriteMode{0o600}
+	if force {
+		modes = append(modes, filer.OverwriteIfExists)
+	}
 	for _, item := range artifacts {
-		if err := writeFile(item.name, item.data); err != nil {
+		if err := local.Write(ctx, item.name, bytes.NewReader(item.data), modes...); err != nil {
 			return nil, fmt.Errorf("failed to write %s: %w", item.name, err)
 		}
 		written = append(written, path.Join(generatedArtifactsDir, item.name))
