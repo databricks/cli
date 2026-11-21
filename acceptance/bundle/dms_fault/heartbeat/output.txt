@@ -82,7 +82,7 @@
 
 >>> bundle deploy --auto-approve
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-heartbeat-commands-[UNIQUE_NAME]/files...
-  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=9
+  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=7
   Updated pipelines.bar
   Files: 6 uploaded, 0 deleted
   Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
@@ -100,7 +100,7 @@
 
 >>> bundle deploy --auto-approve
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-heartbeat-commands-[UNIQUE_NAME]/files...
-  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=11
+  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=9
   Updated jobs.foo
   Updated pipelines.bar
   Files: 2 uploaded, 0 deleted
