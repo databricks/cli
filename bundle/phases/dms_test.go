@@ -3,11 +3,38 @@ package phases
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestBundleMetadataWithoutDeployedFiles(t *testing.T) {
+	for _, mode := range []config.SyncMode{config.SyncModeImmutable, config.SyncModeInPlace} {
+		t.Run(string(mode), func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Bundle: config.Bundle{Name: "test", Target: "prod", Mode: config.Production},
+					Workspace: config.Workspace{
+						RootPath: "/Workspace/bundle",
+						FilePath: "${resources.snapshots.files.full_path}/files",
+						SyncMode: mode,
+					},
+				},
+				SyncRootPath: "/Workspace/source",
+			}
+
+			assert.Equal(t, bundledeployments.Deployment{
+				DisplayName:    "test",
+				TargetName:     "prod",
+				DeploymentMode: bundledeployments.DeploymentModeDeploymentModeProduction,
+				WorkspaceInfo:  &bundledeployments.WorkspaceInfo{RootPath: "/Workspace/bundle"},
+			}, bundleMetadata(b).Deployment())
+		})
+	}
+}
 
 func TestStagedOperationsCoversEveryTouchedResource(t *testing.T) {
 	// The version fixes its operation set, so anything the apply will write has to appear
