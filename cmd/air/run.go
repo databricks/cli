@@ -55,7 +55,7 @@ func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
 func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []string, cfg *runConfig, idempotencyToken string, timeout time.Duration) (context.Context, error) {
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		if err := root.MustWorkspaceClient(cmd, args); err != nil {
-			return ctx, err
+			return ctx, &validationAuthenticationError{err}
 		}
 		ctx = cmd.Context()
 	}
@@ -162,7 +162,7 @@ databricks-ai-runtime skill:
 
 		cfg, err := loadRunConfigWithOverrides(ctx, file, overrides)
 		if err != nil {
-			return err
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 		}
 
 		if msg := missingTorchWarning(ctx, cfg, file); msg != "" {
@@ -175,19 +175,22 @@ databricks-ai-runtime skill:
 			if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 				count, err := countSnapshotFiles(ctx, cfg.CodeSource.Snapshot, file)
 				if err != nil {
-					return err
+					return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 				}
 				snapshotFileCount = &count
 			}
 			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
 			if err := validateIdempotencyToken(idempotencyToken); err != nil {
-				return err
+				return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 			}
 			if validationErr != nil {
 				unavailable, ok := validationUnavailable(validationErr)
 				if !ok {
-					return validationErr
+					if _, isAuth := errors.AsType[*validationAuthenticationError](validationErr); isAuth {
+						return authError(ctx, cmd, validationErr)
+					}
+					return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, validationErr)
 				}
 				kind := "PERMANENT"
 				if unavailable.retryable {
