@@ -63,6 +63,20 @@ Error: code_source include_paths select no files under [TEST_TMP_DIR]: data. Che
 Tip: use the --debug flag to see more details and a trace of this error:
   databricks --debug air run …
 
+=== include_paths entry that selects no files is rejected (json)
+
+>>> [CLI] air run -f include-unmatched.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "code_source include_paths select no files under [TEST_TMP_DIR]: data. Check that these paths exist under root_path and hold files git does not ignore (`git check-ignore -v \u003cfile\u003e` shows the rule for a file); empty directories, nested git repositories and submodules add no files",
+    "retryable": false
+  }
+}
+
 === include_paths pathspec that selects files outside root_path is rejected
 
 >>> [CLI] air run -f include-outside-root.yaml --dry-run
@@ -133,8 +147,6 @@ Exit code: 1
     "retryable": false
   }
 }
-
-Exit code: 1
 
 === unknown field suggests the near match
 

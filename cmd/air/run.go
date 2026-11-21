@@ -175,14 +175,14 @@ databricks-ai-runtime skill:
 			if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 				count, err := countSnapshotFiles(ctx, cfg.CodeSource.Snapshot, file)
 				if err != nil {
-					return err
+					return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 				}
 				snapshotFileCount = &count
 			}
 			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
 			if err := validateIdempotencyToken(idempotencyToken); err != nil {
-				return err
+				return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 			}
 			if validationErr != nil {
 				unavailable, ok := validationUnavailable(validationErr)
