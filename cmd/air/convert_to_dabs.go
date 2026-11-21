@@ -307,10 +307,11 @@ func isWorkloadBundle(dir, experimentName string) bool {
 }
 
 // existingBundleName returns the bundle.name declared by the bundle file at path, or
-// "" when it declares none or does not load (such as a hand-edited stub).
+// "" when it declares none or does not parse (such as a hand-edited stub). Other
+// diagnostics, like an unknown field, do not hide the name.
 func existingBundleName(path string) string {
-	existing, diags := config.Load(path)
-	if diags.HasError() {
+	existing, _ := config.Load(path)
+	if existing == nil {
 		return ""
 	}
 	return existing.Bundle.Name

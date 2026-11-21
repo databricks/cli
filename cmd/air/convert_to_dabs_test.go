@@ -91,6 +91,11 @@ func TestConvertToDabsForceRefusesDifferentBundle(t *testing.T) {
 	// Without --force the generic hint still applies.
 	_, err = writeBundle(t.Context(), cfgB, pathB, dir, false)
 	require.ErrorContains(t, err, "pass --force to overwrite")
+
+	// A field the bundle loader does not know must not hide the name.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte("bundle: {name: exp-a}\nunknown_field: 1\n"), 0o600))
+	_, err = writeBundle(t.Context(), cfgB, pathB, dir, true)
+	require.ErrorContains(t, err, `belongs to bundle "exp-a"`)
 }
 
 // Re-converting the same workload with --force removes the sidecars the previous
