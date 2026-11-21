@@ -69,9 +69,9 @@ func TestConvertToDabsExistingBundleRoot(t *testing.T) {
 			require.NoError(t, os.WriteFile(existing, edited, 0o600))
 
 			_, err = writeBundle(t.Context(), loaded, path, dir, false)
-			want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", name, dir)
+			want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", name, filepath.ToSlash(dir))
 			if name == "databricks.yml" {
-				want = fmt.Sprintf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
+				want = fmt.Sprintf("databricks.yml already exists in %s; pass --force to overwrite or remove it", filepath.ToSlash(dir))
 			}
 			require.EqualError(t, err, want)
 			found, err := config.FileNames.FindInPath(dir)
@@ -108,9 +108,9 @@ func TestConvertToDabsRejectsAlternateRoot(t *testing.T) {
 				}
 
 				_, err := writeBundle(t.Context(), cfg, path, dir, tc.force)
-				want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", alias, dir)
+				want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", alias, filepath.ToSlash(dir))
 				if !tc.force {
-					want = fmt.Sprintf("%s, %s already exist in %s; move or remove them before converting", canonical, alias, dir)
+					want = fmt.Sprintf("%s, %s already exist in %s; move or remove them before converting", canonical, alias, filepath.ToSlash(dir))
 				}
 				assert.EqualError(t, err, want)
 				for _, name := range tc.files {
@@ -217,6 +217,26 @@ func TestConvertToDabsPreflightsDanglingSidecar(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(dir, "databricks.yml"))
 }
 
+func assertBundleLookupError(t *testing.T, err, lookupErr error) {
+	t.Helper()
+	var original, reported *os.PathError
+	require.ErrorAs(t, lookupErr, &original)
+	require.ErrorAs(t, err, &reported)
+	require.ErrorIs(t, err, original.Err)
+	want := *original
+	want.Path = filepath.ToSlash(original.Path)
+	assert.Equal(t, &want, reported)
+	assert.Contains(t, err.Error(), want.Error())
+}
+
+func TestConvertToDabsPreflightsLstatError(t *testing.T) {
+	// A NUL forces a real lookup failure on every platform, even with elevated privileges.
+	name := filepath.Join(t.TempDir(), "output", "invalid\x00")
+	_, lookupErr := os.Lstat(name)
+	_, err := existingBundlePath(name)
+	assertBundleLookupError(t, err, lookupErr)
+}
+
 func TestConvertToDabsPreflightsSymlinkLookupErrors(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("symlinks need extra privileges on Windows")
@@ -240,7 +260,9 @@ func TestConvertToDabsPreflightsSymlinkLookupErrors(t *testing.T) {
 			link := filepath.Join(dir, tc.loop)
 			require.NoError(t, os.Symlink(filepath.Base(link), link))
 
+			_, lookupErr := os.Stat(link)
 			_, err = writeBundle(t.Context(), cfg, cfgPath, dir, false)
+			assertBundleLookupError(t, err, lookupErr)
 			require.ErrorIs(t, err, syscall.ELOOP)
 			assert.Contains(t, err.Error(), "move or remove")
 			assert.NotContains(t, err.Error(), "--force")
@@ -266,7 +288,7 @@ func TestConvertToDabsPreflightsArtifactParent(t *testing.T) {
 	}
 
 	_, err = writeBundle(t.Context(), cfg, path, dir, false)
-	require.EqualError(t, err, fmt.Sprintf("databricks.yml, generated_artifacts already exist in %s; move or remove them before converting", dir))
+	require.EqualError(t, err, fmt.Sprintf("databricks.yml, generated_artifacts already exist in %s; move or remove them before converting", filepath.ToSlash(dir)))
 	for _, name := range []string{"databricks.yml", generatedArtifactsDir} {
 		testutil.AssertFileContents(t, filepath.Join(dir, name), name)
 	}

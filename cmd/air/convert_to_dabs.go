@@ -610,6 +610,13 @@ func buildPermissionsValue(perms []permission) dyn.Value {
 	return dyn.V(out)
 }
 
+func bundleLookupError(err error) error {
+	if pathErr, ok := errors.AsType[*os.PathError](err); ok {
+		return &os.PathError{Op: pathErr.Op, Path: filepath.ToSlash(pathErr.Path), Err: pathErr.Err}
+	}
+	return err
+}
+
 // A dangling symlink still occupies an output path. For a live link the target's
 // type determines whether it can serve as the artifact directory or a writable file.
 func existingBundlePath(name string) (os.FileInfo, error) {
@@ -617,15 +624,18 @@ func existingBundlePath(name string) (os.FileInfo, error) {
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
-	if err != nil || info.Mode()&os.ModeSymlink == 0 {
-		return info, err
+	if err != nil {
+		return nil, bundleLookupError(err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		return info, nil
 	}
 	target, err := os.Stat(name)
 	if errors.Is(err, os.ErrNotExist) {
 		return info, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("move or remove the symlink before converting: %w", err)
+		return nil, fmt.Errorf("move or remove the symlink before converting: %w", bundleLookupError(err))
 	}
 	return target, nil
 }
@@ -677,7 +687,7 @@ func checkBundleOutputPaths(dir string, artifacts []uploadItem, force bool) erro
 	if canForce && len(lookupErrors) == 0 {
 		hint = "pass --force to overwrite or remove " + pronoun
 	}
-	collision := fmt.Errorf("%s already %s in %s; %s", strings.Join(conflicts, ", "), verb, dir, hint)
+	collision := fmt.Errorf("%s already %s in %s; %s", strings.Join(conflicts, ", "), verb, filepath.ToSlash(dir), hint)
 	return errors.Join(append(lookupErrors, collision)...)
 }
 
