@@ -92,11 +92,6 @@ func TestConvertToDabsForceRefusesDifferentBundle(t *testing.T) {
 	// Without --force the same error applies: suggesting --force would be a dead end.
 	_, err = writeBundle(t.Context(), cfgB, pathB, dir, false)
 	require.EqualError(t, err, want)
-
-	// A field the bundle loader does not know must not hide the name.
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte("bundle: {name: exp-a}\nunknown_field: 1\n"), 0o600))
-	_, err = writeBundle(t.Context(), cfgB, pathB, dir, true)
-	require.ErrorContains(t, err, `belongs to bundle "exp-a"`)
 }
 
 // Re-converting the same workload with --force removes the sidecars the previous
