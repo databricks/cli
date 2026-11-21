@@ -1,0 +1,1 @@
+* Add `skip_missing_data_sources` on Genie spaces so a bundle deploy can still succeed when a Genie space's attached table, metric view, or SQL function does not exist yet ([#6750](https://github.com/databricks/cli/issues/6750)).
