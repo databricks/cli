@@ -1,1 +1,1 @@
-* Update the Go SDK to [v0.202.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.202.0).
+* Update the Go SDK to [v0.202.0](https://github.com/databricks/databricks-sdk-go/releases/tag/v0.202.0). ([#7869](https://github.com/databricks/cli/pull/7869))
