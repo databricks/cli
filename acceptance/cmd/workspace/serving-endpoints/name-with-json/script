@@ -1,0 +1,26 @@
+title "create: NAME as the argument together with --json"
+trace $CLI serving-endpoints create my-endpoint --no-wait --json '{"description": "from arg"}' | jq -c '{name, description}'
+
+title "create: NAME inside --json still works"
+trace $CLI serving-endpoints create --no-wait --json '{"name": "other-endpoint"}' | jq -c '{name}'
+
+title "create: the same name in both places is fine"
+trace $CLI serving-endpoints create third-endpoint --no-wait --json '{"name": "third-endpoint"}' | jq -c '{name}'
+
+title "create: different names are rejected"
+trace musterr $CLI serving-endpoints create my-endpoint --json '{"name": "something-else"}'
+
+title "update-config: NAME from --json when the argument is omitted"
+trace $CLI serving-endpoints update-config --no-wait --json '{"name": "my-endpoint", "served_entities": [{"entity_name": "main.default.m", "entity_version": "1", "workload_size": "Small"}]}' | jq -c '{name}'
+
+title "update-config: the argument still works"
+trace $CLI serving-endpoints update-config my-endpoint --no-wait --json '{"served_entities": [{"entity_name": "main.default.m", "entity_version": "2", "workload_size": "Small"}]}' | jq -c '{name}'
+
+title "update-config: no name anywhere"
+trace musterr $CLI serving-endpoints update-config --json '{"served_entities": []}'
+
+title "Without --json, NAME is still required"
+trace musterr $CLI serving-endpoints create
+trace musterr $CLI serving-endpoints update-config
+
+trace print_requests.py //serving-endpoints
