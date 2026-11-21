@@ -335,7 +335,9 @@ func (m listModel) clampedOffset() int {
 	return max(offset, 0)
 }
 
-func (m listModel) View() string {
+func (m listModel) View() string { return m.render() }
+
+func (m listModel) render() string {
 	if m.mode == modeDetail {
 		faint := m.styles.r.NewStyle().Foreground(colN7)
 		lines := []string{m.detailTitle}

@@ -37,14 +37,17 @@ var (
 	colorDimmedDark  cmdio.Color = lipgloss.Color("#52525B")
 )
 
+// Theme is the huh theme handed to appkit prompt forms and fields.
+type Theme = *huh.Theme
+
 // AppkitTheme returns a custom theme for appkit prompts.
-func AppkitTheme() *huh.Theme {
-	return appkitTheme(cmdio.HasDarkBackground())
+func AppkitTheme() Theme {
+	return appkitStyles(cmdio.HasDarkBackground())
 }
 
-// appkitTheme builds the theme for a known background, matching the shape of
-// huh v2's ThemeFunc.
-func appkitTheme(isDark bool) *huh.Theme {
+// appkitStyles builds the appkit styles on top of huh's base theme for a known
+// background, matching the shape of huh v2's ThemeFunc.
+func appkitStyles(isDark bool) *huh.Theme {
 	lightDark := cmdio.LightDark(isDark)
 	t := huh.ThemeBase()
 
