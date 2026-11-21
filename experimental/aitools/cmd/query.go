@@ -33,20 +33,41 @@ const (
 	queryOutputModeJSON queryOutputMode = iota
 	queryOutputModeStaticTable
 	queryOutputModeInteractiveTable
-	// queryOutputModeNoResults confirms success in words when a table would
-	// otherwise be empty. A statement without a result set may still carry a
-	// schema (CTAS reports num_affected_rows/num_inserted_rows with no rows),
-	// so this keys off the row count alone. JSON mode never uses it: it prints
-	// an empty array so the output stays machine-readable.
+	// queryOutputModeNoResults confirms success in words for a statement that
+	// produced no result set. JSON mode never uses it: it prints an empty array
+	// so the output stays machine-readable.
 	queryOutputModeNoResults
 )
+
+// statementMetadataColumns are the only columns the Statement Execution API
+// reports for DDL and DML. CTAS, for example, returns this schema with no rows.
+var statementMetadataColumns = map[string]bool{
+	"num_affected_rows": true,
+	"num_inserted_rows": true,
+	"num_updated_rows":  true,
+	"num_deleted_rows":  true,
+}
+
+// hasResultSet reports whether columns describe a query result rather than
+// statement metadata. An empty schema or one made only of row-count columns
+// means the statement had no result set, so there is nothing to tabulate; any
+// other schema with zero rows is an empty SELECT whose headers are still worth
+// showing.
+func hasResultSet(columns []string) bool {
+	for _, c := range columns {
+		if !statementMetadataColumns[c] {
+			return true
+		}
+	}
+	return false
+}
 
 // selectQueryOutputMode picks the rendering mode for a single-query result.
 // JSON is the only machine-readable option; static and interactive are
 // table variants chosen by row count and TTY capabilities. Sharing only
 // the threshold with sqlcli; the mode decision is aitools-specific
 // because the postgres command's renderers have a different shape.
-func selectQueryOutputMode(format sqlcli.Format, stdoutInteractive, promptSupported bool, rowCount int) queryOutputMode {
+func selectQueryOutputMode(format sqlcli.Format, stdoutInteractive, promptSupported bool, columns []string, rowCount int) queryOutputMode {
 	if format == sqlcli.OutputJSON {
 		return queryOutputModeJSON
 	}
@@ -55,7 +76,7 @@ func selectQueryOutputMode(format sqlcli.Format, stdoutInteractive, promptSuppor
 	}
 	// Interactive table browsing requires keyboard input from stdin.
 	// If prompts are not supported, prefer static table output instead.
-	if rowCount == 0 {
+	if rowCount == 0 && !hasResultSet(columns) {
 		return queryOutputModeNoResults
 	}
 	if !promptSupported {
@@ -189,7 +210,7 @@ multi-query mode, the same parameter set is applied to every statement.`,
 			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
 			promptSupported := cmdio.IsPromptSupported(ctx)
 
-			switch selectQueryOutputMode(format, stdoutInteractive, promptSupported, len(rows)) {
+			switch selectQueryOutputMode(format, stdoutInteractive, promptSupported, columns, len(rows)) {
 			case queryOutputModeJSON:
 				return renderJSON(cmd.OutOrStdout(), columns, rows)
 			case queryOutputModeNoResults:
