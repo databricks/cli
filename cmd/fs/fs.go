@@ -20,7 +20,10 @@ var Spec = root.CommandSpec{
 }
 
 func buildCommand(ctx context.Context, cmd *cobra.Command) {
-	cmd.Long = `Commands to do file system operations on DBFS, UC Volumes and UC Skills.`
+	cmd.Long = `Commands to do file system operations on DBFS, UC Volumes and UC Skills.
+
+Paths in DBFS, UC Volumes and UC Skills need the "dbfs" scheme, for example dbfs:/Volumes/my_catalog/my_schema/my_volume.
+A path without a scheme is a local path, even if it starts with /Volumes/ or /Skills/.`
 	AddCommands(cmd, filerForPath)
 }
 

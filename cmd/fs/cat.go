@@ -10,7 +10,7 @@ func newCatCommand(filerForPath PathResolver) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "cat FILE_PATH",
 		Short:   "Show file content.",
-		Long:    `Show the contents of a file in DBFS, a UC Volume or a UC Skill. Paths in DBFS, UC Volumes and UC Skills need the "dbfs" scheme, for example dbfs:/Volumes/my_catalog/my_schema/my_volume. A path without a scheme is a local path, even if it starts with /Volumes/ or /Skills/.`,
+		Long:    `Show the contents of a file in DBFS, a UC Volume or a UC Skill.`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
