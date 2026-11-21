@@ -1,0 +1,1 @@
+* The spinner, the pager, interactive tables and `databricks air` output now show basic ANSI colors in Git Bash and other MSYS2 terminals, where their styles were previously printed without color. `NO_COLOR` and `CLICOLOR=0` still turn them off. ([#7737](https://github.com/databricks/cli/pull/7737))

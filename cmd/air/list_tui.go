@@ -62,7 +62,7 @@ func renderListText(cmd *cobra.Command, f *runFetcher, limit int, activeOnly boo
 		_, err = io.WriteString(out, emptyListMessage(activeOnly))
 		return err
 	}
-	_, err = io.WriteString(out, staticListTable(r, rows, color))
+	_, err = io.WriteString(r.Writer(out), staticListTable(r, rows, color))
 	return err
 }
 
@@ -75,7 +75,7 @@ func emptyListMessage(activeOnly bool) string {
 
 // staticListTable renders the whole table once, with no selection — used when
 // piped or non-interactive.
-func staticListTable(r *lipgloss.Renderer, rows []listRow, links bool) string {
+func staticListTable(r *cmdio.Renderer, rows []listRow, links bool) string {
 	if len(rows) == 0 {
 		return "No runs found.\n"
 	}
@@ -131,7 +131,7 @@ type listModel struct {
 // detailHorizontalStep is how many columns ←/→ pan the detail pane.
 const detailHorizontalStep = 8
 
-func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow, links bool) listModel {
+func newListModel(r *cmdio.Renderer, f *runFetcher, rows []listRow, links bool) listModel {
 	vp := viewport.New(0, 0)
 	vp.SetHorizontalStep(detailHorizontalStep)
 	return listModel{

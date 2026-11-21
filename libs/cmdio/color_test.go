@@ -3,11 +3,15 @@ package cmdio_test
 import (
 	"bytes"
 	"context"
+	"io"
+	"strings"
 	"testing"
 
+	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func ttyContext(t *testing.T) context.Context {
@@ -128,15 +132,40 @@ func TestPadLeft(t *testing.T) {
 	}
 }
 
-func TestNewRendererForcesAsciiWhenNoColor(t *testing.T) {
+func TestNewRendererStripsWhenNoColor(t *testing.T) {
 	ctx := noColorContext(t)
 
-	// A bytes.Buffer is never a TTY, so the renderer must fall back to Ascii and
-	// its styles must render without SGR escapes.
-	r, color := cmdio.NewRenderer(ctx, &bytes.Buffer{})
+	// A bytes.Buffer is never a TTY, so output through the renderer must carry
+	// no escapes, whether styles render color themselves or not.
+	var buf bytes.Buffer
+	r, color := cmdio.NewRenderer(ctx, &buf)
 	assert.False(t, color)
-	assert.Equal(t, termenv.Ascii, r.ColorProfile())
-	assert.Equal(t, "hi", r.NewStyle().Bold(true).Render("hi"))
+	assert.Equal(t, colorprofile.NoTTY, r.Profile())
+	assert.Equal(t, "hi", r.Render(r.NewStyle().Bold(true).Render("hi")))
+
+	// Strings styled outside the renderer are stripped at write time too.
+	n, err := io.Copy(r.Writer(&buf), strings.NewReader("\x1b[1mbold\x1b[0m "+cmdio.Hyperlink("https://h.test", "link")))
+	require.NoError(t, err)
+	assert.Equal(t, int64(len("\x1b[1mbold\x1b[0m "+cmdio.Hyperlink("https://h.test", "link"))), n)
+	assert.Equal(t, "bold link", buf.String())
+}
+
+func TestLightDark(t *testing.T) {
+	light, dark := lipgloss.Color("#ffffff"), lipgloss.Color("#000000")
+	assert.Equal(t, dark, cmdio.LightDark(true)(light, dark))
+	assert.Equal(t, light, cmdio.LightDark(false)(light, dark))
+}
+
+func TestNewRendererKeepsTermenvProfile(t *testing.T) {
+	ctx := ttyContext(t)
+
+	// cmdio says a FakeTTY supports color, but it isn't an MSYS2 pty pipe, so
+	// termenv's own decision (Ascii: it can't see a terminal) stands. The same
+	// holds for CLICOLOR=0 or CI on a real terminal. The MSYS2 pipe case is
+	// covered in conpty_windows_test.go.
+	r, color := cmdio.NewRenderer(ctx, cmdio.FakeTTY(&bytes.Buffer{}))
+	assert.True(t, color)
+	assert.Equal(t, colorprofile.Ascii, r.Profile())
 }
 
 func TestRenderFuncMap(t *testing.T) {
