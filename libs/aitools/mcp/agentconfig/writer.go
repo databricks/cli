@@ -492,9 +492,26 @@ func configLock(path string) (string, error) {
 	return abs + ".lock", nil
 }
 
+// readInUseTimeout bounds the retries of a read that fails because the file is in use (see readConfig).
+var readInUseTimeout = 2 * time.Second
+
+// readConfig reads the file at path. A read without the agent's lock can run while the agent renames a new version
+// over the file, as Claude Code does on every save; on Windows, opening the file then fails with a sharing violation
+// for as long as the rename takes, so the read is tried again.
+func readConfig(path string) ([]byte, error) {
+	deadline := time.Now().Add(readInUseTimeout)
+	for {
+		data, err := os.ReadFile(path)
+		if err == nil || !fileInUse(err) || time.Now().After(deadline) {
+			return data, err
+		}
+		time.Sleep(lockRetry)
+	}
+}
+
 // load reads and parses the config at path. A missing file is an empty document.
 func load(spec *mcpconfig.Spec, path string) (document, error) {
-	data, err := os.ReadFile(path)
+	data, err := readConfig(path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, fmt.Errorf("read %s: %w", filepath.ToSlash(path), err)
 	}
