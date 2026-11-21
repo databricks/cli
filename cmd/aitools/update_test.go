@@ -599,6 +599,9 @@ func TestUpdateProjectScopeSkipsWhenOnlyPluginAgentsRemain(t *testing.T) {
 func TestUpdateWithoutStateKeepsTheInstallGuidance(t *testing.T) {
 	noTelemetryAuth(t)
 	isolateAgents(t)
+	// isolateAgents clears TestMain's DATABRICKS_FORCE_EMBEDDED_COMPAT; pin
+	// the ref so update does not fetch the compatibility manifest.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
