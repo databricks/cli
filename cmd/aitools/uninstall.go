@@ -79,8 +79,8 @@ The command exits with code 1 when every removal it attempts fails.`,
 			}
 
 			// Uninstall is destructive, so confirm interactively before doing
-			// anything. Non-interactive runs (no TTY) proceed unprompted so
-			// automation is unaffected.
+			// anything. Non-interactive runs (no TTY, or a coding agent caller)
+			// proceed unprompted so automation is unaffected.
 			dir := globalDir
 			if scope == installer.ScopeProject {
 				dir = projectDir
@@ -89,7 +89,7 @@ The command exits with code 1 when every removal it attempts fails.`,
 			if err != nil {
 				return fmt.Errorf("failed to load install state: %w", err)
 			}
-			if cmdio.IsPromptSupported(ctx) {
+			if promptsSupported(ctx) {
 				proceed, err := confirmUninstall(ctx, state, opts)
 				if err != nil {
 					return err
@@ -99,6 +99,8 @@ The command exits with code 1 when every removal it attempts fails.`,
 					funnel.finishWith(ctx, protos.AitoolsCommandOutcomeCancelled, protos.AitoolsErrorCategoryUnspecified)
 					return nil
 				}
+			} else if _, ask := uninstallConfirmMessage(state, opts); ask {
+				logSkippedPromptNote(ctx)
 			}
 
 			// With something installed the run removes files and runs agent CLIs,
