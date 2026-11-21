@@ -12,10 +12,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -298,6 +301,128 @@ func TestForwardHandlerRelaysUpgrade(t *testing.T) {
 	}))
 	defer upstream.Close()
 	forward := startForward(t, upstream, fakeAuth)
+	addr := strings.TrimPrefix(forward.URL, "http://")
+
+	status, reader, conn := rawRequest(t, addr, "GET /ws HTTP/1.1\r\nHost: "+addr+"\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n")
+	require.Equal(t, http.StatusSwitchingProtocols, status)
+
+	_, err := io.WriteString(conn, "ping")
+	require.NoError(t, err)
+	echo := make([]byte, 4)
+	_, err = io.ReadFull(reader, echo)
+	require.NoError(t, err)
+	assert.Equal(t, "ping", string(echo))
+}
+
+// wellKnownConfigPath is fetched by the SDK while it resolves the workspace
+// config, before any forwarded request. Test upstreams answer it with a 404.
+const wellKnownConfigPath = "/.well-known/databricks-config"
+
+// startTLSForward serves a forward handler whose transport comes from
+// newForwardTransport, so the workspace's HTTP/2 negotiation is exercised.
+func startTLSForward(t *testing.T, upstream *httptest.Server) *httptest.Server {
+	transport, err := newForwardTransport(&config.Config{Host: upstream.URL, AuthType: "pat", Token: "test-token", InsecureSkipVerify: true})
+	require.NoError(t, err)
+	workspace, err := url.Parse(upstream.URL)
+	require.NoError(t, err)
+	target := forwardTarget{workspace: workspace, sandboxID: testSandboxID, authenticate: fakeAuth, transport: transport}
+	forward := httptest.NewServer(newForwardHandler(target, 10080, slog.Default()))
+	t.Cleanup(forward.Close)
+	return forward
+}
+
+// Once one request has warmed the pool, HTTP/2 sends the rest over that same
+// TCP connection, which caps parallel downloads at one connection's throughput.
+func TestForwardUsesSeparateUpstreamConnections(t *testing.T) {
+	const parallel = 4
+	var conns atomic.Int32
+	var arrived sync.WaitGroup
+	arrived.Add(parallel)
+	allArrived := make(chan struct{})
+	go func() {
+		arrived.Wait()
+		close(allArrived)
+	}()
+
+	upstream := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == wellKnownConfigPath {
+			http.NotFound(w, r)
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/warm") {
+			return
+		}
+		// Hold every request until all are in flight, so none can finish first
+		// and free a connection for the next.
+		arrived.Done()
+		select {
+		case <-allArrived:
+		case <-r.Context().Done():
+		}
+	}))
+	upstream.EnableHTTP2 = true
+	upstream.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			conns.Add(1)
+		}
+	}
+	upstream.StartTLS()
+	defer upstream.Close()
+	forward := startTLSForward(t, upstream)
+	// Resolving the SDK config opened a connection of its own; leave it out of the count.
+	conns.Store(0)
+
+	warm, err := http.Get(forward.URL + "/warm")
+	require.NoError(t, err)
+	require.NoError(t, warm.Body.Close())
+
+	var wg sync.WaitGroup
+	for range parallel {
+		wg.Go(func() {
+			ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+			defer cancel()
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, forward.URL+"/", nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			_, _ = io.Copy(io.Discard, resp.Body)
+			_ = resp.Body.Close()
+		})
+	}
+	wg.Wait()
+
+	assert.GreaterOrEqual(t, conns.Load(), int32(parallel), "concurrent forwarded requests shared one upstream connection")
+}
+
+func TestForwardHandlerRelaysUpgradeOverTLS(t *testing.T) {
+	upstream := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == wellKnownConfigPath {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Header.Get("Upgrade") != "websocket" {
+			http.Error(w, "expected an upgrade", http.StatusBadRequest)
+			return
+		}
+		conn, buf, err := http.NewResponseController(w).Hijack()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		_, _ = buf.WriteString("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n")
+		_ = buf.Flush()
+		_, _ = io.Copy(conn, buf)
+	}))
+	upstream.EnableHTTP2 = true
+	upstream.StartTLS()
+	defer upstream.Close()
+	forward := startTLSForward(t, upstream)
 	addr := strings.TrimPrefix(forward.URL, "http://")
 
 	status, reader, conn := rawRequest(t, addr, "GET /ws HTTP/1.1\r\nHost: "+addr+"\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n")
