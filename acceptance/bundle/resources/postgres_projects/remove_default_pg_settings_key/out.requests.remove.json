@@ -1,0 +1,19 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec.default_endpoint_settings.pg_settings"
+  },
+  "body": {
+    "spec": {
+      "default_endpoint_settings": {
+        "pg_settings": {
+          "statement_timeout": "8000"
+        }
+      },
+      "display_name": "Test Project for Default pg_settings Key Removal",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  }
+}

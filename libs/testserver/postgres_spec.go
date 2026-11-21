@@ -10,7 +10,8 @@ import (
 // update. Since 2026-11-12 the API returns spec as stored for projects, branches,
 // endpoints, databases and roles (catalogs, data APIs and synced tables were not
 // observed to change and still return status only): the fields the
-// caller set (a field masked but absent from the body keeps its previous value),
+// caller set (a field masked but absent from the body keeps its previous value, except
+// a repeated field, which is cleared),
 // minus inputOnly fields that are consulted once and never echoed. Defaults the
 // backend materializes appear only in status, not in spec.
 //
@@ -63,6 +64,8 @@ func echoedSpec[T any](stored *T, body []byte, mask string, oneofGroups map[stri
 			parts := strings.Split(rel, ".")
 			if v, ok := specMapGet(bodySpec, parts); ok {
 				specMapSet(result, parts, v)
+			} else if slices.Contains(postgresRepeatedMaskPaths, path) {
+				specMapDelete(result, parts)
 			}
 		}
 	}

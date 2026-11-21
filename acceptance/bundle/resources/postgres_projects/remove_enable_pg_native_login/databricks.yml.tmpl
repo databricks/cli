@@ -1,0 +1,14 @@
+bundle:
+  name: remove-enable-pg-native-login-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Native Login Removal"
+      pg_version: 16
+      history_retention_duration: 604800s
+      enable_pg_native_login: true

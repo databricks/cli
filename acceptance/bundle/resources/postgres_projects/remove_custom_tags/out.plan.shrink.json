@@ -1,0 +1,40 @@
+{
+  "action": "update",
+  "changes": {
+    "custom_tags": {
+      "action": "update",
+      "old": [
+        {
+          "key": "env",
+          "value": "test"
+        },
+        {
+          "key": "team",
+          "value": "data"
+        }
+      ],
+      "new": [
+        {
+          "key": "env",
+          "value": "test"
+        }
+      ],
+      "remote": [
+        {
+          "key": "env",
+          "value": "test"
+        },
+        {
+          "key": "team",
+          "value": "data"
+        }
+      ]
+    },
+    "pg_version": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": 16,
+      "new": 16
+    }
+  }
+}
