@@ -1,0 +1,15 @@
+# No git-repo-init here: the directory stays non-git, so the snapshot must fall
+# back to plain_tar over everything in the working tree, including run.log and
+# the binary file, and the CLI announces that before packaging.
+echo "print('hello')" > main.py
+echo "some training log output" > run.log
+head -c 65536 /dev/zero > weights.bin
+
+title "submit from a non-git directory"
+trace $CLI air run -f run.yaml
+
+title "unchanged resubmit reuses the cached snapshot"
+trace $CLI air run -f run.yaml
+
+title "json mode: no notice, like the Submitting line"
+trace $CLI -o json air run -f run.yaml

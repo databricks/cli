@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/tarpack"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -24,14 +25,115 @@ import (
 // latency to AIR submissions.
 const uploadProvenanceSidecars = false
 
+// snapshotLargeSourceBytes is the uncompressed size of the shipped files at or
+// above which the non-git snapshot notice suggests narrowing the selection. The
+// value is an arbitrary default, not derived from measurements; tune it freely.
+const snapshotLargeSourceBytes = 64 << 20
+
+// snapshotSkippedPathsShown caps how many skipped paths the warning names.
+const snapshotSkippedPathsShown = 5
+
+// humanBytes formats a byte count using binary (1024-based) units. It is a copy
+// of humanBytes in cmd/fs/upload_progress.go, which is unexported there.
+func humanBytes(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	units := []string{"KiB", "MiB", "GiB", "TiB", "PiB"}
+	div, exp := int64(unit), 0
+	for n/div >= unit && exp < len(units)-1 {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %s", float64(n)/float64(div), units[exp])
+}
+
+// shippedSnapshotFiles applies the plain tarball's entry rule (tarpack.Archives)
+// to a listing: it returns how many entries the tarball will hold, their
+// uncompressed content bytes (symlinks carry none), and the listed paths it will
+// skip. ls-files lists a nested git repository as one directory entry, so that
+// repository's files are skipped with it.
+func shippedSnapshotFiles(files []snapshotFile) (count int, sourceBytes int64, skipped []string) {
+	for _, f := range files {
+		mode := fs.FileMode(f.mode)
+		if !tarpack.Archives(mode) {
+			skipped = append(skipped, filepath.ToSlash(f.rel))
+			continue
+		}
+		count++
+		if mode.IsRegular() {
+			sourceBytes += f.size
+		}
+	}
+	return count, sourceBytes, skipped
+}
+
+// plainTarNoticeLines renders the non-git snapshot disclosure. The size is the
+// uncompressed shipped bytes, which include_paths and .gitignore control; the
+// compressed tarball size stays telemetry-only. reuse marks a cache hit, where
+// nothing is packaged or uploaded, so the size tip is omitted.
+func plainTarNoticeLines(repoPath string, count int, sourceBytes int64, reuse bool) []string {
+	base := filepath.ToSlash(repoPath)
+	total := humanBytes(sourceBytes)
+	if reuse {
+		return []string{fmt.Sprintf("No git repository at %s; reusing the cached snapshot (%d file(s), %s uncompressed).", base, count, total)}
+	}
+	lines := []string{fmt.Sprintf("No git repository at %s; packaging %d file(s) (%s uncompressed) from the working tree.", base, count, total)}
+	if sourceBytes >= snapshotLargeSourceBytes {
+		lines = append(lines, "Tip: limit the snapshot with code_source.include_paths or a .gitignore in the directory.")
+	}
+	return lines
+}
+
+// skippedSnapshotWarning names up to snapshotSkippedPathsShown listed paths that
+// the tarball leaves out.
+func skippedSnapshotWarning(skipped []string) string {
+	shown := skipped
+	more := ""
+	if len(shown) > snapshotSkippedPathsShown {
+		shown = shown[:snapshotSkippedPathsShown]
+		more = fmt.Sprintf(" (and %d more)", len(skipped)-snapshotSkippedPathsShown)
+	}
+	return fmt.Sprintf("Warning: the snapshot leaves out %d listed path(s) that are not regular files or symlinks, such as nested git repositories: %s%s.", len(skipped), strings.Join(shown, ", "), more)
+}
+
+// preparedSnapshot is a code_source snapshot resolved up to, but not including,
+// packaging: the plan, the content-addressed tarball name, the plain_tar listing
+// and whether the store already holds the tarball. submitWorkload resolves it
+// before the staging spinner starts so the snapshot notice prints first.
+type preparedSnapshot struct {
+	repoPath string
+	plan     snapshotPlan
+	store    filer.Filer
+	tarName  string
+	remote   string
+	// files is the plain_tar listing; nil for git_archive.
+	files  []snapshotFile
+	exists bool
+	// result carries the telemetry fields known before packaging, and is
+	// returned on a resolution failure after the plan is known.
+	result snapshotResult
+}
+
 // uploadSnapshot packages the code_source into a tarball and uploads it to the
 // artifact store's .internal directory, returning the remote path to attach to the
 // ai_runtime_task. Uploading reuses libs/filer for the workspace/volume write without
 // depending on the bundle package (see uploadSnapshotTarball / snapshotUploadFiler).
 func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath, snapshotArtifactPath string, sidecarStore filer.Filer, sidecarBase string) (snapshotResult, error) {
+	p, err := prepareSnapshot(ctx, w, snap, configPath, snapshotArtifactPath)
+	if err != nil {
+		return p.result, err
+	}
+	return p.upload(ctx, sidecarStore, sidecarBase)
+}
+
+// prepareSnapshot resolves the root path, packaging plan and tarball name, and
+// checks whether the tarball is already uploaded.
+func prepareSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath, snapshotArtifactPath string) (preparedSnapshot, error) {
 	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
 	if err != nil {
-		return snapshotResult{}, err
+		return preparedSnapshot{}, err
 	}
 
 	// Resolve how to package before touching the tarball: git_archive (pinned commit) vs
@@ -39,7 +141,7 @@ func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *sn
 	// the already-uploaded tarball instead of re-packaging and re-uploading.
 	plan, err := resolveSnapshotPlan(ctx, newGitRepo(repoPath), snap.Git, snap.IncludePaths)
 	if err != nil {
-		return snapshotResult{}, err
+		return preparedSnapshot{}, err
 	}
 
 	// remote_volume, when set, is a UC Volume path; snapshotUploadFiler routes
@@ -47,7 +149,33 @@ func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *sn
 	if snap.RemoteVolume != nil {
 		snapshotArtifactPath = *snap.RemoteVolume
 	}
-	result, err := uploadSnapshotTarball(ctx, w, repoPath, plan, snapshotArtifactPath)
+	return prepareSnapshotTarball(ctx, w, repoPath, plan, snapshotArtifactPath)
+}
+
+// announceSnapshot tells the user what a non-git snapshot ships. The skipped-path
+// warning prints in every output mode, since those contents are silently missing
+// from the run; the notice is progress output and prints only when showNotice is
+// set (text mode). Git snapshots are scoped by git and get neither.
+func announceSnapshot(ctx context.Context, p preparedSnapshot, showNotice bool) {
+	if p.plan.mode != modePlainTar || p.plan.isGitRepo {
+		return
+	}
+	count, sourceBytes, skipped := shippedSnapshotFiles(p.files)
+	if len(skipped) > 0 {
+		cmdio.LogString(ctx, skippedSnapshotWarning(skipped))
+	}
+	if !showNotice {
+		return
+	}
+	for _, line := range plainTarNoticeLines(p.repoPath, count, sourceBytes, p.exists) {
+		cmdio.LogProgress(ctx, line)
+	}
+}
+
+// upload packages and uploads the prepared snapshot (unless it is already in the
+// store) and returns its remote code_source_path.
+func (p preparedSnapshot) upload(ctx context.Context, sidecarStore filer.Filer, sidecarBase string) (snapshotResult, error) {
+	result, err := p.uploadTarball(ctx)
 	if err != nil {
 		return result, err
 	}
@@ -65,8 +193,8 @@ func uploadSnapshot(ctx context.Context, w *databricks.WorkspaceClient, snap *sn
 	// cache) or serve a prior run's stale provenance on a cache hit. They also live in
 	// the per-run launch dir,
 	// not the shared artifact dir, so they don't accumulate. Keep them out of the tar.
-	if uploadProvenanceSidecars && plan.isGitRepo {
-		result.GitStatePath, result.GitDiffPath = uploadSnapshotSidecars(ctx, sidecarStore, sidecarBase, newGitRepo(repoPath), plan)
+	if uploadProvenanceSidecars && p.plan.isGitRepo {
+		result.GitStatePath, result.GitDiffPath = uploadSnapshotSidecars(ctx, sidecarStore, sidecarBase, newGitRepo(p.repoPath), p.plan)
 	}
 	return result, nil
 }
@@ -133,7 +261,11 @@ func countSnapshotFiles(ctx context.Context, snap *snapshotSourceConfig, configP
 		return git.countFilesAtCommit(ctx, plan.commitSHA, plan.subtreePrefix, plan.includePaths)
 	}
 	files, err := snapshotFiles(ctx, repoPath, plan.includePaths, plan.isGitRepo)
-	return len(files), err
+	if err != nil {
+		return 0, err
+	}
+	count, _, _ := shippedSnapshotFiles(files)
+	return count, nil
 }
 
 // snapshotTarName resolves the content-addressed upload filename for the snapshot and,
@@ -172,32 +304,49 @@ const airArtifactInternalDir = ".internal"
 // uploadSnapshotTarball uploads the packaged snapshot to <artifactPath>/.internal and returns
 // the remote code_source_path to attach to the ai_runtime_task. artifactPath is either
 // the user's repo_snapshots directory or a configured UC Volume.
-//
-// The tarball name is content-addressed — by (commit, include_paths, root_path subtree)
-// for git_archive and by the working-tree metadata fingerprint for plain_tar — so if
-// the identical object already exists we skip packaging and upload entirely and reuse it.
 func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, artifactPath string) (snapshotResult, error) {
-	result := snapshotResult{UsesGit: &plan.isGitRepo, PackagingMode: &plan.mode}
+	p, err := prepareSnapshotTarball(ctx, w, repoPath, plan, artifactPath)
+	if err != nil {
+		return p.result, err
+	}
+	return p.uploadTarball(ctx)
+}
+
+// prepareSnapshotTarball resolves the upload store and the content-addressed tarball
+// name — by (commit, include_paths, root_path subtree) for git_archive and by the
+// working-tree metadata fingerprint for plain_tar — and checks whether the identical
+// object already exists, in which case uploadTarball skips packaging and upload.
+func prepareSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, artifactPath string) (preparedSnapshot, error) {
+	p := preparedSnapshot{
+		repoPath: repoPath,
+		plan:     plan,
+		result:   snapshotResult{UsesGit: &plan.isGitRepo, PackagingMode: &plan.mode},
+	}
 	f, uploadPath, err := snapshotUploadFiler(ctx, w, artifactPath)
 	if err != nil {
-		return result, err
+		return p, err
 	}
+	p.store = f
 
-	tarName, files, err := snapshotTarName(ctx, repoPath, plan)
+	p.tarName, p.files, err = snapshotTarName(ctx, repoPath, plan)
 	if err != nil {
-		return result, err
+		return p, err
 	}
 	// code_source_path is content-addressed by tarName, so it is the same whether we
 	// upload the bytes now or reuse an object already in the store.
-	remote := path.Join(uploadPath, tarName)
+	p.remote = path.Join(uploadPath, p.tarName)
 
-	exists, err := snapshotExists(ctx, f, tarName)
-	if err != nil {
-		return result, err
-	}
-	if exists {
-		log.Debugf(ctx, "snapshot upload skipped; reusing %s", remote)
-		result.CodeSourcePath = remote
+	p.exists, err = snapshotExists(ctx, f, p.tarName)
+	return p, err
+}
+
+// uploadTarball packages and uploads the prepared tarball, or reuses the stored one.
+func (p preparedSnapshot) uploadTarball(ctx context.Context) (snapshotResult, error) {
+	result := p.result
+	tarName := p.tarName
+	if p.exists {
+		log.Debugf(ctx, "snapshot upload skipped; reusing %s", p.remote)
+		result.CodeSourcePath = p.remote
 		result.PackagingDurationMs = new(int64(0))
 		result.UploadDurationMs = new(int64(0))
 		return result, nil
@@ -211,7 +360,7 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 
 	tarball := filepath.Join(tmp, tarName)
 	packagingStart := time.Now()
-	err = packageSnapshot(ctx, repoPath, plan, files, tarball)
+	err = packageSnapshot(ctx, p.repoPath, p.plan, p.files, tarball)
 	result.PackagingDurationMs = new(time.Since(packagingStart).Milliseconds())
 	if err != nil {
 		return result, err
@@ -231,12 +380,12 @@ func uploadSnapshotTarball(ctx context.Context, w *databricks.WorkspaceClient, r
 	}
 	cmdio.LogProgress(ctx, fmt.Sprintf("Uploading %s...", tarName))
 	uploadStart := time.Now()
-	err = f.Write(ctx, tarName, file, filer.OverwriteIfExists, filer.CreateParentDirectories)
+	err = p.store.Write(ctx, tarName, file, filer.OverwriteIfExists, filer.CreateParentDirectories)
 	result.UploadDurationMs = new(time.Since(uploadStart).Milliseconds())
 	if err != nil {
 		return result, fmt.Errorf("failed to upload snapshot %s: %w", tarName, err)
 	}
-	result.CodeSourcePath = remote
+	result.CodeSourcePath = p.remote
 	return result, nil
 }
 
