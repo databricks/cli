@@ -148,6 +148,20 @@ Exit code: 1
   }
 }
 
+=== dry-run without credentials reports an authentication error (json)
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] air run -f valid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "kind": "PERMANENT",
+    "message": "no default profile is set: pass --profile (-p) or configure a default profile in your .databrickscfg",
+    "retryable": false
+  }
+}
+
 === unknown field suggests the near match
 
 >>> [CLI] air run -f unknown-field.yaml --dry-run

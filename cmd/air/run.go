@@ -55,7 +55,7 @@ func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
 func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []string, cfg *runConfig, idempotencyToken string, timeout time.Duration) (context.Context, error) {
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		if err := root.MustWorkspaceClient(cmd, args); err != nil {
-			return ctx, err
+			return ctx, &validationAuthenticationError{err}
 		}
 		ctx = cmd.Context()
 	}
@@ -187,6 +187,9 @@ databricks-ai-runtime skill:
 			if validationErr != nil {
 				unavailable, ok := validationUnavailable(validationErr)
 				if !ok {
+					if _, isAuth := errors.AsType[*validationAuthenticationError](validationErr); isAuth {
+						return authError(ctx, cmd, validationErr)
+					}
 					return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, validationErr)
 				}
 				kind := "PERMANENT"
