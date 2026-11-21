@@ -89,7 +89,7 @@ func TestFuseUserInfo(t *testing.T) {
 		wantUserID      string
 		wantNotebookDir string
 	}{
-		{name: "available", status: http.StatusOK, body: `{"id":"12345","userName":"user@example.test"}`, wantUserID: "12345", wantNotebookDir: "/Users/user@example.test"},
+		{name: "available", status: http.StatusOK, body: `{"user":{"user_id":"12345","username":"user@example.test"}}`, wantUserID: "12345", wantNotebookDir: "/Users/user@example.test"},
 		{name: "forbidden", status: http.StatusForbidden, body: `{"message":"forbidden"}`},
 		{name: "timeout"},
 	} {
@@ -98,7 +98,7 @@ func TestFuseUserInfo(t *testing.T) {
 				c, err := databricks.NewWorkspaceClient(&databricks.Config{
 					Host: "https://workspace.test", HostMetadataResolver: noHostMetadata, Token: "test-token",
 					HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-						assert.Equal(t, "/api/2.0/preview/scim/v2/Me", r.URL.Path)
+						assert.Equal(t, "/api/2.0/identity/me", r.URL.Path)
 						if tc.status == 0 {
 							<-r.Context().Done()
 							return nil, r.Context().Err()

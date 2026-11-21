@@ -1,0 +1,3 @@
+# Runs on a real workspace too. The check is that the caller's parent groups are read without
+# a warning and include the workspace users group, which every workspace identity belongs to.
+Cloud = true

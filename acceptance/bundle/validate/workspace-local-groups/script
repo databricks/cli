@@ -1,0 +1,9 @@
+ME=$($CLI current-user me | jq -r .id)
+MSYS_NO_PATHCONV=1 trace $CLI api post /api/2.0/preview/scim/v2/Groups --json "{\"displayName\": \"admins\", \"members\": [{\"value\": \"$ME\"}]}" > LOG.groups.admins
+
+trace $CLI bundle validate -o json | jq '.workspace.current_user.groups | map(.display)'
+trace print_requests.py --get //api/2.0/identity/me/transitive-parent-groups
+
+# The groups come from the cache, so the second command reads no parent groups.
+trace $CLI bundle validate
+trace print_requests.py --get //api/2.0/identity/me/transitive-parent-groups

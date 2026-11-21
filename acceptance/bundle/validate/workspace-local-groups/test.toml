@@ -1,0 +1,4 @@
+# The current user belongs to the workspace-local groups admins and users. The script creates
+# admins; the fake lists users for every identity, as a workspace does. Their CAN_MANAGE grant
+# counts as manageable.
+RecordRequests = true

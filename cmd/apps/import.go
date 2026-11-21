@@ -30,11 +30,11 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -90,7 +90,7 @@ Examples:
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Get current user to filter apps
-			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+			me, err := iamutil.GetUserPrincipal(ctx, w)
 			if err != nil {
 				return fmt.Errorf("failed to get current user: %w", err)
 			}

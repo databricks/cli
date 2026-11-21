@@ -348,10 +348,8 @@ func TestRegularScanKeepsFullCap(t *testing.T) {
 func TestListSelfUserFilterUsesIndex(t *testing.T) {
 	var indexHits, listHits atomic.Int32
 	run := indexRun(7, 3000_000)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(withAirIdentityMe(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/2.0/preview/scim/v2/Me":
-			_, _ = w.Write([]byte(`{"userName":"me@example.com"}`))
 		case aiTrainingWorkflowsPath:
 			indexHits.Add(1)
 			_, _ = w.Write([]byte(`{"training_workflows":[{"job_run_id":"7","submit_time":{"seconds":3000}}]}`))

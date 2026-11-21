@@ -14,11 +14,11 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -158,7 +158,7 @@ func credentialError(ctx context.Context, w *databricks.WorkspaceClient, err err
 	if !errors.Is(err, apierr.ErrUnauthenticated) && !errors.Is(err, apierr.ErrPermissionDenied) {
 		return nil
 	}
-	_, meErr := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	_, meErr := iamutil.GetCurrentUserOnce(ctx, w)
 	return meErr
 }
 

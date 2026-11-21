@@ -1,0 +1,6 @@
+Ignore = [
+    "home"
+]
+
+# The caller is an assumed group, which identity/me returns as the principal.
+IsAssumedGroup = true

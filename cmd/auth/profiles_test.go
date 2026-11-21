@@ -112,7 +112,7 @@ func TestProfilesDefaultMarker(t *testing.T) {
 
 // newSPOGServer creates a mock SPOG server that returns account-scoped OIDC.
 // It serves both validation endpoints since SPOG workspace profiles (with a
-// real workspace_id) need CurrentUser.Me, while account profiles need
+// real workspace_id) need identity/me, while account profiles need
 // Workspaces.List. The workspace-only newWorkspaceServer omits the account
 // endpoint to prove routing correctness for non-SPOG hosts.
 func newSPOGServer(t *testing.T, accountID string) *httptest.Server {
@@ -127,9 +127,9 @@ func newSPOGServer(t *testing.T, accountID string) *httptest.Server {
 			})
 		case "/api/2.0/accounts/" + accountID + "/workspaces":
 			_ = json.NewEncoder(w).Encode([]map[string]any{})
-		case "/api/2.0/preview/scim/v2/Me":
-			// SPOG workspace profiles also need CurrentUser.Me to succeed.
-			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+		case "/api/2.0/identity/me":
+			// SPOG workspace profiles also need the current user to resolve.
+			_ = json.NewEncoder(w).Encode(map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user"}})
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -151,8 +151,8 @@ func newWorkspaceServer(t *testing.T, accountID string) *httptest.Server {
 				"account_id":    accountID,
 				"oidc_endpoint": r.Host + "/oidc",
 			})
-		case "/api/2.0/preview/scim/v2/Me":
-			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+		case "/api/2.0/identity/me":
+			_ = json.NewEncoder(w).Encode(map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user"}})
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -250,14 +250,14 @@ func TestClassicAccountsHostConfigType(t *testing.T) {
 func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
 	// When .well-known returns 404 and the unified-host fallback is false,
 	// the SPOG override should NOT trigger even if account_id is set. The
-	// profile should stay WorkspaceConfig and validate via CurrentUser.Me.
+	// profile should stay WorkspaceConfig and validate via identity/me.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/.well-known/databricks-config":
 			w.WriteHeader(http.StatusNotFound)
-		case "/api/2.0/preview/scim/v2/Me":
-			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+		case "/api/2.0/identity/me":
+			_ = json.NewEncoder(w).Encode(map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user"}})
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}

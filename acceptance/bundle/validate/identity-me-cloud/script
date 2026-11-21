@@ -1,0 +1,2 @@
+trace $CLI bundle validate -o json 2>LOG.validate | jq -r '.workspace.current_user | .userName, (.groups | map(.display) | contains(["users"]))'
+contains.py '!Could not read the groups' < LOG.validate > /dev/null

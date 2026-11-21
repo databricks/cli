@@ -13,10 +13,10 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
@@ -110,7 +110,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		if err != nil {
 			return
 		}
-		_, err = w.CurrentUser.Me(callCtx, iam.MeRequest{})
+		_, err = iamutil.GetCurrentUserOnce(callCtx, w)
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {

@@ -8,9 +8,9 @@ import (
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/iamutil"
 	libpsql "github.com/databricks/cli/libs/psql"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
@@ -38,7 +38,7 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 		return err
 	}
 
-	user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	user, err := iamutil.GetUserPrincipal(ctx, w)
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}

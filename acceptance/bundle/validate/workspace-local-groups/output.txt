@@ -1,0 +1,25 @@
+
+>>> [CLI] api post /api/2.0/preview/scim/v2/Groups --json {"displayName": "admins", "members": [{"value": "[USERID]"}]}
+
+>>> [CLI] bundle validate -o json
+[
+  "admins",
+  "users"
+]
+
+>>> print_requests.py --get //api/2.0/identity/me/transitive-parent-groups
+{
+  "method": "GET",
+  "path": "/api/2.0/identity/me/transitive-parent-groups"
+}
+
+>>> [CLI] bundle validate
+Name: workspace-local-groups
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/workspace-local-groups/default
+
+Validation OK!
+
+>>> print_requests.py --get //api/2.0/identity/me/transitive-parent-groups

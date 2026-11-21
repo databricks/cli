@@ -15,7 +15,7 @@
 
 >>> [CLI] bundle validate
 
->>> print_requests.py --get //scim/v2/Me
+>>> print_requests.py --get //identity/me
 
 === Invalid entries are dropped and the rest is normalized
 

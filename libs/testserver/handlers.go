@@ -251,6 +251,14 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
+	server.Handle("GET", "/api/2.0/identity/me", func(req Request) any {
+		return req.Workspace.IdentityMe(req.Token)
+	})
+
+	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(req Request) any {
+		return req.Workspace.IdentityMeTransitiveParentGroups()
+	})
+
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
 		returnGitInfo := req.URL.Query().Get("return_git_info") == "true"

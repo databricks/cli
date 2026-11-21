@@ -1,0 +1,3 @@
+# The caller is an assumed group. Bundle commands act as a user, so validate fails
+# early instead of using the group name as a user name.
+IsAssumedGroup = true

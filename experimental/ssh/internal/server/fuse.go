@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/fuse"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 func startFuseRegistration(ctx context.Context, client *databricks.WorkspaceClient, serverless bool) {
@@ -44,7 +44,7 @@ func fuseUserInfo(ctx context.Context, client *databricks.WorkspaceClient) (user
 	// User metadata is optional. Limit its lookup before publishing the server port.
 	userCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	me, err := client.CurrentUser.Me(userCtx, iam.MeRequest{})
+	me, err := iamutil.GetUserPrincipal(userCtx, client)
 	if err != nil {
 		log.Debugf(ctx, "Registering filesystem credentials without user metadata: %v", err)
 		return "", ""

@@ -14,7 +14,7 @@ contains.py " skill/databricks-core" < LOG.api > /dev/null
 
 title "Env var adds the skills from bundle commands"
 DATABRICKS_SKILLS_INVOKED=databricks-dabs trace $CLI bundle validate > /dev/null
-trace print_requests.py --get //scim/v2/Me > LOG.bundle
+trace print_requests.py --get //identity/me > LOG.bundle
 contains.py " skill/databricks-dabs" < LOG.bundle > /dev/null
 
 title "Invalid entries are dropped and the rest is normalized"

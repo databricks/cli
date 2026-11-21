@@ -769,9 +769,9 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
 	var meCalls atomic.Int32
-	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
+	server.Handle("GET", "/api/2.0/identity/me", func(req testserver.Request) any {
 		meCalls.Add(1)
-		return req.Workspace.MeUser(req.Token)
+		return req.Workspace.IdentityMe(req.Token)
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)

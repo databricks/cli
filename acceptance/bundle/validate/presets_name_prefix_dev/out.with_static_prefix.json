@@ -70,7 +70,20 @@
   "workspace": {
     "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/BUNDLE/dev/artifacts",
     "current_user": {
+      "active": true,
       "domain_friendly_name": "[USERNAME]",
+      "emails": [
+        {
+          "primary": true,
+          "value": "[USERNAME]"
+        }
+      ],
+      "groups": [
+        {
+          "display": "users",
+          "value": "1"
+        }
+      ],
       "id": "[USERID]",
       "short_name": "[USERNAME]",
       "userName": "[USERNAME]"
