@@ -759,20 +759,28 @@ func TestConvertToDabsIncludePathsDirectories(t *testing.T) {
 
 // root_path "." (the code source is the whole bundle directory) has no basename to
 // nest the archive under, and an include rooted at "." would sweep the bundle's own
-// generated files into the tarball, so every snapshot there is rejected. Only a
-// working-tree snapshot is offered --output-dir: a git snapshot is archived from the
-// bundle root, which a parent directory would move outside the repository.
+// generated files into the tarball, so every snapshot there is rejected. A working-tree
+// snapshot is offered --output-dir; a git snapshot is archived from the bundle root, so
+// it is offered a parent only when the bundle directory is below the repository's top
+// level (the parent is then still inside the repository).
 func TestConvertToDabsDotRootPathRejected(t *testing.T) {
+	gitSnap := "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    git:\n      commit: abc123\n"
 	for _, tc := range []struct {
 		name, snap        string
+		repoSubdir        bool // the bundle dir is a subdirectory of a git repository
 		wantOutputDirHint bool
 	}{
-		{"plain", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n", true},
-		{"include", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    include_paths:\n      - foo\n", true},
-		{"git", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    git:\n      commit: abc123\n", false},
+		{"plain", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n", false, true},
+		{"include", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    include_paths:\n      - foo\n", false, true},
+		{"git-no-repo", gitSnap, false, false},
+		{"git-repo-subdir", gitSnap, true, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
+			if tc.repoSubdir {
+				runGit(t, dir, "init", "-q")
+				dir = filepath.Join(dir, "proj")
+			}
 			require.NoError(t, os.MkdirAll(filepath.Join(dir, "foo"), 0o700))
 			cfg := "experiment_name: dot\ncommand: python train.py\n" +
 				"compute: {accelerator_type: GPU_1xA10, num_accelerators: 1}\n" + tc.snap
@@ -943,11 +951,13 @@ func TestQuotedPath(t *testing.T) {
 	assert.Equal(t, `"bad\nname"`, quotedPath("bad\nname"))
 }
 
-// A git-pinned snapshot is archived from the bundle root, and a parent of the code
-// directory may be outside the repository, so no parent is offered.
+// A git-pinned snapshot is archived from the bundle root. When the code directory is
+// the repository's top level, its parent is outside the repository, so no parent is
+// offered.
 func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
 	outside := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(outside, "src"), 0o700))
+	runGit(t, filepath.Join(outside, "src"), "init", "-q")
 	cfg := "experiment_name: outside\ncommand: python train.py\n" +
 		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
 		"code_source:\n  root_path: " + filepath.Join(outside, "src") + "\n  git:\n    commit: abc123\n"
@@ -959,6 +969,38 @@ func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
 	require.ErrorContains(t, err, "not inside the bundle")
 	assert.Contains(t, err.Error(), "; move the code inside the bundle directory")
 	assert.NotContains(t, err.Error(), "--output-dir")
+}
+
+// A git-pinned code directory below the repository's top level (ray/ in a repo, with
+// the workload in ray/core) has a parent inside the repository, so that parent is
+// offered as --output-dir, and converting there emits the git-pinned artifact.
+func TestConvertToDabsGitPinOutsideBundleSuggestsOutputDirInRepoSubdir(t *testing.T) {
+	dir := t.TempDir()
+	runGit(t, dir, "init", "-q")
+	recipeDir := filepath.Join(dir, "ray", "core")
+	require.NoError(t, os.MkdirAll(recipeDir, 0o700))
+	cfg := "experiment_name: ray-core\ncommand: bash ray_bootstrap.sh\n" +
+		"compute: {accelerator_type: GPU_1xA10, num_accelerators: 2}\n" +
+		"code_source:\n  root_path: ..\n  git:\n    commit: abc123\n"
+	path := filepath.Join(recipeDir, "workload.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	_, _, err = convertToDabs(t.Context(), loaded, path, recipeDir)
+	require.ErrorContains(t, err, "not inside the bundle")
+	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
+	require.True(t, ok)
+	assert.Contains(t, err.Error(), "--output-dir "+quoted+" ")
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
+	assert.Equal(t, "abc123", get(t, root, a+".git.commit").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 1)
+	assert.Equal(t, "ray", inc[0].MustString())
 }
 
 // reconvertSharedCode runs the conversion with the same arguments as a workload author.

@@ -150,7 +150,7 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		return nil, nil, err
 	}
 	codeSourcePath := codeDirPath
-	art, err := codeArtifactFor(cfg, codeDirPath)
+	art, err := codeArtifactFor(ctx, cfg, codeDirPath, bundleDir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -196,13 +196,13 @@ type codeArtifact struct {
 // and uploaded through the standard artifact path; a git ref / include_paths just add
 // `git` / narrowed `include` to the same artifact. It errors when the code dir resolves
 // to the bundle root (no basename to nest under). codeDirPath is the source dir relative
-// to the bundle ("./"-prefixed).
+// to the bundle ("./"-prefixed); bundleDir is the bundle directory itself.
 //
 // The artifact snapshotter names entries relative to `path`, and the runtime extracts
 // to /databricks/code_source/<dir>, so the code dir's basename must be the top-level
 // entry. To get that, emit path = the code dir's parent and include = basename-prefixed
 // subpaths, so entries come out as "<basename>/..." — the layout the air CLI produced.
-func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) {
+func codeArtifactFor(ctx context.Context, cfg *runConfig, codeDirPath, bundleDir string) (*codeArtifact, error) {
 	snap := codeSnapshot(cfg)
 	if snap == nil {
 		return nil, nil
@@ -214,10 +214,7 @@ func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) 
 	// generated_artifacts/, the output tarball) into it. Reject rather than emit that.
 	if codeDirRel == "." {
 		remedy := "move the code into a subdirectory (for example ./src) and point root_path at it"
-		// A bundle rooted at the parent only works for a working-tree snapshot: a git
-		// snapshot is archived from the bundle root, which would then sit outside the
-		// repository (or inside an unrelated one).
-		if snap.Git == nil {
+		if parentOutputDirWorks(ctx, snap, bundleDir) {
 			remedy += ", or pass --output-dir with a dedicated parent directory that contains the code directory"
 		}
 		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root, so there is no code directory to nest under %s/<dir>; %s", snap.RootPath, runtimeCodeSourceRoot, remedy)
@@ -268,20 +265,33 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 	}
 	rel, err := filepath.Rel(bundleAbs, root)
 	if err != nil || !filepath.IsLocal(rel) {
-		return "", codeOutsideBundleError(snap, root, bundleDir, cfg.ExperimentName)
+		return "", codeOutsideBundleError(ctx, snap, root, bundleDir, cfg.ExperimentName)
 	}
 	return localBundlePath(filepath.ToSlash(rel)), nil
 }
 
-// codeOutsideBundleError explains a code directory outside the bundle directory. For
-// a working-tree snapshot it names the code directory's parent as an --output-dir,
-// unless that parent already holds a bundle: sibling workloads that share a code
-// directory would each be sent there and replace one another's bundle. As in
-// codeArtifactFor, a git snapshot is not offered a parent, which may be outside the
-// repository.
-func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir, experimentName string) error {
-	remedy := "move the code inside the bundle directory"
+// parentOutputDirWorks reports whether a bundle rooted at the code directory's parent
+// can package the snapshot. A working-tree snapshot is archived from the bundle, so any
+// parent works. A git snapshot is archived from the bundle root, so the parent must be
+// inside the repository too, which holds exactly when the code directory is not the
+// repository's top level (`git rev-parse --show-prefix` is non-empty). A code directory
+// outside any repository can't be archived from a git ref at all, so no parent is offered.
+func parentOutputDirWorks(ctx context.Context, snap *snapshotSourceConfig, codeDir string) bool {
 	if snap.Git == nil {
+		return true
+	}
+	prefix, err := newGitRepo(codeDir).repoRelativePrefix(ctx)
+	return err == nil && prefix != ""
+}
+
+// codeOutsideBundleError explains a code directory outside the bundle directory. When
+// a bundle at the code directory's parent would work (parentOutputDirWorks), it names
+// that parent as an --output-dir, unless the parent already holds a bundle: sibling
+// workloads that share a code directory would each be sent there and replace one
+// another's bundle.
+func codeOutsideBundleError(ctx context.Context, snap *snapshotSourceConfig, root, bundleDir, experimentName string) error {
+	remedy := "move the code inside the bundle directory"
+	if parentOutputDirWorks(ctx, snap, root) {
 		parent := filepath.Dir(root)
 		if name := bundleFileIn(parent, ""); name != "" {
 			remedy = fmt.Sprintf("%s already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", quotedPath(parent), name, remedy)
