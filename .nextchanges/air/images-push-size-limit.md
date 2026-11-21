@@ -1,1 +1,1 @@
-* Check the source image size in `databricks air images push` before uploading, print it, and fail with the 20 GB limit and advice to start from a Databricks base image and trim layers when the image exceeds it. ([#7868](https://github.com/databricks/cli/pull/7868))
+* Print the source image size in `databricks air images push` before uploading, and warn with the 20 GB limit and advice to start from a Databricks base image and trim layers when the local image exceeds it. ([#7868](https://github.com/databricks/cli/pull/7868))

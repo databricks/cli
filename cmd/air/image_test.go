@@ -85,7 +85,8 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	)
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
-	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB; AI Runtime allows up to 20 GB.")
+	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed; AI Runtime allows up to 20 GB compressed.")
+	assert.NotContains(t, stderr.String(), "Warning: source image")
 	assert.Contains(t, stderr.String(), "Pushed image")
 }
 
@@ -97,27 +98,27 @@ func fakeImageInspect(format, sizeBytes string) string {
 	return "linux/amd64\n"
 }
 
-func TestRunImagePushRejectsOversizedImage(t *testing.T) {
+func TestRunImagePushWarnsAboutOversizedImage(t *testing.T) {
+	warning := "Warning: source image example/trainer:v1 exceeds 20 GB uncompressed, so the push may be rejected: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches."
 	tests := []struct {
 		name      string
 		sizeBytes string
+		warn      bool
 		wantErr   string
 	}{
 		{name: "at limit", sizeBytes: "20000000000"},
-		{name: "over limit", sizeBytes: "20000000001", wantErr: "image size (20.0GB) exceeds maximum allowed size (20GB): start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches"},
+		{name: "over limit", sizeBytes: "25300000000", warn: true},
 		{name: "unreadable", sizeBytes: "unknown", wantErr: "parse size of source image example/trainer:v1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd, _, stderr := newImagePushTestCommand(t, "workspace")
-			var commands []recordedImageCommand
 			deps := imagePushDeps{
 				configureDocker: func(context.Context, string) (string, error) {
 					return "123.container.us-west-2.cloud.databricks.test", nil
 				},
 				lookPath: func(string) (string, error) { return "docker", nil },
-				runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, executable string, args ...string) error {
-					commands = append(commands, recordedImageCommand{executable: executable, args: args})
+				runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
 					switch strings.Join(args[:2], " ") {
 					case "image ls":
 						_, err := io.WriteString(out, "image-id\n")
@@ -136,16 +137,19 @@ func TestRunImagePushRejectsOversizedImage(t *testing.T) {
 				schema:   "training",
 				artifact: "trainer",
 			}, deps)
-			if tt.wantErr == "" {
-				require.NoError(t, err)
-				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 20.0 GB; AI Runtime allows up to 20 GB.")
-				assert.Contains(t, stderr.String(), "Pushed image")
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.NotContains(t, stderr.String(), "Pushed image")
 				return
 			}
-			require.ErrorContains(t, err, tt.wantErr)
-			for _, command := range commands {
-				assert.NotContains(t, []string{"tag", "push"}, command.args[0], "oversized image must not be tagged or pushed")
+			require.NoError(t, err)
+			if tt.warn {
+				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 25.3 GB uncompressed; AI Runtime allows up to 20 GB compressed.")
+				assert.Contains(t, stderr.String(), warning)
+			} else {
+				assert.NotContains(t, stderr.String(), "Warning: source image")
 			}
+			assert.Contains(t, stderr.String(), "Pushed image")
 		})
 	}
 }
