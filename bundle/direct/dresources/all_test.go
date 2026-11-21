@@ -657,8 +657,9 @@ var testDeps = map[string]prepareWorkspace{
 			return nil, err
 		}
 
+		// The permissions API takes the endpoint's ID, not its name.
 		return &PermissionsState{
-			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
+			ObjectID: "/serving-endpoints/" + waiter.Response.Id,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",

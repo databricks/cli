@@ -1,0 +1,1 @@
+* `serving-endpoints get-permissions`, `set-permissions` and `update-permissions` now also accept the endpoint name, and resolve it to the endpoint ID. Passing a name previously failed with `is not a valid Inference Endpoint ID`. ([#7662](https://github.com/databricks/cli/pull/7662))
