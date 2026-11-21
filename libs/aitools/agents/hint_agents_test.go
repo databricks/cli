@@ -326,3 +326,20 @@ func TestMaybeHint_DisabledCacheSkipsHint(t *testing.T) {
 		assert.Empty(t, telemetry.BufferedEvents(ctx))
 	}
 }
+
+// Non-Claude agents keep their generic install hint on `databricks air`
+// subcommands too: the aitools installer has no per-agent AI Runtime variant
+// to offer them, so the air scoping only changes Claude Code's hint.
+func TestMaybeHint_AgentInstallHintUnchangedOnAIR(t *testing.T) {
+	for _, a := range Registry {
+		if a.Name == NameClaudeCode {
+			continue
+		}
+		t.Run(a.Name, func(t *testing.T) {
+			setAgentEnv(t, agentDetectEnv[a.Name])
+			ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
+			MaybeHint(ctx, airCmd(), noPluginRecorded)
+			assert.Equal(t, agentInstallHint(a, noPluginRecorded).text+"\n", stderr.String())
+		})
+	}
+}

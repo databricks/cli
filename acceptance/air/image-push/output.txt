@@ -218,7 +218,7 @@ pull --platform linux/amd64 example/image:v1
 
 >>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 <claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
-Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
 Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
@@ -233,7 +233,7 @@ Now you can set `environment.unity_catalog_image = main.training.image:v1` in yo
 
 >>> musterr databricks air images push -p pat-test -s example/image:v1 --catalog main --schema training
 <claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
-Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+Tip: install the databricks-ai-runtime skill for workload configuration and run debugging: databricks aitools install --skills-only --skills databricks-ai-runtime. To preview it first, replace --skills-only with --path <dir>.
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile pat-test
 Error: configure Docker authentication: run auth docker configure: exit status 1: Error: profile "pat-test" uses auth_type "pat". Docker credential helper requires a profile created by databricks auth login
