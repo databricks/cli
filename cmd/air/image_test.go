@@ -56,7 +56,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 				_, err := io.WriteString(out, "image-id\n")
 				return err
 			case "image inspect":
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, fakeImageInspect(args[3], "7140000000"))
 				return err
 			}
 			return nil
@@ -75,6 +75,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	assert.Equal(t, []recordedImageCommand{
 		{executable: "/usr/bin/docker", args: []string{"image", "ls", "--quiet", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", "nvidia/cuda:13.4.1"}},
+		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Size}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
 	}, commands)
@@ -84,7 +85,69 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	)
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
+	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB; AI Runtime allows up to 20 GB.")
 	assert.Contains(t, stderr.String(), "Pushed image")
+}
+
+// fakeImageInspect answers the two docker image inspect formats runImagePush uses.
+func fakeImageInspect(format, sizeBytes string) string {
+	if format == "{{.Size}}" {
+		return sizeBytes + "\n"
+	}
+	return "linux/amd64\n"
+}
+
+func TestRunImagePushRejectsOversizedImage(t *testing.T) {
+	tests := []struct {
+		name      string
+		sizeBytes string
+		wantErr   string
+	}{
+		{name: "at limit", sizeBytes: "20000000000"},
+		{name: "over limit", sizeBytes: "20000000001", wantErr: "image size (20.0GB) exceeds maximum allowed size (20GB): start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches"},
+		{name: "unreadable", sizeBytes: "unknown", wantErr: "parse size of source image example/trainer:v1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd, _, stderr := newImagePushTestCommand(t, "workspace")
+			var commands []recordedImageCommand
+			deps := imagePushDeps{
+				configureDocker: func(context.Context, string) (string, error) {
+					return "123.container.us-west-2.cloud.databricks.test", nil
+				},
+				lookPath: func(string) (string, error) { return "docker", nil },
+				runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, executable string, args ...string) error {
+					commands = append(commands, recordedImageCommand{executable: executable, args: args})
+					switch strings.Join(args[:2], " ") {
+					case "image ls":
+						_, err := io.WriteString(out, "image-id\n")
+						return err
+					case "image inspect":
+						_, err := io.WriteString(out, fakeImageInspect(args[3], tt.sizeBytes))
+						return err
+					}
+					return nil
+				},
+			}
+
+			err := runImagePush(cmd, &imagePushOptions{
+				source:   "example/trainer:v1",
+				catalog:  "main",
+				schema:   "training",
+				artifact: "trainer",
+			}, deps)
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 20.0 GB; AI Runtime allows up to 20 GB.")
+				assert.Contains(t, stderr.String(), "Pushed image")
+				return
+			}
+			require.ErrorContains(t, err, tt.wantErr)
+			for _, command := range commands {
+				assert.NotContains(t, []string{"tag", "push"}, command.args[0], "oversized image must not be tagged or pushed")
+			}
+		})
+	}
 }
 
 func TestRegistryHostFromDockerConfigureOutput(t *testing.T) {
@@ -111,7 +174,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 		runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, executable string, args ...string) error {
 			commands = append(commands, recordedImageCommand{executable: executable, args: args})
 			if args[0] == "image" && args[1] == "inspect" {
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, fakeImageInspect(args[3], "7140000000"))
 				return err
 			}
 			return nil
@@ -126,7 +189,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 	}, deps)
 	require.NoError(t, err)
 
-	require.Len(t, commands, 5)
+	require.Len(t, commands, 6)
 	assert.Equal(t, []string{"pull", "--platform", "linux/amd64", "example/image:v1"}, commands[1].args)
 }
 
