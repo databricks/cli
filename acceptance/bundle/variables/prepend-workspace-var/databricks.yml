@@ -9,6 +9,8 @@ variables:
   workspace_root:
     description: "root directory in the Databricks workspace to store the Declarative Automation Bundle and associated artifacts"
     default: /Users/${workspace.current_user.userName}
+  config_file:
+    default: ${workspace.file_path}/path/to/config.yaml
 
 targets:
   dev:
@@ -23,5 +25,8 @@ resources:
       tasks:
         - existing_cluster_id: 500
           python_wheel_task:
+            package_name: my_package
+            entry_point: main
             named_parameters:
               conf-file: "${workspace.file_path}/path/to/config.yaml"
+              alias-file: "${var.config_file}"
