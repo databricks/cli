@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle
+
+variables:
+  warehouse:
+    default: ""
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      source_code_path: .
+      config:
+        env:
+          - name: WAREHOUSE_ID
+            value: ${var.warehouse}
+          - name: STATIC
+            value: configured
+          - name: RESOURCE
+            value_from: secret-resource
