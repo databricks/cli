@@ -171,6 +171,24 @@ func makeTestCases() []testCase {
 			outputFormat: flags.OutputJSON,
 			errMessage:   "json output not supported",
 		},
+		{
+			name:         "io.Reader with JSON body",
+			v:            strings.NewReader(`{"openapi":"3.1.0","paths":{"/a":[1,2]}}` + "\n"),
+			outputFormat: flags.OutputJSON,
+			expected:     "{\n  \"openapi\": \"3.1.0\",\n  \"paths\": {\n    \"/a\": [\n      1,\n      2\n    ]\n  }\n}\n",
+		},
+		{
+			name:         "io.Reader with JSON body as text is unchanged",
+			v:            strings.NewReader(`{"openapi":"3.1.0"}`),
+			outputFormat: flags.OutputText,
+			expected:     `{"openapi":"3.1.0"}`,
+		},
+		{
+			name:         "io.Reader with big integers keeps them exact",
+			v:            strings.NewReader(`{"id":9007199254740993}`),
+			outputFormat: flags.OutputJSON,
+			expected:     "{\n  \"id\": 9007199254740993\n}\n",
+		},
 	}
 }
 
