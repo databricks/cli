@@ -36,8 +36,12 @@ func (a *AppSpec) GetFileName() string {
 func ReadAppSpecFile(config *Config) (*AppSpec, error) {
 	spec := &AppSpec{config: config}
 	for _, file := range config.AppSpecFiles {
+		// An absolute entry point is used verbatim; relative names resolve under AppPath.
+		if !filepath.IsAbs(file) {
+			file = filepath.Join(config.AppPath, file)
+		}
 		// Read the yaml file
-		yamlFile, err := os.ReadFile(filepath.Join(config.AppPath, file))
+		yamlFile, err := os.ReadFile(file)
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
