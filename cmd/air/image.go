@@ -25,8 +25,8 @@ const (
 	maxImageRepositoryLength = 255
 	maxImageTagLength        = 128
 	airImagePlatform         = "linux/amd64"
-	// AI Runtime rejects images over this many decimal gigabytes, the unit Docker reports sizes in.
-	maxImageSizeGB = 20
+	// Databricks Artifact Registry caps images at this many decimal gigabytes, the unit Docker reports sizes in.
+	maxImageSizeGB = 30
 )
 
 var (
@@ -209,15 +209,15 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	if platform != airImagePlatform {
 		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
 	}
-	// Docker reports the uncompressed size while the server measures compressed layers,
+	// Docker reports the uncompressed size while the registry measures compressed layers,
 	// so the size is advisory: an oversized or unreadable size never blocks the push.
 	if sizeBytes, err := strconv.ParseInt(size, 10, 64); err != nil {
 		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the size of source image %s: %v", resolved.source, err))
 	} else {
 		sizeGB := float64(sizeBytes) / 1e9
-		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB uncompressed; AI Runtime allows up to %d GB compressed.", resolved.source, sizeGB, maxImageSizeGB))
+		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB uncompressed; Databricks Artifact Registry caps images at %d GB compressed.", resolved.source, sizeGB, maxImageSizeGB))
 		if sizeGB > maxImageSizeGB {
-			cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s exceeds %d GB uncompressed, so the push may be rejected: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches.", resolved.source, maxImageSizeGB))
+			cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s exceeds %d GB uncompressed, so Databricks Artifact Registry may reject the push: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches.", resolved.source, maxImageSizeGB))
 		}
 	}
 
