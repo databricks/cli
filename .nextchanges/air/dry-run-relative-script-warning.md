@@ -1,0 +1,1 @@
+* `air run --dry-run` warns when `command` refers to a file by a path relative to `code_source.root_path` and suggests `$CODE_SOURCE_PATH/<file>`, since the runtime working directory is not the code directory. ([#7865](https://github.com/databricks/cli/pull/7865))
