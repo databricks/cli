@@ -308,6 +308,13 @@ func TestFollowsParentRename(t *testing.T) {
 			expectedAction: deployplan.Recreate,
 		},
 		{
+			name:           "own name referencing the renamed parent is recreated",
+			resource:       "secrets",
+			field:          "name",
+			old:            "s_old",
+			expectedAction: deployplan.Recreate,
+		},
+		{
 			name:           "recreate_on_changes field is recreated",
 			resource:       "volumes",
 			field:          "storage_location",
