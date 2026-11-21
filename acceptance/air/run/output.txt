@@ -120,6 +120,22 @@ Tip: use the --debug flag to see more details and a trace of this error:
 
 Exit code: 1
 
+=== invalid config is rejected (json)
+
+>>> [CLI] air run -f invalid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "invalid experiment_name \"bad.name\": only alphanumeric characters, hyphens (-), and underscores (_) are allowed",
+    "retryable": false
+  }
+}
+
+Exit code: 1
+
 === unknown field suggests the near match
 
 >>> [CLI] air run -f unknown-field.yaml --dry-run

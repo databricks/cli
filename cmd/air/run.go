@@ -162,7 +162,7 @@ databricks-ai-runtime skill:
 
 		cfg, err := loadRunConfigWithOverrides(ctx, file, overrides)
 		if err != nil {
-			return err
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 		}
 
 		if msg := missingTorchWarning(ctx, cfg, file); msg != "" {
@@ -187,7 +187,7 @@ databricks-ai-runtime skill:
 			if validationErr != nil {
 				unavailable, ok := validationUnavailable(validationErr)
 				if !ok {
-					return validationErr
+					return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, validationErr)
 				}
 				kind := "PERMANENT"
 				if unavailable.retryable {
