@@ -34,15 +34,27 @@ func SplitPath(fullPath string) (scheme, name string) {
 	return parts[0], parts[1]
 }
 
+// warnSchemelessUCPaths warns once when any of the given paths starts with
+// /Volumes/ or /Skills/ without a scheme. Such a path is usually a UC path
+// missing its scheme, but on macOS /Volumes/ is also the mount point for local
+// drives, so it stays a local path. The warning makes sure a forgotten scheme
+// never acts on the local filesystem silently.
+func warnSchemelessUCPaths(ctx context.Context, fullPaths ...string) {
+	var local []string
+	for _, fullPath := range fullPaths {
+		if scheme, _ := SplitPath(fullPath); scheme == "" && (strings.HasPrefix(fullPath, "/Volumes/") || strings.HasPrefix(fullPath, "/Skills/")) {
+			local = append(local, fullPath)
+		}
+	}
+	if len(local) == 0 {
+		return
+	}
+	log.Warnf(ctx, "Paths without a scheme are local paths: %s. For a Unity Catalog volume or skill, add the dbfs: scheme", strings.Join(local, ", "))
+}
+
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 	scheme, path := SplitPath(fullPath)
 	if scheme == "" && path == fullPath {
-		// A scheme-less /Volumes/ or /Skills/ path is usually a UC path missing its
-		// scheme, but on macOS /Volumes/ is also the mount point for local drives.
-		// Keep it local and warn, so a forgotten scheme never acts on the laptop silently.
-		if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
-			log.Warnf(ctx, "%s has no scheme and is treated as a local path. For a Unity Catalog volume or skill, add the dbfs: scheme", path)
-		}
 		f, err := filer.NewLocalClient("")
 		return f, path, err
 	}

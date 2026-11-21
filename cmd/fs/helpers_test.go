@@ -45,18 +45,31 @@ func TestFilerForPathForInvalidScheme(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid scheme")
 }
 
-func TestFilerForPathForSchemelessUCPathStaysLocalWithWarning(t *testing.T) {
-	for _, path := range []string{"/Volumes/main/default/vol/data.csv", "/Skills/foo/bar"} {
-		t.Run(path, func(t *testing.T) {
+func TestWarnSchemelessUCPaths(t *testing.T) {
+	tcases := []struct {
+		name  string
+		paths []string
+		want  string
+	}{
+		{"volume", []string{"/Volumes/main/default/vol/data.csv"}, "local paths: /Volumes/main/default/vol/data.csv."},
+		{"skill", []string{"/Skills/foo/bar"}, "local paths: /Skills/foo/bar."},
+		{"once per command", []string{"/Volumes/a", "/Volumes/b"}, "local paths: /Volumes/a, /Volumes/b."},
+		{"with scheme", []string{"dbfs:/Volumes/main/default/vol", "dbfs:/Skills/foo"}, ""},
+		{"other local", []string{"data.csv", "/tmp/Volumes/x"}, ""},
+	}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
 			var logs bytes.Buffer
 			ctx := log.NewContext(t.Context(), slog.New(slog.NewTextHandler(&logs, nil)))
 
-			f, got, err := filerForPath(ctx, path)
-			require.NoError(t, err)
-			assert.Equal(t, path, got)
-			assert.IsType(t, &filer.LocalClient{}, f)
+			warnSchemelessUCPaths(ctx, tc.paths...)
+			if tc.want == "" {
+				assert.Empty(t, logs.String())
+				return
+			}
 			assert.Contains(t, logs.String(), "level=WARN")
-			assert.Contains(t, logs.String(), "add the dbfs: scheme")
+			assert.Contains(t, logs.String(), tc.want)
 		})
 	}
 }

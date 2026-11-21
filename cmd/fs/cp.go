@@ -240,6 +240,8 @@ func newCpCommand(filerForPath PathResolver) *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
+		warnSchemelessUCPaths(ctx, args...)
+
 		// Get source filer and source path without scheme
 		fullSourcePath := args[0]
 		sourceFiler, sourcePath, err := filerForPath(ctx, fullSourcePath)
