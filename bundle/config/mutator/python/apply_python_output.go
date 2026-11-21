@@ -135,7 +135,11 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				return right, nil
 			}
 		},
-		VisitUpdate: func(valuePath dyn.Path, _, right dyn.Value) (dyn.Value, error) {
+		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
+			if isWholeFloatAsInt(left, right) {
+				return left, nil
+			}
+
 			if !valuePath.HasPrefix(resourcesPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
 			}
@@ -210,4 +214,12 @@ func isOmitemptyDelete(left dyn.Value) bool {
 	default:
 		return false
 	}
+}
+
+// isWholeFloatAsInt reports whether right is the int Python returns for the float left.
+// JSON doesn't tell 1.0 from 1, so a float such as a variable default of 1.0 comes
+// back from Python as an int.
+func isWholeFloatAsInt(left, right dyn.Value) bool {
+	return left.Kind() == dyn.KindFloat && right.Kind() == dyn.KindInt &&
+		left.MustFloat() == float64(right.MustInt())
 }
