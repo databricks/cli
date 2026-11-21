@@ -67,7 +67,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `App id of the OAuth published app integration.`)
+	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `ID of the published OAuth app to enable, as returned in app_id by the list of published OAuth apps.`)
 	// TODO: complex arg: token_access_policy
 
 	cmd.Use = "create"
@@ -146,10 +146,14 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete Published OAuth App Integration.`
 	cmd.Long = `Delete Published OAuth App Integration.
 
-  Delete an existing Published OAuth App Integration. You can retrieve the
-  published OAuth app integration via [PublishedAppIntegration/get].
+  Delete an existing Published OAuth App Integration. The app can no longer be
+  used to sign in to the account until it is enabled again with
+  [PublishedAppIntegration/create].
 
-  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get`
+  [PublishedAppIntegration/create]: https://docs.databricks.com/api/account/publishedappintegration/create
+
+  Arguments:
+    INTEGRATION_ID: ID of the published OAuth app integration to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -204,7 +208,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get OAuth Published App Integration.`
 	cmd.Long = `Get OAuth Published App Integration.
 
-  Gets the Published OAuth App Integration for the given integration id.`
+  Gets the Published OAuth App Integration for the given integration id.
+
+  Arguments:
+    INTEGRATION_ID: ID of the published OAuth app integration.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -260,7 +267,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of integrations to return in one page, at most 1000.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -274,7 +281,7 @@ func newList() *cobra.Command {
 	cmd.Long = `Get published oauth app integrations.
 
   Get the list of published OAuth app integrations for the specified Databricks
-  account`
+  account.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -339,7 +346,10 @@ func newUpdate() *cobra.Command {
   Updates an existing published OAuth App Integration. You can retrieve the
   published OAuth app integration via [PublishedAppIntegration/get].
 
-  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get`
+  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get
+
+  Arguments:
+    INTEGRATION_ID: ID of the published OAuth app integration to update.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
