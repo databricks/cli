@@ -708,18 +708,27 @@ tasks:
       - acceptance/experimental/aitools/**
       - "{{.EMBED_SOURCES}}"
     cmds:
+      # cmd/root runs aitools hooks on every command, cmd, cmd/apps and
+      # cmd/version print aitools text, cmd/experimental registers the
+      # experimental aitools command, and the root package imports aitools,
+      # so their tests run here too: a change under the sources above does not
+      # trigger the `test` job. cmd/air is left out: its only aitools call is
+      # covered by the air/image-push golden below, and its unit tests take
+      # over a minute without touching aitools.
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/..." \
+          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/... ./cmd ./cmd/apps ./cmd/experimental ./cmd/root ./cmd/version ." \
           -- -timeout=${LOCAL_TIMEOUT:-60m}
+      # The goldens of help, cmd/version, quickstart and air help print aitools text;
+      # air/image-push runs a child process with the aitools self-exec environment.
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/apps|TestAccept/cmd/aitools|TestAccept/experimental/aitools"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/apps|TestAccept/cmd/aitools|TestAccept/experimental/aitools|TestAccept/help$|TestAccept/cmd/version$|TestAccept/quickstart$|TestAccept/air/help$|TestAccept/air/config-help$|TestAccept/air/image-push$"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
