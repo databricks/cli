@@ -27,6 +27,23 @@ const (
 // Run displays tabular data in an interactive browser.
 // Writes to w (typically stdout). Blocks until user quits.
 func Run(ctx context.Context, w io.Writer, columns []string, rows [][]string) error {
+	return RunWithOptions(ctx, w, columns, rows, RunOptions{})
+}
+
+// RunOptions adjusts [RunWithOptions]. The zero value behaves like [Run].
+type RunOptions struct {
+	// Input replaces the program's default input (os.Stdin) when non-nil.
+	Input io.Reader
+
+	// Width and Height, when both positive, are delivered as the initial
+	// window size. Bubble Tea only detects the size of a terminal writer, so
+	// tests that render into a buffer need them.
+	Width, Height int
+}
+
+// RunWithOptions is [Run] with the adjustments in opts. It exists so tests can
+// drive the browser through pipes.
+func RunWithOptions(ctx context.Context, w io.Writer, columns []string, rows [][]string, opts RunOptions) error {
 	all := renderTableLines(columns, rows)
 	header := all[:headerLines]
 	dataLines := all[headerLines:]
@@ -42,7 +59,14 @@ func Run(ctx context.Context, w io.Writer, columns []string, rows [][]string) er
 		searchStyle:          r.NewStyle().Foreground(lipgloss.Color("229")),
 	}
 
-	p := tea.NewProgram(m, tea.WithOutput(w))
+	teaOpts := []tea.ProgramOption{tea.WithOutput(w)}
+	if opts.Input != nil {
+		teaOpts = append(teaOpts, tea.WithInput(opts.Input))
+	}
+	p := tea.NewProgram(m, teaOpts...)
+	if opts.Width > 0 && opts.Height > 0 {
+		go p.Send(tea.WindowSizeMsg{Width: opts.Width, Height: opts.Height})
+	}
 	_, err := p.Run()
 	return err
 }
