@@ -30,7 +30,7 @@ title "the current SDK recognizes B300 so bundle validation is clean"
 (cd generated-b300 && trace $CLI bundle validate)
 
 title "--force does not replace a different workload's bundle"
-errcode trace $CLI air convert-to-dabs databricks-ai.yaml --force
+musterr trace $CLI air convert-to-dabs databricks-ai.yaml --force
 
 title "databricks_ai versions use a base environment"
 trace $CLI air convert-to-dabs databricks-ai.yaml --output-dir generated-databricks-ai
