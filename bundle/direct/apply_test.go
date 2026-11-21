@@ -72,13 +72,41 @@ func TestCreateFailsOnEmptyID(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestRecordPreventDestroy(t *testing.T) {
+	adapter, err := dresources.NewAdapter((*emptyIDResource)(nil), "fake", nil)
+	require.NoError(t, err)
+	path := filepath.Join(t.TempDir(), "resources.json")
+
+	// A deploy records the resource without the flag.
+	db := &dstate.DeploymentState{}
+	require.NoError(t, db.Open(t.Context(), path, dstate.WritingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}))
+	require.NoError(t, db.SaveState(t.Context(), "resources.fakes.foo", "id", &emptyIDState{Name: "foo"}, nil, false))
+	finalizeEmptyIDState(t, db)
+
+	// The next deploy skips the unchanged resource but plans prevent_destroy: only the flag moves.
+	db = &dstate.DeploymentState{}
+	require.NoError(t, db.Open(t.Context(), path, dstate.WritingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}))
+	d := &DeploymentUnit{ResourceKey: "resources.fakes.foo", Adapter: adapter, PreventDestroy: true}
+	require.NoError(t, d.RecordPreventDestroy(t.Context(), db))
+	finalizeEmptyIDState(t, db)
+
+	db = &dstate.DeploymentState{}
+	require.NoError(t, db.Open(t.Context(), path, dstate.ReadingFile, dstate.WithRecovery(false), dstate.OpenDmsArgs{}))
+	defer finalizeEmptyIDState(t, db)
+	entry, ok := db.GetResourceEntry("resources.fakes.foo")
+	require.True(t, ok)
+	assert.Equal(t, "id", entry.ID)
+	assert.JSONEq(t, `{"name":"foo"}`, string(entry.State))
+	assert.True(t, entry.PreventDestroy)
+}
+
 func TestUpdateWithIDFailsOnEmptyID(t *testing.T) {
 	adapter, err := dresources.NewAdapter((*emptyIDResource)(nil), "fake", nil)
 	require.NoError(t, err)
 	db := newEmptyIDDeploymentState(t)
 	defer finalizeEmptyIDState(t, db)
 	d := &DeploymentUnit{ResourceKey: "resources.fakes.foo", Adapter: adapter}
-	require.NoError(t, db.SaveState(t.Context(), d.ResourceKey, "old-id", &emptyIDState{Name: "foo"}, nil))
+	require.NoError(t, db.SaveState(t.Context(), d.ResourceKey, "old-id", &emptyIDState{Name: "foo"}, nil, false))
 
 	err = d.UpdateWithID(t.Context(), db, "old-id", &emptyIDState{Name: "bar"}, nil)
 	require.EqualError(t, err, "update returned an empty resource id")

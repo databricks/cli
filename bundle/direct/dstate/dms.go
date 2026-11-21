@@ -9,11 +9,13 @@ import (
 )
 
 // RecordedState is what the CLI serializes into the DMS operation's state field. It wraps the
-// config so depends_on survives the round trip: DMS has no field for dependency edges, and
-// nesting them in the config would collide with resource fields of the same name.
+// config so depends_on and prevent_destroy survive the round trip: DMS has no field for dependency
+// edges or lifecycle settings, and nesting them in the config would collide with resource fields
+// of the same name.
 type RecordedState struct {
-	State     json.RawMessage             `json:"state"`
-	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+	State          json.RawMessage             `json:"state"`
+	DependsOn      []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
+	PreventDestroy bool                        `json:"prevent_destroy,omitempty"`
 }
 
 // applyDMSState fills in the resource state from what DMS recorded. For a deployment that uses DMS
@@ -54,8 +56,9 @@ func stateEntry(res dms.Resource) (ResourceEntry, error) {
 	}
 
 	return ResourceEntry{
-		ID:        res.ID,
-		State:     recorded.State,
-		DependsOn: recorded.DependsOn,
+		ID:             res.ID,
+		State:          recorded.State,
+		DependsOn:      recorded.DependsOn,
+		PreventDestroy: recorded.PreventDestroy,
 	}, nil
 }

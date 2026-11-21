@@ -26,15 +26,23 @@ import (
 
 // stagedOperations lists the resources the plan will touch, for CreateVersion to stage an
 // operation each. Skipped and undefined actions are left out: nothing is applied for them, so
-// their operations would stay pending and the service would hold no state for them.
+// their operations would stay pending and the service would hold no state for them. The
+// exception is a skip that rewrites the state entry for a changed lifecycle.prevent_destroy:
+// the service's copy of the state must follow, so it is recorded as an update.
 func stagedOperations(plan *deployplan.Plan) ([]bundledeployments.StagedOperation, error) {
 	actions := plan.GetActions()
 	staged := make([]bundledeployments.StagedOperation, 0, len(actions))
 	for _, action := range actions {
-		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
+		planned := action.ActionType
+		if planned == deployplan.Skip && action.PreventDestroyChanged {
+			// The resource is left alone but its recorded state changes, and the service has no
+			// action type for that: an update is the closest description.
+			planned = deployplan.Update
+		}
+		if planned == deployplan.Skip || planned == deployplan.Undefined {
 			continue
 		}
-		actionType, err := actionToSDK(action.ActionType)
+		actionType, err := actionToSDK(planned)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", action.ResourceKey, err)
 		}

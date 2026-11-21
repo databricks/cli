@@ -32,17 +32,21 @@ func TestStagedOperationsCoversEveryTouchedResource(t *testing.T) {
 
 func TestStagedOperationsLeavesOutUntouchedResources(t *testing.T) {
 	// A skipped resource is never applied, so staging it would leave an operation pending for
-	// the life of the version. Undefined is not a real action either.
+	// the life of the version. Undefined is not a real action either. The one skip that is
+	// applied, as a rewrite of its state entry for a changed lifecycle.prevent_destroy, is
+	// staged as an update so the service's copy of the state follows.
 	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
-		"resources.jobs.touched":   {Action: deployplan.Update},
-		"resources.jobs.unchanged": {Action: deployplan.Skip},
-		"resources.jobs.unknown":   {Action: deployplan.Undefined},
+		"resources.jobs.touched":     {Action: deployplan.Update},
+		"resources.jobs.unchanged":   {Action: deployplan.Skip},
+		"resources.jobs.reprotected": {Action: deployplan.Skip, PreventDestroyChanged: true},
+		"resources.jobs.unknown":     {Action: deployplan.Undefined},
 	}}
 
 	staged, err := stagedOperations(plan)
 	require.NoError(t, err)
 
 	assert.Equal(t, []bundledeployments.StagedOperation{
+		{ResourceKey: "jobs.reprotected", ActionType: bundledeployments.OperationActionTypeOperationActionTypeUpdate},
 		{ResourceKey: "jobs.touched", ActionType: bundledeployments.OperationActionTypeOperationActionTypeUpdate},
 	}, staged)
 }
