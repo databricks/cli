@@ -1,2 +1,2 @@
-# Git Bash rewrites a leading-slash argument into a Windows path before the CLI sees it.
-GOOS.windows = false
+# Git Bash would rewrite the leading-slash arguments into Windows paths before the CLI sees them.
+Env.MSYS_NO_PATHCONV = "1"

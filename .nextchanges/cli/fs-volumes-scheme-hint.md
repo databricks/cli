@@ -1,1 +1,1 @@
-* `databricks fs` commands now fail with a hint to use the `dbfs:` scheme when a `/Volumes/` or `/Skills/` path is given without it, instead of treating it as a local path. `databricks fs cp --help` shows a UC Volume example. ([#7862](https://github.com/databricks/cli/pull/7862))
+* `databricks fs` commands now warn when a `/Volumes/` or `/Skills/` path is given without the `dbfs:` scheme and is therefore treated as a local path. `databricks fs cp --help` shows a UC Volume example. ([#7862](https://github.com/databricks/cli/pull/7862))

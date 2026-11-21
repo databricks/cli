@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/filer/completer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/spf13/cobra"
 )
@@ -36,10 +37,11 @@ func SplitPath(fullPath string) (scheme, name string) {
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 	scheme, path := SplitPath(fullPath)
 	if scheme == "" && path == fullPath {
-		// A scheme-less /Volumes/ or /Skills/ path is a UC path missing its scheme.
-		// Treating it as a local path would silently act on the wrong filesystem.
+		// A scheme-less /Volumes/ or /Skills/ path is usually a UC path missing its
+		// scheme, but on macOS /Volumes/ is also the mount point for local drives.
+		// Keep it local and warn, so a forgotten scheme never acts on the laptop silently.
 		if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
-			return nil, "", fmt.Errorf("%s looks like a UC Volumes or UC Skills path missing the dbfs: scheme; did you mean dbfs:%s? Paths without a scheme are local paths", path, path)
+			log.Warnf(ctx, "%s has no scheme and is treated as a local path. For a Unity Catalog volume or skill use dbfs:%s", path, path)
 		}
 		f, err := filer.NewLocalClient("")
 		return f, path, err

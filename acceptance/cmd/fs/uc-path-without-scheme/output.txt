@@ -1,9 +1,8 @@
 
->>> musterr [CLI] fs cp hello.txt /Volumes/main/default/vol/
-Error: /Volumes/main/default/vol/ looks like a UC Volumes or UC Skills path missing the dbfs: scheme; did you mean dbfs:/Volumes/main/default/vol/? Paths without a scheme are local paths
-
->>> musterr [CLI] fs mkdirs /Volumes/main/default/vol/dir
-Error: /Volumes/main/default/vol/dir looks like a UC Volumes or UC Skills path missing the dbfs: scheme; did you mean dbfs:/Volumes/main/default/vol/dir? Paths without a scheme are local paths
+>>> musterr [CLI] fs ls /Volumes/main/default/vol
+Warn: /Volumes/main/default/vol has no scheme and is treated as a local path. For a Unity Catalog volume or skill use dbfs:/Volumes/main/default/vol
+Error: no such directory: /Volumes/main/default/vol
 
 >>> musterr [CLI] fs ls /Skills/foo/bar
-Error: /Skills/foo/bar looks like a UC Volumes or UC Skills path missing the dbfs: scheme; did you mean dbfs:/Skills/foo/bar? Paths without a scheme are local paths
+Warn: /Skills/foo/bar has no scheme and is treated as a local path. For a Unity Catalog volume or skill use dbfs:/Skills/foo/bar
+Error: no such directory: /Skills/foo/bar
