@@ -2,6 +2,8 @@
 # that precedes it, which fault.py's trailing-* pattern cannot express, so this case
 # keeps a [[Server]] stub - and the cloud harness ignores stubs.
 Cloud = false
+# Litebox serves DMS itself, so the stub below never fires there either.
+Litebox = false
 
 # The first version fails, so the deployment record is never created - only the
 # workspace node CreateDeployment registered. The next deploy resolves the ID from
