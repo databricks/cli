@@ -11,12 +11,17 @@ import (
 // Load a JSON document and validate it against the JSON schema. Instance here
 // refers to a JSON document. see: https://json-schema.org/draft/2020-12/json-schema-core.html#name-instance
 func (s *Schema) LoadInstance(path string) (map[string]any, error) {
-	instance := make(map[string]any)
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(b, &instance)
+	return s.LoadInstanceFromBytes(b)
+}
+
+// LoadInstanceFromBytes validates a JSON document against the JSON schema.
+func (s *Schema) LoadInstanceFromBytes(b []byte) (map[string]any, error) {
+	instance := make(map[string]any)
+	err := json.Unmarshal(b, &instance)
 	if err != nil {
 		return nil, err
 	}
