@@ -194,7 +194,7 @@ Validation OK!
 === --force does not replace a different workload's bundle
 
 >>> [CLI] air convert-to-dabs databricks-ai.yaml --force
-Error: databricks.yml in . belongs to bundle "torchrun-a10-smoke-test", not to this workload's bundle "databricks-ai-v5-smoke-test"; pass --output-dir with another directory that contains the code directory, or remove it
+Error: databricks.yml in . belongs to bundle "torchrun-a10-smoke-test", not to this workload's bundle "databricks-ai-v5-smoke-test"; pass --output-dir with another directory that contains the code directory
 
 === databricks_ai versions use a base environment
 

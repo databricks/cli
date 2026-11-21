@@ -640,13 +640,13 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	}
 	bundlePath := filepath.Join(dir, bundleFileName)
 	if _, err := os.Stat(bundlePath); err == nil {
+		// A sibling workload's bundle is never replaced, with or without --force: its
+		// job would still be planned for deletion from the shared .databricks/ state.
+		if name := existingBundleName(bundlePath); name != "" && name != cfg.ExperimentName {
+			return nil, fmt.Errorf("%s in %s belongs to bundle %q, not to this workload's bundle %q; pass --output-dir with another directory that contains the code directory", bundleFileName, dir, name, cfg.ExperimentName)
+		}
 		if !force {
 			return nil, fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", bundleFileName, dir)
-		}
-		// --force re-converts this workload; it must not replace a sibling workload's
-		// bundle, whose job the shared .databricks/ state would then plan to delete.
-		if name := existingBundleName(bundlePath); name != "" && name != cfg.ExperimentName {
-			return nil, fmt.Errorf("%s in %s belongs to bundle %q, not to this workload's bundle %q; pass --output-dir with another directory that contains the code directory, or remove it", bundleFileName, dir, name, cfg.ExperimentName)
 		}
 	}
 
@@ -697,7 +697,7 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	// example after dropping env_variables). sync.paths uploads the whole directory,
 	// so remove the generated names it no longer writes rather than ship stale ones.
 	if force {
-		for _, name := range []string{commandScriptName, hyperparametersName, envVarsName, secretEnvVarsName} {
+		for _, name := range optionalLaunchArtifacts {
 			if slices.ContainsFunc(artifacts, func(item uploadItem) bool { return item.name == name }) {
 				continue
 			}

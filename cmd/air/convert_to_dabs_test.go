@@ -81,16 +81,17 @@ func TestConvertToDabsForceRefusesDifferentBundle(t *testing.T) {
 	bundleA := testutil.ReadFile(t, filepath.Join(dir, "databricks.yml"))
 
 	cfgB, pathB := sharedCodeWorkload(t, dir, "exp-b", "")
+	want := fmt.Sprintf("databricks.yml in %s belongs to bundle \"exp-a\", not to this workload's bundle \"exp-b\"; pass --output-dir with another directory that contains the code directory", dir)
 	_, err = writeBundle(t.Context(), cfgB, pathB, dir, true)
-	require.EqualError(t, err, fmt.Sprintf("databricks.yml in %s belongs to bundle \"exp-a\", not to this workload's bundle \"exp-b\"; pass --output-dir with another directory that contains the code directory, or remove it", dir))
+	require.EqualError(t, err, want)
 	assert.Equal(t, bundleA, testutil.ReadFile(t, filepath.Join(dir, "databricks.yml")))
 	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, envVarsName))
 	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, secretEnvVarsName))
 	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, hyperparametersName))
 
-	// Without --force the generic hint still applies.
+	// Without --force the same error applies: suggesting --force would be a dead end.
 	_, err = writeBundle(t.Context(), cfgB, pathB, dir, false)
-	require.ErrorContains(t, err, "pass --force to overwrite")
+	require.EqualError(t, err, want)
 
 	// A field the bundle loader does not know must not hide the name.
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte("bundle: {name: exp-a}\nunknown_field: 1\n"), 0o600))
