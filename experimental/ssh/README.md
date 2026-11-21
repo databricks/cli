@@ -11,6 +11,22 @@ for terminal SSH sessions as well as for IDE Remote Development: the tunnel runs
 attaches as a single user. Standard access mode (`USER_ISOLATION`), Dedicated-to-a-group, and
 no-isolation clusters all fail with `cluster '<id>' must be a dedicated single-user cluster`.
 
+## Network Requirements
+
+The server is the Linux build of the CLI with the client's version. The client downloads it and
+uploads it to `/Workspace/Users/<me>/.databricks/ssh-tunnel/<version>/` once per version, so the
+machine running `ssh connect` needs to reach one of:
+
+- GitHub (`github.com` and `release-assets.githubusercontent.com`), which serves the CLI release
+  archives, or
+- a Python package index that serves the CLI wheels of the `databricks` package: `PIP_INDEX_URL`,
+  else `index-url` in the per-user pip config (`pip.conf`, or `pip.ini` on Windows), else PyPI
+  (`pypi.org` and `files.pythonhosted.org`). System-wide pip config files are not read. The client
+  falls back to the index when the GitHub download fails, takes a wheel only if it matches the
+  SHA-256 digest the index lists, and sends credentials in the index URL only to the index host.
+
+Development builds are not published, so they need `--releases-dir` (see [Development](#development)).
+
 ## Usage
 A. With local ssh config setup:
 ```shell
