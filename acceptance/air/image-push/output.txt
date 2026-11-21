@@ -8,7 +8,7 @@ Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.local
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image nvidia/cuda:13.4.1
-Source image nvidia/cuda:13.4.1 is 7.1 GB; AI Runtime allows up to 20 GB.
+Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed; AI Runtime allows up to 20 GB compressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 Docker push progress
@@ -47,7 +47,7 @@ Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Pulling source image example/image:v1 for linux/amd64
 Docker pull progress
-Source image example/image:v1 is 7.1 GB; AI Runtime allows up to 20 GB.
+Source image example/image:v1 is 7.1 GB uncompressed; AI Runtime allows up to 20 GB compressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
@@ -64,7 +64,7 @@ Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Pulling source image example/image:v1 for linux/amd64
 Docker pull progress
-Source image example/image:v1 is 7.1 GB; AI Runtime allows up to 20 GB.
+Source image example/image:v1 is 7.1 GB uncompressed; AI Runtime allows up to 20 GB compressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
@@ -125,17 +125,22 @@ Pulling source image example/image:v1 for linux/amd64
 Docker pull progress
 Error: source image example/image:v1 has platform "linux/arm64"; AIR requires linux/amd64: use --pull to fetch a compatible image, or rebuild the source for linux/amd64
 
-=== oversized image must not be pushed
+=== oversized image warns but is pushed
 
->>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
 Pushing example/image:v1 as main.training.image:v1 using profile docker-test
 Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image example/image:v1
-Source image example/image:v1 is 25.3 GB; AI Runtime allows up to 20 GB.
-Error: image size (25.3GB) exceeds maximum allowed size (20GB): start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches
+Source image example/image:v1 is 25.3 GB uncompressed; AI Runtime allows up to 20 GB compressed.
+Warning: source image example/image:v1 exceeds 20 GB uncompressed, so the push may be rejected: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches.
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 === pull failure must not be pushed
 
@@ -234,6 +239,8 @@ image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
 image ls --quiet example/image:v1
 image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
 image inspect --format {{.Size}} example/image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 pull --platform linux/amd64 example/image:v1
 
 === in a Claude Code session the auth docker configure child adds no install hint
@@ -247,7 +254,7 @@ Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.local
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image example/image:v1
-Source image example/image:v1 is 7.1 GB; AI Runtime allows up to 20 GB.
+Source image example/image:v1 is 7.1 GB uncompressed; AI Runtime allows up to 20 GB compressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress

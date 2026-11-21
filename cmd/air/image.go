@@ -218,9 +218,11 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 		return fmt.Errorf("parse size of source image %s: %w", resolved.source, err)
 	}
 	sizeGB := float64(sizeBytes) / 1e9
-	cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB; AI Runtime allows up to %d GB.", resolved.source, sizeGB, maxImageSizeGB))
+	cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB uncompressed; AI Runtime allows up to %d GB compressed.", resolved.source, sizeGB, maxImageSizeGB))
+	// Docker reports the uncompressed size while the server measures compressed layers,
+	// so an oversized local image may still be accepted: warn instead of failing.
 	if sizeGB > maxImageSizeGB {
-		return fmt.Errorf("image size (%.1fGB) exceeds maximum allowed size (%dGB): start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches", sizeGB, maxImageSizeGB)
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s exceeds %d GB uncompressed, so the push may be rejected: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches.", resolved.source, maxImageSizeGB))
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
