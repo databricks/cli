@@ -1,1 +1,1 @@
-* Allow `databricks sandbox forward` to forward remote ports below 10000. The sandbox refuses a few reserved platform ports with an error that names the port.
+* Allow `databricks sandbox forward` to forward remote ports below 10000. The sandbox refuses a few reserved platform ports with an error that names the port. ([#7861](https://github.com/databricks/cli/pull/7861))
