@@ -697,8 +697,8 @@ func TestAnyInstalledAndFirstFailureCategory(t *testing.T) {
 // agent (isolateAgents), the remaining config dir overrides derived from that
 // HOME, and a no-op telemetry auth resolver, so it reads no host state and
 // contacts nothing.
-func isolateCommandEnv(t *testing.T) {
-	isolateAgents(t)
+func isolateCommandEnv(t *testing.T, agentEnv ...string) {
+	isolateAgents(t, agentEnv...)
 	noTelemetryAuth(t)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -738,6 +738,50 @@ func TestUninstallDeclinedIsCancelled(t *testing.T) {
 	events := funnelEvents(ctx)
 	assert.Equal(t, []string{"STARTED", "FINISHED:CANCELLED:"}, funnelShape(events))
 	assert.True(t, events[0].Interactive)
+}
+
+// A coding agent in a pseudo-terminal cannot answer "Proceed?", so the
+// uninstall proceeds unprompted, as it does without a terminal.
+func TestUninstallAgentCallerIsNotAskedToConfirm(t *testing.T) {
+	isolateCommandEnv(t, "CODEX_CI", "1")
+	globalDir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(globalDir, &installer.InstallState{
+		SchemaVersion: 1,
+		Release:       "v0.2.6",
+		Skills:        map[string]string{"databricks-test": "1.0.0"},
+	}))
+	calls := setupUninstallMock(t)
+
+	ioCtx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	go drainReader(test.Stdout)
+	stderr := make(chan []byte, 1)
+	go func() {
+		b, _ := io.ReadAll(test.Stderr)
+		stderr <- b
+	}()
+	// Declines if asked, so a confirm shown by mistake fails the test
+	// instead of blocking it.
+	go func() {
+		_, _ = test.Stdin.WriteString("n\n")
+		_ = test.Stdin.Flush()
+	}()
+
+	ctx := telemetry.WithNewLogger(ioCtx)
+	cmd := NewUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{})
+	require.NoError(t, cmd.Execute())
+	test.Done()
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, installer.ScopeGlobal, (*calls)[0].Scope)
+	out := string(<-stderr)
+	assert.NotContains(t, out, "Proceed?")
+	assert.Contains(t, out, "No prompts shown because a coding agent (codex) was detected.")
+	events := funnelEvents(ctx)
+	require.NotEmpty(t, events)
+	assert.False(t, events[0].Interactive)
 }
 
 // Update and uninstall with nothing installed keep their error (and exit code)
