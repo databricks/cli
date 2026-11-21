@@ -93,6 +93,22 @@ func TestDefaultHandlersAcceptFixtureStatements(t *testing.T) {
 	}
 }
 
+func TestDefaultFixtureCTASReportsRowCountSchemaWithoutRows(t *testing.T) {
+	server := New(t)
+	AddDefaultHandlers(server)
+
+	resp := postSQL(t, server, "/api/2.0/sql/statements", "CREATE OR REPLACE TABLE main.s.t AS SELECT * FROM main.s.src")
+	require.NotNil(t, resp.Manifest)
+	require.NotNil(t, resp.Manifest.Schema)
+	names := make([]string, len(resp.Manifest.Schema.Columns))
+	for i, col := range resp.Manifest.Schema.Columns {
+		names[i] = col.Name
+	}
+	assert.Equal(t, []string{"num_affected_rows", "num_inserted_rows"}, names)
+	require.NotNil(t, resp.Result)
+	assert.Empty(t, resp.Result.DataArray)
+}
+
 func TestDefaultFixtureMatcherYieldsToTestMatcher(t *testing.T) {
 	server := New(t)
 	AddDefaultHandlers(server)

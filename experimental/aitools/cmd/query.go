@@ -33,12 +33,18 @@ const (
 	queryOutputModeJSON queryOutputMode = iota
 	queryOutputModeStaticTable
 	queryOutputModeInteractiveTable
+	// queryOutputModeNoResults confirms success in words when a table would
+	// otherwise be empty. A statement without a result set may still carry a
+	// schema (CTAS reports num_affected_rows/num_inserted_rows with no rows),
+	// so this keys off the row count alone. JSON mode never uses it: it prints
+	// an empty array so the output stays machine-readable.
+	queryOutputModeNoResults
 )
 
 // selectQueryOutputMode picks the rendering mode for a single-query result.
 // JSON is the only machine-readable option; static and interactive are
 // table variants chosen by row count and TTY capabilities. Sharing only
-// the threshold with sqlcli; the three-way decision is aitools-specific
+// the threshold with sqlcli; the mode decision is aitools-specific
 // because the postgres command's renderers have a different shape.
 func selectQueryOutputMode(format sqlcli.Format, stdoutInteractive, promptSupported bool, rowCount int) queryOutputMode {
 	if format == sqlcli.OutputJSON {
@@ -49,6 +55,9 @@ func selectQueryOutputMode(format sqlcli.Format, stdoutInteractive, promptSuppor
 	}
 	// Interactive table browsing requires keyboard input from stdin.
 	// If prompts are not supported, prefer static table output instead.
+	if rowCount == 0 {
+		return queryOutputModeNoResults
+	}
 	if !promptSupported {
 		return queryOutputModeStaticTable
 	}
@@ -175,14 +184,6 @@ multi-query mode, the same parameter set is applied to every statement.`,
 				return renderCSV(cmd.OutOrStdout(), columns, rows)
 			}
 
-			// A statement without a result set may still carry a schema: CTAS
-			// and other DML report num_affected_rows/num_inserted_rows columns
-			// with no rows, which JSON mode would otherwise print as "[]".
-			if len(rows) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "Query executed successfully (no results)")
-				return nil
-			}
-
 			// Output format depends on stdout capabilities.
 			// Interactive table browsing also requires prompt-capable stdin.
 			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
@@ -191,6 +192,9 @@ multi-query mode, the same parameter set is applied to every statement.`,
 			switch selectQueryOutputMode(format, stdoutInteractive, promptSupported, len(rows)) {
 			case queryOutputModeJSON:
 				return renderJSON(cmd.OutOrStdout(), columns, rows)
+			case queryOutputModeNoResults:
+				fmt.Fprintln(cmd.OutOrStdout(), "Query executed successfully (no results)")
+				return nil
 			case queryOutputModeStaticTable:
 				return renderStaticTable(cmd.OutOrStdout(), columns, rows)
 			default:

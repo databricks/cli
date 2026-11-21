@@ -282,6 +282,38 @@ func TestSelectQueryOutputMode(t *testing.T) {
 			rowCount:          sqlcli.StaticTableThreshold + 1,
 			want:              queryOutputModeInteractiveTable,
 		},
+		{
+			name:              "no rows in a terminal confirms success",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          0,
+			want:              queryOutputModeNoResults,
+		},
+		{
+			name:              "no rows without stdin interactivity confirms success",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   false,
+			rowCount:          0,
+			want:              queryOutputModeNoResults,
+		},
+		{
+			name:              "no rows with json flag stays json",
+			format:            sqlcli.OutputJSON,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          0,
+			want:              queryOutputModeJSON,
+		},
+		{
+			name:              "no rows on non interactive stdout stays json",
+			format:            sqlcli.OutputText,
+			stdoutInteractive: false,
+			promptSupported:   true,
+			rowCount:          0,
+			want:              queryOutputModeJSON,
+		},
 	}
 
 	for _, tc := range tests {

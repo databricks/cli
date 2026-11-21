@@ -1,12 +1,1 @@
-# Every statement gets the CTAS response of the Statement Execution API:
-# num_affected_rows/num_inserted_rows columns in the manifest, zero rows.
-[[Server]]
-Pattern = "POST /api/2.0/sql/statements"
-Response.Body = '''
-{
-  "statement_id": "s1",
-  "status": {"state": "SUCCEEDED"},
-  "manifest": {"schema": {"column_count": 2, "columns": [{"name": "num_affected_rows"}, {"name": "num_inserted_rows"}]}, "total_chunk_count": 0, "total_row_count": 0},
-  "result": {}
-}
-'''
+RecordRequests = true
