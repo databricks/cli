@@ -12,6 +12,9 @@ import (
 
 type dropEmptyStrings struct{}
 
+// lifecyclePattern matches the lifecycle block of every resource.
+var lifecyclePattern = dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("lifecycle"))
+
 // DropEmptyStrings removes empty-string values on omitempty resource fields, so
 // they are not force-sent to the backend. An empty string reaches this point
 // either literally (policy_id: "") or via a variable that resolved to "", so
@@ -21,6 +24,10 @@ type dropEmptyStrings struct{}
 // force-sends explicitly-set zero values, defeating the omitempty tag. Dropping
 // here fixes it and makes the result visible in `bundle validate -o json`, which
 // serializes the dynamic value.
+//
+// lifecycle is left as is: it configures the bundle and is never sent to the
+// backend, and an empty string is meaningful there (job_runs
+// lifecycle.triggers.on_value_change can watch a value that is "").
 func DropEmptyStrings() bundle.Mutator {
 	return &dropEmptyStrings{}
 }
@@ -32,12 +39,28 @@ func (m *dropEmptyStrings) Name() string {
 func (m *dropEmptyStrings) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		root, err := dyn.Map(root, "resources", func(_ dyn.Path, resources dyn.Value) (dyn.Value, error) {
+		lifecycles := make(map[string]dyn.Value)
+		_, err := dyn.MapByPattern(root, lifecyclePattern, func(p dyn.Path, lifecycle dyn.Value) (dyn.Value, error) {
+			lifecycles[p.String()] = lifecycle
+			return lifecycle, nil
+		})
+		if err != nil {
+			return root, err
+		}
+
+		root, err = dyn.Map(root, "resources", func(_ dyn.Path, resources dyn.Value) (dyn.Value, error) {
 			// Normalize against the resources type so omitempty is known per field.
 			// Only DropEmptyStrings is set: existing values are kept as-is otherwise.
 			out, normDiags := convert.Normalize(config.Resources{}, resources, convert.DropEmptyStrings)
 			diags = diags.Extend(normDiags)
 			return out, nil
+		})
+		if err != nil {
+			return root, err
+		}
+
+		root, err = dyn.MapByPattern(root, lifecyclePattern, func(p dyn.Path, _ dyn.Value) (dyn.Value, error) {
+			return lifecycles[p.String()], nil
 		})
 		if err != nil {
 			return root, err

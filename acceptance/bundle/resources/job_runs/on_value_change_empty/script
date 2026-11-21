@@ -1,0 +1,32 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "validate keeps the empty value"
+trace $CLI bundle validate -o json | jq .resources.job_runs.my_run.lifecycle
+
+title "a watch on an empty value deploys and records it"
+trace $CLI bundle deploy
+read_id.py my_job > /dev/null
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+trace print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle'
+
+title "redeploy with the value still empty plans nothing"
+trace $CLI bundle plan
+
+title "setting the value re-fires"
+update_file.py databricks.yml '{default: ""}' '{default: set}'
+trace $CLI bundle plan
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "clearing the value again re-fires"
+update_file.py databricks.yml '{default: set}' '{default: ""}'
+trace $CLI bundle plan
+trace $CLI bundle deploy
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now

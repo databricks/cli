@@ -166,6 +166,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Must run after PythonMutator to see development values set by Python mutators.
 		validate.PipelineDevelopmentDeprecated(),
 
+		// Store job_runs on_value_change values in triggers_state. Must run after
+		// PythonMutator: triggers_state is not declared by the PyDABs JobRunLifecycle
+		// model, so exposing it to Python would fail resource loading.
+		mutator.ResolveJobRunValueTriggers(),
+
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).

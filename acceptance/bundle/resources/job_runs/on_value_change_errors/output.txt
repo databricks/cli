@@ -1,0 +1,42 @@
+
+=== multiple trigger fields in one entry are rejected
+>>> musterr [CLI] bundle validate
+Error: lifecycle.triggers entry must set only one of on_bundle_deploy, on_file_change, or on_value_change
+  in databricks.yml:24:20
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error
+
+=== an undefined variable is rejected
+>>> musterr [CLI] bundle validate
+Error: reference does not exist: ${var.missing}
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error
+
+=== a complex value is rejected
+>>> musterr [CLI] bundle validate
+Warning: expected string, found map
+  at resources.job_runs.my_run.lifecycle.triggers[0].on_value_change
+  in databricks.yml:24:38
+
+Error: lifecycle.triggers entry must set on_bundle_deploy, on_file_change, or on_value_change
+  in databricks.yml:24:20
+
+Name: job-runs-on-value-change-errors
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-value-change-errors/default
+
+Found 1 error and 1 warning
