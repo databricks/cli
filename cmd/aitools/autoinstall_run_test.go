@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -354,33 +353,55 @@ func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
 }
 
 // An interrupted lookup can still answer from a stale cached manifest that has
-// the gate on. The run stops instead of installing.
+// the gate on. The run stops instead of installing: it records the version as
+// a failed lookup does, and then ends the CLI by the signal.
 func TestAutoInstallStopsWhenTheGateLookupIsInterrupted(t *testing.T) {
 	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
-	var interrupt context.CancelFunc
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	origNotify, origRaise := notifyInterrupt, raise
 	t.Cleanup(func() {
 		gateOn = autoinstall.GateOn
-		notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
-			return signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-		}
+		notifyInterrupt, raise = origNotify, origRaise
 	})
-	notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
+	var caught []os.Signal
+	var interrupt context.CancelFunc
+	notifyInterrupt = func(ctx context.Context, sigs ...os.Signal) (context.Context, func() os.Signal) {
+		caught = sigs
 		ctx, interrupt = context.WithCancel(ctx)
-		return ctx, interrupt
+		return ctx, func() os.Signal { return syscall.SIGHUP }
 	}
 	gateOn = func(context.Context, string) (bool, error) {
 		interrupt()
 		return true, nil
 	}
-	ctx := cmdio.MockDiscard(t.Context())
-	ctx = telemetry.WithNewLogger(ctx)
+	var raised []os.Signal
+	var stateWhenRaised autoinstall.State
+	raise = func(sig os.Signal) {
+		raised = append(raised, sig)
+		var err error
+		stateWhenRaised, err = autoinstall.Load(ctx)
+		require.NoError(t, err)
+	}
 	runAutoInstallHook(ctx)
 
+	assert.Equal(t, []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGHUP}, caught)
 	assert.Empty(t, telemetry.BufferedEvents(ctx))
 	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+	want := autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}
 	state, err := autoinstall.Load(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}, state)
+	assert.Equal(t, want, state)
+	assert.Equal(t, []os.Signal{syscall.SIGHUP}, raised)
+	assert.Equal(t, want, stateWhenRaised, "the version is recorded before the CLI ends")
+}
+
+// Without a signal, stopping reports none.
+func TestNotifyInterruptWithoutASignal(t *testing.T) {
+	ctx, stop := notifyInterrupt(t.Context(), os.Interrupt)
+	assert.NoError(t, ctx.Err())
+	assert.Nil(t, stop())
+	assert.ErrorIs(t, ctx.Err(), context.Canceled)
 }
 
 // A run that has nothing to install or cannot ask skips before the gate
