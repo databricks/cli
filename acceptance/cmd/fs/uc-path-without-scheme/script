@@ -4,5 +4,5 @@ trace musterr $CLI fs ls /Volumes/main/default/vol
 trace musterr $CLI fs ls /Skills/foo/bar
 trace musterr $CLI fs cp /Volumes/main/default/vol/a.csv /Volumes/main/default/vol/b.csv
 
-# Completion only lists candidates and does not warn.
-trace $CLI __complete fs ls /Volumes/
+# Completion does not warn. On macOS /Volumes/ is a real directory, so complete a path that exists nowhere.
+trace $CLI __complete fs ls /Volumes/main/default/vol/
