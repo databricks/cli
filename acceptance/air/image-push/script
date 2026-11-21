@@ -43,6 +43,10 @@ trace musterr databricks air images push -p docker-test -s example/image:v1 --ca
 title "incompatible pulled image must not be pushed"
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
 
+title "oversized image warns but is pushed"
+export DOCKER_TEST_MODE=oversized
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
 title "pull failure must not be pushed"
 export DOCKER_TEST_MODE=pull-error
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull

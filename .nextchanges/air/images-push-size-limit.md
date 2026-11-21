@@ -1,0 +1,1 @@
+* Print the source image size in `databricks air images push` before uploading, and warn with the 30 GB Databricks Artifact Registry limit and advice to start from a Databricks base image and trim layers when the local image exceeds it. ([#7868](https://github.com/databricks/cli/pull/7868))

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -24,6 +25,8 @@ const (
 	maxImageRepositoryLength = 255
 	maxImageTagLength        = 128
 	airImagePlatform         = "linux/amd64"
+	// Databricks Artifact Registry caps images at this many decimal gigabytes, the unit Docker reports sizes in.
+	maxImageSizeGB = 30
 )
 
 var (
@@ -198,12 +201,24 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 		cmdio.LogString(ctx, "Using local source image "+resolved.source)
 	}
 
-	var platform bytes.Buffer
-	if err := deps.runCommand(ctx, nil, &platform, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", resolved.source); err != nil {
+	var inspected bytes.Buffer
+	if err := deps.runCommand(ctx, nil, &inspected, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Size}}", resolved.source); err != nil {
 		return fmt.Errorf("inspect source image %s: %w", resolved.source, err)
 	}
-	if got := strings.TrimSpace(platform.String()); got != airImagePlatform {
-		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, got, airImagePlatform, airImagePlatform)
+	platform, size, _ := strings.Cut(strings.TrimSpace(inspected.String()), "|")
+	if platform != airImagePlatform {
+		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
+	}
+	// Docker reports the uncompressed size while the registry measures compressed layers,
+	// so the size is advisory: an oversized or unreadable size never blocks the push.
+	if sizeBytes, err := strconv.ParseInt(size, 10, 64); err != nil {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the size of source image %s (got %q).", resolved.source, size))
+	} else {
+		sizeGB := float64(sizeBytes) / 1e9
+		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB uncompressed; Databricks Artifact Registry caps images at %d GB compressed.", resolved.source, sizeGB, maxImageSizeGB))
+		if sizeGB > maxImageSizeGB {
+			cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s exceeds %d GB uncompressed, so Databricks Artifact Registry may reject the push: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches.", resolved.source, maxImageSizeGB))
+		}
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)

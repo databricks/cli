@@ -56,7 +56,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 				_, err := io.WriteString(out, "image-id\n")
 				return err
 			case "image inspect":
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, fakeImageInspect("7140000000"))
 				return err
 			}
 			return nil
@@ -74,7 +74,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	target := "123.container.us-west-2.cloud.databricks.test/main.training.cuda:13.4.1"
 	assert.Equal(t, []recordedImageCommand{
 		{executable: "/usr/bin/docker", args: []string{"image", "ls", "--quiet", "nvidia/cuda:13.4.1"}},
-		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", "nvidia/cuda:13.4.1"}},
+		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Size}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
 	}, commands)
@@ -84,7 +84,70 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	)
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
+	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
+	assert.NotContains(t, stderr.String(), "Warning: source image")
 	assert.Contains(t, stderr.String(), "Pushed image")
+}
+
+// fakeImageInspect answers the docker image inspect format runImagePush uses for a linux/amd64 image.
+func fakeImageInspect(sizeBytes string) string {
+	return "linux/amd64|" + sizeBytes + "\n"
+}
+
+func TestRunImagePushWarnsAboutOversizedImage(t *testing.T) {
+	oversized := "Warning: source image example/trainer:v1 exceeds 30 GB uncompressed, so Databricks Artifact Registry may reject the push: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches."
+	tests := []struct {
+		name      string
+		sizeBytes string
+		warning   string
+	}{
+		{name: "at limit", sizeBytes: "30000000000"},
+		{name: "over limit", sizeBytes: "35300000000", warning: oversized},
+		{name: "unreadable", sizeBytes: "unknown", warning: "Warning: could not read the size of source image example/trainer:v1 (got \"unknown\")."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd, _, stderr := newImagePushTestCommand(t, "workspace")
+			deps := imagePushDeps{
+				configureDocker: func(context.Context, string) (string, error) {
+					return "123.container.us-west-2.cloud.databricks.test", nil
+				},
+				lookPath: func(string) (string, error) { return "docker", nil },
+				runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
+					switch strings.Join(args[:2], " ") {
+					case "image ls":
+						_, err := io.WriteString(out, "image-id\n")
+						return err
+					case "image inspect":
+						_, err := io.WriteString(out, fakeImageInspect(tt.sizeBytes))
+						return err
+					}
+					return nil
+				},
+			}
+
+			err := runImagePush(cmd, &imagePushOptions{
+				source:   "example/trainer:v1",
+				catalog:  "main",
+				schema:   "training",
+				artifact: "trainer",
+			}, deps)
+			require.NoError(t, err)
+			switch tt.warning {
+			case "":
+				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 30.0 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
+				assert.NotContains(t, stderr.String(), "Warning: source image")
+				assert.NotContains(t, stderr.String(), "could not read the size")
+			case oversized:
+				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 35.3 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
+				assert.Contains(t, stderr.String(), oversized)
+			default:
+				assert.Contains(t, stderr.String(), tt.warning)
+				assert.NotContains(t, stderr.String(), "GB uncompressed;")
+			}
+			assert.Contains(t, stderr.String(), "Pushed image")
+		})
+	}
 }
 
 func TestRegistryHostFromDockerConfigureOutput(t *testing.T) {
@@ -111,7 +174,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 		runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, executable string, args ...string) error {
 			commands = append(commands, recordedImageCommand{executable: executable, args: args})
 			if args[0] == "image" && args[1] == "inspect" {
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, fakeImageInspect("7140000000"))
 				return err
 			}
 			return nil
