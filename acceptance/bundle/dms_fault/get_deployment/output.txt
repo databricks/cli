@@ -55,6 +55,9 @@
 
 
 >>> bundle deployment unbind foo
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Failed to record deployment history for unbind: Fault injected by test.
 
 >>> bundle generate job --existing-job-id [FOO_ID] --key foo --config-dir resources --source-dir src --force --bind
   Job configuration successfully saved to resources/foo.job.yml
@@ -76,6 +79,9 @@
 
 
 >>> bundle deployment unbind bar
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Failed to record deployment history for unbind: Fault injected by test.
 
 >>> bundle generate pipeline --existing-pipeline-id [BAR_ID] --key bar --config-dir resources --source-dir src --force --bind
   File successfully saved to src/pipeline.sql

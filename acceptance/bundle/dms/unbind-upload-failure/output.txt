@@ -1,0 +1,23 @@
+
+=== A remote state upload failure fails the unbind version
+
+>>> fault.py POST /api/2.0/workspace-files/import-file/**resources.json 400 0 1
+
+>>> musterr [CLI] bundle deployment unbind upload_failed
+Error: Fault injected by test. (400 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Fdms-unbind-upload-failure-[UNIQUE_NAME]%2Fdefault%2Fstate%2Fresources.json?overwrite=true
+HTTP Status: 400 Bad Request
+API error_code: INJECTED
+API message: Fault injected by test.
+
+
+>>> print_requests.py --dms //complete --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/4/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
+
+=== Remote state still contains the binding whose upload failed
+
+>>> [CLI] bundle summary -o json
+{
+  "upload_failed": "[JOB_ID]"
+}

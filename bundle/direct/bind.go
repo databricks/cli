@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -40,6 +41,12 @@ func (e ErrResourceAlreadyBound) Error() string {
 type DMSBindMetadata struct {
 	Serial        int
 	ResourceState dstate.ResourceEntry
+}
+
+// DMSUnbindMetadata holds removed keys to publish after the unbind commits.
+type DMSUnbindMetadata struct {
+	Serial       int
+	ResourceKeys []string
 }
 
 // BindResult contains the result of a bind operation including any detected changes.
@@ -269,18 +276,40 @@ func (result *BindResult) Cancel() {
 
 // Unbind removes a resource from direct engine state without deleting
 // the workspace resource. Also removes associated permissions/grants entries.
-func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey string) error {
+// It returns nil DMS metadata when deployment history is disabled.
+func (b *DeploymentBundle) Unbind(ctx context.Context, configRoot *config.Root, statePath, resourceKey string) (*DMSUnbindMetadata, error) {
 	if err := b.StateDB.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
-		return err
+		return nil, err
+	}
+	var configured *bool
+	if configRoot.Experimental != nil {
+		configured = configRoot.Experimental.DeploymentHistory
+	}
+	if b.StateDB.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured) {
+		if b.StateDB.Data.Features == nil {
+			b.StateDB.Data.Features = make(map[string]struct{})
+		}
+		b.StateDB.Data.Features[dstate.FeatureDeploymentHistoryShadow] = struct{}{}
 	}
 	if err := b.StateDB.UpgradeToWrite(); err != nil {
-		return err
+		return nil, err
+	}
+	var metadata *DMSUnbindMetadata
+	if b.StateDB.RecordsHistory() {
+		metadata = &DMSUnbindMetadata{Serial: b.StateDB.Data.Serial}
+		// Finalize commits the removals below as one existing WAL transaction.
+		if b.StateDB.Data.State != nil {
+			metadata.Serial++
+		}
+		if _, exists := b.StateDB.GetResourceEntry(resourceKey); exists {
+			metadata.ResourceKeys = append(metadata.ResourceKeys, resourceKey)
+		}
 	}
 
 	// Delete the main resource
 	err := b.StateDB.DeleteState(ctx, resourceKey, false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	log.Infof(ctx, "Unbound %s", resourceKey)
@@ -294,12 +323,18 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 		if key == permissionsKey || key == grantsKey || strings.HasPrefix(key, resourceKey+".") {
 			err = b.StateDB.DeleteState(ctx, key, false)
 			if err != nil {
-				return err
+				return nil, err
+			}
+			if metadata != nil {
+				metadata.ResourceKeys = append(metadata.ResourceKeys, key)
 			}
 			log.Infof(ctx, "Unbound %s", key)
 		}
 	}
 
+	if metadata != nil {
+		slices.Sort(metadata.ResourceKeys)
+	}
 	_, err = b.StateDB.Finalize(ctx)
-	return err
+	return metadata, err
 }
