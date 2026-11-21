@@ -493,7 +493,7 @@ func configLock(path string) (string, error) {
 }
 
 // readInUseTimeout bounds the retries of a read that fails because the file is in use (see readConfig).
-var readInUseTimeout = 2 * time.Second
+const readInUseTimeout = 2 * time.Second
 
 // readConfig reads the file at path. A read without the agent's lock can run while the agent renames a new version
 // over the file, as Claude Code does on every save; on Windows, opening the file then fails with a sharing violation
