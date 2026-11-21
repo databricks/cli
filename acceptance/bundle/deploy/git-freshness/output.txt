@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle plan -o json
+
+=== A stale branch blocks non-interactive deployments
+
+>>> [CLI] bundle deploy
+Warning: Git branch "main" is 1 commit(s) behind its upstream "origin/main"
+
+Error: Git branch "main" is 1 commit(s) behind its upstream "origin/main"; the current console does not support prompting. To proceed, use --auto-approve (which also approves other deployment actions)
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Warning: Git branch "main" is 1 commit(s) behind its upstream "origin/main"
+
+Error: Git branch "main" is 1 commit(s) behind its upstream "origin/main"; the current console does not support prompting. To proceed, use --auto-approve (which also approves other deployment actions)
+
+=== Auto-approve allows a stale branch
+
+>>> [CLI] bundle deploy --plan tmp.plan.json --auto-approve
+Warning: Git branch "main" is 1 commit(s) behind its upstream "origin/main"
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/git-freshness/default/files...
+Created jobs.job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
