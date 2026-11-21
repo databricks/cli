@@ -205,9 +205,7 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	if got := strings.TrimSpace(platform.String()); got != airImagePlatform {
 		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, got, airImagePlatform, airImagePlatform)
 	}
-	if err := warnImageWorkingDir(ctx, deps.runCommand, dockerPath, resolved.source, cmd.ErrOrStderr()); err != nil {
-		return err
-	}
+	warnImageWorkingDir(ctx, deps.runCommand, dockerPath, resolved.source, cmd.ErrOrStderr())
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "tag", resolved.source, target); err != nil {
@@ -372,20 +370,22 @@ func imageExistsLocally(
 }
 
 // warnImageWorkingDir warns when the source image sets WORKDIR, which AIR ignores at runtime.
+// The check is advisory, so an inspect failure is reported but never blocks the push.
 func warnImageWorkingDir(
 	ctx context.Context,
 	runCommand func(context.Context, io.Reader, io.Writer, io.Writer, string, ...string) error,
 	dockerPath, source string,
 	errOut io.Writer,
-) error {
+) {
 	var workingDir bytes.Buffer
 	if err := runCommand(ctx, nil, &workingDir, errOut, dockerPath, "image", "inspect", "--format", "{{.Config.WorkingDir}}", source); err != nil {
-		return fmt.Errorf("inspect source image %s: %w", source, err)
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: couldn't read WORKDIR of source image %s: %v", source, err))
+		return
 	}
-	if dir := strings.TrimSpace(workingDir.String()); dir != "" {
+	// WORKDIR / is Docker's default and cannot break relative paths.
+	if dir := strings.TrimSpace(workingDir.String()); dir != "" && dir != "/" {
 		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts.", source, dir))
 	}
-	return nil
 }
 
 // runImageCommand runs a subprocess with the supplied context and I/O streams.

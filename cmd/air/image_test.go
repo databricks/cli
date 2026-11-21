@@ -127,6 +127,37 @@ func TestRunImagePushWarnsWhenImageSetsWorkingDir(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Pushed image")
 }
 
+func TestWarnImageWorkingDir(t *testing.T) {
+	tests := []struct {
+		name       string
+		workingDir string
+		err        error
+		want       string
+	}{
+		{name: "unset", workingDir: "\n", want: ""},
+		{name: "root", workingDir: "/\n", want: ""},
+		{name: "set", workingDir: "/app\n", want: "sets WORKDIR /app"},
+		{name: "inspect fails", err: errors.New("daemon unavailable"), want: "Warning: couldn't read WORKDIR of source image example/trainer:v1: daemon unavailable"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stderr := &bytes.Buffer{}
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, stderr, "", ""))
+			run := func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
+				assert.Equal(t, []string{"image", "inspect", "--format", "{{.Config.WorkingDir}}", "example/trainer:v1"}, args)
+				_, _ = io.WriteString(out, tt.workingDir)
+				return tt.err
+			}
+			warnImageWorkingDir(ctx, run, "docker", "example/trainer:v1", io.Discard)
+			if tt.want == "" {
+				assert.Empty(t, stderr.String())
+			} else {
+				assert.Contains(t, stderr.String(), tt.want)
+			}
+		})
+	}
+}
+
 func TestRegistryHostFromDockerConfigureOutput(t *testing.T) {
 	output := `Configured Docker credential helper for 123.container.us-west-2.cloud.databricks.test
 Updated Docker config: /tmp/docker/config.json
