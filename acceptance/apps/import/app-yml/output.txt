@@ -1,0 +1,59 @@
+
+>>> [CLI] apps import --name myapp --output-dir out
+Loading app 'myapp' configuration
+Creating bundle configuration
+File successfully saved to app.yml
+Bundle configuration created at databricks.yml
+Binding bundle to existing app
+Successfully bound to app 'myapp'
+Deploying bundle
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/myapp/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Bundle deployed successfully
+Starting app
+✓ Getting the status of the app myapp
+✓ App is in RUNNING state
+✓ App compute is in ACTIVE state
+✓ Deployment succeeded
+You can access the app at myapp-123.cloud.databricksapps.com
+App started successfully
+
+✔ App 'myapp' imported to [TEST_TMP_DIR]/out
+
+You can now deploy changes with: databricks bundle deploy
+
+>>> ls out
+app.yml
+databricks.yml
+
+>>> cat out/databricks.yml
+bundle:
+  name: myapp
+
+workspace:
+  host: [DATABRICKS_URL]
+
+resources:
+  apps:
+    app:
+      name: myapp
+      description: ""
+      source_code_path: .
+
+>>> cat out/app.yml
+command:
+  - python
+  - app.py
+env:
+  - name: GREETING
+    value: hello
+  - name: WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: PYTHON_VERSION
+    value: 3.10
+
+=== App config the bundle deploys (app.yml, if kept, is uploaded with the source)
+
+>>> [CLI] bundle validate -o json
+null

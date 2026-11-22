@@ -49,14 +49,20 @@ type pagerModel[T any] struct {
 	total    int
 
 	// Keep only one fetch in flight at a time: the iterator is not safe
-	// to read from two goroutines. If SPACE or ENTER arrives while
-	// fetching, drainAll is recorded and the pending batchMsg chains
-	// the next fetch.
-	fetching   bool
-	drainAll   bool
-	hasPrinted bool
-	iterDone   bool
-	err        error
+	// to read from two goroutines. If ENTER arrives while fetching,
+	// drainAll is recorded and the pagePrintedMsg that follows the
+	// fetched page chains the next fetch.
+	fetching bool
+	// printing is set from a batchMsg until its pagePrintedMsg: tea runs
+	// every returned Cmd on its own goroutine, so a fetch or Quit issued
+	// before the page's print reaches the event loop can overtake it and
+	// the page's rows are lost or reordered. Keys wait for it.
+	printing    bool
+	quitPending bool
+	drainAll    bool
+	hasPrinted  bool
+	iterDone    bool
+	err         error
 }
 
 // newPagerModel wires ctx into the fetch closure so nothing on the
@@ -103,6 +109,10 @@ type batchMsg struct {
 	done  bool
 	err   error
 }
+
+// pagePrintedMsg follows a page's print in the same tea.Sequence, so
+// when Update sees it the page's lines are already queued for output.
+type pagePrintedMsg struct{}
 
 func (m *pagerModel[T]) Init() tea.Cmd {
 	m.fetching = true
@@ -163,22 +173,30 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.total += msg.count
 		m.hasPrinted = true
-		// One Println cmd (not N) keeps the batch ordered even though
-		// tea.Sequence dispatches each cmd on its own goroutine.
+		// One Println for the whole batch: tea.Sequence delivers each
+		// cmd's message before running the next, so what follows it in
+		// the same Sequence lands after the page is queued for output.
 		var printCmd tea.Cmd
 		if len(msg.lines) > 0 {
 			printCmd = tea.Println(strings.Join(msg.lines, "\n"))
 		}
-		switch {
-		case msg.done:
+		if msg.done {
 			m.iterDone = true
 			return m, tea.Sequence(printCmd, tea.Quit)
-		case m.drainAll:
-			m.fetching = true
-			return m, tea.Sequence(printCmd, m.fetch(m.pageSize, m.limit, m.total))
-		default:
-			return m, printCmd
 		}
+		m.printing = true
+		return m, tea.Sequence(printCmd, func() tea.Msg { return pagePrintedMsg{} })
+
+	case pagePrintedMsg:
+		m.printing = false
+		switch {
+		case m.quitPending:
+			return m, tea.Quit
+		case m.drainAll && !m.iterDone && m.err == nil:
+			m.fetching = true
+			return m, m.fetch(m.pageSize, m.limit, m.total)
+		}
+		return m, nil
 
 	case tea.KeyMsg:
 		if m.iterDone {
@@ -194,7 +212,7 @@ func (m *pagerModel[T]) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case tea.KeyEnter:
 		return m, m.startDrain()
 	case tea.KeyEsc, tea.KeyCtrlC:
-		return m, tea.Quit
+		return m, m.quit()
 	case tea.KeySpace:
 		return m, m.startAdvance()
 	case tea.KeyRunes:
@@ -202,14 +220,23 @@ func (m *pagerModel[T]) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case " ":
 			return m, m.startAdvance()
 		case "q", "Q":
-			return m, tea.Quit
+			return m, m.quit()
 		}
 	}
 	return m, nil
 }
 
+// quit waits for a pending page print so its rows are not dropped.
+func (m *pagerModel[T]) quit() tea.Cmd {
+	if m.printing {
+		m.quitPending = true
+		return nil
+	}
+	return tea.Quit
+}
+
 func (m *pagerModel[T]) startAdvance() tea.Cmd {
-	if m.drainAll || m.fetching {
+	if m.drainAll || m.fetching || m.printing {
 		return nil
 	}
 	m.fetching = true
@@ -221,9 +248,9 @@ func (m *pagerModel[T]) startDrain() tea.Cmd {
 		return nil
 	}
 	m.drainAll = true
-	// If a fetch is already in flight, its batchMsg will see drainAll
-	// and chain the next fetch. Otherwise kick one off here.
-	if m.fetching {
+	// If a fetch or a page print is pending, its pagePrintedMsg will see
+	// drainAll and chain the next fetch. Otherwise kick one off here.
+	if m.fetching || m.printing {
 		return nil
 	}
 	m.fetching = true

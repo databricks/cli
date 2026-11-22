@@ -4,6 +4,10 @@ This Software includes software developed at Databricks (https://www.databricks.
 
 This Software contains code from the following open source projects, licensed under the Apache 2.0 license:
 
+grpc/grpc-go - https://github.com/grpc/grpc-go
+Copyright The gRPC Authors
+License - https://github.com/grpc/grpc-go/blob/master/LICENSE
+
 spf13/cobra - https://github.com/spf13/cobra
 Copyright cobra authors
 License - https://github.com/spf13/cobra/blob/main/LICENSE.txt
@@ -32,6 +36,10 @@ License - https://github.com/gorilla/websocket/blob/main/LICENSE
 ---
 
 This Software contains code from the following open source projects, licensed under the BSD (3-clause) license:
+
+protocolbuffers/protobuf-go - https://github.com/protocolbuffers/protobuf-go
+Copyright The Go Authors
+License - https://github.com/protocolbuffers/protobuf-go/blob/master/LICENSE
 
 spf13/pflag - https://github.com/spf13/pflag
 Copyright (c) 2012 Alex Ogier. All rights reserved.

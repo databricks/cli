@@ -61,6 +61,9 @@ __all__ = [
     "Function",
     "FunctionDict",
     "FunctionParam",
+    "IcebergTableSource",
+    "IcebergTableSourceDict",
+    "IcebergTableSourceParam",
     "InputBinding",
     "InputBindingDict",
     "InputBindingParam",
@@ -240,6 +243,11 @@ from databricks.bundles.features._models.function import (
     Function,
     FunctionDict,
     FunctionParam,
+)
+from databricks.bundles.features._models.iceberg_table_source import (
+    IcebergTableSource,
+    IcebergTableSourceDict,
+    IcebergTableSourceParam,
 )
 from databricks.bundles.features._models.input_binding import (
     InputBinding,

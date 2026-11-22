@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	stdlog "log" //nolint:depguard // slog.SetDefault redirects the standard log package, and Execute restores it
 	"log/slog"
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -24,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New(ctx context.Context) *cobra.Command {
+func newRootCommand(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "databricks",
 		Short:   "Databricks CLI",
@@ -50,6 +53,7 @@ func New(ctx context.Context) *cobra.Command {
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
 	initTargetFlag(cmd)
+	initSkillsInvokedFlag(cmd)
 
 	// Deprecated flag. Warn if it is specified.
 	initProgressLoggerFlag(cmd, logFlags)
@@ -66,7 +70,7 @@ func New(ctx context.Context) *cobra.Command {
 		}
 
 		// Configure default logger.
-		ctx, err = logFlags.initializeContext(ctx)
+		ctx, err = logFlags.initializeContext(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -76,7 +80,7 @@ func New(ctx context.Context) *cobra.Command {
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
 
-		warnIfStaleVersion(ctx)
+		warnIfStaleVersion(ctx, cmd)
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
@@ -87,18 +91,28 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = installer.WithAiDevKitInUserAgent(ctx)
 		ctx = installer.WithCallingAgentToolingInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
+		ctx = withSkillsInUserAgent(ctx, cmd)
 		cmd.SetContext(ctx)
 
-		// Recommend installing Databricks AI tooling to Claude Code when it is
-		// driving the CLI without the tooling installed (best-effort: a stderr
-		// line and a telemetry event that is uploaded at exit).
-		agents.MaybeHint(ctx, cmd)
+		// Recommend installing Databricks AI tooling to the calling coding agent
+		// when it drives the CLI without the tooling installed (best-effort: a
+		// stderr line and a telemetry event that is uploaded at exit). Only the
+		// global install state is read, as for the calling-agent User-Agent.
+		agents.MaybeHint(ctx, cmd, func(ctx context.Context, agentName string) bool {
+			return installer.PluginRecorded(ctx, installer.ScopeGlobal, agentName)
+		})
 		return nil
 	}
 
 	cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
 		// Wait for any active Bubble Tea programs to finish and restore terminal state
 		cmdio.Wait(cmd.Context())
+
+		// On the first run of a new CLI version, install Databricks AI tools.
+		// Cobra runs post-run hooks only when the command succeeded.
+		if autoinstall.Run != nil {
+			autoinstall.Run(cmd)
+		}
 		return nil
 	}
 
@@ -114,9 +128,10 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, cmd *cobra.Command) (err error) {
+// execute runs cmd with args, which select the subcommand to run. Unlike
+// [cobra.Command.SetArgs], nil args mean no arguments rather than the process
+// arguments.
+func execute(ctx context.Context, cmd *cobra.Command, args []string) (err error) {
 	defer func() {
 		r := recover()
 
@@ -152,11 +167,32 @@ Stack Trace:
 	// Set a command execution ID value in the context
 	ctx = cmdctx.GenerateExecId(ctx)
 
+	// Cobra runs with the process arguments if args are nil.
+	if args == nil {
+		args = []string{}
+	}
+	cmd.SetArgs(args)
+
 	startTime := time.Now()
+
+	// initializeContext puts the log file it opens in this slot. It is closed when Execute returns, even on a panic, and
+	// the loggers are restored, so nothing writes to the closed file.
+	var logFile logFileSlot
+	ctx = context.WithValue(ctx, logFileKey{}, &logFile)
+	// slog.SetDefault also redirects the standard log package, so both are restored.
+	prevLogger := slog.Default()
+	prevLogWriter, prevLogFlags := stdlog.Writer(), stdlog.Flags()
+	defer func() {
+		logFile.close()
+		slog.SetDefault(prevLogger)
+		stdlog.SetOutput(prevLogWriter)
+		stdlog.SetFlags(prevLogFlags)
+	}()
 
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
+		err = describeEmptyAPIError(err)
 		if cmdctx.HasConfigUsed(cmd.Context()) {
 			cfg := cmdctx.ConfigUsed(cmd.Context())
 			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
@@ -170,6 +206,8 @@ Stack Trace:
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
+	exitCode := ExitStatus(err)
+
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
 	// context
@@ -179,19 +217,14 @@ Stack Trace:
 				slog.String("exit_code", "0"))
 		} else if errors.Is(err, ErrAlreadyPrinted) {
 			logger.Debug("failed execution",
-				slog.String("exit_code", "1"),
+				slog.String("exit_code", strconv.Itoa(exitCode)),
 			)
 		} else {
 			logger.Info("failed execution",
-				slog.String("exit_code", "1"),
+				slog.String("exit_code", strconv.Itoa(exitCode)),
 				slog.String("error", err.Error()),
 			)
 		}
-	}
-
-	exitCode := 0
-	if err != nil {
-		exitCode = 1
 	}
 
 	commandStr := commandString(cmd)

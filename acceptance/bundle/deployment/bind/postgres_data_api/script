@@ -16,16 +16,16 @@ trace $CLI bundle deployment bind data_api1 "${DATA_API_NAME}" --auto-approve
 trace $CLI bundle summary
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace $CLI postgres get-data-api "${DATA_API_NAME}" | jq '{name, status: (.status | {db_schemas, db_max_rows})}'
+trace retry $CLI postgres get-data-api "${DATA_API_NAME}" | jq '{name, status: (.status | {db_schemas, db_max_rows})}'
 trace $CLI bundle plan
 
 title "Unbind leaves the Data API enabled"
 trace $CLI bundle deployment unbind data_api1
 trace $CLI bundle summary
-trace $CLI postgres get-data-api "${DATA_API_NAME}" | jq '{name}'
+trace retry $CLI postgres get-data-api "${DATA_API_NAME}" | jq '{name}'
 
 title "Bind again; destroy turns off the Data API"
 trace $CLI bundle deployment bind data_api1 "${DATA_API_NAME}" --auto-approve
 trace $CLI bundle destroy --auto-approve
 trace musterr $CLI postgres get-data-api "${DATA_API_NAME}"
-trace $CLI postgres get-database "${DATABASE_NAME}" | jq '{name}'
+trace retry $CLI postgres get-database "${DATABASE_NAME}" | jq '{name}'

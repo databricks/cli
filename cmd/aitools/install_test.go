@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -334,6 +335,8 @@ func TestMapAgentScope(t *testing.T) {
 }
 
 func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude", "codex")
 	orig := installPluginForAgentFn
@@ -372,7 +375,42 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	assert.NotErrorIs(t, err, errNoAgentSetUp)
 }
 
+// An install that tries the plugin for an agent the user had put on raw skills
+// ends that choice even when the plugin install fails, so update tries the
+// plugin again. The choice of an agent not asked for the plugin stays.
+func TestExecutePlanFailedPluginForgetsSkillsOnlyChoice(t *testing.T) {
+	setupTestAgents(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	fakeBinsOnPath(t, "claude")
+	orig := installPluginForAgentFn
+	t.Cleanup(func() { installPluginForAgentFn = orig })
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed}
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := installer.GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{
+		SchemaVersion:    installer.CurrentSchemaVersion,
+		Release:          "v0.2.5",
+		Skills:           map[string]string{"databricks": "0.2.5"},
+		SkillsOnlyAgents: []string{agents.NameClaudeCode, agents.NameCodex},
+	}))
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	plan := buildPlan(t.Context(), []*agents.Agent{claude}, installer.ScopeGlobal, false, false)
+	_, err = executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, true)
+	require.ErrorIs(t, err, errNoAgentSetUp)
+
+	st, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{agents.NameCodex}, st.SkillsOnlyAgents)
+}
+
 func TestExecutePlanNothingInstalledIsAnError(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude")
 	orig := installPluginForAgentFn
@@ -505,6 +543,8 @@ func TestExecutePlanNoSkillsToInstall(t *testing.T) {
 }
 
 func TestExecutePlanNoSkillsToInstallWithPluginFailures(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude")
 	setupPluginMock(t)
@@ -905,6 +945,7 @@ func TestInstallSkillsOnlyAllAgents(t *testing.T) {
 	require.Len(t, *calls, 1)
 	assert.Len(t, (*calls)[0].agents, 2)
 	assert.Nil(t, (*calls)[0].opts.SpecificSkills)
+	assert.True(t, (*calls)[0].opts.SkillsOnly)
 }
 
 func TestInstallSkillsOnlySpecificSkills(t *testing.T) {
@@ -1082,14 +1123,12 @@ func TestInstallOutputJSONThroughRoot(t *testing.T) {
 	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	cli := root.New(ctx)
-	cli.AddCommand(NewInstallCmd())
+	cli := root.NewTree(ctx)
+	cli.Add(Spec)
 	var out, errOut bytes.Buffer
 	cli.SetOut(&out)
 	cli.SetErr(&errOut)
-	cli.SetArgs([]string{"install", "--agents", "codex", "--scope", "global", "--output", "json"})
-
-	err := root.Execute(ctx, cli)
+	err := cli.Execute(ctx, []string{"aitools", "install", "--agents", "codex", "--scope", "global", "--output", "json"})
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	assert.NotContains(t, errOut.String(), "Error:")
 
@@ -1821,4 +1860,82 @@ func TestNoAgentsMessageMatchesTheDetection(t *testing.T) {
 	ctx, stderr = cmdio.NewTestContextWithStderr(t.Context())
 	printNoAgentsMessage(ctx, installInvocation{scope: installer.ScopeGlobal})
 	assert.Contains(t, stderr.String(), "No supported coding agents found on PATH.")
+}
+
+// Esc cancels the agent picker as Ctrl+C does, and both end the run with
+// huh.ErrUserAborted.
+func TestAgentPickerEscCancelsLikeCtrlC(t *testing.T) {
+	options := []huh.Option[string]{huh.NewOption("Cursor", "cursor")}
+
+	var selected []string
+	field := agentPickerField(installer.ScopeGlobal, options, &selected)
+	p := newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
+	p.Init()
+	p.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	assert.Contains(t, p.View(), agentPickerHelp)
+
+	_, cmd := p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	assert.True(t, p.cancelled)
+	assert.Equal(t, tea.QuitMsg{}, cmd())
+	assert.Empty(t, p.View(), "a cancelled picker leaves nothing on screen")
+	assert.ErrorIs(t, pickerError(p.cancelled, nil), huh.ErrUserAborted)
+
+	field = agentPickerField(installer.ScopeGlobal, options, &selected)
+	p = newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
+	p.Init()
+	_, cmd = p.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	assert.Equal(t, tea.InterruptMsg{}, cmd())
+	assert.ErrorIs(t, pickerError(false, tea.ErrInterrupted), huh.ErrUserAborted)
+}
+
+// While the agent picker searches, the first Esc only leaves the search.
+func TestAgentPickerEscLeavesSearchBeforeCancelling(t *testing.T) {
+	options := []huh.Option[string]{huh.NewOption("Cursor", "cursor"), huh.NewOption("Claude Code", "claude")}
+
+	var selected []string
+	field := agentPickerField(installer.ScopeGlobal, options, &selected)
+	p := newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
+	p.Init()
+	p.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	p.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
+	require.True(t, field.GetFiltering())
+
+	p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	assert.False(t, p.cancelled, "the first Esc leaves the search")
+	assert.False(t, field.GetFiltering())
+
+	p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	assert.True(t, p.cancelled, "Esc outside the search cancels the picker")
+}
+
+func TestPickerError(t *testing.T) {
+	boom := errors.New("boom")
+	tests := []struct {
+		name      string
+		cancelled bool
+		err       error
+		want      error
+	}{
+		{"completed", false, nil, nil},
+		{"esc", true, nil, huh.ErrUserAborted},
+		{"ctrl c", false, tea.ErrInterrupted, huh.ErrUserAborted},
+		{"program error", false, boom, boom},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, pickerError(tc.cancelled, tc.err))
+		})
+	}
+}
+
+// TestTopLevelFailureKeepsErrorsOutsideAgents checks that a run error which joins per-agent failures with another failure,
+// such as a sign-in that failed, keeps the other failure as the document's top-level error.
+func TestTopLevelFailureKeepsErrorsOutsideAgents(t *testing.T) {
+	signInErr := errors.New("sign-in failed")
+	agentErr := &agentErrors{err: errors.New("agent failed")}
+
+	assert.NoError(t, topLevelFailure(agentErr))
+	top := topLevelFailure(errors.Join(agentErr, signInErr))
+	require.ErrorIs(t, top, signInErr)
+	assert.Equal(t, signInErr.Error(), top.Error())
 }

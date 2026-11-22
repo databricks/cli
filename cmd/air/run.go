@@ -97,7 +97,12 @@ field, pass its path to -h as a separate argument:
 
   databricks air run -h config                            all fields
   databricks air run -h config.compute                    one section
-  databricks air run -h config.compute.accelerator_type   one field`,
+  databricks air run -h config.compute.accelerator_type   one field
+
+To have a coding agent write the YAML and follow the run, install the
+databricks-ai-runtime skill:
+
+  ` + skillInstallCommand,
 		Example: `  # Submit and stream logs until the run finishes
   databricks air run -f workload.yaml --watch
 
@@ -140,7 +145,7 @@ field, pass its path to -h as a separate argument:
 	cmd.Flags().BoolVar(&watch, "watch", false, "Stream logs until the run completes")
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config against the workspace without submitting a run")
-	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used (max 64 characters)")
 	_ = cmd.MarkFlagRequired("file")
 
 	// --dry-run authenticates after local parsing and validation so syntax, unknown
@@ -158,6 +163,10 @@ field, pass its path to -h as a separate argument:
 		cfg, err := loadRunConfigWithOverrides(ctx, file, overrides)
 		if err != nil {
 			return err
+		}
+
+		if msg := missingTorchWarning(ctx, cfg, file); msg != "" {
+			cmdio.LogString(ctx, msg)
 		}
 
 		if dryRun {
@@ -274,9 +283,9 @@ field, pass its path to -h as a separate argument:
 		out := cmd.OutOrStdout()
 		printSubmittedEvent(out, runIDStr, dashboardURL)
 		grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
-		req.onStatusChange = func(current, previous string) {
+		req.onStatusChange = newStatusTransitionReporter(func(current, previous string) {
 			printStatusEvent(out, current, previous)
-		}
+		})
 		err = runLogs(watchCtx, cmd, req)
 
 		// Re-resolve the run for the closing envelope. STATUS events only fire on
@@ -315,7 +324,7 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 }
 
 func airLogsCommand(profile, runID string) string {
-	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID)}
+	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID), "--follow"}
 	if profile != "" {
 		args = append(args, "-p", shellquote.BashArg(profile))
 	}

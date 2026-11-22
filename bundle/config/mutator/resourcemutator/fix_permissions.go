@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -155,7 +156,7 @@ func useMaximumLevel(permissions dyn.Value, resourceType string) (dyn.Value, err
 	}
 
 	levelPerPrincipal := make(map[string]string)
-	principalIndex := make(map[string]int)
+	maxPermission := make(map[string]dyn.Value)
 	var principals []string
 
 	for _, permission := range permissionArray {
@@ -168,19 +169,26 @@ func useMaximumLevel(permissions dyn.Value, resourceType string) (dyn.Value, err
 		if principal == "" {
 			continue
 		}
-		_, ok = principalIndex[principal]
+		_, ok = maxPermission[principal]
 		if !ok {
-			ind := len(principalIndex)
-			principalIndex[principal] = ind
 			principals = append(principals, principal)
 		}
-		levelPerPrincipal[principal] = resources.GetMaxLevel(levelPerPrincipal[principal], level)
+		maxLevel := resources.GetMaxLevel(levelPerPrincipal[principal], level)
+		if maxLevel != levelPerPrincipal[principal] {
+			maxPermission[principal] = permission
+		}
+		levelPerPrincipal[principal] = maxLevel
 	}
 
 	var newPermissions []dyn.Value
 
 	for _, principal := range principals {
-		newPermissions = append(newPermissions, createPermissionFromPrincipal(principal, levelPerPrincipal[principal]))
+		permission := createPermissionFromPrincipal(principal, levelPerPrincipal[principal])
+		// Keep the entry that sets the level as is: its source location lets config-remote-sync write it back.
+		if original := maxPermission[principal]; reflect.DeepEqual(original.AsAny(), permission.AsAny()) {
+			permission = original
+		}
+		newPermissions = append(newPermissions, permission)
 	}
 
 	return dyn.V(newPermissions), nil

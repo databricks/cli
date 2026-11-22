@@ -43,6 +43,8 @@ resources.materialization_sets.*.materialized_features[*].online_store_config.ca
 resources.materialization_sets.*.materialized_features[*].online_store_config.online_store_name	string	ALL
 resources.materialization_sets.*.materialized_features[*].online_store_config.schema_name	string	ALL
 resources.materialization_sets.*.materialized_features[*].online_store_config.table_name_prefix	string	ALL
+resources.materialization_sets.*.materialized_features[*].operations	*ml.MaterializedFeatureOperations	ALL
+resources.materialization_sets.*.materialized_features[*].operations.latest_entity_purge_operation	string	ALL
 resources.materialization_sets.*.materialized_features[*].pipeline_id	string	ALL
 resources.materialization_sets.*.materialized_features[*].pipeline_schedule_state	ml.MaterializedFeaturePipelineScheduleState	ALL
 resources.materialization_sets.*.materialized_features[*].streaming_mode	*ml.StreamingMode	ALL

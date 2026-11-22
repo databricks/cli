@@ -3,6 +3,7 @@
 package ai_search
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,22 +21,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ai-search",
-		Short: `*Public Preview* **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "ai-search",
+	Short:   `*Public Preview* **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.`,
+	GroupID: "aisearch",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 **AI Search Endpoint**: Represents the compute resources to host AI Search
   indexes. AIP-conformant replacement for the legacy VectorSearchEndpoints API;
-  functionally equivalent.`,
-		GroupID: "aisearch",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  functionally equivalent.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateEndpoint())
@@ -57,8 +62,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-endpoint command
@@ -79,16 +82,16 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createEndpointReq.EndpointId, "endpoint-id", createEndpointReq.EndpointId, `The user-supplied short name for the Endpoint, per AIP-133.`)
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", createEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.EndpointId, "endpoint-id", createEndpointReq.EndpointId, `Short name of the endpoint, which becomes the last segment of name.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", createEndpointReq.Endpoint.BudgetPolicyId, `ID of the serverless budget policy to apply to the endpoint.`)
 	// TODO: array: custom_tags
 	// TODO: complex arg: endpoint_status
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Full resource name of the endpoint, in the form workspaces/{workspace_id}/endpoints/{endpoint_id}.`)
 	cmd.Flags().IntVar(&createEndpointReq.Endpoint.ReplicaCount, "replica-count", createEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
 	// TODO: complex arg: scaling_info
 	cmd.Flags().IntVar(&createEndpointReq.Endpoint.TargetQps, "target-qps", createEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
 	// TODO: complex arg: throughput_info
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", createEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", createEndpointReq.Endpoint.UsagePolicyId, `ID of the usage policy to apply to the endpoint.`)
 
 	cmd.Use = "create-endpoint PARENT ENDPOINT_TYPE"
 	cmd.Short = `*Public Preview* Create an AI Search endpoint.`
@@ -184,10 +187,10 @@ func newCreateIndex() *cobra.Command {
 
 	cmd.Flags().Var(&createIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createIndexReq.IndexId, "index-id", createIndexReq.IndexId, `The user-supplied Unity Catalog table name for the Index, per AIP-133.`)
+	cmd.Flags().StringVar(&createIndexReq.IndexId, "index-id", createIndexReq.IndexId, `Three-level Unity Catalog table name for the new index, in the form catalog.schema.name.`)
 	// TODO: complex arg: delta_sync_index_spec
 	// TODO: complex arg: direct_access_index_spec
-	cmd.Flags().Var(&createIndexReq.Index.IndexSubtype, "index-subtype", `The subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`)
+	cmd.Flags().Var(&createIndexReq.Index.IndexSubtype, "index-subtype", `Subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`)
 	cmd.Flags().StringVar(&createIndexReq.Index.Name, "name", createIndexReq.Index.Name, `Name of the AI Search index.`)
 	// TODO: complex arg: status
 
@@ -197,13 +200,19 @@ func newCreateIndex() *cobra.Command {
 
 Create an AI Search index.
 
-  Create a new AI Search index.
+  Create a new AI Search index. The index is provisioned asynchronously;
+  status.ready on GetIndex reports when it can serve queries.
 
   Arguments:
     PARENT: The Endpoint where this Index will be created. Format:
       workspaces/{workspace_id}/endpoints/{endpoint_id}
-    PRIMARY_KEY: Primary key of the index. Set on create and immutable thereafter.
-    INDEX_TYPE: Type of index. Required on create and immutable thereafter.
+    PRIMARY_KEY: Name of the column that uniquely identifies each row. It must exist in the
+      source table (Delta Sync) or in schema_json (Direct Access) and cannot
+      be the embedding source or vector column. Set on create and immutable
+      thereafter.
+    INDEX_TYPE: Type of index. A DELTA_SYNC index is kept in sync with a source Delta
+      table; a DIRECT_ACCESS index holds rows that you write through
+      UpsertData and RemoveData. Set on create and immutable thereafter.
       Supported values: [DELTA_SYNC, DIRECT_ACCESS]`
 
 	cmd.Annotations = make(map[string]string)
@@ -531,7 +540,7 @@ func newListEndpoints() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Best-effort upper bound on the number of results to return.`)
+	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Maximum number of endpoints to return in one page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -609,7 +618,7 @@ func newListIndexes() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listIndexesLimit int
 
-	cmd.Flags().IntVar(&listIndexesReq.PageSize, "page-size", listIndexesReq.PageSize, `Best-effort upper bound on the number of results to return.`)
+	cmd.Flags().IntVar(&listIndexesReq.PageSize, "page-size", listIndexesReq.PageSize, `Maximum number of indexes to return.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listIndexesLimit, "limit", 0, `Maximum number of results to return.`)
@@ -688,14 +697,14 @@ func newQueryIndex() *cobra.Command {
 
 	// TODO: array: columns_to_rerank
 	// TODO: array: facets
-	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string describing query filters (e.g.`)
-	cmd.Flags().IntVar(&queryIndexReq.MaxResults, "max-results", queryIndexReq.MaxResults, `Maximum number of results to return (the legacy num_results).`)
+	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON object of filters to apply, serialized as a string.`)
+	cmd.Flags().IntVar(&queryIndexReq.MaxResults, "max-results", queryIndexReq.MaxResults, `Maximum number of results to return.`)
 	// TODO: array: query_columns
 	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
-	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `Query type: ANN, HYBRID, or FULL_TEXT.`)
+	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `Query type: ANN for vector similarity search, HYBRID for combined vector and keyword search, or FULL_TEXT for keyword search without embeddings.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
-	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Score threshold for the approximate nearest-neighbor search.`)
+	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Score threshold for the approximate nearest-neighbor search; results that score below it are not returned.`)
 	// TODO: array: sort_columns
 
 	cmd.Use = "query-index NAME"
@@ -940,9 +949,9 @@ func newSyncIndex() *cobra.Command {
 
 Synchronize an AI Search index.
 
-  Synchronize a Delta Sync AI Search index with its source Delta table. Applies
-  only to Delta Sync indexes; Direct Access indexes are written via the
-  data-plane upsert path.
+  Start a sync of a Delta Sync AI Search index with its source Delta table. Use
+  it with TRIGGERED pipelines; CONTINUOUS pipelines sync automatically.
+  Direct Access indexes are written through UpsertData instead.
 
   Arguments:
     NAME: Full resource name of the index to synchronize. Must be a Delta Sync
@@ -1003,15 +1012,15 @@ func newUpdateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&updateEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", updateEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", updateEndpointReq.Endpoint.BudgetPolicyId, `ID of the serverless budget policy to apply to the endpoint.`)
 	// TODO: array: custom_tags
 	// TODO: complex arg: endpoint_status
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Full resource name of the endpoint, in the form workspaces/{workspace_id}/endpoints/{endpoint_id}.`)
 	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.ReplicaCount, "replica-count", updateEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
 	// TODO: complex arg: scaling_info
 	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.TargetQps, "target-qps", updateEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
 	// TODO: complex arg: throughput_info
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", updateEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", updateEndpointReq.Endpoint.UsagePolicyId, `ID of the usage policy to apply to the endpoint.`)
 
 	cmd.Use = "update-endpoint NAME UPDATE_MASK ENDPOINT_TYPE"
 	cmd.Short = `*Public Preview* Update an AI Search endpoint.`
@@ -1019,19 +1028,19 @@ func newUpdateEndpoint() *cobra.Command {
 
 Update an AI Search endpoint.
 
-  Update an existing AI Search endpoint. Multi-bucket masks are supported and
-  dispatched in deterministic bucket order: budget policy, custom tags,
-  throughput, scaling/replicas, then metrics export. Per-bucket dispatch is not
-  atomic across buckets — if a later bucket fails, earlier buckets may already
-  have been applied.
+  Update an existing AI Search endpoint. Only the fields named in update_mask
+  change. The server applies a mask that spans several settings, such as
+  budget_policy_id and custom_tags, one setting at a time, so if a later
+  setting fails, the earlier ones may already have been applied.
 
   Arguments:
-    NAME: Name of the AI Search endpoint. Server-assigned full resource path
-      (workspaces/{workspace}/endpoints/{endpoint}) on output. On create, the
-      user-supplied short name is conveyed via
-      CreateEndpointRequest.endpoint_id; the server composes the full name
-      and returns it on the response.
-    UPDATE_MASK: The list of fields to update.
+    NAME: Full resource name of the endpoint, in the form
+      workspaces/{workspace_id}/endpoints/{endpoint_id}. On create, the server
+      composes it from parent and endpoint_id and ignores any value supplied
+      in the request body.
+    UPDATE_MASK: Comma-separated list of Endpoint fields to update. The updatable fields
+      are budget_policy_id, usage_policy_id, custom_tags, replica_count,
+      and target_qps. The server rejects nested paths and unknown fields.
     ENDPOINT_TYPE: Type of endpoint. Required on create and immutable thereafter.
       Supported values: [STANDARD, STORAGE_OPTIMIZED]`
 
@@ -1129,7 +1138,11 @@ Upsert data into an AI Search index.
   Arguments:
     NAME: Full resource name of the index. Must be a Direct Access index. Format:
       workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}
-    INPUTS_JSON: JSON document describing the rows to upsert.`
+    INPUTS_JSON: JSON array of the rows to insert or update, serialized as a string. Each
+      element is an object that maps column names to values and must include the
+      primary key column; vector columns are given as arrays of numbers. A row
+      whose primary key already exists is overwritten. The array must not be
+      empty.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"

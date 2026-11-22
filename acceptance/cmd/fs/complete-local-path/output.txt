@@ -1,0 +1,35 @@
+
+>>> [CLI] __complete fs ls sr
+src/
+dbfs:/
+:2
+Completion ended with directive: ShellCompDirectiveNoSpace
+bash offers: src/
+
+>>> [CLI] __complete fs ls ./sr
+./src/
+dbfs:/
+:2
+Completion ended with directive: ShellCompDirectiveNoSpace
+bash offers: ./src/
+
+>>> [CLI] __complete fs ls ./
+./src/
+dbfs:/
+:2
+Completion ended with directive: ShellCompDirectiveNoSpace
+bash offers: ./src/
+
+>>> [CLI] __complete fs ls ./src/
+./src/sub/
+dbfs:/
+:2
+Completion ended with directive: ShellCompDirectiveNoSpace
+bash offers: ./src/sub/
+
+>>> [CLI] __complete fs ls src//s
+src//sub/
+dbfs:/
+:2
+Completion ended with directive: ShellCompDirectiveNoSpace
+bash offers: src//sub/

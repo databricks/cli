@@ -3,6 +3,8 @@
 package permissions
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -15,11 +17,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "permissions",
-		Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
-		Long: `Permissions API are used to create read, write, edit, update and manage access
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "permissions",
+	Short:   `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Permissions API are used to create read, write, edit, update and manage access
   for various users on different objects and endpoints. * **[Apps
   permissions](:service:apps)** — Manage which users can manage or use apps. *
   **[Cluster permissions](:service:clusters)** — Manage which users can
@@ -49,14 +56,13 @@ func New() *cobra.Command {
   access control on service principals, use **[Account Access Control
   Proxy](:service:accountaccesscontrolproxy)**.
 
-  [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`,
-		GroupID: "iam",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -68,8 +74,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

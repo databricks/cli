@@ -1,0 +1,7 @@
+bundle:
+  name: test-pipeline-test-invalid-project
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: ${var.missing}

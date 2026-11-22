@@ -3,6 +3,7 @@
 package ai_gateway
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -19,22 +20,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ai-gateway",
-		Short: `Govern AI workloads in Unity Catalog.`,
-		Long: `Govern AI workloads in Unity Catalog. This API manages the Unity Catalog
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "ai-gateway",
+	Short:   `Govern AI workloads in Unity Catalog.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Govern AI workloads in Unity Catalog. This API manages the Unity Catalog
   securables that bring centralized access control, lineage, and auditing to
   AI-serving entities: model services (governed access to foundation models and
   external LLMs), model provider services (governed resources for external model
-  providers), and MCP services (governed Model Context Protocol servers).`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  providers), and MCP services (governed Model Context Protocol servers).`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateMcpService())
@@ -66,8 +71,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-mcp-service command
@@ -109,7 +112,9 @@ func newCreateMcpService() *cobra.Command {
   Arguments:
     PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
       {...} component is capped at 255 characters individually.
-    MCP_SERVICE_ID: Name for the MCP service, e.g. "my_mcp_service".`
+    MCP_SERVICE_ID: Name of the MCP service within the parent schema. The name must not
+      contain periods, spaces, forward slashes, percent signs, or control
+      characters, and it is stored in lowercase.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -286,7 +291,10 @@ func newCreateModelProviderService() *cobra.Command {
   Arguments:
     PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
       {...} component is capped at 255 characters individually.
-    MODEL_PROVIDER_SERVICE_ID: Name for the model provider service, e.g. "openai_prod".`
+    MODEL_PROVIDER_SERVICE_ID: Name of the model provider service within the parent schema. The name must
+      not contain periods, spaces, forward slashes, percent signs, or control
+      characters, must not end in _DO_NOT_MODIFY, and must not exceed 241
+      characters. It is stored in lowercase.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -379,7 +387,9 @@ func newCreateModelService() *cobra.Command {
   Arguments:
     PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
       {...} component is capped at 255 characters individually.
-    MODEL_SERVICE_ID: Name for the model service, e.g. "my_model_service".`
+    MODEL_SERVICE_ID: Name of the model service within the parent schema. The name must not
+      contain periods, spaces, forward slashes, percent signs, or control
+      characters, and it is stored in lowercase.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1634,8 +1644,9 @@ func newUpdateMcpService() *cobra.Command {
   Arguments:
     NAME: Resource name of the MCP service. Format:
       mcp-services/{catalog}.{schema}.{mcp_service}. Each {...} component is
-      capped at 255 characters individually. Server-derived on Create from
-      parent + mcp_service_id; required and immutable on Update/Get/Delete.
+      capped at 255 characters individually. The server derives the name on
+      Create from parent and mcp_service_id; it is required and immutable on
+      Update, Get, and Delete.
     UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
       replacement must include every required field; any optional field you omit
       is cleared. To preserve sibling fields, use one or more granular paths:
@@ -1737,9 +1748,10 @@ func newUpdateModelProviderService() *cobra.Command {
   Arguments:
     NAME: Resource name of the provider service. Format:
       model-provider-services/{catalog}.{schema}.{model_provider_service}.
-      Each {...} component is capped at 255 characters individually.
-      Server-derived on Create from parent + model_provider_service_id;
-      required and immutable on Update/Get/Delete.
+      Each {...} component is capped at 255 characters individually. The
+      server derives the name on Create from parent and
+      model_provider_service_id; it is required and immutable on Update, Get,
+      and Delete.
     UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
       replacement must include every required field; any optional field you omit
       is cleared. To preserve sibling fields, use one or more granular paths:
@@ -1852,9 +1864,9 @@ func newUpdateModelService() *cobra.Command {
   Arguments:
     NAME: Resource name of the model service. Format:
       model-services/{catalog}.{schema}.{model_service}. Each {...}
-      component is capped at 255 characters individually. Server-derived on
-      Create from parent + model_service_id; required and immutable on
-      Update/Get/Delete.
+      component is capped at 255 characters individually. The server derives the
+      name on Create from parent and model_service_id; it is required and
+      immutable on Update, Get, and Delete.
     UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
       replacement must include every required field; any optional field you omit
       is cleared. To preserve sibling fields, use one or more granular paths:

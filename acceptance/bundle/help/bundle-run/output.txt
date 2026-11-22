@@ -71,20 +71,20 @@ Job Task Flags:
       --sql-params stringToString            A map from keys to values for jobs with SQL tasks. (default [])
 
 Pipeline Flags:
-      --full-refresh selectors   Space-separated table:<name> or file:<path> selectors to reset and recompute. Quote lists or repeat the flag.
-      --full-refresh-all         Perform a full graph reset and recompute.
-      --refresh selectors        Space-separated table:<name> or file:<path> selectors to update. Quote lists or repeat the flag.
-      --refresh-all              Perform a full graph update.
-      --validate-only            Perform an update to validate graph correctness.
+      --full-refresh selectors          Space-separated table:<name> or file:<path> selectors to reset and recompute. Quote lists or repeat the flag.
+      --full-refresh-all[=true|false]   Perform a full graph reset and recompute.
+      --refresh selectors               Space-separated table:<name> or file:<path> selectors to update. Quote lists or repeat the flag.
+      --refresh-all[=true|false]        Perform a full graph update.
+      --validate-only[=true|false]      Perform an update to validate graph correctness.
 
 Flags:
-  -h, --help      help for run
-      --no-wait   Don't wait for the run to complete.
-      --restart   Restart the run if it is already running.
+  -h, --help[=true|false]      help for run
+      --no-wait[=true|false]   Don't wait for the run to complete.
+      --restart[=true|false]   Restart the run if it is already running.
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+      --var strings          set values for variables defined in bundle config. Example: --var="foo=bar"
