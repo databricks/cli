@@ -650,7 +650,7 @@ func existingBundlePath(dir, name string) (bundlePathStatus, error) {
 		return bundlePathFree, nil
 	case err != nil:
 		// Stat and Lstat return a PathError; normalize only its displayed path.
-		pathErr := err.(*os.PathError)
+		pathErr, _ := errors.AsType[*os.PathError](err)
 		pathErr.Path = filepath.ToSlash(pathErr.Path)
 		return bundlePathFree, pathErr
 	case name == generatedArtifactsDir && info.IsDir():
