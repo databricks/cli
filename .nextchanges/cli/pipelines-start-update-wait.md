@@ -1,1 +1,1 @@
-* Add `--wait` and `--timeout` to `databricks pipelines start-update`. With `--wait`, the command waits for the update to finish and fails if the update fails or is canceled.
+* Add `--wait` and `--timeout` to `databricks pipelines start-update`. With `--wait`, the command waits for the update to finish and fails if the update fails or is canceled. ([#7878](https://github.com/databricks/cli/pull/7878))
