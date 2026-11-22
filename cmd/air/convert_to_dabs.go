@@ -153,7 +153,7 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		return nil, nil, err
 	}
 	codeSourcePath := codeDirPath
-	art, err := codeArtifactFor(cfg, codeDirPath)
+	art, err := codeArtifactFor(ctx, cfg, codeDirPath, bundleDir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -199,13 +199,13 @@ type codeArtifact struct {
 // and uploaded through the standard artifact path; a git ref / include_paths just add
 // `git` / narrowed `include` to the same artifact. It errors when the code dir resolves
 // to the bundle root (no basename to nest under). codeDirPath is the source dir relative
-// to the bundle ("./"-prefixed).
+// to the bundle ("./"-prefixed); bundleDir is the bundle directory itself.
 //
 // The artifact snapshotter names entries relative to `path`, and the runtime extracts
 // to /databricks/code_source/<dir>, so the code dir's basename must be the top-level
 // entry. To get that, emit path = the code dir's parent and include = basename-prefixed
 // subpaths, so entries come out as "<basename>/..." — the layout the air CLI produced.
-func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) {
+func codeArtifactFor(ctx context.Context, cfg *runConfig, codeDirPath, bundleDir string) (*codeArtifact, error) {
 	snap := codeSnapshot(cfg)
 	if snap == nil {
 		return nil, nil
@@ -217,10 +217,7 @@ func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) 
 	// generated_artifacts/, the output tarball) into it. Reject rather than emit that.
 	if codeDirRel == "." {
 		remedy := "move the code into a subdirectory (for example ./src) and point root_path at it"
-		// A bundle rooted at the parent only works for a working-tree snapshot: a git
-		// snapshot is archived from the bundle root, which would then sit outside the
-		// repository (or inside an unrelated one).
-		if snap.Git == nil {
+		if parentOutputDirWorks(ctx, snap, bundleDir) {
 			remedy += ", or pass --output-dir with a dedicated parent directory that contains the code directory"
 		}
 		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root, so there is no code directory to nest under %s/<dir>; %s", snap.RootPath, runtimeCodeSourceRoot, remedy)
@@ -271,20 +268,33 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 	}
 	rel, err := filepath.Rel(bundleAbs, root)
 	if err != nil || !filepath.IsLocal(rel) {
-		return "", codeOutsideBundleError(snap, root, bundleDir, cfg.ExperimentName)
+		return "", codeOutsideBundleError(ctx, snap, root, bundleDir, cfg.ExperimentName)
 	}
 	return localBundlePath(filepath.ToSlash(rel)), nil
 }
 
-// codeOutsideBundleError explains a code directory outside the bundle directory. For
-// a working-tree snapshot it names the code directory's parent as an --output-dir,
-// unless that parent already holds a bundle: sibling workloads that share a code
-// directory would each be sent there and replace one another's bundle. As in
-// codeArtifactFor, a git snapshot is not offered a parent, which may be outside the
-// repository.
-func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir, experimentName string) error {
-	remedy := "move the code inside the bundle directory"
+// parentOutputDirWorks reports whether a bundle rooted at the code directory's parent
+// can package the snapshot. A working-tree snapshot is archived from the bundle, so any
+// parent works. A git snapshot is archived from the bundle root, so the parent must be
+// inside the repository too, which holds exactly when the code directory is not the
+// repository's top level (`git rev-parse --show-prefix` is non-empty). A code directory
+// outside any repository can't be archived from a git ref at all, so no parent is offered.
+func parentOutputDirWorks(ctx context.Context, snap *snapshotSourceConfig, codeDir string) bool {
 	if snap.Git == nil {
+		return true
+	}
+	prefix, err := newGitRepo(codeDir).repoRelativePrefix(ctx)
+	return err == nil && prefix != ""
+}
+
+// codeOutsideBundleError explains a code directory outside the bundle directory. When
+// a bundle at the code directory's parent would work (parentOutputDirWorks), it names
+// that parent as an --output-dir, unless the parent already holds a bundle: sibling
+// workloads that share a code directory would each be sent there and replace one
+// another's bundle.
+func codeOutsideBundleError(ctx context.Context, snap *snapshotSourceConfig, root, bundleDir, experimentName string) error {
+	remedy := "move the code inside the bundle directory"
+	if parentOutputDirWorks(ctx, snap, root) {
 		parent := filepath.Dir(root)
 		if name := bundleFileIn(parent); name != "" {
 			remedy = fmt.Sprintf("%s already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", quotedPath(parent), name, remedy)
@@ -306,8 +316,17 @@ func isWorkloadBundle(dir, experimentName string) bool {
 	if err != nil || filepath.Base(path) != bundleFileName || experimentName == "" {
 		return false
 	}
-	existing, diags := config.Load(path)
-	return !diags.HasError() && existing.Bundle.Name == experimentName
+	return existingBundleName(path) == experimentName
+}
+
+// existingBundleName returns the bundle.name declared by the bundle file at path, or
+// "" when it declares none or does not parse (such as a hand-edited stub).
+func existingBundleName(path string) string {
+	existing, _ := config.Load(path)
+	if existing == nil {
+		return ""
+	}
+	return existing.Bundle.Name
 }
 
 // quotedPath quotes a local path the way the --output-dir suggestion does, so a
@@ -610,85 +629,81 @@ func buildPermissionsValue(perms []permission) dyn.Value {
 	return dyn.V(out)
 }
 
-func bundleLookupError(err error) error {
-	if pathErr, ok := errors.AsType[*os.PathError](err); ok {
-		return &os.PathError{Op: pathErr.Op, Path: filepath.ToSlash(pathErr.Path), Err: pathErr.Err}
+type bundlePathStatus int
+
+const (
+	bundlePathFree bundlePathStatus = iota
+	bundlePathOverwritable
+	bundlePathMustMove
+)
+
+// existingBundlePath classifies a root, the artifact directory, or one of its sidecars.
+func existingBundlePath(dir, name string) (bundlePathStatus, error) {
+	filename := filepath.Join(dir, name)
+	info, err := os.Stat(filename)
+	if errors.Is(err, os.ErrNotExist) {
+		// A dangling link still occupies the name even though Stat cannot find its target.
+		info, err = os.Lstat(filename)
 	}
-	return err
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		return bundlePathFree, nil
+	case err != nil:
+		// Stat and Lstat return a PathError; normalize only its displayed path.
+		pathErr := err.(*os.PathError)
+		pathErr.Path = filepath.ToSlash(pathErr.Path)
+		return bundlePathFree, pathErr
+	case name == generatedArtifactsDir && info.IsDir():
+		return bundlePathFree, nil
+	case info.Mode().IsRegular() && (name == bundleFileName || path.Dir(name) == generatedArtifactsDir):
+		return bundlePathOverwritable, nil
+	default:
+		// Alternate roots and non-regular outputs cannot be replaced with --force.
+		return bundlePathMustMove, nil
+	}
 }
 
-// A dangling symlink still occupies an output path. For a live link the target's
-// type determines whether it can serve as the artifact directory or a writable file.
-func existingBundlePath(name string) (os.FileInfo, error) {
-	info, err := os.Lstat(name)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, bundleLookupError(err)
-	}
-	if info.Mode()&os.ModeSymlink == 0 {
-		return info, nil
-	}
-	target, err := os.Stat(name)
-	if errors.Is(err, os.ErrNotExist) {
-		return info, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("move or remove the symlink before converting: %w", bundleLookupError(err))
-	}
-	return target, nil
-}
-
-func checkBundleOutputPaths(dir string, artifacts []uploadItem, force bool) error {
-	var lookupErrors []error
-	parent, err := existingBundlePath(filepath.Join(dir, generatedArtifactsDir))
-	if err != nil {
-		lookupErrors = append(lookupErrors, err)
-	}
-	names := slices.Clone(config.FileNames)
-	if parent != nil && parent.IsDir() {
-		for _, item := range artifacts {
-			names = append(names, path.Join(generatedArtifactsDir, item.name))
-		}
+func checkBundleOutputPaths(dir, experimentName string, artifacts []uploadItem, force bool) error {
+	names := append(slices.Clone(config.FileNames), generatedArtifactsDir)
+	for _, item := range artifacts {
+		names = append(names, path.Join(generatedArtifactsDir, item.name))
 	}
 
 	var conflicts []string
 	canForce := true
 	for _, name := range names {
-		info, err := existingBundlePath(filepath.Join(dir, name))
+		status, err := existingBundlePath(dir, name)
 		if err != nil {
-			lookupErrors = append(lookupErrors, err)
-			continue
+			return err
 		}
-		if info == nil {
-			continue
+		if name == bundleFileName && status == bundlePathOverwritable {
+			// Replacing a sibling workload's bundle would plan deletion of its job from shared state.
+			if owner := existingBundleName(filepath.Join(dir, name)); owner != "" && owner != experimentName {
+				return fmt.Errorf("%s in %s belongs to bundle %q, not to this workload's bundle %q; pass --output-dir with another directory that contains the code directory", name, filepath.ToSlash(dir), owner, experimentName)
+			}
 		}
-		alternateRoot := name != bundleFileName && slices.Contains(config.FileNames, name)
-		replaceable := !alternateRoot && info.Mode().IsRegular()
-		if force && replaceable {
+		if status == bundlePathFree || (force && status == bundlePathOverwritable) {
 			continue
 		}
 		conflicts = append(conflicts, name)
-		canForce = canForce && replaceable
-	}
-	if parent != nil && !parent.IsDir() {
-		conflicts = append(conflicts, generatedArtifactsDir)
-		canForce = false
+		canForce = canForce && status == bundlePathOverwritable
+		if name == generatedArtifactsDir {
+			// A blocked parent must be moved before any of its children can exist.
+			break
+		}
 	}
 	if len(conflicts) == 0 {
-		return errors.Join(lookupErrors...)
+		return nil
 	}
 	verb, pronoun := "exist", "them"
 	if len(conflicts) == 1 {
 		verb, pronoun = "exists", "it"
 	}
 	hint := "move or remove " + pronoun + " before converting"
-	if canForce && len(lookupErrors) == 0 {
+	if canForce {
 		hint = "pass --force to overwrite or remove " + pronoun
 	}
-	collision := fmt.Errorf("%s already %s in %s; %s", strings.Join(conflicts, ", "), verb, filepath.ToSlash(dir), hint)
-	return errors.Join(append(lookupErrors, collision)...)
+	return fmt.Errorf("%s already %s in %s; %s", strings.Join(conflicts, ", "), verb, filepath.ToSlash(dir), hint)
 }
 
 // writeBundle writes the bundle into dir: databricks.yml plus the loose launch
@@ -703,7 +718,7 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 		return nil, err
 	}
 
-	if err := checkBundleOutputPaths(dir, artifacts, force); err != nil {
+	if err := checkBundleOutputPaths(dir, cfg.ExperimentName, artifacts, force); err != nil {
 		return nil, err
 	}
 
@@ -735,6 +750,20 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 			return nil, fmt.Errorf("failed to write %s: %w", item.name, err)
 		}
 		written = append(written, path.Join(generatedArtifactsDir, item.name))
+	}
+
+	// A forced re-conversion may write fewer sidecars than the previous one (for
+	// example after dropping env_variables). sync.paths uploads the whole directory,
+	// so remove the generated names it no longer writes rather than ship stale ones.
+	if force {
+		for _, name := range optionalLaunchArtifacts {
+			if slices.ContainsFunc(artifacts, func(item uploadItem) bool { return item.name == name }) {
+				continue
+			}
+			if err := os.Remove(filepath.Join(artifactDir, name)); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("failed to remove stale %s: %w", name, err)
+			}
+		}
 	}
 
 	return written, nil
