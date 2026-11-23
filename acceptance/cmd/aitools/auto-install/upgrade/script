@@ -43,7 +43,7 @@ use_home pinned-home
 skills_dir="${USERPROFILE:-$HOME}/.databricks/aitools/skills"
 trace DATABRICKS_SKILLS_REF=v0.4.0 $CLI aitools install --skills-only --scope=global --agents=cursor
 print_telemetry > /dev/null
-echo '{"0.0.0": {"appkit": "0.84.0", "skills": "0.3.0", "auto_install": true}}' > "$DATABRICKS_CACHE_DIR/compat-manifest.json"
+gate true 0.3.0
 
 title "upgrade to 1.33.0 pinned to 0.3.0 over an explicit 0.4.0 install: no downgrade, nothing printed, not retried"
 trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.33.0 $CLI jobs list

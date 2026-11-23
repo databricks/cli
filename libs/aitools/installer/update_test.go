@@ -174,11 +174,13 @@ func TestUpdateNoDowngradeRefusesAnOlderPinnedRelease(t *testing.T) {
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
 
-	// A pinned older release, as the compatibility manifest pins one.
+	// A pinned older release, as the compatibility manifest pins one. It is
+	// refused before its manifest is fetched.
 	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
-	_, err := UpdateSkills(ctx, src, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
-	_, refused := errors.AsType[*RefusedError](err)
-	assert.True(t, refused, "got %v", err)
+	unfetchable := &mockManifestSource{fetchErr: errors.New("the manifest was fetched")}
+	_, err := UpdateSkills(ctx, unfetchable, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
+	assert.ErrorAs(t, err, new(*RefusedError))
+	assert.ErrorContains(t, err, "keeping the installed skills 0.2.0, which are newer than the pinned 0.1.5; run 'databricks aitools update' to install 0.1.5")
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)

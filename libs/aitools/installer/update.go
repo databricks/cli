@@ -39,8 +39,9 @@ type UpdateOptions struct {
 
 	// NoDowngrade refuses a release older than the installed one even when
 	// the ref is pinned (by DATABRICKS_SKILLS_REF or the compatibility
-	// manifest). A pinned branch or commit SHA is still installed. Automatic updates set it: a newer release the user installed
-	// is theirs to roll back.
+	// manifest). A pinned branch or commit SHA is still installed. Automatic
+	// updates set it: a newer release the user installed is theirs to roll
+	// back.
 	NoDowngrade bool
 }
 
@@ -115,6 +116,12 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
 
+	// A pinned ref is the ref installed, so it is compared before fetching its
+	// manifest. A branch or commit SHA has no release order to compare.
+	if explicit && opts.NoDowngrade && semver.IsValid(latestTag) && semver.Compare(latestTag, installedRef) < 0 {
+		return nil, &RefusedError{Err: fmt.Errorf("keeping the installed skills %s, which are newer than the pinned %s; run 'databricks aitools update' to install %s", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(latestTag), DisplaySkillsVersion(latestTag))}
+	}
+
 	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, allowFallback && !explicit)
 	if err != nil {
 		if opts.Check {
@@ -123,10 +130,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		}
 		return nil, err
 	}
-	// A branch or commit SHA has no release order to compare, so NoDowngrade
-	// applies only to a release tag; the explicit ref is honored otherwise.
-	noDowngrade := opts.NoDowngrade && semver.IsValid(latestTag)
-	if err := checkSkillsDowngrade(installedRef, latestTag, explicit && !noDowngrade); err != nil {
+	if err := checkSkillsDowngrade(installedRef, latestTag, explicit); err != nil {
 		return nil, err
 	}
 

@@ -488,8 +488,9 @@ func (t toolsPlan) fresh() bool {
 // planTools plans what `databricks aitools install --scope=global` runs
 // without prompts, for the agents whose config directory exists. An existing
 // global installation is updated as `databricks aitools update --scope=global`
-// does instead, which keeps its downgrade guard, keeps the skills whose files
-// the user modified at their version, and does not migrate skills to plugins.
+// does instead, which keeps its downgrade guard, also keeps an installed
+// release newer than a pinned one, keeps the skills whose files the user
+// modified at their version, and does not migrate skills to plugins.
 // Planning reads only local state; prior is the auto-install state.
 func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) {
 	globalDir, err := installer.GlobalSkillsDir(ctx)
@@ -583,8 +584,12 @@ func updateTools(ctx context.Context, globalDir string, before *installer.Instal
 	uctx := telemetry.WithNewLogger(ctx)
 	uctx = context.WithValue(uctx, funnelKey{}, &commandFunnel{command: protos.AitoolsCommandUpdate})
 	uctx = context.WithValue(uctx, telemetryAuthKey{}, &telemetryAuth{})
-	if err := runUpdate(uctx, updateFlags{scope: installer.ScopeGlobal, keepModified: true}); err != nil {
-		return installResult{}, err
+	updateErr := runUpdate(uctx, updateFlags{scope: installer.ScopeGlobal, keepModified: true})
+	// The update refuses the raw skills after it updated the plugins, so a
+	// refusal still reports the plugins it changed.
+	_, refused := errors.AsType[*installer.RefusedError](updateErr)
+	if updateErr != nil && !refused {
+		return installResult{}, updateErr
 	}
 	after, err := installer.LoadState(globalDir)
 	if err != nil {
@@ -594,9 +599,14 @@ func updateTools(ctx context.Context, globalDir string, before *installer.Instal
 	if after != nil {
 		result.agents = changedAgents(ctx, before, after)
 	}
-	if len(result.agents) > 0 {
-		result.outcome = protos.AitoolsAutoInstallOutcomeInstalled
+	if len(result.agents) == 0 {
+		// Nothing changed: the caller reports a refusal as kept.
+		return result, updateErr
 	}
+	if refused {
+		log.Debugf(ctx, "auto-install: kept the installed skills: %v", updateErr)
+	}
+	result.outcome = protos.AitoolsAutoInstallOutcomeInstalled
 	return result, nil
 }
 
