@@ -93,7 +93,7 @@ By default this installs the databricks plugin through each agent's own CLI
 (` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files.
 
 Escape hatches:
-  --skills-only          Force raw skill files for every agent (no plugin; not with --path).
+  --skills-only          Force raw skill files for every agent (no plugin; cannot be used with --path).
   --skills name1,name2   Install only the named skills (with --skills-only/--path).
   --path <dir>           Write resolved skill files to a directory (no agents, no state).
 
@@ -314,7 +314,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to install (comma-separated)")
 	cmd.Flags().StringVar(&agentsFlag, "agents", "", "Agents to install for (comma-separated, e.g. claude-code,cursor)")
 	cmd.Flags().BoolVar(&includeExperimental, "experimental", false, "Include experimental skills")
-	cmd.Flags().BoolVar(&skillsOnly, "skills-only", false, "Force raw skill files for every agent instead of the plugin (not with --path)")
+	cmd.Flags().BoolVar(&skillsOnly, "skills-only", false, "Force raw skill files for every agent instead of the plugin (cannot be used with --path)")
 	cmd.Flags().StringVar(&pathFlag, "path", "", "Write resolved skill files to this directory instead of using --skills-only (no agents, no state)")
 	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Install scope: project or global (default: global, or prompt when interactive)")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Install to project directory (cwd)")
