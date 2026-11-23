@@ -706,9 +706,10 @@ tasks:
       # acceptance/cmd/aitools is not listed on purpose: a change there runs
       # `test`, which also runs on Windows. The -run pattern below still runs it.
       - acceptance/experimental/aitools/**
-      # Only aitools tests use hostenv, and its tests check that every aitools
-      # test package calls hostenv.Isolate.
-      - internal/testutil/hostenv/**
+      # internal/testutil/hostenv is not listed on purpose: a change there runs
+      # `test`, which also runs the aitools unit tests on Windows, where Isolate
+      # moves USERPROFILE and LOCALAPPDATA. The packages below still include it:
+      # its tests check that every aitools test package calls hostenv.Isolate.
       - "{{.EMBED_SOURCES}}"
     cmds:
       # cmd/root runs aitools hooks on every command, cmd, cmd/apps and
