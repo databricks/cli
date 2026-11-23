@@ -44,6 +44,7 @@ func relativeScriptInCommand(command string, snapshotFiles []string) string {
 		}
 		if strings.HasPrefix(word, "-") {
 			_, word, _ = strings.Cut(word, "=")
+			word = strings.Trim(word, `"'`)
 		} else if strings.Contains(word, "=") {
 			continue
 		}

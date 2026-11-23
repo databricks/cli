@@ -19,6 +19,7 @@ func TestRelativeScriptWarning(t *testing.T) {
 		{"quoted nested script", `torchrun --nproc_per_node=8 "src/main.py"`, "src/main.py", "src/main.py"},
 		{"flag value with equals", "python -m mod --config=configs/base.yaml", "configs/base.yaml", "configs/base.yaml"},
 		{"flag value with space", "python -m mod --config configs/base.yaml", "configs/base.yaml", "configs/base.yaml"},
+		{"quoted flag value with equals", `python -m mod --config="configs/base.yaml"`, "configs/base.yaml", "configs/base.yaml"},
 		{"code source path variable", `python "$CODE_SOURCE_PATH/train.py"`, "", ""},
 		{"absolute path", "python /opt/train.py", "", ""},
 		{"environment assignment", "SCRIPT=train.py python -m mod", "", ""},
