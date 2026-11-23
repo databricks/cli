@@ -21,6 +21,13 @@ func setUploadConfig(ctx context.Context, profileName, configFile string, bound 
 		return
 	}
 	if bound != nil {
+		// A fresh CLI OAuth credential lookup can pick up a different profile's
+		// token after the command authenticated. Only use a credential strategy
+		// tied to the resolved config.
+		if bound.AuthType == "" || bound.AuthType == (auth.CLICredentials{}).Name() {
+			telemetry.SkipUpload(ctx)
+			return
+		}
 		if err := mcp.CheckUnrecordedBinding("", profileName, configFile, bound); err != nil {
 			log.Debugf(ctx, "telemetry: profile %s no longer matches the bound workspace: %s", profileName, err)
 			telemetry.SkipUpload(ctx)
@@ -48,9 +55,12 @@ func setUploadConfig(ctx context.Context, profileName, configFile string, bound 
 				return
 			}
 		}
-	} else if !sameUploadWorkspace(cfg, bound) {
-		telemetry.SkipUpload(ctx)
-		return
+	} else {
+		if !sameUploadWorkspace(cfg, bound) || (cfg.AuthType != "" && cfg.AuthType != bound.AuthType) {
+			telemetry.SkipUpload(ctx)
+			return
+		}
+		cfg.AuthType = bound.AuthType
 	}
 	telemetry.SetUploadConfig(ctx, cfg)
 }

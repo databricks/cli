@@ -230,12 +230,17 @@ func TestSetUploadConfigSkipsUnverifiedCredentials(t *testing.T) {
 		{
 			name:  "profile re-pointed",
 			cfg:   "[logfood]\nhost = https://adb-2.test\nauth_type = pat\ntoken = test\n",
-			bound: &config.Config{Host: "https://adb-1.test"},
+			bound: &config.Config{Host: "https://adb-1.test", AuthType: "pat"},
 		},
 		{
 			name:  "workspace removed from profile",
 			cfg:   "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = test\n",
-			bound: &config.Config{Host: "https://adb-1.test", WorkspaceID: "222"},
+			bound: &config.Config{Host: "https://adb-1.test", WorkspaceID: "222", AuthType: "pat"},
+		},
+		{
+			name:  "profile-keyed OAuth token cannot verify workspace",
+			cfg:   "[logfood]\nhost = https://adb-1.test\nauth_type = databricks-cli\n",
+			bound: &config.Config{Host: "https://adb-1.test", AuthType: "databricks-cli"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
