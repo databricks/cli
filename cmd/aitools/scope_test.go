@@ -2,10 +2,12 @@ package aitools
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -69,22 +71,11 @@ func interactiveCtx(t *testing.T) (context.Context, func()) {
 	return ctx, test.Done
 }
 
-// interactiveCtxWithStderr is interactiveCtx that keeps stderr: the returned
-// function ends the test IO and returns everything written to it.
-func interactiveCtxWithStderr(t *testing.T) (context.Context, func() string) {
-	t.Helper()
-	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
-	go drainReader(test.Stdout)
-	// Buffered so the reader never blocks if the test stops before receiving.
-	stderr := make(chan []byte, 1)
-	go func() {
-		b, _ := io.ReadAll(test.Stderr)
-		stderr <- b
-	}()
-	return ctx, func() string {
-		test.Done()
-		return string(<-stderr)
-	}
+// interactiveCtxWithStderr is a context whose prompts look supported and
+// whose stderr is kept in the returned buffer. Stdin is empty.
+func interactiveCtxWithStderr(t *testing.T) (context.Context, *bytes.Buffer) {
+	var stderr bytes.Buffer
+	return cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(""), io.Discard, &stderr)), &stderr
 }
 
 // --- parseScopeFlag tests ---
@@ -469,7 +460,7 @@ func TestResolveScopeForUpdateNoFlagsBothAgentCaller(t *testing.T) {
 	_, err := resolveScopeForUpdate(ctx, false, false, globalDir, projectDir)
 	require.EqualError(t, err, "skills are installed in both global and project scopes; use --scope=global, --scope=project, or --scope=both to specify which to update")
 	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, classifyInstallError(err))
-	assert.Equal(t, "No prompts shown because a coding agent (claude-code) was detected.\n", stderr())
+	assert.Equal(t, "No prompts shown because a coding agent (claude-code) was detected.\n", stderr.String())
 }
 
 func TestResolveScopeForUpdateNoFlagsNeitherInstalled(t *testing.T) {
@@ -607,7 +598,7 @@ func TestResolveScopeForUninstallNoFlagsBothAgentCaller(t *testing.T) {
 	_, err := resolveScopeForUninstall(ctx, false, false, globalDir, projectDir)
 	require.EqualError(t, err, "skills are installed in both global and project scopes; use --scope=global or --scope=project to specify which to uninstall")
 	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, classifyInstallError(err))
-	assert.Equal(t, "No prompts shown because a coding agent (codex) was detected.\n", stderr())
+	assert.Equal(t, "No prompts shown because a coding agent (codex) was detected.\n", stderr.String())
 }
 
 func TestResolveScopeForUninstallNoFlagsNeitherInstalled(t *testing.T) {

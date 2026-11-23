@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -753,35 +754,37 @@ func TestUninstallAgentCallerIsNotAskedToConfirm(t *testing.T) {
 	}))
 	calls := setupUninstallMock(t)
 
-	ioCtx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
-	go drainReader(test.Stdout)
-	stderr := make(chan []byte, 1)
-	go func() {
-		b, _ := io.ReadAll(test.Stderr)
-		stderr <- b
-	}()
-	// Declines if asked, so a confirm shown by mistake fails the test
-	// instead of blocking it.
-	go func() {
-		_, _ = test.Stdin.WriteString("n\n")
-		_ = test.Stdin.Flush()
-	}()
-
+	// Declines if asked, so a confirm shown by mistake fails the test.
+	var stderr bytes.Buffer
+	ioCtx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader("n\n"), io.Discard, &stderr))
 	ctx := telemetry.WithNewLogger(ioCtx)
 	cmd := NewUninstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{})
 	require.NoError(t, cmd.Execute())
-	test.Done()
 
 	require.Len(t, *calls, 1)
 	assert.Equal(t, installer.ScopeGlobal, (*calls)[0].Scope)
-	out := string(<-stderr)
-	assert.NotContains(t, out, "Proceed?")
-	assert.Contains(t, out, "No prompts shown because a coding agent (codex) was detected.")
+	assert.Equal(t, "This will remove 1 skill from all agents (global scope).\nNo prompts shown because a coding agent (codex) was detected.\n", stderr.String())
 	events := funnelEvents(ctx)
 	require.NotEmpty(t, events)
 	assert.False(t, events[0].Interactive)
+}
+
+// A --skills value that names no skill must not widen the uninstall to every
+// skill.
+func TestUninstallSkillsNamingNoSkillIsRejected(t *testing.T) {
+	isolateCommandEnv(t)
+	calls := setupUninstallMock(t)
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	cmd := NewUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--skills", ","})
+	err := cmd.Execute()
+	require.EqualError(t, err, "--skills names no skill; pass one or more skill names, or omit --skills to remove every skill")
+	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, classifyInstallError(err))
+	assert.Empty(t, *calls)
 }
 
 // Update and uninstall with nothing installed keep their error (and exit code)

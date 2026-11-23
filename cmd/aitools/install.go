@@ -42,8 +42,11 @@ var (
 // checked. The funnel reports it as CANCELLED: the user chose to act on nothing.
 var errNoAgentsSelected = errors.New("at least one agent must be selected")
 
-// promptsSupported reports whether install, update and uninstall may show
-// their prompts. Agents often run commands in a pseudo-terminal (Cursor,
+// promptsSupported is the aitools package-wide prompt gate: it reports whether
+// a command may show its prompts (install's prompts, the update and uninstall
+// scope pickers, the uninstall confirm, the mcp add and remove pickers), and it
+// is the Interactive value of the install, update, uninstall, list and version
+// funnel events. Agents often run commands in a pseudo-terminal (Cursor,
 // Copilot in the VS Code terminal) where stdin looks like a TTY but nobody can
 // answer a TUI prompt. Agent detection is the SDK's list of agent environment
 // variables:
