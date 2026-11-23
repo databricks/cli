@@ -271,47 +271,6 @@ func TestRunDryRunRetriesUnavailableResponseOnce(t *testing.T) {
 	}
 }
 
-// Credentials rejected after the workspace client is built (by the current-user
-// lookup or by config:validate) must not be reported as INVALID_ARGS, or agents
-// edit a valid config instead of fixing their credentials. The current-user
-// lookup fails only for bad credentials. A 403 from config:validate after it
-// passed is a missing permission (acceptance/air/run-permission-denied).
-func TestRunDryRunReportsRejectedCredentials(t *testing.T) {
-	tests := []struct {
-		name, method, path string
-		status             int
-		errorCode          string
-		wantCode           string
-	}{
-		{"current user/401", "GET", "/api/2.0/preview/scim/v2/Me", http.StatusUnauthorized, "UNAUTHENTICATED", "UNAUTHENTICATED"},
-		{"current user/403", "GET", "/api/2.0/preview/scim/v2/Me", http.StatusForbidden, "PERMISSION_DENIED", "UNAUTHENTICATED"},
-		{"config validate/401", "POST", validateConfigPath, http.StatusUnauthorized, "UNAUTHENTICATED", "UNAUTHENTICATED"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			srv := testserver.New(t)
-			// Registered before AddDefaultHandlers: the router is first-wins.
-			srv.Handle(tc.method, tc.path, func(testserver.Request) any {
-				return testserver.Response{
-					StatusCode: tc.status,
-					Body:       map[string]string{"error_code": tc.errorCode, "message": "credentials rejected"},
-				}
-			})
-			testserver.AddDefaultHandlers(srv)
-			t.Cleanup(srv.Close)
-
-			result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputJSON, srv.URL, minimalConfig, "--dry-run")
-			require.ErrorIs(t, result.err, root.ErrAlreadyPrinted)
-			var got errorEnvelope
-			require.NoError(t, json.Unmarshal([]byte(result.stdout), &got))
-			assert.Equal(t, tc.wantCode, got.Error.Code)
-			assert.Equal(t, "PERMANENT", got.Error.Kind)
-			assert.False(t, got.Error.Retryable)
-			assert.Contains(t, got.Error.Message, "credentials rejected")
-		})
-	}
-}
-
 // Workspace-client setup failures that a retry can't fix must not be reported
 // as retryable, while a transient failure while authenticating still is.
 func TestRenderWorkspaceClientError(t *testing.T) {

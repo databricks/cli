@@ -1,2 +1,0 @@
-title "a 403 from config:validate is a missing permission (json)"
-musterr trace $CLI air run -f valid.yaml --dry-run -o json

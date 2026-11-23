@@ -113,8 +113,8 @@ func renderWorkspaceClientError(ctx context.Context, cmd *cobra.Command, err err
 
 // renderDryRunCallerError renders a --dry-run failure that is the caller's to
 // fix, keeping credential and permission failures apart from config errors so
-// agents don't edit a valid config. Current-user failures and a 401 from
-// config:validate go through authError, as in air get. A 403
+// agents don't edit a valid config. A 401 or 403 from the current-user lookup
+// and a 401 from config:validate go through authError, as in air get. A 403
 // from config:validate is PERMISSION_DENIED: the same credentials just passed the
 // current-user lookup. Text mode keeps the original error.
 func renderDryRunCallerError(ctx context.Context, cmd *cobra.Command, err error) error {
