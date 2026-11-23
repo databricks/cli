@@ -729,3 +729,20 @@ func TestNilBuilder(t *testing.T) {
 		b.ResolveVariables(cfg)
 	})
 }
+
+func TestCheckAppendOnly(t *testing.T) {
+	assert.NoError(t, CheckAppendOnly([]string{"a", "b"}, []string{"a", "b"}))
+	assert.NoError(t, CheckAppendOnly([]string{"a", "b"}, []string{"a", "b", "c"}))
+	assert.NoError(t, CheckAppendOnly(nil, []string{"a"}))
+	assert.ErrorContains(t, CheckAppendOnly([]string{"a", "b"}, []string{"b", "a"}), `bit 0 is "a" in the base schema but "b" now`)
+	assert.ErrorContains(t, CheckAppendOnly([]string{"a", "b"}, []string{"a", "c", "b"}), `bit 1 is "b"`)
+	assert.ErrorContains(t, CheckAppendOnly([]string{"a", "b"}, []string{"a"}), "fewer than the 2")
+}
+
+func TestDecompressSchemaRoundTrip(t *testing.T) {
+	compressed, err := CompressSchema([]byte("a\nb\n"))
+	require.NoError(t, err)
+	schema, err := DecompressSchema(compressed)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, schema)
+}

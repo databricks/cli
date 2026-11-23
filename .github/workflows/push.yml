@@ -529,6 +529,17 @@ jobs:
             exit 1
           fi
 
+      # Bitmaps already sent are decoded by bit position, so main's bitmap schema
+      # must stay a prefix of this one. Regenerating cannot catch a reorder: the
+      # goldens that list the schema are regenerated from it too.
+      - name: Verify that the bitmap schema only appends to main's
+        run: |
+          git fetch --depth=1 origin main
+          if git cat-file -e FETCH_HEAD:bundle/bitmap/schema.deflate 2>/dev/null; then
+            git show FETCH_HEAD:bundle/bitmap/schema.deflate > "$RUNNER_TEMP/main-schema.deflate"
+            go run . bundle bitmap update-schema --validate --base "$RUNNER_TEMP/main-schema.deflate"
+          fi
+
   # Trigger integration tests in a separate repository.
   # Writes the same-org "Integration Tests" check run for skip/auto-approve
   # paths on deco runners. The cross-org `gh workflow run` dispatch is split

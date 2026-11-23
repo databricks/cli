@@ -43,12 +43,37 @@ const headerSize = 10
 
 // EmbeddedSchema returns the schema baked into the binary at build time.
 func EmbeddedSchema() []string {
-	text, err := io.ReadAll(flate.NewReader(bytes.NewReader(schemaDeflate)))
+	schema, err := DecompressSchema(schemaDeflate)
 	if err != nil {
 		// schema.deflate is generated and checked by TestEmbeddedSchemaIsCompleteAndUnique.
 		panic(fmt.Sprintf("bitmap: corrupt embedded schema: %s", err))
 	}
-	return parseSchema(text)
+	return schema
+}
+
+// DecompressSchema reverses CompressSchema, returning the field paths.
+func DecompressSchema(compressed []byte) ([]string, error) {
+	text, err := io.ReadAll(flate.NewReader(bytes.NewReader(compressed)))
+	if err != nil {
+		return nil, err
+	}
+	return parseSchema(text), nil
+}
+
+// CheckAppendOnly returns an error unless base, an earlier schema, is a prefix
+// of schema: every bit keeps its position, and new fields only go at the end.
+// Bitmaps already sent are decoded by position, so a moved entry would rename
+// their bits.
+func CheckAppendOnly(base, schema []string) error {
+	for i, p := range base {
+		if i >= len(schema) {
+			return fmt.Errorf("schema has %d entries, fewer than the %d of the base schema; entries are never removed", len(schema), len(base))
+		}
+		if schema[i] != p {
+			return fmt.Errorf("bit %d is %q in the base schema but %q now; the schema is append-only: keep the base schema as is and append new fields after it", i, p, schema[i])
+		}
+	}
+	return nil
 }
 
 // CompressSchema encodes schema text, one field path per line, the way

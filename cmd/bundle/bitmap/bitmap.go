@@ -2,8 +2,10 @@ package bitmap
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strings"
 
@@ -55,18 +57,37 @@ fields are kept so that bit positions stay stable.`,
 		Args: root.NoArgs,
 	}
 	var validate bool
+	var base string
 	cmd.Flags().BoolVar(&validate, "validate", false, "Fail if the embedded schema is missing fields instead of printing the merged schema")
+	cmd.Flags().StringVar(&base, "base", "", "With --validate, also fail unless the schema in this schema.deflate file (e.g. from main) is a prefix of the embedded one")
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		fresh, err := bundlebitmap.WalkSchema(reflect.TypeFor[bundle.Telemetry]())
 		if err != nil {
 			return err
 		}
-		merged, added := bundlebitmap.Merge(bundlebitmap.EmbeddedSchema(), fresh)
+		embedded := bundlebitmap.EmbeddedSchema()
+		merged, added := bundlebitmap.Merge(embedded, fresh)
 		if validate {
 			if len(added) > 0 {
 				return fmt.Errorf("embedded schema is out of date, %d field(s) missing:\n%s\nrun 'task generate-bitmap-schema' to update", len(added), strings.Join(added, "\n"))
 			}
+			if base != "" {
+				compressed, err := os.ReadFile(base)
+				if err != nil {
+					return err
+				}
+				baseSchema, err := bundlebitmap.DecompressSchema(compressed)
+				if err != nil {
+					return fmt.Errorf("%s: %w", base, err)
+				}
+				if err := bundlebitmap.CheckAppendOnly(baseSchema, embedded); err != nil {
+					return fmt.Errorf("%s: %w", base, err)
+				}
+			}
 			return nil
+		}
+		if base != "" {
+			return errors.New("--base requires --validate")
 		}
 		return printLines(cmd.OutOrStdout(), merged)
 	}
@@ -185,6 +206,9 @@ func loadBits(cmd *cobra.Command) ([]bool, []string, error) {
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{Validate: true})
 	if err != nil {
 		return nil, nil, err
+	}
+	if b.Bitmap == nil {
+		return nil, nil, errors.New("the bundle configuration did not load")
 	}
 	bits, err := b.Bitmap.Bits(b.Telemetry)
 	if err != nil {
