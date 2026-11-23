@@ -137,8 +137,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	entry := plan.Plan[resourceKey]
 	if entry != nil {
 		result.Action = entry.Action
-		// A state-only entry only records something in the state (such as an internal ID a bind
-		// does not write), so it changes nothing remotely.
+		// A state-only entry only records something in the state, so it changes nothing remotely.
 		result.HasChanges = result.Action != deployplan.Skip && result.Action != deployplan.Undefined && !entry.IsStateOnly()
 	}
 

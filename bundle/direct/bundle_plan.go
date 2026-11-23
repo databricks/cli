@@ -422,8 +422,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 			if missing {
-				// The state was recorded without the internal ID (by a CLI from before it was, or by
-				// bind): applying only records it, from the remote state.
+				// The state was written without the internal ID (by an older CLI, on deploy or bind):
+				// applying only records it, from the remote state.
 				action = deployplan.Update
 				entry.StateOnly = true
 			}

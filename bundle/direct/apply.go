@@ -285,7 +285,8 @@ func (d *DeploymentUnit) Rekey(ctx context.Context, db *dstate.DeploymentState, 
 }
 
 // RecordState saves the state at its ID without a backend call. A state-only update does this to
-// record the internal ID the state lacks, from the plan's remote state.
+// record the internal ID the state lacks, or the state of a resource a bind records; saveState takes
+// the internal ID from the plan's remote state.
 func (d *DeploymentUnit) RecordState(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
 	err := d.saveState(ctx, db, id, newState, d.DependsOn, planEntry.RemoteState)
 	if err != nil {

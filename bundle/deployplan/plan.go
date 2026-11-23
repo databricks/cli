@@ -146,8 +146,9 @@ type PlanEntry struct {
 	//   - an UpdateWithID that only follows a parent's rename (or a rename found by the plan):
 	//     the backend already moved the resource, so applying it records the state under the
 	//     ID IDFromState gives it. It is left out of the textual plan and counted as unchanged.
-	//   - an Update of an otherwise unchanged resource whose state lacks its internal ID (recorded
-	//     before the ID was, or by bind): applying it records the ID from the remote state. It is
+	//   - an Update of an otherwise unchanged resource whose state lacks its internal ID (written by
+	//     an older CLI, which did not record it on deploy or bind): applying it records the ID from
+	//     the remote state. It is
 	//     likewise left out of the textual plan and counted as unchanged.
 	//   - an Update of the resource a bind plan records: applying it saves the config as the
 	//     resource's state at ID, which the state does not have yet.

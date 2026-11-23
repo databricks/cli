@@ -184,16 +184,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		//       already resolved and should not play a role here.
 		//
 		// A skipped node changes nothing, and planning resolved its dependents' references to it (see
-		// LookupReferencePreDeploy), so only a deployed node's remote state is read for them.
+		// LookupReferencePreDeploy), so only a deployed node's remote state is read for them. A bind
+		// plan relies on this: the dependencies it skips may be undeployed or deleted remotely.
 		needRemoteState := action != deployplan.Skip && len(g.Adj[resourceKey]) > 0
 		if needRemoteState {
 			id := b.StateDB.GetResourceID(d.ResourceKey)
-			if id == "" && action == deployplan.Skip {
-				// A skipped node that was never deployed has no remote state to read. Only a bind
-				// plan skips such a node (see calculateBindPlan); its dependents resolve no
-				// references to it.
-				return true
-			}
 			if id == "" {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state after deploy", errorPrefix))
 				return false
