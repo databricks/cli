@@ -173,7 +173,7 @@ Tip: use the --debug flag to see more details and a trace of this error:
 === bundle diagnostics are reported once (json)
 
 >>> [CLI] air run -f ../valid.yaml --dry-run -o json
-Error: failed to load [TEST_TMP_DIR]/broken-bundle/databricks.yml: yaml: line 2: did not find expected node content
+Error: multiple targets are marked as default (dev, dev2)
 
 
 === unknown field suggests the near match
