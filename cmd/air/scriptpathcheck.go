@@ -1,28 +1,21 @@
 package aircmd
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"path/filepath"
+	"path"
+	"slices"
 	"strings"
 )
 
 // relativeScriptWarning returns a warning when command (or a container's
-// command) refers to a file by a path relative to code_source.root_path, such as
-// `python train.py`, or "" when none does or the check doesn't apply. The runtime
-// working directory is not the extracted code directory, so such a run only fails
-// after it waits for a GPU.
-func relativeScriptWarning(ctx context.Context, cfg *runConfig, configPath string) string {
-	if cfg.CodeSource == nil || cfg.CodeSource.Snapshot == nil {
-		return ""
-	}
-	repoPath, err := resolveRootPath(ctx, cfg.CodeSource.Snapshot.RootPath, filepath.Dir(configPath))
-	if err != nil {
-		return ""
-	}
+// command) refers to a snapshot file by a path relative to code_source.root_path,
+// such as `python train.py`, or "" when none does. snapshotFiles are the
+// snapshot-relative paths that would be packaged. The runtime working directory
+// is not the extracted code directory, so such a run only fails after it waits
+// for a GPU.
+func relativeScriptWarning(cfg *runConfig, snapshotFiles []string) string {
 	if cfg.Command != nil {
-		if rel := relativeScriptInCommand(repoPath, *cfg.Command); rel != "" {
+		if rel := relativeScriptInCommand(*cfg.Command, snapshotFiles); rel != "" {
 			return relativeScriptMessage("command", rel)
 		}
 	}
@@ -30,35 +23,40 @@ func relativeScriptWarning(ctx context.Context, cfg *runConfig, configPath strin
 		if c.Command == nil {
 			continue
 		}
-		if rel := relativeScriptInCommand(repoPath, *c.Command); rel != "" {
+		if rel := relativeScriptInCommand(*c.Command, snapshotFiles); rel != "" {
 			return relativeScriptMessage(fmt.Sprintf("containers[%s].command", c.Name), rel)
 		}
 	}
 	return ""
 }
 
-// relativeScriptInCommand returns the first word of command that names an
-// existing file under repoPath, or "". Scanning stops at a `cd`: once the command
-// changes directory, as in `cd "$CODE_SOURCE_PATH" && python train.py`, later
-// relative paths are resolved against a directory this check can't know.
-func relativeScriptInCommand(repoPath, command string) string {
+// relativeScriptInCommand returns the first word of command that names a file in
+// snapshotFiles, or "". A `--flag=value` word is checked by its value; a
+// `NAME=value` word is an environment assignment and skipped. Scanning stops at a
+// `cd` or `pushd`: once the command changes directory, as in
+// `cd "$CODE_SOURCE_PATH" && python train.py`, later relative paths are resolved
+// against a directory this check can't know.
+func relativeScriptInCommand(command string, snapshotFiles []string) string {
 	for word := range strings.FieldsSeq(command) {
-		rel := strings.Trim(word, `"'`)
-		if rel == "cd" {
+		word = strings.Trim(word, `"'();&|`)
+		if word == "cd" || word == "pushd" {
 			return ""
 		}
-		if rel == "" || strings.ContainsAny(rel, "$=") || filepath.IsAbs(rel) {
+		if strings.HasPrefix(word, "-") {
+			_, word, _ = strings.Cut(word, "=")
+		} else if strings.Contains(word, "=") {
 			continue
 		}
-		info, err := os.Stat(filepath.Join(repoPath, rel))
-		if err != nil || info.IsDir() {
+		if word == "" || strings.Contains(word, "$") || strings.HasPrefix(word, "/") {
 			continue
 		}
-		return rel
+		if slices.Contains(snapshotFiles, path.Clean(word)) {
+			return word
+		}
 	}
 	return ""
 }
 
 func relativeScriptMessage(field, rel string) string {
-	return fmt.Sprintf("Warning: %s refers to %q, a path relative to code_source.root_path, but at runtime the working directory is not your code directory, so this run may fail with \"No such file or directory\". Use \"$CODE_SOURCE_PATH/%s\".", field, rel, filepath.ToSlash(filepath.Clean(rel)))
+	return fmt.Sprintf("Warning: %s refers to %q, a path relative to code_source.root_path, but at runtime the working directory is not your code directory, so this run may fail with \"No such file or directory\". Use \"$CODE_SOURCE_PATH/%s\".", field, rel, path.Clean(rel))
 }

@@ -1,15 +1,13 @@
 package aircmd
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRelativeScriptWarning(t *testing.T) {
+	snapshot := []string{"train.py", "src/main.py", "configs/base.yaml"}
 	cases := []struct {
 		name    string
 		command string
@@ -19,26 +17,23 @@ func TestRelativeScriptWarning(t *testing.T) {
 		{"bare script", "python train.py", "train.py", "train.py"},
 		{"dot-slash script", "./train.py --epochs 1", "./train.py", "train.py"},
 		{"quoted nested script", `torchrun --nproc_per_node=8 "src/main.py"`, "src/main.py", "src/main.py"},
+		{"flag value with equals", "python -m mod --config=configs/base.yaml", "configs/base.yaml", "configs/base.yaml"},
+		{"flag value with space", "python -m mod --config configs/base.yaml", "configs/base.yaml", "configs/base.yaml"},
 		{"code source path variable", `python "$CODE_SOURCE_PATH/train.py"`, "", ""},
-		{"flag value", "python -m mod --config=train.py", "", ""},
-		{"cd into code source first", `cd "$CODE_SOURCE_PATH" && python train.py`, "", ""},
-		{"cd elsewhere first", "cd src && python main.py", "", ""},
-		{"missing file", "python other.py", "", ""},
+		{"absolute path", "python /opt/train.py", "", ""},
+		{"environment assignment", "SCRIPT=train.py python -m mod", "", ""},
+		{"not in snapshot", "python other.py", "", ""},
+		{"local file outside include_paths", "python tools/prep.py", "", ""},
+		{"parent directory", "python ../tools/prep.py", "", ""},
 		{"directory", "ls src", "", ""},
+		{"cd into code source first", `cd "$CODE_SOURCE_PATH" && python train.py`, "", ""},
+		{"subshell cd", `(cd "$CODE_SOURCE_PATH" && python train.py --epochs 1)`, "", ""},
+		{"pushd", `pushd "$CODE_SOURCE_PATH"; python train.py`, "", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			dir := t.TempDir()
-			require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
-			require.NoError(t, os.WriteFile(filepath.Join(dir, "train.py"), []byte("print(1)\n"), 0o644))
-			require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "main.py"), []byte("print(1)\n"), 0o644))
-			yaml := "experiment_name: e\ncompute:\n  num_accelerators: 1\n  accelerator_type: GPU_1xA10\ncode_source:\n  root_path: .\ncommand: " + tc.command + "\n"
-			path := filepath.Join(dir, "run.yaml")
-			require.NoError(t, os.WriteFile(path, []byte(yaml), 0o644))
-			cfg, err := loadRunConfig(path)
-			require.NoError(t, err)
-
-			got := relativeScriptWarning(t.Context(), cfg, path)
+			cfg := &runConfig{Command: &tc.command}
+			got := relativeScriptWarning(cfg, snapshot)
 			if tc.word == "" {
 				assert.Empty(t, got)
 				return
@@ -50,27 +45,13 @@ func TestRelativeScriptWarning(t *testing.T) {
 }
 
 func TestRelativeScriptWarningContainers(t *testing.T) {
-	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "train.py"), []byte("print(1)\n"), 0o644))
-	yaml := "experiment_name: e\ncompute:\n  num_accelerators: 2\n  accelerator_type: GPU_1xA10\ncode_source:\n  root_path: .\n" +
-		"containers:\n  - name: head\n    command: python \"$CODE_SOURCE_PATH/train.py\"\n    ranks: [0]\n    unity_catalog_image: main.s.img:v1\n" +
-		"  - name: worker\n    command: python train.py\n    ranks: [1]\n    unity_catalog_image: main.s.img:v1\n"
-	path := filepath.Join(dir, "run.yaml")
-	require.NoError(t, os.WriteFile(path, []byte(yaml), 0o644))
-	cfg, err := loadRunConfig(path)
-	require.NoError(t, err)
-
-	got := relativeScriptWarning(t.Context(), cfg, path)
+	head := `python "$CODE_SOURCE_PATH/train.py"`
+	worker := "python train.py"
+	cfg := &runConfig{Containers: []containerConfig{
+		{Name: "head", Command: &head},
+		{Name: "worker", Command: &worker},
+	}}
+	got := relativeScriptWarning(cfg, []string{"train.py"})
 	assert.Contains(t, got, "Warning: containers[worker].command refers to \"train.py\"")
 	assert.Contains(t, got, "Use \"$CODE_SOURCE_PATH/train.py\".")
-}
-
-func TestRelativeScriptWarningWithoutCodeSource(t *testing.T) {
-	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "train.py"), []byte("print(1)\n"), 0o644))
-	path := filepath.Join(dir, "run.yaml")
-	require.NoError(t, os.WriteFile(path, []byte("experiment_name: e\ncompute:\n  num_accelerators: 1\n  accelerator_type: GPU_1xA10\ncommand: python train.py\n"), 0o644))
-	cfg, err := loadRunConfig(path)
-	require.NoError(t, err)
-	assert.Empty(t, relativeScriptWarning(t.Context(), cfg, path))
 }

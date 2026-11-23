@@ -1,5 +1,5 @@
 experiment_name: smoke-test
-command: python "$CODE_SOURCE_PATH/main.py"
+command: python main.py
 compute:
   accelerator_type: GPU_1xH100
   num_accelerators: 1

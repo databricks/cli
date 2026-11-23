@@ -370,9 +370,9 @@ func TestCountFilesAtCommit(t *testing.T) {
 	writeRepoFile(t, repo, "subpkg/nested/util.py", "pass")
 	sha := commitAll(t, repo, "init")
 
-	count, err := newGitRepo(repo).countFilesAtCommit(ctx, sha, "", nil)
+	files, err := newGitRepo(repo).listFilesAtCommit(ctx, sha, "", nil)
 	require.NoError(t, err)
-	assert.Equal(t, 3, count)
+	assert.Equal(t, []string{"README.md", "subpkg/nested/util.py", "subpkg/train.py"}, files)
 
 	// root_path below the repo root: git runs from the subfolder, and the count
 	// must still cover the whole subtree, as `git archive` does.
@@ -380,11 +380,11 @@ func TestCountFilesAtCommit(t *testing.T) {
 	prefix, err := subGit.repoRelativePrefix(ctx)
 	require.NoError(t, err)
 
-	count, err = subGit.countFilesAtCommit(ctx, sha, prefix, nil)
+	files, err = subGit.listFilesAtCommit(ctx, sha, prefix, nil)
 	require.NoError(t, err)
-	assert.Equal(t, 2, count)
+	assert.Equal(t, []string{"nested/util.py", "train.py"}, files)
 
-	count, err = subGit.countFilesAtCommit(ctx, sha, prefix, []string{"nested"})
+	files, err = subGit.listFilesAtCommit(ctx, sha, prefix, []string{"nested"})
 	require.NoError(t, err)
-	assert.Equal(t, 1, count)
+	assert.Equal(t, []string{"nested/util.py"}, files)
 }

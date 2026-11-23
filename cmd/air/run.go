@@ -171,16 +171,17 @@ databricks-ai-runtime skill:
 
 		if dryRun {
 			// Local and credential-free, so it runs before workspace validation.
-			if msg := relativeScriptWarning(ctx, cfg, file); msg != "" {
-				cmdio.LogString(ctx, msg)
-			}
 			var snapshotFileCount *int
 			if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-				count, err := countSnapshotFiles(ctx, cfg.CodeSource.Snapshot, file)
+				files, err := listSnapshotFiles(ctx, cfg.CodeSource.Snapshot, file)
 				if err != nil {
 					return err
 				}
+				count := len(files)
 				snapshotFileCount = &count
+				if msg := relativeScriptWarning(cfg, files); msg != "" {
+					cmdio.LogString(ctx, msg)
+				}
 			}
 			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
