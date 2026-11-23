@@ -194,6 +194,24 @@ func TestUpdateNoDowngradeRefusesAnOlderPinnedRelease(t *testing.T) {
 	assert.Equal(t, testSkillsRef, state.Release)
 }
 
+func TestUpdateNoDowngradeInstallsANewerPinnedRelease(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	_, err := UpdateSkills(ctx, src, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
+	require.NoError(t, err)
+	state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Equal(t, "v0.2.0", state.Release)
+}
+
 func TestUpdateNoDowngradeInstallsAPinnedBranch(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
