@@ -1,0 +1,23 @@
+
+=== The service rejects the enrollment check, and the deploy carries on without recording or a warning
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-check-rejected-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/enrollments:check",
+  "q": {
+    "features": "record_history_auto"
+  }
+}
+
+=== The plan carries no recording feature
+
+>>> [CLI] bundle plan -o json
+{
+  "features": null
+}

@@ -7,14 +7,21 @@ import "context"
 // Deliberately undocumented.
 const DeploymentHistoryVariable = "DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY"
 
-// RecordsDeploymentHistory reports whether recording is on, from config or env var. Single predicate
-// for all recording code paths, keeping them in sync. Explicit config takes priority over the env var.
-// The env var only counts as "true": anything
-// else - a typo like "TRUE" or "yes" - leaves recording off rather than silently enabling it.
-func RecordsDeploymentHistory(ctx context.Context, configured *bool) bool {
+// DeploymentHistoryChoice returns whether the bundle turned recording on or off, from config or
+// env var, and whether it chose at all. Explicit config takes priority over the env var.
+// The env var only counts as "true" or "false": anything else - unset, or a typo like "TRUE" or
+// "yes" - is no choice, which leaves recording to the workspace's enrollment.
+func DeploymentHistoryChoice(ctx context.Context, configured *bool) (enabled, explicit bool) {
 	if configured != nil {
-		return *configured
+		return *configured, true
 	}
 	value, _ := get(ctx, []string{DeploymentHistoryVariable})
-	return value == "true"
+	switch value {
+	case "true":
+		return true, true
+	case "false":
+		return false, true
+	default:
+		return false, false
+	}
 }
