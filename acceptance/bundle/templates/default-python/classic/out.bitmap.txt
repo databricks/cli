@@ -69,8 +69,8 @@ P   resources.pipelines.*.root_path
 P   resources.pipelines.*.schema
 P   presets
 PT  presets.artifacts_dynamic_version
-PT  telemetry.ArtifactBuildCommandIsSet
-P F telemetry.ArtifactFilesIsSet
-PT  telemetry.PresetsNamePrefixIsSet
-P F telemetry.UseLegacyRunAs
-P F telemetry.RunAsSet
+PT  telemetry.artifact_build_command_is_set
+P F telemetry.artifact_files_is_set
+PT  telemetry.presets_name_prefix_is_set
+P F telemetry.experimental.use_legacy_run_as
+P F telemetry.run_as_set

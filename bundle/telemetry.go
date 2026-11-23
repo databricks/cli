@@ -18,8 +18,8 @@ import (
 //     bool_values reports whether any measurement was true, and the bitmap
 //     records each value it took.
 //
-// The `metric` tag is the key in bool_values. Fields have no json tags: the
-// bitmap uses the Go field names (e.g. "telemetry.SelectUsed").
+// The `metric` tag is the key in bool_values and names the field's bitmap bits
+// (e.g. "telemetry.select_used"), so renaming a Go field keeps its bits.
 //
 // Not here: the has_<task_type> keys, which the bitmap already records as config
 // fields (resources.jobs.*.tasks[*].<type>_task), and the local.cache.* keys,

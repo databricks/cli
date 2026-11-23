@@ -56,9 +56,9 @@ P   presets.name_prefix
 P F presets.pipelines_development
 P   experimental
 P F experimental.use_legacy_run_as
-PTF telemetry.ArtifactBuildCommandIsSet
-PTF telemetry.ArtifactFilesIsSet
-PT  telemetry.PresetsNamePrefixIsSet
-PT  telemetry.ConfigHasDoubleDollarBrace
-P F telemetry.UseLegacyRunAs
-PT  telemetry.RunAsSet
+PTF telemetry.artifact_build_command_is_set
+PTF telemetry.artifact_files_is_set
+PT  telemetry.presets_name_prefix_is_set
+PT  telemetry.config_has_double_dollar_brace
+P F telemetry.experimental.use_legacy_run_as
+PT  telemetry.run_as_set

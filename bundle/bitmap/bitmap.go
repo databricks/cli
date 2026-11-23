@@ -14,10 +14,12 @@ import (
 	"compress/flate"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -123,7 +125,7 @@ func WalkSchema(telemetryType reflect.Type) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	tmPaths, err := walkTypePaths(telemetryType, telemetryPrefix+".", nil)
+	tmPaths, err := telemetryPaths(telemetryType)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +249,7 @@ func (b *Builder) Mark(cfg dyn.Value) {
 	if b == nil {
 		return
 	}
-	b.markChildren(cfg, "")
+	b.markChildren(cfg, "", false)
 }
 
 // MarkChanges sets the bits of what after holds that before does not: fields
@@ -278,17 +280,25 @@ func (b *Builder) ResolveVariables(cfg dyn.Value) {
 		if err != nil {
 			continue
 		}
-		// A value from --var or the environment is a string; coerce it the way
-		// the loader does when it reaches a bool field.
-		if _, ok := b.index[ref.pattern+trueSuffix]; ok {
-			normalized, diags := convert.Normalize(false, v)
-			if diags.HasError() {
-				continue
-			}
-			v = normalized
-		}
-		b.mark(v, ref.pattern)
+		// Variable values are not normalized against the fields they end up in:
+		// a value from --var or the environment is a string, and so is a quoted
+		// bool inside a complex variable. Coerce them where a bool field holds
+		// them, the way the loader does.
+		b.mark(v, ref.pattern, true)
 	}
+}
+
+// coerceBool returns v as a bool when pattern is a bool field and v is a string
+// the loader would read as one ("true", "false", ...), and v unchanged otherwise.
+func coerceBool(v dyn.Value, index map[string]int, pattern string) dyn.Value {
+	if _, isBool := index[pattern+trueSuffix]; !isBool || v.Kind() != dyn.KindString {
+		return v
+	}
+	normalized, diags := convert.Normalize(false, v)
+	if diags.HasError() {
+		return v
+	}
+	return normalized
 }
 
 // variableValue looks up the value of a variable reference in cfg. cfg keeps
@@ -324,12 +334,39 @@ type boolValues interface{ Values() []bool }
 
 var boolValuesType = reflect.TypeFor[boolValues]()
 
+// telemetryPaths returns the schema entries of the telemetry struct: each field
+// under its metric tag (its key in bool_values), followed by its value entries.
+// The tag, not the Go name, so renaming a field keeps its bits.
+func telemetryPaths(telemetryType reflect.Type) ([]string, error) {
+	var paths []string
+	for field := range telemetryType.Fields() {
+		path, err := telemetryPath(field)
+		if err != nil {
+			return nil, err
+		}
+		paths = append(paths, path, path+trueSuffix, path+falseSuffix)
+	}
+	return paths, nil
+}
+
+func telemetryPath(f reflect.StructField) (string, error) {
+	metric := f.Tag.Get("metric")
+	if metric == "" {
+		return "", fmt.Errorf("telemetry field %s has no metric tag", f.Name)
+	}
+	return joinField(telemetryPrefix, metric), nil
+}
+
 // markTelemetry sets the bits of the measured telemetry fields: the presence
 // bit and the bit of each value taken. A bool counts only when true.
 func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
 	v := reflect.ValueOf(telemetry)
 	for i := range v.NumField() {
 		name := v.Type().Field(i).Name
+		path, err := telemetryPath(v.Type().Field(i))
+		if err != nil {
+			return err
+		}
 		var values []bool
 		switch f := v.Field(i).Interface().(type) {
 		case bool:
@@ -345,7 +382,6 @@ func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
 		default:
 			return fmt.Errorf("telemetry field %s has unsupported type %s", name, v.Field(i).Type())
 		}
-		path := joinField(telemetryPrefix, name)
 		for _, value := range values {
 			setBit(index, bits, path)
 			setBit(index, bits, path+valueSuffix(value))
@@ -357,15 +393,15 @@ func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
 // markChildren marks every child of v whose schema pattern is known. A map key
 // resolves to the struct field of that name when the schema has one and to the
 // ".*" wildcard otherwise; a sequence element resolves to "[*]".
-func (b *Builder) markChildren(v dyn.Value, pattern string) {
+func (b *Builder) markChildren(v dyn.Value, pattern string, coerce bool) {
 	if m, ok := v.AsMap(); ok {
 		for _, pair := range m.Pairs() {
-			b.mark(pair.Value, b.childPattern(pattern, pair.Key.MustString()))
+			b.mark(pair.Value, b.childPattern(pattern, pair.Key.MustString()), coerce)
 		}
 	}
 	if s, ok := v.AsSequence(); ok {
 		for _, elem := range s {
-			b.mark(elem, pattern+listSuffix)
+			b.mark(elem, pattern+listSuffix, coerce)
 		}
 	}
 }
@@ -373,11 +409,20 @@ func (b *Builder) markChildren(v dyn.Value, pattern string) {
 // childPattern returns the schema pattern of the map entry key under pattern:
 // the field of that name, or the ".*" wildcard of a map.
 func (b *Builder) childPattern(pattern, key string) string {
-	child := joinField(pattern, key)
-	if _, ok := b.index[child]; !ok {
-		child = joinField(pattern, "*")
+	// A field name never contains these, but a map key may (a variable named
+	// "a.description", a key "enabled=true"); joined literally, such a key would
+	// name another schema entry.
+	if !strings.ContainsAny(key, ".=[]*") {
+		if child := joinField(pattern, key); hasEntry(b.index, child) {
+			return child
+		}
 	}
-	return child
+	return joinField(pattern, "*")
+}
+
+func hasEntry(index map[string]int, p string) bool {
+	_, ok := index[p]
+	return ok
 }
 
 // markChanged marks after at pattern where it differs from before, and reports
@@ -388,7 +433,7 @@ func (b *Builder) markChanged(before, after dyn.Value, pattern string) bool {
 	}
 	switch {
 	case before.Kind() != after.Kind():
-		b.mark(after, pattern)
+		b.mark(after, pattern, false)
 		return true
 	case after.Kind() == dyn.KindMap || after.Kind() == dyn.KindSequence:
 		if !b.markChangedChildren(before, after, pattern) {
@@ -399,7 +444,7 @@ func (b *Builder) markChanged(before, after dyn.Value, pattern string) bool {
 	case before.AsAny() == after.AsAny():
 		return false
 	default:
-		b.mark(after, pattern)
+		b.mark(after, pattern, false)
 		return true
 	}
 }
@@ -417,32 +462,68 @@ func (b *Builder) markChangedChildren(before, after dyn.Value, pattern string) b
 	if s, ok := after.AsSequence(); ok {
 		prev, _ := before.AsSequence()
 		for i, elem := range s {
-			old := dyn.InvalidValue
-			if i < len(prev) {
-				old = prev[i]
+			if slices.ContainsFunc(prev, func(old dyn.Value) bool { return equalValues(old, elem) }) {
+				// Unchanged, wherever it moved: a list Python reorders or prepends
+				// to keeps the elements it received.
+				continue
 			}
-			changed = b.markChanged(old, elem, pattern+listSuffix) || changed
+			changed = b.markChanged(previousElement(prev, elem, i), elem, pattern+listSuffix) || changed
 		}
 	}
 	return changed
 }
 
+// listKeys are the fields that identify an element of a keyed list (job tasks,
+// job clusters, environments, pipeline clusters, parameters, app resources).
+var listKeys = []string{"task_key", "job_cluster_key", "environment_key", "label", "name"}
+
+// previousElement returns the element of prev that elem is a changed version
+// of: the one with the same key when elem has a key field, otherwise the one at
+// the same position. A keyed element with no match is new.
+func previousElement(prev []dyn.Value, elem dyn.Value, i int) dyn.Value {
+	for _, key := range listKeys {
+		id, ok := elem.Get(key).AsString()
+		if !ok {
+			continue
+		}
+		for _, old := range prev {
+			if oldID, ok := old.Get(key).AsString(); ok && oldID == id {
+				return old
+			}
+		}
+		return dyn.InvalidValue
+	}
+	if i < len(prev) {
+		return prev[i]
+	}
+	return dyn.InvalidValue
+}
+
+// equalValues reports whether a and b hold the same configuration, ignoring
+// locations.
+func equalValues(a, b dyn.Value) bool {
+	return a.Kind() == b.Kind() && reflect.DeepEqual(a.AsAny(), b.AsAny())
+}
+
 // mark sets the bit for a present (non-null) value and recurses into it. A
 // pattern outside the schema is not descended into: that covers the pruned
 // subtrees and the contents of interface-typed fields, whose own bit is set.
-func (b *Builder) mark(v dyn.Value, pattern string) {
+func (b *Builder) mark(v dyn.Value, pattern string, coerce bool) {
 	i, ok := b.index[pattern]
 	if !ok || v.Kind() == dyn.KindNil {
 		return
 	}
 	b.bits[i] = true
+	if coerce {
+		v = coerceBool(v, b.index, pattern)
+	}
 	if value, ok := v.AsBool(); ok {
 		setBit(b.index, b.bits, pattern+valueSuffix(value))
 	}
 	if s, ok := v.AsString(); ok && isVariableReference(s) {
 		b.refs[varRef{pattern: pattern, reference: s}] = struct{}{}
 	}
-	b.markChildren(v, pattern)
+	b.markChildren(v, pattern, coerce)
 }
 
 // isVariableReference reports whether s is exactly one variable reference,
@@ -601,10 +682,33 @@ func indexSchema(schema []string) map[string]int {
 	return index
 }
 
+// encodedPrefix starts every encoded bitmap: "bm1.<size>.<base64>". The size,
+// repeated outside the compressed payload, lets the logging pipeline's data
+// shape (DATA_SHAPE_DABS_BUNDLE_BITMAP) bound the length of the rest without
+// decompressing it, so the bitmap survives centralization from regulated
+// (FedRAMP) workspaces, where strings without a shape are redacted.
+const encodedPrefix = "bm1."
+
+// MaxSize is the largest bitmap the shape accepts, in bits.
+const MaxSize = 32768
+
+// MaxEncodedBodyLen is the longest base64 body the shape accepts after
+// "bm1.<size>.": DEFLATE's worst case for the raw payload plus a margin,
+// base64-encoded. Encode never exceeds it (TestEncodeFitsShape).
+func MaxEncodedBodyLen(size int) int {
+	raw := headerSize + (size+7)/8
+	maxDeflate := raw + 5*((raw+65534)/65535) + 16
+	return 4 * ((maxDeflate + 2) / 3)
+}
+
 // Encode packs bits into the wire format (magic, size, context, bitmap),
-// compresses it with DEFLATE, and base64-encodes the result. DEFLATE is used
-// rather than gzip because it has no timestamp, keeping the output deterministic.
+// compresses it with DEFLATE, base64-encodes the result, and prefixes it with
+// "bm1.<size>.". DEFLATE is used rather than gzip because it has no timestamp,
+// keeping the output deterministic.
 func Encode(bits []bool, context uint16) (string, error) {
+	if len(bits) == 0 || len(bits) > MaxSize {
+		return "", fmt.Errorf("bitmap has %d bits; the encoding takes 1 to %d", len(bits), MaxSize)
+	}
 	n := len(bits)
 	raw := make([]byte, headerSize+(n+7)/8)
 	copy(raw, magic)
@@ -627,13 +731,26 @@ func Encode(bits []bool, context uint16) (string, error) {
 	if err := w.Close(); err != nil {
 		return "", err
 	}
-	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+	return fmt.Sprintf("%s%d.%s", encodedPrefix, len(bits), base64.StdEncoding.EncodeToString(buf.Bytes())), nil
 }
 
-// Decode reverses Encode: it base64-decodes, inflates, validates the header, and
-// returns the bits and context.
+// Decode reverses Encode: it checks the "bm1.<size>." prefix, base64-decodes,
+// inflates, validates the header against the prefix, and returns the bits and
+// context.
 func Decode(encoded string) (bits []bool, context uint16, err error) {
-	compressed, err := base64.StdEncoding.DecodeString(encoded)
+	rest, ok := strings.CutPrefix(encoded, encodedPrefix)
+	if !ok {
+		return nil, 0, fmt.Errorf("missing %q prefix", encodedPrefix)
+	}
+	sizeText, body, ok := strings.Cut(rest, ".")
+	if !ok {
+		return nil, 0, errors.New("missing '.' after the size")
+	}
+	size, err := strconv.Atoi(sizeText)
+	if err != nil || size < 1 || size > MaxSize {
+		return nil, 0, fmt.Errorf("bad size %q", sizeText)
+	}
+	compressed, err := base64.StdEncoding.DecodeString(body)
 	if err != nil {
 		return nil, 0, fmt.Errorf("base64: %w", err)
 	}
@@ -649,6 +766,9 @@ func Decode(encoded string) (bits []bool, context uint16, err error) {
 	}
 	n := binary.BigEndian.Uint32(raw[4:])
 	context = binary.BigEndian.Uint16(raw[8:])
+	if uint64(n) != uint64(size) {
+		return nil, 0, fmt.Errorf("prefix says %d bits, payload %d", size, n)
+	}
 	// Compare in uint64 so a corrupt size near 2^32 cannot overflow int on 32-bit platforms.
 	if uint64(len(raw)-headerSize) != (uint64(n)+7)/8 {
 		return nil, 0, fmt.Errorf("payload size mismatch: %d bits, %d bytes", n, len(raw))

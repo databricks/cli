@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"encoding/base64"
 	"encoding/binary"
+	"math/rand/v2"
 	"os"
 	"slices"
 	"strings"
@@ -86,6 +87,16 @@ resources:
       tasks: []
 `))
 	require.Empty(t, diags)
+	// A variable whose name spells another schema path ("*.description")
+	// counts as a variable, not as that path.
+	odd, diags := config.LoadFromBytes("databricks.yml", []byte(`
+variables:
+  "*.description":
+    default: x
+`))
+	require.Empty(t, diags)
+	schema0 := EmbeddedSchema()
+	assert.Equal(t, []string{"variables", "variables.*", "variables.*.default"}, setPaths(schema0, markedBits(t, odd.Value(), schema0)))
 
 	schema := EmbeddedSchema()
 	bits := markedBits(t, root.Value(), schema)
@@ -240,11 +251,30 @@ func TestBuilderMarkChanges(t *testing.T) {
 			want:   append(slices.Clone(job), "resources.jobs.*.tags", "resources.jobs.*.tags.*"),
 		},
 		{
-			name:   "list elements are compared by position",
+			name:   "list elements are paired by key",
 			before: `resources: {jobs: {a: {tasks: [{task_key: t1}]}}}`,
 			after:  `resources: {jobs: {a: {tasks: [{task_key: t1, description: d}, {task_key: t2}]}}}`,
 			want: append(slices.Clone(job), "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]",
 				"resources.jobs.*.tasks[*].description", "resources.jobs.*.tasks[*].task_key"),
+		},
+		// The CLI filled in fields of t1 before Python ran; Python only added t0.
+		{
+			name:   "an element prepended to a keyed list",
+			before: `resources: {jobs: {a: {tasks: [{task_key: t1, notebook_task: {notebook_path: p, source: WORKSPACE}}]}}}`,
+			after:  `resources: {jobs: {a: {tasks: [{task_key: t0}, {task_key: t1, notebook_task: {notebook_path: p, source: WORKSPACE}}]}}}`,
+			want:   append(slices.Clone(job), "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]", "resources.jobs.*.tasks[*].task_key"),
+		},
+		{
+			name:   "a keyed element that moved and changed",
+			before: `resources: {jobs: {a: {tasks: [{task_key: t1}, {task_key: t2, max_retries: 1}]}}}`,
+			after:  `resources: {jobs: {a: {tasks: [{task_key: t2, max_retries: 2}, {task_key: t1}]}}}`,
+			want:   append(slices.Clone(job), "resources.jobs.*.tasks", "resources.jobs.*.tasks[*]", "resources.jobs.*.tasks[*].max_retries"),
+		},
+		{
+			name:   "a list without keys that Python reorders",
+			before: `resources: {jobs: {a: {permissions: [{level: CAN_VIEW, user_name: u}, {level: IS_OWNER, user_name: o}]}}}`,
+			after:  `resources: {jobs: {a: {permissions: [{level: IS_OWNER, user_name: o}, {level: CAN_VIEW, user_name: u}]}}}`,
+			want:   nil,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -343,6 +373,18 @@ func TestBuilderResolveVariables(t *testing.T) {
 			},
 		},
 		{
+			name:      "quoted bool inside a complex variable",
+			config:    `resources: {jobs: {j: {queue: "${var.q}"}}}`,
+			variables: `variables: {q: {value: {enabled: "false"}}}`,
+			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
+		},
+		{
+			name:      "a variable key that spells a value entry",
+			config:    `resources: {jobs: {j: {queue: "${var.q}"}}}`,
+			variables: `variables: {q: {value: {"enabled=true": x, enabled: false}}}`,
+			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
+		},
+		{
 			name:      "interpolated string is a plain string",
 			config:    `resources: {jobs: {j: {name: "job-${var.suffix}"}}}`,
 			variables: `variables: {suffix: {value: {queue: {enabled: true}}}}`,
@@ -363,7 +405,9 @@ func TestBuilderResolveVariables(t *testing.T) {
 }
 
 func TestBitsRejectsUnsupportedTelemetryField(t *testing.T) {
-	_, err := NewBuilder(EmbeddedSchema()).Bits(struct{ Count int }{})
+	_, err := NewBuilder(EmbeddedSchema()).Bits(struct {
+		Count int `metric:"count"`
+	}{})
 	assert.ErrorContains(t, err, "telemetry field Count has unsupported type int")
 }
 
@@ -379,7 +423,7 @@ func TestParseSchema(t *testing.T) {
 
 func TestEncodeDecodeRoundTrip(t *testing.T) {
 	// Sizes around byte boundaries exercise the MSB-first packing and padding.
-	for _, n := range []int{0, 1, 7, 8, 9, 16, 17} {
+	for _, n := range []int{1, 7, 8, 9, 16, 17, MaxSize} {
 		bits := make([]bool, n)
 		for i := range bits {
 			bits[i] = i%3 == 0
@@ -392,10 +436,13 @@ func TestEncodeDecodeRoundTrip(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, context, gotContext)
 			assert.Len(t, decoded, n)
-			if n > 0 {
-				assert.Equal(t, bits, decoded)
-			}
+			assert.Equal(t, bits, decoded)
 		}
+	}
+	// The shape that lets the bitmap leave regulated regions takes 1 to MaxSize bits.
+	for _, n := range []int{0, MaxSize + 1} {
+		_, err := Encode(make([]bool, n), ContextFullBundle)
+		assert.ErrorContains(t, err, "the encoding takes 1 to 32768", n)
 	}
 }
 
@@ -403,7 +450,9 @@ func TestEncodeBitOrder(t *testing.T) {
 	encoded, err := Encode([]bool{true, false, false, false, false, false, false, true, true}, ContextFullBundle)
 	require.NoError(t, err)
 
-	compressed, err := base64.StdEncoding.DecodeString(encoded)
+	body, ok := strings.CutPrefix(encoded, "bm1.9.")
+	require.True(t, ok, encoded)
+	compressed, err := base64.StdEncoding.DecodeString(body)
 	require.NoError(t, err)
 	var raw bytes.Buffer
 	_, err = raw.ReadFrom(flate.NewReader(bytes.NewReader(compressed)))
@@ -438,39 +487,64 @@ func TestDecodeErrors(t *testing.T) {
 		err     string
 	}{
 		{
+			name:    "missing prefix",
+			encoded: deflateBase64(t, append(header(magic, 1), 0x80)),
+			err:     `missing "bm1." prefix`,
+		},
+		{
+			name:    "missing dot after the size",
+			encoded: "bm1.1",
+			err:     "missing '.' after the size",
+		},
+		{
+			name:    "size zero",
+			encoded: "bm1.0.AAAA",
+			err:     `bad size "0"`,
+		},
+		{
+			name:    "size over the cap",
+			encoded: "bm1.32769.AAAA",
+			err:     `bad size "32769"`,
+		},
+		{
 			name:    "bad base64",
-			encoded: "not-valid-base64!!!",
+			encoded: "bm1.1.not-valid-base64!!!",
 			err:     "base64",
 		},
 		{
 			name:    "not deflate",
-			encoded: base64.StdEncoding.EncodeToString([]byte{0xff, 0xff}),
+			encoded: "bm1.1." + base64.StdEncoding.EncodeToString([]byte{0xff, 0xff}),
 			err:     "inflate",
 		},
 		{
 			name:    "short header",
-			encoded: deflateBase64(t, []byte("DBTB")),
+			encoded: "bm1.1." + deflateBase64(t, []byte("DBTB")),
 			err:     "payload too short",
 		},
 		{
 			name:    "bad magic",
-			encoded: deflateBase64(t, append(header("XXXX", 1), 0x80)),
+			encoded: "bm1.1." + deflateBase64(t, append(header("XXXX", 1), 0x80)),
 			err:     "bad magic",
 		},
 		{
+			name:    "prefix and payload disagree",
+			encoded: "bm1.2." + deflateBase64(t, append(header(magic, 1), 0x80)),
+			err:     "prefix says 2 bits, payload 1",
+		},
+		{
 			name:    "missing bitmap bytes",
-			encoded: deflateBase64(t, header(magic, 9)),
+			encoded: "bm1.9." + deflateBase64(t, header(magic, 9)),
 			err:     "payload size mismatch",
 		},
 		{
 			name:    "extra bitmap bytes",
-			encoded: deflateBase64(t, append(header(magic, 1), 0x80, 0x00)),
+			encoded: "bm1.1." + deflateBase64(t, append(header(magic, 1), 0x80, 0x00)),
 			err:     "payload size mismatch",
 		},
 		{
 			name:    "size near 2^32",
-			encoded: deflateBase64(t, header(magic, 0xFFFFFFFF)),
-			err:     "payload size mismatch",
+			encoded: "bm1.1." + deflateBase64(t, header(magic, 0xFFFFFFFF)),
+			err:     "prefix says 1 bits, payload 4294967295",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -671,8 +745,9 @@ func TestToJSONIsLossless(t *testing.T) {
 			presence++
 		}
 	}
-	// "telemetry" namespaces the telemetry fields but is not a schema entry.
-	assert.Equal(t, presence+1, countNodes(got.Presence))
+	// "telemetry" namespaces the telemetry fields, and a dotted metric tag such
+	// as "experimental.use_legacy_run_as" nests too; neither is a schema entry.
+	assert.Equal(t, presence+len(implicitParents(schema)), countNodes(got.Presence))
 	// A bool field has no children, so each value entry is a leaf.
 	assert.Equal(t, trueValues, countLeaves(got.True))
 	assert.Equal(t, falseValues, countLeaves(got.False))
@@ -745,4 +820,86 @@ func TestDecompressSchemaRoundTrip(t *testing.T) {
 	schema, err := DecompressSchema(compressed)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"a", "b"}, schema)
+}
+
+// implicitParents returns the dotted prefixes of schema entries that are not
+// entries themselves, which ToJSON still renders as nodes.
+func implicitParents(schema []string) []string {
+	entries := map[string]bool{}
+	for _, p := range schema {
+		entries[p] = true
+	}
+	var parents []string
+	seen := map[string]bool{}
+	for _, p := range schema {
+		if strings.HasSuffix(p, trueSuffix) || strings.HasSuffix(p, falseSuffix) {
+			continue
+		}
+		for i := range len(p) {
+			if p[i] != '.' {
+				continue
+			}
+			if prefix := p[:i]; !entries[prefix] && !seen[prefix] {
+				seen[prefix] = true
+				parents = append(parents, prefix)
+			}
+		}
+	}
+	return parents
+}
+
+// validShape is a copy of DATA_SHAPE_DABS_BUNDLE_BITMAP from universe
+// compliance/shape: the format the logging pipeline lets out of regulated
+// (FedRAMP) regions. A bitmap that fails it is redacted there.
+func validShape(v string) bool {
+	rest, ok := strings.CutPrefix(v, "bm1.")
+	if !ok {
+		return false
+	}
+	sizeText, body, ok := strings.Cut(rest, ".")
+	if !ok || len(sizeText) < 1 || len(sizeText) > 5 || sizeText[0] == '0' {
+		return false
+	}
+	size := 0
+	for _, c := range sizeText {
+		if c < '0' || c > '9' {
+			return false
+		}
+		size = size*10 + int(c-'0')
+	}
+	if size < 1 || size > MaxSize || len(body) < 4 || len(body)%4 != 0 || len(body) > MaxEncodedBodyLen(size) {
+		return false
+	}
+	for i, c := range body {
+		switch {
+		case c >= 'A' && c <= 'Z', c >= 'a' && c <= 'z', c >= '0' && c <= '9', c == '+', c == '/':
+		case c == '=' && i >= len(body)-2 && (i == len(body)-1 || body[len(body)-1] == '='):
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func TestEncodeFitsShape(t *testing.T) {
+	r := rand.New(rand.NewPCG(1, 2))
+	sizes := []int{1, 2, 7, 8, 9, 100, len(EmbeddedSchema()), MaxSize}
+	for range 50 {
+		sizes = append(sizes, 1+r.IntN(MaxSize))
+	}
+	for _, size := range sizes {
+		// Random bits compress worst; all set and none set are the extremes.
+		for _, density := range []float64{0, 0.05, 0.5, 1} {
+			bits := make([]bool, size)
+			for i := range bits {
+				bits[i] = r.Float64() < density
+			}
+			encoded, err := Encode(bits, ContextFullBundle)
+			require.NoError(t, err)
+			assert.True(t, validShape(encoded), "size %d density %v: %q fails the shape", size, density, encoded)
+		}
+	}
+	for _, v := range []string{"bm1.orders.2024", "bm1.5311.my_table_name", "BM1.8.AAAA", "bm1.08.AAAA", "bm1.8.AA=A"} {
+		assert.False(t, validShape(v), v)
+	}
 }

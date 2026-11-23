@@ -73,12 +73,14 @@
       "service_principal_name": true
     },
     "telemetry": {
-      "ArtifactBuildCommandIsSet": true,
-      "ArtifactFilesIsSet": true,
-      "ConfigHasDoubleDollarBrace": true,
-      "PresetsNamePrefixIsSet": true,
-      "RunAsSet": true,
-      "UseLegacyRunAs": true
+      "artifact_build_command_is_set": true,
+      "artifact_files_is_set": true,
+      "config_has_double_dollar_brace": true,
+      "experimental": {
+        "use_legacy_run_as": true
+      },
+      "presets_name_prefix_is_set": true,
+      "run_as_set": true
     },
     "variables": {
       "*": {
@@ -109,11 +111,11 @@
       }
     },
     "telemetry": {
-      "ArtifactBuildCommandIsSet": true,
-      "ArtifactFilesIsSet": true,
-      "ConfigHasDoubleDollarBrace": true,
-      "PresetsNamePrefixIsSet": true,
-      "RunAsSet": true
+      "artifact_build_command_is_set": true,
+      "artifact_files_is_set": true,
+      "config_has_double_dollar_brace": true,
+      "presets_name_prefix_is_set": true,
+      "run_as_set": true
     }
   },
   "false": {
@@ -146,9 +148,11 @@
       }
     },
     "telemetry": {
-      "ArtifactBuildCommandIsSet": true,
-      "ArtifactFilesIsSet": true,
-      "UseLegacyRunAs": true
+      "artifact_build_command_is_set": true,
+      "artifact_files_is_set": true,
+      "experimental": {
+        "use_legacy_run_as": true
+      }
     }
   }
 }

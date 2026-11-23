@@ -32,21 +32,23 @@ func TestWalkSchema(t *testing.T) {
 	assert.Contains(t, schema, "resources.jobs.*.name")
 	assert.Contains(t, schema, "resources.jobs.*.tasks[*].task_key")
 	assert.Contains(t, schema, "variables.*.default")
-	// Telemetry fields are namespaced under "telemetry." and, having no json
-	// tag, keep their Go field name.
-	assert.Contains(t, schema, "telemetry.SelectUsed")
-	assert.Contains(t, schema, "telemetry.RunAsSet")
-	assert.Contains(t, schema, "telemetry.ArtifactFilesIsSet")
-	assert.NotContains(t, schema, "telemetry.ArtifactFilesIsSet[*]")
+	// Telemetry fields are namespaced under "telemetry." and named by their
+	// metric tag, so renaming a Go field keeps its bits.
+	assert.Contains(t, schema, "telemetry.select_used")
+	assert.Contains(t, schema, "telemetry.run_as_set")
+	assert.Contains(t, schema, "telemetry.artifact_files_is_set")
+	assert.Contains(t, schema, "telemetry.experimental.use_legacy_run_as")
+	assert.NotContains(t, schema, "telemetry.SelectUsed")
+	assert.NotContains(t, schema, "telemetry.artifact_files_is_set[*]")
 
 	// Each bool field, whatever its Go shape, is followed by its value entries.
 	for _, p := range []string{
 		"experimental.use_legacy_run_as",                      // bool, omitempty
 		"resources.jobs.*.queue.enabled",                      // bool, no omitempty
 		"presets.pipelines_development",                       // *bool
-		"telemetry.SelectUsed",                                // telemetry bool
-		"telemetry.RunAsSet",                                  // telemetry *bool
-		"telemetry.ArtifactFilesIsSet",                        // telemetry BoolSet
+		"telemetry.select_used",                               // telemetry bool
+		"telemetry.run_as_set",                                // telemetry *bool
+		"telemetry.artifact_files_is_set",                     // telemetry BoolSet
 		"resources.jobs.*.tasks[*].disable_auto_optimization", // bool in a list element
 	} {
 		i := slices.Index(schema, p)
@@ -95,7 +97,7 @@ func TestBitsTelemetry(t *testing.T) {
 		{
 			name: "bool true",
 			tm:   bundle.Telemetry{SelectUsed: true},
-			want: []string{"telemetry.SelectUsed", "telemetry.SelectUsed=true"},
+			want: []string{"telemetry.select_used", "telemetry.select_used=true"},
 		},
 		{
 			name: "*bool nil",
@@ -105,12 +107,12 @@ func TestBitsTelemetry(t *testing.T) {
 		{
 			name: "*bool false",
 			tm:   bundle.Telemetry{RunAsSet: new(false)},
-			want: []string{"telemetry.RunAsSet", "telemetry.RunAsSet=false"},
+			want: []string{"telemetry.run_as_set", "telemetry.run_as_set=false"},
 		},
 		{
 			name: "*bool true",
 			tm:   bundle.Telemetry{RunAsSet: new(true)},
-			want: []string{"telemetry.RunAsSet", "telemetry.RunAsSet=true"},
+			want: []string{"telemetry.run_as_set", "telemetry.run_as_set=true"},
 		},
 		{
 			name: "BoolSet unset",
@@ -121,14 +123,14 @@ func TestBitsTelemetry(t *testing.T) {
 			name: "BoolSet true twice",
 			tm:   bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, true)},
 			want: []string{
-				"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet=true",
+				"telemetry.artifact_files_is_set", "telemetry.artifact_files_is_set=true",
 			},
 		},
 		{
 			name: "BoolSet both values",
 			tm:   bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, false)},
 			want: []string{
-				"telemetry.ArtifactFilesIsSet", "telemetry.ArtifactFilesIsSet=false", "telemetry.ArtifactFilesIsSet=true",
+				"telemetry.artifact_files_is_set", "telemetry.artifact_files_is_set=false", "telemetry.artifact_files_is_set=true",
 			},
 		},
 	} {

@@ -55,7 +55,7 @@ P   future #[FUTURE_BIT]
 
 
 >>> musterr [CLI] bundle bitmap decode
-Error: base64: illegal base64 data at input byte 3
+Error: missing "bm1." prefix
 
 === -o accepts compressed, text and json
 

@@ -15,9 +15,16 @@ from databricks.bundles._bitmap import (
 )
 
 
-def _encode(raw: bytes) -> str:
+def _encode(raw: bytes, size: int | None = None) -> str:
+    """Encode raw as the CLI does: "bm1.<size>." and base64 of raw DEFLATE.
+
+    size defaults to the one in raw's header, or 1 when raw has none.
+    """
+    if size is None:
+        size = struct.unpack(">I", raw[4:8])[0] if len(raw) >= 8 else 1
     compressor = zlib.compressobj(wbits=-15)
-    return base64.b64encode(compressor.compress(raw) + compressor.flush()).decode()
+    body = base64.b64encode(compressor.compress(raw) + compressor.flush()).decode()
+    return f"bm1.{size}.{body}"
 
 
 def _payload(bits: list[bool], context: int = 0) -> bytes:
@@ -30,11 +37,11 @@ def _payload(bits: list[bool], context: int = 0) -> bytes:
 
 def test_embedded_schema():
     assert "bundle.name" in SCHEMA
-    assert "telemetry.SelectUsed=true" in SCHEMA
+    assert "telemetry.select_used=true" in SCHEMA
     assert len(SCHEMA) == len(set(SCHEMA))
 
 
-@pytest.mark.parametrize("n", [0, 1, 7, 8, 9, 16, 17])
+@pytest.mark.parametrize("n", [1, 7, 8, 9, 16, 17, 32768])
 def test_decode_bits_round_trip(n: int):
     bits = [i % 3 == 0 for i in range(n)]
     assert decode_bits(_encode(_payload(bits, context=0xBEEF))) == (bits, 0xBEEF)
@@ -55,12 +62,23 @@ def test_decode_bits_reads_cli_payload():
 @pytest.mark.parametrize(
     ("encoded", "error"),
     [
-        ("not-valid-base64!!!", "base64"),
-        (base64.b64encode(b"\xff\xff").decode(), "decompressing"),
+        ("AAAA", "missing 'bm1.' prefix"),
+        ("bm1.1", "missing '.' after the size"),
+        ("bm1.0.AAAA", "bad size '0'"),
+        ("bm1.32769.AAAA", "bad size '32769'"),
+        ("bm1.1.not-valid-base64!!!", "base64"),
+        ("bm1.1." + base64.b64encode(b"\xff\xff").decode(), "decompressing"),
         (_encode(b"DBTB"), "payload too short"),
         (_encode(b"XXXX" + struct.pack(">IH", 1, 0) + b"\x80"), "bad magic"),
+        (
+            _encode(b"DBTB" + struct.pack(">IH", 1, 0) + b"\x80", size=2),
+            "prefix says 2 bits, payload 1",
+        ),
         (_encode(b"DBTB" + struct.pack(">IH", 9, 0)), "payload size mismatch"),
-        (_encode(b"DBTB" + struct.pack(">IH", 0xFFFFFFFF, 0)), "payload size mismatch"),
+        (
+            _encode(b"DBTB" + struct.pack(">IH", 0xFFFFFFFF, 0), size=1),
+            "prefix says 1 bits",
+        ),
     ],
 )
 def test_decode_bits_errors(encoded: str, error: str):
@@ -130,7 +148,7 @@ def test_decode():
 @pytest.mark.parametrize("decoder", [decode, decode_json])
 def test_decode_rejects_unknown_context(decoder):
     with pytest.raises(ValueError, match="unsupported bitmap context 1"):
-        decoder(_encode(_payload([], context=1)))
+        decoder(_encode(_payload([True], context=1)))
 
 
 def test_decode_newer_bitmap():
