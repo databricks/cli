@@ -785,6 +785,9 @@ tasks:
   # go test timeout leaves room for setup, the build and the report steps, so a
   # slow run ends with a timeout panic that lists the running tests instead of a
   # killed job with no output for the package.
+  # The cloud tests mostly wait on the workspace, so -parallel 8 rather than 4: at 4
+  # the full acceptance suite (~19h of test time) took close to 5h20m when concurrent
+  # main runs slowed the workspace down.
   integration:
     desc: Run integration tests (requires Databricks workspace)
     deps: [install-pythons]
@@ -796,7 +799,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=5h20m
+          -- -parallel 8 -timeout=5h20m
 
   integration-short:
     desc: Run integration tests except the slow ones (skips CloudSlow via -short)
@@ -810,7 +813,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=5h20m -short
+          -- -parallel 8 -timeout=5h20m -short
 
   cloud-select:
     desc: Run selection of integration tests (tests changed in this branch)
