@@ -28,9 +28,13 @@ type checkEnrollmentsResponse struct {
 
 // CheckEnrollments reports which of the given rollout features the workspace is enrolled in.
 // The service leaves out a feature it does not know, so a missing key reads as not enrolled.
+// Asking about no features is answered here: the service rejects an empty list.
 //
 // TODO: switch to the SDK's generated method once the SDK has it.
 func CheckEnrollments(ctx context.Context, w *databricks.WorkspaceClient, features ...string) (map[string]bool, error) {
+	if len(features) == 0 {
+		return map[string]bool{}, nil
+	}
 	client, err := databricksclient.New(w.Config)
 	if err != nil {
 		return nil, err
