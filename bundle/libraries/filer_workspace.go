@@ -9,6 +9,6 @@ import (
 )
 
 func filerForWorkspace(ctx context.Context, b *bundle.Bundle, uploadPath string) (filer.Filer, string, diag.Diagnostics) {
-	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), uploadPath)
+	f, err := filer.NewWorkspaceFilesClientForBundleDeploy(b.WorkspaceClient(ctx), uploadPath)
 	return f, uploadPath, diag.FromErr(err)
 }
