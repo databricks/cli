@@ -67,7 +67,7 @@ type runConfig struct {
 	MaxRetries                *int           `yaml:"max_retries" help:"How many times to retry a failed run. Must be >= 0. Defaults to 3 when unset." group:"Execution"`
 	TimeoutMinutes            *int           `yaml:"timeout_minutes" help:"Wall-clock limit for the run in minutes. Must be >= 1." group:"Execution"`
 	IdempotencyToken          *string        `yaml:"idempotency_token" help:"Reuse token: a repeat submission with the same token returns the existing run instead of starting another. Max 64 characters." group:"Execution"`
-	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed. Floats such as 2e-5 and 1e6 can load as strings in Python." group:"Workload"`
+	Parameters                map[string]any `yaml:"parameters" help:"Free-form values written as YAML to $HYPERPARAMETERS_PATH. Nested structures are allowed. When using Python's yaml.safe_load, very small or large floats such as 0.00002 or 1e6 may be returned as strings; convert them with float() after loading." group:"Workload"`
 	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only." group:"MLflow tracking"`
 	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace." group:"MLflow tracking"`
 	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ." group:"MLflow tracking"`

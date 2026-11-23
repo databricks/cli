@@ -69,7 +69,7 @@ config
     env_variables                Plain environment variables, as NAME: value.
     secrets                      Environment variables sourced from secrets, as NAME: scope/key.
     code_source                  Local code to upload and make available to the run.
-    parameters                   Free-form values passed through to the workload.
+    parameters                   Free-form values written as YAML to $HYPERPARAMETERS_PATH.
 
   Execution:
     max_retries                  How many times to retry a failed run.
