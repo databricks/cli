@@ -27,10 +27,6 @@
 === above_2_53
 
 >>> uv run [UV_ARGS] -q [CLI] bundle validate -t above_2_53 --output json
-Error: internal error when merging output of Python mutator: unexpected change at "variables.id.default" (update)
-
-
-Exit code: 1
 {"default":1234567890123456800,"value":1234567890123456800}
 
 === complex

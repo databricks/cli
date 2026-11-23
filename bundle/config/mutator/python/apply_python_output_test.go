@@ -1,6 +1,7 @@
 package python
 
 import (
+	"math"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -194,6 +195,36 @@ func TestMergeOutput_wholeFloatAsInt(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, input.Get("not_resource"), merged.Get("not_resource"))
+}
+
+func TestMergeOutput_wholeFloatAsInt_negativeZero(t *testing.T) {
+	input := mapOf("not_resource", dyn.V(math.Copysign(0, -1)))
+	output := mapOf("not_resource", dyn.V(0))
+
+	_, _, err := applyPythonOutput(input, output)
+
+	require.NoError(t, err)
+}
+
+func TestMergeOutput_wholeFloatAsInt_shortestDecimalAbove2p53(t *testing.T) {
+	// json.Marshal writes 1234567890123456789.0 (stored as 1234567890123456768) as 1234567890123456800.
+	input := mapOf("not_resource", dyn.V(1234567890123456789.0))
+	output := mapOf("not_resource", dyn.V(int64(1234567890123456800)))
+
+	merged, _, err := applyPythonOutput(input, output)
+
+	require.NoError(t, err)
+	assert.Equal(t, input.Get("not_resource"), merged.Get("not_resource"))
+}
+
+func TestMergeOutput_disallowNearbyIntAbove2p53(t *testing.T) {
+	// float64(9007199254740993) rounds to 9007199254740992, but Python did change the value.
+	input := mapOf("not_resource", dyn.V(9007199254740992.0))
+	output := mapOf("not_resource", dyn.V(int64(9007199254740993)))
+
+	_, _, err := applyPythonOutput(input, output)
+
+	assert.EqualError(t, err, `unexpected change at "not_resource" (update)`)
 }
 
 func TestMergeOutput_disallowFloatToDifferentInt(t *testing.T) {

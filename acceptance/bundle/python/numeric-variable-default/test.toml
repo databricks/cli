@@ -1,4 +1,4 @@
-Badness = 'Whole-number float variable defaults fail with an internal error when the bundle has Python code. A whole float beyond int64 fails differently: the Python output cannot be parsed.'
+Badness = 'A whole float beyond int64 fails: the Python output cannot be parsed.'
 Ignore = [".databricks", "__pycache__", "tmp.json"]
 
 # The position depends on the size of the Python output, which includes paths.
