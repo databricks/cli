@@ -4,10 +4,12 @@ package process
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"syscall"
 	"testing"
 	"time"
@@ -32,23 +34,35 @@ func TestBackgroundInGroupInterruptHelper(t *testing.T) {
 	t.Fatal("the interrupt did not end the process")
 }
 
-// raiseHelperEnv makes TestMain raise SIGINT in a helper process, which exits
-// normally if Raise returns.
+// raiseHelperEnv makes TestMain raise a signal in a helper process, which
+// exits normally if Raise returns. The value names the signal: "SIGINT", which
+// the helper also catches elsewhere, or "SIGHUP", which it started with
+// ignored.
 const raiseHelperEnv = "PROCESS_TEST_RAISE_HELPER"
 
-// TestMain raises the signal when TestRaiseEndsTheProcessBySignal re-executes
-// the test binary as the helper.
+// TestMain raises the signal when a Raise test re-executes the test binary as
+// the helper.
 func TestMain(m *testing.M) {
-	if os.Getenv(raiseHelperEnv) == "" {
+	switch os.Getenv(raiseHelperEnv) {
+	case "":
 		os.Exit(m.Run())
+	case "SIGINT":
+		// Another part of the process still catches it.
+		signal.Notify(make(chan os.Signal, 1), os.Interrupt)
+		Raise(os.Interrupt)
+	case "SIGHUP":
+		if slices.Contains(InterruptSignals(), os.Signal(syscall.SIGHUP)) {
+			fmt.Fprintln(os.Stderr, "SIGHUP is caught although it was ignored at start")
+			os.Exit(2)
+		}
+		Raise(syscall.SIGHUP)
 	}
-	Raise(os.Interrupt)
 	os.Exit(0)
 }
 
 func TestRaiseEndsTheProcessBySignal(t *testing.T) {
 	helper := exec.Command(os.Args[0])
-	helper.Env = append(os.Environ(), raiseHelperEnv+"=1")
+	helper.Env = append(os.Environ(), raiseHelperEnv+"=SIGINT")
 	err := helper.Run()
 	exitErr, ok := errors.AsType[*exec.ExitError](err)
 	require.True(t, ok, "helper exited with %v", err)
@@ -57,11 +71,16 @@ func TestRaiseEndsTheProcessBySignal(t *testing.T) {
 	assert.Equal(t, syscall.SIGINT, status.Signal())
 }
 
-// A signal the process ignores does not end it, and Raise returns.
-func TestRaiseReturnsWhenTheSignalIsIgnored(t *testing.T) {
-	signal.Ignore(syscall.SIGUSR1)
-	t.Cleanup(func() { signal.Reset(syscall.SIGUSR1) })
-	Raise(syscall.SIGUSR1)
+// A process started with SIGHUP ignored, as under nohup, does not catch it,
+// and the signal does not end it: Raise returns.
+func TestRaiseReturnsWhenSIGHUPWasIgnoredAtStart(t *testing.T) {
+	// The shell starts the helper with SIGHUP ignored, as nohup does. Ignoring
+	// it in the test process instead would outlast signal.Reset and reach the
+	// helpers of later tests.
+	helper := exec.Command("sh", "-c", `trap '' HUP; exec "$0"`, os.Args[0])
+	helper.Env = append(os.Environ(), raiseHelperEnv+"=SIGHUP")
+	out, err := helper.CombinedOutput()
+	require.NoError(t, err, "helper printed:\n%s", out)
 }
 
 func TestBackgroundInGroupForwardsInterrupt(t *testing.T) {

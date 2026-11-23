@@ -12,7 +12,6 @@ import (
 	"runtime"
 	"slices"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -31,13 +30,6 @@ import (
 )
 
 const (
-	// gateTimeout bounds the gate lookup, one compatibility manifest fetch.
-	// Every machine pays it once per version while the gate is off, and a
-	// machine that cannot reach the manifest waits this long after its
-	// command finished, so it is kept short. A version gets one lookup: one
-	// that fails is not repeated (see autoInstall).
-	gateTimeout = time.Second
-
 	// installTimeout bounds the install or update (its downloads and the
 	// agent CLIs it runs). One that runs out of time counts as a failed
 	// attempt and is retried on a later run.
@@ -46,6 +38,13 @@ const (
 	// promptTimeout bounds the wait for an answer at the install prompt.
 	promptTimeout = time.Minute
 )
+
+// gateTimeout bounds the gate lookup, one compatibility manifest fetch. Every
+// machine pays it once per version while the gate is off, and a machine that
+// cannot reach the manifest waits this long after its command finished, so it
+// is kept short. A version gets one lookup: one that fails is not repeated
+// (see autoInstall). Tests raise it.
+var gateTimeout = time.Second
 
 // gateOn is autoinstall.GateOn; tests replace it.
 var gateOn = autoinstall.GateOn
@@ -87,10 +86,8 @@ var notifyInterrupt = func(ctx context.Context, sigs ...os.Signal) (context.Cont
 	}
 }
 
-// raise ends the CLI by a signal that auto-install caught, once it recorded
-// what it must, so that the shell stops the script, loop or command list that
-// ran the command, as it would have without auto-install; tests replace it.
-var raise = process.Raise
+// errInterrupted is why a run stopped when it caught a signal.
+var errInterrupted = errors.New("interrupted")
 
 // autoInstallDisable is the opt-out command named in the notice.
 const autoInstallDisable = "databricks aitools auto-install disable"
@@ -98,18 +95,23 @@ const autoInstallDisable = "databricks aitools auto-install disable"
 // AutoInstall installs Databricks AI tools for the coding agents on this
 // machine, or updates an existing installation, on the first run of a new CLI
 // version. The root command runs it after a command succeeded. It never fails
-// the command, though a signal it catches still ends the CLI (see raise), and
-// never writes to stdout. On stderr it prints the install
+// the command and never writes to stdout. On stderr it prints the install
 // prompt (in a terminal) and one line on what it did; why it skipped or failed
 // goes only to the debug log.
-func AutoInstall(cmd *cobra.Command) {
+//
+// It returns the signal that stopped it, if one did: Ctrl+C at the question,
+// or Ctrl+C, a request to terminate or the terminal closing during the gate
+// lookup. It records what it must first. The root command then ends the CLI
+// by the signal, so that the shell stops the script, loop or command list
+// that ran the command, as it would have without auto-install.
+func AutoInstall(cmd *cobra.Command) os.Signal {
 	ctx := cmd.Context()
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debugf(ctx, "auto-install: panic: %v", r)
 		}
 	}()
-	autoInstall(ctx, skipsAutoInstall(cmd))
+	return autoInstall(ctx, skipsAutoInstall(cmd))
 }
 
 // skipsAutoInstall reports whether cmd never triggers auto-install: the
@@ -133,7 +135,7 @@ func skipsAutoInstall(cmd *cobra.Command) bool {
 	return false
 }
 
-func autoInstall(ctx context.Context, skippedCommand bool) {
+func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 	version := autoinstall.Version(ctx)
 	in := autoinstall.Inputs{
 		SkippedCommand: skippedCommand,
@@ -153,18 +155,18 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 		if reason == autoinstall.ReasonRootInUserHome {
 			log.Debugf(ctx, "auto-install: skipped: %s", reason)
 		}
-		return
+		return nil
 	}
 	var err error
 	in.State, err = autoinstall.Load(ctx)
 	if err != nil {
 		log.Debugf(ctx, "auto-install: skipped: %v", err)
-		return
+		return nil
 	}
 	reason := autoinstall.Decide(in)
 	if !reason.Due() {
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
-		return
+		return nil
 	}
 	// A run that would ask before installing but cannot skips before the lock
 	// and the gate lookup, since it repeats on every such run until a run that
@@ -181,25 +183,25 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 		tools, err := planTools(quietContext(ctx), in.State)
 		if err == nil && tools.skip == protos.AitoolsAutoInstallOutcomeSkippedNoAgents {
 			log.Debugf(ctx, "auto-install: skipped: %s", tools.skipWhy)
-			return
+			return nil
 		}
 		if err == nil && autoInstallAsks() && in.State.AcceptedVersion != version && !canAsk(ctx) && len(tools.newAgents()) > 0 {
 			skipUnaskable(ctx, in.State.ID)
-			return
+			return nil
 		}
 	}
 
 	unlock, ok := autoinstall.TryLock(ctx)
 	if !ok {
 		log.Debugf(ctx, "auto-install: skipped: another CLI process is running it")
-		return
+		return nil
 	}
 	defer unlock()
 	// Another process may have finished a run since the state was read.
 	in.State, err = autoinstall.Load(ctx)
 	if err != nil {
 		log.Debugf(ctx, "auto-install: skipped: %v", err)
-		return
+		return nil
 	}
 	id := in.State.ID
 	if id == "" {
@@ -208,7 +210,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 		id, err = autoinstall.SaveID(ctx, autoinstall.NewID())
 		if err != nil {
 			log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", err)
-			return
+			return nil
 		}
 	}
 	in.Bucket = autoinstall.Bucket(id)
@@ -218,9 +220,9 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 	reason = autoinstall.Decide(in)
 	if reason == autoinstall.ReasonGateOff {
 		// Ctrl+C, a request to terminate or the terminal closing ends the
-		// lookup. The version is recorded as for a failed lookup, and then the
-		// CLI ends by the signal.
-		sigCtx, stop := notifyInterrupt(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+		// lookup. The version is recorded as for a failed lookup, and the
+		// signal is returned for the CLI to end by.
+		sigCtx, stop := notifyInterrupt(ctx, process.InterruptSignals()...)
 		gateCtx, cancel := context.WithTimeout(sigCtx, gateTimeout)
 		in.GateOn, err = gateOn(gateCtx, version)
 		cancel()
@@ -229,7 +231,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 			// An interrupted lookup can still answer, from a manifest cached
 			// earlier. The user asked the CLI to stop, so the run ends here
 			// like one whose lookup failed.
-			err = errors.New("interrupted")
+			err = errInterrupted
 		}
 		if err != nil {
 			// The gate is unknown. A machine that cannot reach the manifest
@@ -241,10 +243,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 			if err := autoinstall.Record(ctx, version, autoinstall.MaxAttempts, id); err != nil {
 				log.Debugf(ctx, "auto-install: could not save the state: %v", err)
 			}
-			if sig != nil {
-				raise(sig)
-			}
-			return
+			return sig
 		}
 		reason = autoinstall.Decide(in)
 	}
@@ -257,7 +256,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 	if !reason.Due() {
 		// Another process settled the version while this one waited.
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
-		return
+		return nil
 	}
 	if reason == autoinstall.ReasonGateOff {
 		// The feature is not launched, so the skip is not reported.
@@ -265,18 +264,18 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 		if err := autoinstall.Record(ctx, version, 0, id); err != nil {
 			log.Debugf(ctx, "auto-install: could not save the state: %v", err)
 		}
-		return
+		return nil
 	}
 	if outcome, ok := skipOutcomes[reason]; ok {
 		run.settle(ctx, outcome)
-		return
+		return nil
 	}
-	run.attempt(ctx, in.State)
+	return run.attempt(ctx, in.State)
 }
 
 // attempt installs or updates the tools and reports the outcome. prior is the
 // state the run was decided on.
-func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
+func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os.Signal {
 	attempt := autoinstall.NextAttempt(prior, r.version)
 	qctx := quietContext(ctx)
 	tools, err := planTools(qctx, prior)
@@ -289,10 +288,10 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 		// on may have changed since.
 		if !canAsk(ctx) {
 			skipUnaskable(ctx, r.id)
-			return
+			return nil
 		}
-		if !r.ask(ctx, tools.newAgents()) {
-			return
+		if ok, sig := r.ask(ctx, tools.newAgents()); !ok {
+			return sig
 		}
 		asked = true
 	}
@@ -301,7 +300,7 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 	// auto-install instead of retrying it on every run.
 	if recErr := autoinstall.Record(ctx, r.version, attempt, r.id); recErr != nil {
 		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", recErr)
-		return
+		return nil
 	}
 	if err == nil && tools.fresh() {
 		// Skills an unfinished install leaves have no install state; the
@@ -343,6 +342,7 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 			cmdio.LogString(ctx, fmt.Sprintf("%s Databricks AI tools for %s. Disable: %s", verb, strings.Join(result.agents, ", "), autoInstallDisable))
 		}
 	}
+	return nil
 }
 
 // autoInstallAsks reports whether auto-install asks before a first install:
@@ -379,45 +379,43 @@ func skipUnaskable(ctx context.Context, storedID string) {
 const skippedNotice = "Skipped. To install Databricks AI tools later, run: databricks aitools install"
 
 // ask asks whether to install for the agents names and reports whether to go
-// ahead. What was typed before the question, such as the next command typed
-// while this one ran, is discarded unread; where it cannot be (a pipe that
-// Git Bash's mintty counts as a terminal), the question is not asked. The
-// version is settled before asking, so the question is asked once per
+// ahead, and the signal that ended the question, if one did (see
+// AutoInstall). What was typed before the question, such as the next command
+// typed while this one ran, is discarded unread; where it cannot be (a pipe
+// that Git Bash's mintty counts as a terminal), the question is not asked.
+// The version is settled before asking, so the question is asked once per
 // version even when it is never answered: the process is killed, stdin is
 // closed, Ctrl+C is pressed, nobody answers within promptTimeout (an
 // unrecognized agent in a pseudo-terminal), or the answer is neither yes nor
 // no. "Yes" is recorded so that the version's retries do not ask again; only
 // "no" stores the opt-out.
-func (r autoInstallRun) ask(ctx context.Context, names []string) bool {
+func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signal) {
 	if err := cmdio.DiscardInput(ctx); err != nil {
 		log.Debugf(ctx, "auto-install: could not discard the pending input: %v", err)
 		skipUnaskable(ctx, r.id)
-		return false
+		return false, nil
 	}
 	if err := autoinstall.Record(ctx, r.version, 0, r.id); err != nil {
 		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", err)
-		return false
+		return false, nil
 	}
 	actx, cancel := context.WithTimeout(ctx, promptTimeout)
 	defer cancel()
 	// Ctrl+C ends the question. The version is settled as unanswered, and
-	// then the CLI ends by the signal.
+	// the signal is returned for the CLI to end by.
 	actx, stop := notifyInterrupt(actx, os.Interrupt)
 	ans, err := cmdio.AskCancellable(actx, "Install Databricks AI tools for "+strings.Join(names, ", ")+"? [Y/n]", "")
 	sig := stop()
 	if err == nil && sig != nil {
 		// Ctrl+C right after an answer: the user asked the CLI to stop.
-		err = errors.New("interrupted")
+		err = errInterrupted
 	}
 	if err != nil {
 		log.Debugf(ctx, "auto-install: skipped: the prompt was not answered: %v", err)
 		// End the question's line.
 		cmdio.LogString(ctx, "")
 		r.settle(ctx, protos.AitoolsAutoInstallOutcomeUnanswered)
-		if sig != nil {
-			raise(sig)
-		}
-		return false
+		return false, sig
 	}
 	switch strings.ToLower(strings.TrimSpace(ans)) {
 	case "", "y", "yes":
@@ -425,15 +423,15 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) bool {
 			// The install goes ahead; a retry of it asks again.
 			log.Debugf(ctx, "auto-install: could not save the answer: %v", err)
 		}
-		return true
+		return true, nil
 	case "n", "no":
 		r.decline(ctx)
-		return false
+		return false, nil
 	}
 	log.Debugf(ctx, "auto-install: skipped: the answer was neither yes nor no")
 	r.settle(ctx, protos.AitoolsAutoInstallOutcomeUnanswered)
 	cmdio.LogString(ctx, skippedNotice)
-	return false
+	return false, nil
 }
 
 // decline stores a "no" at the prompt as the opt-out, so no later version

@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,14 +38,18 @@ func TestMain(m *testing.M) {
 	if step == "" {
 		os.Exit(m.Run())
 	}
-	runAutoInstallSignalHelper(step)
-	// The signal ends the helper before the hook returns; exiting normally
-	// fails the test.
+	// The root command ends the CLI by the signal that the hook returns;
+	// exiting normally fails the test.
+	if sig := runAutoInstallSignalHelper(step); sig != nil {
+		process.Raise(sig)
+	}
 	os.Exit(0)
 }
 
-func runAutoInstallSignalHelper(step string) {
+func runAutoInstallSignalHelper(step string) os.Signal {
 	if step == "lookup" {
+		// Only the signal ends the lookup.
+		gateTimeout = time.Hour
 		// A lookup that waits for the manifest until it is stopped.
 		gateOn = func(ctx context.Context, _ string) (bool, error) {
 			fmt.Fprintln(os.Stderr, gateLookupStarted)
@@ -59,7 +64,7 @@ func runAutoInstallSignalHelper(step string) {
 	// answer.
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, cmdio.FakeTTYReader(os.Stdin), cmdio.FakeTTY(io.Discard), cmdio.FakeTTY(os.Stderr), "", ""))
 	ctx = telemetry.WithNewLogger(ctx)
-	runAutoInstallHook(ctx)
+	return runAutoInstallHook(ctx)
 }
 
 // A signal at the question or during the gate lookup ends the CLI by that
