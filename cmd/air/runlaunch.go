@@ -79,8 +79,7 @@ func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, 
 }
 
 // launchIndexComponent names the local cache that maps a staged file set to the
-// launch dir that holds it. Entries are keyed by workspace, so a launch from one
-// machine never trusts another's record.
+// launch dir that holds it.
 const (
 	launchIndexComponent = "air-launch-dirs"
 	launchIndexTTL       = 30 * 24 * time.Hour
@@ -109,14 +108,21 @@ func launchContentHash(items []uploadItem) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// launchFilesStaged reports whether every launch file is already in dir. The
-// checks run in parallel, so a partly written dir counts as a miss.
+// launchFilesStaged reports whether every launch file is already in dir with its
+// local size; a workspace edit that keeps the size is not detected. Any missing
+// file or failed check is a miss, so the caller uploads again.
 func launchFilesStaged(ctx context.Context, w *databricks.WorkspaceClient, dir string, items []uploadItem) bool {
 	group, groupCtx := errgroup.WithContext(ctx)
 	for _, item := range items {
 		group.Go(func() error {
-			_, err := w.Workspace.GetStatusByPath(groupCtx, path.Join(dir, item.name))
-			return err
+			info, err := w.Workspace.GetStatusByPath(groupCtx, path.Join(dir, item.name))
+			if err != nil {
+				return err
+			}
+			if info.Size != int64(len(item.data)) {
+				return fmt.Errorf("%s is %d bytes in the workspace, %d locally", item.name, info.Size, len(item.data))
+			}
+			return nil
 		})
 	}
 	return group.Wait() == nil

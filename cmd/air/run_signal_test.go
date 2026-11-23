@@ -26,7 +26,7 @@ const signalChildEnv = "TEST_AIR_SIGNAL_CHILD"
 // TestMain runs notifyInterrupt under test when re-executed as the child.
 func TestMain(m *testing.M) {
 	if os.Getenv(signalChildEnv) == "" {
-		os.Exit(m.Run())
+		os.Exit(runWithTempCacheDir(m))
 	}
 
 	// TestMain has no *testing.T, so t.Context() is unavailable here.
@@ -42,6 +42,20 @@ func TestMain(m *testing.M) {
 	time.Sleep(30 * time.Second)
 	os.Stdout.WriteString("SURVIVED\n")
 	os.Exit(0)
+}
+
+// runWithTempCacheDir points the local cache at a temp dir for the whole run, so
+// tests that reach submitWorkload never read or write the user's launch-dir index.
+func runWithTempCacheDir(m *testing.M) int {
+	dir, err := os.MkdirTemp("", "air-test-cache-")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(dir)
+	if err := os.Setenv("DATABRICKS_CACHE_DIR", dir); err != nil {
+		panic(err)
+	}
+	return m.Run()
 }
 
 // TestNotifyInterruptSecondSignalStillKills is the regression test for the

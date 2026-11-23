@@ -1,7 +1,7 @@
 package aircmd
 
 import (
-	"io/fs"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -138,17 +137,19 @@ func TestEnsureExperimentDirectory(t *testing.T) {
 	require.ErrorContains(t, err, "is not a directory")
 }
 
-// launchFilesServer answers get-status 200 for every path except missing.
-func launchFilesServer(t *testing.T, missing *string) *databricks.WorkspaceClient {
+// launchFilesServer answers get-status with the size of each path in files and
+// 404 for any other path.
+func launchFilesServer(t *testing.T, files map[string]int) *databricks.WorkspaceClient {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Query().Get("path")
-		if r.URL.Path != "/api/2.0/workspace/get-status" || p == *missing {
+		size, ok := files[p]
+		if r.URL.Path != "/api/2.0/workspace/get-status" || !ok {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"not found"}`))
 			return
 		}
-		_, _ = w.Write([]byte(`{"path":"` + p + `","object_type":"FILE"}`))
+		_, _ = fmt.Fprintf(w, `{"path":%q,"object_type":"FILE","size":%d}`, p, size)
 	}))
 	t.Cleanup(srv.Close)
 	return newTestWorkspaceClient(t, srv.URL)
@@ -157,13 +158,21 @@ func launchFilesServer(t *testing.T, missing *string) *databricks.WorkspaceClien
 func TestLaunchFilesStaged(t *testing.T) {
 	const dir = "/Workspace/Users/me@example.com/.air/cli_launch/exp/run_abc"
 	items := []uploadItem{{trainingConfigName, []byte("cfg")}, {commandScriptName, []byte("echo hi")}}
-	missing := ""
-	w := launchFilesServer(t, &missing)
-	assert.True(t, launchFilesStaged(t.Context(), w, dir, items))
-	// A partly written dir is a miss, whichever file is absent.
+	// staged probes a workspace that holds items as uploaded, after edit.
+	staged := func(edit func(files map[string]int)) bool {
+		files := map[string]int{}
+		for _, item := range items {
+			files[path.Join(dir, item.name)] = len(item.data)
+		}
+		edit(files)
+		return launchFilesStaged(t.Context(), launchFilesServer(t, files), dir, items)
+	}
+	assert.True(t, staged(func(map[string]int) {}))
+	// A partly written dir, or a file whose size changed in the workspace, is a miss.
 	for _, item := range items {
-		missing = path.Join(dir, item.name)
-		assert.False(t, launchFilesStaged(t.Context(), w, dir, items), item.name)
+		p := path.Join(dir, item.name)
+		assert.False(t, staged(func(files map[string]int) { delete(files, p) }), item.name+" missing")
+		assert.False(t, staged(func(files map[string]int) { files[p]++ }), item.name+" resized")
 	}
 }
 
@@ -172,36 +181,4 @@ func TestLaunchContentHash(t *testing.T) {
 	assert.Equal(t, launchContentHash(files), launchContentHash([]uploadItem{{commandScriptName, []byte("echo hi")}, {trainingConfigName, []byte("cfg")}}))
 	assert.NotEqual(t, launchContentHash(files), launchContentHash([]uploadItem{{commandScriptName, []byte("echo bye")}, {trainingConfigName, []byte("cfg")}}))
 	assert.NotEqual(t, launchContentHash([]uploadItem{{"a", []byte("bc")}}), launchContentHash([]uploadItem{{"ab", []byte("c")}}))
-}
-
-func TestLaunchIndex(t *testing.T) {
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
-	t.Setenv("DATABRICKS_CACHE_ENABLED", "true")
-	ctx := t.Context()
-	key := launchIndexKey{Host: "https://h.example.com", Base: "/Workspace/Users/me", Content: "c1"}
-	const dir = "/Workspace/Users/me/.air/cli_launch/exp/run_1"
-
-	_, ok := cache.Get[string](ctx, newLaunchIndex(ctx), key)
-	assert.False(t, ok, "first launch has no entry")
-
-	cache.Put(ctx, newLaunchIndex(ctx), key, dir)
-	got, ok := cache.Get[string](ctx, newLaunchIndex(ctx), key)
-	require.True(t, ok)
-	assert.Equal(t, dir, got)
-
-	// Another workspace never sees this entry.
-	other := key
-	other.Host = "https://other.example.com"
-	_, ok = cache.Get[string](ctx, newLaunchIndex(ctx), other)
-	assert.False(t, ok)
-
-	// A corrupt entry reads as a miss, so the launch takes the first-launch path.
-	require.NoError(t, filepath.WalkDir(os.Getenv("XDG_CACHE_HOME"), func(p string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() {
-			return os.WriteFile(p, []byte("{not json"), 0o600)
-		}
-		return err
-	}))
-	_, ok = cache.Get[string](ctx, newLaunchIndex(ctx), key)
-	assert.False(t, ok)
 }

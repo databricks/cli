@@ -405,8 +405,9 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	})
 	group.Go(func() error {
 		return withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
-			// A recorded dir whose files all exist is staged. Anything else, including
-			// a 404 for a dir that was deleted, uploads into funcDir.
+			// A recorded dir whose files all exist with their local sizes is staged.
+			// Anything else, including a 404 for a dir that was deleted, uploads into
+			// funcDir.
 			staged = recorded && launchFilesStaged(stagingCtx, w, funcDir, items)
 			if staged {
 				return nil

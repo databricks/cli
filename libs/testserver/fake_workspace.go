@@ -1321,6 +1321,7 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite bool,
 			ObjectType: "FILE",
 			Path:       filePath,
 			ObjectId:   nextTreenodeID(),
+			Size:       int64(len(body)),
 		},
 		Data: body,
 	}
