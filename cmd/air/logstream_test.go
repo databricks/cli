@@ -418,12 +418,12 @@ func TestWaitingSpinnerText(t *testing.T) {
 	assert.Equal(t, "Waiting for GPU capacity...",
 		newStreamer(t, "STATUS: Waiting for GPU capacity", "PENDING", "").waitingSpinnerText())
 
-	// No status message + PENDING -> compute-capacity fallback.
-	assert.Equal(t, waitingForComputeStatus,
+	// No status message + PENDING -> neutral fallback.
+	assert.Equal(t, waitingForWorkloadStatus,
 		newStreamer(t, "", "PENDING", "").waitingSpinnerText())
 
 	for _, state := range []string{"PENDING", "QUEUED", "WAITING_FOR_RETRY", "BLOCKED"} {
-		assert.Equal(t, waitingForComputeStatus,
+		assert.Equal(t, waitingForWorkloadStatus,
 			newStreamer(t, "", "RUNNING", state).waitingSpinnerText(), state)
 	}
 
@@ -499,7 +499,7 @@ func TestStreamBricklensJSONEmitsWaitingEvent(t *testing.T) {
 			}
 			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
 		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
-			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`))
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{}}`))
 		default:
 			_, _ = w.Write([]byte(`{}`))
 		}
@@ -519,7 +519,7 @@ func TestStreamBricklensJSONEmitsWaitingEvent(t *testing.T) {
 	var first waitingEvent
 	require.NoError(t, json.Unmarshal([]byte(lines[0]), &first))
 	assert.Equal(t, "WAITING", first.Type)
-	assert.Equal(t, "Waiting for GPU capacity...", first.Message)
+	assert.Equal(t, waitingForWorkloadStatus, first.Message)
 	assert.Contains(t, lines[len(lines)-1], `"line":"training"`)
 	assert.Equal(t, 1, strings.Count(stdout.String(), `"type":"WAITING"`), "one event per distinct status")
 	assert.Empty(t, stderr.String())

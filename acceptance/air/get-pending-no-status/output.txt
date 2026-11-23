@@ -1,0 +1,31 @@
+
+=== Text fallback
+
+>>> [CLI] air get 123
+Warn: air get: could not download training config /Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/training_config.yaml: Path (/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/training_config.yaml) doesn't exist.
+
+╭─ Metadata ─────────────────────────────────────────────────────╮
+│                                                                │
+│  Run ID        123                                             │
+│  Status        ● Waiting for the latest workload status...     │
+│  Submitted     N/A                                             │
+│  Retries       0                                               │
+│  Max Retries   0                                               │
+│  Duration      N/A                                             │
+│  Experiment    my-exp                                          │
+│  MLflow Run    N/A                                             │
+│  User          user@example.com                                │
+│  Accelerators  1x A10                                          │
+│  Environment   N/A                                             │
+│                                                                │
+╰────────────────────────────────────────────────────────────────╯
+
+Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
+
+=== JSON contract
+
+>>> [CLI] air get 123 -o json
+{
+  "status": "PENDING",
+  "has_status_message": false
+}
