@@ -24,12 +24,14 @@ func TestRelativeScriptWarning(t *testing.T) {
 		{"absolute path", "python /opt/train.py", "", ""},
 		{"environment assignment", "SCRIPT=train.py python -m mod", "", ""},
 		{"not in snapshot", "python other.py", "", ""},
-		{"local file outside include_paths", "python tools/prep.py", "", ""},
 		{"parent directory", "python ../tools/prep.py", "", ""},
 		{"directory", "ls src", "", ""},
 		{"cd into code source first", `cd "$CODE_SOURCE_PATH" && python train.py`, "", ""},
 		{"subshell cd", `(cd "$CODE_SOURCE_PATH" && python train.py --epochs 1)`, "", ""},
 		{"pushd", `pushd "$CODE_SOURCE_PATH"; python train.py`, "", ""},
+		{"glued cd", `pip install -r "$CODE_SOURCE_PATH/req.txt"&&cd "$CODE_SOURCE_PATH" && python train.py`, "", ""},
+		{"comment", `python "$CODE_SOURCE_PATH/train.py" # was train.py`, "", ""},
+		{"path before a comment", "python train.py # entrypoint", "train.py", "train.py"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

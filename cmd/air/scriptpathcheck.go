@@ -5,6 +5,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"unicode"
 )
 
 // relativeScriptWarning returns a warning when command (or a container's
@@ -31,15 +32,16 @@ func relativeScriptWarning(cfg *runConfig, snapshotFiles []string) string {
 }
 
 // relativeScriptInCommand returns the first word of command that names a file in
-// snapshotFiles, or "". A `--flag=value` word is checked by its value; a
+// snapshotFiles, or "". Words are split on whitespace and shell operators, so
+// `&&cd` is seen as `cd`. A `--flag=value` word is checked by its value; a
 // `NAME=value` word is an environment assignment and skipped. Scanning stops at a
-// `cd` or `pushd`: once the command changes directory, as in
+// `#` comment and at a `cd` or `pushd`: once the command changes directory, as in
 // `cd "$CODE_SOURCE_PATH" && python train.py`, later relative paths are resolved
 // against a directory this check can't know.
 func relativeScriptInCommand(command string, snapshotFiles []string) string {
-	for word := range strings.FieldsSeq(command) {
-		word = strings.Trim(word, `"'();&|`)
-		if word == "cd" || word == "pushd" {
+	for word := range strings.FieldsFuncSeq(command, isShellWordBreak) {
+		word = strings.Trim(word, `"'`)
+		if word == "cd" || word == "pushd" || strings.HasPrefix(word, "#") {
 			return ""
 		}
 		if strings.HasPrefix(word, "-") {
@@ -56,6 +58,10 @@ func relativeScriptInCommand(command string, snapshotFiles []string) string {
 		}
 	}
 	return ""
+}
+
+func isShellWordBreak(r rune) bool {
+	return unicode.IsSpace(r) || strings.ContainsRune(";&|()", r)
 }
 
 func relativeScriptMessage(field, rel string) string {
