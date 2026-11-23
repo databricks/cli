@@ -83,16 +83,19 @@ func Bucket(id string) int {
 	return int(binary.BigEndian.Uint64(sum[:8]) % 100)
 }
 
-// Record stores the outcome of a run for version: attempts is 0 when the
-// version is settled, or the number of failed attempts so far. It re-reads the
-// state and changes only the fields a run owns, so an opt-out stored while the
-// run was installing is kept.
-func Record(ctx context.Context, version string, attempts int, id string) error {
+// Record stores the outcome of a run for version at now: attempts is 0 when
+// the version is settled, or the number of failed attempts so far, the last
+// of which started at now. It re-reads the state and changes only the fields
+// a run owns, so an opt-out stored while the run was installing is kept.
+func Record(ctx context.Context, version string, attempts int, id string, now time.Time) error {
 	return updateState(ctx, func(s *State) {
 		s.LastVersion = version
 		s.Attempts = attempts
 		if attempts == 0 {
 			s.Installing = false
+			s.LastAttempt = time.Time{}
+		} else {
+			s.LastAttempt = now.UTC()
 		}
 		if s.ID == "" {
 			s.ID = id

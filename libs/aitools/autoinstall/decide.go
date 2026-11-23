@@ -1,6 +1,8 @@
 package autoinstall
 
 import (
+	"time"
+
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
 )
@@ -9,6 +11,11 @@ const (
 	// MaxAttempts is how many failed attempts one CLI version gets. A new
 	// version starts over.
 	MaxAttempts = 10
+
+	// firstRetryDelay is the wait after the first failed attempt of a
+	// version before the next one. It doubles with each failed attempt, so
+	// the last of MaxAttempts comes about 42 hours after the first.
+	firstRetryDelay = 5 * time.Minute
 
 	// HoldoutPercent is the share of machines (by Bucket) that never
 	// auto-install, so the install rate can be compared with a control group.
@@ -28,6 +35,7 @@ const (
 	ReasonRootInUserHome   Reason = "root_in_user_home"
 	ReasonAlreadyRan       Reason = "already_ran"
 	ReasonRetriesExhausted Reason = "retries_exhausted"
+	ReasonRetryNotDue      Reason = "retry_not_due"
 
 	// Settle the version without installing. All but ReasonGateOff are
 	// reported: the feature is not launched while the gate is off.
@@ -44,7 +52,7 @@ const (
 // settles the version. A run that is not due changes nothing.
 func (r Reason) Due() bool {
 	switch r {
-	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted:
+	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted, ReasonRetryNotDue:
 		return false
 	case ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun:
 		return true
@@ -73,6 +81,9 @@ type Inputs struct {
 
 	// State is the persisted state: last version, attempts and opt-out.
 	State State
+
+	// Now is the time of the run.
+	Now time.Time
 
 	// CI is set when the CLI runs in continuous integration.
 	CI bool
@@ -113,6 +124,10 @@ func Decide(in Inputs) Reason {
 		return ReasonRetriesExhausted
 	case in.State.LastVersion == in.Version && in.State.Attempts == 0:
 		return ReasonAlreadyRan
+	// A source or agent CLI that stays broken would otherwise make every
+	// following command wait for a failing attempt.
+	case in.State.LastVersion == in.Version && !retryDue(in.State, in.Now):
+		return ReasonRetryNotDue
 	// A newer CLI already ran here, e.g. an IDE ships its own older CLI next
 	// to the user's: alternating between the two must not run on every
 	// command.
@@ -128,6 +143,17 @@ func Decide(in Inputs) Reason {
 		return ReasonSkippedHoldout
 	}
 	return ReasonRun
+}
+
+// retryDue reports whether the wait after the failed attempts of s is over at
+// now: firstRetryDelay after the first, doubling with each one after it. A
+// state without State.LastAttempt (one an older CLI wrote) is due. So is one
+// whose last attempt is later than now: the clock was set back, and the wait
+// would otherwise last until the clock caught up.
+func retryDue(s State, now time.Time) bool {
+	since := now.Sub(s.LastAttempt)
+	// A hand-edited negative count would make the shift panic.
+	return since < 0 || since >= firstRetryDelay<<max(s.Attempts-1, 0)
 }
 
 // InHoldout reports whether a machine in bucket belongs to the holdout.

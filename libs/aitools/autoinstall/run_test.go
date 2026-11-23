@@ -40,7 +40,7 @@ func TestRecordKeepsConcurrentOptOut(t *testing.T) {
 	// was saved would write opted_out=false back.
 	var wg sync.WaitGroup
 	for range 20 {
-		wg.Go(func() { assert.NoError(t, Record(ctx, "1.30.0", 1, "machine")) })
+		wg.Go(func() { assert.NoError(t, Record(ctx, "1.30.0", 1, "machine", time.Now())) })
 	}
 	wg.Go(func() { assert.NoError(t, SetOptedOut(ctx, true)) })
 	wg.Wait()
@@ -141,15 +141,30 @@ func TestRecordClearsInstallingWhenSettled(t *testing.T) {
 
 	require.NoError(t, MarkInstalling(ctx))
 	// A failed attempt leaves the marker for the next run.
-	require.NoError(t, Record(ctx, "1.30.0", 1, "machine"))
+	require.NoError(t, Record(ctx, "1.30.0", 1, "machine", time.Now()))
 	s, err := Load(ctx)
 	require.NoError(t, err)
 	assert.True(t, s.Installing)
 
-	require.NoError(t, Record(ctx, "1.30.0", 0, "machine"))
+	require.NoError(t, Record(ctx, "1.30.0", 0, "machine", time.Now()))
 	s, err = Load(ctx)
 	require.NoError(t, err)
 	assert.False(t, s.Installing)
+}
+
+func TestRecordStoresTheLastFailedAttempt(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	at := time.Date(2026, 1, 2, 3, 4, 5, 0, time.FixedZone("UTC+2", 2*60*60))
+
+	require.NoError(t, Record(ctx, "1.30.0", 2, "machine", at))
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.True(t, at.Equal(s.LastAttempt), "got %v", s.LastAttempt)
+
+	require.NoError(t, Record(ctx, "1.30.0", 0, "machine", at))
+	s, err = Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{LastVersion: "1.30.0", ID: "machine"}, s, "a settled version has no last attempt")
 }
 
 func TestNextAttempt(t *testing.T) {

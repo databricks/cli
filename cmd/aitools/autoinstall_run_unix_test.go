@@ -52,6 +52,8 @@ func runAutoInstallSignalHelperProcess() {
 }
 
 func runAutoInstallSignalHelper(step string) os.Signal {
+	// The helper is a new process: it has the real clock, not the test's.
+	now = func() time.Time { return autoInstallTestNow }
 	if step == "lookup" {
 		// Only the signal ends the lookup.
 		gateTimeout = time.Hour
@@ -83,9 +85,9 @@ func TestAutoInstallEndsByTheSignal(t *testing.T) {
 		wantState autoinstall.State
 	}{
 		{"question", syscall.SIGINT, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}},
-		{"lookup", syscall.SIGINT, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}},
-		{"lookup", syscall.SIGTERM, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}},
-		{"lookup", syscall.SIGHUP, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}},
+		{"lookup", syscall.SIGINT, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, LastAttempt: autoInstallTestNow, ID: "treatment-machine"}},
+		{"lookup", syscall.SIGTERM, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, LastAttempt: autoInstallTestNow, ID: "treatment-machine"}},
+		{"lookup", syscall.SIGHUP, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, LastAttempt: autoInstallTestNow, ID: "treatment-machine"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.step+"/"+tc.sig.String(), func(t *testing.T) {
