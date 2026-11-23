@@ -57,7 +57,7 @@ func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
 func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []string, cfg *runConfig, idempotencyToken string, timeout time.Duration) (context.Context, error) {
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		if err := root.MustWorkspaceClient(cmd, args); err != nil {
-			return ctx, renderWorkspaceClientError(ctx, cmd, err)
+			return ctx, &workspaceClientError{err}
 		}
 		ctx = cmd.Context()
 	}
@@ -78,6 +78,15 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 
 	return ctx, validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
 }
+
+// workspaceClientError marks a --dry-run failure to build the workspace client,
+// so it is rendered after the local checks, in the same order as before.
+type workspaceClientError struct {
+	err error
+}
+
+func (e *workspaceClientError) Error() string { return e.err.Error() }
+func (e *workspaceClientError) Unwrap() error { return e.err }
 
 // renderWorkspaceClientError renders a failure to build the workspace client.
 // Bundle diagnostics that were already printed pass through, as in air get. A
@@ -225,11 +234,11 @@ databricks-ai-runtime skill:
 			}
 			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
-			if errors.Is(validationErr, root.ErrAlreadyPrinted) {
-				return validationErr
-			}
 			if err := validateIdempotencyToken(idempotencyToken); err != nil {
 				return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+			}
+			if clientErr, ok := errors.AsType[*workspaceClientError](validationErr); ok {
+				return renderWorkspaceClientError(ctx, cmd, clientErr.err)
 			}
 			if validationErr != nil {
 				unavailable, ok := validationUnavailable(validationErr)

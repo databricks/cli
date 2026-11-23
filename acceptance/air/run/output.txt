@@ -184,6 +184,20 @@ Tip: use the --debug flag to see more details and a trace of this error:
   }
 }
 
+=== dry-run reports an over-long idempotency key before missing credentials (json)
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] air run -f valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "idempotency token must be 64 characters or less, got 65",
+    "retryable": false
+  }
+}
+
 === dry-run with an unknown profile is a permanent config error (json)
 
 >>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN DATABRICKS_CONFIG_FILE=profiles.databrickscfg [CLI] air run -f valid.yaml --dry-run -o json -p does-not-exist
@@ -203,6 +217,14 @@ Tip: use the --debug flag to see more details and a trace of this error:
 >>> [CLI] air run -f ../valid.yaml --dry-run -o json
 Error: multiple targets are marked as default ([TARGETS])
 
+
+>>> [CLI] air run -f ../valid.yaml --dry-run --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Error: multiple targets are marked as default ([TARGETS])
+
+Error: idempotency token must be 64 characters or less, got 65
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
 
 >>> [CLI] air run -f ../valid.yaml -o json
 Error: multiple targets are marked as default ([TARGETS])
