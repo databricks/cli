@@ -27,6 +27,9 @@ func LoadDefaultTarget(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	bundle.ApplyContext(ctx, b, mutator.SelectDefaultTarget())
+	if logdiag.HasError(ctx) {
+		return
+	}
 	recordConfig(b)
 }
 
@@ -39,6 +42,9 @@ func LoadNamedTarget(ctx context.Context, b *bundle.Bundle, target string) {
 	}
 
 	bundle.ApplyContext(ctx, b, mutator.SelectTarget(target))
+	if logdiag.HasError(ctx) {
+		return
+	}
 	recordConfig(b)
 }
 
