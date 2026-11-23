@@ -45,7 +45,8 @@ class SqlWarehouse(Resource):
     RUNNING queries) before it is automatically stopped.
     
     Supported values:
-    - Must be == 0 or >= 10 mins
+    - Must be == 0 or >= 1 min for serverless warehouses.
+    - Must be == 0 or >= 10 mins for classic and pro warehouses.
     - 0 indicates no autostop.
     
     Defaults to 120 mins
@@ -53,7 +54,7 @@ class SqlWarehouse(Resource):
 
     channel: VariableOrOptional[Channel] = None
     """
-    Channel Details
+    Channel that determines which Databricks SQL version the warehouse runs.
     """
 
     cluster_size: VariableOrOptional[str] = None
@@ -78,7 +79,8 @@ class SqlWarehouse(Resource):
 
     creator_name: VariableOrOptional[str] = None
     """
-    warehouse creator name
+    Name of the user who created the warehouse. Set by the server and ignored in
+    requests.
     """
 
     enable_photon: VariableOrOptional[bool] = None
@@ -141,11 +143,11 @@ class SqlWarehouse(Resource):
 
     name: VariableOrOptional[str] = None
     """
-    Logical name for the cluster.
+    Logical name for the warehouse.
     
     Supported values:
     - Must be unique within an org.
-    - Must be less than 100 characters.
+    - Must be 1 to 100 characters.
     """
 
     permissions: VariableOrList[SqlWarehousePermission] = field(default_factory=list)
@@ -170,14 +172,17 @@ class SqlWarehouse(Resource):
 
     spot_instance_policy: VariableOrOptional[SpotInstancePolicy] = None
     """
-    Configurations whether the endpoint should use spot instances.
+    Configures whether the warehouse should use spot instances. COST_OPTIMIZED uses
+    spot instances where the cloud provider supports them, and RELIABILITY_OPTIMIZED
+    uses on-demand instances only.
     """
 
     statement_timeout: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Warehouse statement timeout in seconds.
+    [Public Preview] Maximum time in seconds that a statement can run on this warehouse before it is
+    cancelled. Set to 0 to remove the warehouse-level timeout. Changing the value of a
+    running warehouse restarts it. See
+    https://docs.databricks.com/aws/en/sql/language-manual/parameters/statement_timeout.
     """
 
     tags: VariableOrOptional[EndpointTags] = None
@@ -212,7 +217,8 @@ class SqlWarehouseDict(TypedDict, total=False):
     RUNNING queries) before it is automatically stopped.
     
     Supported values:
-    - Must be == 0 or >= 10 mins
+    - Must be == 0 or >= 1 min for serverless warehouses.
+    - Must be == 0 or >= 10 mins for classic and pro warehouses.
     - 0 indicates no autostop.
     
     Defaults to 120 mins
@@ -220,7 +226,7 @@ class SqlWarehouseDict(TypedDict, total=False):
 
     channel: VariableOrOptional[ChannelParam]
     """
-    Channel Details
+    Channel that determines which Databricks SQL version the warehouse runs.
     """
 
     cluster_size: VariableOrOptional[str]
@@ -245,7 +251,8 @@ class SqlWarehouseDict(TypedDict, total=False):
 
     creator_name: VariableOrOptional[str]
     """
-    warehouse creator name
+    Name of the user who created the warehouse. Set by the server and ignored in
+    requests.
     """
 
     enable_photon: VariableOrOptional[bool]
@@ -308,11 +315,11 @@ class SqlWarehouseDict(TypedDict, total=False):
 
     name: VariableOrOptional[str]
     """
-    Logical name for the cluster.
+    Logical name for the warehouse.
     
     Supported values:
     - Must be unique within an org.
-    - Must be less than 100 characters.
+    - Must be 1 to 100 characters.
     """
 
     permissions: VariableOrList[SqlWarehousePermissionParam]
@@ -337,14 +344,17 @@ class SqlWarehouseDict(TypedDict, total=False):
 
     spot_instance_policy: VariableOrOptional[SpotInstancePolicyParam]
     """
-    Configurations whether the endpoint should use spot instances.
+    Configures whether the warehouse should use spot instances. COST_OPTIMIZED uses
+    spot instances where the cloud provider supports them, and RELIABILITY_OPTIMIZED
+    uses on-demand instances only.
     """
 
     statement_timeout: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Warehouse statement timeout in seconds.
+    [Public Preview] Maximum time in seconds that a statement can run on this warehouse before it is
+    cancelled. Set to 0 to remove the warehouse-level timeout. Changing the value of a
+    running warehouse restarts it. See
+    https://docs.databricks.com/aws/en/sql/language-manual/parameters/statement_timeout.
     """
 
     tags: VariableOrOptional[EndpointTagsParam]

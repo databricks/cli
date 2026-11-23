@@ -324,7 +324,7 @@ func authenticate(r *http.Request, cfg *config.Config, running *atomic.Int32) er
 }
 
 // Send uploads logs in a single request and returns an error unless all of them
-// were accepted. It is for events the user explicitly asked to send, so unlike
+// were accepted. It is for explicit submissions, so unlike
 // Upload it ignores DATABRICKS_CLI_DISABLE_TELEMETRY and never retries.
 func Send(ctx context.Context, cfg *config.Config, logs []protos.FrontendLog) error {
 	protoLogs, err := marshalLogs(logs)

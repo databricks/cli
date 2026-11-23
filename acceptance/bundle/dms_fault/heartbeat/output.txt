@@ -141,4 +141,4 @@
 
   Destroy: 2 deleted
 
-DMS API called: no
+DMS API called: yes

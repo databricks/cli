@@ -1395,6 +1395,9 @@ func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cf
 	for _, p := range cfg.UpdatableIDFields {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdatableIDFields: %s", p.Field)
 	}
+	for _, p := range cfg.ParentIDFields {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "ParentIDFields: %s", p.Field)
+	}
 	for _, p := range cfg.IgnoreRemoteChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
 	}

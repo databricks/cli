@@ -24,22 +24,20 @@ var cmdOverrides []func(*cobra.Command)
 // Spec declares the command for this service.
 var Spec = root.CommandSpec{
 	Use:     "ai-search",
-	Short:   `*Public Preview* **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.`,
+	Short:   `**AI Search Endpoint**: Represents the compute resources to host AI Search indexes.`,
 	GroupID: "aisearch",
 	Build:   buildCommand,
 }
 
 func buildCommand(ctx context.Context, cmd *cobra.Command) {
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-**AI Search Endpoint**: Represents the compute resources to host AI Search
+	cmd.Long = `**AI Search Endpoint**: Represents the compute resources to host AI Search
   indexes. AIP-conformant replacement for the legacy VectorSearchEndpoints API;
   functionally equivalent.`
 	cmd.RunE = root.ReportUnknownSubcommand
 
 	cmd.Annotations = map[string]string{
-		"launch_stage":         "PUBLIC_PREVIEW",
-		"launch_stage_display": "Public Preview",
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
 	}
 
 	// Add methods
@@ -82,22 +80,20 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createEndpointReq.EndpointId, "endpoint-id", createEndpointReq.EndpointId, `The user-supplied short name for the Endpoint, per AIP-133.`)
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", createEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.EndpointId, "endpoint-id", createEndpointReq.EndpointId, `Short name of the endpoint, which becomes the last segment of name.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", createEndpointReq.Endpoint.BudgetPolicyId, `ID of the serverless budget policy to apply to the endpoint.`)
 	// TODO: array: custom_tags
 	// TODO: complex arg: endpoint_status
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Full resource name of the endpoint, in the form workspaces/{workspace_id}/endpoints/{endpoint_id}.`)
 	cmd.Flags().IntVar(&createEndpointReq.Endpoint.ReplicaCount, "replica-count", createEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
 	// TODO: complex arg: scaling_info
 	cmd.Flags().IntVar(&createEndpointReq.Endpoint.TargetQps, "target-qps", createEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
 	// TODO: complex arg: throughput_info
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", createEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", createEndpointReq.Endpoint.UsagePolicyId, `ID of the usage policy to apply to the endpoint.`)
 
 	cmd.Use = "create-endpoint PARENT ENDPOINT_TYPE"
-	cmd.Short = `*Public Preview* Create an AI Search endpoint.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create an AI Search endpoint.
+	cmd.Short = `Create an AI Search endpoint.`
+	cmd.Long = `Create an AI Search endpoint.
 
   Create a new AI Search endpoint.
 
@@ -108,8 +104,8 @@ Create an AI Search endpoint.
       Supported values: [STANDARD, STORAGE_OPTIMIZED]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -195,10 +191,8 @@ func newCreateIndex() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-index PARENT PRIMARY_KEY INDEX_TYPE"
-	cmd.Short = `*Public Preview* Create an AI Search index.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Create an AI Search index.
+	cmd.Short = `Create an AI Search index.`
+	cmd.Long = `Create an AI Search index.
 
   Create a new AI Search index. The index is provisioned asynchronously;
   status.ready on GetIndex reports when it can serve queries.
@@ -216,8 +210,8 @@ Create an AI Search index.
       Supported values: [DELTA_SYNC, DIRECT_ACCESS]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -295,18 +289,16 @@ func newDeleteEndpoint() *cobra.Command {
 	var deleteEndpointReq aisearch.DeleteEndpointRequest
 
 	cmd.Use = "delete-endpoint NAME"
-	cmd.Short = `*Public Preview* Delete an AI Search endpoint.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete an AI Search endpoint.
+	cmd.Short = `Delete an AI Search endpoint.`
+	cmd.Long = `Delete an AI Search endpoint.
 
   Arguments:
     NAME: Full resource name of the endpoint to delete. Format:
       workspaces/{workspace_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -354,18 +346,16 @@ func newDeleteIndex() *cobra.Command {
 	var deleteIndexReq aisearch.DeleteIndexRequest
 
 	cmd.Use = "delete-index NAME"
-	cmd.Short = `*Public Preview* Delete an AI Search index.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Delete an AI Search index.
+	cmd.Short = `Delete an AI Search index.`
+	cmd.Long = `Delete an AI Search index.
 
   Arguments:
     NAME: Full resource name of the index to delete. Format:
       workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -413,10 +403,8 @@ func newGetEndpoint() *cobra.Command {
 	var getEndpointReq aisearch.GetEndpointRequest
 
 	cmd.Use = "get-endpoint NAME"
-	cmd.Short = `*Public Preview* Get an AI Search endpoint.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get an AI Search endpoint.
+	cmd.Short = `Get an AI Search endpoint.`
+	cmd.Long = `Get an AI Search endpoint.
 
   Get details for a single AI Search endpoint.
 
@@ -425,8 +413,8 @@ Get an AI Search endpoint.
       workspaces/{workspace_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -475,10 +463,8 @@ func newGetIndex() *cobra.Command {
 	var getIndexReq aisearch.GetIndexRequest
 
 	cmd.Use = "get-index NAME"
-	cmd.Short = `*Public Preview* Get an AI Search index.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get an AI Search index.
+	cmd.Short = `Get an AI Search index.`
+	cmd.Long = `Get an AI Search index.
 
   Get details for a single AI Search index.
 
@@ -487,8 +473,8 @@ Get an AI Search index.
       workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -540,7 +526,7 @@ func newListEndpoints() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Best-effort upper bound on the number of results to return.`)
+	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Maximum number of endpoints to return in one page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -550,10 +536,8 @@ func newListEndpoints() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
-	cmd.Short = `*Public Preview* List AI Search endpoints.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List AI Search endpoints.
+	cmd.Short = `List AI Search endpoints.`
+	cmd.Long = `List AI Search endpoints.
 
   List AI Search endpoints in a workspace.
 
@@ -562,8 +546,8 @@ List AI Search endpoints.
       workspaces/{workspace_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -628,10 +612,8 @@ func newListIndexes() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-indexes PARENT"
-	cmd.Short = `*Public Preview* List AI Search indexes.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List AI Search indexes.
+	cmd.Short = `List AI Search indexes.`
+	cmd.Long = `List AI Search indexes.
 
   List AI Search indexes on an endpoint.
 
@@ -640,8 +622,8 @@ List AI Search indexes.
       workspaces/{workspace_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -708,10 +690,8 @@ func newQueryIndex() *cobra.Command {
 	// TODO: array: sort_columns
 
 	cmd.Use = "query-index NAME"
-	cmd.Short = `*Public Preview* Query an AI Search index.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Query an AI Search index.
+	cmd.Short = `Query an AI Search index.`
+	cmd.Long = `Query an AI Search index.
 
   Query (search) an AI Search index. Read-only, so a read-scoped token may
   invoke it.
@@ -721,8 +701,8 @@ Query an AI Search index.
       workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -788,10 +768,8 @@ func newRemoveData() *cobra.Command {
 	cmd.Flags().Var(&removeDataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "remove-data NAME"
-	cmd.Short = `*Public Preview* Remove data from an AI Search index.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Remove data from an AI Search index.
+	cmd.Short = `Remove data from an AI Search index.`
+	cmd.Long = `Remove data from an AI Search index.
 
   Remove rows by primary key from a Direct Access AI Search index.
 
@@ -800,8 +778,8 @@ Remove data from an AI Search index.
       workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -870,10 +848,8 @@ func newScanIndex() *cobra.Command {
 	cmd.Flags().StringVar(&scanIndexReq.PageToken, "page-token", scanIndexReq.PageToken, `Page token from a previous response; if unset, scanning starts from the beginning.`)
 
 	cmd.Use = "scan-index NAME"
-	cmd.Short = `*Public Preview* Scan an AI Search index.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Scan an AI Search index.
+	cmd.Short = `Scan an AI Search index.`
+	cmd.Long = `Scan an AI Search index.
 
   Scan (paginate over) the rows of an AI Search index.
 
@@ -882,8 +858,8 @@ Scan an AI Search index.
       workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -944,10 +920,8 @@ func newSyncIndex() *cobra.Command {
 	var syncIndexReq aisearch.SyncIndexRequest
 
 	cmd.Use = "sync-index NAME"
-	cmd.Short = `*Public Preview* Synchronize an AI Search index.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Synchronize an AI Search index.
+	cmd.Short = `Synchronize an AI Search index.`
+	cmd.Long = `Synchronize an AI Search index.
 
   Start a sync of a Delta Sync AI Search index with its source Delta table. Use
   it with TRIGGERED pipelines; CONTINUOUS pipelines sync automatically.
@@ -959,8 +933,8 @@ Synchronize an AI Search index.
       workspaces/{workspace_id}/endpoints/{endpoint_id}/indexes/{index_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1012,41 +986,39 @@ func newUpdateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&updateEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", updateEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", updateEndpointReq.Endpoint.BudgetPolicyId, `ID of the serverless budget policy to apply to the endpoint.`)
 	// TODO: array: custom_tags
 	// TODO: complex arg: endpoint_status
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Full resource name of the endpoint, in the form workspaces/{workspace_id}/endpoints/{endpoint_id}.`)
 	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.ReplicaCount, "replica-count", updateEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
 	// TODO: complex arg: scaling_info
 	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.TargetQps, "target-qps", updateEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
 	// TODO: complex arg: throughput_info
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", updateEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", updateEndpointReq.Endpoint.UsagePolicyId, `ID of the usage policy to apply to the endpoint.`)
 
 	cmd.Use = "update-endpoint NAME UPDATE_MASK ENDPOINT_TYPE"
-	cmd.Short = `*Public Preview* Update an AI Search endpoint.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
+	cmd.Short = `Update an AI Search endpoint.`
+	cmd.Long = `Update an AI Search endpoint.
 
-Update an AI Search endpoint.
-
-  Update an existing AI Search endpoint. Multi-bucket masks are supported and
-  dispatched in deterministic bucket order: budget policy, custom tags,
-  throughput, scaling/replicas, then metrics export. Per-bucket dispatch is not
-  atomic across buckets — if a later bucket fails, earlier buckets may already
-  have been applied.
+  Update an existing AI Search endpoint. Only the fields named in update_mask
+  change. The server applies a mask that spans several settings, such as
+  budget_policy_id and custom_tags, one setting at a time, so if a later
+  setting fails, the earlier ones may already have been applied.
 
   Arguments:
-    NAME: Name of the AI Search endpoint. Server-assigned full resource path
-      (workspaces/{workspace}/endpoints/{endpoint}) on output. On create, the
-      user-supplied short name is conveyed via
-      CreateEndpointRequest.endpoint_id; the server composes the full name
-      and returns it on the response.
-    UPDATE_MASK: The list of fields to update.
+    NAME: Full resource name of the endpoint, in the form
+      workspaces/{workspace_id}/endpoints/{endpoint_id}. On create, the server
+      composes it from parent and endpoint_id and ignores any value supplied
+      in the request body.
+    UPDATE_MASK: Comma-separated list of Endpoint fields to update. The updatable fields
+      are budget_policy_id, usage_policy_id, custom_tags, replica_count,
+      and target_qps. The server rejects nested paths and unknown fields.
     ENDPOINT_TYPE: Type of endpoint. Required on create and immutable thereafter.
       Supported values: [STANDARD, STORAGE_OPTIMIZED]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1128,10 +1100,8 @@ func newUpsertData() *cobra.Command {
 	cmd.Flags().Var(&upsertDataJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "upsert-data NAME INPUTS_JSON"
-	cmd.Short = `*Public Preview* Upsert data into an AI Search index.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Upsert data into an AI Search index.
+	cmd.Short = `Upsert data into an AI Search index.`
+	cmd.Long = `Upsert data into an AI Search index.
 
   Upsert rows into a Direct Access AI Search index.
 
@@ -1145,8 +1115,8 @@ Upsert data into an AI Search index.
       empty.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

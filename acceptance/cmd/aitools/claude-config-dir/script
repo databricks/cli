@@ -3,8 +3,7 @@ export CLAUDECODE=1
 # enables the native <claude-code-hint> line; CI suppresses it.
 export CLAUDE_CODE_CHILD_SESSION=1
 unset CLAUDE_CODE_SESSION_ID
-# CI and the CI/CD provider markers the SDK detects (GitHub Actions sets both).
-unset CI GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD CIRCLECI TRAVIS BITBUCKET_BUILD_NUMBER PROJECT_ID CODEBUILD_BUILD_ARN TFC_RUN_ID
+unset_ci_env
 
 # Hint-exempt commands (aitools, auth, one-shot lookups such as version and current-user me,
 # completion) skip the install hint; clusters list exercises it against the fake server.

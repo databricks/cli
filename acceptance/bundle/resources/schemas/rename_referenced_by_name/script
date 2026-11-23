@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+export BUNDLE_VAR_secret_value=secret-value
+
+SHARED="main.test_shared_${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy two schemas, and a model and a secret in the shared one, named after the app schema"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "Rename the app schema. The model and the secret stay in the shared schema, so only their own name changes"
+trace update_file.py databricks.yml test_app_ test_app_renamed_
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py --sort //unity-catalog
+
+title "The old model and secret are gone; the new ones are in the shared schema"
+# Not traced: the "not found" messages differ between UC and the test server.
+$CLI registered-models get "$SHARED.test_app_${UNIQUE_NAME}" &> /dev/null && echo "old model still exists" || echo "old model is gone"
+$CLI secrets-uc get-secret "$SHARED.test_app_${UNIQUE_NAME}" &> /dev/null && echo "old secret still exists" || echo "old secret is gone"
+trace $CLI registered-models get "$SHARED.test_app_renamed_${UNIQUE_NAME}" | jq '{full_name}'
+trace $CLI secrets-uc get-secret "$SHARED.test_app_renamed_${UNIQUE_NAME}" | jq '{full_name}'
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

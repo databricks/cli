@@ -1,0 +1,5 @@
+RecordRequests = true
+IncludeRequestHeaders = ["User-Agent"]
+Ignore = [".databricks"]
+# A host opt-out would otherwise remove the skills the positive cases assert.
+Env.DATABRICKS_CLI_DISABLE_TELEMETRY = ""

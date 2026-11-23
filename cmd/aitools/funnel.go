@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
@@ -123,7 +122,7 @@ func (f *commandFunnel) log(ctx context.Context, e protos.AitoolsCommandEvent) {
 // FINISHED (outcome from the returned error).
 func withCommandFunnel(command protos.AitoolsCommand, runE func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) (err error) {
-		f := startFunnel(cmd.Context(), command, "", cmdio.IsPromptSupported(cmd.Context()))
+		f := startFunnel(cmd.Context(), command, "", promptsSupported(cmd.Context()))
 		defer func() { f.finish(cmd.Context(), err) }()
 		cmd.SetContext(context.WithValue(cmd.Context(), funnelKey{}, f))
 		return runE(cmd, args)

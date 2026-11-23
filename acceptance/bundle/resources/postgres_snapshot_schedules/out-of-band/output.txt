@@ -8,7 +8,7 @@ Created postgres_snapshot_schedules.main_schedule
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> [CLI] postgres get-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule
+>>> retry [CLI] postgres get-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule",
   "schedule": [
@@ -51,7 +51,7 @@ Updated postgres_snapshot_schedules.main_schedule
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> [CLI] postgres get-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule
+>>> retry [CLI] postgres get-snapshot-schedule projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/snapshot-schedule",
   "schedule": [

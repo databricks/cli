@@ -1,0 +1,53 @@
+# The diagnostic is already printed, so telemetry records it instead of the AlreadyPrinted sentinel.
+trace musterr $CLI bundle config-remote-sync
+
+trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
+
+cat > .databrickscfg <<EOT
+[myprofile]
+host = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+
+[workspace2222]
+host = $DATABRICKS_HOST
+workspace_id = 2222
+token = $DATABRICKS_TOKEN
+EOT
+export DATABRICKS_CONFIG_FILE=$PWD/.databrickscfg
+
+# Selecting the target fails before the auth config is set; with an explicit profile the failure is still reported.
+trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
+
+trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
+
+# So is one with the profile from DATABRICKS_CONFIG_PROFILE, one where the bundle's or the target's host is the
+# profile's (also to the profile's host when DATABRICKS_HOST names another), one where the target's workspace on the
+# same host is the profile's, and a default target next to a target on another host.
+DATABRICKS_CONFIG_PROFILE=myprofile trace musterr $CLI bundle config-remote-sync -t bad
+envsubst < same-host/databricks.yml > out && mv out same-host/databricks.yml
+withdir same-host trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
+DATABRICKS_HOST=https://other.test withdir same-host trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
+envsubst < conflict/databricks.yml > out && mv out conflict/databricks.yml
+withdir conflict trace musterr $CLI bundle config-remote-sync -t own-host -p myprofile
+envsubst < other-workspace/databricks.yml > out && mv out other-workspace/databricks.yml
+withdir other-workspace trace musterr $CLI bundle config-remote-sync -t profile-workspace -p workspace2222
+withdir default-target trace musterr $CLI bundle config-remote-sync -p myprofile
+
+trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
+
+# So is a bundle that is not found at all.
+DATABRICKS_BUNDLE_ROOT=missing trace musterr $CLI bundle config-remote-sync -p myprofile
+
+trace print_requests.py //telemetry-ext | jq '.body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | {error_message, error_category}'
+
+# Without a profile, with one that does not resolve, with one for another host than the bundle's or the target's
+# or for another workspace on the bundle's host, or when the bundle's own auth fails, nothing is sent.
+trace musterr $CLI bundle config-remote-sync -t bad
+trace musterr $CLI bundle config-remote-sync -t bad -p missing
+withdir conflict trace musterr $CLI bundle config-remote-sync -t bad -p myprofile
+withdir other-workspace trace musterr $CLI bundle config-remote-sync -t bad -p workspace2222
+trace musterr $CLI bundle config-remote-sync -t other -p myprofile
+DATABRICKS_BUNDLE_TARGET=other trace musterr $CLI bundle config-remote-sync -p myprofile
+trace musterr $CLI bundle config-remote-sync -t auth-error -p myprofile
+
+trace errcode print_requests.py //telemetry-ext

@@ -1,1 +1,0 @@
-* Add `databricks aitools auto-install disable` and `enable` to turn off (or back on) the automatic installation of Databricks AI tools on CLI upgrades. A global-scope `databricks aitools uninstall` also turns it off. ([#7701](https://github.com/databricks/cli/pull/7701))

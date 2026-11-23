@@ -1,0 +1,52 @@
+# Experimental skill-usage tracking: DATABRICKS_SKILLS_INVOKED adds skill/<name> pairs to the user agent.
+# The rest of the user agent varies by machine, so each request dump goes to a LOG.* file (kept for
+# diagnosis, excluded from the diff) and only the pairs are asserted.
+
+title "Env var adds the skills to the user agent on a workspace GET"
+DATABRICKS_SKILLS_INVOKED=databricks-core,databricks-jobs trace $CLI current-user me > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.me
+contains.py " skill/databricks-core skill/databricks-jobs" < LOG.me > /dev/null
+
+title "Env var adds the skills on databricks api"
+DATABRICKS_SKILLS_INVOKED=databricks-core MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.1/clusters/list > /dev/null
+trace print_requests.py --get //clusters/list > LOG.api
+contains.py " skill/databricks-core" < LOG.api > /dev/null
+
+title "Env var adds the skills from bundle commands"
+DATABRICKS_SKILLS_INVOKED=databricks-dabs trace $CLI bundle validate > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.bundle
+contains.py " skill/databricks-dabs" < LOG.bundle > /dev/null
+
+title "Invalid entries are dropped and the rest is normalized"
+DATABRICKS_SKILLS_INVOKED=' Databricks-Core , bad name!,,databricks-core,databricks:databricks-jobs ' trace $CLI current-user me > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.normalized
+contains.py " skill/databricks-core" "!skill/databricks-core skill/" "!skill/bad" "!databricks:" < LOG.normalized > /dev/null
+
+title "No skills when unset"
+trace $CLI current-user me > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.unset
+contains.py "!skill/" < LOG.unset > /dev/null
+
+title "No skills when telemetry is disabled"
+DATABRICKS_SKILLS_INVOKED=databricks-core DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI current-user me > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.disabled
+contains.py "!skill/" < LOG.disabled > /dev/null
+
+title "Hidden flag adds the skills, so commands still start with databricks"
+trace $CLI current-user me --skills-invoked databricks-core,databricks-jobs > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.flag
+contains.py " skill/databricks-core skill/databricks-jobs" < LOG.flag > /dev/null
+
+title "Flag wins over env var"
+DATABRICKS_SKILLS_INVOKED=from-env trace $CLI current-user me --skills-invoked from-flag > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.flag-wins
+contains.py " skill/from-flag" "!skill/from-env" < LOG.flag-wins > /dev/null
+
+title "No skills from the flag when telemetry is disabled"
+DATABRICKS_CLI_DISABLE_TELEMETRY=1 trace $CLI current-user me --skills-invoked databricks-core > /dev/null
+trace print_requests.py --get //scim/v2/Me > LOG.flag-disabled
+contains.py "!skill/" < LOG.flag-disabled > /dev/null
+
+title "Flag is hidden from help and completion"
+trace $CLI current-user me --help | contains.py "!skills-invoked" > /dev/null
+trace $CLI __complete current-user me --sk | contains.py "!skills-invoked" > /dev/null

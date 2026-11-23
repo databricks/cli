@@ -52,6 +52,9 @@ class GitSource:
     """
 
     sparse_checkout: VariableOrOptional[SparseCheckout] = None
+    """
+    Sparse checkout settings for the repository. When set, only the directories listed in `patterns` are checked out.
+    """
 
     @classmethod
     def from_dict(cls, value: "GitSourceDict") -> "Self":
@@ -90,6 +93,9 @@ class GitSourceDict(TypedDict, total=False):
     """
 
     sparse_checkout: VariableOrOptional[SparseCheckoutParam]
+    """
+    Sparse checkout settings for the repository. When set, only the directories listed in `patterns` are checked out.
+    """
 
 
 GitSourceParam = GitSourceDict | GitSource

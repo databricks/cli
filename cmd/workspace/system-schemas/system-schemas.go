@@ -75,7 +75,7 @@ Disable a system schema.
 
   Arguments:
     METASTORE_ID: The metastore ID under which the system schema lives.
-    SCHEMA_NAME: Full name of the system schema.`
+    SCHEMA_NAME: Name of the system schema, without the catalog prefix.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -130,7 +130,7 @@ func newEnable() *cobra.Command {
 
 	cmd.Flags().Var(&enableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in.`)
+	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `Name of the catalog in which to enable the system schema.`)
 
 	cmd.Use = "enable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `*Public Preview* Enable a system schema.`
@@ -143,7 +143,7 @@ Enable a system schema.
 
   Arguments:
     METASTORE_ID: The metastore ID under which the system schema lives.
-    SCHEMA_NAME: Full name of the system schema.`
+    SCHEMA_NAME: Name of the system schema, without the catalog prefix.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"

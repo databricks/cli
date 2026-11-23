@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -132,11 +133,11 @@ func retryMessage(err error) string {
 	msg := "retrying after " + err.Error()
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
 		endpoint := ""
-		if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
-			req := rw.Response.Request
-			endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
+		if e := diag.FormatAPIErrorEndpoint(apiErr); e != "" {
+			endpoint = " from " + e
 		}
-		msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
+		status := diag.FormatAPIErrorStatus(apiErr)
+		msg = fmt.Sprintf("retrying after %s%s", status, endpoint)
 		// Include the context the caller added to the error, e.g. the path of the file being written.
 		if err.Error() != apiErr.Error() {
 			msg += ": " + err.Error()

@@ -15,3 +15,7 @@ Ignore = [
 # rejection path. Pinned to "true" (not the suite's ["", "true"]) since the field already
 # records - the empty variant would just duplicate it.
 EnvMatrix.DMS = ["true"]
+
+# The CLI sends a heartbeat after 30s without a state write, so a slow cloud deploy would
+# record one at a random point. 1h never fires within a test.
+Env.DATABRICKS_BUNDLE_DMS_HEARTBEAT_INTERVAL_MS = "3600000"

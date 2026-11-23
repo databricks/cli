@@ -10,6 +10,7 @@ Wait for it to finish, or pass its update ID to --resume to read its results
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID][0]/updates",
   "body": {
-    "test_only": true
+    "test_only": true,
+    "test_options": {}
   }
 }

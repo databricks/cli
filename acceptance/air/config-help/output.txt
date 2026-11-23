@@ -34,7 +34,7 @@ Flags:
       --watch[=true|false]       Stream logs until the run completes
       --override stringArray     Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)
       --dry-run[=true|false]     Validate the config against the workspace without submitting a run
-      --idempotency-key string   Return the existing run if this key was already used
+      --idempotency-key string   Return the existing run if this key was already used (max 64 characters)
   -h, --help[=true|false]        help for run
 
 Global Flags:
@@ -113,12 +113,12 @@ config.compute
     GPU_1xRTX6000 - 1 accelerator per node
 
   Fields:
-    num_accelerators  (required) Total number of GPUs to allocate.
-    accelerator_type  (required) Which accelerator to run on, e.g. GPU_1xA10.
+    num_accelerators     (required) Total number of GPUs to allocate.
+    accelerator_type     (required) Which accelerator to run on, e.g. GPU_1xA10.
 
-  Provisioned capacity (optional):
-    pool_id           GPU pool to run on, by id.
-    priority_class    Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL.
+  GPU Pools (optional):
+    accelerator_pool_id  GPU Pool to run on, by ID.
+    priority_class       Scheduling priority within the GPU Pool: NORMAL.
 
 For details on a field, run "databricks air run -h config.compute.<field>".
 
@@ -131,16 +131,16 @@ config.mlflow_artifact_location
   Type:     string
   Required: no
 
->>> [CLI] air run -h config.compute.pool_id
-config.compute.pool_id
-  GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'databricks air pools list'.
+>>> [CLI] air run -h config.compute.accelerator_pool_id
+config.compute.accelerator_pool_id
+  GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'.
 
   Type:     string
   Required: no
 
 >>> [CLI] air run -h config.compute.priority_class
 config.compute.priority_class
-  Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable) or NORMAL. Requires pool_id.
+  Scheduling priority within the GPU Pool: NORMAL. Requires accelerator_pool_id.
 
   Type:     string
   Required: no
@@ -231,9 +231,16 @@ config.compute.num_accelerators
 >>> [CLI] air run -h config.compute.acclerator_type
 Error: unknown config field "config.compute.acclerator_type"; did you mean "accelerator_type"?
 
-fields under "config.compute" are: accelerator_type, num_accelerators, pool_id, priority_class
+fields under "config.compute" are: accelerator_pool_id, accelerator_type, num_accelerators, priority_class
 
 === free-form map keys are not schema fields
 
 >>> [CLI] air run -h config.parameters.learning_rate
 Error: "config.parameters" holds user-defined keys, so "learning_rate" is not part of the schema; see "config.parameters" instead
+
+=== removed pool field is not in the schema
+
+>>> [CLI] air run -h config.compute.pool_id
+Error: unknown config field "config.compute.pool_id"; did you mean "accelerator_pool_id"?
+
+fields under "config.compute" are: accelerator_pool_id, accelerator_type, num_accelerators, priority_class
