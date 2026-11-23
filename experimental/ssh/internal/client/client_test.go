@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -67,19 +68,28 @@ func TestValidate(t *testing.T) {
 			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_2xA10"},
 		},
 		{
+			name: "accelerator suffix at length limit",
+			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_" + strings.Repeat("A", 64)},
+		},
+		{
+			name:    "accelerator suffix exceeds length limit",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_" + strings.Repeat("A", 65)},
+			wantErr: fmt.Sprintf(`invalid accelerator value "GPU_%s": expected a GPU type name such as GPU_1xA10 (1-64 characters after GPU_: letters, numbers, dashes and underscores)`, strings.Repeat("A", 65)),
+		},
+		{
 			name:    "invalid accelerator value",
 			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "CPU_1x"},
-			wantErr: `invalid accelerator value "CPU_1x": expected a GPU type name such as GPU_1xA10 (letters, numbers, dashes and underscores)`,
+			wantErr: `invalid accelerator value "CPU_1x": expected a GPU type name such as GPU_1xA10 (1-64 characters after GPU_: letters, numbers, dashes and underscores)`,
 		},
 		{
 			name:    "accelerator with shell metacharacters",
 			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10;id"},
-			wantErr: `invalid accelerator value "GPU_1xA10;id": expected a GPU type name such as GPU_1xA10 (letters, numbers, dashes and underscores)`,
+			wantErr: `invalid accelerator value "GPU_1xA10;id": expected a GPU type name such as GPU_1xA10 (1-64 characters after GPU_: letters, numbers, dashes and underscores)`,
 		},
 		{
 			name:    "accelerator with command substitution",
 			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10$(id)"},
-			wantErr: `invalid accelerator value "GPU_1xA10$(id)": expected a GPU type name such as GPU_1xA10 (letters, numbers, dashes and underscores)`,
+			wantErr: `invalid accelerator value "GPU_1xA10$(id)": expected a GPU type name such as GPU_1xA10 (1-64 characters after GPU_: letters, numbers, dashes and underscores)`,
 		},
 		{
 			name: "both cluster ID and connection name",

@@ -64,7 +64,7 @@ var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel c
 
 var (
 	connectionNameRegex  = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
-	acceleratorNameRegex = regexp.MustCompile(`^GPU_[A-Za-z0-9][A-Za-z0-9_-]*$`)
+	acceleratorNameRegex = regexp.MustCompile(`^GPU_[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
 )
 
 // DefaultEnvironmentVersion is the serverless environment version used when --environment-version is not set.
@@ -172,7 +172,7 @@ func (o *ClientOptions) Validate() error {
 	// a safe shape; the backend validates available GPU types and environment versions,
 	// so new GPU types need no CLI change.
 	if o.Accelerator != "" && !acceleratorNameRegex.MatchString(o.Accelerator) {
-		return fmt.Errorf("invalid accelerator value %q: expected a GPU type name such as GPU_1xA10 (letters, numbers, dashes and underscores)", o.Accelerator)
+		return fmt.Errorf("invalid accelerator value %q: expected a GPU type name such as GPU_1xA10 (1-64 characters after GPU_: letters, numbers, dashes and underscores)", o.Accelerator)
 	}
 	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
 		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)
