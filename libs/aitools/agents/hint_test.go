@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
@@ -805,4 +806,62 @@ func TestMaybeHint_ProjectSkillsInstalledSilent(t *testing.T) {
 			assert.Empty(t, stderr.String())
 		})
 	}
+}
+
+// setInstallsFor replaces autoinstall.InstallsFor for the test and returns the
+// agent names it was asked about.
+func setInstallsFor(t *testing.T, installs bool) *[]string {
+	var asked []string
+	prev := autoinstall.InstallsFor
+	autoinstall.InstallsFor = func(_ *cobra.Command, agentName string) bool {
+		asked = append(asked, agentName)
+		return installs
+	}
+	t.Cleanup(func() { autoinstall.InstallsFor = prev })
+	return &asked
+}
+
+func TestMaybeHint_WithheldWhileAutoInstallInstallsForTheAgent(t *testing.T) {
+	setClaudeAgent(t)
+	home, cacheDir := t.TempDir(), t.TempDir()
+	asked := setInstallsFor(t, true)
+
+	// Both lines are withheld, and no event or throttle marker is written.
+	ctx1, stderr1 := sessionCtx(t, home, cacheDir, true)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr1.String())
+	assert.Empty(t, hintKinds(t, ctx1))
+	assert.Equal(t, []string{NameClaudeCode}, *asked)
+
+	// That run did not install after all: the session's next command hints.
+	setInstallsFor(t, false)
+	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	assert.Contains(t, stderr2.String(), wantNativeHint)
+	assert.Contains(t, stderr2.String(), hintText)
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindClaudeCodeNative, protos.AitoolsHintKindInstallText}, hintKinds(t, ctx2))
+}
+
+func TestMaybeHint_RegistryAgentAskedByItsName(t *testing.T) {
+	testutil.SetAgentEnv(t, "CURSOR_AGENT", "1")
+	cwd := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(cwd, ".git"), 0o755))
+	t.Chdir(cwd)
+	asked := setInstallsFor(t, true)
+	ctx, stderr := claudeCtx(t, t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
+	assert.Equal(t, []string{NameCursor}, *asked)
+}
+
+func TestMaybeHint_InstalledToolingSkipsTheAutoInstallCheck(t *testing.T) {
+	setClaudeAgent(t)
+	home := t.TempDir()
+	writeClaudeSkill(t, home, "databricks-core")
+	asked := setInstallsFor(t, true)
+	ctx, _ := claudeCtx(t, home)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Empty(t, *asked)
 }

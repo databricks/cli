@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -109,6 +110,9 @@ var (
 // agentHint describes how one calling agent is nudged to install the
 // Databricks AI tooling.
 type agentHint struct {
+	// agentName is the registry name of the hinted agent.
+	agentName string
+
 	// installed reports whether the agent already has the tooling; when it
 	// does, nothing is printed.
 	installed func(ctx context.Context) bool
@@ -159,6 +163,7 @@ func hintForAgent(provider string, pluginRecorded PluginRecordedFunc) *agentHint
 	switch provider {
 	case claudeAgentProvider:
 		return &agentHint{
+			agentName:  NameClaudeCode,
 			installed:  claudeToolingInstalled,
 			text:       hintText,
 			textKind:   protos.AitoolsHintKindInstallText,
@@ -236,6 +241,12 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 		return
 	}
 	if hint.installed(ctx) {
+		return
+	}
+	// The auto-install after this command prints its own notice; neither line
+	// may tell the agent to install what it installs. No marker is written, so
+	// a run that ends up not installing leaves the hint to the next command.
+	if autoinstall.InstallsFor != nil && autoinstall.InstallsFor(cmd, hint.agentName) {
 		return
 	}
 	// Only agents without a native line have a durable throttle, so a failed

@@ -1,0 +1,1 @@
+* A coding agent no longer gets the "Databricks skills are not installed" hint on a command after which the automatic installation of Databricks AI tools installs them for that agent, so its output no longer tells it to install what the same command installs. When that installation does not happen, the hint appears on the next command.
