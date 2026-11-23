@@ -237,7 +237,7 @@ func followMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io
 		if err := sleepOrCancel(ctx, retryCheckInterval); err != nil {
 			return false, err
 		}
-		refreshed, err := resolveRunStatus(ctx, w, req.runID)
+		refreshed, err := req.resolveRunStatus(ctx, w)
 		if err != nil {
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) || ctx.Err() != nil {
 				return false, err

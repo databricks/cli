@@ -203,6 +203,44 @@ func TestRunWatchJSONStatusAfterActiveMLflowProbeHandoff(t *testing.T) {
 	assert.Equal(t, "SUCCESS", got.finalStatus)
 }
 
+func TestRunWatchJSONUsesAirTaskStatus(t *testing.T) {
+	oldBricklens := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = oldBricklens })
+
+	var statusCalls atomic.Int32
+	server := testserver.New(t)
+	defer server.Close()
+	server.Handle("POST", "/api/2.0/ai-training/config:validate", func(testserver.Request) any { return `{}` })
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(testserver.Request) any { return `{"run_id":777}` })
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(testserver.Request) any {
+		switch statusCalls.Add(1) {
+		case 1, 2:
+			return `{"run_id":777,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"task_key":"train","run_id":778,"state":{"life_cycle_state":"QUEUED"},"ai_runtime_task":{"experiment":"exp"}}]}`
+		case 3:
+			return `{"run_id":777,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"task_key":"train","run_id":778,"state":{"life_cycle_state":"RUNNING"},"ai_runtime_task":{"experiment":"exp"}}]}`
+		default:
+			return `{"run_id":777,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"task_key":"train","run_id":778,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"ai_runtime_task":{"experiment":"exp"}}]}`
+		}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(testserver.Request) any { return `{}` })
+	server.Handle("GET", "/api/2.0/ai-training/workflows/by-run-id/777/logs", func(testserver.Request) any {
+		if statusCalls.Load() < 3 {
+			return `{"log_records":[]}`
+		}
+		return `{"log_records":[{"record_id":"one","time_unix_nano":1700000001000000000,"body":"hello","node_index":0}]}`
+	})
+	testserver.AddDefaultHandlers(server)
+
+	var out bytes.Buffer
+	require.NoError(t, runWatchCmd(t, flags.OutputJSON, &out, server.URL))
+
+	got := parseWatchJSONEvents(t, out.String())
+	assert.Equal(t, []string{"SUBMITTED", "PENDING<-", "RUNNING<-PENDING", "SUCCESS<-RUNNING"}, got.lifecycle)
+	assert.Equal(t, 1, got.logCount)
+	assert.Equal(t, "SUCCESS", got.finalStatus)
+}
+
 func TestStatusTransitionReporterDropsRepeatsAndPostTerminalStates(t *testing.T) {
 	var got []string
 	report := newStatusTransitionReporter(func(current, previous string) {

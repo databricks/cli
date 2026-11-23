@@ -309,13 +309,14 @@ databricks-ai-runtime skill:
 		// `air logs <run>` (Bricklens with MLflow fallback).
 		maxRetries := cfg.maxRetries()
 		req := logRequest{
-			runID:        runID,
-			runURL:       dashboardURL,
-			attempt:      -1,
-			tailLines:    -1,
-			jsonOutput:   jsonOut,
-			maxRetries:   &maxRetries,
-			retryTracker: newRetryTracker(logRunStatus{}),
+			runID:            runID,
+			runURL:           dashboardURL,
+			attempt:          -1,
+			tailLines:        -1,
+			jsonOutput:       jsonOut,
+			useAirTaskStatus: true,
+			maxRetries:       &maxRetries,
+			retryTracker:     newRetryTracker(logRunStatus{}),
 		}
 
 		watchCtx, stop := notifyInterrupt(ctx)
@@ -485,7 +486,7 @@ func printLogsDivider(ctx context.Context, out io.Writer) {
 // closing --watch envelope. The run is terminal once streaming returns; if the
 // status can't be re-fetched, "UNKNOWN" is reported rather than guessing.
 func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
-	status, err := resolveRunStatus(ctx, w, runID)
+	status, err := (logRequest{runID: runID, useAirTaskStatus: true}).resolveRunStatus(ctx, w)
 	if err != nil {
 		return "UNKNOWN"
 	}
