@@ -362,7 +362,7 @@ func TestCaptureDirtyDiff_IncludePaths(t *testing.T) {
 
 var fixedNow = time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC)
 
-func TestCountFilesAtCommit(t *testing.T) {
+func TestListFilesAtCommit(t *testing.T) {
 	ctx := t.Context()
 	repo := newTestRepo(t)
 	writeRepoFile(t, repo, "README.md", "repo root")
@@ -374,7 +374,7 @@ func TestCountFilesAtCommit(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"README.md", "subpkg/nested/util.py", "subpkg/train.py"}, files)
 
-	// root_path below the repo root: git runs from the subfolder, and the count
+	// root_path below the repo root: git runs from the subfolder, and the listing
 	// must still cover the whole subtree, as `git archive` does.
 	subGit := newGitRepo(filepath.Join(repo, "subpkg"))
 	prefix, err := subGit.repoRelativePrefix(ctx)
@@ -387,4 +387,9 @@ func TestCountFilesAtCommit(t *testing.T) {
 	files, err = subGit.listFilesAtCommit(ctx, sha, prefix, []string{"nested"})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"nested/util.py"}, files)
+
+	// A selection that matches nothing lists no files rather than one empty name.
+	files, err = subGit.listFilesAtCommit(ctx, sha, prefix, []string{"missing"})
+	require.NoError(t, err)
+	assert.Empty(t, files)
 }

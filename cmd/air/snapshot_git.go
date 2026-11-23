@@ -255,7 +255,7 @@ func (g gitRepo) listFilesAtCommit(ctx context.Context, commitSHA, subtreePrefix
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(strings.TrimSuffix(string(out), "\x00"), "\x00"), nil
+	return strings.FieldsFunc(string(out), func(r rune) bool { return r == 0 }), nil
 }
 
 // shortSHA abbreviates a commit SHA to 8 chars for log/error messages, tolerating
