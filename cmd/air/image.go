@@ -3,6 +3,7 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -164,6 +165,79 @@ func formatImageSize(sizeBytes int64) string {
 	return fmt.Sprintf("%.1f GB", float64(sizeBytes)/1e9)
 }
 
+// logCompressedImageSize prints the compressed size and layer count from the pushed manifest,
+// which is what DAR measures; the local image store only knows the uncompressed size.
+func logCompressedImageSize(ctx context.Context, deps imagePushDeps, dockerPath, target string) {
+	var manifest, errOut bytes.Buffer
+	if err := deps.runCommand(ctx, nil, &manifest, &errOut, dockerPath, "manifest", "inspect", "--verbose", target); err != nil {
+		detail, _, _ := strings.Cut(strings.TrimSpace(errOut.String()), "\n")
+		if detail == "" {
+			detail = err.Error()
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the compressed size of %s: %s", target, detail))
+		return
+	}
+	sizeBytes, layers, err := compressedImageSize(manifest.Bytes())
+	if err != nil {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the compressed size of %s: %v", target, err))
+		return
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Compressed image size: %s in %d layers.", formatImageSize(sizeBytes), layers))
+}
+
+type manifestLayers struct {
+	Layers []struct {
+		Size int64 `json:"size"`
+	} `json:"layers"`
+}
+
+type verboseManifest struct {
+	Descriptor struct {
+		Platform *struct {
+			OS           string `json:"os"`
+			Architecture string `json:"architecture"`
+		} `json:"platform"`
+	}
+	SchemaV2Manifest *manifestLayers
+	OCIManifest      *manifestLayers
+}
+
+// compressedImageSize sums the layer sizes in `docker manifest inspect --verbose` output. That
+// output is one object for an image manifest and an array for an index, whose linux/amd64 entry is used.
+func compressedImageSize(output []byte) (int64, int, error) {
+	output = bytes.TrimSpace(output)
+	var entries []verboseManifest
+	if bytes.HasPrefix(output, []byte("[")) {
+		if err := json.Unmarshal(output, &entries); err != nil {
+			return 0, 0, err
+		}
+	} else {
+		var entry verboseManifest
+		if err := json.Unmarshal(output, &entry); err != nil {
+			return 0, 0, err
+		}
+		entries = []verboseManifest{entry}
+	}
+	for _, e := range entries {
+		if p := e.Descriptor.Platform; p != nil && p.OS+"/"+p.Architecture != airImagePlatform {
+			continue
+		}
+		m := e.OCIManifest
+		if m == nil {
+			m = e.SchemaV2Manifest
+		}
+		if m == nil || len(m.Layers) == 0 {
+			continue
+		}
+		var sizeBytes int64
+		for _, l := range m.Layers {
+			sizeBytes += l.Size
+		}
+		return sizeBytes, len(m.Layers), nil
+	}
+	return 0, 0, fmt.Errorf("no %s image manifest with layers", airImagePlatform)
+}
+
 // darLimitationsURL returns the DAR limitations docs for the workspace's cloud.
 func darLimitationsURL(cfg *config.Config) string {
 	switch {
@@ -228,13 +302,12 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	if platform != airImagePlatform {
 		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
 	}
-	sizeBytes, err := strconv.ParseInt(size, 10, 64)
-	if err != nil {
-		return fmt.Errorf("inspect source image %s: unexpected output %q", resolved.source, strings.TrimSpace(inspected.String()))
+	// Sizes are informational only: a size that can't be read never blocks the push.
+	if sizeBytes, err := strconv.ParseInt(size, 10, 64); err == nil {
+		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %s uncompressed.", resolved.source, formatImageSize(sizeBytes)))
+	} else {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the uncompressed size of source image %s (got %q).", resolved.source, size))
 	}
-	// DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
-	cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %s uncompressed.", resolved.source, formatImageSize(sizeBytes)))
-	cmdio.LogString(ctx, "For Databricks Artifact Registry image limits, see "+darLimitationsURL(w.Config))
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "tag", resolved.source, target); err != nil {
@@ -246,6 +319,9 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	}
 
 	cmdio.LogString(ctx, "Pushed image.")
+	logCompressedImageSize(ctx, deps, dockerPath, target)
+	// DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
+	cmdio.LogString(ctx, "For Databricks Artifact Registry image limits, see "+darLimitationsURL(w.Config))
 	if root.OutputType(cmd) == flags.OutputJSON {
 		return renderEnvelope(ctx, struct {
 			UnityCatalogImage string `json:"unity_catalog_image"`

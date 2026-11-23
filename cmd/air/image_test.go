@@ -78,6 +78,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Size}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
+		{executable: "/usr/bin/docker", args: []string{"manifest", "inspect", "--verbose", target}},
 	}, commands)
 	assert.Equal(t,
 		"Now you can set `environment.unity_catalog_image = main.training.cuda:13.4.1` in your YAML config and create a workload with `databricks air run -f config.yaml`.\n",
@@ -97,6 +98,52 @@ func TestFormatImageSize(t *testing.T) {
 	assert.Equal(t, "7.6 MB", formatImageSize(7_600_000))
 	assert.Equal(t, "999.0 MB", formatImageSize(999_000_000))
 	assert.Equal(t, "7.1 GB", formatImageSize(7_140_000_000))
+}
+
+func TestCompressedImageSize(t *testing.T) {
+	tests := []struct {
+		name    string
+		output  string
+		size    int64
+		layers  int
+		wantErr string
+	}{
+		{
+			name:   "image manifest",
+			output: `{"Descriptor":{"platform":{"architecture":"amd64","os":"linux"}},"OCIManifest":{"layers":[{"size":2900000000},{"size":240000000}]}}`,
+			size:   3_140_000_000, layers: 2,
+		},
+		{
+			name:   "schema2 manifest without platform",
+			output: `{"Descriptor":{},"SchemaV2Manifest":{"layers":[{"size":7600000}]}}`,
+			size:   7_600_000, layers: 1,
+		},
+		{
+			name: "index uses the linux/amd64 entry",
+			output: `[{"Descriptor":{"platform":{"architecture":"arm64","os":"linux"}},"OCIManifest":{"layers":[{"size":1}]}},
+				{"Descriptor":{"platform":{"architecture":"amd64","os":"linux"}},"OCIManifest":{"layers":[{"size":5},{"size":6},{"size":7}]}},
+				{"Descriptor":{"platform":{"architecture":"unknown","os":"unknown"}},"OCIManifest":{"layers":[{"size":9}]}}]`,
+			size: 18, layers: 3,
+		},
+		{
+			name:    "index without linux/amd64",
+			output:  `[{"Descriptor":{"platform":{"architecture":"arm64","os":"linux"}},"OCIManifest":{"layers":[{"size":1}]}}]`,
+			wantErr: "no linux/amd64 image manifest with layers",
+		},
+		{name: "not JSON", output: "no such manifest", wantErr: "invalid character"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			size, layers, err := compressedImageSize([]byte(tt.output))
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.size, size)
+			assert.Equal(t, tt.layers, layers)
+		})
+	}
 }
 
 func TestDARLimitationsURL(t *testing.T) {
@@ -154,7 +201,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 	}, deps)
 	require.NoError(t, err)
 
-	require.Len(t, commands, 5)
+	require.Len(t, commands, 6)
 	assert.Equal(t, []string{"pull", "--platform", "linux/amd64", "example/image:v1"}, commands[1].args)
 }
 

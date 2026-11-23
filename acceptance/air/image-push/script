@@ -36,9 +36,9 @@ title "inspect failure must not pull"
 export DOCKER_TEST_MODE=inspect-error
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
-title "unreadable image size must not be pushed"
+title "unreadable image sizes warn but the image is pushed"
 export DOCKER_TEST_MODE=bad-size
-trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
 title "incompatible local image must not be pushed"
 export DOCKER_TEST_MODE=arm64

@@ -23,6 +23,13 @@ case "$1 $2" in
       *) printf 'linux/amd64|7140000000\n' ;;
     esac
     ;;
+  "manifest inspect")
+    if [ "$DOCKER_TEST_MODE" = bad-size ]; then
+      printf 'no such manifest: %s\n' "$4" >&2
+      exit 1
+    fi
+    printf '{"Descriptor":{"platform":{"architecture":"amd64","os":"linux"}},"OCIManifest":{"layers":[{"size":2900000000},{"size":240000000}]}}\n'
+    ;;
   pull\ *)
     if [ "$DOCKER_TEST_MODE" = pull-error ]; then
       printf 'Docker pull failed\n' >&2
