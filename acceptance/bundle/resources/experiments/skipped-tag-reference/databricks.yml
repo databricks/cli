@@ -10,9 +10,8 @@ resources:
           value: initial
 
   jobs:
+    #TO_ADD:new_job:
+    #TO_ADD:  name: new job
     reader:
       name: reader
       description: "tag is ${resources.experiments.e.tags[0].value}"
-
-#TO_ADD:    new_job:
-#TO_ADD:      name: new job
