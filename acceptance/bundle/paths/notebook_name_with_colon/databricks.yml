@@ -1,0 +1,11 @@
+bundle:
+  name: notebook_name_with_colon
+
+resources:
+  jobs:
+    job:
+      name: job
+      tasks:
+        - task_key: task
+          notebook_task:
+            notebook_path: New Notebook 12:17:43.ipynb

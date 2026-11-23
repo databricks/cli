@@ -299,6 +299,10 @@ func pluginMigrationCandidatesForScope(ctx context.Context, scope string, state 
 			if _, alreadyPlugin := state.Plugins[agent.Name]; alreadyPlugin {
 				continue
 			}
+			// The user chose raw skills over the plugin (install --skills-only).
+			if slices.Contains(state.SkillsOnlyAgents, agent.Name) {
+				continue
+			}
 		}
 		nativeScope, ok, _ := mapAgentScope(agent, scope)
 		if !ok {

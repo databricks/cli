@@ -4,6 +4,7 @@ Env.DATABRICKS_SKILLS_REF = "test-ref"
 
 Ignore = [
     "home",
+    "agent-calls.log",
 ]
 
 [[Server]]

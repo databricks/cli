@@ -5,10 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/shellquote"
@@ -50,6 +52,130 @@ func TestConvertToDabsForceOverwrite(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEqual(t, edited, regenerated)
 	assert.Contains(t, string(regenerated), "ai_runtime_task")
+}
+
+// sharedCodeWorkload writes a workload YAML in dir that points at dir/src, so two
+// workloads can be converted into the same directory.
+func sharedCodeWorkload(t *testing.T, dir, name, extra string) (*runConfig, string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
+	cfg := "experiment_name: " + name + "\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n" + extra
+	path := filepath.Join(dir, name+".yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+	return loaded, path
+}
+
+const sidecarsConfig = "env_variables: {FOO: bar}\nsecrets: {TOKEN: scope/key}\nparameters: {lr: 0.1}\n"
+
+// --force re-converts the same workload only: a databricks.yml that names a different
+// bundle is left alone, together with its sidecars, and the error names both bundles.
+func TestConvertToDabsForceRefusesDifferentBundle(t *testing.T) {
+	dir := t.TempDir()
+	cfgA, pathA := sharedCodeWorkload(t, dir, "exp-a", sidecarsConfig)
+	_, err := writeBundle(t.Context(), cfgA, pathA, dir, false)
+	require.NoError(t, err)
+	bundleA := testutil.ReadFile(t, filepath.Join(dir, "databricks.yml"))
+
+	cfgB, pathB := sharedCodeWorkload(t, dir, "exp-b", "")
+	want := fmt.Sprintf("databricks.yml in %s belongs to bundle \"exp-a\", not to this workload's bundle \"exp-b\"; pass --output-dir with another directory that contains the code directory", dir)
+	_, err = writeBundle(t.Context(), cfgB, pathB, dir, true)
+	require.EqualError(t, err, want)
+	assert.Equal(t, bundleA, testutil.ReadFile(t, filepath.Join(dir, "databricks.yml")))
+	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, envVarsName))
+	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, secretEnvVarsName))
+	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, hyperparametersName))
+
+	// Without --force the same error applies: suggesting --force would be a dead end.
+	_, err = writeBundle(t.Context(), cfgB, pathB, dir, false)
+	require.EqualError(t, err, want)
+}
+
+// Re-converting the same workload with --force removes the sidecars the previous
+// conversion wrote and this one does not, so sync.paths does not upload stale ones.
+func TestConvertToDabsForceRemovesStaleSidecars(t *testing.T) {
+	dir := t.TempDir()
+	cfg, path := sharedCodeWorkload(t, dir, "exp-a", sidecarsConfig)
+	_, err := writeBundle(t.Context(), cfg, path, dir, false)
+	require.NoError(t, err)
+
+	cfg, path = sharedCodeWorkload(t, dir, "exp-a", "")
+	_, err = writeBundle(t.Context(), cfg, path, dir, true)
+	require.NoError(t, err)
+	assert.FileExists(t, filepath.Join(dir, generatedArtifactsDir, commandScriptName))
+	assert.NoFileExists(t, filepath.Join(dir, generatedArtifactsDir, envVarsName))
+	assert.NoFileExists(t, filepath.Join(dir, generatedArtifactsDir, secretEnvVarsName))
+	assert.NoFileExists(t, filepath.Join(dir, generatedArtifactsDir, hyperparametersName))
+}
+
+func TestConvertToDabsExistingBundleRoot(t *testing.T) {
+	for _, name := range config.FileNames {
+		t.Run(name, func(t *testing.T) {
+			path := writeConfigFile(t, "run.yaml", minimalConfig+"code_source:\n  root_path: ./src\n")
+			dir := filepath.Dir(path)
+			require.NoError(t, os.Mkdir(filepath.Join(dir, "src"), 0o700))
+			loaded, err := loadRunConfig(path)
+			require.NoError(t, err)
+			existing := filepath.Join(dir, name)
+			edited := []byte("# hand-edited\n")
+			require.NoError(t, os.WriteFile(existing, edited, 0o600))
+
+			_, err = writeBundle(t.Context(), loaded, path, dir, false)
+			want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", name, dir)
+			if name == "databricks.yml" {
+				want = fmt.Sprintf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
+			}
+			require.EqualError(t, err, want)
+			found, err := config.FileNames.FindInPath(dir)
+			require.NoError(t, err)
+			assert.Equal(t, existing, found)
+			kept, err := os.ReadFile(existing)
+			require.NoError(t, err)
+			assert.Equal(t, edited, kept)
+		})
+	}
+}
+
+func TestConvertToDabsRejectsAlternateRoot(t *testing.T) {
+	const canonical = "databricks.yml"
+	script := filepath.Join(generatedArtifactsDir, commandScriptName)
+	for _, alias := range config.FileNames {
+		if alias == canonical {
+			continue
+		}
+		for _, tc := range []struct {
+			name  string
+			force bool
+			files []string
+		}{
+			{"force", true, []string{alias}},
+			{"force-with-canonical", true, []string{canonical, alias, script}},
+			{"with-canonical", false, []string{canonical, alias}},
+		} {
+			t.Run(alias+"/"+tc.name, func(t *testing.T) {
+				dir := t.TempDir()
+				cfg, path := rayLayoutConfig(t, dir, "core")
+				for _, name := range tc.files {
+					testutil.WriteFile(t, filepath.Join(dir, name), name)
+				}
+
+				_, err := writeBundle(t.Context(), cfg, path, dir, tc.force)
+				assert.EqualError(t, err, fmt.Sprintf("%s already exists in %s; move or remove it before converting", alias, dir))
+				for _, name := range tc.files {
+					assert.Equal(t, name, testutil.ReadFile(t, filepath.Join(dir, name)))
+				}
+				if !slices.Contains(tc.files, canonical) {
+					assert.NoFileExists(t, filepath.Join(dir, canonical))
+				}
+				if !slices.Contains(tc.files, script) {
+					assert.NoDirExists(t, filepath.Join(dir, generatedArtifactsDir))
+				}
+			})
+		}
+	}
 }
 
 // command.sh is the user's command copied verbatim — convert injects no cd. The
@@ -633,20 +759,28 @@ func TestConvertToDabsIncludePathsDirectories(t *testing.T) {
 
 // root_path "." (the code source is the whole bundle directory) has no basename to
 // nest the archive under, and an include rooted at "." would sweep the bundle's own
-// generated files into the tarball, so every snapshot there is rejected. Only a
-// working-tree snapshot is offered --output-dir: a git snapshot is archived from the
-// bundle root, which a parent directory would move outside the repository.
+// generated files into the tarball, so every snapshot there is rejected. A working-tree
+// snapshot is offered --output-dir; a git snapshot is archived from the bundle root, so
+// it is offered a parent only when the bundle directory is below the repository's top
+// level (the parent is then still inside the repository).
 func TestConvertToDabsDotRootPathRejected(t *testing.T) {
+	gitSnap := "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    git:\n      commit: abc123\n"
 	for _, tc := range []struct {
 		name, snap        string
+		repoSubdir        bool // the bundle dir is a subdirectory of a git repository
 		wantOutputDirHint bool
 	}{
-		{"plain", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n", true},
-		{"include", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    include_paths:\n      - foo\n", true},
-		{"git", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    git:\n      commit: abc123\n", false},
+		{"plain", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n", false, true},
+		{"include", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    include_paths:\n      - foo\n", false, true},
+		{"git-no-repo", gitSnap, false, false},
+		{"git-repo-subdir", gitSnap, true, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
+			if tc.repoSubdir {
+				runGit(t, dir, "init", "-q")
+				dir = filepath.Join(dir, "proj")
+			}
 			require.NoError(t, os.MkdirAll(filepath.Join(dir, "foo"), 0o700))
 			cfg := "experiment_name: dot\ncommand: python train.py\n" +
 				"compute: {accelerator_type: GPU_1xA10, num_accelerators: 1}\n" + tc.snap
@@ -817,11 +951,13 @@ func TestQuotedPath(t *testing.T) {
 	assert.Equal(t, `"bad\nname"`, quotedPath("bad\nname"))
 }
 
-// A git-pinned snapshot is archived from the bundle root, and a parent of the code
-// directory may be outside the repository, so no parent is offered.
+// A git-pinned snapshot is archived from the bundle root. When the code directory is
+// the repository's top level, its parent is outside the repository, so no parent is
+// offered.
 func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
 	outside := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(outside, "src"), 0o700))
+	runGit(t, filepath.Join(outside, "src"), "init", "-q")
 	cfg := "experiment_name: outside\ncommand: python train.py\n" +
 		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
 		"code_source:\n  root_path: " + filepath.Join(outside, "src") + "\n  git:\n    commit: abc123\n"
@@ -833,4 +969,75 @@ func TestConvertToDabsGitPinOutsideBundleDoesNotSuggestOutputDir(t *testing.T) {
 	require.ErrorContains(t, err, "not inside the bundle")
 	assert.Contains(t, err.Error(), "; move the code inside the bundle directory")
 	assert.NotContains(t, err.Error(), "--output-dir")
+}
+
+// A git-pinned code directory below the repository's top level (ray/ in a repo, with
+// the workload in ray/core) has a parent inside the repository, so that parent is
+// offered as --output-dir, and converting there emits the git-pinned artifact.
+func TestConvertToDabsGitPinOutsideBundleSuggestsOutputDirInRepoSubdir(t *testing.T) {
+	dir := t.TempDir()
+	runGit(t, dir, "init", "-q")
+	recipeDir := filepath.Join(dir, "ray", "core")
+	require.NoError(t, os.MkdirAll(recipeDir, 0o700))
+	cfg := "experiment_name: ray-core\ncommand: bash ray_bootstrap.sh\n" +
+		"compute: {accelerator_type: GPU_1xA10, num_accelerators: 2}\n" +
+		"code_source:\n  root_path: ..\n  git:\n    commit: abc123\n"
+	path := filepath.Join(recipeDir, "workload.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	_, _, err = convertToDabs(t.Context(), loaded, path, recipeDir)
+	require.ErrorContains(t, err, "not inside the bundle")
+	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
+	require.True(t, ok)
+	assert.Contains(t, err.Error(), "--output-dir "+quoted+" ")
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
+	assert.Equal(t, "abc123", get(t, root, a+".git.commit").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 1)
+	assert.Equal(t, "ray", inc[0].MustString())
+}
+
+// reconvertSharedCode runs the conversion with the same arguments as a workload author.
+func reconvertSharedCode(t *testing.T, path string, flags ...string) error {
+	t.Helper()
+	cmd := newConvertToDabsCommand()
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	cmd.SetContext(ctx)
+	cmd.SetArgs(append(flags, path))
+	return cmd.Execute()
+}
+
+func TestConvertToDabsReconvertSharedCode(t *testing.T) {
+	dir := t.TempDir()
+	_, path := rayLayoutConfig(t, dir, "core")
+
+	require.NoError(t, reconvertSharedCode(t, path, "--output-dir", dir))
+	quoted, ok := shellquote.Arg(runtime.GOOS, dir)
+	require.True(t, ok)
+	require.ErrorContains(t, reconvertSharedCode(t, path), "--output-dir "+quoted+" --force")
+	require.NoError(t, reconvertSharedCode(t, path, "--output-dir", dir, "--force"))
+	for _, content := range []string{"bundle: {name: ray-data}", "bundle: {}", "bundle: ["} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte(content), 0o600))
+		err := reconvertSharedCode(t, path)
+		require.ErrorContains(t, err, "already holds a bundle")
+		assert.NotContains(t, err.Error(), "--force")
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yaml"), []byte("bundle: {name: ray-core}"), 0o600))
+	for _, duplicate := range []bool{true, false} {
+		yml := filepath.Join(dir, "databricks.yml")
+		if duplicate {
+			require.NoError(t, os.WriteFile(yml, []byte("bundle: {name: ray-core}"), 0o600))
+		} else {
+			require.NoError(t, os.Remove(yml))
+		}
+		err := reconvertSharedCode(t, path)
+		require.ErrorContains(t, err, "already holds a bundle")
+		assert.NotContains(t, err.Error(), "--force")
+	}
 }
