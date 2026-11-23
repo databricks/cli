@@ -123,13 +123,10 @@ type WorkspaceFilesClient struct {
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
 
-	// Sent with every upload so the workspace knows where the file came from.
-	bundleFileOrigin string
+	// Tag every upload as written by a bundle deployment, so the workspace
+	// does not treat a deployed databricks.yml as a bundle's source.
+	deploymentCopy bool
 }
-
-// BundleFileOriginDeploymentCopy marks a file written by a bundle deployment,
-// so the workspace does not treat a deployed databricks.yml as a bundle's source.
-const BundleFileOriginDeploymentCopy = "DEPLOYMENT_COPY"
 
 // workspaceIDHeaders returns the workspace routing header map for outbound
 // API calls, or nil if the workspace client is unset. Wraps the shared
@@ -144,16 +141,16 @@ func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	return newWorkspaceFilesClient(w, root, "")
+	return newWorkspaceFilesClient(w, root, false)
 }
 
 // NewWorkspaceFilesClientForBundleDeploy returns a client that tags every
 // upload as a bundle deployment copy.
 func NewWorkspaceFilesClientForBundleDeploy(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	return newWorkspaceFilesClient(w, root, BundleFileOriginDeploymentCopy)
+	return newWorkspaceFilesClient(w, root, true)
 }
 
-func newWorkspaceFilesClient(w *databricks.WorkspaceClient, root, bundleFileOrigin string) (Filer, error) {
+func newWorkspaceFilesClient(w *databricks.WorkspaceClient, root string, deploymentCopy bool) (Filer, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, err
@@ -165,7 +162,7 @@ func newWorkspaceFilesClient(w *databricks.WorkspaceClient, root, bundleFileOrig
 
 		root: NewWorkspaceRootPath(root),
 
-		bundleFileOrigin: bundleFileOrigin,
+		deploymentCopy: deploymentCopy,
 	}, nil
 }
 
@@ -183,8 +180,8 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		overwrite,
 	)
 	// Workspaces that do not know the parameter ignore it.
-	if w.bundleFileOrigin != "" {
-		urlPath += "&bundleFileOrigin=" + url.QueryEscape(w.bundleFileOrigin)
+	if w.deploymentCopy {
+		urlPath += "&bundleFileOrigin=DEPLOYMENT_COPY"
 	}
 
 	// Buffer the file contents because we may need to retry below and we cannot read twice.
