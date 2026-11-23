@@ -21,6 +21,8 @@ func TestRelativeScriptWarning(t *testing.T) {
 		{"quoted nested script", `torchrun --nproc_per_node=8 "src/main.py"`, "src/main.py", "src/main.py"},
 		{"code source path variable", `python "$CODE_SOURCE_PATH/train.py"`, "", ""},
 		{"flag value", "python -m mod --config=train.py", "", ""},
+		{"cd into code source first", `cd "$CODE_SOURCE_PATH" && python train.py`, "", ""},
+		{"cd elsewhere first", "cd src && python main.py", "", ""},
 		{"missing file", "python other.py", "", ""},
 		{"directory", "ls src", "", ""},
 	}
@@ -45,6 +47,22 @@ func TestRelativeScriptWarning(t *testing.T) {
 			assert.Contains(t, got, "Use \"$CODE_SOURCE_PATH/"+tc.suggest+"\".")
 		})
 	}
+}
+
+func TestRelativeScriptWarningContainers(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "train.py"), []byte("print(1)\n"), 0o644))
+	yaml := "experiment_name: e\ncompute:\n  num_accelerators: 2\n  accelerator_type: GPU_1xA10\ncode_source:\n  root_path: .\n" +
+		"containers:\n  - name: head\n    command: python \"$CODE_SOURCE_PATH/train.py\"\n    ranks: [0]\n    unity_catalog_image: main.s.img:v1\n" +
+		"  - name: worker\n    command: python train.py\n    ranks: [1]\n    unity_catalog_image: main.s.img:v1\n"
+	path := filepath.Join(dir, "run.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(yaml), 0o644))
+	cfg, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	got := relativeScriptWarning(t.Context(), cfg, path)
+	assert.Contains(t, got, "Warning: containers[worker].command refers to \"train.py\"")
+	assert.Contains(t, got, "Use \"$CODE_SOURCE_PATH/train.py\".")
 }
 
 func TestRelativeScriptWarningWithoutCodeSource(t *testing.T) {
