@@ -11,6 +11,9 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dagrun"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -183,6 +186,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		//       The graph includes edges for both local and remote references. The local references are
 		//       already resolved and should not play a role here.
 		needRemoteState := len(g.Adj[resourceKey]) > 0
+		if needRemoteState && action == deployplan.Skip {
+			// A skipped node changes nothing, so planning resolved its dependents' references to it,
+			// except the ones LookupReferencePreDeploy delays. Only those need its remote state.
+			needRemoteState = b.hasUnresolvedRefsTo(g, resourceKey)
+		}
 		if needRemoteState {
 			id := b.StateDB.GetResourceID(d.ResourceKey)
 			if id == "" {
@@ -200,6 +208,34 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		return true
 	})
+}
+
+// hasUnresolvedRefsTo reports whether a dependent of resourceKey has a reference to it left, which
+// LookupReferencePostDeploy resolves once resourceKey is applied.
+func (b *DeploymentBundle) hasUnresolvedRefsTo(g *dagrun.Graph, resourceKey string) bool {
+	for _, edge := range g.Adj[resourceKey] {
+		sv, ok := b.StateCache.Load(edge.To)
+		if !ok {
+			continue
+		}
+		for _, refString := range sv.Refs {
+			ref, ok := dynvar.NewRef(dyn.V(refString))
+			if !ok {
+				// resolveReferences reports it; keep the read it may need.
+				return true
+			}
+			for _, pathString := range ref.References() {
+				path, err := structpath.ParsePath(pathString)
+				if err != nil {
+					return true
+				}
+				if target, _ := splitResourcePath(path); target == resourceKey {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {

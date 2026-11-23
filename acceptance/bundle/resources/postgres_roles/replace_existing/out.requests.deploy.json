@@ -7,14 +7,6 @@
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
 }
 {
-  "method": "GET",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
-}
-{
   "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
   "q": {
