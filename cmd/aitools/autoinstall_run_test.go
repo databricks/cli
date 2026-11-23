@@ -6,8 +6,8 @@ import (
 	"errors"
 	"io"
 	"os"
-	"os/signal"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
@@ -354,33 +355,82 @@ func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
 }
 
 // An interrupted lookup can still answer from a stale cached manifest that has
-// the gate on. The run stops instead of installing.
+// the gate on. The run stops instead of installing: it records the version as
+// a failed lookup does, and returns the signal for the CLI to end by.
 func TestAutoInstallStopsWhenTheGateLookupIsInterrupted(t *testing.T) {
 	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
-	var interrupt context.CancelFunc
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	origNotify := notifyInterrupt
 	t.Cleanup(func() {
 		gateOn = autoinstall.GateOn
-		notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
-			return signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-		}
+		notifyInterrupt = origNotify
 	})
-	notifyInterrupt = func(ctx context.Context) (context.Context, context.CancelFunc) {
+	var caught []os.Signal
+	var interrupt context.CancelFunc
+	notifyInterrupt = func(ctx context.Context, sigs ...os.Signal) (context.Context, func() os.Signal) {
+		caught = sigs
 		ctx, interrupt = context.WithCancel(ctx)
-		return ctx, interrupt
+		return ctx, func() os.Signal { return syscall.SIGHUP }
 	}
 	gateOn = func(context.Context, string) (bool, error) {
 		interrupt()
 		return true, nil
 	}
-	ctx := cmdio.MockDiscard(t.Context())
-	ctx = telemetry.WithNewLogger(ctx)
-	runAutoInstallHook(ctx)
+	sig := runAutoInstallHook(ctx)
 
+	assert.Equal(t, process.InterruptSignals(), caught)
 	assert.Empty(t, telemetry.BufferedEvents(ctx))
+	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+	want := autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, want, state)
+	assert.Equal(t, syscall.SIGHUP, sig)
+}
+
+// Ctrl+C right after the question was answered stops the run as Ctrl+C at the
+// question does: nothing is installed, the version is settled as unanswered,
+// and the signal is returned for the CLI to end by.
+func TestAutoInstallStopsWhenInterruptedAfterAnAnswer(t *testing.T) {
+	home := setupAutoInstallHome(t, "")
+	t.Setenv("TERM", "xterm")
+	origNotify := notifyInterrupt
+	t.Cleanup(func() { notifyInterrupt = origNotify })
+	notifyInterrupt = func(ctx context.Context, sigs ...os.Signal) (context.Context, func() os.Signal) {
+		if !slices.Equal(sigs, []os.Signal{os.Interrupt}) {
+			// The gate lookup is not interrupted.
+			return origNotify(ctx, sigs...)
+		}
+		// The question reads the answer, and then Ctrl+C arrives.
+		return ctx, func() os.Signal { return os.Interrupt }
+	}
+	var stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, cmdio.FakeTTYReader(strings.NewReader("y\n")), cmdio.FakeTTY(io.Discard), cmdio.FakeTTY(&stderr), "", ""))
+	ctx = telemetry.WithNewLogger(ctx)
+	sig := runAutoInstallHook(ctx)
+
+	assert.Equal(t, os.Interrupt, sig)
+	assert.Contains(t, stderr.String(), "Install Databricks AI tools for Cursor? [Y/n]: ")
 	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
 	state, err := autoinstall.Load(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	var outcomes []protos.AitoolsAutoInstallOutcome
+	for _, e := range telemetry.BufferedEvents(ctx) {
+		if e := e.AitoolsAutoInstallEvent; e != nil {
+			outcomes = append(outcomes, e.Outcome)
+		}
+	}
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeUnanswered}, outcomes)
+}
+
+// Without a signal, stopping reports none.
+func TestNotifyInterruptWithoutASignal(t *testing.T) {
+	ctx, stop := notifyInterrupt(t.Context(), os.Interrupt)
+	assert.NoError(t, ctx.Err())
+	assert.Nil(t, stop())
+	assert.ErrorIs(t, ctx.Err(), context.Canceled)
 }
 
 // A run that has nothing to install or cannot ask skips before the gate
@@ -493,8 +543,8 @@ func TestToolsPlanNewAgents(t *testing.T) {
 }
 
 // runAutoInstallHook runs the hook as the root command does after
-// `databricks jobs list` succeeded.
-func runAutoInstallHook(ctx context.Context) {
+// `databricks jobs list` succeeded, and returns the signal it caught.
+func runAutoInstallHook(ctx context.Context) os.Signal {
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{})
 	root := &cobra.Command{Use: "databricks"}
 	jobs := &cobra.Command{Use: "jobs"}
@@ -502,7 +552,7 @@ func runAutoInstallHook(ctx context.Context) {
 	root.AddCommand(jobs)
 	jobs.AddCommand(list)
 	list.SetContext(ctx)
-	AutoInstall(list)
+	return AutoInstall(list)
 }
 
 // setupAutoInstallHome gives the run a clean environment with Cursor's config
