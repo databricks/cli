@@ -1338,6 +1338,8 @@ func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
 
 func TestInstallKeepsNameWhenRepoDirChanges(t *testing.T) {
 	tmp := setupTestHome(t)
+	// Pin the ref so the install doesn't look up the latest release on GitHub.
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 	ctx := cmdio.MockDiscard(t.Context())
 	agent := testAgent(tmp)
 	var fetchedFrom []string

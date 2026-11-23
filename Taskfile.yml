@@ -706,6 +706,10 @@ tasks:
       # acceptance/cmd/aitools is not listed on purpose: a change there runs
       # `test`, which also runs on Windows. The -run pattern below still runs it.
       - acceptance/experimental/aitools/**
+      # internal/testutil/hostenv is not listed on purpose: a change there runs
+      # `test`, which also runs the aitools unit tests on Windows, where Isolate
+      # moves USERPROFILE and LOCALAPPDATA. The packages below still include it:
+      # its tests check that every aitools test package calls hostenv.Isolate.
       - "{{.EMBED_SOURCES}}"
     cmds:
       # A change under the sources above does not trigger the `test` job, so the
@@ -726,7 +730,7 @@ tasks:
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/... ./cmd ./cmd/apps ./cmd/experimental ./cmd/root ./cmd/version ." \
+          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/... ./internal/testutil/hostenv/... ./cmd ./cmd/apps ./cmd/experimental ./cmd/root ./cmd/version ." \
           -- -timeout=${LOCAL_TIMEOUT:-60m}
       # The help golden prints the aitools command summary, cmd/version prints the
       # aitools install tip, and air/image-push runs a child process with the
