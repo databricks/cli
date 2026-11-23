@@ -210,22 +210,28 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 // Best-effort: it never fails the command. Besides the stderr lines, it logs a
 // telemetry event for each hint line shown, which makes a command that resolved
 // auth upload telemetry at exit.
-func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRecordedFunc) {
+//
+// When the auto-install after cmd may give the agent its tools (see
+// autoinstall.InstallsFor), the hint is withheld: MaybeHint returns a function
+// to call once the command has ended, which prints the hint unless the tooling
+// is installed by then. A failed command, a gate that turns out off or a
+// failed install then still gets the hint. Otherwise it returns nil.
+func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRecordedFunc) (deferred func()) {
 	hint := hintForAgent(useragent.AgentProvider(), pluginRecorded)
 	if hint == nil {
-		return
+		return nil
 	}
 	if isHintExemptCommand(cmd) {
-		return
+		return nil
 	}
 	if IsCredentialHelperCommand(cmd) {
-		return
+		return nil
 	}
 	if IsSelfExec(ctx) {
-		return
+		return nil
 	}
 	if !cmdio.HasIO(ctx) {
-		return
+		return nil
 	}
 	// Check the throttles before the filesystem probe, so a throttled session
 	// skips the plugin/skills detection. A marker is written only once its
@@ -238,20 +244,32 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	}
 	textDue := !textHintThrottle.seen(ctx, key)
 	if native == "" && !textDue {
-		return
+		return nil
 	}
 	if hint.installed(ctx) {
-		return
+		return nil
 	}
 	// The auto-install after this command prints its own notice; neither line
-	// may tell the agent to install what it installs. No marker is written, so
-	// a run that ends up not installing leaves the hint to the next command.
+	// may tell the agent to install what it installs. No marker is written
+	// until the hint prints.
 	if autoinstall.InstallsFor != nil && autoinstall.InstallsFor(cmd, hint.agentName) {
-		return
+		return func() {
+			if hint.installed(ctx) {
+				return
+			}
+			hint.show(ctx, key, native, textDue)
+		}
 	}
+	hint.show(ctx, key, native, textDue)
+	return nil
+}
+
+// show prints the lines MaybeHint found due, records their throttle markers
+// and logs their hint-shown events.
+func (h *agentHint) show(ctx context.Context, key, native string, textDue bool) {
 	// Only agents without a native line have a durable throttle, so a failed
 	// claim leaves nothing to print.
-	if textDue && !hint.claim(ctx, key) {
+	if textDue && !h.claim(ctx, key) {
 		return
 	}
 	if native != "" {
@@ -260,15 +278,15 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 		// A text print starts a new text window, in which this is the first
 		// native print.
 		if textDue || !nativeEventThrottle.seen(ctx, key) {
-			logHintShown(ctx, hint.nativeKind)
+			logHintShown(ctx, h.nativeKind)
 			nativeEventThrottle.set(ctx, key, true)
 		}
-	} else if textDue && hint.native != nil {
+	} else if textDue && h.native != nil {
 		nativeEventThrottle.set(ctx, key, false)
 	}
 	if textDue {
-		cmdio.LogString(ctx, hint.text)
-		logHintShown(ctx, hint.textKind)
+		cmdio.LogString(ctx, h.text)
+		logHintShown(ctx, h.textKind)
 	}
 }
 

@@ -3,15 +3,20 @@ package aitools
 import (
 	"slices"
 
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/spf13/cobra"
 )
 
-// AutoInstallsFor reports whether the auto-install after cmd is due to give
-// the agent agentName its first tools (see autoinstall.InstallsFor). It decides
-// as autoInstall does up to the gate lookup, which it skips: a run that would
+// AutoInstallsFor reports whether the auto-install after cmd may give the
+// agent agentName tools (see autoinstall.InstallsFor). It decides as
+// autoInstall does up to the gate lookup, which it skips: a run that would
 // look the gate up counts as installing, so on a version whose gate is off the
-// install hint waits one command.
+// install hint moves to the end of the command. A machine whose stored ID puts
+// it in the holdout never installs. A first install gives tools to the agents
+// its plan names; an update gives skills to every agent with a config
+// directory when a skill changed, which is only known after the manifest is
+// fetched, so it counts as installing for each of them.
 func AutoInstallsFor(cmd *cobra.Command, agentName string) bool {
 	ctx := cmd.Context()
 	in := autoInstallInputs(ctx, skipsAutoInstall(cmd))
@@ -23,9 +28,17 @@ func AutoInstallsFor(cmd *cobra.Command, agentName string) bool {
 	if err != nil || autoinstall.Decide(in) != autoinstall.ReasonGateOff {
 		return false
 	}
-	tools, err := planTools(quietContext(ctx), in.State)
-	if err != nil {
+	if in.State.ID != "" && autoinstall.InHoldout(autoinstall.Bucket(in.State.ID)) {
 		return false
+	}
+	tools, err := planTools(quietContext(ctx), in.State)
+	if err != nil || tools.skip != "" {
+		return false
+	}
+	if tools.existing != nil {
+		return slices.ContainsFunc(agents.DetectInstalled(ctx), func(a *agents.Agent) bool {
+			return a.Name == agentName
+		})
 	}
 	for _, it := range tools.plan {
 		if it.agent.Name == agentName {

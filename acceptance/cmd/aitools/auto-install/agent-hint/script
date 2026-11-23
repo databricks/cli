@@ -6,6 +6,10 @@ use_home home
 "$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
 gate true
 
+title "a failing command: no install, the hint once the command ends"
+errcode trace CLAUDECODE=1 $CLI jobs get abc
+trace print_telemetry
+
 title "first run of a new version: the install notice, no install hint"
 trace CLAUDECODE=1 $CLI jobs list
 trace print_telemetry
@@ -14,7 +18,7 @@ title "second run: the tools are installed, nothing"
 trace CLAUDECODE=1 $CLI jobs list
 trace print_telemetry
 
-title "gate off: nothing on the first run, the hint on the next"
+title "gate off: no install, the hint once the command ends, and on the next"
 use_home no-agents-home
 "$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
 gate false

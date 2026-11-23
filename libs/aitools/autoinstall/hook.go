@@ -17,11 +17,11 @@ import (
 // file.
 var Run func(cmd *cobra.Command) os.Signal
 
-// InstallsFor, when set, reports whether the Run after cmd is due to give
-// the agent with this registry name its first Databricks AI tools. The install
-// hint, printed before the command runs, is withheld then so the agent is not
-// told to install what the same run installs. It reads only local state: the
-// gate is looked up after the command, so a run it reports may still end
-// without installing, and the hint then waits for the next command. main.go
-// sets it with Run.
+// InstallsFor, when set, reports whether the Run after cmd may give the agent
+// with this registry name Databricks AI tools. The install hint, printed before
+// the command runs, is withheld then so the agent is not told to install what
+// the same run installs. It reads only local state: the gate is looked up
+// after the command, Run is skipped when the command fails, and an install can
+// fail, so the withheld hint prints when the command ends unless the agent has
+// the tools by then. main.go sets it with Run.
 var InstallsFor func(cmd *cobra.Command, agentName string) bool

@@ -16,6 +16,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// globalInstallState is a global install state file of an earlier install.
+const globalInstallState = `{"schema_version": 2, "release": "v0.1.0", "skills": {"databricks-test": "0.1.0"}}`
+
 func TestAutoInstallsFor(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -40,6 +43,9 @@ func TestAutoInstallsFor(t *testing.T) {
 		{name: "a development build installs nothing", env: map[string]string{"DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION": ""}},
 		{name: "a command that skips auto-install installs nothing", command: "aitools list"},
 		{name: "a failed plan installs nothing", installState: "not json"},
+		{name: "a holdout machine installs nothing", state: `{"id": "holdout-machine"}`},
+		{name: "an update may install for an agent with a config dir", installState: globalInstallState, want: true},
+		{name: "an update installs nothing for an agent without a config dir", installState: globalInstallState, agent: agents.NameClaudeCode},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

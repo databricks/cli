@@ -1,4 +1,15 @@
 
+=== a failing command: no install, the hint once the command ends
+
+>>> CLAUDECODE=1 [CLI] jobs get abc
+Error: invalid JOB_ID: abc
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+
+Exit code: 1
+
+>>> print_telemetry
+{"command":"jobs_get","exit_code":1,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+
 === first run of a new version: the install notice, no install hint
 
 >>> CLAUDECODE=1 [CLI] jobs list
@@ -14,11 +25,13 @@ Installed Databricks AI tools for Claude Code, Cursor. Disable: databricks aitoo
 
 >>> print_telemetry
 
-=== gate off: nothing on the first run, the hint on the next
+=== gate off: no install, the hint once the command ends, and on the next
 
 >>> CLAUDECODE=1 [CLI] jobs list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
 
 >>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
 
 >>> CLAUDECODE=1 [CLI] jobs list
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
