@@ -17,7 +17,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Successfully bound job with an id '[EXTERNAL_JOB_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
->>> jq .state | map_values({__id__, depends_on}) .databricks/bundle/default/resources.json
+>>> jq .state | map_values({__id__, depends_on, description: .state.description}) .databricks/bundle/default/resources.json
 {
   "resources.jobs.job_1": {
     "__id__": "[EXTERNAL_JOB_ID]",
@@ -26,11 +26,13 @@ Run 'bundle deploy' to deploy changes to your workspace
         "node": "resources.jobs.upstream",
         "label": "${resources.jobs.upstream.id}"
       }
-    ]
+    ],
+    "description": "runs after ${resources.jobs.upstream.id}"
   },
   "resources.jobs.upstream": {
     "__id__": "[UPSTREAM_ID]",
-    "depends_on": null
+    "depends_on": null,
+    "description": null
   }
 }
 

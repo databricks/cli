@@ -10,7 +10,7 @@ add_repl "$job_id" EXTERNAL_JOB_ID
 
 title "Bind records the job; the deleted upstream stays in the state"
 trace $CLI bundle deployment bind job_1 $job_id --auto-approve
-trace jq '.state | map_values({__id__, depends_on})' .databricks/bundle/default/resources.json
+trace jq '.state | map_values({__id__, depends_on, description: .state.description})' .databricks/bundle/default/resources.json
 
 title "Deploy recreates the upstream job and updates the bound job"
 trace $CLI bundle plan
