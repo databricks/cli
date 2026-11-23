@@ -36,6 +36,12 @@ type UpdateOptions struct {
 	// no record to check against), instead of replacing it. Automatic updates
 	// set it: they must never overwrite what the user changed.
 	KeepModified bool
+
+	// NoDowngrade refuses a release older than the installed one even when
+	// the ref is pinned (by DATABRICKS_SKILLS_REF or the compatibility
+	// manifest). A pinned branch or commit SHA is still installed. Automatic updates set it: a newer release the user installed
+	// is theirs to roll back.
+	NoDowngrade bool
 }
 
 // UpdateResult describes what UpdateSkills did (or would do in check mode).
@@ -117,7 +123,10 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		}
 		return nil, err
 	}
-	if err := checkSkillsDowngrade(installedRef, latestTag, explicit); err != nil {
+	// A branch or commit SHA has no release order to compare, so NoDowngrade
+	// applies only to a release tag; the explicit ref is honored otherwise.
+	noDowngrade := opts.NoDowngrade && semver.IsValid(latestTag)
+	if err := checkSkillsDowngrade(installedRef, latestTag, explicit && !noDowngrade); err != nil {
 		return nil, err
 	}
 

@@ -36,3 +36,18 @@ title "an older CLI on the same machine (e.g. one an IDE ships) does nothing"
 trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 $CLI jobs list
 trace print_telemetry
 trace auto_install_state
+
+# The user pinned release 0.4.0 with an explicit install. The compatibility
+# manifest pins this CLI to the older 0.3.0, as it pins released CLIs.
+use_home pinned-home
+skills_dir="${USERPROFILE:-$HOME}/.databricks/aitools/skills"
+trace DATABRICKS_SKILLS_REF=v0.4.0 $CLI aitools install --skills-only --scope=global --agents=cursor
+print_telemetry > /dev/null
+echo '{"0.0.0": {"appkit": "0.84.0", "skills": "0.3.0", "auto_install": true}}' > "$DATABRICKS_CACHE_DIR/compat-manifest.json"
+
+title "upgrade to 1.33.0 pinned to 0.3.0 over an explicit 0.4.0 install: no downgrade, nothing printed, not retried"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.33.0 $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace skill_file databricks-kept
+trace auto_install_state

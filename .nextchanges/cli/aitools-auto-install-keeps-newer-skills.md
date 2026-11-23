@@ -1,0 +1,1 @@
+* Automatic installation of Databricks AI tools no longer moves skills you installed from a newer release (for example with `DATABRICKS_SKILLS_REF`) back to the older release this CLI version is pinned to, and no longer reports that as "Updated"; it leaves them alone. `databricks aitools update` still installs the pinned release when you run it.
