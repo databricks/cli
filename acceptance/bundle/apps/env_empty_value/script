@@ -1,0 +1,15 @@
+title "Empty variable value is rejected by validate"
+trace musterr $CLI bundle validate
+
+title "Overriding the variable passes validate"
+trace $CLI bundle validate --var warehouse_id=abc
+
+title "Deploy with the override"
+trace $CLI bundle deploy --var warehouse_id=abc
+
+title "Run with the empty variable fails before calling the Deploy API"
+trace musterr $CLI bundle run myapp
+
+title "Run with the override sends all env entries; it is the only deployment request"
+trace $CLI bundle run myapp --var warehouse_id=abc
+trace print_requests.py //api/2.0/apps/myapp/deployments

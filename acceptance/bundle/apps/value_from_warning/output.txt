@@ -6,10 +6,18 @@ Warning: Use 'value_from' instead of 'valueFrom'
 
 The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.
 
+Error: app environment variable "MY_SECRET" must set value or value_from
+  at resources.apps.myapp.config.env[0]
+  in databricks.yml:11:13
+
+Set a non-empty value, or set value_from to reference an app resource. A value that resolves to an empty string is not supported
+
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 warning
+Found 1 error and 1 warning
+
+Exit code: 1

@@ -224,6 +224,36 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 	return diags
 }
 
+// errorForAppEnvWithoutSource errors for inline app env entries with neither value nor
+// value_from: the Deploy API rejects them without naming the entry. An empty value, for
+// example from a variable that resolves to "", is dropped by omitempty and ends up here.
+func errorForAppEnvWithoutSource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	for key, app := range b.Config.Resources.Apps {
+		if app.Config == nil {
+			continue
+		}
+		for i, env := range app.Config.Env {
+			if env.Value != "" || env.ValueFrom != "" {
+				continue
+			}
+			path := structpath.NewPath(nil, "resources", "apps", key, "config", "env", i)
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("app environment variable %q must set value or value_from", env.Name),
+				Detail:    "Set a non-empty value, or set value_from to reference an app resource. A value that resolves to an empty string is not supported",
+				Locations: b.Config.GetLocationsOf(path),
+				Paths:     []*structpath.PathNode{path},
+			})
+		}
+	}
+
+	sortDiagnostics(diags)
+
+	return diags
+}
+
 // isMissingOrEmptyString reports whether v is unset, null, or an empty string.
 func isMissingOrEmptyString(v dyn.Value) bool {
 	switch v.Kind() {
@@ -252,6 +282,7 @@ func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	diags := errorForMissingFields(ctx, b)
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
 	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
+	diags = diags.Extend(errorForAppEnvWithoutSource(ctx, b))
 	if diags.HasError() {
 		return diags
 	}
