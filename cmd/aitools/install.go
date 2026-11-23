@@ -124,6 +124,15 @@ type agentChoice struct {
 }
 
 func NewInstallCmd() *cobra.Command {
+	return newInstallCmd(true)
+}
+
+// newInstallCmd builds the install command. recordSkillsOnly says whether
+// --skills-only records the user's choice of raw skills, so update keeps those
+// agents off the plugin. The deprecated `experimental aitools skills install`
+// alias passes false: it always adds --skills-only to keep its pre-plugin
+// behavior, so its users did not decline the plugin.
+func newInstallCmd(recordSkillsOnly bool) *cobra.Command {
 	var skillsFlag, agentsFlag, scopeFlag, pathFlag string
 	var includeExperimental, skillsOnly bool
 	var projectFlag, globalFlag bool
@@ -196,6 +205,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			opts := installer.InstallOptions{
 				IncludeExperimental: includeExperimental,
 				SpecificSkills:      splitAndTrim(skillsFlag),
+				SkillsOnly:          skillsOnly && recordSkillsOnly,
 			}
 
 			// --skills cherry-picks individual skill files, which only applies to
@@ -407,10 +417,11 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 }
 
 // installOutputIsJSON reports whether --output json was requested. Unlike list,
-// install can run detached from root: the legacy `skills install` alias builds a
-// NewInstallCmd and executes it directly (see newLegacySkillsInstallCmd), so the
-// root-supplied --output flag may be absent. Treat a missing flag as text rather
-// than panicking the way root.OutputType would.
+// install can run detached from root: the legacy `skills install` alias builds an
+// install command with newInstallCmd and executes it directly (see
+// newLegacySkillsInstallCmd), so the root-supplied --output flag may be absent.
+// Treat a missing flag as text rather than panicking the way root.OutputType
+// would.
 func installOutputIsJSON(cmd *cobra.Command) bool {
 	f := cmd.Flag("output")
 	if f == nil {
@@ -956,6 +967,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			ref = ""
 		}
 		records := map[string]installer.PluginRecord{}
+		var failed []string
 		for _, it := range pluginItems {
 			if !quiet {
 				cmdio.LogString(ctx, fmt.Sprintf("Installing databricks plugin for %s...", it.agent.DisplayName))
@@ -978,6 +990,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 				if it.explicit {
 					explicitErrs = append(explicitErrs, &displayError{msg: it.agent.DisplayName + ": " + reason, err: err})
 				}
+				failed = append(failed, it.agent.Name)
 				continue
 			}
 			records[it.agent.Name] = rec
@@ -990,6 +1003,14 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			}
 			if !quiet {
 				cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", it.agent.DisplayName, versionToken(rec.Version)))
+			}
+		}
+		// Asking for the plugin ends an earlier --skills-only choice even when
+		// the install fails, so update tries the plugin again. A successful
+		// install ends it when the plugin is recorded.
+		if len(failed) > 0 {
+			if err := installer.ForgetSkillsOnlyChoice(ctx, opts.Scope, failed); err != nil {
+				log.Warnf(ctx, "Could not drop the --skills-only choice for %s: %v", strings.Join(failed, ", "), err)
 			}
 		}
 		if len(records) > 0 && skillsErr != nil && installer.HasUntrackedSkills(ctx, opts.Scope) {
