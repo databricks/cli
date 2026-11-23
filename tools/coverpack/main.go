@@ -49,10 +49,28 @@ func main() {
 	flag.StringVar(&o.meta, "meta", "{}", "JSON object for the meta (sha, os, cell, ...)")
 	flag.StringVar(&o.output, "o", "", "the .bin.zst to write")
 	dumpPath := flag.String("dump", "", "print `FILE` as Go cover profile text instead")
+	commitOf := flag.String("commit", "", "print the commit that the build of `FILE` tested instead")
+	var c compareOptions
+	compareMode := flag.Bool("compare", false, "write the markdown of a PR comment instead (compare.go)")
+	flag.Func("base", "with -compare: a `FILE` of the base build (repeated for each cell)", func(s string) error { c.base = append(c.base, s); return nil })
+	flag.Func("head", "with -compare: a `FILE` of the PR's build (repeated for each cell)", func(s string) error { c.head = append(c.head, s); return nil })
+	flag.StringVar(&c.repo, "repo", ".", "with -compare: the git checkout to read the PR's change from")
+	flag.StringVar(&c.from, "from", "", "with -compare: the commit the PR's change starts from")
+	flag.StringVar(&c.to, "to", "", "with -compare: the commit the PR's build tested")
+	flag.StringVar(&c.baseDesc, "base-desc", "", "with -compare: markdown naming the base build")
+	flag.StringVar(&c.headDesc, "head-desc", "", "with -compare: markdown naming the PR's build")
 	flag.Parse()
 
 	var err error
 	switch {
+	case *compareMode:
+		c.output = o.output
+		err = compare(c)
+	case *commitOf != "":
+		var commit string
+		if commit, err = metaCommit(*commitOf); err == nil {
+			fmt.Println(commit)
+		}
 	case *dumpPath != "":
 		err = dump(os.Stdout, *dumpPath)
 	case o.output == "":
@@ -429,21 +447,7 @@ func writeCompressed(path string, data []byte) (int64, error) {
 }
 
 func dump(out io.Writer, path string) error {
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	r, err := zstd.NewReader(f)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return err
-	}
-	d, err := decode(data)
+	d, err := readPacked(path)
 	if err != nil {
 		return err
 	}

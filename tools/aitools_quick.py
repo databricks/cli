@@ -46,7 +46,9 @@ PACKAGES = ["./cmd/aitools/...", "./libs/aitools/...", "./experimental/aitools/.
 
 # Packages outside aitools that import it. cmd/root calls aitools from the root
 # command's pre-run, so a change there can break every command. The fake agent
-# CLIs of the acceptance tests write agent config through aitools.
+# CLIs of the acceptance tests write agent config through aitools. The
+# test-exp-aitools task in Taskfile.yml runs a subset of IMPORTERS and ACCEPTANCE
+# in CI. A new aitools importer goes in both places.
 IMPORTERS = [
     ".",
     "./acceptance/internal/fakeagent",
