@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -105,16 +106,21 @@ type testIndexOptions struct {
 	redirectURL string
 	// dropDownloads closes the connection of every file download instead of answering it.
 	dropDownloads bool
+	// undigestedCopies lists every file a second time, before the copy with the digest,
+	// without a digest.
+	undigestedCopies bool
 }
 
-// newTestIndex serves the PEP 503 project page of databricks at <prefix>/simple/databricks/,
-// the files it links to under <prefix>/packages/, a relative redirect to the project page
-// from /moved<prefix>/simple/databricks/, and an absolute one from
-// /moved-absolute<prefix>/simple/databricks/.
+// newTestIndex serves over HTTPS the PEP 503 project page of databricks at
+// <prefix>/simple/databricks/, the files it links to under <prefix>/packages/, a relative
+// redirect to the project page from /moved<prefix>/simple/databricks/, an absolute one from
+// /moved-absolute<prefix>/simple/databricks/, and a redirect with a Location header that
+// does not parse, and carries a token, from /bad-redirect/simple/databricks/. The PyPI
+// client trusts it until the test ends.
 func newTestIndex(t *testing.T, files map[string][]byte, opts testIndexOptions) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET "+opts.prefix+"/simple/databricks/", func(w http.ResponseWriter, r *http.Request) {
-		filesURL := "http://" + r.Host + opts.prefix
+		filesURL := "https://" + r.Host + opts.prefix
 		if opts.filesURL != "" {
 			filesURL = opts.filesURL
 		}
@@ -126,11 +132,14 @@ func newTestIndex(t *testing.T, files map[string][]byte, opts testIndexOptions) 
 			if opts.digest != nil {
 				fragment = opts.digest(hex.EncodeToString(sum[:]))
 			}
-			href := filesURL + "/packages/" + name + fragment
+			href := filesURL + "/packages/" + name
 			if opts.relativeLinks {
-				href = "../../packages/" + name + fragment
+				href = "../../packages/" + name
 			}
-			fmt.Fprintf(&page, "<a href=\"%s\" data-requires-python=\"&gt;=3.8\">%s</a><br />\n", href, name)
+			if opts.undigestedCopies {
+				fmt.Fprintf(&page, "<a href=\"%s\">%s</a><br />\n", href, name)
+			}
+			fmt.Fprintf(&page, "<a href=\"%s\" data-requires-python=\"&gt;=3.8\">%s</a><br />\n", href+fragment, name)
 		}
 		page.WriteString("</body></html>\n")
 		_, _ = io.WriteString(w, page.String())
@@ -157,10 +166,14 @@ func newTestIndex(t *testing.T, files map[string][]byte, opts testIndexOptions) 
 		http.Redirect(w, r, target, http.StatusFound)
 	})
 	mux.HandleFunc("GET /moved-absolute"+opts.prefix+"/simple/databricks/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "http://"+r.Host+opts.prefix+"/simple/databricks/", http.StatusFound)
+		http.Redirect(w, r, "https://"+r.Host+opts.prefix+"/simple/databricks/", http.StatusFound)
+	})
+	mux.HandleFunc("GET /bad-redirect/simple/databricks/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", "/signed/token-secret%zz")
+		w.WriteHeader(http.StatusFound)
 	})
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// The mux redirects a path with a doubled slash to its clean form. An index need not,
 		// so such a request is a miss here.
 		if strings.Contains(r.URL.Path, "//") {
@@ -180,12 +193,21 @@ func newTestIndex(t *testing.T, files map[string][]byte, opts testIndexOptions) 
 		mux.ServeHTTP(w, r)
 	}))
 	t.Cleanup(server.Close)
+	trustTestServer(t, server)
 	return server
+}
+
+// trustTestServer makes the PyPI client trust the certificate of the test server, which
+// every httptest server shares, until the test ends.
+func trustTestServer(t *testing.T, server *httptest.Server) {
+	transport := pypiHTTPClient.Transport
+	t.Cleanup(func() { pypiHTTPClient.Transport = transport })
+	pypiHTTPClient.Transport = redirectLocationTransport{base: server.Client().Transport}
 }
 
 // withCredentials returns serverURL with the credentials as its userinfo.
 func withCredentials(serverURL, username, password string) string {
-	return strings.Replace(serverURL, "http://", "http://"+username+":"+password+"@", 1)
+	return strings.Replace(serverURL, "https://", "https://"+username+":"+password+"@", 1)
 }
 
 // pipConfigContext returns a context in which pip is configured only by PIP_INDEX_URL, when
@@ -279,6 +301,11 @@ func TestGetPyPIRelease(t *testing.T) {
 			},
 		},
 		{
+			name:     "wheel listed again with a digest after a copy without one",
+			opts:     testIndexOptions{undigestedCopies: true},
+			indexURL: func(serverURL string) string { return serverURL + "/simple" },
+		},
+		{
 			name:     "upper-case digest",
 			opts:     testIndexOptions{digest: func(sum string) string { return "#sha256=" + strings.ToUpper(sum) }},
 			indexURL: func(serverURL string) string { return serverURL + "/simple" },
@@ -338,6 +365,18 @@ func TestCheckPyPIRedirect(t *testing.T) {
 			wantAuthorization: authorization,
 		},
 		{
+			name:              "index origin with the default port written out",
+			target:            "https://index.test:443/packages/databricks.whl",
+			wantURL:           "https://user:secret@index.test:443/packages/databricks.whl",
+			wantAuthorization: authorization,
+		},
+		{
+			name:              "index origin with an upper-case host name",
+			target:            "https://INDEX.test/packages/databricks.whl",
+			wantURL:           "https://user:secret@INDEX.test/packages/databricks.whl",
+			wantAuthorization: authorization,
+		},
+		{
 			name:    "other host",
 			target:  "https://files.test/packages/databricks.whl",
 			wantURL: "https://files.test/packages/databricks.whl",
@@ -360,12 +399,12 @@ func TestCheckPyPIRedirect(t *testing.T) {
 		{
 			name:    "plain HTTP on the index host",
 			target:  "http://index.test/packages/databricks.whl",
-			wantErr: "refusing to follow a redirect from HTTPS to plain HTTP for an index URL with credentials, from index.test to index.test",
+			wantErr: "refusing to follow a redirect from index.test to plain HTTP at index.test",
 		},
 		{
 			name:    "plain HTTP on another host",
 			target:  "http://files.test/packages/databricks.whl",
-			wantErr: "refusing to follow a redirect from HTTPS to plain HTTP for an index URL with credentials, from index.test to files.test",
+			wantErr: "refusing to follow a redirect from index.test to plain HTTP at files.test",
 		},
 		{
 			name:     "too many redirects",
@@ -399,14 +438,33 @@ func TestCheckPyPIRedirect(t *testing.T) {
 	}
 }
 
-func TestCheckPyPIRedirectWithoutCredentials(t *testing.T) {
-	// Without credentials in the index URL there is nothing to leak, so a redirect from
-	// HTTPS to plain HTTP is followed.
+func TestCheckPyPIRedirectRefusesPlainHTTPWithoutCredentials(t *testing.T) {
+	// The wheel is checked against the digest on the project page, so neither may come over
+	// plain HTTP, credentials or not.
 	first := httptest.NewRequest(http.MethodGet, "https://index.test/simple/databricks/", nil)
 	req := httptest.NewRequest(http.MethodGet, "http://index.test/packages/databricks.whl", nil)
 
-	require.NoError(t, checkPyPIRedirect(req, []*http.Request{first}))
-	assert.Equal(t, "http://index.test/packages/databricks.whl", req.URL.String())
+	require.EqualError(t, checkPyPIRedirect(req, []*http.Request{first}), "refusing to follow a redirect from index.test to plain HTTP at index.test")
+}
+
+func TestGetPyPIReleaseRefusesPlainHTTPIndex(t *testing.T) {
+	ctx := pipConfigContext(t, "http://user:secret@index.test/simple", "")
+	_, err := getPyPIRelease(ctx, "amd64", testWheelVersion, "")
+	require.EqualError(t, err, "the Python package index index.test must use HTTPS: the wheel is checked against the digest on its project page, which plain HTTP does not protect")
+}
+
+func TestGetPyPIReleaseTimesOutOnStalledProjectPage(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+	trustTestServer(t, server)
+	timeout := indexPageTimeout
+	t.Cleanup(func() { indexPageTimeout = timeout })
+	indexPageTimeout = 100 * time.Millisecond
+
+	_, err := getPyPIRelease(pipConfigContext(t, server.URL+"/simple", ""), "amd64", testWheelVersion, "")
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
 func TestGetPyPIReleaseErrors(t *testing.T) {
@@ -461,6 +519,14 @@ func TestGetPyPIReleaseErrors(t *testing.T) {
 			wantErr:   "lists no SHA-256 digest",
 		},
 		{
+			name:      "wheel linked over plain HTTP",
+			files:     files,
+			opts:      testIndexOptions{filesURL: "http://files.test"},
+			version:   testWheelVersion,
+			indexPath: "/simple",
+			wantErr:   "links " + testWheelName(testWheelVersion, testWheelPlatforms["amd64"]) + " over plain HTTP",
+		},
+		{
 			name: "wheel without the binary",
 			files: map[string][]byte{
 				testWheelName(testWheelVersion, testWheelPlatforms["amd64"]): testWheel(t, "1.26.0", []byte("misnamed data directory")),
@@ -495,7 +561,7 @@ func TestGetPyPIReleaseKeepsCredentialsOutOfErrors(t *testing.T) {
 	files := testIndexFiles(t, testBinaries())
 	index := newTestIndex(t, files, testIndexOptions{username: "index-user", password: "index-secret"})
 	dropping := newTestIndex(t, files, testIndexOptions{relativeLinks: true, username: "index-user", password: "index-secret", dropDownloads: true})
-	closed := httptest.NewServer(http.NotFoundHandler())
+	closed := httptest.NewTLSServer(http.NotFoundHandler())
 	closed.Close()
 
 	tests := []struct {
@@ -511,12 +577,17 @@ func TestGetPyPIReleaseKeepsCredentialsOutOfErrors(t *testing.T) {
 		{
 			name:     "unreachable index",
 			indexURL: withCredentials(closed.URL, "index-user", "index-secret") + "/simple",
-			wantErr:  "failed to fetch the databricks package from " + strings.TrimPrefix(closed.URL, "http://"),
+			wantErr:  "failed to fetch the databricks package from " + strings.TrimPrefix(closed.URL, "https://"),
+		},
+		{
+			name:     "redirect with a Location header that does not parse",
+			indexURL: withCredentials(index.URL, "index-user", "index-secret") + "/bad-redirect/simple",
+			wantErr:  "invalid redirect from " + strings.TrimPrefix(index.URL, "https://"),
 		},
 		{
 			name:     "wheel download cut off",
 			indexURL: withCredentials(dropping.URL, "index-user", "index-secret") + "/simple",
-			wantErr:  "from " + strings.TrimPrefix(dropping.URL, "http://"),
+			wantErr:  "from " + strings.TrimPrefix(dropping.URL, "https://"),
 		},
 	}
 

@@ -19,11 +19,15 @@ machine running `ssh connect` needs to reach one of:
 
 - GitHub (`github.com` and `release-assets.githubusercontent.com`), which serves the CLI release
   archives, or
-- a Python package index that serves the CLI wheels of the `databricks` package: `PIP_INDEX_URL`,
-  else `index-url` in the per-user pip config (`pip.conf`, or `pip.ini` on Windows), else PyPI
-  (`pypi.org` and `files.pythonhosted.org`). System-wide pip config files are not read. The client
-  falls back to the index when the GitHub download fails, takes a wheel only if it matches the
-  SHA-256 digest the index lists, and sends credentials in the index URL only to the index host.
+- an HTTPS Python package index that serves the CLI wheels of the `databricks` package:
+  `PIP_INDEX_URL`, else an `index-url = <url>` line in the per-user pip config, else PyPI
+  (`pypi.org` and `files.pythonhosted.org`). The per-user pip config is the first of
+  `~/.config/pip/pip.conf` and `~/.pip/pip.conf` on Linux,
+  `~/Library/Application Support/pip/pip.conf` and those two on macOS, and
+  `%APPDATA%\pip\pip.ini` on Windows. `PIP_CONFIG_FILE`, `XDG_CONFIG_HOME`, `UV_INDEX_URL` and
+  system-wide pip config files are not read. The client falls back to the index when the GitHub
+  download fails, takes a wheel only if it matches the SHA-256 digest the index lists, and sends
+  credentials in the index URL only to the index host.
 
 Development builds are not published, so they need `--releases-dir` (see [Development](#development)).
 
