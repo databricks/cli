@@ -25,6 +25,13 @@ func TestWritesOntoSource(t *testing.T) {
 			expect:       true,
 		},
 		{
+			name:         "file_path from a variable without the /Workspace prefix",
+			isDbr:        true,
+			syncRootPath: "/Workspace/Users/me/my_bundle",
+			filePath:     "/Users/me/my_bundle",
+			expect:       true,
+		},
+		{
 			name:         "default file_path from the workspace",
 			isDbr:        true,
 			syncRootPath: "/Workspace/Users/me/my_bundle",
@@ -50,4 +57,8 @@ func TestWritesOntoSource(t *testing.T) {
 			assert.Equal(t, tc.expect, writesOntoSource(ctx, b))
 		})
 	}
+
+	t.Run("no runtime detection", func(t *testing.T) {
+		assert.False(t, writesOntoSource(t.Context(), &bundle.Bundle{}))
+	})
 }
