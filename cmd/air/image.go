@@ -156,6 +156,14 @@ The destination --artifact ARTIFACT[:TAG] defaults to the source image name and 
 	return cmd
 }
 
+// formatImageSize renders a byte count in decimal MB or GB, the units docker images uses.
+func formatImageSize(sizeBytes int64) string {
+	if sizeBytes < 1e9 {
+		return fmt.Sprintf("%.1f MB", float64(sizeBytes)/1e6)
+	}
+	return fmt.Sprintf("%.1f GB", float64(sizeBytes)/1e9)
+}
+
 // darLimitationsURL returns the DAR limitations docs for the workspace's cloud.
 func darLimitationsURL(cfg *config.Config) string {
 	switch {
@@ -220,12 +228,12 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	if platform != airImagePlatform {
 		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
 	}
-	// The size is informational: DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
-	if sizeBytes, err := strconv.ParseInt(size, 10, 64); err != nil {
-		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the size of source image %s (got %q).", resolved.source, size))
-	} else {
-		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB uncompressed.", resolved.source, float64(sizeBytes)/1e9))
+	sizeBytes, err := strconv.ParseInt(size, 10, 64)
+	if err != nil {
+		return fmt.Errorf("inspect source image %s: unexpected output %q", resolved.source, strings.TrimSpace(inspected.String()))
 	}
+	// DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
+	cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %s uncompressed.", resolved.source, formatImageSize(sizeBytes)))
 	cmdio.LogString(ctx, "For Databricks Artifact Registry image limits, see "+darLimitationsURL(w.Config))
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)

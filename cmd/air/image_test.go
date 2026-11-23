@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/common/environment"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -84,7 +85,6 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	)
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
-	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed.\nFor Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations\n")
 	assert.Contains(t, stderr.String(), "Pushed image")
 }
 
@@ -93,62 +93,24 @@ func fakeImageInspect(sizeBytes string) string {
 	return "linux/amd64|" + sizeBytes + "\n"
 }
 
-func TestRunImagePushReportsImageSize(t *testing.T) {
-	tests := []struct {
-		name      string
-		sizeBytes string
-		want      string
-	}{
-		{name: "readable", sizeBytes: "35300000000", want: "Source image example/trainer:v1 is 35.3 GB uncompressed."},
-		{name: "unreadable", sizeBytes: "unknown", want: "Warning: could not read the size of source image example/trainer:v1 (got \"unknown\")."},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd, _, stderr := newImagePushTestCommand(t, "workspace")
-			deps := imagePushDeps{
-				configureDocker: func(context.Context, string) (string, error) {
-					return "123.container.us-west-2.cloud.databricks.test", nil
-				},
-				lookPath: func(string) (string, error) { return "docker", nil },
-				runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
-					switch strings.Join(args[:2], " ") {
-					case "image ls":
-						_, err := io.WriteString(out, "image-id\n")
-						return err
-					case "image inspect":
-						_, err := io.WriteString(out, fakeImageInspect(tt.sizeBytes))
-						return err
-					}
-					return nil
-				},
-			}
-
-			err := runImagePush(cmd, &imagePushOptions{
-				source:   "example/trainer:v1",
-				catalog:  "main",
-				schema:   "training",
-				artifact: "trainer",
-			}, deps)
-			require.NoError(t, err)
-			assert.Contains(t, stderr.String(), tt.want)
-			assert.Contains(t, stderr.String(), "For Databricks Artifact Registry image limits, see ")
-			assert.Contains(t, stderr.String(), "Pushed image")
-		})
-	}
+func TestFormatImageSize(t *testing.T) {
+	assert.Equal(t, "7.6 MB", formatImageSize(7_600_000))
+	assert.Equal(t, "999.0 MB", formatImageSize(999_000_000))
+	assert.Equal(t, "7.1 GB", formatImageSize(7_140_000_000))
 }
 
 func TestDARLimitationsURL(t *testing.T) {
 	tests := []struct {
-		host string
-		want string
+		cloud environment.Cloud
+		want  string
 	}{
-		{host: "https://dbc-123.cloud.databricks.com", want: "https://docs.databricks.com/aws/en/artifact-registry/#limitations"},
-		{host: "https://adb-123.4.azuredatabricks.net", want: "https://learn.microsoft.com/azure/databricks/artifact-registry/#limitations"},
-		{host: "https://123.4.gcp.databricks.com", want: "https://docs.databricks.com/gcp/en/artifact-registry/#limitations"},
+		{cloud: environment.CloudAWS, want: "https://docs.databricks.com/aws/en/artifact-registry/#limitations"},
+		{cloud: environment.CloudAzure, want: "https://learn.microsoft.com/azure/databricks/artifact-registry/#limitations"},
+		{cloud: environment.CloudGCP, want: "https://docs.databricks.com/gcp/en/artifact-registry/#limitations"},
 	}
 	for _, tt := range tests {
-		t.Run(tt.host, func(t *testing.T) {
-			assert.Equal(t, tt.want, darLimitationsURL(&config.Config{Host: tt.host}))
+		t.Run(string(tt.cloud), func(t *testing.T) {
+			assert.Equal(t, tt.want, darLimitationsURL(&config.Config{Cloud: tt.cloud}))
 		})
 	}
 }

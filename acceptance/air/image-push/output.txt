@@ -104,6 +104,17 @@ Using local source image example/image:v1
 Docker inspect failed
 Error: inspect source image example/image:v1: exit status 1
 
+=== unreadable image size must not be pushed
+
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Error: inspect source image example/image:v1: unexpected output "linux/amd64|"
+
 === incompatible local image must not be pushed
 
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
@@ -212,6 +223,8 @@ image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
 image ls --quiet example/image:v1
 image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
 image ls --quiet example/image:v1
