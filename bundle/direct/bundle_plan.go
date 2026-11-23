@@ -1403,8 +1403,17 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	_, isUnresolved := sv.Refs[fieldPathS]
 	if isUnresolved {
-		// The value that is requested is itself a reference; this means it will be resolved after apply
-		return nil, errDelayed
+		if targetAction != deployplan.Skip {
+			// The value that is requested is itself a reference; this means it will be resolved after apply
+			return nil, errDelayed
+		}
+		// A skipped target is not deployed, so its field keeps the value in its remote state. Resolving
+		// it here leaves no reference to a skipped node for apply, which reads none of their remote states.
+		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+		if !ok {
+			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
+		}
+		return structaccess.Get(remoteState, fieldPath)
 	}
 
 	localConfig := sv.Value
