@@ -49,11 +49,18 @@ func TestTelemetryBoolValues(t *testing.T) {
 			tm:   Telemetry{ArtifactFilesIsSet: boolSet()},
 			want: nil,
 		},
+		// One entry per key: consumers read bool_values as a map.
 		{
-			name: "BoolSet reports each value once, true first",
+			name: "BoolSet with both values reports true once",
 			tm:   Telemetry{ArtifactFilesIsSet: boolSet(false, true, false)},
 			want: []protos.BoolMapEntry{
 				{Key: "artifact_files_is_set", Value: true},
+			},
+		},
+		{
+			name: "BoolSet with only false reports false once",
+			tm:   Telemetry{ArtifactFilesIsSet: boolSet(false, false)},
+			want: []protos.BoolMapEntry{
 				{Key: "artifact_files_is_set", Value: false},
 			},
 		},

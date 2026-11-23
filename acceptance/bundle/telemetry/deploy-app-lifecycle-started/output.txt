@@ -22,10 +22,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "value": true
     },
     {
-      "key": "app_lifecycle_started",
-      "value": false
-    },
-    {
       "key": "deployment_history_enabled",
       "value": false
     },

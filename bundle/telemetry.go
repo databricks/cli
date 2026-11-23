@@ -15,7 +15,8 @@ import (
 //   - bool: a flag reported only when true; absence means "not seen".
 //   - *bool: a measured value; nil when the measurement did not run.
 //   - BoolSet: a measurement taken several times (e.g. once per artifact);
-//     each value it took is reported once.
+//     bool_values reports whether any measurement was true, and the bitmap
+//     records each value it took.
 //
 // The `metric` tag is the key in bool_values. Fields have no json tags: the
 // bitmap uses the Go field names (e.g. "telemetry.SelectUsed").
@@ -159,7 +160,8 @@ type Telemetry struct {
 }
 
 // BoolValues returns the flags as deploy-event entries, in field order: a true
-// bool, the value of a non-nil *bool, and each value a BoolSet took.
+// bool, the value of a non-nil *bool, and for a BoolSet whether any of its
+// measurements was true.
 func (t *Telemetry) BoolValues() []protos.BoolMapEntry {
 	var out []protos.BoolMapEntry
 	v := reflect.ValueOf(t).Elem()
@@ -175,8 +177,11 @@ func (t *Telemetry) BoolValues() []protos.BoolMapEntry {
 				out = append(out, protos.BoolMapEntry{Key: key, Value: *f})
 			}
 		case BoolSet:
-			for _, value := range f.Values() {
-				out = append(out, protos.BoolMapEntry{Key: key, Value: value})
+			// One entry per key: consumers read bool_values as a map, so a key
+			// repeated with both values would keep whichever came last. The bitmap
+			// records both.
+			if values := f.Values(); len(values) > 0 {
+				out = append(out, protos.BoolMapEntry{Key: key, Value: values[0]})
 			}
 		}
 	}
