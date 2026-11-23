@@ -34,8 +34,9 @@ func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	return me.UserName, nil
 }
 
-// userWorkspaceDir returns the user's workspace home, honoring the env override.
-func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+// workspaceDirOverride returns the configured workspace home, or "" when the home
+// has to come from the current user.
+func workspaceDirOverride(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	if override := env.Get(ctx, userWorkspaceDirEnv); override != "" {
 		return override, nil
 	}
@@ -43,8 +44,14 @@ func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	if err != nil {
 		return "", fmt.Errorf("failed to read selected profile: %w", err)
 	}
-	if override != "" {
-		return override, nil
+	return override, nil
+}
+
+// userWorkspaceDir returns the user's workspace home, honoring the env override.
+func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	override, err := workspaceDirOverride(ctx, w)
+	if err != nil || override != "" {
+		return override, err
 	}
 	email, err := currentUserEmail(ctx, w)
 	if err != nil {
@@ -85,12 +92,21 @@ const (
 	launchIndexTTL       = 30 * 24 * time.Hour
 )
 
-// launchIndexKey identifies a staged file set: the workspace, the user's home it
-// is staged under, and a hash of the files' names and bytes.
+// launchIndexKey identifies a staged file set: the workspace and a hash of the
+// files' names and bytes. The home is not part of the key, because a relaunch
+// must find the entry before Me has named the user; launchIndexEntry carries it
+// and is checked against Me.
 type launchIndexKey struct {
 	Host    string
-	Base    string
 	Content string
+}
+
+// launchIndexEntry records where a staged file set lives. UserName is the Me
+// name that produced Base; it is "" when the home came from an override.
+type launchIndexEntry struct {
+	Base     string
+	UserName string
+	Dir      string
 }
 
 func newLaunchIndex(ctx context.Context) *cache.Cache {
@@ -126,6 +142,48 @@ func launchFilesStaged(ctx context.Context, w *databricks.WorkspaceClient, dir s
 		})
 	}
 	return group.Wait() == nil
+}
+
+// launchSpeculation holds the read-only checks and the dry-run validation started
+// under a remembered launch dir before Me confirms the user name that produced it.
+// Nothing here writes: the probes are GETs and validation is a stateless dry run.
+// Writes and the submit wait for Me, and a mismatch discards the results.
+type launchSpeculation struct {
+	cancel      context.CancelFunc
+	group       *errgroup.Group
+	staged      bool
+	unavailable bool
+	workspaceID int64
+}
+
+func startLaunchSpeculation(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, items []uploadItem, dir, token string) *launchSpeculation {
+	specCtx, cancel := context.WithCancel(ctx)
+	group, groupCtx := errgroup.WithContext(specCtx)
+	spec := &launchSpeculation{cancel: cancel, group: group}
+	group.Go(func() error {
+		var err error
+		spec.unavailable, err = preflightValidate(groupCtx, w, cfg, path.Join(dir, commandScriptName), submittedContainers(cfg, dir), token)
+		return err
+	})
+	group.Go(func() error {
+		spec.staged = launchFilesStaged(groupCtx, w, dir, items)
+		return nil
+	})
+	group.Go(func() error {
+		spec.workspaceID = workspaceIDForRunLink(groupCtx, w)
+		return nil
+	})
+	return spec
+}
+
+// abort discards a speculation that Me did not confirm and waits for its requests
+// to stop. A nil speculation is a no-op.
+func (s *launchSpeculation) abort() {
+	if s == nil {
+		return
+	}
+	s.cancel()
+	_ = s.group.Wait()
 }
 
 // ensureExperimentDirectory creates experimentDir if it is missing, matching the
