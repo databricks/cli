@@ -29,6 +29,9 @@ trace $CLI air run -f with-code-source.yaml --dry-run
 title "include_paths entry that selects no files is rejected"
 musterr trace $CLI air run -f include-unmatched.yaml --dry-run
 
+title "include_paths entry that selects no files is rejected (json)"
+musterr trace $CLI air run -f include-unmatched.yaml --dry-run -o json
+
 title "include_paths pathspec that selects files outside root_path is rejected"
 # :(top) resolves against the repository root, so from root_path src it selects ../valid.yaml.
 musterr trace $CLI air run -f include-outside-root.yaml --dry-run
@@ -61,6 +64,32 @@ errcode trace $CLI air run -f git-remote.yaml --dry-run
 
 title "invalid config is rejected"
 errcode trace $CLI air run -f invalid.yaml --dry-run
+
+title "invalid config is rejected (json)"
+musterr trace $CLI air run -f invalid.yaml --dry-run -o json
+
+title "dry-run without credentials reports an authentication error (json)"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml --dry-run -o json
+
+title "dry-run without credentials keeps the original error in text mode"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml --dry-run
+
+title "submit without credentials reports an authentication error (json)"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml -o json
+
+title "dry-run reports an over-long idempotency key before missing credentials (json)"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+title "dry-run with an unknown profile is a permanent config error (json)"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN DATABRICKS_CONFIG_FILE=profiles.databrickscfg $CLI air run -f valid.yaml --dry-run -o json -p does-not-exist
+
+title "bundle diagnostics are reported once (json)"
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run -o json
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml -o json
+
+title "bundle diagnostics come before the idempotency key error"
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 title "unknown field suggests the near match"
 errcode trace $CLI air run -f unknown-field.yaml --dry-run

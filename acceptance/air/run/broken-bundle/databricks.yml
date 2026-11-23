@@ -1,0 +1,10 @@
+bundle:
+  name: broken-bundle
+
+# Two targets both marked default is an invalid bundle, so loading it prints
+# diagnostics before air run reaches the workspace.
+targets:
+  dev:
+    default: true
+  dev2:
+    default: true
