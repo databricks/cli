@@ -245,7 +245,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	refresh := &refreshGuard{authenticate: authenticate, profile: profileName, pinnedFile: pinnedFile, cancel: stop}
 
 	// The sign-in client is built only when serveChallenge reads the service or signs in. A server whose record says it
-	// needs no sign-in makes no call at start.
+	// needs no sign-in skips the startup service lookup.
 	var w *databricks.WorkspaceClient
 	if entry == nil || entry.SignInRequired {
 		w, err = guardedClient(cfg, refresh)
@@ -294,7 +294,9 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		},
 		Challenge: challenge,
 	})
-	dropUploadIfRebound(cmd.Context(), check, profileName)
+	if !telemetry.Disabled(ctx) && len(telemetry.BufferedEvents(ctx)) > 0 {
+		dropUploadIfRebound(cmd.Context(), check, profileName)
+	}
 	return err
 }
 

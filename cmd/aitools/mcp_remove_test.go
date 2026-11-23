@@ -200,8 +200,14 @@ func TestMcpRemoveMakesNoRequestWhenTelemetryIsOff(t *testing.T) {
 	genie := seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", server.URL)
 	saveState(t, genie)
 
-	_, _, err := runMcpCmd(t, "remove", "--names", "genie_one_mcp-logfood", "--output", "json")
-	require.NoError(t, err)
+	parent := newMCPTestRoot()
+	ctx, _ := cmdio.NewTestContextWithStderr(telemetry.WithNewLogger(t.Context()))
+	parent.SetOut(&bytes.Buffer{})
+	parent.SetArgs([]string{"mcp", "remove", "--names", "genie_one_mcp-logfood", "--output", "json"})
+	require.NoError(t, parent.ExecuteContext(ctx))
+	require.Empty(t, telemetry.BufferedEvents(ctx))
+	_, uploads := telemetry.UploadConfig(ctx)
+	require.False(t, uploads)
 	assert.NotContains(t, jsonServers(t, claudePath), "genie_one_mcp-logfood")
 }
 

@@ -165,12 +165,13 @@ func logRemoveEvent(ctx context.Context, out *removeOutput) {
 	}
 	// The upload sends the profile's token to the profile's host, so a profile whose recorded servers no longer match it
 	// uploads nothing. The records are the ones read before the removal.
-	if bindingDrifted(ctx, out.stateBefore, out.profile) {
+	targets := recordedUploadTargets(ctx, out.stateBefore, out.profile)
+	if len(targets) == 0 {
 		log.Debugf(ctx, "telemetry: profile %s no longer matches an MCP server recorded for it; not uploading telemetry", out.profile.profile)
 		telemetry.SkipUpload(ctx)
 		return
 	}
-	setUploadConfig(ctx, out.profile.profile, out.profile.path, nil)
+	setUploadConfig(ctx, out.profile.profile, out.profile.path, nil, targets...)
 }
 
 // runMcpRemove removes the chosen servers from the agent configs and records the result. Results are printed

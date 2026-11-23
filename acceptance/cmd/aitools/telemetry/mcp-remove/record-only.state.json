@@ -7,7 +7,7 @@
         "service": "system.ai.dbsql",
         "profile": "logfood",
         "host": "$DATABRICKS_HOST",
-        "workspace_id": "",
+        "workspace_id": "900800700600",
         "sign_in_required": false,
         "command": "",
         "config_file": "$PWD/.databrickscfg",

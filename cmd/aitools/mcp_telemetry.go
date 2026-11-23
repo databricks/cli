@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -15,7 +16,7 @@ import (
 // setUploadConfig prepares telemetry after the command has resolved its workspace.
 // For offline removal, bound is nil and only a token in the profile itself can
 // be used. The CLI OAuth cache keys tokens by profile name across config files.
-func setUploadConfig(ctx context.Context, profileName, configFile string, bound *config.Config) {
+func setUploadConfig(ctx context.Context, profileName, configFile string, bound *config.Config, recorded ...mcp.Entry) {
 	if telemetry.Disabled(ctx) {
 		return
 	}
@@ -39,11 +40,24 @@ func setUploadConfig(ctx context.Context, profileName, configFile string, bound 
 			return
 		}
 		cfg.Credentials = pat
-	} else if cfg.Host != bound.Host {
+		for _, entry := range recorded {
+			target := &config.Config{Host: entry.Host, WorkspaceID: entry.WorkspaceID}
+			target.Host = target.CanonicalHostName()
+			if !sameUploadWorkspace(cfg, target) {
+				telemetry.SkipUpload(ctx)
+				return
+			}
+		}
+	} else if !sameUploadWorkspace(cfg, bound) {
 		telemetry.SkipUpload(ctx)
 		return
 	}
 	telemetry.SetUploadConfig(ctx, cfg)
+}
+
+func sameUploadWorkspace(a, b *config.Config) bool {
+	return mcp.NormalizeHost(a.Host) == mcp.NormalizeHost(b.Host) &&
+		auth.WorkspaceIDHeaders(a)[auth.WorkspaceIDHeader] == auth.WorkspaceIDHeaders(b)[auth.WorkspaceIDHeader]
 }
 
 // mcpServiceTypes maps the system.ai leaves in the CLI's service table to their telemetry enum.
@@ -93,7 +107,7 @@ func proxyAgentType(flag string) protos.AitoolsAgentType {
 	return agentType(flag)
 }
 
-// logMcpEvent buffers an MCP event, and reports whether it did; cmd/root uploads it at exit. An event without server
+// logMcpEvent buffers an MCP event for the next upload and reports whether it did. An event without server
 // results is not logged: a run that stopped before any server was reached has nothing to report. The bound profile count
 // is read from the state file as it is after the operation. A state file that cannot be read drops the event; telemetry
 // never fails a command.
@@ -275,21 +289,22 @@ func signInPromptedEvent(agent protos.AitoolsAgentType, service string, signedIn
 	}
 }
 
-// bindingDrifted reports whether a server recorded for the profile of key no longer matches that profile in its config
-// file: its host or workspace changed. The upload would send the profile's token to the host the profile names now, which
-// the server was not set up against. Only the servers grouped under key are checked, so a profile of the same name in
-// another config file does not count. It reads the config files only.
-func bindingDrifted(ctx context.Context, state *mcp.State, key profileKey) bool {
+// recordedUploadTargets returns the entries under key after checking their
+// bindings against the config file. A missing profile or drift skips the upload
+// before resolving credentials or host metadata.
+func recordedUploadTargets(ctx context.Context, state *mcp.State, key profileKey) []mcp.Entry {
 	checks := mcp.CheckEntries(ctx, state)
+	var entries []mcp.Entry
 	for i, e := range state.Servers {
 		if profileGroup(e, checks[i]) != key {
 			continue
 		}
 		if checks[i].Err != nil || checks[i].Drift != nil {
-			return true
+			return nil
 		}
+		entries = append(entries, e)
 	}
-	return false
+	return entries
 }
 
 // sharedProfile returns the profile and config file that all entries are bound to, grouped as list groups them, or the
