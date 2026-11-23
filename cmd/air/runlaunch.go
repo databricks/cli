@@ -106,12 +106,11 @@ type launchIndexKey struct {
 	Content string
 }
 
-// launchIndexEntry records where a staged file set lives. UserName is the Me
-// name that produced Base; it is "" when the home came from an override.
+// launchIndexEntry records where a staged file set lives and the home it was
+// staged under, which Me must confirm before Dir is used.
 type launchIndexEntry struct {
-	Base     string
-	UserName string
-	Dir      string
+	Base string
+	Dir  string
 }
 
 func newLaunchIndex(ctx context.Context) *cache.Cache {

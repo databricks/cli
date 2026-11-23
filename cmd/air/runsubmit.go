@@ -372,14 +372,15 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// before Me returns. Those are reads and a dry run. Me then confirms the name,
 	// and every write and the submit wait for that.
 	var spec *launchSpeculation
-	if remembered != nil && override == "" && remembered.UserName != "" {
+	if remembered != nil && override == "" {
 		spec = startLaunchSpeculation(ctx, w, cfg, items, remembered.Dir, token)
+		// Every return below joins the speculation; abort is idempotent.
+		defer spec.abort()
 	}
-	base, email := override, ""
+	base := override
 	if override == "" {
-		email, err = currentUserEmail(ctx, w)
-		if err != nil {
-			spec.abort()
+		var email string
+		if email, err = currentUserEmail(ctx, w); err != nil {
 			return 0, "", err
 		}
 		base = "/Workspace/Users/" + email
@@ -473,7 +474,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// its TTL should keep counting from the upload that created the dir. An
 	// unconfirmed entry is replaced here too, since its dir was not used.
 	if indexKey != nil && !staged {
-		cache.Put(ctx, launchIndex, *indexKey, launchIndexEntry{Base: base, UserName: email, Dir: funcDir})
+		cache.Put(ctx, launchIndex, *indexKey, launchIndexEntry{Base: base, Dir: funcDir})
 	}
 	// Warn only after staging so the warning doesn't interleave with the spinner.
 	if validationUnavailable && cmdio.HasIO(ctx) {
