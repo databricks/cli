@@ -490,13 +490,23 @@ func TestBuildSshTunnelEvent(t *testing.T) {
 			},
 		},
 		{
+			name: "serverless GPU in proxy mode",
+			opts: ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10", ProxyMode: true},
+			want: protos.SshTunnelEvent{
+				ComputeType:        protos.SshTunnelComputeTypeServerless,
+				AcceleratorType:    "GPU_1xA10",
+				ClientMode:         protos.SshTunnelClientModeProxy,
+				EnvironmentVersion: 4,
+			},
+		},
+		{
 			name: "proxy mode takes precedence over IDE",
 			opts: ClientOptions{ConnectionName: "my-conn", ProxyMode: true, IDE: "vscode"},
 			want: protos.SshTunnelEvent{
 				ComputeType:        protos.SshTunnelComputeTypeServerless,
 				IdeType:            "vscode",
 				ClientMode:         protos.SshTunnelClientModeProxy,
-				EnvironmentVersion: 4,
+				EnvironmentVersion: 5,
 			},
 		},
 		{
@@ -506,7 +516,7 @@ func TestBuildSshTunnelEvent(t *testing.T) {
 				ComputeType:        protos.SshTunnelComputeTypeServerless,
 				IdeType:            "cursor",
 				ClientMode:         protos.SshTunnelClientModeIDE,
-				EnvironmentVersion: 4,
+				EnvironmentVersion: 5,
 			},
 		},
 		{

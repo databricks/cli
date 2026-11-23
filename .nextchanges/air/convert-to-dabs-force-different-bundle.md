@@ -1,0 +1,1 @@
+* Refuse to replace a different bundle when `databricks air convert-to-dabs --force` finds a `databricks.yml` with another `bundle.name` in the output directory, and remove stale sidecars from `generated_artifacts/` when re-converting the same workload. ([#7857](https://github.com/databricks/cli/pull/7857))

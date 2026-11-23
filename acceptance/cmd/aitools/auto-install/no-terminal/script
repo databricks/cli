@@ -1,0 +1,15 @@
+use_home home
+gate true
+unset AGENT
+
+title "no terminal and no coding agent: cannot ask, so nothing is installed or reported, and the version is not settled"
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace auto_install_state
+
+title "the version is still due: a coding agent's call installs without asking"
+trace AGENT=test-agent $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace auto_install_state

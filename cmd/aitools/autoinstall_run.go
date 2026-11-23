@@ -148,7 +148,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 			log.Debugf(ctx, "auto-install: skipped: %s", tools.skipWhy)
 			return
 		}
-		if err == nil && autoInstallAsks(ctx) && in.State.AcceptedVersion != version && !canAsk(ctx) && len(tools.newAgents()) > 0 {
+		if err == nil && autoInstallAsks() && in.State.AcceptedVersion != version && !canAsk(ctx) && len(tools.newAgents()) > 0 {
 			skipUnaskable(ctx, in.State.ID)
 			return
 		}
@@ -213,7 +213,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) {
 		version:     version,
 		id:          id,
 		arm:         holdoutArm(in.Bucket),
-		interactive: autoInstallAsks(ctx),
+		interactive: cmdio.HasTerminal(ctx) && autoInstallAsks(),
 	}
 	if !reason.Due() {
 		// Another process settled the version while this one waited.
@@ -241,11 +241,11 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 	attempt := autoinstall.NextAttempt(prior, r.version)
 	qctx := quietContext(ctx)
 	tools, err := planTools(qctx, prior)
-	// A person at the terminal is asked before a first install, once per
-	// version: a "yes" covers that version's retries. A planning failure is
-	// a failed attempt, and its retry asks.
+	// A caller that is not a coding agent is asked before a first install,
+	// once per version: a "yes" covers that version's retries. A planning
+	// failure is a failed attempt, and its retry asks.
 	asked := false
-	if err == nil && r.interactive && prior.AcceptedVersion != r.version && len(tools.newAgents()) > 0 {
+	if err == nil && autoInstallAsks() && prior.AcceptedVersion != r.version && len(tools.newAgents()) > 0 {
 		// autoInstall skips this case before the lock; the state it decided
 		// on may have changed since.
 		if !canAsk(ctx) {
@@ -306,15 +306,11 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 	}
 }
 
-// autoInstallAsks reports whether a person may be at the terminal, so
-// auto-install asks before installing: stdin, stdout or stderr is a terminal
-// and no coding agent is detected (see installPromptsSupported). It asks only
-// when the question can be seen and answered (cmdio.IsLinePromptSupported)
-// and skips otherwise; the install without asking is left to runs with no
-// terminal at all. The question is a plain-text line, so TERM=dumb and an
-// MSYS2 pty pipe, which turn off the TUI prompts of install, do not skip it.
-func autoInstallAsks(ctx context.Context) bool {
-	return cmdio.HasTerminal(ctx) && useragent.AgentProvider() == ""
+// autoInstallAsks reports whether auto-install asks before a first install:
+// no coding agent is detected. A run that cannot ask (see canAsk) skips;
+// coding agents install without a question.
+func autoInstallAsks() bool {
+	return useragent.AgentProvider() == ""
 }
 
 // canAsk reports whether the question can be seen and answered: see
