@@ -28,6 +28,11 @@ targets:
   float_fraction:
     variables:
       id: 3.10
+  # Beyond 2^53 the CLI sends the float's shortest decimal, which Python reads
+  # as an int that is not exactly equal to the float.
+  above_2_53:
+    variables:
+      id: 1234567890123456789.0
   complex:
     variables:
       id:
