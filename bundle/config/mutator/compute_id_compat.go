@@ -25,11 +25,17 @@ func (m *computeIdToClusterId) Apply(ctx context.Context, b *bundle.Bundle) diag
 	// The "compute_id" key is set; rewrite it to "cluster_id".
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		v, d := rewriteComputeIdToClusterId(v, dyn.NewPath(dyn.Key("bundle")), nil)
+		if len(d) > 0 {
+			b.ComputeIdWrittenIn = append(b.ComputeIdWrittenIn, "")
+		}
 		diags = diags.Extend(d)
 
 		// Check if the "compute_id" key is set in any target overrides.
 		return dyn.MapByPattern(v, dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			v, d := rewriteComputeIdToClusterId(v, dyn.Path{}, p)
+			if len(d) > 0 {
+				b.ComputeIdWrittenIn = append(b.ComputeIdWrittenIn, p[1].Key())
+			}
 			diags = diags.Extend(d)
 			return v, nil
 		})

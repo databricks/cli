@@ -157,6 +157,11 @@ type Bundle struct {
 	// IsFileIncluded. Set via SetIncludePatterns.
 	includePatterns []string
 
+	// ComputeIdWrittenIn lists where the deprecated bundle.compute_id was written
+	// before ComputeIdToClusterId renamed it to cluster_id: "" for the root
+	// configuration, otherwise the target's name. The bundle bitmap counts it.
+	ComputeIdWrittenIn []string
+
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
 
