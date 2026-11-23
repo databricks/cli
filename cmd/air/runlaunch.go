@@ -77,12 +77,17 @@ func prospectiveLaunchPaths(ctx context.Context, w *databricks.WorkspaceClient, 
 	if err != nil {
 		return "", "", "", err
 	}
+	launchDir := launchDirFor(base, cfg)
+	return base, launchDir, path.Join(launchDir, commandScriptName), nil
+}
+
+// launchDirFor returns a new launch dir for cfg under base.
+func launchDirFor(base string, cfg *runConfig) string {
 	runName := ""
 	if cfg.MLflowRunName != nil {
 		runName = *cfg.MLflowRunName
 	}
-	launchDir := cliLaunchDir(base, cfg.ExperimentName, runName)
-	return base, launchDir, path.Join(launchDir, commandScriptName), nil
+	return cliLaunchDir(base, cfg.ExperimentName, runName)
 }
 
 // launchIndexComponent names the local cache that maps a staged file set to the

@@ -391,11 +391,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	} else {
 		spec.abort()
 		spec = nil
-		runName := ""
-		if cfg.MLflowRunName != nil {
-			runName = *cfg.MLflowRunName
-		}
-		funcDir = cliLaunchDir(base, cfg.ExperimentName, runName)
+		funcDir = launchDirFor(base, cfg)
 	}
 	commandPath := path.Join(funcDir, commandScriptName)
 	containers := submittedContainers(cfg, funcDir)
