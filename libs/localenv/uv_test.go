@@ -298,7 +298,7 @@ func TestPipConfIndexURLReadsOSSpecificPath(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Dir(primary), 0o755))
 	require.NoError(t, os.WriteFile(primary, []byte("[global]\nindex-url = https://proxy.example/simple\n"), 0o644))
 
-	assert.Equal(t, "https://proxy.example/simple", pipConfIndexURL(ctx))
+	assert.Equal(t, "https://proxy.example/simple", PipConfIndexURL(ctx))
 }
 
 func TestRedactURLCredentials(t *testing.T) {
@@ -328,26 +328,26 @@ func TestPipConfIndexURLReadsLegacyPath(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(legacy, "pip.conf"), []byte("[global]\nindex-url = https://legacy.example/simple\n"), 0o644))
 
 	ctx := env.WithUserHomeDir(t.Context(), tmp)
-	assert.Equal(t, "https://legacy.example/simple", pipConfIndexURL(ctx))
+	assert.Equal(t, "https://legacy.example/simple", PipConfIndexURL(ctx))
 }
 
 func TestPipConfIndexURL(t *testing.T) {
 	t.Run("returns_url_from_pip_conf", func(t *testing.T) {
 		ctx := writePipConf(t, "[global]\nindex-url = https://proxy.example/simple\n")
-		got := pipConfIndexURL(ctx)
+		got := PipConfIndexURL(ctx)
 		assert.Equal(t, "https://proxy.example/simple", got)
 	})
 
 	t.Run("returns_empty_when_no_pip_conf", func(t *testing.T) {
 		tmp := t.TempDir()
 		ctx := env.WithUserHomeDir(t.Context(), tmp)
-		got := pipConfIndexURL(ctx)
+		got := PipConfIndexURL(ctx)
 		assert.Empty(t, got)
 	})
 
 	t.Run("returns_empty_when_no_index_url_in_conf", func(t *testing.T) {
 		ctx := writePipConf(t, "[global]\nextra-index-url = https://other.example/simple\n")
-		got := pipConfIndexURL(ctx)
+		got := PipConfIndexURL(ctx)
 		assert.Empty(t, got)
 	})
 }
