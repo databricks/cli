@@ -128,7 +128,7 @@ func TestCompare(t *testing.T) {
 	data, err = os.ReadFile(out)
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "| Combined | – | 25.0% |")
-	assert.Contains(t, string(data), "1 changed files are left out")
+	assert.Contains(t, string(data), "1 changed file is left out")
 }
 
 func TestAddedLines(t *testing.T) {
@@ -185,4 +185,12 @@ func TestRangesAndNames(t *testing.T) {
 	assert.Equal(t, "a/b_c.go", safeName("a/b_c.go"))
 	assert.Equal(t, "a?b?.go", safeName("a`b|.go"))
 	assert.Equal(t, "-1,234", thousands(-1234))
+}
+
+func TestRenderPackagesNamesTheModuleRoot(t *testing.T) {
+	var out strings.Builder
+	base := map[string]counts{".": {stmts: 2, covered: [measures]int{1, 1, 0}}}
+	head := map[string]counts{".": {stmts: 3, covered: [measures]int{1, 1, 0}}}
+	renderPackages(&out, base, head, map[string]bool{".": true})
+	assert.Contains(t, out.String(), "| (module root) | 3 (+1) | 33.3% |")
 }

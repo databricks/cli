@@ -498,7 +498,11 @@ func render(w io.Writer, o compareOptions, base, head map[string]counts, metas [
 		fmt.Fprintln(w)
 	}
 	if p.skipped > 0 {
-		fmt.Fprintf(w, "%d changed files are left out: the build measured another version of them.\n\n", p.skipped)
+		files := "files are"
+		if p.skipped == 1 {
+			files = "file is"
+		}
+		fmt.Fprintf(w, "%d changed %s left out: the build measured another version.\n\n", p.skipped, files)
 	}
 
 	if len(p.files) > 0 {
@@ -569,9 +573,9 @@ func renderPackages(w io.Writer, base, head map[string]counts, changed map[strin
 			fmt.Fprintf(w, "\nand %d more packages\n", len(rows)-maxShownPackage)
 			break
 		}
-		name := r.name
-		if name == "." {
-			name = "(root)"
+		name := "`" + safeName(r.name) + "`"
+		if r.name == "." {
+			name = "(module root)"
 		}
 		combined, d := pct(r.head.covered[measureCombined], r.head.stmts), "new"
 		switch {
@@ -580,7 +584,7 @@ func renderPackages(w io.Writer, base, head map[string]counts, changed map[strin
 		case r.base.stmts > 0:
 			d = delta(r.head.pct(measureCombined) - r.base.pct(measureCombined))
 		}
-		fmt.Fprintf(w, "| `%s` | %s (%+d) | %s | %s | %+d |\n", safeName(name), thousands(r.head.stmts), r.head.stmts-r.base.stmts, combined, d, r.uncoveredChanged)
+		fmt.Fprintf(w, "| %s | %s (%+d) | %s | %s | %+d |\n", name, thousands(r.head.stmts), r.head.stmts-r.base.stmts, combined, d, r.uncoveredChanged)
 	}
 	fmt.Fprintln(w, "\n</details>")
 }
