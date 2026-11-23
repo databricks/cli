@@ -88,6 +88,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Detail:    "When a .dbalert.json is specified, only the following fields are allowed in the bundle configuration: " + strings.Join(allowedInYAML, ", "),
 					Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, k),
 					Locations: v.Locations(),
+					Cause:     nil,
 				},
 			}
 		}
@@ -110,6 +111,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Detail:    "",
 					Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, "file_path"),
 					Locations: alertV.Get("file_path").Locations(),
+					Cause:     err,
 				},
 			}
 		}
@@ -125,6 +127,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Detail:    "",
 					Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, "file_path"),
 					Locations: alertV.Get("file_path").Locations(),
+					Cause:     err,
 				},
 			}
 		}
@@ -139,6 +142,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 					Detail:    "Please inline the alert configuration in the bundle configuration to use variables",
 					Paths:     structpath.NewPathSlice("resources", "alerts", alertKey, "file_path"),
 					Locations: alertV.Get("file_path").Locations(),
+					Cause:     nil,
 				},
 			}
 		}
