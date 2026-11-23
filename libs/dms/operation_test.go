@@ -16,6 +16,31 @@ import (
 // failure leaves alone - is asserted by acceptance/bundle/dms. What is left here are the limits
 // and the merge, which a deploy cannot reach.
 
+func TestNewStateUpdateSizeLimit(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		size    int
+		wantErr bool
+	}{
+		{name: "above compressed storage limit", size: 80 * 1024},
+		{name: "below client limit", size: 800*1024 - 1},
+		{name: "at client limit", size: 800 * 1024},
+		{name: "above client limit", size: 800*1024 + 1, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			state := json.RawMessage(`{"state":"` + strings.Repeat("x", tc.size-len(`{"state":""}`)) + `"}`)
+			update, err := NewStateUpdate("job-123", state, false)
+			if tc.wantErr {
+				require.ErrorContains(t, err, "exceeds the 819200 byte limit")
+				return
+			}
+			require.NoError(t, err)
+			assert.Len(t, update.State, tc.size)
+			assert.Equal(t, bundledeployments.OperationStatusOperationStatusSucceeded, update.Status)
+		})
+	}
+}
+
 func TestNewFailureUpdateTruncatesLongError(t *testing.T) {
 	// Truncated rather than rejected: a message over the limit would make recording
 	// fail and hide the error it is reporting.
