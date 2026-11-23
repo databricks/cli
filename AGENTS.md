@@ -32,6 +32,7 @@ Every acceptance test runs locally against the fake server in `libs/testserver`.
 **RULE: When rebasing, prefix git commands so they never launch an interactive editor.**
 
 ```sh
+GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git fetch origin main &&
 GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase origin/main
 ```
 
