@@ -22,7 +22,8 @@ var ErrNotFound = errors.New("token not found")
 // Entry is the value held in the CLI token store. It wraps the credential so
 // the schema can grow additive metadata (e.g. a config fingerprint, scopes)
 // without changing the Store interface. Backends persist it verbatim and never
-// interpret its contents.
+// interpret its contents. The exception is the keyring store, which keeps an
+// access token too large for one item in separate items.
 type Entry struct {
 	// Token is the cached OAuth token. Set for every stored entry except a
 	// pending login.
@@ -61,9 +62,16 @@ type PendingLogin struct {
 // metadata without changing the Store interface.
 type Store interface {
 	// Put writes e under key, replacing any existing entry.
+	//
+	// The keyring store can fail with ErrAccessTokenNotStored after it stored
+	// everything but the access token.
 	Put(key string, e Entry) error
 
 	// Lookup returns the entry stored under key, or ErrNotFound.
+	//
+	// The keyring store returns a token without its access token when the
+	// items that hold the access token are missing or stale. Such a token is
+	// not valid, so the caller refreshes it.
 	Lookup(key string) (Entry, error)
 
 	// Delete removes the entry under key. Deleting a missing entry is not an

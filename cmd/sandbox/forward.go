@@ -39,12 +39,6 @@ const (
 	forwardBindHostIPv6 = "::1"
 )
 
-// The sandbox only forwards to remote ports in this range.
-const (
-	minRemotePort = 10000
-	maxRemotePort = 65535
-)
-
 // forwardReadHeaderTimeout bounds how long a local client may take to send
 // request headers. Bodies and upgraded connections are not bounded.
 const forwardReadHeaderTimeout = time.Minute
@@ -78,8 +72,9 @@ func newForwardCommand() *cobra.Command {
 
 Each -L LOCAL:REMOTE serves http://127.0.0.1:LOCAL and relays HTTP and
 WebSocket traffic to an app listening on 0.0.0.0:REMOTE in the sandbox,
-authenticated as you. Remote ports must be between 10000 and 65535. Pass 0
-as the local port to pick a free one. A stopped sandbox is started first.
+authenticated as you. The sandbox refuses a few reserved platform ports
+and returns an error naming the port. Pass 0 as the local port to pick a
+free one. A stopped sandbox is started first.
 Runs until interrupted.
 
 Examples:
@@ -149,7 +144,7 @@ Examples:
 }
 
 // parseForwards parses -L LOCAL:REMOTE specs. LOCAL may be 0 to pick a free
-// port. A few platform ports inside the remote range are refused by the sandbox.
+// port. The sandbox, not the CLI, decides which remote ports it refuses.
 func parseForwards(specs []string) ([]forwardSpec, error) {
 	forwards := make([]forwardSpec, 0, len(specs))
 	for _, spec := range specs {
@@ -159,8 +154,8 @@ func parseForwards(specs []string) ([]forwardSpec, error) {
 		if !found || localErr != nil || remoteErr != nil || localPort < 0 || localPort > 65535 {
 			return nil, fmt.Errorf("invalid -L %q: expected LOCAL:REMOTE ports, e.g. 8080:10080", spec)
 		}
-		if remotePort < minRemotePort || remotePort > maxRemotePort {
-			return nil, fmt.Errorf("invalid -L %q: remote port must be between %d and %d", spec, minRemotePort, maxRemotePort)
+		if remotePort < 1 || remotePort > 65535 {
+			return nil, fmt.Errorf("invalid -L %q: remote port must be between 1 and 65535", spec)
 		}
 		forwards = append(forwards, forwardSpec{localPort: localPort, remotePort: remotePort})
 	}
