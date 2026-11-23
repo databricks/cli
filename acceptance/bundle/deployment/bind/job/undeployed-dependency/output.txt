@@ -34,6 +34,8 @@ Exit code: 1
   "resources.jobs.deployed"
 ]
 
+>>> assert_not_exists.py .databricks/bundle/default/resources.json.temp-bind
+
 === Bind with auto-approve records the job and its dependencies
 
 >>> [CLI] bundle deployment bind job_1 [EXTERNAL_JOB_ID] --auto-approve
