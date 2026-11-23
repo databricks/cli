@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -71,6 +72,16 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 	}
 
 	return ctx, validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
+}
+
+// isDryRunAuthFailure reports whether a --dry-run failure is about credentials or
+// permissions rather than the config: building the workspace client, the
+// current-user lookup, or config:validate rejecting the caller with 401/403.
+func isDryRunAuthFailure(err error) bool {
+	if _, ok := errors.AsType[*validationAuthenticationError](err); ok {
+		return true
+	}
+	return errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied)
 }
 
 func newRunCommand() *cobra.Command {
@@ -187,7 +198,7 @@ databricks-ai-runtime skill:
 			if validationErr != nil {
 				unavailable, ok := validationUnavailable(validationErr)
 				if !ok {
-					if _, isAuth := errors.AsType[*validationAuthenticationError](validationErr); isAuth {
+					if isDryRunAuthFailure(validationErr) {
 						return authError(ctx, cmd, validationErr)
 					}
 					return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, validationErr)

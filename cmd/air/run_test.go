@@ -266,6 +266,49 @@ func TestRunDryRunRetriesUnavailableResponseOnce(t *testing.T) {
 	}
 }
 
+// Credentials rejected after the workspace client is built (by the current-user
+// lookup or by config:validate) must not be reported as INVALID_ARGS, or agents
+// edit a valid config instead of fixing their credentials.
+func TestRunDryRunReportsRejectedCredentialsAsUnauthenticated(t *testing.T) {
+	endpoints := []struct{ name, method, path string }{
+		{"current user", "GET", "/api/2.0/preview/scim/v2/Me"},
+		{"config validate", "POST", validateConfigPath},
+	}
+	rejections := []struct {
+		status    int
+		errorCode string
+	}{
+		{http.StatusUnauthorized, "UNAUTHENTICATED"},
+		{http.StatusForbidden, "PERMISSION_DENIED"},
+	}
+	for _, endpoint := range endpoints {
+		for _, rejection := range rejections {
+			t.Run(endpoint.name+"/"+http.StatusText(rejection.status), func(t *testing.T) {
+				srv := testserver.New(t)
+				// Registered before AddDefaultHandlers: the router is first-wins.
+				srv.Handle(endpoint.method, endpoint.path, func(testserver.Request) any {
+					return testserver.Response{
+						StatusCode: rejection.status,
+						Body:       map[string]string{"error_code": rejection.errorCode, "message": "credentials rejected"},
+					}
+				})
+				testserver.AddDefaultHandlers(srv)
+				t.Cleanup(srv.Close)
+
+				result := runDryRunCmd(t, dryRunValidationTimeout, flags.OutputJSON, srv.URL, minimalConfig, "--dry-run")
+				require.ErrorIs(t, result.err, root.ErrAlreadyPrinted)
+				var got errorEnvelope
+				require.NoError(t, json.Unmarshal([]byte(result.stdout), &got))
+				assert.Equal(t, "UNAUTHENTICATED", got.Error.Code)
+				assert.Equal(t, "PERMANENT", got.Error.Kind)
+				assert.False(t, got.Error.Retryable)
+				assert.Contains(t, got.Error.Message, "authentication was not successful")
+				assert.Contains(t, got.Error.Message, "credentials rejected")
+			})
+		}
+	}
+}
+
 func TestRunDryRunValidatesIdempotencyTokenAfterWorkspaceValidation(t *testing.T) {
 	var requests []dryRunRequest
 	srv := dryRunServer(t, validateConfigResponse{}, &requests)
