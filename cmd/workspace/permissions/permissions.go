@@ -104,7 +104,10 @@ func newGet() *cobra.Command {
       genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
       queries, registered-models, repos, serving-endpoints, supervisor-agents,
       vector-search-endpoints, or warehouses.
-    REQUEST_OBJECT_ID: The id of the request object.`
+    REQUEST_OBJECT_ID: The id of the object. It is the id that the object's own API uses, for
+      example the cluster id for clusters, the job id for jobs, and the
+      workspace object id for notebooks and directories. For the authorization
+      object type, use tokens to manage token permissions.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -170,7 +173,10 @@ func newGetPermissionLevels() *cobra.Command {
       genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
       queries, registered-models, repos, serving-endpoints, supervisor-agents,
       vector-search-endpoints, or warehouses.
-    REQUEST_OBJECT_ID: `
+    REQUEST_OBJECT_ID: The id of the object. It is the id that the object's own API uses, for
+      example the cluster id for clusters, the job id for jobs, and the
+      workspace object id for notebooks and directories. For the authorization
+      object type, use tokens to manage token permissions.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -232,9 +238,11 @@ func newSet() *cobra.Command {
 	cmd.Short = `Set object permissions.`
 	cmd.Long = `Set object permissions.
 
-  Sets permissions on an object, replacing existing permissions if they exist.
-  Deletes all direct permissions if none are specified. Objects can inherit
-  permissions from their parent objects or root object.
+  Sets permissions on an object, replacing all direct permissions with the ones
+  in the request. Principals that are not in the request lose their direct
+  permissions on the object, and all direct permissions are deleted if none are
+  specified. Objects can inherit permissions from their parent objects or root
+  object.
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
@@ -243,7 +251,10 @@ func newSet() *cobra.Command {
       genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
       queries, registered-models, repos, serving-endpoints, supervisor-agents,
       vector-search-endpoints, or warehouses.
-    REQUEST_OBJECT_ID: The id of the request object.`
+    REQUEST_OBJECT_ID: The id of the object. It is the id that the object's own API uses, for
+      example the cluster id for clusters, the job id for jobs, and the
+      workspace object id for notebooks and directories. For the authorization
+      object type, use tokens to manage token permissions.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -317,8 +328,10 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update object permissions.`
 	cmd.Long = `Update object permissions.
 
-  Updates the permissions on an object. Objects can inherit permissions from
-  their parent objects or root object.
+  Updates the permissions on an object by adding or changing the permissions of
+  the principals in the request. Principals that are not in the request keep
+  their existing permissions. Objects can inherit permissions from their parent
+  objects or root object.
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
@@ -327,7 +340,10 @@ func newUpdate() *cobra.Command {
       genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
       queries, registered-models, repos, serving-endpoints, supervisor-agents,
       vector-search-endpoints, or warehouses.
-    REQUEST_OBJECT_ID: The id of the request object.`
+    REQUEST_OBJECT_ID: The id of the object. It is the id that the object's own API uses, for
+      example the cluster id for clusters, the job id for jobs, and the
+      workspace object id for notebooks and directories. For the authorization
+      object type, use tokens to manage token permissions.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

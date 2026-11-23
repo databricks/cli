@@ -7,6 +7,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "status": "skipped",
   "error": "no deployed jobs resource with id no-such-id-999; deployed jobs ids in state: [TEST_JOB_ID]",
+  "errorCode": "NO_MATCHING_SELECTOR",
   "files": null,
   "changes": {}
 }

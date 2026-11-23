@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
@@ -111,7 +112,12 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 		// On the first run of a new CLI version, install Databricks AI tools.
 		// Cobra runs post-run hooks only when the command succeeded.
 		if autoinstall.Run != nil {
-			autoinstall.Run(cmd)
+			sig := autoinstall.Run(cmd)
+			// Commands run without execute have no slot, and then the CLI does
+			// not end by the signal.
+			if caught, ok := cmd.Context().Value(caughtSignalKey{}).(*os.Signal); ok {
+				*caught = sig
+			}
 		}
 		return nil
 	}
@@ -120,6 +126,13 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 	cmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
 	return cmd
 }
+
+// caughtSignalKey is the context key of the *os.Signal that execute puts in
+// the context. It holds the signal that stopped auto-install, if one did.
+type caughtSignalKey struct{}
+
+// raise is process.Raise; tests replace it.
+var raise = process.Raise
 
 // flagErrorFunc wraps flag errors to include the usage string and, for unknown
 // flags, a "Did you mean" suggestion based on Levenshtein distance.
@@ -179,6 +192,8 @@ Stack Trace:
 	// the loggers are restored, so nothing writes to the closed file.
 	var logFile logFileSlot
 	ctx = context.WithValue(ctx, logFileKey{}, &logFile)
+	var caught os.Signal
+	ctx = context.WithValue(ctx, caughtSignalKey{}, &caught)
 	// slog.SetDefault also redirects the standard log package, so both are restored.
 	prevLogger := slog.Default()
 	prevLogWriter, prevLogFlags := stdlog.Writer(), stdlog.Flags()
@@ -187,6 +202,13 @@ Stack Trace:
 		slog.SetDefault(prevLogger)
 		stdlog.SetOutput(prevLogWriter)
 		stdlog.SetFlags(prevLogFlags)
+		// Auto-install caught a signal after the command succeeded. Now that
+		// the telemetry is uploaded and the log file is closed, the CLI ends by
+		// it, so that the shell stops the script, loop or command list that ran
+		// the command, as it would have without auto-install.
+		if caught != nil {
+			raise(caught)
+		}
 	}()
 
 	// Run the command

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -256,4 +257,33 @@ func TestExecuteRestoresStdLogOutput(t *testing.T) {
 	stdlog.Print("after execute")
 	assert.Equal(t, prevFlags, stdlog.Flags())
 	assert.Contains(t, out.String(), "after execute")
+}
+
+// A signal that auto-install caught ends the CLI only after the telemetry is
+// uploaded and the log file is closed.
+func TestExecuteRaisesTheSignalAutoInstallCaught(t *testing.T) {
+	keepDefaultLogger(t)
+	prevRun, prevRaise := autoinstall.Run, raise
+	t.Cleanup(func() { autoinstall.Run, raise = prevRun, prevRaise })
+	autoinstall.Run = func(*cobra.Command) os.Signal { return os.Interrupt }
+	logFile := filepath.Join(t.TempDir(), "run.log")
+	var raised []os.Signal
+	var logged string
+	raise = func(sig os.Signal) {
+		raised = append(raised, sig)
+		content, err := os.ReadFile(logFile)
+		require.NoError(t, err)
+		logged = string(content)
+	}
+
+	cmd := newRootCommand(t.Context())
+	cmd.AddCommand(&cobra.Command{
+		Use:  "ok",
+		RunE: func(*cobra.Command, []string) error { return nil },
+	})
+	cmd.SetErr(io.Discard)
+	require.NoError(t, execute(t.Context(), cmd, []string{"ok", "--log-file", logFile, "--log-level", "debug"}))
+
+	assert.Equal(t, []os.Signal{os.Interrupt}, raised)
+	assert.Contains(t, logged, "no telemetry logs to upload", "the telemetry upload runs before the CLI ends")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
@@ -15,7 +16,7 @@ import (
 
 // setAutoInstallRun replaces autoinstall.Run for the test. The variable is
 // global, so tests that call it must not run in parallel.
-func setAutoInstallRun(t *testing.T, run func(*cobra.Command)) {
+func setAutoInstallRun(t *testing.T, run func(*cobra.Command) os.Signal) {
 	prev := autoinstall.Run
 	autoinstall.Run = run
 	t.Cleanup(func() { autoinstall.Run = prev })
@@ -38,7 +39,10 @@ func newAutoInstallTestRoot(t *testing.T) *root.Tree {
 
 func TestPostRunCallsAutoInstallWithTheCommand(t *testing.T) {
 	var ran []string
-	setAutoInstallRun(t, func(cmd *cobra.Command) { ran = append(ran, cmd.CommandPath()) })
+	setAutoInstallRun(t, func(cmd *cobra.Command) os.Signal {
+		ran = append(ran, cmd.CommandPath())
+		return nil
+	})
 
 	err := newAutoInstallTestRoot(t).Execute(t.Context(), []string{"jobs", "ok"})
 	require.NoError(t, err)
@@ -47,7 +51,10 @@ func TestPostRunCallsAutoInstallWithTheCommand(t *testing.T) {
 
 func TestPostRunSkipsAutoInstallAfterAFailedCommand(t *testing.T) {
 	var ran []string
-	setAutoInstallRun(t, func(cmd *cobra.Command) { ran = append(ran, cmd.CommandPath()) })
+	setAutoInstallRun(t, func(cmd *cobra.Command) os.Signal {
+		ran = append(ran, cmd.CommandPath())
+		return nil
+	})
 
 	err := newAutoInstallTestRoot(t).Execute(t.Context(), []string{"jobs", "fail"})
 	require.Error(t, err)
