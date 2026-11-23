@@ -35,6 +35,9 @@ type runResult struct {
 	SnapshotFileCount *int   `json:"snapshot_file_count,omitempty"`
 	RunID             string `json:"run_id,omitempty"`
 	DashboardURL      string `json:"dashboard_url,omitempty"`
+	// Existing is nil when unknown: a dry run submits nothing, and the
+	// existing-run lookup can fail or not apply (e.g. container runs).
+	Existing *bool `json:"existing,omitempty"`
 }
 
 const experimentalContainersWarning = `+--------------------------------------------------------------------+
@@ -216,9 +219,18 @@ databricks-ai-runtime skill:
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
+		// The --watch JSON events don't report existing, so skip its runs/get there.
+		submitCtx, report := ctx, &existingRunReport{}
+		if !watch || !jsonOut {
+			submitCtx, report = withExistingRunReport(ctx)
+		}
+		runID, dashboardURL, err := submitWorkload(submitCtx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err
+		}
+		existingKey := ""
+		if report.Existing != nil && *report.Existing {
+			existingKey = userIdempotencyToken(idempotencyKey, cfg)
 		}
 
 		runIDStr := strconv.FormatInt(runID, 10)
@@ -226,14 +238,14 @@ databricks-ai-runtime skill:
 		if !watch {
 			if !jsonOut {
 				out := cmd.OutOrStdout()
-				printSubmitResult(ctx, out, runIDStr, dashboardURL)
+				printSubmitResult(ctx, out, runIDStr, dashboardURL, existingKey)
 				printPostSubmitGuidance(out, w.Config.Profile, runIDStr)
 				grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, true)
 				return nil
 			}
 			// PENDING is the submit status, distinct from the --watch JSONL
 			// SUBMITTED event type below.
-			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL}); err != nil {
+			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL, Existing: report.Existing}); err != nil {
 				return err
 			}
 			grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
@@ -268,7 +280,7 @@ databricks-ai-runtime skill:
 				monitoringMessage = fmt.Sprintf("Monitoring run and streaming logs from node 0 of %d...", cfg.Compute.NumAccelerators/perNode)
 			}
 			// The MLflow links stream in via the logs below, so don't poll here.
-			printSubmitResult(ctx, out, runIDStr, dashboardURL)
+			printSubmitResult(ctx, out, runIDStr, dashboardURL, existingKey)
 			grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, true)
 			// Separate the submit summary from the streamed logs.
 			fmt.Fprintln(out)
@@ -392,12 +404,17 @@ func handleWatchResult(out io.Writer, profile, runID string, err error) error {
 
 // printSubmitResult writes the green success line and Job Run link. The link is
 // styled (blue, underlined) and clickable, matching the `air get` view, and
-// degrades to plain text on non-rich terminals.
-func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
+// degrades to plain text on non-rich terminals. existingKey is the idempotency
+// key when it returned an existing run, else empty.
+func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL, existingKey string) {
 	renderer, colorOn := cmdio.NewRenderer(ctx, out)
 	p := newPalette(renderer)
 
-	fmt.Fprintln(out, p.green.Render("Submitted workload with Job Run ID: "+runIDStr))
+	line := "Submitted workload with Job Run ID: " + runIDStr
+	if existingKey != "" {
+		line = fmt.Sprintf("Returned existing workload with Job Run ID: %s (idempotency key %q was already used)", runIDStr, existingKey)
+	}
+	fmt.Fprintln(out, p.green.Render(line))
 	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, dashboardURL, dashboardURL))
 }
 

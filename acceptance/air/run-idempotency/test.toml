@@ -1,0 +1,11 @@
+# Repeated submits against the fake workspace, whose runs/submit returns the run
+# an already-used idempotency token started.
+
+# The SDK probes host reachability with a HEAD request; stub it for determinism.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '{}'
