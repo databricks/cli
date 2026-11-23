@@ -70,6 +70,10 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 	if err != nil {
 		unavailable, retryable := classifyValidationFailure(err)
 		if !unavailable {
+			// The current-user lookup rejects only bad credentials, even with a 403.
+			if errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied) {
+				return ctx, &validationAuthenticationError{err}
+			}
 			return ctx, err
 		}
 		return ctx, asValidationUnavailable(err, retryable)
@@ -79,17 +83,20 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 }
 
 // renderDryRunCallerError renders a --dry-run failure that is the caller's to
-// fix. Credential and permission failures are kept apart from config errors so
-// agents don't edit a valid config: a 401 or a client that can't be built is
-// UNAUTHENTICATED, and a 403 is PERMISSION_DENIED since the credentials work.
-// Text mode keeps the original error.
+// fix, keeping credential and permission failures apart from config errors so
+// agents don't edit a valid config. Workspace-client and current-user failures,
+// and a 401 from config:validate, go through authError, as in air get. A 403
+// from config:validate is PERMISSION_DENIED: the same credentials just passed the
+// current-user lookup. Text mode keeps the original error.
 func renderDryRunCallerError(ctx context.Context, cmd *cobra.Command, err error) error {
-	if errors.Is(err, apierr.ErrPermissionDenied) {
-		return renderError(ctx, cmd, "PERMISSION_DENIED", "PERMANENT", false, err)
-	}
-	_, clientErr := errors.AsType[*validationAuthenticationError](err)
-	if (clientErr || errors.Is(err, apierr.ErrUnauthenticated)) && root.OutputType(cmd) == flags.OutputJSON {
+	_, credentialsRejected := errors.AsType[*validationAuthenticationError](err)
+	switch {
+	case root.OutputType(cmd) != flags.OutputJSON:
+		return err
+	case credentialsRejected || errors.Is(err, apierr.ErrUnauthenticated):
 		return authError(ctx, cmd, err)
+	case errors.Is(err, apierr.ErrPermissionDenied):
+		return renderError(ctx, cmd, "PERMISSION_DENIED", "PERMANENT", false, err)
 	}
 	return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 }

@@ -1,1 +1,1 @@
-* `air run -o json` now reports config-validation errors as a JSON error envelope instead of plain text. ([#7864](https://github.com/databricks/cli/pull/7864))
+* `air run -o json` now reports config-validation errors as a JSON error envelope instead of plain text. With `--dry-run`, rejected credentials report `UNAUTHENTICATED` and a missing permission on `config:validate` reports the new `PERMISSION_DENIED` code. ([#7864](https://github.com/databricks/cli/pull/7864))
