@@ -81,7 +81,8 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 }
 
 // workspaceClientError marks a --dry-run failure to build the workspace client,
-// so it is rendered after the local checks, in the same order as before.
+// so RunE classifies it with renderWorkspaceClientError rather than as a
+// validation error.
 type workspaceClientError struct {
 	err error
 }

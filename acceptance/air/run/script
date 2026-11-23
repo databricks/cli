@@ -85,8 +85,11 @@ musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN DATABRICKS_CONFIG_FILE=
 
 title "bundle diagnostics are reported once (json)"
 musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run -o json
-musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml -o json
+
+title "bundle diagnostics come before the idempotency key error"
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+musterr withdir broken-bundle trace $CLI air run -f ../valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 title "unknown field suggests the near match"
 errcode trace $CLI air run -f unknown-field.yaml --dry-run

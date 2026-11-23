@@ -218,6 +218,12 @@ Tip: use the --debug flag to see more details and a trace of this error:
 Error: multiple targets are marked as default ([TARGETS])
 
 
+>>> [CLI] air run -f ../valid.yaml -o json
+Error: multiple targets are marked as default ([TARGETS])
+
+
+=== bundle diagnostics come before the idempotency key error
+
 >>> [CLI] air run -f ../valid.yaml --dry-run --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 Error: multiple targets are marked as default ([TARGETS])
 
@@ -226,9 +232,19 @@ Error: idempotency token must be 64 characters or less, got 65
 Tip: use the --debug flag to see more details and a trace of this error:
   databricks --debug air run …
 
->>> [CLI] air run -f ../valid.yaml -o json
+>>> [CLI] air run -f ../valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 Error: multiple targets are marked as default ([TARGETS])
 
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "idempotency token must be 64 characters or less, got 65",
+    "retryable": false
+  }
+}
 
 === unknown field suggests the near match
 
