@@ -212,6 +212,38 @@ func TestLogMcpEventLogsRejectedCredential(t *testing.T) {
 	assert.True(t, uploads)
 }
 
+func TestLogMcpEventWithoutLogger(t *testing.T) {
+	withHome(t)
+	assert.False(t, logMcpEvent(t.Context(), proxyStartedEvent(protos.AitoolsAgentTypeCodex, "system.ai.github")))
+}
+
+func TestSetUploadConfigSkipsUnverifiedCredentials(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		cfg   string
+		bound *config.Config
+	}{
+		{
+			name: "offline OAuth",
+			cfg:  "[logfood]\nhost = https://adb-1.test\nauth_type = databricks-cli\n",
+		},
+		{
+			name:  "profile re-pointed",
+			cfg:   "[logfood]\nhost = https://adb-2.test\nauth_type = pat\ntoken = test\n",
+			bound: &config.Config{Host: "https://adb-1.test"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := withHome(t)
+			writeHomeConfig(t, home, tc.cfg)
+			ctx := telemetry.WithNewLogger(t.Context())
+			setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"), tc.bound)
+			_, uploads := telemetry.UploadConfig(ctx)
+			assert.False(t, uploads)
+		})
+	}
+}
+
 // TestSetUploadConfigLogsNoWarningForFailedHostMetadata checks that an upload whose host metadata lookup fails warns
 // nothing through the global logger, since the SDK would log that failure there. The command has succeeded, and the
 // upload is best-effort.
@@ -233,7 +265,7 @@ func TestSetUploadConfigLogsNoWarningForFailedHostMetadata(t *testing.T) {
 	t.Cleanup(func() { slog.SetDefault(defaultLogger) })
 
 	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
-	setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"))
+	setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"), nil)
 	_, uploads := telemetry.UploadConfig(ctx)
 	assert.True(t, uploads)
 	assert.Empty(t, warnings.String())
@@ -336,5 +368,6 @@ func TestMcpEventOmitsUserContent(t *testing.T) {
 func TestAddSignInStateWithoutAState(t *testing.T) {
 	failed := addServerOutput{Service: "system.ai.github", SignInRequired: true, SignIn: &addSignInOutput{ErrorCategory: protos.AitoolsErrorCategoryUncategorized}}
 	assert.Equal(t, protos.AitoolsMcpSignInStatePending, addSignInState(failed))
+	assert.Empty(t, addSignInState(addServerOutput{Service: "system.ai.github", SignInRequired: true}))
 	assert.Equal(t, protos.AitoolsMcpSignInStateNotRequired, addSignInState(addServerOutput{Service: "system.ai.dbsql"}))
 }

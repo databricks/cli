@@ -1,5 +1,5 @@
 
-=== serve uploads PROXY_STARTED after the binding checks, while it serves
+=== serve uploads PROXY_STARTED after the binding checks
 
 >>> [CLI] aitools mcp serve --profile logfood --service system.ai.genie_one_mcp --agent claude-code
 No install record for system.ai.genie_one_mcp on profile "logfood"; using its current host [DATABRICKS_URL]

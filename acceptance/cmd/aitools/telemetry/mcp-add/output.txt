@@ -1,5 +1,5 @@
 
-=== A new install for two agents: CHANGED per (service, agent); github needs sign-in, so its sign-in state is PENDING
+=== A new install for two agents: CHANGED per service and agent. GitHub sign-in was not checked
 
 >>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp,system.ai.github --agents claude-code,codex --output json
 {
@@ -21,14 +21,12 @@
     {
       "service": "GITHUB",
       "agent": "CLAUDE_CODE",
-      "outcome": "CHANGED",
-      "sign_in_state": "PENDING"
+      "outcome": "CHANGED"
     },
     {
       "service": "GITHUB",
       "agent": "CODEX",
-      "outcome": "CHANGED",
-      "sign_in_state": "PENDING"
+      "outcome": "CHANGED"
     }
   ],
   "bound_profile_count": 1
@@ -56,14 +54,12 @@
     {
       "service": "GITHUB",
       "agent": "CLAUDE_CODE",
-      "outcome": "UNCHANGED",
-      "sign_in_state": "PENDING"
+      "outcome": "UNCHANGED"
     },
     {
       "service": "GITHUB",
       "agent": "CODEX",
-      "outcome": "UNCHANGED",
-      "sign_in_state": "PENDING"
+      "outcome": "UNCHANGED"
     }
   ],
   "bound_profile_count": 1

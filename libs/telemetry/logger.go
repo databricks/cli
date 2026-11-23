@@ -74,7 +74,8 @@ func UploadConfig(ctx context.Context) (*config.Config, bool) {
 	return nil, false
 }
 
-func Log(ctx context.Context, event protos.DatabricksCliLog) {
+// Log buffers an event and reports whether a telemetry logger was present.
+func Log(ctx context.Context, event protos.DatabricksCliLog) bool {
 	// A missing logger means telemetry was never initialized on this context
 	// (e.g. a command invoked outside the normal cmd/root setup). Dropping the
 	// event is the right call: telemetry is best-effort and must never crash a
@@ -82,9 +83,10 @@ func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	l, ok := loggerFromContext(ctx)
 	if !ok {
 		log.Debugf(ctx, "telemetry logger not found in the context; dropping event")
-		return
+		return false
 	}
 	l.log(event)
+	return true
 }
 
 type logger struct {
@@ -157,8 +159,8 @@ const (
 	waitBetweenRetries = 200 * time.Millisecond
 )
 
-// Upload sends the events logged on ctx. Events the service accepts are removed from the buffer, so a later Upload sends
-// only the events logged since.
+// Upload sends the events logged on ctx. It removes the batch when the service
+// accepts every event in it.
 func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	l := fromContext(ctx)
 	// Upload works on a copy, so that setting the execution context does not write the events a proxy goroutine may append to.

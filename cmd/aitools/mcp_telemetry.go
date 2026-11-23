@@ -9,19 +9,37 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/config"
 )
 
-// setUploadConfig sets the config of profileName in configFile for the run's telemetry upload: resolved within
-// telemetryAuthBudget, with credentials that never refresh (mcp.BoundUploadConfig). A command calls it once its binding
-// checks have passed, so the upload authenticates with the profile the command bound. Nothing is resolved when telemetry
-// is disabled, and a profile that does not resolve uploads nothing.
-func setUploadConfig(ctx context.Context, profileName, configFile string) {
+// setUploadConfig prepares telemetry after the command has resolved its workspace.
+// For offline removal, bound is nil and only a token in the profile itself can
+// be used. The CLI OAuth cache keys tokens by profile name across config files.
+func setUploadConfig(ctx context.Context, profileName, configFile string, bound *config.Config) {
 	if telemetry.Disabled(ctx) {
 		return
+	}
+	if bound != nil {
+		if err := mcp.CheckUnrecordedBinding("", profileName, configFile, bound); err != nil {
+			log.Debugf(ctx, "telemetry: profile %s no longer matches the bound workspace: %s", profileName, err)
+			telemetry.SkipUpload(ctx)
+			return
+		}
 	}
 	cfg, err := mcp.BoundUploadConfig(ctx, profileName, configFile, telemetryAuthBudget)
 	if err != nil {
 		log.Debugf(ctx, "telemetry: cannot resolve profile %s to upload with: %s", profileName, err)
+		telemetry.SkipUpload(ctx)
+		return
+	}
+	if bound == nil {
+		pat := config.PatCredentials{}
+		if cfg.Token == "" || (cfg.AuthType != "" && cfg.AuthType != pat.Name()) {
+			telemetry.SkipUpload(ctx)
+			return
+		}
+		cfg.Credentials = pat
+	} else if cfg.Host != bound.Host {
 		telemetry.SkipUpload(ctx)
 		return
 	}
@@ -80,7 +98,7 @@ func proxyAgentType(flag string) protos.AitoolsAgentType {
 // is read from the state file as it is after the operation. A state file that cannot be read drops the event; telemetry
 // never fails a command.
 func logMcpEvent(ctx context.Context, event protos.AitoolsMcpEvent) bool {
-	if len(event.Servers) == 0 {
+	if telemetry.Disabled(ctx) || len(event.Servers) == 0 {
 		return false
 	}
 	state, err := mcp.LoadState(ctx)
@@ -89,28 +107,30 @@ func logMcpEvent(ctx context.Context, event protos.AitoolsMcpEvent) bool {
 		return false
 	}
 	event.BoundProfileCount = boundProfileCount(ctx, state)
-	telemetry.Log(ctx, protos.DatabricksCliLog{AitoolsMcpEvent: &event})
-	return true
+	return telemetry.Log(ctx, protos.DatabricksCliLog{AitoolsMcpEvent: &event})
 }
 
 // boundProfileCount returns the number of distinct profiles that have servers installed, grouped as list groups them
 // (profileGroup), so DEFAULT in two config files counts twice.
 func boundProfileCount(ctx context.Context, state *mcp.State) int64 {
 	profiles := map[profileKey]bool{}
-	checks := mcp.CheckEntries(ctx, state)
-	for i, e := range state.Servers {
-		profiles[profileGroup(e, checks[i])] = true
+	for _, e := range state.Servers {
+		path, _ := mcp.ResolveConfigFile(ctx, e.ConfigFile)
+		profiles[profileGroup(e, mcp.EntryCheck{Path: path})] = true
 	}
 	return int64(len(profiles))
 }
 
-// addSignInState is the sign-in state of a server after an add: the state that --login reports, else PENDING for a
-// server that needs sign-in, else NOT_REQUIRED. A sign-in that failed before it read a state is PENDING.
+// addSignInState reports the state add observed. A service may require sign-in
+// even when add never checks whether the user has already signed in.
 func addSignInState(s addServerOutput) protos.AitoolsMcpSignInState {
 	if s.SignIn != nil && s.SignIn.State != "" {
 		return signInStateOf(s.SignIn.State)
 	}
 	if s.SignInRequired {
+		if s.SignIn == nil {
+			return ""
+		}
 		return protos.AitoolsMcpSignInStatePending
 	}
 	return protos.AitoolsMcpSignInStateNotRequired
@@ -265,7 +285,7 @@ func bindingDrifted(ctx context.Context, state *mcp.State, key profileKey) bool 
 		if profileGroup(e, checks[i]) != key {
 			continue
 		}
-		if _, err := mcp.CheckBinding(ctx, state, e.Service, key.profile, key.path); err != nil {
+		if checks[i].Err != nil || checks[i].Drift != nil {
 			return true
 		}
 	}

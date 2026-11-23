@@ -160,7 +160,6 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 		// A mistyped --profile gets the existing profiles, as add lists them.
 		return withExistingProfiles(ctx, state, profileName, err)
 	}
-	setUploadConfig(ctx, profileName, configFile)
 	// A server pinned to a config file names that file in the hints, as add does.
 	pinnedFile := mcp.PinnedFile(entry, configFile)
 	w, err := profileClient(ctx, profileName, configFile, pinnedFile)
@@ -168,7 +167,9 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 		return err
 	}
 	out.Host = w.Config.Host
-	return action(ctx, errOut, w, out, pinnedFile)
+	err = action(ctx, errOut, w, out, pinnedFile)
+	setUploadConfig(ctx, profileName, configFile, w.Config)
+	return err
 }
 
 // signInEvent is the SIGN_IN or SIGN_OUT event of one login or logout.

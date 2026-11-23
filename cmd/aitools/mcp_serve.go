@@ -270,9 +270,13 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	// Only a serving start is logged, and it is uploaded now rather than at exit: the exit upload cannot refresh an expired
 	// token, so a session idle past the token's life would lose its start. The upload authenticates with the profile as it
 	// was bound here, with a config of its own that never refreshes a token, since the session's config refreshes its token.
-	setUploadConfig(cmd.Context(), profileName, cfg.ConfigFile)
-	if logMcpEvent(cmd.Context(), proxyStartedEvent(agent, f.service)) {
-		uploadAtStart(cmd, start)
+	if logMcpEvent(ctx, proxyStartedEvent(agent, f.service)) {
+		setUploadConfig(ctx, profileName, cfg.ConfigFile, cfg)
+		uploadAtStart(ctx, cmd, start)
+		if ctx.Err() != nil {
+			telemetry.SkipUpload(ctx)
+			return nil
+		}
 	}
 
 	err = serveProxy(ctx, cmd, refresh, proxy.Options{
@@ -308,8 +312,7 @@ func dropUploadIfRebound(ctx context.Context, check func() error, profileName st
 // uploadAtStart uploads the events logged so far, which at serve's start is its PROXY_STARTED. The upload waits for the
 // service, bounded by its timeout, so the proxy starts after it. A failed upload keeps its events for the exit upload.
 // The run is still going, so its exit code is 0.
-func uploadAtStart(cmd *cobra.Command, start time.Time) {
-	ctx := cmd.Context()
+func uploadAtStart(ctx context.Context, cmd *cobra.Command, start time.Time) {
 	err := telemetry.Upload(ctx, root.TelemetryExecutionContext(cmd, start, 0))
 	if err != nil {
 		log.Debugf(ctx, "telemetry: upload at start failed: %s", err)

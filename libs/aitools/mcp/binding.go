@@ -131,14 +131,14 @@ func BoundUploadConfig(ctx context.Context, profileName, configFile string, budg
 // would send the registered resolver's warning to the global logger. A failed lookup falls back to the user config, as
 // the SDK does.
 func quietHostMetadata(ctx context.Context, cfg *config.Config) {
-	resolve := cfg.DefaultHostMetadataResolver()
-	if factory := config.DefaultHostMetadataResolverFactory; factory != nil {
-		if r := factory(cfg); r != nil {
-			resolve = r
-		}
-	}
 	logger := slog.New(handler.DebugOnlyHandler{Handler: log.GetLogger(ctx).Handler()})
 	cfg.HostMetadataResolver = func(sdkCtx context.Context, host string) (*config.HostMetadata, error) {
+		resolve := cfg.DefaultHostMetadataResolver()
+		if factory := config.DefaultHostMetadataResolverFactory; factory != nil {
+			if r := factory(cfg); r != nil {
+				resolve = r
+			}
+		}
 		meta, err := resolve(log.NewContext(sdkCtx, logger), host)
 		if err != nil {
 			log.Debugf(sdkCtx, "telemetry: cannot resolve host metadata for %s: %s", host, err)

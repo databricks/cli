@@ -366,10 +366,6 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err := planningRefusals(plans, targets, refused); err != nil {
 		return err
 	}
-	// Every refusal that needs no request has come, so the upload authenticates with the profile this run binds. Resolving
-	// its config makes the host's metadata request, which is why it waits for the refusals.
-	setUploadConfig(ctx, profileName, configFile)
-
 	if !pickingServices {
 		w, workspaceID, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
 		if err != nil {
@@ -435,6 +431,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if req.login || req.askLogin {
 		signErr = signInInstalled(ctx, cmd.ErrOrStderr(), w, req, plans, servers)
 	}
+	setUploadConfig(ctx, profileName, configFile, w.Config)
 	return errors.Join(recordErr, signErr, agentFailureError(req, servers))
 }
 
