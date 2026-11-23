@@ -1,0 +1,9 @@
+trace $CLI bundle deploy
+read_id.py foo > /dev/null
+
+# No deployed job has this id, so the sync is skipped rather than failed.
+trace $CLI bundle config-remote-sync --select-ids "jobs:999999" -o json
+
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | {error_message, error_category}'
+
+rm "$OUT_REQUESTS"

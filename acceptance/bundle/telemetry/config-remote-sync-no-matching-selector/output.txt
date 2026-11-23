@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-remote-sync-no-matching-selector/default/files...
+Created jobs.foo
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle config-remote-sync --select-ids jobs:999999 -o json
+{
+  "status": "skipped",
+  "error": "no deployed jobs resource with id 999999; deployed jobs ids in state: [FOO_ID]",
+  "errorCode": "NO_MATCHING_SELECTOR",
+  "files": null,
+  "changes": {}
+}
+
+>>> cat [OUTPUT_DIR]/out.requests.txt
+{
+  "error_message": "no deployed jobs resource with id 999999; deployed jobs ids in state: [FOO_ID]",
+  "error_category": "NO_MATCHING_SELECTOR"
+}
