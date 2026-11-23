@@ -427,7 +427,7 @@ func TestServeOnEndpointRefusesToReplaceOtherEntities(t *testing.T) {
 		existing *servingEndpoint
 		wantErr  string
 	}{
-		{"another model", endpointServing(other, readyState), "endpoint qwen-chat serves version 5 of main.models.llama, and air deploy replaces only a single version of main.models.qwen"},
+		{"another model", endpointServing(other, readyState), "endpoint qwen-chat serves version 5 of main.models.llama, and air serve replaces only a single version of main.models.qwen"},
 		{"a traffic split", split, "endpoint qwen-chat serves version 2 of main.models.qwen and version 1 of main.models.qwen"},
 	}
 	for _, tt := range tests {

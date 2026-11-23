@@ -150,7 +150,7 @@ const (
 		"staging_status": {"state": "IN_PROGRESS", "model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "IN_PROGRESS"}}}`
 )
 
-// fastRetries shortens the pause before air deploy repeats a failed request.
+// fastRetries shortens the pause before air serve repeats a failed request.
 func fastRetries(ctx context.Context) context.Context {
 	return env.Set(ctx, retry.IntervalMsVariable, "1")
 }
@@ -273,7 +273,7 @@ func TestRegisterAndFinalizeRejectsAMalformedRegistrationStatus(t *testing.T) {
 			fake := newFakeModelServing(t, `{"model_id": "m-1", "registered_model": "main.models.qwen", "model_version": "3", "ready": false, "staging_status": `+tt.status+`}`)
 
 			resp, states, err := registerTestCheckpoint(t, fake, checkpointRequest())
-			assert.ErrorContains(t, err, "air deploy can't read Model Serving's response about version 3 of main.models.qwen: ")
+			assert.ErrorContains(t, err, "air serve can't read Model Serving's response about version 3 of main.models.qwen: ")
 			assert.ErrorContains(t, err, tt.wantErr)
 			assert.Nil(t, resp)
 			assert.Empty(t, states)
@@ -291,7 +291,7 @@ func TestRegisterAndFinalizeRejectsAMalformedPolledStatus(t *testing.T) {
 
 			resp, states, err := registerTestCheckpoint(t, fake, checkpointRequest())
 			assert.ErrorContains(t, err, tt.wantErr)
-			code, retryable := deployErrorCode(err)
+			code, retryable := serveErrorCode(err)
 			assert.Equal(t, codeInternalError, code)
 			assert.True(t, retryable)
 			// It stops at the malformed status instead of reading it as progress.
@@ -395,7 +395,7 @@ func TestRegisterAndFinalizeStopsWhenCanceled(t *testing.T) {
 }
 
 func TestRegistrationRequestForCommandJSON(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, commandDeployConfig+"mlflow_experiment_path: /Shared/qwen\n")
+	cfg, err := loadServeConfigText(t, commandServeConfig+"mlflow_experiment_path: /Shared/qwen\n")
 	require.NoError(t, err)
 	raw, err := json.Marshal(cfg.registrationRequest("k"))
 	require.NoError(t, err)
@@ -413,7 +413,7 @@ func TestRegistrationRequestForCommandJSON(t *testing.T) {
 }
 
 func TestRegistrationRequestForDedicatedJSON(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, dedicatedDeployConfig)
+	cfg, err := loadServeConfigText(t, dedicatedServeConfig)
 	require.NoError(t, err)
 	raw, err := json.Marshal(cfg.registrationRequest("k"))
 	require.NoError(t, err)

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// commandDeployConfig is a checkpoint served by a command.
-const commandDeployConfig = `registered_model_name: main.models.qwen
+// commandServeConfig is a checkpoint served by a command.
+const commandServeConfig = `registered_model_name: main.models.qwen
 checkpoint: /Volumes/main/models/weights/qwen3_8b
 command: python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080
 task: llm/v1/chat
@@ -27,8 +27,8 @@ env_variables:
   LOG_LEVEL: info
 `
 
-// dedicatedDeployConfig is a checkpoint served with dedicated inference.
-const dedicatedDeployConfig = `registered_model_name: main.models.qwen
+// dedicatedServeConfig is a checkpoint served with dedicated inference.
+const dedicatedServeConfig = `registered_model_name: main.models.qwen
 checkpoint: /Volumes/main/models/weights/qwen3_8b
 endpoint_name: qwen-chat
 compute:
@@ -36,29 +36,29 @@ compute:
   provisioned_model_units: 600
 `
 
-// registeredDeployConfig serves a version that is already registered.
-const registeredDeployConfig = `registered_model_name: main.models.qwen
+// registeredServeConfig serves a version that is already registered.
+const registeredServeConfig = `registered_model_name: main.models.qwen
 model_version: 7
 endpoint_name: qwen-chat
 `
 
-func loadDeployConfigText(t *testing.T, text string, overrides ...string) (*deployConfig, error) {
+func loadServeConfigText(t *testing.T, text string, overrides ...string) (*serveConfig, error) {
 	t.Helper()
-	return loadDeployConfig(t.Context(), writeConfigFile(t, "deploy.yaml", text), overrides)
+	return loadServeConfig(t.Context(), writeConfigFile(t, "serve.yaml", text), overrides)
 }
 
-func TestLoadDeployConfigVariantIsInferredFromTheFields(t *testing.T) {
+func TestLoadServeConfigVariantIsInferredFromTheFields(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		text    string
 		variant string
 	}{
-		{"checkpoint and command", commandDeployConfig, variantCommand},
-		{"checkpoint without command", dedicatedDeployConfig, variantDedicated},
-		{"no checkpoint", registeredDeployConfig, variantRegistered},
+		{"checkpoint and command", commandServeConfig, variantCommand},
+		{"checkpoint without command", dedicatedServeConfig, variantDedicated},
+		{"no checkpoint", registeredServeConfig, variantRegistered},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := loadDeployConfigText(t, tt.text)
+			cfg, err := loadServeConfigText(t, tt.text)
 			require.NoError(t, err)
 			assert.Equal(t, tt.variant, cfg.variant())
 			assert.Equal(t, tt.variant != variantRegistered, cfg.registers())
@@ -66,8 +66,8 @@ func TestLoadDeployConfigVariantIsInferredFromTheFields(t *testing.T) {
 	}
 }
 
-func TestLoadDeployConfigCommand(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, commandDeployConfig)
+func TestLoadServeConfigCommand(t *testing.T) {
+	cfg, err := loadServeConfigText(t, commandServeConfig)
 	require.NoError(t, err)
 
 	req := cfg.registrationRequest("key-1")
@@ -93,15 +93,15 @@ func TestLoadDeployConfigCommand(t *testing.T) {
 	}, entity)
 }
 
-func TestLoadDeployConfigCommandOnDatabricksAI(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, strings.Replace(commandDeployConfig, "  version: 6\n", "  version: databricks_ai_v6\n", 1))
+func TestLoadServeConfigCommandOnDatabricksAI(t *testing.T) {
+	cfg, err := loadServeConfigText(t, strings.Replace(commandServeConfig, "  version: 6\n", "  version: databricks_ai_v6\n", 1))
 	require.NoError(t, err)
 	req := cfg.registrationRequest("key-1")
 	assert.Equal(t, modelPackageEnvironment{Runtime: "client.6-gpu", Dependencies: []string{"einops==0.8.0"}, BaseEnvironment: "databricks-ai"}, req.Checkpoint.Environment)
 }
 
-func TestLoadDeployConfigDedicated(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, dedicatedDeployConfig+"mlflow_experiment_path: /Shared/qwen\n")
+func TestLoadServeConfigDedicated(t *testing.T) {
+	cfg, err := loadServeConfigText(t, dedicatedServeConfig+"mlflow_experiment_path: /Shared/qwen\n")
 	require.NoError(t, err)
 
 	req := cfg.registrationRequest("key-1")
@@ -117,8 +117,8 @@ func TestLoadDeployConfigDedicated(t *testing.T) {
 	assert.Equal(t, &dedicatedCompute{ComputeProfile: "COMPUTE_PROFILE_LOW_LATENCY", ProvisionedModelUnits: 600}, dedicated)
 }
 
-func TestLoadDeployConfigRegisteredDefaultsToCPU(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, registeredDeployConfig)
+func TestLoadServeConfigRegisteredDefaultsToCPU(t *testing.T) {
+	cfg, err := loadServeConfigText(t, registeredServeConfig)
 	require.NoError(t, err)
 	assert.False(t, cfg.registers())
 
@@ -129,7 +129,7 @@ func TestLoadDeployConfigRegisteredDefaultsToCPU(t *testing.T) {
 	assert.Nil(t, entity.EnvironmentVars)
 }
 
-func TestDeployConfigCrossVariantFields(t *testing.T) {
+func TestServeConfigCrossVariantFields(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  string
@@ -137,110 +137,110 @@ func TestDeployConfigCrossVariantFields(t *testing.T) {
 	}{
 		{
 			"task without a checkpoint",
-			registeredDeployConfig + "task: llm/v1/chat\n",
+			registeredServeConfig + "task: llm/v1/chat\n",
 			"task can't be set: the file is read as a registered model, because it sets no checkpoint, and task applies only to a checkpoint served by command",
 		},
 		{
 			"command without a checkpoint",
-			registeredDeployConfig + "command: python serve.py\n",
+			registeredServeConfig + "command: python serve.py\n",
 			"command can't be set: the file is read as a registered model, because it sets no checkpoint, and command applies only to a checkpoint served by command",
 		},
 		{
 			"environment on a dedicated checkpoint",
-			dedicatedDeployConfig + "environment: {version: 6}\n",
+			dedicatedServeConfig + "environment: {version: 6}\n",
 			"environment can't be set: the file is read as a dedicated checkpoint, because it sets checkpoint but not command, and environment applies only to a checkpoint served by command",
 		},
 		{
 			"model_version with a checkpoint",
-			commandDeployConfig + "model_version: 3\n",
+			commandServeConfig + "model_version: 3\n",
 			"model_version can't be set: the file is read as a checkpoint served by command, because it sets checkpoint and command, and model_version applies only to a registered model",
 		},
 		{
 			"model_version on a dedicated checkpoint",
-			dedicatedDeployConfig + "model_version: 3\n",
+			dedicatedServeConfig + "model_version: 3\n",
 			"model_version can't be set: the file is read as a dedicated checkpoint",
 		},
 		{
 			"secrets on a dedicated checkpoint",
-			dedicatedDeployConfig + "secrets: {HF_TOKEN: llm/hf_token}\n",
+			dedicatedServeConfig + "secrets: {HF_TOKEN: llm/hf_token}\n",
 			"secrets can't be set: the file is read as a dedicated checkpoint, because it sets checkpoint but not command, and secrets applies only to a command or registered model",
 		},
 		{
 			"env_variables on a dedicated checkpoint",
-			dedicatedDeployConfig + "env_variables: {LOG_LEVEL: info}\n",
+			dedicatedServeConfig + "env_variables: {LOG_LEVEL: info}\n",
 			"env_variables can't be set: the file is read as a dedicated checkpoint",
 		},
 		{
 			"idempotency_token without a checkpoint",
-			registeredDeployConfig + "idempotency_token: key-1\n",
-			"idempotency_token can't be set: the file is read as a registered model, because it sets no checkpoint, and idempotency_token applies only to a checkpoint, which air deploy registers",
+			registeredServeConfig + "idempotency_token: key-1\n",
+			"idempotency_token can't be set: the file is read as a registered model, because it sets no checkpoint, and idempotency_token applies only to a checkpoint, which air serve registers",
 		},
 		{
 			"mlflow_experiment_path without a checkpoint",
-			registeredDeployConfig + "mlflow_experiment_path: /Shared/qwen\n",
+			registeredServeConfig + "mlflow_experiment_path: /Shared/qwen\n",
 			"mlflow_experiment_path can't be set: the file is read as a registered model",
 		},
 		{
 			"serving compute on a dedicated checkpoint",
-			strings.Replace(dedicatedDeployConfig, "  compute_profile: low_latency\n", "  compute_profile: low_latency\n  accelerator_type: GPU_1xA10\n", 1),
+			strings.Replace(dedicatedServeConfig, "  compute_profile: low_latency\n", "  compute_profile: low_latency\n  accelerator_type: GPU_1xA10\n", 1),
 			"compute.accelerator_type can't be set: the file is read as a dedicated checkpoint, because it sets checkpoint but not command, and compute.accelerator_type applies only to a command or registered model",
 		},
 		{
 			"dedicated compute on a command",
-			strings.Replace(commandDeployConfig, "  workload_size: Small\n", "  workload_size: Small\n  compute_profile: low_latency\n", 1),
+			strings.Replace(commandServeConfig, "  workload_size: Small\n", "  workload_size: Small\n  compute_profile: low_latency\n", 1),
 			"compute.compute_profile can't be set: the file is read as a checkpoint served by command, because it sets checkpoint and command, and compute.compute_profile applies only to a dedicated checkpoint",
 		},
 		{
 			"reservation term on a command",
-			strings.Replace(commandDeployConfig, "  workload_size: Small\n", "  workload_size: Small\n  reservation_term: ONE_MONTH\n", 1),
+			strings.Replace(commandServeConfig, "  workload_size: Small\n", "  workload_size: Small\n  reservation_term: ONE_MONTH\n", 1),
 			"compute.reservation_term can't be set: the file is read as a checkpoint served by command",
 		},
 		{
 			"dedicated compute on a registered model",
-			registeredDeployConfig + "compute: {workload_size: Small, provisioned_model_units: 10}\n",
+			registeredServeConfig + "compute: {workload_size: Small, provisioned_model_units: 10}\n",
 			"compute.provisioned_model_units can't be set: the file is read as a registered model",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadDeployConfigText(t, tt.config)
+			_, err := loadServeConfigText(t, tt.config)
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }
 
-func TestDeployConfigRequiredFieldsPerVariant(t *testing.T) {
+func TestServeConfigRequiredFieldsPerVariant(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  string
 		wantErr string
 	}{
-		{"command without a task", dropLine("task:")(commandDeployConfig), "task is required for a checkpoint served by command"},
-		{"command without an environment", dropBlock("environment:")(commandDeployConfig), "environment is required for a checkpoint served by command"},
-		{"dedicated without compute", dropBlock("compute:")(dedicatedDeployConfig), "compute is required for a dedicated checkpoint"},
-		{"dedicated without a profile", dropLine("  compute_profile:")(dedicatedDeployConfig), "compute.compute_profile is required for a dedicated checkpoint"},
-		{"dedicated without units", dropLine("  provisioned_model_units:")(dedicatedDeployConfig), "compute.provisioned_model_units is required for a dedicated checkpoint"},
-		{"command compute without num_accelerators", dropLine("  num_accelerators:")(commandDeployConfig), "compute.num_accelerators is required when compute is set"},
-		{"registered compute without accelerator", registeredDeployConfig + "compute: {workload_size: Small}\n", "compute.accelerator_type is required when compute is set"},
-		{"no endpoint", dropLine("endpoint_name:")(commandDeployConfig), `endpoint_name must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
-		{"no registered model", dropLine("registered_model_name:")(commandDeployConfig), `registered_model_name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got ""`},
-		{"registered with a bad version", replaceFirst("model_version: 7", "model_version: v7")(registeredDeployConfig), "model_version must be a model version number such as 3"},
+		{"command without a task", dropLine("task:")(commandServeConfig), "task is required for a checkpoint served by command"},
+		{"command without an environment", dropBlock("environment:")(commandServeConfig), "environment is required for a checkpoint served by command"},
+		{"dedicated without compute", dropBlock("compute:")(dedicatedServeConfig), "compute is required for a dedicated checkpoint"},
+		{"dedicated without a profile", dropLine("  compute_profile:")(dedicatedServeConfig), "compute.compute_profile is required for a dedicated checkpoint"},
+		{"dedicated without units", dropLine("  provisioned_model_units:")(dedicatedServeConfig), "compute.provisioned_model_units is required for a dedicated checkpoint"},
+		{"command compute without num_accelerators", dropLine("  num_accelerators:")(commandServeConfig), "compute.num_accelerators is required when compute is set"},
+		{"registered compute without accelerator", registeredServeConfig + "compute: {workload_size: Small}\n", "compute.accelerator_type is required when compute is set"},
+		{"no endpoint", dropLine("endpoint_name:")(commandServeConfig), `endpoint_name must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
+		{"no registered model", dropLine("registered_model_name:")(commandServeConfig), `registered_model_name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got ""`},
+		{"registered with a bad version", replaceFirst("model_version: 7", "model_version: v7")(registeredServeConfig), "model_version must be a model version number such as 3"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadDeployConfigText(t, tt.config)
+			_, err := loadServeConfigText(t, tt.config)
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }
 
 // servingCompute is a config's serving compute for one accelerator, count and size.
-func servingCompute(accelerator string, count int, size string) *deployComputeConfig {
-	return &deployComputeConfig{AcceleratorType: &accelerator, NumAccelerators: &count, WorkloadSize: &size}
+func servingCompute(accelerator string, count int, size string) *serveComputeConfig {
+	return &serveComputeConfig{AcceleratorType: &accelerator, NumAccelerators: &count, WorkloadSize: &size}
 }
 
-func TestDeployServingComputeTable(t *testing.T) {
-	cfg := deployConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
+func TestServeServingComputeTable(t *testing.T) {
+	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
 	for _, tt := range []struct {
 		accelerator string
 		count       int
@@ -261,9 +261,9 @@ func TestDeployServingComputeTable(t *testing.T) {
 	}
 }
 
-func TestDeployServingComputeRejectsUnsupportedPairs(t *testing.T) {
+func TestServeServingComputeRejectsUnsupportedPairs(t *testing.T) {
 	const pairs = "GPU_1xA10 x1, GPU_1xA10 x4, GPU_1xA10 x8, GPU_1xH100 x1, GPU_8xH100 x8, GPU_1xRTX6000 x1"
-	cfg := deployConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
+	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
 	for _, tt := range []struct {
 		accelerator string
 		count       int
@@ -285,52 +285,52 @@ func TestDeployServingComputeRejectsUnsupportedPairs(t *testing.T) {
 	assert.ErrorContains(t, err, `compute.accelerator_type: "GPU_9xA10" is not a recognized accelerator type; the supported pairs are `+pairs)
 }
 
-func TestDeployServingComputeDefaults(t *testing.T) {
-	command := deployConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
+func TestServeServingComputeDefaults(t *testing.T) {
+	command := serveConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
 	workload, size, err := command.resolveServingCompute()
 	require.NoError(t, err)
 	assert.Equal(t, "GPU_MEDIUM", workload)
 	assert.Equal(t, "Small", size)
 
-	registered := deployConfig{}
+	registered := serveConfig{}
 	workload, size, err = registered.resolveServingCompute()
 	require.NoError(t, err)
 	assert.Equal(t, "CPU", workload)
 	assert.Equal(t, "Small", size)
 }
 
-func TestDeployServingComputeRejectsBadSize(t *testing.T) {
-	cfg := deployConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve"), Compute: servingCompute("GPU_1xA10", 1, "Huge")}
+func TestServeServingComputeRejectsBadSize(t *testing.T) {
+	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve"), Compute: servingCompute("GPU_1xA10", 1, "Huge")}
 	_, _, err := cfg.resolveServingCompute()
 	assert.ErrorContains(t, err, `compute.workload_size must be one of Small, Medium, Large, got "Huge"`)
 }
 
-func TestDeployDedicatedComputeMapping(t *testing.T) {
-	cfg := deployConfig{Checkpoint: new("/Volumes/a/b/c/w")}
+func TestServeDedicatedComputeMapping(t *testing.T) {
+	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w")}
 	for profile, want := range map[string]string{
 		"low_latency":  "COMPUTE_PROFILE_LOW_LATENCY",
 		"FAST":         "COMPUTE_PROFILE_FAST",
 		"Throughput":   "COMPUTE_PROFILE_THROUGHPUT",
 		"minimal_cost": "COMPUTE_PROFILE_MINIMAL_COST",
 	} {
-		cfg.Compute = &deployComputeConfig{ComputeProfile: new(profile), ProvisionedModelUnits: new(600)}
+		cfg.Compute = &serveComputeConfig{ComputeProfile: new(profile), ProvisionedModelUnits: new(600)}
 		dedicated, err := cfg.resolveDedicatedCompute()
 		require.NoError(t, err, profile)
 		assert.Equal(t, want, dedicated.ComputeProfile, profile)
 	}
 }
 
-func TestDeployDedicatedComputeRejects(t *testing.T) {
-	cfg := deployConfig{Checkpoint: new("/Volumes/a/b/c/w")}
+func TestServeDedicatedComputeRejects(t *testing.T) {
+	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w")}
 	for _, tt := range []struct {
 		name    string
-		compute deployComputeConfig
+		compute serveComputeConfig
 		wantErr string
 	}{
-		{"unknown profile", deployComputeConfig{ComputeProfile: new("fastest"), ProvisionedModelUnits: new(600)}, `compute.compute_profile must be one of low_latency, fast, throughput, minimal_cost, got "fastest"`},
-		{"zero units", deployComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(0)}, "compute.provisioned_model_units must be above 0, got 0"},
-		{"negative units", deployComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(-1)}, "compute.provisioned_model_units must be above 0, got -1"},
-		{"a reservation term", deployComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(600), ReservationTerm: new("ONE_MONTH")}, "compute.reservation_term isn't supported yet"},
+		{"unknown profile", serveComputeConfig{ComputeProfile: new("fastest"), ProvisionedModelUnits: new(600)}, `compute.compute_profile must be one of low_latency, fast, throughput, minimal_cost, got "fastest"`},
+		{"zero units", serveComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(0)}, "compute.provisioned_model_units must be above 0, got 0"},
+		{"negative units", serveComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(-1)}, "compute.provisioned_model_units must be above 0, got -1"},
+		{"a reservation term", serveComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(600), ReservationTerm: new("ONE_MONTH")}, "compute.reservation_term isn't supported yet"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg.Compute = &tt.compute
@@ -340,7 +340,7 @@ func TestDeployDedicatedComputeRejects(t *testing.T) {
 	}
 }
 
-func TestDeployConfigValidation(t *testing.T) {
+func TestServeConfigValidation(t *testing.T) {
 	tests := []struct {
 		name    string
 		edit    func(string) string
@@ -374,13 +374,13 @@ func TestDeployConfigValidation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadDeployConfigText(t, tt.edit(commandDeployConfig))
+			_, err := loadServeConfigText(t, tt.edit(commandServeConfig))
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }
 
-func TestDeployConfigDedicatedValidation(t *testing.T) {
+func TestServeConfigDedicatedValidation(t *testing.T) {
 	tests := []struct {
 		name    string
 		edit    func(string) string
@@ -394,20 +394,20 @@ func TestDeployConfigDedicatedValidation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadDeployConfigText(t, tt.edit(dedicatedDeployConfig))
+			_, err := loadServeConfigText(t, tt.edit(dedicatedServeConfig))
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }
 
-func TestDeployConfigCountsCharactersNotBytes(t *testing.T) {
+func TestServeConfigCountsCharactersNotBytes(t *testing.T) {
 	// 1,000 two-byte characters fit the 1,024-character cap on a volume path.
-	_, err := loadDeployConfigText(t, replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/Volumes/"+strings.Repeat("é", 1000))(commandDeployConfig))
+	_, err := loadServeConfigText(t, replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/Volumes/"+strings.Repeat("é", 1000))(commandServeConfig))
 	assert.NoError(t, err)
 }
 
-func TestLoadDeployConfigOverride(t *testing.T) {
-	cfg, err := loadDeployConfigText(t, commandDeployConfig, "compute.num_accelerators=4", "environment.version=5")
+func TestLoadServeConfigOverride(t *testing.T) {
+	cfg, err := loadServeConfigText(t, commandServeConfig, "compute.num_accelerators=4", "environment.version=5")
 	require.NoError(t, err)
 	entity, err := cfg.servedEntity("3")
 	require.NoError(t, err)
@@ -415,60 +415,60 @@ func TestLoadDeployConfigOverride(t *testing.T) {
 	assert.Equal(t, "client.5-gpu", cfg.registrationRequest("k").Checkpoint.Environment.Runtime)
 }
 
-func TestLoadDeployConfigOverrideIsValidatedAgainstTheVariant(t *testing.T) {
-	_, err := loadDeployConfigText(t, commandDeployConfig, "compute.compute_profile=low_latency")
+func TestLoadServeConfigOverrideIsValidatedAgainstTheVariant(t *testing.T) {
+	_, err := loadServeConfigText(t, commandServeConfig, "compute.compute_profile=low_latency")
 	assert.ErrorContains(t, err, "compute.compute_profile can't be set: the file is read as a checkpoint served by command")
 }
 
-func TestLoadDeployConfigRejectsUnknownOverride(t *testing.T) {
-	_, err := loadDeployConfigText(t, commandDeployConfig, "compute.workers=2")
+func TestLoadServeConfigRejectsUnknownOverride(t *testing.T) {
+	_, err := loadServeConfigText(t, commandServeConfig, "compute.workers=2")
 	assert.ErrorContains(t, err, `"workers" is not a known field`)
 }
 
-func TestLoadDeployConfigRejectsUnknownField(t *testing.T) {
-	_, err := loadDeployConfigText(t, commandDeployConfig+"experiment_name: x\n")
+func TestLoadServeConfigRejectsUnknownField(t *testing.T) {
+	_, err := loadServeConfigText(t, commandServeConfig+"experiment_name: x\n")
 	assert.ErrorContains(t, err, "field experiment_name not found")
 }
 
-func TestLoadDeployConfigRejectsOldShape(t *testing.T) {
-	_, err := loadDeployConfigText(t, "registered_model: main.models.qwen\nendpoint: qwen-chat\n")
+func TestLoadServeConfigRejectsOldShape(t *testing.T) {
+	_, err := loadServeConfigText(t, "registered_model: main.models.qwen\nendpoint: qwen-chat\n")
 	assert.ErrorContains(t, err, "field registered_model not found")
 }
 
-func TestLoadDeployConfigRejectsEmptyFile(t *testing.T) {
-	_, err := loadDeployConfigText(t, "")
+func TestLoadServeConfigRejectsEmptyFile(t *testing.T) {
+	_, err := loadServeConfigText(t, "")
 	assert.ErrorContains(t, err, "is empty")
 }
 
-func TestDeploySchemaHelp(t *testing.T) {
-	root, err := resolveSchemaField(deploySchema(), "config")
+func TestServeSchemaHelp(t *testing.T) {
+	root, err := resolveSchemaField(serveSchema(), "config")
 	require.NoError(t, err)
 	var out strings.Builder
-	renderConfigField(&out, deployCommandPath, root, nil)
+	renderConfigField(&out, serveCommandPath, root, nil)
 	help := out.String()
-	assert.Contains(t, help, "    databricks air deploy -h config.checkpoint\n")
+	assert.Contains(t, help, "    databricks air serve -h config.checkpoint\n")
 	assert.Contains(t, help, "  Model:\n")
 	assert.Contains(t, help, "  Serving:\n")
 	assert.Contains(t, help, "  Registration:\n")
-	assert.Contains(t, help, `For details on a field, run "databricks air deploy -h config.<field>".`)
+	assert.Contains(t, help, `For details on a field, run "databricks air serve -h config.<field>".`)
 
-	field, err := resolveSchemaField(deploySchema(), "compute.compute_profile")
+	field, err := resolveSchemaField(serveSchema(), "compute.compute_profile")
 	require.NoError(t, err)
 	assert.Equal(t, "when checkpoint is set without command", field.required)
 
-	_, err = resolveSchemaField(deploySchema(), "checkpont")
+	_, err = resolveSchemaField(serveSchema(), "checkpont")
 	assert.ErrorContains(t, err, `did you mean "checkpoint"?`)
 
-	_, err = resolveSchemaField(deploySchema(), "secrets.HF_TOKEN")
+	_, err = resolveSchemaField(serveSchema(), "secrets.HF_TOKEN")
 	assert.ErrorContains(t, err, "holds user-defined keys")
 }
 
 // Every field a variant names must be a schema path, so the variant checks can't
 // drift from the YAML.
-func TestDeployVariantFieldsAreSchemaPaths(t *testing.T) {
-	var cfg deployConfig
+func TestServeVariantFieldsAreSchemaPaths(t *testing.T) {
+	var cfg serveConfig
 	for _, f := range cfg.variantFields() {
-		_, err := resolveSchemaField(deploySchema(), f.name)
+		_, err := resolveSchemaField(serveSchema(), f.name)
 		assert.NoError(t, err, f.name)
 	}
 }

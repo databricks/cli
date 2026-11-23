@@ -17,7 +17,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// This file defines the `air deploy` YAML schema and its validation. The fields a
+// This file defines the `air serve` YAML schema and its validation. The fields a
 // file sets select its variant, and each variant reads its own fields. Fields shared
 // with `air run` (environment, env_variables, secrets, idempotency_token) keep their
 // meaning; the server validates what needs the workspace, such as task names,
@@ -30,7 +30,7 @@ const (
 	// variantDedicated: a checkpoint Databricks serves with dedicated inference.
 	variantDedicated = "dedicated"
 	// variantRegistered: a model version already registered in Unity Catalog, which
-	// air deploy serves without registering another.
+	// air serve serves without registering another.
 	variantRegistered = "registered"
 )
 
@@ -56,8 +56,8 @@ const (
 	taskAudioTranslations   = "llm/v1/audio/translations"
 )
 
-// deployCommandPath is the command whose -h documents deployConfig.
-const deployCommandPath = "databricks air deploy"
+// serveCommandPath is the command whose -h documents serveConfig.
+const serveCommandPath = "databricks air serve"
 
 // Serving compute a command or registered model gets when compute is omitted: one
 // A10 for a command, CPU for a registered model.
@@ -78,8 +78,8 @@ const (
 // server accepts in each part.
 var registeredModelRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile("^[^\\s./`]+\\.[^\\s./`]+\\.[^\\s./`]+$") })
 
-// deployIdempotencyKeyRe matches the registration keys the server records.
-var deployIdempotencyKeyRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9._-]{1,128}$`) })
+// serveIdempotencyKeyRe matches the registration keys the server records.
+var serveIdempotencyKeyRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9._-]{1,128}$`) })
 
 // modelVersionRe matches a Unity Catalog model version number.
 var modelVersionRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[1-9][0-9]*$`) })
@@ -114,34 +114,34 @@ var servingShapes = []servingShape{
 // them. The API takes each as COMPUTE_PROFILE_ followed by its uppercase form.
 var computeProfiles = []string{"low_latency", "fast", "throughput", "minimal_cost"}
 
-// deployConfig is the `air deploy` YAML schema: a model to serve on an endpoint,
+// serveConfig is the `air serve` YAML schema: a model to serve on an endpoint,
 // and the checkpoint to register as a version of it, if any.
-type deployConfig struct {
-	RegisteredModel string                   `yaml:"registered_model_name" help:"Unity Catalog model, as <catalog>.<schema>.<model>. A checkpoint is registered as a new version of it, creating the model if it doesn't exist. Without a checkpoint, the model must already have a version to serve." required:"yes" group:"Model"`
-	Checkpoint      *string                  `yaml:"checkpoint" help:"Unity Catalog volume directory holding a checkpoint's weights, as /Volumes/<catalog>/<schema>/<volume>/<path>. Model Serving copies it, with its subdirectories, into the version air deploy registers. Leave it out to serve a version that is already registered." group:"Model"`
-	Command         *string                  `yaml:"command" help:"Shell command that starts a model server over the checkpoint's weights on port 8080, at most 32,768 characters. It runs from the directory where the checkpoint appears under its own name. Set it to serve the checkpoint with your own server; without it, Databricks serves the checkpoint with dedicated inference." group:"Model"`
-	Task            *string                  `yaml:"task" help:"The task Model Serving routes to the command, such as llm/v1/chat, llm/v1/embeddings or llm/v1/audio/transcriptions." required:"when command is set" group:"Model"`
-	Environment     *deployEnvironmentConfig `yaml:"environment" help:"Serverless environment to serve the command on, and the packages to install. The model uses its Python version." required:"when command is set" group:"Model"`
-	ModelVersion    *string                  `yaml:"model_version" help:"Version of registered_model to serve, e.g. 3. Without it, the newest READY version is served." group:"Model"`
+type serveConfig struct {
+	RegisteredModel string                  `yaml:"registered_model_name" help:"Unity Catalog model, as <catalog>.<schema>.<model>. A checkpoint is registered as a new version of it, creating the model if it doesn't exist. Without a checkpoint, the model must already have a version to serve." required:"yes" group:"Model"`
+	Checkpoint      *string                 `yaml:"checkpoint" help:"Unity Catalog volume directory holding a checkpoint's weights, as /Volumes/<catalog>/<schema>/<volume>/<path>. Model Serving copies it, with its subdirectories, into the version air serve registers. Leave it out to serve a version that is already registered." group:"Model"`
+	Command         *string                 `yaml:"command" help:"Shell command that starts a model server over the checkpoint's weights on port 8080, at most 32,768 characters. It runs from the directory where the checkpoint appears under its own name. Set it to serve the checkpoint with your own server; without it, Databricks serves the checkpoint with dedicated inference." group:"Model"`
+	Task            *string                 `yaml:"task" help:"The task Model Serving routes to the command, such as llm/v1/chat, llm/v1/embeddings or llm/v1/audio/transcriptions." required:"when command is set" group:"Model"`
+	Environment     *serveEnvironmentConfig `yaml:"environment" help:"Serverless environment to serve the command on, and the packages to install. The model uses its Python version." required:"when command is set" group:"Model"`
+	ModelVersion    *string                 `yaml:"model_version" help:"Version of registered_model to serve, e.g. 3. Without it, the newest READY version is served." group:"Model"`
 
-	Endpoint     string               `yaml:"endpoint_name" help:"Serving endpoint to serve the model on. It is created if it doesn't exist. An endpoint that serves one version of registered_model is updated to serve this version instead, with the compute, environment variables and secrets in this file replacing the ones it has; air deploy doesn't change an endpoint that serves anything else." required:"yes" group:"Serving"`
-	Compute      *deployComputeConfig `yaml:"compute" help:"Compute to serve on. A command or registered model takes serving compute, and a dedicated checkpoint takes dedicated compute. Without compute, a command is served on one GPU_1xA10 with workload size Small, and a registered model on CPU with workload size Small." required:"when checkpoint is set without command" group:"Serving"`
-	EnvVariables map[string]string    `yaml:"env_variables" help:"Plain environment variables of the served model, as NAME: value. A name here cannot also appear in secrets. A command or registered model only." group:"Serving"`
-	Secrets      map[string]string    `yaml:"secrets" help:"Environment variables of the served model sourced from secrets, as NAME: scope/key. A command or registered model only." group:"Serving"`
+	Endpoint     string              `yaml:"endpoint_name" help:"Serving endpoint to serve the model on. It is created if it doesn't exist. An endpoint that serves one version of registered_model is updated to serve this version instead, with the compute, environment variables and secrets in this file replacing the ones it has; air serve doesn't change an endpoint that serves anything else." required:"yes" group:"Serving"`
+	Compute      *serveComputeConfig `yaml:"compute" help:"Compute to serve on. A command or registered model takes serving compute, and a dedicated checkpoint takes dedicated compute. Without compute, a command is served on one GPU_1xA10 with workload size Small, and a registered model on CPU with workload size Small." required:"when checkpoint is set without command" group:"Serving"`
+	EnvVariables map[string]string   `yaml:"env_variables" help:"Plain environment variables of the served model, as NAME: value. A name here cannot also appear in secrets. A command or registered model only." group:"Serving"`
+	Secrets      map[string]string   `yaml:"secrets" help:"Environment variables of the served model sourced from secrets, as NAME: scope/key. A command or registered model only." group:"Serving"`
 
-	IdempotencyToken     *string `yaml:"idempotency_token" help:"Key of the registration: 1 to 128 letters, digits, '.', '_' or '-'. Running air deploy again with the same key and unchanged inputs continues that registration instead of registering another version. Defaults to a new key, which air deploy prints. A checkpoint only." group:"Registration"`
+	IdempotencyToken     *string `yaml:"idempotency_token" help:"Key of the registration: 1 to 128 letters, digits, '.', '_' or '-'. Running air serve again with the same key and unchanged inputs continues that registration instead of registering another version. Defaults to a new key, which air serve prints. A checkpoint only." group:"Registration"`
 	MLflowExperimentPath *string `yaml:"mlflow_experiment_path" help:"Workspace path of the MLflow experiment that records the registered model (default: /Users/<you>/air-deployments). A checkpoint only." group:"Registration"`
 }
 
-// deployEnvironmentConfig is the `environment` block of a command.
-type deployEnvironmentConfig struct {
+// serveEnvironmentConfig is the `environment` block of a command.
+type serveEnvironmentConfig struct {
 	Version      *stringOrInt `yaml:"version" required:"yes" help:"Serverless environment to serve on: 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment, as for air run. The model uses its Python version. Standard includes CUDA but not PyTorch; the Databricks AI environment adds PyTorch, Transformers and vLLM, and needs GPU compute. A command that doesn't install SGLang runs on the Databricks AI environment either way."`
 	Dependencies []string     `yaml:"dependencies" help:"pip requirement lines to install, e.g. einops==0.8.0, at most 1,000."`
 }
 
-// deployComputeConfig is the `compute` block. A command or registered model reads
+// serveComputeConfig is the `compute` block. A command or registered model reads
 // the serving fields, and a dedicated checkpoint the dedicated fields.
-type deployComputeConfig struct {
+type serveComputeConfig struct {
 	AcceleratorType *string `yaml:"accelerator_type" help:"Accelerator to serve on, as in air run: GPU_1xA10, GPU_1xH100, GPU_8xH100 or GPU_1xRTX6000. Each takes the num_accelerators listed for it: GPU_1xA10 takes 1, 4 or 8; GPU_1xH100 takes 1; GPU_8xH100 takes 8; GPU_1xRTX6000 takes 1." required:"when compute is set" group:"Serving compute"`
 	NumAccelerators *int    `yaml:"num_accelerators" help:"Number of accelerators, from the pairs listed under accelerator_type." required:"when compute is set" group:"Serving compute"`
 	WorkloadSize    *string `yaml:"workload_size" help:"How far the endpoint scales: Small, Medium or Large." required:"when compute is set" group:"Serving compute"`
@@ -162,8 +162,8 @@ type variantField struct {
 
 // variantFields lists the optional fields with the variants that use them, in the
 // order their errors are reported.
-func (c *deployConfig) variantFields() []variantField {
-	var compute deployComputeConfig
+func (c *serveConfig) variantFields() []variantField {
+	var compute serveComputeConfig
 	if c.Compute != nil {
 		compute = *c.Compute
 	}
@@ -176,8 +176,8 @@ func (c *deployConfig) variantFields() []variantField {
 		{"model_version", c.ModelVersion != nil, []string{variantRegistered}, "a registered model"},
 		{"env_variables", c.EnvVariables != nil, servingVariants, "a command or registered model"},
 		{"secrets", c.Secrets != nil, servingVariants, "a command or registered model"},
-		{"idempotency_token", c.IdempotencyToken != nil, registeringVariants, "a checkpoint, which air deploy registers"},
-		{"mlflow_experiment_path", c.MLflowExperimentPath != nil, registeringVariants, "a checkpoint, which air deploy registers"},
+		{"idempotency_token", c.IdempotencyToken != nil, registeringVariants, "a checkpoint, which air serve registers"},
+		{"mlflow_experiment_path", c.MLflowExperimentPath != nil, registeringVariants, "a checkpoint, which air serve registers"},
 		{"compute.accelerator_type", compute.AcceleratorType != nil, servingVariants, "a command or registered model"},
 		{"compute.num_accelerators", compute.NumAccelerators != nil, servingVariants, "a command or registered model"},
 		{"compute.workload_size", compute.WorkloadSize != nil, servingVariants, "a command or registered model"},
@@ -190,7 +190,7 @@ func (c *deployConfig) variantFields() []variantField {
 // variant is the deployment the file describes, inferred from the fields it sets: a
 // checkpoint with a command is served by that command, a checkpoint without one is
 // served with dedicated inference, and no checkpoint means a registered version.
-func (c *deployConfig) variant() string {
+func (c *serveConfig) variant() string {
 	switch {
 	case c.Checkpoint == nil:
 		return variantRegistered
@@ -202,19 +202,19 @@ func (c *deployConfig) variant() string {
 }
 
 // readAs says how the file was read and why, for errors about its fields.
-func (c *deployConfig) readAs() string {
+func (c *serveConfig) readAs() string {
 	v := c.variant()
 	return fmt.Sprintf("the file is read as %s, because %s", variantDescriptions[v], variantReasons[v])
 }
 
-// registers reports whether air deploy registers a new version from the checkpoint.
-func (c *deployConfig) registers() bool {
+// registers reports whether air serve registers a new version from the checkpoint.
+func (c *serveConfig) registers() bool {
 	return c.Checkpoint != nil
 }
 
 // validate runs structural validation over the whole config, returning the
 // first failure. Fields are checked in declaration order to keep errors stable.
-func (c *deployConfig) validate() error {
+func (c *serveConfig) validate() error {
 	if !registeredModelRe().MatchString(c.RegisteredModel) {
 		return fmt.Errorf("registered_model_name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got %q", c.RegisteredModel)
 	}
@@ -231,7 +231,7 @@ func (c *deployConfig) validate() error {
 		return err
 	}
 	if c.IdempotencyToken != nil {
-		if err := validateDeployIdempotencyKey(*c.IdempotencyToken, "idempotency_token"); err != nil {
+		if err := validateServeIdempotencyKey(*c.IdempotencyToken, "idempotency_token"); err != nil {
 			return err
 		}
 	}
@@ -243,7 +243,7 @@ func (c *deployConfig) validate() error {
 
 // validateSource checks that the fields the file sets fit its variant, and that the
 // variant's own fields are valid.
-func (c *deployConfig) validateSource() error {
+func (c *serveConfig) validateSource() error {
 	if err := c.checkVariantFields(); err != nil {
 		return err
 	}
@@ -265,7 +265,7 @@ func (c *deployConfig) validateSource() error {
 
 // checkVariantFields rejects a field the file's variant doesn't use, naming the
 // field, the variant and why the file is read as that variant.
-func (c *deployConfig) checkVariantFields() error {
+func (c *serveConfig) checkVariantFields() error {
 	variant := c.variant()
 	for _, f := range c.variantFields() {
 		if f.set && !slices.Contains(f.users, variant) {
@@ -276,7 +276,7 @@ func (c *deployConfig) checkVariantFields() error {
 }
 
 // validateCommandSource checks the fields only a checkpoint served by command has.
-func (c *deployConfig) validateCommandSource() error {
+func (c *serveConfig) validateCommandSource() error {
 	if c.Task == nil {
 		return errors.New("task is required for a checkpoint served by command: the task Model Serving routes to the command, such as llm/v1/chat")
 	}
@@ -296,7 +296,7 @@ func (c *deployConfig) validateCommandSource() error {
 }
 
 // validateCompute checks the compute the variant reads.
-func (c *deployConfig) validateCompute() error {
+func (c *serveConfig) validateCompute() error {
 	if c.variant() == variantDedicated {
 		_, err := c.resolveDedicatedCompute()
 		return err
@@ -308,7 +308,7 @@ func (c *deployConfig) validateCompute() error {
 // resolveServingCompute returns the workload type and size a command or registered
 // model is served on. Without compute, the defaults apply; with it, all three fields
 // are required and the accelerator and count must be a pair the server offers.
-func (c *deployConfig) resolveServingCompute() (string, string, error) {
+func (c *serveConfig) resolveServingCompute() (string, string, error) {
 	if c.Compute == nil {
 		if c.variant() == variantRegistered {
 			return defaultRegisteredWorkloadType, defaultWorkloadSize, nil
@@ -356,7 +356,7 @@ type dedicatedCompute struct {
 
 // resolveDedicatedCompute returns the dedicated compute of a dedicated checkpoint. The
 // server has no default for it, so compute, its profile and its units are required.
-func (c *deployConfig) resolveDedicatedCompute() (*dedicatedCompute, error) {
+func (c *serveConfig) resolveDedicatedCompute() (*dedicatedCompute, error) {
 	if c.Compute == nil {
 		return nil, errors.New("compute is required for a dedicated checkpoint: set compute.compute_profile and compute.provisioned_model_units")
 	}
@@ -395,7 +395,7 @@ func validateVolumeDirectory(field, v string) error {
 }
 
 // validate checks the environment version and dependency lines.
-func (e *deployEnvironmentConfig) validate() error {
+func (e *serveEnvironmentConfig) validate() error {
 	if e.Version == nil {
 		return errors.New("environment.version is required: the serverless environment to serve the command on, such as 6 or databricks_ai_v6")
 	}
@@ -413,10 +413,10 @@ func (e *deployEnvironmentConfig) validate() error {
 	return nil
 }
 
-// validateDeployIdempotencyKey checks a registration key from source (the YAML
+// validateServeIdempotencyKey checks a registration key from source (the YAML
 // field or the flag) against the server's rule.
-func validateDeployIdempotencyKey(key, source string) error {
-	if !deployIdempotencyKeyRe().MatchString(key) {
+func validateServeIdempotencyKey(key, source string) error {
+	if !serveIdempotencyKeyRe().MatchString(key) {
 		return fmt.Errorf("%s must be 1 to 128 letters, digits, '.', '_' or '-', got %q", source, key)
 	}
 	return nil
@@ -434,7 +434,7 @@ func serverLength(s string) int {
 
 // runtimeVersion is environment.version as a version number, and whether it names
 // the Databricks AI environment, as air run reads the same field.
-func (e *deployEnvironmentConfig) runtimeVersion() (int, bool, error) {
+func (e *serveEnvironmentConfig) runtimeVersion() (int, bool, error) {
 	if e.Version == nil {
 		return 0, false, errors.New("environment.version is required")
 	}
@@ -452,7 +452,7 @@ func (e *deployEnvironmentConfig) runtimeVersion() (int, bool, error) {
 
 // servedEnvironmentVars merges env_variables and secrets into the served
 // entity's environment variables, with each secret as {{secrets/scope/key}}.
-func (c *deployConfig) servedEnvironmentVars() map[string]string {
+func (c *serveConfig) servedEnvironmentVars() map[string]string {
 	if len(c.EnvVariables) == 0 && len(c.Secrets) == 0 {
 		return nil
 	}
@@ -466,14 +466,14 @@ func (c *deployConfig) servedEnvironmentVars() map[string]string {
 	return vars
 }
 
-// deploySchema is the reflection walk over deployConfig, shared by
-// `air deploy -h config.<field>` and --override path validation.
-func deploySchema() configField {
+// serveSchema is the reflection walk over serveConfig, shared by
+// `air serve -h config.<field>` and --override path validation.
+func serveSchema() configField {
 	return configField{
 		path: configHelpRoot,
 		help: `Deployment YAML schema. For details on a field, pass its path to -h, for example:
 
-    databricks air deploy -h config.checkpoint
+    databricks air serve -h config.checkpoint
 
   A checkpoint served by a command of your own:
     registered_model_name: main.serving.qwen30b_sglang
@@ -501,14 +501,14 @@ func deploySchema() configField {
     registered_model_name: main.ml.churn
     endpoint_name: churn
     model_version: 3`,
-		children: describeStruct(reflect.TypeFor[deployConfig](), configHelpRoot),
+		children: describeStruct(reflect.TypeFor[serveConfig](), configHelpRoot),
 	}
 }
 
-// loadDeployConfig reads a deployment YAML, applies --override entries, decodes
+// loadServeConfig reads a deployment YAML, applies --override entries, decodes
 // it with unknown keys rejected and validates it. ctx is used only to log applied
 // overrides.
-func loadDeployConfig(ctx context.Context, path string, overrides []string) (*deployConfig, error) {
+func loadServeConfig(ctx context.Context, path string, overrides []string) (*serveConfig, error) {
 	var (
 		document       *yaml.Node
 		validationYAML []byte
@@ -517,7 +517,7 @@ func loadDeployConfig(ctx context.Context, path string, overrides []string) (*de
 	if len(overrides) == 0 {
 		document, validationYAML, err = readRunConfigDocument(path)
 	} else {
-		document, validationYAML, err = readConfigWithOverrides(ctx, path, overrides, deploySchema())
+		document, validationYAML, err = readConfigWithOverrides(ctx, path, overrides, serveSchema())
 	}
 	if err != nil {
 		return nil, err
@@ -526,7 +526,7 @@ func loadDeployConfig(ctx context.Context, path string, overrides []string) (*de
 		return nil, fmt.Errorf("config %s is empty", path)
 	}
 
-	cfg, err := decodeConfigReader[deployConfig](bytes.NewReader(validationYAML), path)
+	cfg, err := decodeConfigReader[serveConfig](bytes.NewReader(validationYAML), path)
 	if err != nil {
 		return nil, err
 	}

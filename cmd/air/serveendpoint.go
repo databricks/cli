@@ -26,7 +26,7 @@ const (
 	dedicatedEndpointsPath = servingEndpointsPath + "/pt"
 )
 
-// servedEntity is the one entity air deploy serves on the endpoint: a version of the
+// servedEntity is the one entity air serve serves on the endpoint: a version of the
 // model on serving compute, or on dedicated compute when Dedicated is set.
 type servedEntity struct {
 	EntityName    string
@@ -42,7 +42,7 @@ type servedEntity struct {
 
 // servedEntity is the entity the endpoint serves for version: the version the
 // registration produced, or the one the config names.
-func (c *deployConfig) servedEntity(version string) (servedEntity, error) {
+func (c *serveConfig) servedEntity(version string) (servedEntity, error) {
 	entity := servedEntity{EntityName: c.RegisteredModel, EntityVersion: version, EnvironmentVars: c.servedEnvironmentVars()}
 	if c.variant() == variantDedicated {
 		dedicated, err := c.resolveDedicatedCompute()
@@ -111,7 +111,7 @@ func (e servedEntity) dedicatedJSON() dedicatedServedEntity {
 }
 
 // servingEndpoint is a serving endpoint as GET /api/2.0/serving-endpoints/{name}
-// reports it, with the fields air deploy reads. It replaces the SDK's type, which has
+// reports it, with the fields air serve reads. It replaces the SDK's type, which has
 // no compute_profile for a dedicated served entity.
 type servingEndpoint struct {
 	Name          string                 `json:"name"`
@@ -138,7 +138,7 @@ type observedEntity struct {
 	ComputeProfile        string            `json:"compute_profile"`
 }
 
-// endpointAPI calls the serving endpoints API for air deploy. Endpoints are read as
+// endpointAPI calls the serving endpoints API for air serve. Endpoints are read as
 // JSON, and dedicated endpoints written so; serving compute is written through the SDK.
 type endpointAPI struct {
 	w       *databricks.WorkspaceClient
@@ -205,8 +205,8 @@ func (e *endpointAPI) update(ctx context.Context, name string, entity servedEnti
 }
 
 // checkEndpoint fails when the endpoint named name, if it exists, serves
-// something air deploy won't replace with a version of model, or is of the other
-// kind than dedicated says. air deploy checks it before registering, so a wrong
+// something air serve won't replace with a version of model, or is of the other
+// kind than dedicated says. air serve checks it before registering, so a wrong
 // endpoint name fails before any weights are copied.
 func checkEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name, model string, dedicated bool) error {
 	e, err := newEndpointAPI(w)
@@ -250,7 +250,7 @@ func checkKind(endpoint *servingEndpoint, dedicated bool) error {
 func checkReplaceable(endpoint *servingEndpoint, model string) error {
 	for _, served := range [][]observedEntity{currentEntities(endpoint), pendingEntities(endpoint)} {
 		if len(served) > 1 || (len(served) == 1 && !strings.EqualFold(served[0].EntityName, model)) {
-			return withCode(codeInvalidArgs, false, fmt.Errorf("endpoint %s serves %s, and air deploy replaces only a single version of %s; set endpoint_name to another name, or change this endpoint with databricks serving-endpoints update-config", stripControl(endpoint.Name), describeEntities(served), model))
+			return withCode(codeInvalidArgs, false, fmt.Errorf("endpoint %s serves %s, and air serve replaces only a single version of %s; set endpoint_name to another name, or change this endpoint with databricks serving-endpoints update-config", stripControl(endpoint.Name), describeEntities(served), model))
 		}
 	}
 	return nil
@@ -259,7 +259,7 @@ func checkReplaceable(endpoint *servingEndpoint, model string) error {
 // serveOnEndpoint makes the endpoint named name serve only entity and waits until
 // it is ready, calling progress on every poll. It creates the endpoint if it
 // doesn't exist. An endpoint that already serves entity isn't updated, and an
-// update to entity that an interrupted air deploy started is waited for.
+// update to entity that an interrupted air serve started is waited for.
 func serveOnEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name string, entity servedEntity, progress func(*servingEndpoint)) (*servingEndpoint, error) {
 	e, err := newEndpointAPI(w)
 	if err != nil {
@@ -339,7 +339,7 @@ func waitServes(ctx context.Context, e *endpointAPI, name string, entity servedE
 }
 
 // errEndpointNotReady reports an endpoint that serves the version but isn't ready.
-// Running air deploy again doesn't make it ready; it reports success once the
+// Running air serve again doesn't make it ready; it reports success once the
 // endpoint recovers, so the error isn't marked retryable.
 var errEndpointNotReady = errors.New("endpoint isn't ready")
 
@@ -347,7 +347,7 @@ var errEndpointNotReady = errors.New("endpoint isn't ready")
 func checkServes(endpoint *servingEndpoint, entity servedEntity) (*servingEndpoint, error) {
 	name := stripControl(endpoint.Name)
 	if !servesOnly(currentEntities(endpoint), entity) {
-		return nil, fmt.Errorf("endpoint %s was changed to serve %s while air deploy waited for it", name, describeEntities(currentEntities(endpoint)))
+		return nil, fmt.Errorf("endpoint %s was changed to serve %s while air serve waited for it", name, describeEntities(currentEntities(endpoint)))
 	}
 	if endpoint.State == nil || endpoint.State.Ready != serving.EndpointStateReadyReady {
 		return nil, withCode(codeEndpointNotReady, false, fmt.Errorf("%w: endpoint %s serves version %s of %s but isn't ready; check its events and logs in the Serving UI", errEndpointNotReady, name, entity.EntityVersion, entity.EntityName))
@@ -412,7 +412,7 @@ func servesOnly(served []observedEntity, entity servedEntity) bool {
 		maps.Equal(s.EnvironmentVars, entity.EnvironmentVars)
 }
 
-// untilDeadline is the time left before ctx's deadline, which air deploy always
+// untilDeadline is the time left before ctx's deadline, which air serve always
 // sets from --timeout.
 func untilDeadline(ctx context.Context) time.Duration {
 	deadline, _ := ctx.Deadline()
