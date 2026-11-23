@@ -38,9 +38,9 @@ require (
 	golang.org/x/crypto v0.58.1-0.20261009181718-2f1f834330b2 // BSD-3-Clause
 	golang.org/x/mod v0.42.0 // BSD-3-Clause
 	golang.org/x/net v0.62.0 // BSD-3-Clause
-	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
+	golang.org/x/oauth2 v0.38.0 // BSD-3-Clause
 	golang.org/x/sync v0.25.0 // BSD-3-Clause
-	golang.org/x/sys v0.49.0 // BSD-3-Clause
+	golang.org/x/sys v0.50.0 // BSD-3-Clause
 	golang.org/x/term v0.47.0 // BSD-3-Clause
 	golang.org/x/text v0.43.0 // BSD-3-Clause
 	google.golang.org/grpc v1.83.2 // Apache-2.0
