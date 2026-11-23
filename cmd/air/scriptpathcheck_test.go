@@ -42,7 +42,7 @@ func TestRelativeScriptWarning(t *testing.T) {
 				return
 			}
 			assert.Contains(t, got, "Warning: command refers to \""+tc.word+"\"")
-			assert.Contains(t, got, "Use \"$CODE_SOURCE_PATH/"+tc.suggest+"\".")
+			assert.Contains(t, got, "Consider \"$CODE_SOURCE_PATH/"+tc.suggest+"\" instead.")
 		})
 	}
 }
@@ -56,5 +56,7 @@ func TestRelativeScriptWarningContainers(t *testing.T) {
 	}}
 	got := relativeScriptWarning(cfg, []string{"train.py"})
 	assert.Contains(t, got, "Warning: containers[worker].command refers to \"train.py\"")
-	assert.Contains(t, got, "Use \"$CODE_SOURCE_PATH/train.py\".")
+	assert.Contains(t, got, "Consider \"$CODE_SOURCE_PATH/train.py\" instead.")
+	assert.Contains(t, got, "https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command")
+	assert.Contains(t, got, "https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command")
 }

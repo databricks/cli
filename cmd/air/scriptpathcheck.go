@@ -11,9 +11,9 @@ import (
 // relativeScriptWarning returns a warning when command (or a container's
 // command) refers to a snapshot file by a path relative to code_source.root_path,
 // such as `python train.py`, or "" when none does. snapshotFiles are the
-// snapshot-relative paths that would be packaged. The runtime working directory
-// is not the extracted code directory, so such a run only fails after it waits
-// for a GPU.
+// snapshot-relative paths that would be packaged. Whether such a path resolves
+// depends on the runtime, which the CLI doesn't own, so the warning suggests
+// $CODE_SOURCE_PATH and links the docs rather than asserting how the run behaves.
 func relativeScriptWarning(cfg *runConfig, snapshotFiles []string) string {
 	if cfg.Command != nil {
 		if rel := relativeScriptInCommand(*cfg.Command, snapshotFiles); rel != "" {
@@ -65,5 +65,14 @@ func isShellWordBreak(r rune) bool {
 }
 
 func relativeScriptMessage(field, rel string) string {
-	return fmt.Sprintf("Warning: %s refers to %q, a path relative to code_source.root_path, but at runtime the working directory is not your code directory, so this run may fail with \"No such file or directory\". Use \"$CODE_SOURCE_PATH/%s\".", field, rel, path.Clean(rel))
+	var b strings.Builder
+	fmt.Fprintf(&b, "Warning: %s refers to %q, a path relative to code_source.root_path. Consider \"$CODE_SOURCE_PATH/%s\" instead. See how command paths and $CODE_SOURCE_PATH work:", field, rel, path.Clean(rel))
+	for _, d := range configDocsBases {
+		fmt.Fprintf(&b, "\n  %-6s %s%s", d.cloud+":", d.base, yamlConfigDocsPath)
+	}
+	return b.String()
 }
+
+// yamlConfigDocsPath is the docs page that describes command paths and
+// $CODE_SOURCE_PATH; see configDocsBases.
+const yamlConfigDocsPath = "/machine-learning/ai-runtime/connecting/cli/yaml-config#command"
