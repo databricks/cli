@@ -1,4 +1,5 @@
-package config
+// Package httptransport provides the HTTP transport for clients that talk to a Databricks workspace.
+package httptransport
 
 import (
 	"crypto/tls"
@@ -25,10 +26,6 @@ const (
 // which is unexported) and adds the HTTP/2 health check. Keep the two in sync on SDK upgrades.
 // experimental/ssh/internal/client/releases.go (newHTTP11Transport) is another hand copy of the
 // same defaults, HTTP/1.1-only; check it too.
-//
-// The bundle workspace client uses it, and so do workspace commands run in a bundle root:
-// cmd/root/auth.go builds their client from the bundle client's config. The token-refresh client
-// the SDK builds while resolving the config still uses the SDK default.
 func newHealthCheckedTransport(insecureSkipVerify bool) *http.Transport {
 	t := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -60,7 +57,11 @@ var (
 	insecureHealthCheckedTransport = sync.OnceValue(func() *http.Transport { return newHealthCheckedTransport(true) })
 )
 
-func workspaceTransport(insecureSkipVerify bool) *http.Transport {
+// HealthChecked returns the shared health-checked transport. Use it for clients that live long
+// enough to see a connection die, in particular clients shared by a whole test process, where one
+// dead connection would otherwise fail every test that follows. Set it on the config before the
+// config is resolved, so the SDK's token-refresh client uses it too.
+func HealthChecked(insecureSkipVerify bool) *http.Transport {
 	if insecureSkipVerify {
 		return insecureHealthCheckedTransport()
 	}
