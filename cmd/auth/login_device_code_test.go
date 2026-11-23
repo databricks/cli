@@ -843,3 +843,39 @@ func TestLoginDeviceCodeWrongConfirmationCode(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateLoginProfileName(t *testing.T) {
+	cases := []struct {
+		name    string
+		profile string
+		wantErr string
+	}{
+		{name: "plain name", profile: "dev"},
+		{
+			name:    "key of a pending device code login",
+			profile: "dev#device-code",
+			wantErr: `profile name "dev#device-code" must not end with #device-code, which marks pending device code logins`,
+		},
+		{
+			name:    "key of an access token part",
+			profile: "dev#access-token-0",
+			wantErr: `profile name "dev#access-token-0" must not contain #access-token-, which marks the parts of large access tokens`,
+		},
+		{
+			name:    "key of an access token part in another letter case",
+			profile: "dev#Access-Token-0",
+			wantErr: `profile name "dev#Access-Token-0" must not contain #access-token-, which marks the parts of large access tokens`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateLoginProfileName(tc.profile)
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			assert.EqualError(t, err, tc.wantErr)
+		})
+	}
+}
