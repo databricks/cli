@@ -4,7 +4,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-undeployed-dependency/default/files...
 Created jobs.deployed
-Files: 2 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add a job that references both the deployed job and a job that is not deployed yet
