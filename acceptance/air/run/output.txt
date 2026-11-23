@@ -162,6 +162,20 @@ Exit code: 1
   }
 }
 
+=== dry-run without credentials keeps the original error in text mode
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] air run -f valid.yaml --dry-run
+Error: default auth: cannot configure default credentials, please check https://docs.databricks.com/en/dev-tools/auth.html#databricks-client-unified-authentication to configure credentials for your preferred authentication method. Config: databricks_cli_path=[CLI]. Env: DATABRICKS_CLI_PATH
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== bundle diagnostics are reported once (json)
+
+>>> [CLI] air run -f ../valid.yaml --dry-run -o json
+Error: failed to load [TEST_TMP_DIR]/broken-bundle/databricks.yml: yaml: line 2: did not find expected node content
+
+
 === unknown field suggests the near match
 
 >>> [CLI] air run -f unknown-field.yaml --dry-run

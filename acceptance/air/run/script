@@ -71,6 +71,17 @@ musterr trace $CLI air run -f invalid.yaml --dry-run -o json
 title "dry-run without credentials reports an authentication error (json)"
 musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml --dry-run -o json
 
+title "dry-run without credentials keeps the original error in text mode"
+musterr trace env -u DATABRICKS_HOST -u DATABRICKS_TOKEN $CLI air run -f valid.yaml --dry-run
+
+title "bundle diagnostics are reported once (json)"
+mkdir broken-bundle
+printf 'bundle:\n  name: [\n' > broken-bundle/databricks.yml
+cd broken-bundle
+musterr trace $CLI air run -f ../valid.yaml --dry-run -o json
+cd ..
+rm -r broken-bundle
+
 title "unknown field suggests the near match"
 errcode trace $CLI air run -f unknown-field.yaml --dry-run
 
