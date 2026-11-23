@@ -872,8 +872,11 @@ func newGenieCreateEvalRun() *cobra.Command {
 
 Start a benchmark evaluation run.
 
-  Creates and runs chat-mode evaluations for multiple benchmark questions in a
-  Genie space.
+  Starts a benchmark evaluation run that asks Genie each selected benchmark
+  question in a Genie space and compares every response with the benchmark SQL.
+  The run executes asynchronously: the response is the new run with its current
+  status. If it is still running, poll with the get method until the status is
+  terminal.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the evaluations will be
@@ -947,7 +950,10 @@ func newGenieGetEvalResultDetails() *cobra.Command {
 
 Get benchmark evaluation result details.
 
-  Get details for evaluation results.
+  Gets the full result for one benchmark question in an evaluation run: its
+  assessment and the reasons for it, Genie's response with the SQL execution
+  result, and the expected response from the benchmark. The result must belong
+  to the given run.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the evaluation run is
@@ -1013,12 +1019,14 @@ func newGenieGetEvalRun() *cobra.Command {
 
 Get a benchmark evaluation run.
 
-  Get evaluation run details.
+  Gets the current status and summary counts of a benchmark evaluation run. Poll
+  this method until eval_run_status is terminal: DONE, EVALUATION_CANCELLED or
+  EVALUATION_TIMEOUT.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the evaluation run is
       located.
-    EVAL_RUN_ID: `
+    EVAL_RUN_ID: The ID of the evaluation run, as returned when the run was created.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1080,7 +1088,10 @@ func newGenieListEvalResults() *cobra.Command {
 
 List results for a benchmark evaluation run.
 
-  List evaluation results for a specific evaluation run.
+  Lists the results of a benchmark evaluation run, one per benchmark question.
+  Each entry carries the result status and a snapshot of the question and
+  benchmark answer; the assessment and Genie's response are available through
+  the result details method.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the evaluation run is
@@ -1147,7 +1158,8 @@ func newGenieListEvalRuns() *cobra.Command {
 
 List benchmark evaluation runs.
 
-  Lists all evaluation runs in a space.
+  Lists the benchmark evaluation runs in a Genie space with the current status
+  and summary counts of each run.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the evaluation run is

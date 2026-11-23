@@ -34,6 +34,7 @@ class NotificationDestination:
     email_addresses: VariableOrList[str] = field(default_factory=list)
     """
     The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.
+    Only supported on table monitors, via `data_profiling_config`; rejected on schema monitors.
     """
 
     @classmethod
@@ -64,6 +65,7 @@ class NotificationDestinationDict(TypedDict, total=False):
     email_addresses: VariableOrList[str]
     """
     The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.
+    Only supported on table monitors, via `data_profiling_config`; rejected on schema monitors.
     """
 
 

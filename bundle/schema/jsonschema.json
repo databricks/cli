@@ -850,15 +850,15 @@
                 "oneOf": [
                   {
                     "type": "object",
-                    "description": "Monitor for the data quality of unity catalog entities such as schema or table.",
+                    "description": "A data quality monitor on a Unity Catalog object. A `schema` monitor runs anomaly detection on the tables in the\nschema and is configured through `anomaly_detection_config`. A `table` monitor profiles a single table and is\nconfigured through `data_profiling_config`.",
                     "properties": {
                       "anomaly_detection_config": {
-                        "description": "Anomaly Detection Configuration, applicable to `schema` object types.",
+                        "description": "Anomaly detection settings. Required when `object_type` is `schema`. When reading a `table` monitor, this holds\nthe settings of the parent schema's monitor if the schema has one.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.AnomalyDetectionConfig",
                         "x-databricks-launch-stage": "GA"
                       },
                       "data_profiling_config": {
-                        "description": "Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`\nmust be present.",
+                        "description": "Data profiling settings. Required when `object_type` is `table`. Exactly one of `inference_log`, `time_series`\nor `snapshot` must be set.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingConfig",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -1515,10 +1515,9 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "parent_path": {
-                        "description": "[Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.",
+                        "description": "[Beta] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a parent folder.\n\nExample: /Workspace/Projects/my_project",
                         "$ref": "#/$defs/string",
-                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                        "doNotSuggest": true
+                        "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "performance_target": {
                         "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.",
@@ -2285,7 +2284,7 @@
                     "type": "object",
                     "properties": {
                       "allow_duplicate_names": {
-                        "description": "If false, deployment will fail if name conflicts with that of another pipeline.",
+                        "description": "If false, deployment will fail if name conflicts with that of another pipeline.\n\nIgnored when `parent_path` is set. A pipeline in a workspace folder must have a name that is\nunique within that folder, and creation fails if the folder already contains an object with the\nsame name.",
                         "$ref": "#/$defs/bool",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -2393,10 +2392,9 @@
                         "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "parent_path": {
-                        "description": "[Private Preview] Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+                        "description": "[Beta] Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a parent folder.\n\nExample: /Workspace/Projects/my_project",
                         "$ref": "#/$defs/string",
-                        "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                        "doNotSuggest": true
+                        "x-databricks-launch-stage": "PUBLIC_BETA"
                       },
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
@@ -3511,7 +3509,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "channel": {
-                        "description": "Channel Details",
+                        "description": "Channel that determines which Databricks SQL version the warehouse runs.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Channel",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -3521,7 +3519,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "creator_name": {
-                        "description": "warehouse creator name",
+                        "description": "Name of the user who created the warehouse. Set by the server and ignored in\nrequests.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -3563,7 +3561,7 @@
                         "x-databricks-launch-stage": "GA"
                       },
                       "name": {
-                        "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
+                        "description": "Logical name for the warehouse.\n\nSupported values:\n- Must be unique within an org.\n- Must be 1 to 100 characters.",
                         "$ref": "#/$defs/string",
                         "x-databricks-launch-stage": "GA"
                       },
@@ -3579,12 +3577,12 @@
                         "doNotSuggest": true
                       },
                       "spot_instance_policy": {
-                        "description": "Configurations whether the endpoint should use spot instances.",
+                        "description": "Configures whether the warehouse should use spot instances. COST_OPTIMIZED uses\nspot instances where the cloud provider supports them, and RELIABILITY_OPTIMIZED\nuses on-demand instances only.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy",
                         "x-databricks-launch-stage": "GA"
                       },
                       "statement_timeout": {
-                        "description": "[Public Preview] Warehouse statement timeout in seconds.",
+                        "description": "[Public Preview] Maximum time in seconds that a statement can run on this warehouse before it is\ncancelled. Set to 0 to remove the warehouse-level timeout. Changing the value of a\nrunning warehouse restarts it. See\nhttps://docs.databricks.com/aws/en/sql/language-manual/parameters/statement_timeout.",
                         "$ref": "#/$defs/int",
                         "x-databricks-launch-stage": "PUBLIC_PREVIEW"
                       },
@@ -9592,7 +9590,7 @@
                   "description": "Anomaly Detection Configurations.",
                   "properties": {
                     "excluded_table_full_names": {
-                      "description": "[Beta] List of fully qualified table names to exclude from anomaly detection.",
+                      "description": "[Beta] List of fully qualified table names to exclude from anomaly detection. Format: `catalog.schema.table_name`.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "PUBLIC_BETA"
                     },
@@ -9622,7 +9620,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "timezone_id": {
-                      "description": "A Java timezone id. The schedule for a job will be resolved with respect to this timezone.\nSee `Java TimeZone \u003chttp://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html\u003e`_ for details.\nThe timezone id (e.g., ``America/Los_Angeles``) in which to evaluate the quartz expression.",
+                      "description": "The Java timezone ID in which the cron expression is evaluated. See\n[Java TimeZone](https://docs.oracle.com/javase/8/docs/api/java/util/TimeZone.html) for the supported IDs.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -9662,37 +9660,37 @@
                   "description": "Data Profiling Configurations.",
                   "properties": {
                     "assets_dir": {
-                      "description": "Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+                      "description": "The absolute workspace path of the directory where the monitor's assets, such as\nthe dashboard, are stored. The UI and the Python APIs normally prepopulate a default user location.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "baseline_table_name": {
-                      "description": "Baseline table name.\nBaseline data is used to compute drift from the data in the monitored `table_name`.\nThe baseline table and the monitored table shall have the same schema.",
+                      "description": "The fully qualified name of a baseline table. Format: `catalog.schema.table_name`.\nDrift metrics compare the monitored table against the baseline data, so the two tables must have the same\nschema.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "custom_metrics": {
-                      "description": "Custom metrics.",
+                      "description": "Custom metrics to compute in addition to the built-in ones. See\n[custom metrics](https://docs.databricks.com/aws/en/data-governance/unity-catalog/data-quality-monitoring/data-profiling/custom-metrics).",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingCustomMetric",
                       "x-databricks-launch-stage": "GA"
                     },
                     "inference_log": {
-                      "description": "`Analysis Configuration` for monitoring inference log tables.",
+                      "description": "Profiles an inference log table, which stores the requests and predictions of a model. Metrics are\ncomputed per time window and include model quality metrics.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.InferenceLogConfig",
                       "x-databricks-launch-stage": "GA"
                     },
                     "notification_settings": {
-                      "description": "Field for specifying notification settings.",
+                      "description": "Who to notify about this monitor's refreshes. Only `on_failure` with\n`email_addresses` is supported here.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationSettings",
                       "x-databricks-launch-stage": "GA"
                     },
                     "output_schema_id": {
-                      "description": "ID of the schema where output tables are created.",
+                      "description": "The UUID of the Unity Catalog schema where the profile and drift metrics tables\nare created.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "schedule": {
-                      "description": "The cron schedule.",
+                      "description": "The schedule on which the monitor refreshes its metrics. Refreshes can also be\ntriggered on demand through the Refresh resource.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.CronSchedule",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -9702,22 +9700,22 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "slicing_exprs": {
-                      "description": "List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[“col_1”, “col_2 \u003e 10”]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
+                      "description": "List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[\"col_1\", \"col_2 \u003e 10\"]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col_1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "snapshot": {
-                      "description": "`Analysis Configuration` for monitoring snapshot tables.",
+                      "description": "Profiles the full contents of the table. Metrics are computed over all rows at each refresh.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.SnapshotConfig",
                       "x-databricks-launch-stage": "GA"
                     },
                     "time_series": {
-                      "description": "`Analysis Configuration` for monitoring time series tables.",
+                      "description": "Profiles a time series table. Metrics are computed per time window, as defined by `timestamp_column`\nand `granularities`.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.TimeSeriesConfig",
                       "x-databricks-launch-stage": "GA"
                     },
                     "warehouse_id": {
-                      "description": "Optional argument to specify the warehouse for dashboard creation. If not specified, the first running\nwarehouse will be used.",
+                      "description": "The ID of the SQL warehouse used to create the dashboard. If not specified, the first running warehouse the\ncaller can access is used.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -9745,7 +9743,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "input_columns": {
-                      "description": "A list of column names in the input table the metric should be computed for.\nCan use ``\":table\"`` to indicate that the metric needs information from multiple columns.",
+                      "description": "A list of column names in the input table the metric should be computed for.\nCan use `\":table\"` to indicate that the metric needs information from multiple columns.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -9755,12 +9753,12 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "output_data_type": {
-                      "description": "The output type of the custom metric.",
+                      "description": "Specifies the Spark SQL data type of the metric value, either as a plain type name or as a JSON-encoded\nStructField.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "type": {
-                      "description": "The type of the custom metric.",
+                      "description": "The type of the custom metric. `DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE` metrics depend only on the\ncolumns of the input table, `DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED` metrics depend only on previously\ncomputed aggregate metrics, and `DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT` metrics depend on previously computed\naggregate or derived metrics.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingCustomMetricType",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -9828,27 +9826,27 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "label_column": {
-                      "description": "Column for the label.",
+                      "description": "Column containing the ground truth for the model's predictions.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "model_id_column": {
-                      "description": "Column for the model identifier.",
+                      "description": "Column containing the ID of the model that produced each prediction. A slice is created automatically for\neach distinct model ID.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "prediction_column": {
-                      "description": "Column for the prediction.",
+                      "description": "Column containing the model's predicted values.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "problem_type": {
-                      "description": "Problem type the model aims to solve.",
+                      "description": "The type of problem the model solves. It determines which model quality metrics are computed.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.InferenceProblemType",
                       "x-databricks-launch-stage": "GA"
                     },
                     "timestamp_column": {
-                      "description": "Column for the timestamp.",
+                      "description": "Column containing the timestamp of each inference request. Its type must be TIMESTAMP or convertible to a\ntimestamp.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -9901,7 +9899,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "email_addresses": {
-                      "description": "The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.",
+                      "description": "The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.\nOnly supported on table monitors, via `data_profiling_config`; rejected on schema monitors.",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -9921,7 +9919,7 @@
                   "description": "Settings for sending notifications on the data quality monitoring.",
                   "properties": {
                     "on_failure": {
-                      "description": "Destinations to send notifications on failure/timeout.",
+                      "description": "Recipients to notify when a refresh of the monitor fails or times out. Only supported on table\nmonitors, via `data_profiling_config`, and only `email_addresses` is accepted there.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationDestination",
                       "x-databricks-launch-stage": "GA"
                     },
@@ -9964,7 +9962,7 @@
                       "x-databricks-launch-stage": "GA"
                     },
                     "timestamp_column": {
-                      "description": "Column for the timestamp.",
+                      "description": "Column containing the timestamp of each row. Its type must be TIMESTAMP or convertible to a timestamp.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -10382,8 +10380,8 @@
                   "type": "string",
                   "description": "Scheduling priority class for a workload — its priority and preemptability\nwhen the scheduler ranks pending work.",
                   "enum": [
-                    "BEST_EFFORT",
-                    "NORMAL"
+                    "NORMAL",
+                    "HIGH"
                   ],
                   "enumDescriptions": [
                     "[Private Preview]",
@@ -21584,10 +21582,12 @@
                   "description": "Configures the channel name and DBSQL version of the warehouse. CHANNEL_NAME_CUSTOM should be chosen only when `dbsql_version` is specified.",
                   "properties": {
                     "dbsql_version": {
+                      "description": "Databricks SQL version to pin to. Set it if and only if name is\nCHANNEL_NAME_CUSTOM.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "name": {
+                      "description": "Channel to follow. CHANNEL_NAME_CURRENT is the default, and CHANNEL_NAME_PREVIEW\ncarries the upcoming Databricks SQL release for testing.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ChannelName",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21720,10 +21720,12 @@
                   "type": "object",
                   "properties": {
                     "key": {
+                      "description": "Tag key. Keys must be unique within the warehouse and cannot use the keys that\nDatabricks reserves for the tags it sets automatically.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "value": {
+                      "description": "Tag value. Keys and values must follow the tagging rules of the cloud provider.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -21742,6 +21744,7 @@
                   "type": "object",
                   "properties": {
                     "custom_tags": {
+                      "description": "User-defined tags, applied in addition to the tags Databricks sets automatically.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -22038,12 +22041,12 @@
                   "description": "The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`",
                   "properties": {
                     "dns_name": {
-                      "description": "The DNS of the KeyVault",
+                      "description": "The DNS name of the key vault, for example ``https://my-key-vault.vault.azure.net/``.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     },
                     "resource_id": {
-                      "description": "The resource id of the azure KeyVault that user wants to associate the scope with.",
+                      "description": "The Azure resource ID of the key vault to associate with the scope.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
                     }
@@ -22064,7 +22067,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes\nwill be supported in a later release.",
+                  "description": "The types of secret scope backends in the Secret Manager.",
                   "enum": [
                     "DATABRICKS",
                     "AZURE_KEYVAULT"

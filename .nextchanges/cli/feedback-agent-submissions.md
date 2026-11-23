@@ -1,0 +1,1 @@
+* Allow AI agents to submit feedback without confirmation and clarify the guidance on customer content and PII; deprecate `--yes` / `-y` and reject explicit false values from agents, including in a terminal. ([#7795](https://github.com/databricks/cli/pull/7795))

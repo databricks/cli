@@ -59,6 +59,17 @@ type InstallState struct {
 	// e.g. "databricks/SKILL.md"). Added in schema v2; used to prune only the
 	// skills we wrote that the user hasn't modified.
 	Files map[string]FileRecord `json:"files,omitempty"`
+	// SkillsOnlyAgents names, sorted, the agents with a plugin that
+	// `install --skills-only` gave raw skills while their CLI was on PATH, so
+	// the plugin was declined, not unavailable. Update keeps them on raw
+	// skills. Raw skills of other plugin agents were written by an older CLI or
+	// while the agent's CLI was missing, and update migrates those to the
+	// plugin.
+	//
+	// Unlike Plugins, nothing on disk shows this choice again: an older CLI
+	// that rewrites the state drops the field, and update then migrates these
+	// agents to the plugin like any other raw skills.
+	SkillsOnlyAgents []string `json:"skills_only_agents,omitempty"`
 	// MCP records the Databricks MCP servers the `aitools mcp` commands wrote.
 	// Added in schema v3; omitted when none are recorded. SaveState ignores this
 	// field and keeps the section on disk; SaveMCPState is the only writer of it.

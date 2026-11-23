@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -27,6 +28,14 @@ import (
 
 type releaseProvider func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error)
 
+// githubReleaseProvider is the provider UploadTunnelReleases tries first. Tests replace it
+// to block GitHub.
+var githubReleaseProvider releaseProvider = getGithubRelease
+
+// githubDownloadTimeout bounds a GitHub download, body included: a proxy that answers and
+// then stalls must count as a GitHub failure, so the PyPI fallback still runs.
+const githubDownloadTimeout = 10 * time.Minute
+
 func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClient, version, releasesDir string) error {
 	versionedDir, err := workspace.GetWorkspaceVersionedDir(ctx, client, version)
 	if err != nil {
@@ -46,11 +55,51 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 		return fmt.Errorf("failed to create workspace files client: %w", err)
 	}
 
-	getRelease := getGithubRelease
+	getRelease := withPyPIFallback(githubReleaseProvider, getPyPIRelease)
 	if releasesDir != "" {
 		getRelease = getLocalRelease
 	}
 	return uploadReleases(ctx, workspaceFiler, getRelease, version, releasesDir)
+}
+
+// withPyPIFallback returns a provider that downloads the release from GitHub and, when that
+// fails, from the CLI's wheel on PyPI: networks that block GitHub often allow PyPI or point pip
+// at a mirror of it. Once GitHub fails, the provider goes straight to PyPI for the remaining
+// architectures. Development versions are not published to PyPI, so their GitHub error is
+// returned as it is, as is the error of a cancelled command.
+func withPyPIFallback(github, pypi releaseProvider) releaseProvider {
+	var githubErr error
+	return func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		if githubErr == nil {
+			release, err := github(ctx, architecture, version, releasesDir)
+			if err == nil || build.IsDevelopmentVersion(version) || ctx.Err() != nil {
+				return release, err
+			}
+			githubErr = err
+			// Expected on networks that block GitHub, so not a warning. If PyPI fails too, the
+			// error below carries the GitHub failure.
+			log.Infof(ctx, "Failed to download the CLI release from GitHub, trying PyPI: %v", githubErr)
+		}
+		release, pypiErr := pypi(ctx, architecture, version, releasesDir)
+		if pypiErr != nil {
+			return nil, fmt.Errorf("%w\n\nDownloading it from the Python package index failed too: %w\n\n"+
+				"The SSH tunnel uploads the Linux build of the Databricks CLI to your workspace. %s",
+				githubErr, pypiErr, fallbackHint(ctx))
+		}
+		return release, nil
+	}
+}
+
+// fallbackHint tells what to allow when neither GitHub nor the package index serves the
+// release. A mirror is suggested only when none is configured.
+func fallbackHint(ctx context.Context) string {
+	const github = "Allow access to GitHub (github.com, release-assets.githubusercontent.com)"
+	if pypiIndexURL(ctx) != defaultPyPIIndexURL {
+		return github + ", or check that the HTTPS package index set by PIP_INDEX_URL, or index-url in " +
+			"your per-user pip config, serves the databricks package"
+	}
+	return github + " or PyPI (pypi.org, files.pythonhosted.org), or set PIP_INDEX_URL, or index-url in " +
+		"your per-user pip config, to an HTTPS PyPI mirror that serves the databricks package"
 }
 
 // newHTTP11WorkspaceClient returns a workspace client that is identical to one
@@ -182,6 +231,19 @@ func getLocalRelease(ctx context.Context, architecture, version, releasesDir str
 	return releases.OpenLocal(ctx, architecture, version, releasesDir)
 }
 
+// getGithubRelease downloads the release archive from GitHub into memory, so that a body
+// that is cut off or stalls fails here rather than during the upload.
 func getGithubRelease(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
-	return releases.OpenPublished(ctx, architecture, version, releasesDir)
+	ctx, cancel := context.WithTimeout(ctx, githubDownloadTimeout)
+	defer cancel()
+	body, err := releases.OpenPublished(ctx, architecture, version, releasesDir)
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
+	archive, err := io.ReadAll(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download %s from GitHub: %w", getReleaseName(architecture, version), err)
+	}
+	return io.NopCloser(bytes.NewReader(archive)), nil
 }

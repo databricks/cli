@@ -2,13 +2,16 @@ package mcp_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/mcp"
@@ -46,7 +49,24 @@ func bindingTestConfig(t *testing.T, contents string) string {
 	t.Setenv("DATABRICKS_TOKEN", "dapi-env-token")
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "other")
 	t.Setenv("DATABRICKS_AUTH_TYPE", "basic")
+	bindingTestNoFixtureHostMetadata(t)
 	return path
+}
+
+// bindingTestNoFixtureHostMetadata answers the host-metadata lookup of a .test host with no metadata, so a bind against
+// the fixture hosts of these tests does not send a request out of the test binary. A test's own server is still asked.
+func bindingTestNoFixtureHostMetadata(t *testing.T) {
+	orig := config.DefaultHostMetadataResolverFactory
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = orig })
+	config.DefaultHostMetadataResolverFactory = func(cfg *config.Config) config.HostMetadataResolver {
+		return func(ctx context.Context, host string) (*config.HostMetadata, error) {
+			u, err := url.Parse(host)
+			if err == nil && strings.HasSuffix(u.Hostname(), ".test") {
+				return nil, nil
+			}
+			return cfg.DefaultHostMetadataResolver()(ctx, host)
+		}
+	}
 }
 
 func bindingTestProfileContents(token string) string {

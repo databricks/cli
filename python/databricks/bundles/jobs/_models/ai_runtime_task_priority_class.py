@@ -12,10 +12,8 @@ class AiRuntimeTaskPriorityClass(Enum):
     when the scheduler ranks pending work.
     """
 
-    BEST_EFFORT = "BEST_EFFORT"
     NORMAL = "NORMAL"
+    HIGH = "HIGH"
 
 
-AiRuntimeTaskPriorityClassParam = (
-    Literal["BEST_EFFORT", "NORMAL"] | AiRuntimeTaskPriorityClass
-)
+AiRuntimeTaskPriorityClassParam = Literal["NORMAL", "HIGH"] | AiRuntimeTaskPriorityClass
