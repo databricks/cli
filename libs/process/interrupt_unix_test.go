@@ -86,6 +86,11 @@ func TestRaiseReturnsWhenSIGHUPWasIgnoredAtStart(t *testing.T) {
 func TestBackgroundInGroupForwardsInterrupt(t *testing.T) {
 	for _, sig := range []syscall.Signal{syscall.SIGINT, syscall.SIGHUP} {
 		t.Run(sig.String(), func(t *testing.T) {
+			// The helper inherits a SIGHUP ignored at start, as under nohup,
+			// and then rightly leaves it alone.
+			if !slices.Contains(InterruptSignals(), os.Signal(sig)) {
+				t.Skipf("%v was ignored when the test started", sig)
+			}
 			testBackgroundInGroupForwards(t, sig)
 		})
 	}

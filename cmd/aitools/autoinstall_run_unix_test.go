@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"syscall"
 	"testing"
 	"time"
@@ -84,6 +85,11 @@ func TestAutoInstallEndsByTheSignal(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.step+"/"+tc.sig.String(), func(t *testing.T) {
+			// The helper inherits a SIGHUP ignored at start, as under nohup,
+			// and then rightly leaves it alone.
+			if !slices.Contains(process.InterruptSignals(), os.Signal(tc.sig)) {
+				t.Skipf("%v was ignored when the test started", tc.sig)
+			}
 			setupAutoInstallHome(t, "")
 			t.Setenv("TERM", "xterm")
 			helper := exec.Command(os.Args[0])
