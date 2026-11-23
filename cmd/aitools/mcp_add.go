@@ -232,7 +232,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err := validateMCPAddFlags(ctx, f, names, agentNames, jsonMode); err != nil {
 		return err
 	}
-	interactive := !jsonMode && installPromptsSupported(ctx)
+	interactive := !jsonMode && promptsSupported(ctx)
 	location, fullNames, err := resolveServices(f.location, names)
 	if err != nil {
 		return err
@@ -510,7 +510,7 @@ func validateMCPAddFlags(ctx context.Context, f mcpAddFlags, names, agentNames [
 		}
 		return nil
 	}
-	if len(names) == 0 && !installPromptsSupported(ctx) {
+	if len(names) == 0 && !promptsSupported(ctx) {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--names is required so the command runs without interactive prompts")
 	}
 	// The picker chooses services in a terminal, and --name needs exactly one of them, which only --names can give.
