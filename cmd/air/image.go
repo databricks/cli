@@ -206,9 +206,9 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	if platform != airImagePlatform {
 		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
 	}
-	// AIR ignores WORKDIR at runtime; / is Docker's default and cannot break relative paths.
+	// / is Docker's default WORKDIR and cannot break relative paths.
 	if workingDir != "" && workingDir != "/" {
-		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts.", resolved.source, workingDir))
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s; use absolute paths in your command and scripts.", resolved.source, workingDir))
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)

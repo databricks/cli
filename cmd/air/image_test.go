@@ -127,7 +127,7 @@ func TestRunImagePushWarnsWhenImageSetsWorkingDir(t *testing.T) {
 			}, deps)
 			require.NoError(t, err)
 
-			warning := "Warning: source image example/trainer:v1 sets WORKDIR /app, which AI Runtime does not honor at runtime: use absolute paths in your command and scripts."
+			warning := "Warning: source image example/trainer:v1 sets WORKDIR /app; use absolute paths in your command and scripts."
 			if tt.warn {
 				assert.Contains(t, stderr.String(), warning)
 			} else {
