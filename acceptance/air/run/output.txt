@@ -170,10 +170,42 @@ Error: default auth: cannot configure default credentials, please check https://
 Tip: use the --debug flag to see more details and a trace of this error:
   databricks --debug air run …
 
+=== submit without credentials reports an authentication error (json)
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] air run -f valid.yaml -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "kind": "PERMANENT",
+    "message": "no default profile is set: pass --profile (-p) or configure a default profile in your .databrickscfg",
+    "retryable": false
+  }
+}
+
+=== dry-run with an unknown profile is a permanent config error (json)
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN DATABRICKS_CONFIG_FILE=profiles.databrickscfg [CLI] air run -f valid.yaml --dry-run -o json -p does-not-exist
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "resolve: profiles.databrickscfg has no does-not-exist profile configured. Config: profile=does-not-exist, config_file=profiles.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH",
+    "retryable": false
+  }
+}
+
 === bundle diagnostics are reported once (json)
 
 >>> [CLI] air run -f ../valid.yaml --dry-run -o json
-Error: multiple targets are marked as default (dev, dev2)
+Error: multiple targets are marked as default ([TARGETS])
+
+
+>>> [CLI] air run -f ../valid.yaml -o json
+Error: multiple targets are marked as default ([TARGETS])
 
 
 === unknown field suggests the near match

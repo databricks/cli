@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -56,11 +57,7 @@ func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
 func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []string, cfg *runConfig, idempotencyToken string, timeout time.Duration) (context.Context, error) {
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		if err := root.MustWorkspaceClient(cmd, args); err != nil {
-			// Bundle diagnostics were already printed; report them only once.
-			if errors.Is(err, root.ErrAlreadyPrinted) {
-				return ctx, err
-			}
-			return ctx, &validationAuthenticationError{err}
+			return ctx, renderWorkspaceClientError(ctx, cmd, err)
 		}
 		ctx = cmd.Context()
 	}
@@ -82,10 +79,26 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 	return ctx, validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
 }
 
+// renderWorkspaceClientError renders a failure to build the workspace client.
+// Bundle diagnostics that were already printed pass through, as in air get. A
+// missing profile or rejected credentials go through authError. Any other setup
+// failure (an unknown or account-only profile, for example) is a config mistake
+// that a retry can't fix, so it is INVALID_ARGS rather than authError's
+// retryable fallback. Text mode keeps the original error.
+func renderWorkspaceClientError(ctx context.Context, cmd *cobra.Command, err error) error {
+	switch {
+	case errors.Is(err, root.ErrAlreadyPrinted), root.OutputType(cmd) != flags.OutputJSON:
+		return err
+	case errors.Is(err, config.ErrCannotConfigureDefault), errors.Is(err, apierr.ErrUnauthenticated), errors.Is(err, apierr.ErrPermissionDenied):
+		return authError(ctx, cmd, err)
+	}
+	return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+}
+
 // renderDryRunCallerError renders a --dry-run failure that is the caller's to
 // fix, keeping credential and permission failures apart from config errors so
-// agents don't edit a valid config. Workspace-client and current-user failures,
-// and a 401 from config:validate, go through authError, as in air get. A 403
+// agents don't edit a valid config. Current-user failures and a 401 from
+// config:validate go through authError, as in air get. A 403
 // from config:validate is PERMISSION_DENIED: the same credentials just passed the
 // current-user lookup. Text mode keeps the original error.
 func renderDryRunCallerError(ctx context.Context, cmd *cobra.Command, err error) error {
@@ -182,7 +195,10 @@ databricks-ai-runtime skill:
 		if dryRun {
 			return nil
 		}
-		return root.MustWorkspaceClient(cmd, args)
+		if err := root.MustWorkspaceClient(cmd, args); err != nil {
+			return renderWorkspaceClientError(cmd.Context(), cmd, err)
+		}
+		return nil
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
