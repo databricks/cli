@@ -41,6 +41,18 @@ func TestCheckEnrollmentsSendsEachFeatureAsItsOwnParameter(t *testing.T) {
 	assert.Equal(t, map[string]bool{FeatureRecordHistoryAuto: true}, got)
 }
 
+func TestCheckEnrollmentsWithNoFeaturesMakesNoRequest(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", checkEnrollmentsPath, func(testserver.Request) any {
+		t.Error("unexpected request")
+		return nil
+	})
+
+	got, err := CheckEnrollments(t.Context(), enrollmentsClient(t, server))
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
 func TestCheckEnrollmentsReturnsTheServiceError(t *testing.T) {
 	server := testserver.New(t)
 	server.Handle("GET", checkEnrollmentsPath, func(testserver.Request) any {
