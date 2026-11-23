@@ -138,7 +138,9 @@ Create a datasource.
     SCHEDULE: Schedule on which the datasource's ingestion job runs. A datasource cannot
       be paused, so a request that sets schedule.enabled to false is
       rejected. Continuous schedules are not supported for Unity Catalog
-      connection datasources.`
+      connection datasources. For an existing-table datasource, runs must be no
+      further apart than the shorter of the source table's
+      delta.deletedFileRetentionDuration and delta.logRetentionDuration.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2171,7 +2173,9 @@ Update a datasource.
     SCHEDULE: Schedule on which the datasource's ingestion job runs. A datasource cannot
       be paused, so a request that sets schedule.enabled to false is
       rejected. Continuous schedules are not supported for Unity Catalog
-      connection datasources.`
+      connection datasources. For an existing-table datasource, runs must be no
+      further apart than the shorter of the source table's
+      delta.deletedFileRetentionDuration and delta.logRetentionDuration.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

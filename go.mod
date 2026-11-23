@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.9 // MIT
-	github.com/databricks/databricks-sdk-go v0.201.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.202.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.2.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
 	github.com/databricks/sdk-go/files v0.3.0 // Apache-2.0
@@ -38,13 +38,13 @@ require (
 	golang.org/x/crypto v0.58.1-0.20261009181718-2f1f834330b2 // BSD-3-Clause
 	golang.org/x/mod v0.42.0 // BSD-3-Clause
 	golang.org/x/net v0.62.0 // BSD-3-Clause
-	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
+	golang.org/x/oauth2 v0.38.0 // BSD-3-Clause
 	golang.org/x/sync v0.25.0 // BSD-3-Clause
-	golang.org/x/sys v0.49.0 // BSD-3-Clause
+	golang.org/x/sys v0.50.0 // BSD-3-Clause
 	golang.org/x/term v0.47.0 // BSD-3-Clause
 	golang.org/x/text v0.43.0 // BSD-3-Clause
 	google.golang.org/grpc v1.83.2 // Apache-2.0
-	google.golang.org/protobuf v1.36.11 // BSD-3-Clause
+	google.golang.org/protobuf v1.36.12 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 

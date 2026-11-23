@@ -91,7 +91,9 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 		if stats.ErrorCategory == "" {
 			stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
 		}
-		stats.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
+		if stats.ErrorMessage == "" {
+			stats.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
+		}
 		// A selector that matched nothing: nothing to sync, not a failure.
 		if errors.Is(err, ErrNoMatchingSelector) {
 			status = StatusSkipped

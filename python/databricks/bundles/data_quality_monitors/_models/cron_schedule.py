@@ -24,9 +24,8 @@ class CronSchedule:
 
     timezone_id: VariableOr[str]
     """
-    A Java timezone id. The schedule for a job will be resolved with respect to this timezone.
-    See `Java TimeZone <http://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html>`_ for details.
-    The timezone id (e.g., ``America/Los_Angeles``) in which to evaluate the quartz expression.
+    The Java timezone ID in which the cron expression is evaluated. See
+    [Java TimeZone](https://docs.oracle.com/javase/8/docs/api/java/util/TimeZone.html) for the supported IDs.
     """
 
     @classmethod
@@ -47,9 +46,8 @@ class CronScheduleDict(TypedDict, total=False):
 
     timezone_id: VariableOr[str]
     """
-    A Java timezone id. The schedule for a job will be resolved with respect to this timezone.
-    See `Java TimeZone <http://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html>`_ for details.
-    The timezone id (e.g., ``America/Los_Angeles``) in which to evaluate the quartz expression.
+    The Java timezone ID in which the cron expression is evaluated. See
+    [Java TimeZone](https://docs.oracle.com/javase/8/docs/api/java/util/TimeZone.html) for the supported IDs.
     """
 
 

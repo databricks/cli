@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -18,6 +19,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -183,6 +186,13 @@ Examples:
 		})
 		if b != nil {
 			stats.InGitRepo = b.InGitRepo
+		}
+		target := cmp.Or(cmd.Flag("target").Value.String(), cmd.Flag("environment").Value.String())
+		cmd.SetContext(configsync.WithProfileAuth(cmd.Context(), b, cmd.Flag("profile").Value.String(), target))
+
+		// The diagnostics are already on stderr; record the first one instead of the sentinel.
+		if errors.Is(err, root.ErrAlreadyPrinted) {
+			stats.ErrorMessage = telemetry.ScrubErrorMessage(logdiag.GetFirstErrorSummary(cmd.Context()))
 		}
 
 		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, skippedChanges, err)

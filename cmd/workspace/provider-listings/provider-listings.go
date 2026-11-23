@@ -71,7 +71,9 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a listing.`
 	cmd.Long = `Create a listing.
 
-  Create a new listing`
+  Creates a listing under one of the caller's provider profiles. The listing
+  name, provider ID and visibility are required, and the caller must have access
+  to any share that the listing references. Returns the ID of the new listing.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -135,7 +137,12 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a listing.`
 	cmd.Long = `Delete a listing.
 
-  Delete a listing`
+  Deletes a listing permanently. The underlying share is not deleted, and
+  consumers who already have access to the share keep that access until it is
+  revoked in Delta Sharing.
+
+  Arguments:
+    ID: ID of the listing to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -154,14 +161,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Listings drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "ID of the listing to delete")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have id of the listing to delete")
 		}
 		deleteReq.Id = args[0]
 
@@ -202,7 +209,7 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a listing.`
 	cmd.Long = `Get a listing.
 
-  Get a listing`
+  Gets a listing owned by one of the caller's provider profiles.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -270,7 +277,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of results to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -283,7 +290,7 @@ func newList() *cobra.Command {
 	cmd.Short = `List listings.`
 	cmd.Long = `List listings.
 
-  List listings owned by this provider`
+  Lists the listings owned by the provider profiles in the caller's account.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -343,7 +350,12 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update listing.`
 	cmd.Long = `Update listing.
 
-  Update a listing`
+  Updates a listing. Send the full listing definition; the listing type cannot
+  be changed after the listing is created, and changing the share re-links the
+  listing to the new share.
+
+  Arguments:
+    ID: ID of the listing to update.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
