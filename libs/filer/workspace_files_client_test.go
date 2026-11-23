@@ -3,6 +3,8 @@ package filer
 import (
 	"encoding/json"
 	"io/fs"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -180,4 +182,45 @@ func TestWorkspaceFilesClientStatInternalError(t *testing.T) {
 func TestWorkspaceFilesClientStatNotFound(t *testing.T) {
 	err := statWithError(t, 404, "RESOURCE_DOES_NOT_EXIST")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestWorkspaceFilesClientWriteBundleFileOrigin(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		newFn  func(*databricks.WorkspaceClient, string) (Filer, error)
+		expect url.Values
+	}{
+		{
+			name:   "default",
+			newFn:  NewWorkspaceFilesClient,
+			expect: url.Values{"overwrite": {"true"}},
+		},
+		{
+			name:   "bundle deploy",
+			newFn:  NewWorkspaceFilesClientForBundleDeploy,
+			expect: url.Values{"overwrite": {"true"}, "bundleFileOrigin": {"DEPLOYMENT_COPY"}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var query url.Values
+			server := testserver.New(t)
+			server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+				query = req.URL.Query()
+				return ""
+			})
+
+			client, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:  server.URL,
+				Token: "testtoken",
+			})
+			require.NoError(t, err)
+
+			f, err := tc.newFn(client, "/test")
+			require.NoError(t, err)
+
+			err = f.Write(t.Context(), "databricks.yml", strings.NewReader("bundle: {}"), OverwriteIfExists)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expect, query)
+		})
+	}
 }

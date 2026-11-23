@@ -1,0 +1,36 @@
+
+=== Deploy tags the bundle files it uploads, not its state files
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --summary --sort //default/files/ //state/metadata.json
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml bundleFileOrigin=DEPLOYMENT_COPY overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/hello.py bundleFileOrigin=DEPLOYMENT_COPY overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json overwrite=true
+
+=== Bundle sync writes to the same file_path, so it tags them too
+
+>>> [CLI] bundle sync --full
+Action: PUT: databricks.yml, hello.py
+Initial Sync Complete
+Uploaded databricks.yml
+Uploaded hello.py
+
+>>> print_requests.py --summary --sort //api/2.0/workspace-files/import-file
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml bundleFileOrigin=DEPLOYMENT_COPY overwrite=true
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/hello.py bundleFileOrigin=DEPLOYMENT_COPY overwrite=true
+
+=== A plain sync does not tag its uploads
+
+>>> MSYS_NO_PATHCONV=1 [CLI] sync . /Users/[USERNAME]/plain-sync
+Action: PUT: databricks.yml, hello.py
+Initial Sync Complete
+Uploaded databricks.yml
+Uploaded hello.py
+
+>>> print_requests.py --summary --sort //api/2.0/workspace-files/import-file
+POST /api/2.0/workspace-files/import-file/Users/[USERNAME]/plain-sync/databricks.yml overwrite=true
+POST /api/2.0/workspace-files/import-file/Users/[USERNAME]/plain-sync/hello.py overwrite=true

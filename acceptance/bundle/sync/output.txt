@@ -1,8 +1,12 @@
 
 >>> [CLI] bundle sync --output text
-Action: PUT: .gitignore, databricks.yml, dryrun/databricks.yml, dryrun/out.test.toml, ignored-folder/folder1/script.py, ignored-folder/script.py, replace-node-type/bom.sql, replace-node-type/databricks.yml.tmpl, replace-node-type/out.test.toml, replace-node-type/plain.sql, upload-504/databricks.yml, upload-504/out.test.toml, zip-extract/archive.zip, zip-extract/archive_v2.zip, zip-extract/databricks.yml.tmpl, zip-extract/out.test.toml
+Action: PUT: .gitignore, bundle_file_origin/databricks.yml, bundle_file_origin/hello.py, bundle_file_origin/out.test.toml, databricks.yml, dryrun/databricks.yml, dryrun/out.test.toml, ignored-folder/folder1/script.py, ignored-folder/script.py, replace-node-type/bom.sql, replace-node-type/databricks.yml.tmpl, replace-node-type/out.test.toml, replace-node-type/plain.sql, upload-504/databricks.yml, upload-504/out.test.toml, zip-extract/archive.zip, zip-extract/archive_v2.zip, zip-extract/databricks.yml.tmpl, zip-extract/out.test.toml
 Initial Sync Complete
 Uploaded .gitignore
+Uploaded bundle_file_origin
+Uploaded bundle_file_origin/databricks.yml
+Uploaded bundle_file_origin/hello.py
+Uploaded bundle_file_origin/out.test.toml
 Uploaded databricks.yml
 Uploaded dryrun
 Uploaded dryrun/databricks.yml
