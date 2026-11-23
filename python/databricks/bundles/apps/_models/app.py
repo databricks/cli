@@ -141,7 +141,7 @@ class App(Resource):
 
     thumbnail_path: VariableOrOptional[str] = None
     """
-    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the file that defines the app. Removing it deletes the thumbnail.
+    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
     """
 
     usage_policy_id: VariableOrOptional[str] = None
@@ -265,7 +265,7 @@ class AppDict(TypedDict, total=False):
 
     thumbnail_path: VariableOrOptional[str]
     """
-    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the file that defines the app. Removing it deletes the thumbnail.
+    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
     """
 
     usage_policy_id: VariableOrOptional[str]
