@@ -1,0 +1,21 @@
+bundle:
+  name: config-remote-sync-telemetry-error-message
+
+variables:
+  myvar:
+    description: a required variable
+
+targets:
+  dev:
+    default: true
+  bad:
+    variables:
+      undefined_var: value
+  other:
+    workspace:
+      host: https://other.test
+    variables:
+      undefined_var: value
+  auth-error:
+    workspace:
+      client_id: x

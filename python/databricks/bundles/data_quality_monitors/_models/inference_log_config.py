@@ -31,22 +31,24 @@ class InferenceLogConfig:
 
     model_id_column: VariableOr[str]
     """
-    Column for the model identifier.
+    Column containing the ID of the model that produced each prediction. A slice is created automatically for
+    each distinct model ID.
     """
 
     prediction_column: VariableOr[str]
     """
-    Column for the prediction.
+    Column containing the model's predicted values.
     """
 
     problem_type: VariableOr[InferenceProblemType]
     """
-    Problem type the model aims to solve.
+    The type of problem the model solves. It determines which model quality metrics are computed.
     """
 
     timestamp_column: VariableOr[str]
     """
-    Column for the timestamp.
+    Column containing the timestamp of each inference request. Its type must be TIMESTAMP or convertible to a
+    timestamp.
     """
 
     granularities: VariableOrList[AggregationGranularity] = field(default_factory=list)
@@ -56,7 +58,7 @@ class InferenceLogConfig:
 
     label_column: VariableOrOptional[str] = None
     """
-    Column for the label.
+    Column containing the ground truth for the model's predictions.
     """
 
     @classmethod
@@ -72,22 +74,24 @@ class InferenceLogConfigDict(TypedDict, total=False):
 
     model_id_column: VariableOr[str]
     """
-    Column for the model identifier.
+    Column containing the ID of the model that produced each prediction. A slice is created automatically for
+    each distinct model ID.
     """
 
     prediction_column: VariableOr[str]
     """
-    Column for the prediction.
+    Column containing the model's predicted values.
     """
 
     problem_type: VariableOr[InferenceProblemTypeParam]
     """
-    Problem type the model aims to solve.
+    The type of problem the model solves. It determines which model quality metrics are computed.
     """
 
     timestamp_column: VariableOr[str]
     """
-    Column for the timestamp.
+    Column containing the timestamp of each inference request. Its type must be TIMESTAMP or convertible to a
+    timestamp.
     """
 
     granularities: VariableOrList[AggregationGranularityParam]
@@ -97,7 +101,7 @@ class InferenceLogConfigDict(TypedDict, total=False):
 
     label_column: VariableOrOptional[str]
     """
-    Column for the label.
+    Column containing the ground truth for the model's predictions.
     """
 
 

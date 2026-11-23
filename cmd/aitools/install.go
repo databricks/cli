@@ -42,23 +42,24 @@ var (
 // checked. The funnel reports it as CANCELLED: the user chose to act on nothing.
 var errNoAgentsSelected = errors.New("at least one agent must be selected")
 
-// installPromptsSupported reports whether install may show its prompts. Agents
-// often run commands in a pseudo-terminal (Cursor, Copilot in the VS Code
-// terminal) where stdin looks like a TTY but nobody can answer a TUI prompt.
-// Agent detection is the SDK's list of agent environment variables:
+// promptsSupported is the aitools package-wide prompt gate: it reports whether
+// a command may show its prompts (install's prompts, the update and uninstall
+// scope pickers, the uninstall confirm, the mcp add and remove pickers), and it
+// is the Interactive value of the install, update, uninstall, list and version
+// funnel events. Agents often run commands in a pseudo-terminal (Cursor,
+// Copilot in the VS Code terminal) where stdin looks like a TTY but nobody can
+// answer a TUI prompt. Agent detection is the SDK's list of agent environment
+// variables:
 // https://github.com/databricks/databricks-sdk-go/blob/main/useragent/agent.go
-// An agent caller always gets the documented non-interactive defaults.
-func installPromptsSupported(ctx context.Context) bool {
+// An agent caller always gets the documented non-interactive behavior, as a
+// run without a terminal does.
+func promptsSupported(ctx context.Context) bool {
 	return cmdio.IsPromptSupported(ctx) && useragent.AgentProvider() == ""
 }
 
-// agentCallerNote is printed when install skips its prompts on a terminal
-// because the caller is a coding agent. It names the detected agent by its
-// --agents value when it has one, and the flags of `databricks aitools install`
-// that would have replaced the skipped prompts. The command is named because
-// the deprecated `experimental aitools skills install` alias does not accept
-// these flags.
-func agentCallerNote(missingFlags []string) string {
+// noPromptsNote says that prompts were skipped because the caller is a coding
+// agent. It names the detected agent by its --agents value when it has one.
+func noPromptsNote() string {
 	provider := useragent.AgentProvider()
 	detected := "a coding agent was"
 	if provider == "multiple" {
@@ -66,7 +67,27 @@ func agentCallerNote(missingFlags []string) string {
 	} else if agent := agents.AgentForProvider(provider); agent != nil {
 		detected = fmt.Sprintf("a coding agent (%s) was", agent.Name)
 	}
-	return fmt.Sprintf("No prompts shown because %s detected. Pass %s to databricks aitools install to choose what to install.", detected, strings.Join(missingFlags, " and "))
+	return fmt.Sprintf("No prompts shown because %s detected.", detected)
+}
+
+// logSkippedPromptNote prints noPromptsNote where a prompt would otherwise
+// have run on a terminal: a person may be at it with an agent env var
+// inherited from an agent session, and the note says why the prompt they
+// expect is gone. Without a terminal nothing is printed: no caller is shown
+// prompts there.
+func logSkippedPromptNote(ctx context.Context) {
+	if cmdio.IsPromptSupported(ctx) && !promptsSupported(ctx) {
+		cmdio.LogString(ctx, noPromptsNote())
+	}
+}
+
+// agentCallerNote is printed when install skips its prompts on a terminal
+// because the caller is a coding agent. It is noPromptsNote followed by the
+// flags of `databricks aitools install` that would have replaced the skipped
+// prompts. The command is named because the deprecated
+// `experimental aitools skills install` alias does not accept these flags.
+func agentCallerNote(missingFlags []string) string {
+	return fmt.Sprintf("%s Pass %s to databricks aitools install to choose what to install.", noPromptsNote(), strings.Join(missingFlags, " and "))
 }
 
 // delivery is how the databricks tools are delivered to one agent.
@@ -124,6 +145,15 @@ type agentChoice struct {
 }
 
 func NewInstallCmd() *cobra.Command {
+	return newInstallCmd(true)
+}
+
+// newInstallCmd builds the install command. recordSkillsOnly says whether
+// --skills-only records the user's choice of raw skills, so update keeps those
+// agents off the plugin. The deprecated `experimental aitools skills install`
+// alias passes false: it always adds --skills-only to keep its pre-plugin
+// behavior, so its users did not decline the plugin.
+func newInstallCmd(recordSkillsOnly bool) *cobra.Command {
 	var skillsFlag, agentsFlag, scopeFlag, pathFlag string
 	var includeExperimental, skillsOnly bool
 	var projectFlag, globalFlag bool
@@ -178,7 +208,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				ctx = cmdio.WithQuiet(ctx)
 			}
 
-			interactive := installPromptsSupported(ctx)
+			interactive := promptsSupported(ctx)
 			funnel := startFunnel(ctx, protos.AitoolsCommandInstall, installModeType(skillsOnly, pathFlag), interactive)
 			defer func() { funnel.finish(ctx, err) }()
 
@@ -196,6 +226,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			opts := installer.InstallOptions{
 				IncludeExperimental: includeExperimental,
 				SpecificSkills:      splitAndTrim(skillsFlag),
+				SkillsOnly:          skillsOnly && recordSkillsOnly,
 			}
 
 			// --skills cherry-picks individual skill files, which only applies to
@@ -407,10 +438,11 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 }
 
 // installOutputIsJSON reports whether --output json was requested. Unlike list,
-// install can run detached from root: the legacy `skills install` alias builds a
-// NewInstallCmd and executes it directly (see newLegacySkillsInstallCmd), so the
-// root-supplied --output flag may be absent. Treat a missing flag as text rather
-// than panicking the way root.OutputType would.
+// install can run detached from root: the legacy `skills install` alias builds an
+// install command with newInstallCmd and executes it directly (see
+// newLegacySkillsInstallCmd), so the root-supplied --output flag may be absent.
+// Treat a missing flag as text rather than panicking the way root.OutputType
+// would.
 func installOutputIsJSON(cmd *cobra.Command) bool {
 	f := cmd.Flag("output")
 	if f == nil {
@@ -956,6 +988,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			ref = ""
 		}
 		records := map[string]installer.PluginRecord{}
+		var failed []string
 		for _, it := range pluginItems {
 			if !quiet {
 				cmdio.LogString(ctx, fmt.Sprintf("Installing databricks plugin for %s...", it.agent.DisplayName))
@@ -978,6 +1011,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 				if it.explicit {
 					explicitErrs = append(explicitErrs, &displayError{msg: it.agent.DisplayName + ": " + reason, err: err})
 				}
+				failed = append(failed, it.agent.Name)
 				continue
 			}
 			records[it.agent.Name] = rec
@@ -990,6 +1024,14 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			}
 			if !quiet {
 				cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", it.agent.DisplayName, versionToken(rec.Version)))
+			}
+		}
+		// Asking for the plugin ends an earlier --skills-only choice even when
+		// the install fails, so update tries the plugin again. A successful
+		// install ends it when the plugin is recorded.
+		if len(failed) > 0 {
+			if err := installer.ForgetSkillsOnlyChoice(ctx, opts.Scope, failed); err != nil {
+				log.Warnf(ctx, "Could not drop the --skills-only choice for %s: %v", strings.Join(failed, ", "), err)
 			}
 		}
 		if len(records) > 0 && skillsErr != nil && installer.HasUntrackedSkills(ctx, opts.Scope) {

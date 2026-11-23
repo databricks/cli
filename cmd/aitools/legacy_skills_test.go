@@ -30,6 +30,9 @@ func TestLegacySkillsInstallDelegatesToInstall(t *testing.T) {
 
 	require.Len(t, *calls, 1)
 	assert.Len(t, (*calls)[0].agents, 2)
+	// The alias adds --skills-only itself, so its users did not decline the
+	// plugin: the choice is not recorded and update still migrates them.
+	assert.False(t, (*calls)[0].opts.SkillsOnly)
 }
 
 func TestLegacySkillsInstallForwardsSkillName(t *testing.T) {

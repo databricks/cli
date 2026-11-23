@@ -1349,13 +1349,14 @@ func TestMcpRemoveUploadSkipsServersOfSeveralProfiles(t *testing.T) {
 	assert.False(t, uploads, "servers of several profiles have no one profile to upload with")
 }
 
-// TestMcpRemoveOfflineSetsUploadWithoutWarning checks that a remove that cannot reach the workspace warns nothing: the
-// upload's config is resolved, and its host metadata lookup fails quietly, so there is no warning to report.
-func TestMcpRemoveOfflineSetsUploadWithoutWarning(t *testing.T) {
+// TestMcpRemoveMetadataFailureSetsUploadWithoutWarning checks that remove resolves the upload config quietly when
+// the workspace has no metadata.
+func TestMcpRemoveMetadataFailureSetsUploadWithoutWarning(t *testing.T) {
 	home := withHome(t)
-	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nauth_type = pat\ntoken = t\n")
+	server := noAPIServer(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = t\n")
 	claude := agents.ByName("claude-code")
-	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", "https://adb-1.test"))
+	saveState(t, seedInstall(t, claude, "genie_one_mcp-logfood", "system.ai.genie_one_mcp", "logfood", server.URL))
 
 	var stdout, logs bytes.Buffer
 	remove, err := runRemoveWithTelemetry(t, &stdout, &logs, log.LevelWarn, "--names", "genie_one_mcp-logfood", "--output", "json")

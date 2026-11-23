@@ -7,6 +7,7 @@ import (
 	"maps"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -503,6 +504,11 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		state.Plugins = make(map[string]PluginRecord, len(records))
 	}
 	maps.Copy(state.Plugins, records)
+	// An agent with the plugin is no longer on raw skills by choice.
+	state.SkillsOnlyAgents = slices.DeleteFunc(state.SkillsOnlyAgents, func(name string) bool {
+		_, ok := records[name]
+		return ok
+	})
 	// An unresolved release keeps the one recorded by earlier installs.
 	if ref != "" {
 		state.Release = ref
@@ -553,6 +559,30 @@ func ForgetPluginInstalls(ctx context.Context, cliScope string, agentNames []str
 		}
 	}
 	if !changed {
+		return nil
+	}
+	return SaveState(dir, state)
+}
+
+// ForgetSkillsOnlyChoice removes the named agents from the agents the user put
+// on raw skills with `install --skills-only`, in the state file for the given
+// CLI scope. Install calls it for agents whose plugin install it attempted and
+// that failed, so update tries the plugin again. Agents not in the list, or a
+// scope without state, are left as they are.
+func ForgetSkillsOnlyChoice(ctx context.Context, cliScope string, agentNames []string) error {
+	dir, err := skillsDir(ctx, cliScope)
+	if err != nil {
+		return err
+	}
+	state, err := LoadState(dir)
+	if err != nil || state == nil {
+		return err
+	}
+	n := len(state.SkillsOnlyAgents)
+	state.SkillsOnlyAgents = slices.DeleteFunc(state.SkillsOnlyAgents, func(name string) bool {
+		return slices.Contains(agentNames, name)
+	})
+	if len(state.SkillsOnlyAgents) == n {
 		return nil
 	}
 	return SaveState(dir, state)

@@ -242,8 +242,8 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 	cmd.Long = `Generate a temporary service credential.
 
   Returns a set of temporary credentials generated using the specified service
-  credential. The caller must be a metastore admin or have the metastore
-  privilege **ACCESS** on the service credential.
+  credential. The caller must be a metastore admin or have the **ACCESS**
+  privilege on the service credential.
 
   Arguments:
     CREDENTIAL_NAME: The name of the service credential used to generate a temporary credential`

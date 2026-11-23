@@ -501,8 +501,14 @@ func TestServeBindFailureTokenStatus(t *testing.T) {
 // profile written before auth login set one, with no cached token. The chain drops each strategy's error and returns
 // config.ErrCannotConfigureDefault, which a login fixes, so serve exits 2 with the login hint.
 func TestServeBindHostOnlyProfileNeedsLogin(t *testing.T) {
+	// The workspace is a local server that knows no endpoint, so the host-metadata lookup and the OAuth discovery of
+	// the chain stay in the test binary.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(server.Close)
 	home := withHome(t)
-	writeHomeConfig(t, home, "[legacy]\nhost = https://legacy.test\n")
+	writeHomeConfig(t, home, "[legacy]\nhost = "+server.URL+"\n")
 
 	_, _, err := mcp.Bind(t.Context(), mcp.BindOptions{
 		Profile: "legacy",
@@ -1490,10 +1496,15 @@ func TestServeChallengeFollowsStateOrServiceLookup(t *testing.T) {
 	assert.Equal(t, int32(1), lookups.Load(), "without a record the service is read once")
 }
 
+// noHostMetadata answers a host-metadata lookup with no metadata, so a client for a .test host does not try to reach it.
+func noHostMetadata(context.Context, string) (*config.HostMetadata, error) {
+	return nil, nil
+}
+
 // TestServeChallengeNamesTheRecordedWorkspace checks that the challenge of a server with an install record names the
 // workspace the record holds, which is the workspace the binding check keeps the profile on.
 func TestServeChallengeNamesTheRecordedWorkspace(t *testing.T) {
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: "https://workspace.test", Token: "test-token"})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: "https://workspace.test", Token: "test-token", HostMetadataResolver: noHostMetadata})
 	require.NoError(t, err)
 
 	challenge, err := serveChallenge(t.Context(), serveTarget{w: w, entry: &mcp.Entry{SignInRequired: true, WorkspaceID: "42"}, profile: testProfile, service: testService}, io.Discard)
@@ -1505,7 +1516,7 @@ func TestServeChallengeNamesTheRecordedWorkspace(t *testing.T) {
 // TestServeChallengeHintNamesPinnedFileAndQuotesProfile checks that a server pinned to a config file names that file in
 // the login command its hints print, and that a profile name with a space is quoted for a shell.
 func TestServeChallengeHintNamesPinnedFileAndQuotesProfile(t *testing.T) {
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: "https://workspace.test", Token: "test-token"})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: "https://workspace.test", Token: "test-token", HostMetadataResolver: noHostMetadata})
 	require.NoError(t, err)
 	const pinned = "/work/cfg/my file.cfg"
 

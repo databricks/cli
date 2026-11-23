@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -149,7 +150,7 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		return nil, nil, err
 	}
 	codeSourcePath := codeDirPath
-	art, err := codeArtifactFor(cfg, codeDirPath)
+	art, err := codeArtifactFor(ctx, cfg, codeDirPath, bundleDir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -195,13 +196,13 @@ type codeArtifact struct {
 // and uploaded through the standard artifact path; a git ref / include_paths just add
 // `git` / narrowed `include` to the same artifact. It errors when the code dir resolves
 // to the bundle root (no basename to nest under). codeDirPath is the source dir relative
-// to the bundle ("./"-prefixed).
+// to the bundle ("./"-prefixed); bundleDir is the bundle directory itself.
 //
 // The artifact snapshotter names entries relative to `path`, and the runtime extracts
 // to /databricks/code_source/<dir>, so the code dir's basename must be the top-level
 // entry. To get that, emit path = the code dir's parent and include = basename-prefixed
 // subpaths, so entries come out as "<basename>/..." — the layout the air CLI produced.
-func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) {
+func codeArtifactFor(ctx context.Context, cfg *runConfig, codeDirPath, bundleDir string) (*codeArtifact, error) {
 	snap := codeSnapshot(cfg)
 	if snap == nil {
 		return nil, nil
@@ -213,10 +214,7 @@ func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) 
 	// generated_artifacts/, the output tarball) into it. Reject rather than emit that.
 	if codeDirRel == "." {
 		remedy := "move the code into a subdirectory (for example ./src) and point root_path at it"
-		// A bundle rooted at the parent only works for a working-tree snapshot: a git
-		// snapshot is archived from the bundle root, which would then sit outside the
-		// repository (or inside an unrelated one).
-		if snap.Git == nil {
+		if parentOutputDirWorks(ctx, snap, bundleDir) {
 			remedy += ", or pass --output-dir with a dedicated parent directory that contains the code directory"
 		}
 		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root, so there is no code directory to nest under %s/<dir>; %s", snap.RootPath, runtimeCodeSourceRoot, remedy)
@@ -267,23 +265,39 @@ func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundl
 	}
 	rel, err := filepath.Rel(bundleAbs, root)
 	if err != nil || !filepath.IsLocal(rel) {
-		return "", codeOutsideBundleError(snap, root, bundleDir)
+		return "", codeOutsideBundleError(ctx, snap, root, bundleDir, cfg.ExperimentName)
 	}
 	return localBundlePath(filepath.ToSlash(rel)), nil
 }
 
-// codeOutsideBundleError explains a code directory outside the bundle directory. For
-// a working-tree snapshot it names the code directory's parent as an --output-dir,
-// unless that parent already holds a bundle: sibling workloads that share a code
-// directory would each be sent there and replace one another's bundle. As in
-// codeArtifactFor, a git snapshot is not offered a parent, which may be outside the
-// repository.
-func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir string) error {
-	remedy := "move the code inside the bundle directory"
+// parentOutputDirWorks reports whether a bundle rooted at the code directory's parent
+// can package the snapshot. A working-tree snapshot is archived from the bundle, so any
+// parent works. A git snapshot is archived from the bundle root, so the parent must be
+// inside the repository too, which holds exactly when the code directory is not the
+// repository's top level (`git rev-parse --show-prefix` is non-empty). A code directory
+// outside any repository can't be archived from a git ref at all, so no parent is offered.
+func parentOutputDirWorks(ctx context.Context, snap *snapshotSourceConfig, codeDir string) bool {
 	if snap.Git == nil {
+		return true
+	}
+	prefix, err := newGitRepo(codeDir).repoRelativePrefix(ctx)
+	return err == nil && prefix != ""
+}
+
+// codeOutsideBundleError explains a code directory outside the bundle directory. When
+// a bundle at the code directory's parent would work (parentOutputDirWorks), it names
+// that parent as an --output-dir, unless the parent already holds a bundle: sibling
+// workloads that share a code directory would each be sent there and replace one
+// another's bundle.
+func codeOutsideBundleError(ctx context.Context, snap *snapshotSourceConfig, root, bundleDir, experimentName string) error {
+	remedy := "move the code inside the bundle directory"
+	if parentOutputDirWorks(ctx, snap, root) {
 		parent := filepath.Dir(root)
-		if name := bundleFileIn(parent); name != "" {
+		if name := bundleFileIn(parent, ""); name != "" {
 			remedy = fmt.Sprintf("%s already holds a bundle (%s), and converting there would replace it; pass --output-dir with another directory that contains the code directory, or %s", quotedPath(parent), name, remedy)
+			if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok && isWorkloadBundle(parent, experimentName) {
+				remedy = fmt.Sprintf("pass --output-dir %s --force to replace this workload's bundle, or move the code inside the bundle directory", quoted)
+			}
 		} else if quoted, ok := shellquote.Arg(runtime.GOOS, parent); ok {
 			remedy = fmt.Sprintf("pass --output-dir %s to write the bundle to the code directory's parent, or %s", quoted, remedy)
 		} else {
@@ -291,6 +305,25 @@ func codeOutsideBundleError(snap *snapshotSourceConfig, root, bundleDir string) 
 		}
 	}
 	return fmt.Errorf("code_source root_path %q (%s) is not inside the bundle directory %q, and convert-to-dabs can package only code inside the bundle directory; %s", snap.RootPath, quotedPath(root), bundleDir, remedy)
+}
+
+// isWorkloadBundle requires a single databricks.yml because writeBundle replaces only that file.
+func isWorkloadBundle(dir, experimentName string) bool {
+	path, err := config.FileNames.FindInPath(dir)
+	if err != nil || filepath.Base(path) != "databricks.yml" || experimentName == "" {
+		return false
+	}
+	return existingBundleName(path) == experimentName
+}
+
+// existingBundleName returns the bundle.name declared by the bundle file at path, or
+// "" when it declares none or does not parse (such as a hand-edited stub).
+func existingBundleName(path string) string {
+	existing, _ := config.Load(path)
+	if existing == nil {
+		return ""
+	}
+	return existing.Bundle.Name
 }
 
 // quotedPath quotes a local path the way the --output-dir suggestion does, so a
@@ -304,10 +337,13 @@ func quotedPath(path string) string {
 	return fmt.Sprintf("%q", path)
 }
 
-// bundleFileIn returns the name of the bundle configuration file in dir, or "" when
-// it has none.
-func bundleFileIn(dir string) string {
+// bundleFileIn returns the first existing bundle filename in dir other than skip,
+// or "" if none exists.
+func bundleFileIn(dir, skip string) string {
 	for _, name := range config.FileNames {
+		if name == skip {
+			continue
+		}
 		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
 			return name
 		}
@@ -348,8 +384,9 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 		"accelerator_type":  nv(cfg.Compute.AcceleratorType, 1),
 		"accelerator_count": nv(cfg.Compute.NumAccelerators, 2),
 	}
-	if cfg.Compute.PoolID != nil {
-		compute["provisioned_capacity_id"] = nv(*cfg.Compute.PoolID, 3)
+	// Bundles still use the legacy field supported by their current schema.
+	if poolID := cfg.Compute.AcceleratorPoolID; poolID != nil {
+		compute["provisioned_capacity_id"] = nv(*poolID, 3)
 	}
 	deployment := map[string]dyn.Value{
 		"command_path": nv(localBundlePath(path.Join(generatedArtifactsDir, commandScriptName)), 1),
@@ -605,6 +642,23 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 		return nil, err
 	}
 
+	// Check alternate roots first so --force is suggested only when it can resolve the collision.
+	const bundleFileName = "databricks.yml"
+	if name := bundleFileIn(dir, bundleFileName); name != "" {
+		return nil, fmt.Errorf("%s already exists in %s; move or remove it before converting", name, dir)
+	}
+	bundlePath := filepath.Join(dir, bundleFileName)
+	if _, err := os.Stat(bundlePath); err == nil {
+		// A sibling workload's bundle is never replaced, with or without --force: its
+		// job would still be planned for deletion from the shared .databricks/ state.
+		if name := existingBundleName(bundlePath); name != "" && name != cfg.ExperimentName {
+			return nil, fmt.Errorf("%s in %s belongs to bundle %q, not to this workload's bundle %q; pass --output-dir with another directory that contains the code directory", bundleFileName, dir, name, cfg.ExperimentName)
+		}
+		if !force {
+			return nil, fmt.Errorf("%s already exists in %s; pass --force to overwrite or remove it", bundleFileName, dir)
+		}
+	}
+
 	// Restrict perms: the bundle carries env_vars.json (literal env var values), so
 	// keep the dir owner-only rather than world-readable.
 	if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -630,12 +684,6 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 		return os.WriteFile(target, data, 0o600)
 	}
 
-	bundlePath := filepath.Join(dir, "databricks.yml")
-	if !force {
-		if _, err := os.Stat(bundlePath); err == nil {
-			return nil, fmt.Errorf("databricks.yml already exists in %s; pass --force to overwrite or remove it", dir)
-		}
-	}
 	// SaveAsYAML's force arg is passed true unconditionally: the collision check
 	// above already decided whether overwriting is allowed.
 	if err := yamlsaver.NewSaver().SaveAsYAML(root, bundlePath, true); err != nil {
@@ -644,7 +692,7 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 	if err := quoteJobKey(bundlePath, bundleResourceKey(cfg.ExperimentName)); err != nil {
 		return nil, err
 	}
-	written := []string{"databricks.yml"}
+	written := []string{bundleFileName}
 
 	// Launch artifacts (command.sh + sidecars) under generated_artifacts/.
 	for _, item := range artifacts {
@@ -652,6 +700,20 @@ func writeBundle(ctx context.Context, cfg *runConfig, configPath, dir string, fo
 			return nil, fmt.Errorf("failed to write %s: %w", item.name, err)
 		}
 		written = append(written, path.Join(generatedArtifactsDir, item.name))
+	}
+
+	// A forced re-conversion may write fewer sidecars than the previous one (for
+	// example after dropping env_variables). sync.paths uploads the whole directory,
+	// so remove the generated names it no longer writes rather than ship stale ones.
+	if force {
+		for _, name := range optionalLaunchArtifacts {
+			if slices.ContainsFunc(artifacts, func(item uploadItem) bool { return item.name == name }) {
+				continue
+			}
+			if err := os.Remove(filepath.Join(artifactDir, name)); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("failed to remove stale %s: %w", name, err)
+			}
+		}
 	}
 
 	return written, nil

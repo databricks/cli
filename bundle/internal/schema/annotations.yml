@@ -1881,14 +1881,6 @@ resources:
       "markdown_description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
       "$fields":
-        "channel":
-          "$fields":
-            "dbsql_version":
-              "description": |-
-                PLACEHOLDER
-            "name":
-              "description": |-
-                PLACEHOLDER
         "enable_photon":
           "description": |-
             Configures whether the warehouse should use Photon optimized clusters.
@@ -1927,18 +1919,6 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "tags":
-          "$fields":
-            "custom_tags":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "key":
-                  "description": |-
-                    PLACEHOLDER
-                "value":
-                  "description": |-
-                    PLACEHOLDER
     "synced_database_tables":
       "description": |-
         PLACEHOLDER

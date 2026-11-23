@@ -66,13 +66,15 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, ``)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `Name shown to consumers for the file, for example a notebook title.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a file.`
 	cmd.Long = `Create a file.
 
-  Create a file. Currently, only provider icons and attached notebooks are
+  Creates a file and returns a short-lived URL for uploading its content with an
+  HTTP PUT request. Only provider icons (PROVIDER_ICON files on a PROVIDER
+  parent) and sample notebooks (EMBEDDED_NOTEBOOK files on a LISTING parent) are
   supported.`
 
 	cmd.Annotations = make(map[string]string)
@@ -137,7 +139,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a file.`
 	cmd.Long = `Delete a file.
 
-  Delete a file`
+  Deletes a file. Fails if the file is still in use.
+
+  Arguments:
+    FILE_ID: ID of the file to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -156,14 +161,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Files drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "ID of the file to delete")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have id of the file to delete")
 		}
 		deleteReq.FileId = args[0]
 
@@ -204,7 +209,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a file.`
 	cmd.Long = `Get a file.
 
-  Get a file`
+  Gets a file's metadata, including a short-lived download URL.
+
+  Arguments:
+    FILE_ID: ID of the file.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -223,14 +231,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Files drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "ID of the file")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have id of the file")
 		}
 		getReq.FileId = args[0]
 
@@ -275,7 +283,7 @@ func newList() *cobra.Command {
 
 	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of results to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -288,7 +296,7 @@ func newList() *cobra.Command {
 	cmd.Short = `List files.`
 	cmd.Long = `List files.
 
-  List files attached to a parent entity.`
+  Lists the files attached to a provider profile or a listing.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

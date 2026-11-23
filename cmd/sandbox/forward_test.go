@@ -28,6 +28,16 @@ func TestParseForwards(t *testing.T) {
 	assert.Equal(t, []forwardSpec{{localPort: 8080, remotePort: 10080}, {localPort: 0, remotePort: 10081}}, forwards)
 }
 
+func TestParseForwardsAcceptsRemotePortsBelow10000(t *testing.T) {
+	for _, port := range []int{1, 80, 3000, 8080, 9999} {
+		t.Run(strconv.Itoa(port), func(t *testing.T) {
+			forwards, err := parseForwards([]string{"8080:" + strconv.Itoa(port)})
+			require.NoError(t, err)
+			assert.Equal(t, []forwardSpec{{localPort: 8080, remotePort: port}}, forwards)
+		})
+	}
+}
+
 func TestParseForwardsRejectsMalformedSpecs(t *testing.T) {
 	for _, spec := range []string{"8080", "8080:", ":10080", "a:10080", "8080:b", "-1:10080", "65536:10080", "8080:10080:1"} {
 		t.Run(spec, func(t *testing.T) {
@@ -38,10 +48,10 @@ func TestParseForwardsRejectsMalformedSpecs(t *testing.T) {
 }
 
 func TestParseForwardsRejectsRemotePortsOutsideRange(t *testing.T) {
-	for _, spec := range []string{"8080:0", "8080:8080", "8080:9999", "8080:65536"} {
+	for _, spec := range []string{"8080:0", "8080:65536"} {
 		t.Run(spec, func(t *testing.T) {
 			_, err := parseForwards([]string{spec})
-			assert.EqualError(t, err, `invalid -L "`+spec+`": remote port must be between 10000 and 65535`)
+			assert.EqualError(t, err, `invalid -L "`+spec+`": remote port must be between 1 and 65535`)
 		})
 	}
 }

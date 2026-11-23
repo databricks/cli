@@ -187,7 +187,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	if cmd.Flags().Changed("agents") && len(agentNames) == 0 {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--agents names no agent; pass one or more of: %s", strings.Join(mcpAgentNames(), ", "))
 	}
-	interactive := !jsonMode && installPromptsSupported(ctx)
+	interactive := !jsonMode && promptsSupported(ctx)
 	if err := validateMCPRemoveFlags(f.all, names, profileName, interactive); err != nil {
 		return err
 	}

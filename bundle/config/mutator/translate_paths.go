@@ -130,13 +130,9 @@ func (t *translateContext) rewritePath(
 		return "", nil
 	}
 
-	url, err := url.Parse(input)
-	if err != nil {
-		return "", err
-	}
-
-	// If the file path has scheme, it's a full path and we don't need to transform it
-	if url.Scheme != "" {
+	// If the file path has scheme, it's a full path and we don't need to transform it.
+	// A path that is not a valid URL, such as "New Notebook 12:17:43.ipynb", is a local path.
+	if u, err := url.Parse(input); err == nil && u.Scheme != "" {
 		return "", nil
 	}
 

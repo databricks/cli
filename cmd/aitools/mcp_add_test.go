@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,6 +30,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -284,6 +286,24 @@ func withHome(t *testing.T) string {
 	t.Setenv("PATH", t.TempDir())
 	for _, name := range agentHomeEnv {
 		t.Setenv(name, "")
+	}
+	// Profiles with .test hosts are fixtures. Keep metadata lookups local while
+	// letting tests with their own HTTP server exercise the normal resolver.
+	factory := config.DefaultHostMetadataResolverFactory
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = factory })
+	config.DefaultHostMetadataResolverFactory = func(cfg *config.Config) config.HostMetadataResolver {
+		return func(ctx context.Context, host string) (*config.HostMetadata, error) {
+			u, err := url.Parse(host)
+			if err == nil && strings.HasSuffix(u.Hostname(), ".test") {
+				return nil, nil
+			}
+			if factory != nil {
+				if resolve := factory(cfg); resolve != nil {
+					return resolve(ctx, host)
+				}
+			}
+			return cfg.DefaultHostMetadataResolver()(ctx, host)
+		}
 	}
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude"), 0o700))
 	return home
