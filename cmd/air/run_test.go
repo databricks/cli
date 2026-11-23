@@ -3,18 +3,23 @@ package aircmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/testserver"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -269,8 +274,8 @@ func TestRunDryRunRetriesUnavailableResponseOnce(t *testing.T) {
 // Credentials rejected after the workspace client is built (by the current-user
 // lookup or by config:validate) must not be reported as INVALID_ARGS, or agents
 // edit a valid config instead of fixing their credentials. The current-user
-// lookup fails only for bad credentials; a 403 from config:validate after it
-// passed is a missing permission.
+// lookup fails only for bad credentials. A 403 from config:validate after it
+// passed is a missing permission (acceptance/air/run-permission-denied).
 func TestRunDryRunReportsRejectedCredentials(t *testing.T) {
 	tests := []struct {
 		name, method, path string
@@ -281,7 +286,6 @@ func TestRunDryRunReportsRejectedCredentials(t *testing.T) {
 		{"current user/401", "GET", "/api/2.0/preview/scim/v2/Me", http.StatusUnauthorized, "UNAUTHENTICATED", "UNAUTHENTICATED"},
 		{"current user/403", "GET", "/api/2.0/preview/scim/v2/Me", http.StatusForbidden, "PERMISSION_DENIED", "UNAUTHENTICATED"},
 		{"config validate/401", "POST", validateConfigPath, http.StatusUnauthorized, "UNAUTHENTICATED", "UNAUTHENTICATED"},
-		{"config validate/403", "POST", validateConfigPath, http.StatusForbidden, "PERMISSION_DENIED", "PERMISSION_DENIED"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -304,6 +308,35 @@ func TestRunDryRunReportsRejectedCredentials(t *testing.T) {
 			assert.Equal(t, "PERMANENT", got.Error.Kind)
 			assert.False(t, got.Error.Retryable)
 			assert.Contains(t, got.Error.Message, "credentials rejected")
+		})
+	}
+}
+
+// Workspace-client setup failures that a retry can't fix must not be reported
+// as retryable, while a transient failure while authenticating still is.
+func TestRenderWorkspaceClientError(t *testing.T) {
+	_, expiredLogin := auth.RewriteAuthError(t.Context(), "https://host.test", "", "dev", &u2m.InvalidRefreshTokenError{})
+	tests := []struct {
+		name      string
+		err       error
+		code      string
+		retryable bool
+	}{
+		{"expired login", expiredLogin, "UNAUTHENTICATED", false},
+		{"network", &url.Error{Op: "Get", URL: "https://host.test", Err: errors.New("connection refused")}, "INTERNAL_ERROR", true},
+		{"account-only profile", root.ErrAccountOnlyProfile{}, "INVALID_ARGS", false},
+		{"unknown profile", errors.New("resolve: .databrickscfg has no dev profile configured"), "INVALID_ARGS", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, &buf, "", ""))
+			err := renderWorkspaceClientError(ctx, withOutput(&cobra.Command{}, flags.OutputJSON), tc.err)
+			require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+			var got errorEnvelope
+			require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+			assert.Equal(t, tc.code, got.Error.Code)
+			assert.Equal(t, tc.retryable, got.Error.Retryable)
 		})
 	}
 }

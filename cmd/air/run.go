@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -90,15 +91,21 @@ func (e *workspaceClientError) Unwrap() error { return e.err }
 
 // renderWorkspaceClientError renders a failure to build the workspace client.
 // Bundle diagnostics that were already printed pass through, as in air get. A
-// missing profile or rejected credentials go through authError. Any other setup
-// failure (an unknown or account-only profile, for example) is a config mistake
-// that a retry can't fix, so it is INVALID_ARGS rather than authError's
-// retryable fallback. Text mode keeps the original error.
+// missing profile, rejected credentials, or a failure that may pass on retry
+// (network, timeout, 429, 5xx) go through authError, and an expired login is
+// UNAUTHENTICATED. Any other setup failure (an unknown or account-only profile,
+// for example) is a config mistake that a retry can't fix, so it is
+// INVALID_ARGS rather than authError's retryable fallback. Text mode keeps the
+// original error.
 func renderWorkspaceClientError(ctx context.Context, cmd *cobra.Command, err error) error {
+	_, transient := classifyValidationFailure(err)
+	_, expiredLogin := errors.AsType[*u2m.InvalidRefreshTokenError](err)
 	switch {
 	case errors.Is(err, root.ErrAlreadyPrinted), root.OutputType(cmd) != flags.OutputJSON:
 		return err
-	case errors.Is(err, config.ErrCannotConfigureDefault), errors.Is(err, apierr.ErrUnauthenticated), errors.Is(err, apierr.ErrPermissionDenied):
+	case expiredLogin:
+		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false, err)
+	case errors.Is(err, config.ErrCannotConfigureDefault), errors.Is(err, apierr.ErrUnauthenticated), errors.Is(err, apierr.ErrPermissionDenied), transient:
 		return authError(ctx, cmd, err)
 	}
 	return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
