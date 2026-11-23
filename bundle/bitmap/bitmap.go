@@ -178,9 +178,11 @@ func Merge(old, fresh []string) (merged, added []string) {
 
 // Builder computes the config bits of a bundle as the user wrote it. Mark runs
 // on the loaded configuration, and on the resources Python adds, before any
-// mutator fills in defaults. A field holding a ${var.*} reference has no value
+// mutator fills in defaults. A field holding a variable reference has no value
 // yet at that point, so Mark keeps it aside, and ResolveVariables marks the
 // variable's value once it is known. Bits are only ever set, never cleared.
+// Mark, MarkChanges and ResolveVariables do nothing on a nil Builder: loading
+// creates it, and a bundle that was not loaded has no bitmap.
 type Builder struct {
 	index map[string]int
 	bits  []bool
@@ -195,8 +197,12 @@ type varRef struct {
 	reference string // e.g. "${var.flag}"
 }
 
-// varPrefix is the first component of a variable reference: ${var.name}.
-var varPrefix = dyn.NewPath(dyn.Key("var"))
+// varPrefix and variablesPrefix start the two spellings of a variable
+// reference: ${var.name} and ${variables.name.value} (or .default).
+var (
+	varPrefix       = dyn.NewPath(dyn.Key("var"))
+	variablesPrefix = dyn.NewPath(dyn.Key("variables"))
+)
 
 // NewBuilder returns a Builder for schema with no bits set.
 func NewBuilder(schema []string) *Builder {
@@ -213,6 +219,9 @@ func NewBuilder(schema []string) *Builder {
 // interface-typed field (variables.*.default) or an empty container ({} or [])
 // counts, and a zero value counts only when it is written out.
 func (b *Builder) Mark(cfg dyn.Value) {
+	if b == nil {
+		return
+	}
 	b.markChildren(cfg, "")
 }
 
@@ -220,15 +229,21 @@ func (b *Builder) Mark(cfg dyn.Value) {
 // before lacks, values that differ, and the fields on the way to them. Both are
 // rooted at the configuration root. List elements are compared by position.
 func (b *Builder) MarkChanges(before, after dyn.Value) {
+	if b == nil {
+		return
+	}
 	b.markChangedChildren(before, after, "")
 }
 
 // ResolveVariables marks the values of the fields Mark found holding a
-// ${var.*} reference, reading each variable's value from cfg, the processed
+// variable reference (${var.*} or ${variables.*}), reading each variable's value from cfg, the processed
 // configuration. The values are the ones the user supplied (default, --var,
 // environment or file), whatever mutators later do to the field. A reference
 // that does not resolve keeps only the presence bit Mark set.
 func (b *Builder) ResolveVariables(cfg dyn.Value) {
+	if b == nil {
+		return
+	}
 	refs := b.refs
 	b.refs = map[varRef]struct{}{}
 	for ref := range refs {
@@ -251,14 +266,19 @@ func (b *Builder) ResolveVariables(cfg dyn.Value) {
 	}
 }
 
-// variableValue looks up the value of a ${var.name...} reference in cfg, which
-// keeps it under variables.name.value.
+// variableValue looks up the value of a variable reference in cfg. cfg keeps
+// ${var.name...} under variables.name.value; ${variables.name...} is a path into
+// cfg as written.
 func variableValue(cfg dyn.Value, p dyn.Path) (dyn.Value, error) {
-	if len(p) < 2 || !p.HasPrefix(varPrefix) {
+	switch {
+	case len(p) >= 2 && p.HasPrefix(varPrefix):
+		path := append(dyn.NewPath(dyn.Key("variables"), p[1], dyn.Key("value")), p[2:]...)
+		return dyn.GetByPath(cfg, path)
+	case len(p) >= 3 && p.HasPrefix(variablesPrefix):
+		return dyn.GetByPath(cfg, p)
+	default:
 		return dyn.InvalidValue, dynvar.ErrSkipResolution
 	}
-	path := append(dyn.NewPath(dyn.Key("variables"), p[1], dyn.Key("value")), p[2:]...)
-	return dyn.GetByPath(cfg, path)
 }
 
 // Bits returns a bit per schema entry: the bits Mark and ResolveVariables set,
@@ -400,10 +420,11 @@ func (b *Builder) mark(v dyn.Value, pattern string) {
 	b.markChildren(v, pattern)
 }
 
-// isVariableReference reports whether s is exactly one ${var.*} reference.
+// isVariableReference reports whether s is exactly one variable reference,
+// ${var.*} or ${variables.*}.
 func isVariableReference(s string) bool {
 	p, ok := dynvar.PureReferenceToPath(s)
-	return ok && p.HasPrefix(varPrefix)
+	return ok && (p.HasPrefix(varPrefix) || p.HasPrefix(variablesPrefix))
 }
 
 // setBit sets the bit of schema path p, if the schema has it.

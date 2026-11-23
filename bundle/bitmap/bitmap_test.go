@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"encoding/base64"
 	"encoding/binary"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -282,6 +283,18 @@ func TestBuilderResolveVariables(t *testing.T) {
 			config:    `resources: {jobs: {j: {queue: {enabled: "${var.flag}"}}}}`,
 			variables: `variables: {flag: {value: false}}`,
 			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
+		},
+		{
+			name:      "bool from the long spelling of a variable reference",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${variables.flag.value}"}}}}`,
+			variables: `variables: {flag: {value: false}}`,
+			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=false"),
+		},
+		{
+			name:      "bool from a variable's default",
+			config:    `resources: {jobs: {j: {queue: {enabled: "${variables.flag.default}"}}}}`,
+			variables: `variables: {flag: {default: true, value: false}}`,
+			want:      append(slices.Clone(queue), "resources.jobs.*.queue.enabled=true"),
 		},
 		{
 			name:      "bool from a string value, as --var passes it",
@@ -697,4 +710,22 @@ func bitsFor(schema, set []string) []bool {
 		bits[slices.Index(schema, p)] = true
 	}
 	return bits
+}
+
+// The databricks-bundles decoder ships its own copy of the schema. A stale copy
+// still decodes every bit it has, so only a byte comparison catches it.
+func TestPythonSchemaMatchesEmbedded(t *testing.T) {
+	python, err := os.ReadFile("../../python/databricks/bundles/_bitmap/schema.deflate")
+	require.NoError(t, err)
+	assert.True(t, bytes.Equal(schemaDeflate, python), "python/databricks/bundles/_bitmap/schema.deflate differs from bundle/bitmap/schema.deflate; run 'task generate-bitmap-schema'")
+}
+
+func TestNilBuilder(t *testing.T) {
+	var b *Builder
+	cfg := dyn.V(map[string]dyn.Value{"bundle": dyn.V(map[string]dyn.Value{"name": dyn.V("x")})})
+	assert.NotPanics(t, func() {
+		b.Mark(cfg)
+		b.MarkChanges(dyn.InvalidValue, cfg)
+		b.ResolveVariables(cfg)
+	})
 }

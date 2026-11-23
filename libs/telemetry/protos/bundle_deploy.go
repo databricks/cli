@@ -64,7 +64,7 @@ type BundleDeployEvent struct {
 	// telemetry flag measured, with the values of boolean fields. Base64 of raw
 	// DEFLATE; decode with 'databricks bundle bitmap decode' or the decoder in
 	// databricks-bundles. Field names, not values: map keys such as resource
-	// names are recorded as "*". Empty when the configuration did not load.
+	// names are recorded as "*". Omitted when the configuration did not load.
 	BundleBitmap string `json:"bundle_bitmap,omitempty"`
 
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
