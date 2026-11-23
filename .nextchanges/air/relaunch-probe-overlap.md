@@ -1,0 +1,1 @@
+* `air run` relaunches with unchanged launch files reach submit sooner: the CLI checks the remembered launch directory while it confirms the signed-in user, and writes nothing until that confirmation arrives. ([#7891](https://github.com/databricks/cli/pull/7891))

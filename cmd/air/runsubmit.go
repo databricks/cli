@@ -345,12 +345,12 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	var snap snapshotResult
 	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
 
-	// Compute and validate the actual submission path before creating artifacts.
-	base, funcDir, commandPath, err := prospectiveLaunchPaths(ctx, w, cfg)
+	items, err := buildArtifacts(cfg)
 	if err != nil {
 		return 0, "", err
 	}
-	items, err := buildArtifacts(cfg)
+	token := effectiveIdempotencyToken(idempotencyKey, cfg)
+	override, err := workspaceDirOverride(ctx, w)
 	if err != nil {
 		return 0, "", err
 	}
@@ -359,18 +359,43 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// takes the unchanged path below, with no extra server call.
 	var indexKey *launchIndexKey
 	launchIndex := newLaunchIndex(ctx)
-	recorded := false
+	var remembered *launchIndexEntry
 	if cfg.CodeSource == nil || cfg.CodeSource.Snapshot == nil {
-		key := launchIndexKey{Host: w.Config.Host, Base: base, Content: launchContentHash(items)}
+		key := launchIndexKey{Host: w.Config.Host, Content: launchContentHash(items)}
 		indexKey = &key
-		if dir, ok := cache.Get[string](ctx, launchIndex, key); ok {
-			funcDir = dir
-			commandPath = path.Join(funcDir, commandScriptName)
-			recorded = true
+		if entry, ok := cache.Get[launchIndexEntry](ctx, launchIndex, key); ok {
+			remembered = &entry
 		}
 	}
+
+	// A remembered dir is probed and validated under the user name that staged it,
+	// before Me returns. Those are reads and a dry run. Me then confirms the name,
+	// and every write and the submit wait for that.
+	var spec *launchSpeculation
+	if remembered != nil && override == "" {
+		spec = startLaunchSpeculation(ctx, w, cfg, items, remembered.Dir, token)
+		// Every return below joins the speculation; abort is idempotent.
+		defer spec.abort()
+	}
+	base := override
+	if override == "" {
+		var email string
+		if email, err = currentUserEmail(ctx, w); err != nil {
+			return 0, "", err
+		}
+		base = "/Workspace/Users/" + email
+	}
+	recorded := remembered != nil && remembered.Base == base
+	var funcDir string
+	if recorded {
+		funcDir = remembered.Dir
+	} else {
+		spec.abort()
+		spec = nil
+		funcDir = launchDirFor(base, cfg)
+	}
+	commandPath := path.Join(funcDir, commandScriptName)
 	containers := submittedContainers(cfg, funcDir)
-	token := effectiveIdempotencyToken(idempotencyKey, cfg)
 
 	deps, _ := cfg.inlineDependencies()
 
@@ -399,36 +424,57 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// the other side and is the one reported.
 	group, stagingCtx := errgroup.WithContext(ctx)
 	var validationUnavailable, staged bool
-	group.Go(func() (err error) {
-		validationUnavailable, err = preflightValidate(stagingCtx, w, cfg, commandPath, containers, token)
-		return err
-	})
-	group.Go(func() error {
-		return withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
-			// A recorded dir whose files all exist with their local sizes is staged.
-			// Anything else, including a 404 for a dir that was deleted, uploads into
-			// funcDir.
-			staged = recorded && launchFilesStaged(stagingCtx, w, funcDir, items)
-			if staged {
-				return nil
-			}
-			var stageErr error
-			snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
-			return stageErr
-		})
-	})
 	var workspaceID int64
-	group.Go(func() error {
-		workspaceID = workspaceIDForRunLink(stagingCtx, w)
-		return nil
-	})
+	if spec != nil {
+		// Me confirmed the speculated dir: the probes and validation are already
+		// done, so join them and upload only if the dir is not fully staged.
+		group.Go(func() error {
+			defer spec.cancel()
+			if err := spec.group.Wait(); err != nil {
+				return err
+			}
+			validationUnavailable, staged, workspaceID = spec.unavailable, spec.staged, spec.workspaceID
+			return withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
+				if staged {
+					return nil
+				}
+				var stageErr error
+				snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
+				return stageErr
+			})
+		})
+	} else {
+		group.Go(func() (err error) {
+			validationUnavailable, err = preflightValidate(stagingCtx, w, cfg, commandPath, containers, token)
+			return err
+		})
+		group.Go(func() error {
+			return withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
+				// A recorded dir whose files all exist with their local sizes is staged.
+				// Anything else, including a 404 for a dir that was deleted, uploads into
+				// funcDir.
+				staged = recorded && launchFilesStaged(stagingCtx, w, funcDir, items)
+				if staged {
+					return nil
+				}
+				var stageErr error
+				snap, stageErr = stageRunArtifacts(stagingCtx, fc, items, stageSnapshot)
+				return stageErr
+			})
+		})
+		group.Go(func() error {
+			workspaceID = workspaceIDForRunLink(stagingCtx, w)
+			return nil
+		})
+	}
 	if err := group.Wait(); err != nil {
 		return 0, "", err
 	}
 	// Refresh the entry only after an upload: a probe hit changed nothing, so
-	// its TTL should keep counting from the upload that created the dir.
+	// its TTL should keep counting from the upload that created the dir. An
+	// unconfirmed entry is replaced here too, since its dir was not used.
 	if indexKey != nil && !staged {
-		cache.Put(ctx, launchIndex, *indexKey, funcDir)
+		cache.Put(ctx, launchIndex, *indexKey, launchIndexEntry{Base: base, Dir: funcDir})
 	}
 	// Warn only after staging so the warning doesn't interleave with the spinner.
 	if validationUnavailable && cmdio.HasIO(ctx) {
