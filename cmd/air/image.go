@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -25,8 +26,6 @@ const (
 	maxImageRepositoryLength = 255
 	maxImageTagLength        = 128
 	airImagePlatform         = "linux/amd64"
-	// Databricks Artifact Registry caps images at this many decimal gigabytes, the unit Docker reports sizes in.
-	maxImageSizeGB = 30
 )
 
 var (
@@ -157,6 +156,18 @@ The destination --artifact ARTIFACT[:TAG] defaults to the source image name and 
 	return cmd
 }
 
+// darLimitationsURL returns the DAR limitations docs for the workspace's cloud.
+func darLimitationsURL(cfg *config.Config) string {
+	switch {
+	case cfg.IsAzure():
+		return "https://learn.microsoft.com/azure/databricks/artifact-registry/#limitations"
+	case cfg.IsGcp():
+		return "https://docs.databricks.com/gcp/en/artifact-registry/#limitations"
+	default:
+		return "https://docs.databricks.com/aws/en/artifact-registry/#limitations"
+	}
+}
+
 // runImagePush validates inputs, prepares a compatible source image, and pushes it to DAR.
 func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps) error {
 	ctx := cmd.Context()
@@ -209,17 +220,13 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	if platform != airImagePlatform {
 		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
 	}
-	// Docker reports the uncompressed size while the registry measures compressed layers,
-	// so the size is advisory: an oversized or unreadable size never blocks the push.
+	// The size is informational: DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
 	if sizeBytes, err := strconv.ParseInt(size, 10, 64); err != nil {
 		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the size of source image %s (got %q).", resolved.source, size))
 	} else {
-		sizeGB := float64(sizeBytes) / 1e9
-		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB uncompressed; Databricks Artifact Registry caps images at %d GB compressed.", resolved.source, sizeGB, maxImageSizeGB))
-		if sizeGB > maxImageSizeGB {
-			cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s exceeds %d GB uncompressed, so Databricks Artifact Registry may reject the push: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches.", resolved.source, maxImageSizeGB))
-		}
+		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %.1f GB uncompressed.", resolved.source, float64(sizeBytes)/1e9))
 	}
+	cmdio.LogString(ctx, "For Databricks Artifact Registry image limits, see "+darLimitationsURL(w.Config))
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "tag", resolved.source, target); err != nil {

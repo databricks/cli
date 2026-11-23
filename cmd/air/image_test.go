@@ -84,8 +84,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	)
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
-	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
-	assert.NotContains(t, stderr.String(), "Warning: source image")
+	assert.Contains(t, stderr.String(), "Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed.\nFor Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations\n")
 	assert.Contains(t, stderr.String(), "Pushed image")
 }
 
@@ -94,16 +93,14 @@ func fakeImageInspect(sizeBytes string) string {
 	return "linux/amd64|" + sizeBytes + "\n"
 }
 
-func TestRunImagePushWarnsAboutOversizedImage(t *testing.T) {
-	oversized := "Warning: source image example/trainer:v1 exceeds 30 GB uncompressed, so Databricks Artifact Registry may reject the push: start from a Databricks base image (databricksruntime/air) and trim layers such as model weights and build caches."
+func TestRunImagePushReportsImageSize(t *testing.T) {
 	tests := []struct {
 		name      string
 		sizeBytes string
-		warning   string
+		want      string
 	}{
-		{name: "at limit", sizeBytes: "30000000000"},
-		{name: "over limit", sizeBytes: "35300000000", warning: oversized},
-		{name: "unreadable", sizeBytes: "unknown", warning: "Warning: could not read the size of source image example/trainer:v1 (got \"unknown\")."},
+		{name: "readable", sizeBytes: "35300000000", want: "Source image example/trainer:v1 is 35.3 GB uncompressed."},
+		{name: "unreadable", sizeBytes: "unknown", want: "Warning: could not read the size of source image example/trainer:v1 (got \"unknown\")."},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -133,19 +130,25 @@ func TestRunImagePushWarnsAboutOversizedImage(t *testing.T) {
 				artifact: "trainer",
 			}, deps)
 			require.NoError(t, err)
-			switch tt.warning {
-			case "":
-				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 30.0 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
-				assert.NotContains(t, stderr.String(), "Warning: source image")
-				assert.NotContains(t, stderr.String(), "could not read the size")
-			case oversized:
-				assert.Contains(t, stderr.String(), "Source image example/trainer:v1 is 35.3 GB uncompressed; Databricks Artifact Registry caps images at 30 GB compressed.")
-				assert.Contains(t, stderr.String(), oversized)
-			default:
-				assert.Contains(t, stderr.String(), tt.warning)
-				assert.NotContains(t, stderr.String(), "GB uncompressed;")
-			}
+			assert.Contains(t, stderr.String(), tt.want)
+			assert.Contains(t, stderr.String(), "For Databricks Artifact Registry image limits, see ")
 			assert.Contains(t, stderr.String(), "Pushed image")
+		})
+	}
+}
+
+func TestDARLimitationsURL(t *testing.T) {
+	tests := []struct {
+		host string
+		want string
+	}{
+		{host: "https://dbc-123.cloud.databricks.com", want: "https://docs.databricks.com/aws/en/artifact-registry/#limitations"},
+		{host: "https://adb-123.4.azuredatabricks.net", want: "https://learn.microsoft.com/azure/databricks/artifact-registry/#limitations"},
+		{host: "https://123.4.gcp.databricks.com", want: "https://docs.databricks.com/gcp/en/artifact-registry/#limitations"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.host, func(t *testing.T) {
+			assert.Equal(t, tt.want, darLimitationsURL(&config.Config{Host: tt.host}))
 		})
 	}
 }
