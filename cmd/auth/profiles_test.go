@@ -1,17 +1,22 @@
 package auth
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +81,7 @@ func TestProfileLoadSkipValidateMakesNoRequests(t *testing.T) {
 
 	assert.Zero(t, requests.Load(), "expected no network calls with skipValidate")
 	assert.Equal(t, server.URL, p.Host)
-	assert.False(t, p.Valid)
+	assert.Nil(t, p.Valid)
 }
 
 func TestProfilesDefaultMarker(t *testing.T) {
@@ -225,7 +230,7 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 			}
 			p.Load(t.Context(), configFile, false, profileValidationTimeout)
 
-			assert.Equal(t, tc.wantValid, p.Valid, "Valid mismatch")
+			assert.Equal(t, new(tc.wantValid), p.Valid, "Valid mismatch")
 			assert.NotEmpty(t, p.Host, "Host should be set")
 			assert.NotEmpty(t, p.AuthType, "AuthType should be set")
 		})
@@ -281,7 +286,7 @@ func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
 	}
 	p.Load(t.Context(), configFile, false, profileValidationTimeout)
 
-	assert.True(t, p.Valid, "should validate as workspace when discovery is unavailable")
+	assert.Equal(t, new(true), p.Valid, "should validate as workspace when discovery is unavailable")
 	assert.NotEmpty(t, p.Host)
 	assert.Equal(t, "pat", p.AuthType)
 }
@@ -320,10 +325,172 @@ func TestProfileLoadTimesOutOnUnresponsiveHost(t *testing.T) {
 	p.Load(t.Context(), configFile, false, 2*time.Second)
 	elapsed := time.Since(start)
 
-	assert.False(t, p.Valid, "an unresponsive host must not validate")
+	assert.Equal(t, new(false), p.Valid, "an unresponsive host must not validate")
 	// Generously above the 2s bound (metadata fetch + validation call, each
 	// bounded) but far below the SDK's ~5m default that this timeout prevents.
 	// A regression that drops the bound would blow past this and the whole
 	// package would then hit the go test -timeout instead.
 	assert.Less(t, elapsed, 60*time.Second, "Load must be bounded by profileValidationTimeout, not the SDK default")
+}
+
+// newRejectingServer serves metadata from /.well-known/databricks-config (404
+// when nil) and answers every other request with 403, so validation fails on
+// whichever endpoint the profile's config type calls.
+func newRejectingServer(t *testing.T, metadata map[string]any) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path != "/.well-known/databricks-config":
+			w.WriteHeader(http.StatusForbidden)
+		case metadata == nil:
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			_ = json.NewEncoder(w).Encode(metadata)
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// TestProfileLoadReportsFailedValidation covers each path in Load that
+// validates a profile without passing. All must report false: JSON omits a nil
+// Valid, which tells scripts that validation was skipped.
+func TestProfileLoadReportsFailedValidation(t *testing.T) {
+	cases := []struct {
+		name string
+		// metadata is served by a rejecting server, used when host is empty.
+		metadata map[string]any
+		host     string
+		keys     string
+	}{
+		{
+			name: "workspace check rejected",
+			keys: "token = test-token\n",
+		},
+		{
+			name:     "account check rejected",
+			metadata: map[string]any{"account_id": "acct", "oidc_endpoint": "https://spog.test/oidc/accounts/acct"},
+			keys:     "token = test-token\naccount_id = acct\n",
+		},
+		{
+			name:     "invalid config",
+			metadata: map[string]any{"host_type": "unified"},
+			keys:     "token = test-token\n",
+		},
+		// Conflicting credentials fail config validation before any request,
+		// so the SDK client is never built.
+		{
+			name: "workspace client not built",
+			host: "https://workspace.cloud.databricks.test",
+			keys: "token = test-token\nusername = user\npassword = pass\n",
+		},
+		{
+			name: "account client not built",
+			host: "https://accounts.cloud.databricks.test",
+			keys: "account_id = acct\ntoken = test-token\nusername = user\npassword = pass\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			host := tc.host
+			if host == "" {
+				host = newRejectingServer(t, tc.metadata).URL
+			}
+			dir := t.TempDir()
+			configFile := filepath.Join(dir, ".databrickscfg")
+			t.Setenv("HOME", dir)
+			if runtime.GOOS == "windows" {
+				t.Setenv("USERPROFILE", dir)
+			}
+			content := "[test-profile]\nhost = " + host + "\n" + tc.keys
+			require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+
+			p := &profileMetadata{Name: "test-profile", Host: host}
+			p.Load(t.Context(), configFile, false, profileValidationTimeout)
+
+			assert.Equal(t, new(false), p.Valid)
+		})
+	}
+}
+
+// runProfilesCommand runs `auth profiles` with args and returns its stdout.
+func runProfilesCommand(t *testing.T, output flags.Output, args ...string) string {
+	t.Helper()
+	cmd := newProfilesCommand()
+	var stdout bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), output, nil, &stdout, io.Discard, "", cmd.Annotations["template"]))
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.ParseFlags(args))
+	require.NoError(t, cmd.RunE(cmd, nil))
+	return stdout.String()
+}
+
+// jsonProfiles decodes the profiles in `auth profiles --output json` as maps,
+// so a test can tell an absent key from a false one.
+func jsonProfiles(t *testing.T, out string) []map[string]any {
+	t.Helper()
+	var doc struct {
+		Profiles []map[string]any `json:"profiles"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(out), &doc))
+	return doc.Profiles
+}
+
+// textCells splits text output into the whitespace-separated cells of each line.
+func textCells(out string) [][]string {
+	var rows [][]string
+	for line := range strings.Lines(out) {
+		rows = append(rows, strings.Fields(line))
+	}
+	return rows
+}
+
+func TestProfilesCommandRendersValid(t *testing.T) {
+	accepted := newWorkspaceServer(t, "ws-acct")
+	rejected := newRejectingServer(t, nil)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	t.Setenv("HOME", dir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	}
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	content := "[accepted]\nhost = " + accepted.URL + "\ntoken = test-token\n\n" +
+		"[rejected]\nhost = " + rejected.URL + "\ntoken = test-token\n"
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+
+	t.Run("json", func(t *testing.T) {
+		valid := map[string]any{}
+		for _, p := range jsonProfiles(t, runProfilesCommand(t, flags.OutputJSON)) {
+			valid[p["name"].(string)] = p["valid"]
+		}
+		assert.Equal(t, map[string]any{"accepted": true, "rejected": false}, valid)
+	})
+
+	t.Run("json with --skip-validate", func(t *testing.T) {
+		profiles := jsonProfiles(t, runProfilesCommand(t, flags.OutputJSON, "--skip-validate"))
+		require.Len(t, profiles, 2)
+		for _, p := range profiles {
+			assert.NotContains(t, p, "valid", "profile %v", p["name"])
+		}
+	})
+
+	t.Run("text", func(t *testing.T) {
+		assert.Equal(t, [][]string{
+			{"Name", "Host", "Valid"},
+			{"accepted", accepted.URL, "YES"},
+			{"rejected", rejected.URL, "NO"},
+		}, textCells(runProfilesCommand(t, flags.OutputText)))
+	})
+
+	t.Run("text with --skip-validate", func(t *testing.T) {
+		assert.Equal(t, [][]string{
+			{"Name", "Host"},
+			{"accepted", accepted.URL},
+			{"rejected", rejected.URL},
+		}, textCells(runProfilesCommand(t, flags.OutputText, "--skip-validate")))
+	})
 }

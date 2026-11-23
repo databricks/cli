@@ -35,8 +35,10 @@ type profileMetadata struct {
 	WorkspaceID string `json:"workspace_id,omitempty"`
 	Cloud       string `json:"cloud"`
 	AuthType    string `json:"auth_type"`
-	Valid       bool   `json:"valid"`
-	Default     bool   `json:"default,omitempty"`
+	// Valid is nil only with --skip-validate, so JSON omits it instead of
+	// reporting false for profiles that were never checked.
+	Valid   *bool `json:"valid,omitempty"`
+	Default bool  `json:"default,omitempty"`
 }
 
 func (c *profileMetadata) IsEmpty() bool {
@@ -84,6 +86,9 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
+	// Validation runs from here on, so every return below reports a result.
+	c.Valid = new(false)
+
 	configType := auth.ResolveConfigType(cfg)
 	if configType != cfg.ConfigType() {
 		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
@@ -104,7 +109,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		if err != nil {
 			return
 		}
-		c.Valid = true
+		c.Valid = new(true)
 	case config.WorkspaceConfig:
 		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 		if err != nil {
@@ -116,7 +121,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		if err != nil {
 			return
 		}
-		c.Valid = true
+		c.Valid = new(true)
 	case config.InvalidConfig:
 		// Invalid configuration, skip validation
 		return
@@ -130,6 +135,8 @@ func newProfilesCommand() *cobra.Command {
 		Annotations: map[string]string{
 			// With --skip-validate nothing is validated, so the Valid column is
 			// omitted instead of reporting NO for every profile.
+			// bool dereferences .Valid; {{if .Valid}} would be true even for a
+			// failed validation, because any non-nil pointer is truthy.
 			"template": cmdio.Heredoc(`
 			{{header "Name"}}	{{header "Host"}}{{if not .SkipValidate}}	{{header "Valid"}}{{end}}
 			{{range .Profiles}}{{.Name | green}}{{if .Default}} (Default){{end}}	{{.Host|cyan}}{{if not $.SkipValidate}}	{{bool .Valid}}{{end}}
@@ -138,7 +145,7 @@ func newProfilesCommand() *cobra.Command {
 	}
 
 	var skipValidate bool
-	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip validating the profiles (the Valid column is omitted and JSON \"valid\" is always false)")
+	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Skip validating the profiles (the Valid column and the JSON \"valid\" field are omitted)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
