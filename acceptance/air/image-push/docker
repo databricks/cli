@@ -41,6 +41,10 @@ case "$1 $2" in
     exit 0
     ;;
   push\ *)
+    if [ "$DOCKER_TEST_MODE" = push-error ]; then
+      printf 'denied: image exceeds the registry size limit\n' >&2
+      exit 1
+    fi
     printf 'Docker push progress\n'
     ;;
   *)

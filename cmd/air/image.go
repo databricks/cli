@@ -165,9 +165,9 @@ func formatImageSize(sizeBytes int64) string {
 	return fmt.Sprintf("%.1f GB", float64(sizeBytes)/1e9)
 }
 
-// logCompressedImageSize prints the compressed size and layer count from the pushed manifest,
-// which is what DAR measures; the local image store only knows the uncompressed size.
-func logCompressedImageSize(ctx context.Context, deps imagePushDeps, dockerPath, target string) {
+// logCompressedImageSize prints the compressed size and layer count from the pushed manifest of the
+// given platform. The registry stores compressed layers; the local image store only knows the uncompressed size.
+func logCompressedImageSize(ctx context.Context, deps imagePushDeps, dockerPath, target, platform string) {
 	var manifest, errOut bytes.Buffer
 	if err := deps.runCommand(ctx, nil, &manifest, &errOut, dockerPath, "manifest", "inspect", "--verbose", target); err != nil {
 		detail, _, _ := strings.Cut(strings.TrimSpace(errOut.String()), "\n")
@@ -177,7 +177,7 @@ func logCompressedImageSize(ctx context.Context, deps imagePushDeps, dockerPath,
 		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the compressed size of %s: %s", target, detail))
 		return
 	}
-	sizeBytes, layers, err := compressedImageSize(manifest.Bytes())
+	sizeBytes, layers, err := compressedImageSize(manifest.Bytes(), platform)
 	if err != nil {
 		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the compressed size of %s: %v", target, err))
 		return
@@ -203,8 +203,8 @@ type verboseManifest struct {
 }
 
 // compressedImageSize sums the layer sizes in `docker manifest inspect --verbose` output. That
-// output is one object for an image manifest and an array for an index, whose linux/amd64 entry is used.
-func compressedImageSize(output []byte) (int64, int, error) {
+// output is one object for an image manifest and an array for an index, whose entry for platform is used.
+func compressedImageSize(output []byte, platform string) (int64, int, error) {
 	output = bytes.TrimSpace(output)
 	var entries []verboseManifest
 	if bytes.HasPrefix(output, []byte("[")) {
@@ -219,7 +219,7 @@ func compressedImageSize(output []byte) (int64, int, error) {
 		entries = []verboseManifest{entry}
 	}
 	for _, e := range entries {
-		if p := e.Descriptor.Platform; p != nil && p.OS+"/"+p.Architecture != airImagePlatform {
+		if p := e.Descriptor.Platform; p != nil && p.OS+"/"+p.Architecture != platform {
 			continue
 		}
 		m := e.OCIManifest
@@ -235,7 +235,7 @@ func compressedImageSize(output []byte) (int64, int, error) {
 		}
 		return sizeBytes, len(m.Layers), nil
 	}
-	return 0, 0, fmt.Errorf("no %s image manifest with layers", airImagePlatform)
+	return 0, 0, fmt.Errorf("no %s image manifest with layers", platform)
 }
 
 // darLimitationsURL returns the DAR limitations docs for the workspace's cloud.
@@ -313,15 +313,17 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "tag", resolved.source, target); err != nil {
 		return fmt.Errorf("tag source image %s: %w", resolved.source, err)
 	}
+	// DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
+	limitsLink := "For Databricks Artifact Registry image limits, see " + darLimitationsURL(w.Config)
 	cmdio.LogProgress(ctx, "Pushing image to "+target)
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "push", target); err != nil {
+		cmdio.LogString(ctx, limitsLink)
 		return fmt.Errorf("push image %s: %w", target, err)
 	}
 
 	cmdio.LogString(ctx, "Pushed image.")
-	logCompressedImageSize(ctx, deps, dockerPath, target)
-	// DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
-	cmdio.LogString(ctx, "For Databricks Artifact Registry image limits, see "+darLimitationsURL(w.Config))
+	logCompressedImageSize(ctx, deps, dockerPath, target, platform)
+	cmdio.LogString(ctx, limitsLink)
 	if root.OutputType(cmd) == flags.OutputJSON {
 		return renderEnvelope(ctx, struct {
 			UnityCatalogImage string `json:"unity_catalog_image"`

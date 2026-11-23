@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"io"
@@ -102,11 +103,12 @@ func TestFormatImageSize(t *testing.T) {
 
 func TestCompressedImageSize(t *testing.T) {
 	tests := []struct {
-		name    string
-		output  string
-		size    int64
-		layers  int
-		wantErr string
+		name     string
+		output   string
+		size     int64
+		layers   int
+		platform string
+		wantErr  string
 	}{
 		{
 			name:   "image manifest",
@@ -126,6 +128,13 @@ func TestCompressedImageSize(t *testing.T) {
 			size: 18, layers: 3,
 		},
 		{
+			name: "index uses the requested platform",
+			output: `[{"Descriptor":{"platform":{"architecture":"amd64","os":"linux"}},"OCIManifest":{"layers":[{"size":5}]}},
+				{"Descriptor":{"platform":{"architecture":"arm64","os":"linux"}},"OCIManifest":{"layers":[{"size":1},{"size":2}]}}]`,
+			platform: "linux/arm64",
+			size:     3, layers: 2,
+		},
+		{
 			name:    "index without linux/amd64",
 			output:  `[{"Descriptor":{"platform":{"architecture":"arm64","os":"linux"}},"OCIManifest":{"layers":[{"size":1}]}}]`,
 			wantErr: "no linux/amd64 image manifest with layers",
@@ -134,7 +143,7 @@ func TestCompressedImageSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			size, layers, err := compressedImageSize([]byte(tt.output))
+			size, layers, err := compressedImageSize([]byte(tt.output), cmp.Or(tt.platform, "linux/amd64"))
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)
 				return
