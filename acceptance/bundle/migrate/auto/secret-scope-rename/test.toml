@@ -1,5 +1,3 @@
-Badness = "The secret scope rename is lost in the migration: reconcileIDFields looks up the state field scope in the terraform attributes, which call it name, so the migrated state records the renamed scope under the old id. The deploy then reports the scope unchanged and the workspace keeps the old name; it should recreate the scope under the new name, as a direct deploy of the same rename does."
-
 # Local-only: the replay fixtures are captured against the fake server, so they reproduce a
 # terraform state only there, not on a real workspace (replaying them on cloud fails auth and
 # hits backend validation the mock does not enforce).
