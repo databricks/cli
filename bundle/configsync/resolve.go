@@ -173,20 +173,24 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 	parentPath := path.Parent()
 	ops := operations[scopedParent(scope, path)]
 
-	adjustment := 0
+	// Each recorded index is where its operation was applied, i.e. already shifted by
+	// the operations before it, so it is compared with the index shifted so far rather
+	// than the original one. Otherwise two earlier removals push the index past an
+	// element that is still there.
+	adjustedIndex := originalIndex
 	for _, op := range ops {
-		if op.index < originalIndex {
+		if op.index < adjustedIndex {
 			switch op.operation {
 			case OperationRemove:
-				adjustment--
+				adjustedIndex--
 			case OperationAdd:
-				adjustment++
+				adjustedIndex++
 			default:
 			}
 		}
 	}
 
-	adjustedIndex := max(originalIndex+adjustment, 0)
+	adjustedIndex = max(adjustedIndex, 0)
 
 	return structpath.NewPatternIndex(parentPath, adjustedIndex)
 }
