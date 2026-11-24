@@ -160,6 +160,54 @@ func TestNewResolver_Timeout_LogsAtDebugAndCachesNegative(t *testing.T) {
 	assert.Equal(t, first, hits.Load(), "a timeout must be negatively cached")
 }
 
+func TestNewResolver_TransientStatus_LogsAtDebugAndCachesNegative(t *testing.T) {
+	for _, status := range []int{
+		http.StatusRequestTimeout,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+	} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+			var hits atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				hits.Add(1)
+				w.WriteHeader(status)
+			}))
+			t.Cleanup(server.Close)
+
+			r := hostmetadata.NewResolver(sdkFetch(t, server.URL))
+
+			ctx, buf := captureLog(t)
+			m, err := r(ctx, server.URL)
+			require.NoError(t, err)
+			assert.Nil(t, m)
+			assert.Contains(t, buf.String(), "Debug: [hostmetadata] failed to fetch host metadata for "+server.URL)
+			assert.NotContains(t, buf.String(), "Warn:")
+
+			first := hits.Load()
+			_, err = r(ctx, server.URL)
+			require.NoError(t, err)
+			assert.Equal(t, first, hits.Load(), "a transient status must be negatively cached")
+		})
+	}
+}
+
+func TestNewResolver_NotFound_LogsWarn(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	server := httptest.NewServer(http.NotFoundHandler())
+	t.Cleanup(server.Close)
+
+	r := hostmetadata.NewResolver(sdkFetch(t, server.URL))
+
+	ctx, buf := captureLog(t)
+	_, err := r(ctx, server.URL)
+	require.NoError(t, err)
+	assert.Contains(t, buf.String(), "Warn: [hostmetadata] failed to fetch host metadata for "+server.URL)
+}
+
 func TestNewResolver_OtherFetchError_LogsWarn(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 
