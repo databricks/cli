@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 
+	"github.com/databricks/cli/cmd/bundle/autodeploy"
 	"github.com/databricks/cli/cmd/bundle/bitmap"
 	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
@@ -48,4 +49,5 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(newPlanCommand())
 	cmd.AddCommand(newConfigRemoteSyncCommand())
 	cmd.AddCommand(bitmap.NewBitmapCommand())
+	cmd.AddCommand(autodeploy.NewAutoDeployCommand())
 }
