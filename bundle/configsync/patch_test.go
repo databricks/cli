@@ -538,3 +538,51 @@ func TestApplyChangeMaterializesPrimaryNullParent(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyChangeKeepsAnchors(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		content   string
+		operation OperationType
+		path      string
+		want      string
+	}{
+		{
+			name:      "replace anchored node",
+			content:   "a: &x\n  k: 1\nb: *x\nc: *x\n",
+			operation: OperationReplace,
+			path:      "a",
+			want:      "a: 2\nb: &x\n  k: 1\nc: *x\n",
+		},
+		{
+			name:      "remove ancestor of anchored node",
+			content:   "tasks:\n  - task_key: a\n    libraries: &libs\n      - whl: a.whl\n  - task_key: b\n    libraries: *libs\n",
+			operation: OperationRemove,
+			path:      "tasks[0]",
+			want:      "tasks:\n  - task_key: b\n    libraries: &libs\n      - whl: a.whl\n",
+		},
+		{
+			name:      "nested anchor",
+			content:   "a: &outer\n  x: &inner 1\nb: *inner\nc: *outer\nd: *inner\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "b: &inner 1\nc: &outer\n  x: &inner 1\nd: *inner\n",
+		},
+		{
+			name:      "replace alias",
+			content:   "a: &x 1\nb: *x\n",
+			operation: OperationReplace,
+			path:      "b",
+			want:      "a: &x 1\nb: 2\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: tc.operation, Value: 2},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, string(result))
+		})
+	}
+}

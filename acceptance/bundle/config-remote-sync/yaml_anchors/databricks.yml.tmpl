@@ -1,0 +1,36 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster: &cluster
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - job_cluster_key: large
+          new_cluster: *cluster
+      tasks:
+        - task_key: setup
+          job_cluster_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/setup
+          libraries: &common_libs
+            - pypi:
+                package: requests
+        - task_key: ingest
+          job_cluster_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/ingest
+          libraries: *common_libs
+        - task_key: transform
+          job_cluster_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/transform
+          libraries: *common_libs
+
+targets:
+  default:
+    mode: development
