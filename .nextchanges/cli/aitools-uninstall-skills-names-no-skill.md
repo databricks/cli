@@ -1,1 +1,1 @@
-* `databricks aitools uninstall --skills` now fails when its value names no skill instead of removing every skill, and `aitools update` and `uninstall` no longer prompt when a coding agent runs them. ([#7873](https://github.com/databricks/cli/pull/7873))
+* `databricks aitools uninstall --skills` now fails when its value names no skill instead of removing every skill, and `aitools update` and `uninstall` no longer prompt when a coding agent runs them; with skills in both scopes they fail and ask for `--scope`. ([#7873](https://github.com/databricks/cli/pull/7873))
