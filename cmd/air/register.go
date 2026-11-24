@@ -26,7 +26,7 @@ type registerResult struct {
 	Status         string        `json:"status"`
 	DryRun         bool          `json:"dry_run,omitempty"`
 	Plan           *registerPlan `json:"plan,omitempty"`
-	UCModel        string        `json:"uc_model_name,omitempty"`
+	UCModel        string        `json:"uc_model,omitempty"`
 	ModelVersion   string        `json:"model_version,omitempty"`
 	ModelID        string        `json:"model_id,omitempty"`
 	IdempotencyKey string        `json:"idempotency_key,omitempty"`
@@ -75,7 +75,7 @@ func newRegisterCommandWithPollInterval(pollInterval time.Duration) *cobra.Comma
 Catalog model, ready to serve with databricks air serve.
 
 Describe the registration in a YAML file (see --file), or name the checkpoint and
-the model with --model-source and --uc-model-name. A file with engine registers a
+the model with --model-source and --uc-model. A file with engine registers a
 checkpoint served by your command; without engine, Databricks serves the
 checkpoint with dedicated inference.
 
@@ -90,7 +90,7 @@ YAML field, pass its path to -h as a separate argument:
   databricks air register -f register.yaml
 
   # Register a checkpoint for dedicated inference
-  databricks air register --model-source /Volumes/main/weights/gemma4_e4b --uc-model-name main.serving.gemma4
+  databricks air register --model-source /Volumes/main/weights/gemma4_e4b --uc-model main.serving.gemma4
 
   # Continue a registration that was interrupted
   databricks air register -f register.yaml --idempotency-key 3f6c0b52-4c7e-4d0b-9b8e-0f7ad6a4c2d1`,
@@ -103,7 +103,7 @@ YAML field, pass its path to -h as a separate argument:
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVarP(&opts.file, "file", "f", "", "Path to the registration YAML config")
 	cmd.Flags().StringVar(&opts.modelSource, modelSourceFlag, "", "Volume directory of the checkpoint, overriding the file's model_source")
-	cmd.Flags().StringVar(&opts.ucModel, ucModelNameFlag, "", "Unity Catalog model to register a version of, overriding the file's uc_model_name")
+	cmd.Flags().StringVar(&opts.ucModel, ucModelFlag, "", "Unity Catalog model to register a version of, overriding the file's uc_model")
 	cmd.Flags().StringArrayVar(&opts.overrides, "override", nil, "Override a YAML field, e.g. engine.environment.version=6 (repeatable)")
 	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "Validate the config, and show the plan, without changing anything")
 	cmd.Flags().StringVar(&opts.idempotencyKey, "idempotency-key", "", "Continue the registration that used this key, instead of registering another version")
@@ -121,14 +121,14 @@ YAML field, pass its path to -h as a separate argument:
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		opts.idempotencyKeySet = cmd.Flags().Changed("idempotency-key")
-		opts.flagsSet = changedFlags(cmd, modelSourceFlag, ucModelNameFlag)
+		opts.flagsSet = changedFlags(cmd, modelSourceFlag, ucModelFlag)
 		return renderModelError(cmd, runRegister(cmd, opts, pollInterval))
 	}
 	return cmd
 }
 
 // loadRegisterConfig reads the config from --file, if set, then applies the
-// --model-source and --uc-model-name flags over it, and validates the result.
+// --model-source and --uc-model flags over it, and validates the result.
 func loadRegisterConfig(ctx context.Context, opts registerOptions) (*registerConfig, error) {
 	if err := validateRegisterFlags(opts); err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func loadRegisterConfig(ctx context.Context, opts registerOptions) (*registerCon
 	case len(opts.overrides) > 0:
 		return nil, errors.New("--override applies to a file; set --file, or pass the fields as flags")
 	case opts.modelSource == "" || opts.ucModel == "":
-		return nil, errors.New("set --file, or both --model-source and --uc-model-name")
+		return nil, errors.New("set --file, or both --model-source and --uc-model")
 	}
 	if opts.modelSource != "" {
 		cfg.ModelSource = opts.modelSource
@@ -163,7 +163,7 @@ func loadRegisterConfig(ctx context.Context, opts registerOptions) (*registerCon
 // validateRegisterFlags checks the model source and model flags that were passed,
 // naming the flag in the error.
 func validateRegisterFlags(opts registerOptions) error {
-	for name, value := range map[string]string{modelSourceFlag: opts.modelSource, ucModelNameFlag: opts.ucModel} {
+	for name, value := range map[string]string{modelSourceFlag: opts.modelSource, ucModelFlag: opts.ucModel} {
 		if opts.flagsSet[name] && strings.TrimSpace(value) == "" {
 			return fmt.Errorf("--%s cannot be empty", name)
 		}
@@ -174,7 +174,7 @@ func validateRegisterFlags(opts registerOptions) error {
 		}
 	}
 	if opts.ucModel != "" {
-		return validateUCModelName(opts.ucModel, "--"+ucModelNameFlag)
+		return validateUCModelName(opts.ucModel, "--"+ucModelFlag)
 	}
 	return nil
 }
@@ -224,7 +224,7 @@ func runRegister(cmd *cobra.Command, opts registerOptions, pollInterval time.Dur
 	if result.EnvironmentStagingFailed {
 		cmdio.LogString(ctx, "Warning: the version's serving environment couldn't be prepared ahead of time, so an endpoint can be slower to start, or fail to start.")
 	}
-	serve := []string{serveCommandPath, "--" + ucModelNameFlag, shellquote.BashArg(cfg.UCModel), "--" + endpointNameFlag, "<endpoint>", "--" + modelVersionFlag, shellquote.BashArg(resp.ModelVersion)}
+	serve := []string{serveCommandPath, "--" + ucModelFlag, shellquote.BashArg(cfg.UCModel), "--" + endpointNameFlag, "<endpoint>", "--" + modelVersionFlag, shellquote.BashArg(resp.ModelVersion)}
 	if profile := w.Config.Profile; profile != "" {
 		serve = append(serve, "-p", shellquote.BashArg(profile))
 	}
@@ -332,7 +332,7 @@ func registerResumeCommand(profile string, opts registerOptions, key string) str
 		args = append(args, "--model-source", shellquote.BashArg(opts.modelSource))
 	}
 	if opts.ucModel != "" {
-		args = append(args, "--uc-model-name", shellquote.BashArg(opts.ucModel))
+		args = append(args, "--uc-model", shellquote.BashArg(opts.ucModel))
 	}
 	args = append(args, "--idempotency-key", shellquote.BashArg(key))
 	if profile != "" {

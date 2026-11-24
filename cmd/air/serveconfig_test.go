@@ -9,7 +9,7 @@ import (
 
 // minimalServeConfig serves the newest READY version on the compute it was
 // registered for.
-const minimalServeConfig = `uc_model_name: main.models.qwen
+const minimalServeConfig = `uc_model: main.models.qwen
 endpoint_name: qwen-chat
 `
 
@@ -156,10 +156,10 @@ func TestServeConfigValidation(t *testing.T) {
 		text    string
 		wantErr string
 	}{
-		{"no model name", "endpoint_name: qwen-chat\n", `uc_model_name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got ""`},
-		{"bad model name", "uc_model_name: qwen\nendpoint_name: qwen-chat\n", "uc_model_name must be a Unity Catalog model name"},
-		{"no endpoint", "uc_model_name: main.models.qwen\n", `endpoint_name must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
-		{"endpoint with a path", "uc_model_name: main.models.qwen\nendpoint_name: x/../../jobs\n", "endpoint_name must be a serving endpoint name"},
+		{"no model name", "endpoint_name: qwen-chat\n", `uc_model must be a Unity Catalog model name as <catalog>.<schema>.<model>, got ""`},
+		{"bad model name", "uc_model: qwen\nendpoint_name: qwen-chat\n", "uc_model must be a Unity Catalog model name"},
+		{"no endpoint", "uc_model: main.models.qwen\n", `endpoint_name must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
+		{"endpoint with a path", "uc_model: main.models.qwen\nendpoint_name: x/../../jobs\n", "endpoint_name must be a serving endpoint name"},
 		{"a version that isn't a number", minimalServeConfig + "model_version: v3\n", `model_version must be a model version number such as 3, got "v3"`},
 		{"version zero", minimalServeConfig + "model_version: 0\n", "model_version must be a model version number"},
 		{"an unknown mode", minimalServeConfig + "compute: {mode: realtime}\n", `compute.mode must be one of latency_sensitive, throughput_optimized, got "realtime"`},
@@ -208,7 +208,7 @@ func TestLoadServeConfigFromFlags(t *testing.T) {
 func TestLoadServeConfigNeedsAFileOrBothFlags(t *testing.T) {
 	for _, opts := range []serveOptions{{}, {ucModel: "a.b.c"}, {endpoint: "ep"}} {
 		_, err := loadServeConfig(t.Context(), opts)
-		assert.ErrorContains(t, err, "set --file, or both --uc-model-name and --endpoint-name")
+		assert.ErrorContains(t, err, "set --file, or both --uc-model and --endpoint-name")
 	}
 	_, err := loadServeConfig(t.Context(), serveOptions{ucModel: "a.b.c", endpoint: "ep", overrides: []string{"compute.mode=x"}})
 	assert.ErrorContains(t, err, "--override applies to a file")
@@ -223,7 +223,7 @@ func TestLoadServeConfigChecksFlagsByName(t *testing.T) {
 		{"an empty version", serveOptions{ucModel: "a.b.c", endpoint: "ep", flagsSet: map[string]bool{modelVersionFlag: true}}, "--model-version cannot be empty"},
 		{"an empty endpoint over a file", serveOptions{file: "unused.yaml", flagsSet: map[string]bool{endpointNameFlag: true}}, "--endpoint-name cannot be empty"},
 		{"a bad version", serveOptions{ucModel: "a.b.c", endpoint: "ep", modelVersion: "latest"}, `--model-version must be a model version number such as 3, got "latest"`},
-		{"a bad model", serveOptions{ucModel: "qwen", endpoint: "ep"}, `--uc-model-name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got "qwen"`},
+		{"a bad model", serveOptions{ucModel: "qwen", endpoint: "ep"}, `--uc-model must be a Unity Catalog model name as <catalog>.<schema>.<model>, got "qwen"`},
 		{"a bad endpoint", serveOptions{ucModel: "a.b.c", endpoint: "a/b"}, `--endpoint-name must be a serving endpoint name of letters, digits, '-' and '_', got "a/b"`},
 	}
 	for _, tt := range tests {

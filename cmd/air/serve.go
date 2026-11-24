@@ -35,7 +35,7 @@ type serveResult struct {
 	Status       string     `json:"status"`
 	DryRun       bool       `json:"dry_run,omitempty"`
 	Plan         *servePlan `json:"plan,omitempty"`
-	UCModel      string     `json:"uc_model_name,omitempty"`
+	UCModel      string     `json:"uc_model,omitempty"`
 	ModelVersion string     `json:"model_version,omitempty"`
 	Endpoint     string     `json:"endpoint,omitempty"`
 	EndpointURL  string     `json:"endpoint_url,omitempty"`
@@ -44,7 +44,7 @@ type serveResult struct {
 // servePlan is what a dry run reports. A dry run makes no request, so the version
 // isn't read, and the compute it gets isn't known yet.
 type servePlan struct {
-	UCModel  string `json:"uc_model_name"`
+	UCModel  string `json:"uc_model"`
 	Endpoint string `json:"endpoint_name"`
 	// ModelVersion is empty when the newest READY version is served, picked when
 	// serving.
@@ -76,7 +76,7 @@ func newServeCommand() *cobra.Command {
 		Long: `Serve a version of a Unity Catalog model on a Model Serving endpoint.
 
 Describe the endpoint in a YAML file (see --file), or name the model and the
-endpoint with --uc-model-name and --endpoint-name. air serve serves the newest
+endpoint with --uc-model and --endpoint-name. air serve serves the newest
 READY version unless model_version names one, and creates the endpoint if it
 doesn't exist. The compute follows from what the version was registered for:
 dedicated inference for a checkpoint registered without engine, and replicas for
@@ -89,7 +89,7 @@ separate argument:
   databricks air serve -h config                 all fields, with examples
   databricks air serve -h config.compute         one section`,
 		Example: `  # Serve the newest READY version, and wait until the endpoint is ready
-  databricks air serve --uc-model-name main.serving.qwen30b_sglang --endpoint-name qwen3-30b --watch
+  databricks air serve --uc-model main.serving.qwen30b_sglang --endpoint-name qwen3-30b --watch
 
   # Serve a version on the compute a file describes
   databricks air serve -f serve.yaml
@@ -104,7 +104,7 @@ separate argument:
 	// List flags in declaration order (most used first) rather than alphabetically.
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVarP(&opts.file, "file", "f", "", "Path to the serving YAML config")
-	cmd.Flags().StringVar(&opts.ucModel, ucModelNameFlag, "", "Unity Catalog model to serve, overriding the file's uc_model_name")
+	cmd.Flags().StringVar(&opts.ucModel, ucModelFlag, "", "Unity Catalog model to serve, overriding the file's uc_model")
 	cmd.Flags().StringVar(&opts.endpoint, endpointNameFlag, "", "Serving endpoint to serve on, overriding the file's endpoint_name")
 	cmd.Flags().StringVar(&opts.modelVersion, modelVersionFlag, "", "Version to serve, overriding the file's model_version (default: the newest READY version)")
 	cmd.Flags().BoolVar(&opts.watch, "watch", false, "Wait until the endpoint is ready")
@@ -122,7 +122,7 @@ separate argument:
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		opts.flagsSet = changedFlags(cmd, ucModelNameFlag, endpointNameFlag, modelVersionFlag)
+		opts.flagsSet = changedFlags(cmd, ucModelFlag, endpointNameFlag, modelVersionFlag)
 		return renderModelError(cmd, runServe(cmd, opts))
 	}
 	return cmd
@@ -131,13 +131,13 @@ separate argument:
 // validateServeFlags checks the model, endpoint and version flags that were passed,
 // naming the flag in the error.
 func validateServeFlags(opts serveOptions) error {
-	for name, value := range map[string]string{ucModelNameFlag: opts.ucModel, endpointNameFlag: opts.endpoint, modelVersionFlag: opts.modelVersion} {
+	for name, value := range map[string]string{ucModelFlag: opts.ucModel, endpointNameFlag: opts.endpoint, modelVersionFlag: opts.modelVersion} {
 		if opts.flagsSet[name] && strings.TrimSpace(value) == "" {
 			return fmt.Errorf("--%s cannot be empty", name)
 		}
 	}
 	if opts.ucModel != "" {
-		if err := validateUCModelName(opts.ucModel, "--"+ucModelNameFlag); err != nil {
+		if err := validateUCModelName(opts.ucModel, "--"+ucModelFlag); err != nil {
 			return err
 		}
 	}
@@ -151,7 +151,7 @@ func validateServeFlags(opts serveOptions) error {
 }
 
 // loadServeConfig reads the config from --file, if set, then applies the
-// --uc-model-name, --endpoint-name and --model-version flags over it, and validates
+// --uc-model, --endpoint-name and --model-version flags over it, and validates
 // the result.
 func loadServeConfig(ctx context.Context, opts serveOptions) (*serveConfig, error) {
 	if err := validateServeFlags(opts); err != nil {
@@ -168,7 +168,7 @@ func loadServeConfig(ctx context.Context, opts serveOptions) (*serveConfig, erro
 	case len(opts.overrides) > 0:
 		return nil, errors.New("--override applies to a file; set --file, or pass the fields as flags")
 	case opts.ucModel == "" || opts.endpoint == "":
-		return nil, errors.New("set --file, or both --uc-model-name and --endpoint-name")
+		return nil, errors.New("set --file, or both --uc-model and --endpoint-name")
 	}
 	if opts.ucModel != "" {
 		cfg.UCModel = opts.ucModel
@@ -331,7 +331,7 @@ func serveResumeCommand(profile string, opts serveOptions, version string) strin
 		args = append(args, "--override", shellquote.BashArg(override))
 	}
 	if opts.ucModel != "" {
-		args = append(args, "--uc-model-name", shellquote.BashArg(opts.ucModel))
+		args = append(args, "--uc-model", shellquote.BashArg(opts.ucModel))
 	}
 	if opts.endpoint != "" {
 		args = append(args, "--endpoint-name", shellquote.BashArg(opts.endpoint))

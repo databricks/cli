@@ -50,7 +50,7 @@ const (
 // checkpoint is served with dedicated inference.
 type registerModelPackageRequest struct {
 	ModelSource        string              `json:"model_source"`
-	UCModel            string              `json:"uc_model_name"`
+	UCModel            string              `json:"uc_model"`
 	Engine             *modelPackageEngine `json:"engine,omitempty"`
 	IdempotencyKey     string              `json:"idempotency_key,omitempty"`
 	RetryFailedStaging bool                `json:"retry_failed_staging,omitempty"`
@@ -74,7 +74,7 @@ type modelPackageEnvironment struct {
 // registerModelPackageResponse is the RegisterModelPackageResponse body.
 type registerModelPackageResponse struct {
 	ModelID       string              `json:"model_id"`
-	UCModel       string              `json:"uc_model_name"`
+	UCModel       string              `json:"uc_model"`
 	ModelVersion  string              `json:"model_version"`
 	Ready         bool                `json:"ready"`
 	StagingStatus *modelStagingStatus `json:"staging_status,omitempty"`
@@ -92,7 +92,7 @@ type artifactStagingStatus struct {
 
 // finalizeModelPackageRequest is the FinalizeModelPackageRequest body.
 type finalizeModelPackageRequest struct {
-	UCModel      string `json:"uc_model_name"`
+	UCModel      string `json:"uc_model"`
 	ModelVersion string `json:"model_version"`
 }
 

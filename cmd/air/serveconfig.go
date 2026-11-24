@@ -79,9 +79,9 @@ const replicaLimit = math.MaxInt32 / concurrencyPerReplica
 // serveConfig is the `air serve` YAML schema: a version of a Unity Catalog model to
 // serve on an endpoint.
 type serveConfig struct {
-	UCModel      string  `yaml:"uc_model_name" help:"Unity Catalog model to serve a version of, as <catalog>.<schema>.<model>." required:"yes"`
-	Endpoint     string  `yaml:"endpoint_name" help:"Serving endpoint to serve the version on. It is created if it doesn't exist. An endpoint that serves one version of uc_model_name is updated to serve this version instead, with the compute in this file replacing what it has; air serve doesn't change an endpoint that serves anything else." required:"yes"`
-	ModelVersion *string `yaml:"model_version" help:"Version of uc_model_name to serve (default: its newest READY version)."`
+	UCModel      string  `yaml:"uc_model" help:"Unity Catalog model to serve a version of, as <catalog>.<schema>.<model>." required:"yes"`
+	Endpoint     string  `yaml:"endpoint_name" help:"Serving endpoint to serve the version on. It is created if it doesn't exist. An endpoint that serves one version of uc_model is updated to serve this version instead, with the compute in this file replacing what it has; air serve doesn't change an endpoint that serves anything else." required:"yes"`
+	ModelVersion *string `yaml:"model_version" help:"Version of uc_model to serve (default: its newest READY version)."`
 	// TODO: env_variables, with {{secrets/scope/key}} values for secrets, set on the
 	// served entity.
 	Compute *serveComputeConfig `yaml:"compute" help:"Compute to serve on: replicas in gpu, or model_units for a checkpoint registered without engine, which is served with dedicated inference. Every field defaults from what the version was registered for."`
@@ -111,7 +111,7 @@ type serveModelUnitsConfig struct {
 // validate checks the whole config without the version, returning the first
 // failure. Fields are checked in declaration order to keep errors stable.
 func (c *serveConfig) validate() error {
-	if err := validateUCModelName(c.UCModel, "uc_model_name"); err != nil {
+	if err := validateUCModelName(c.UCModel, "uc_model"); err != nil {
 		return err
 	}
 	if !endpointNameRe().MatchString(c.Endpoint) {
@@ -312,11 +312,11 @@ func serveSchema() configField {
     databricks air serve -h config.compute
 
   The newest READY version, on the compute it was registered for:
-    uc_model_name: main.serving.qwen30b_sglang
+    uc_model: main.serving.qwen30b_sglang
     endpoint_name: qwen3-30b-sglang
 
   A version on replicas of your choice:
-    uc_model_name: main.serving.qwen30b_sglang
+    uc_model: main.serving.qwen30b_sglang
     endpoint_name: qwen3-30b-sglang
     model_version: 3
     compute:
@@ -326,7 +326,7 @@ func serveSchema() configField {
         max_replicas: 2
 
   A checkpoint registered without engine, on dedicated inference:
-    uc_model_name: main.serving.gemma4
+    uc_model: main.serving.gemma4
     endpoint_name: gemma4
     compute:
       mode: throughput_optimized

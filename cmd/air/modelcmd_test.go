@@ -38,7 +38,7 @@ func TestModelErrorCode(t *testing.T) {
 	}{
 		{"interrupted", fmt.Errorf("air serve %w", errInterrupted), "INTERRUPTED", true},
 		{"timed out", fmt.Errorf("air register %w", errTimedOut), "TIMEOUT", true},
-		{"invalid input", withCode(codeInvalidArgs, false, errors.New("uc_model_name must be a Unity Catalog model name")), "INVALID_ARGS", false},
+		{"invalid input", withCode(codeInvalidArgs, false, errors.New("uc_model must be a Unity Catalog model name")), "INVALID_ARGS", false},
 		{"staging failed", withCode(codeStagingFailed, true, errors.New("copying failed")), "STAGING_FAILED", true},
 		{"server unavailable", fmt.Errorf("x: %w", &apierr.APIError{ErrorCode: "TEMPORARILY_UNAVAILABLE", StatusCode: 503}), "TEMPORARILY_UNAVAILABLE", true},
 		{"bad request", fmt.Errorf("x: %w", &apierr.APIError{ErrorCode: "INVALID_PARAMETER_VALUE", StatusCode: 400}), "INVALID_PARAMETER_VALUE", false},
@@ -63,8 +63,8 @@ func TestWholeNumber(t *testing.T) {
 }
 
 func TestValidateUCModelName(t *testing.T) {
-	assert.NoError(t, validateUCModelName("main.serving.defect-detector", "uc_model_name"))
+	assert.NoError(t, validateUCModelName("main.serving.defect-detector", "uc_model"))
 	for _, name := range []string{"", "qwen", "a.b", "a.b.c.d", "a.b/c.d", "a. b.c", "main.models.`qwen`"} {
-		assert.ErrorContains(t, validateUCModelName(name, "--uc-model-name"), "--uc-model-name must be a Unity Catalog model name", name)
+		assert.ErrorContains(t, validateUCModelName(name, "--uc-model"), "--uc-model must be a Unity Catalog model name", name)
 	}
 }

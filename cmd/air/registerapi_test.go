@@ -133,20 +133,20 @@ func (f *fakeModelServing) requests() []registerModelPackageRequest {
 }
 
 const (
-	stagingInProgress = `{"model_id": "m-1", "uc_model_name": "main.models.qwen", "model_version": "3", "ready": false,
+	stagingInProgress = `{"model_id": "m-1", "uc_model": "main.models.qwen", "model_version": "3", "ready": false,
 		"staging_status": {"state": "IN_PROGRESS", "model_artifact": {"state": "IN_PROGRESS"}, "environment_artifact": {"state": "SUCCEEDED"}}}`
-	stagingSucceeded = `{"model_id": "m-1", "uc_model_name": "main.models.qwen", "model_version": "3", "ready": false,
+	stagingSucceeded = `{"model_id": "m-1", "uc_model": "main.models.qwen", "model_version": "3", "ready": false,
 		"staging_status": {"state": "SUCCEEDED", "model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`
-	stagingReady = `{"model_id": "m-1", "uc_model_name": "main.models.qwen", "model_version": "3", "ready": true,
+	stagingReady = `{"model_id": "m-1", "uc_model": "main.models.qwen", "model_version": "3", "ready": true,
 		"staging_status": {"state": "SUCCEEDED", "model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`
-	stagingFailed = `{"model_id": "m-1", "uc_model_name": "main.models.qwen", "model_version": "3", "ready": false,
+	stagingFailed = `{"model_id": "m-1", "uc_model": "main.models.qwen", "model_version": "3", "ready": false,
 		"staging_status": {"state": "FAILED", "model_artifact": {"state": "FAILED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`
 
 	statusInProgress = `{"status": {"state": "IN_PROGRESS", "model_artifact": {"state": "IN_PROGRESS"}, "environment_artifact": {"state": "SUCCEEDED"}}}`
 	statusSucceeded  = `{"status": {"state": "SUCCEEDED", "model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`
 	statusFailed     = `{"status": {"state": "FAILED", "model_artifact": {"state": "FAILED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`
 
-	finalizedResponse = `{"model_id": "m-1", "uc_model_name": "main.models.qwen", "model_version": "3",
+	finalizedResponse = `{"model_id": "m-1", "uc_model": "main.models.qwen", "model_version": "3",
 		"staging_status": {"state": "IN_PROGRESS", "model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "IN_PROGRESS"}}}`
 )
 
@@ -270,7 +270,7 @@ var malformedStagingStatuses = map[string]struct {
 func TestRegisterAndFinalizeRejectsAMalformedRegistrationStatus(t *testing.T) {
 	for name, tt := range malformedStagingStatuses {
 		t.Run(name, func(t *testing.T) {
-			fake := newFakeModelServing(t, `{"model_id": "m-1", "uc_model_name": "main.models.qwen", "model_version": "3", "ready": false, "staging_status": `+tt.status+`}`)
+			fake := newFakeModelServing(t, `{"model_id": "m-1", "uc_model": "main.models.qwen", "model_version": "3", "ready": false, "staging_status": `+tt.status+`}`)
 
 			resp, states, err := registerTestCheckpoint(t, fake, checkpointRequest())
 			assert.ErrorContains(t, err, "air register can't read Model Serving's response about version 3 of main.models.qwen: ")
@@ -340,7 +340,7 @@ func TestRegisterAndFinalizeRejectsAnotherFinalizedVersion(t *testing.T) {
 }
 
 func TestRegisterAndFinalizeRejectsARegistrationWithoutAVersion(t *testing.T) {
-	fake := newFakeModelServing(t, `{"model_id": "m-1", "uc_model_name": "main.models.qwen", "ready": false}`)
+	fake := newFakeModelServing(t, `{"model_id": "m-1", "uc_model": "main.models.qwen", "ready": false}`)
 
 	_, _, err := registerTestCheckpoint(t, fake, checkpointRequest())
 	assert.ErrorContains(t, err, "registering a version of main.models.qwen returned no version")
@@ -348,7 +348,7 @@ func TestRegisterAndFinalizeRejectsARegistrationWithoutAVersion(t *testing.T) {
 }
 
 func TestRegisterAndFinalizeRejectsAVersionThatIsntANumber(t *testing.T) {
-	fake := newFakeModelServing(t, `{"model_id": "m-1", "uc_model_name": "main.models.qwen", "model_version": "3; rm", "ready": false, "staging_status": {"model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`)
+	fake := newFakeModelServing(t, `{"model_id": "m-1", "uc_model": "main.models.qwen", "model_version": "3; rm", "ready": false, "staging_status": {"model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "SUCCEEDED"}}}`)
 
 	_, _, err := registerTestCheckpoint(t, fake, checkpointRequest())
 	assert.ErrorContains(t, err, `registering a version of main.models.qwen returned "3; rm", which isn't a version number`)
@@ -401,7 +401,7 @@ func TestRegistrationRequestForCommandJSON(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
 		"model_source": "/Volumes/main/models/weights/qwen3_8b",
-		"uc_model_name": "main.models.qwen",
+		"uc_model": "main.models.qwen",
 		"idempotency_key": "k",
 		"engine": {
 			"environment": {"version": "6", "dependencies": ["einops==0.8.0"]},
@@ -418,7 +418,7 @@ func TestRegistrationRequestForDedicatedJSON(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
 		"model_source": "/Volumes/main/models/weights/qwen3_8b",
-		"uc_model_name": "main.models.qwen",
+		"uc_model": "main.models.qwen",
 		"idempotency_key": "k"
 	}`, string(raw))
 }
@@ -428,7 +428,7 @@ func TestRegisterModelPackageRequestJSON(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
 		"model_source": "/Volumes/main/models/weights/qwen3_8b",
-		"uc_model_name": "main.models.qwen",
+		"uc_model": "main.models.qwen",
 		"idempotency_key": "key-1",
 		"engine": {
 			"environment": {"version": "6"},

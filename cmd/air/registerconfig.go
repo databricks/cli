@@ -51,7 +51,7 @@ var registrationKeyRe = sync.OnceValue(func() *regexp.Regexp { return regexp.Mus
 // new version of a Unity Catalog model.
 type registerConfig struct {
 	ModelSource string                `yaml:"model_source" help:"Unity Catalog volume directory holding a checkpoint's weights, as /Volumes/<catalog>/<schema>/<volume>/<path>. Model Serving copies it, with its subdirectories, into the new version." required:"yes"`
-	UCModel     string                `yaml:"uc_model_name" help:"Unity Catalog model, as <catalog>.<schema>.<model>. The checkpoint is registered as a new version of it, creating the model if it doesn't exist." required:"yes"`
+	UCModel     string                `yaml:"uc_model" help:"Unity Catalog model, as <catalog>.<schema>.<model>. The checkpoint is registered as a new version of it, creating the model if it doesn't exist." required:"yes"`
 	Engine      *registerEngineConfig `yaml:"engine" help:"Your own model server for the checkpoint: the command that starts it and the serverless environment it runs on. Without engine, Databricks serves the checkpoint with dedicated inference."`
 }
 
@@ -88,7 +88,7 @@ func (c *registerConfig) validate() error {
 	if err := validateVolumeDirectory("model_source", c.ModelSource); err != nil {
 		return err
 	}
-	if err := validateUCModelName(c.UCModel, "uc_model_name"); err != nil {
+	if err := validateUCModelName(c.UCModel, "uc_model"); err != nil {
 		return err
 	}
 	if c.Engine == nil {
@@ -207,7 +207,7 @@ func registerSchema() configField {
 
   A checkpoint served by a command of your own:
     model_source: /Volumes/main/weights/qwen3_30b_a3b
-    uc_model_name: main.serving.qwen30b_sglang
+    uc_model: main.serving.qwen30b_sglang
     engine:
       environment:
         version: 6
@@ -216,7 +216,7 @@ func registerSchema() configField {
 
   A checkpoint served with dedicated inference:
     model_source: /Volumes/main/weights/gemma4_e4b
-    uc_model_name: main.serving.gemma4`,
+    uc_model: main.serving.gemma4`,
 		children: describeStruct(reflect.TypeFor[registerConfig](), configHelpRoot),
 	}
 }

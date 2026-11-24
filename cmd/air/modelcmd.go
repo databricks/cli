@@ -99,7 +99,7 @@ func modelErrorCode(err error) (code string, retryable bool) {
 
 // Flags the model commands share.
 const (
-	ucModelNameFlag  = "uc-model-name"
+	ucModelFlag      = "uc-model"
 	endpointNameFlag = "endpoint-name"
 	modelVersionFlag = "model-version"
 	modelSourceFlag  = "model-source"

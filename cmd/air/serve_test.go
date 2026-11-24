@@ -192,7 +192,7 @@ func TestServeFromFlags(t *testing.T) {
 
 	var buf bytes.Buffer
 	require.NoError(t, runModelCmd(t, newServeCommand(), flags.OutputJSON, &buf, srv.URL,
-		"uc-model-name", "main.models.qwen", "endpoint-name", "from-flags", "model-version", "2", "watch", "true"))
+		"uc-model", "main.models.qwen", "endpoint-name", "from-flags", "model-version", "2", "watch", "true"))
 	got := serveJSON(t, &buf)
 	assert.Equal(t, "from-flags", got.Endpoint)
 	assert.Equal(t, "2", got.ModelVersion)
@@ -280,7 +280,7 @@ func TestServeRefusesToReplaceAnotherModel(t *testing.T) {
 
 func TestServeRefusesAnEmptyVersionFlag(t *testing.T) {
 	var buf bytes.Buffer
-	err := runModelCmd(t, newServeCommand(), flags.OutputText, &buf, "", "uc-model-name", "main.models.qwen", "endpoint-name", "ep", "model-version", "", "dry-run", "true")
+	err := runModelCmd(t, newServeCommand(), flags.OutputText, &buf, "", "uc-model", "main.models.qwen", "endpoint-name", "ep", "model-version", "", "dry-run", "true")
 	assert.ErrorContains(t, err, "--model-version cannot be empty")
 }
 
@@ -316,7 +316,7 @@ func TestServeResumeCommand(t *testing.T) {
 		serveResumeCommand("dev", opts, "4"))
 
 	assert.Equal(t,
-		"databricks air serve --uc-model-name a.b.c --endpoint-name ep --model-version 2 --watch",
+		"databricks air serve --uc-model a.b.c --endpoint-name ep --model-version 2 --watch",
 		serveResumeCommand("", serveOptions{ucModel: "a.b.c", endpoint: "ep"}, "2"))
 }
 

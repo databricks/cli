@@ -10,7 +10,7 @@ import (
 
 // commandRegisterConfig is a checkpoint served by a command.
 const commandRegisterConfig = `model_source: /Volumes/main/models/weights/qwen3_8b
-uc_model_name: main.models.qwen
+uc_model: main.models.qwen
 engine:
   environment:
     version: 6
@@ -21,7 +21,7 @@ engine:
 
 // dedicatedRegisterConfig is a checkpoint served with dedicated inference.
 const dedicatedRegisterConfig = `model_source: /Volumes/main/models/weights/qwen3_8b
-uc_model_name: main.models.qwen
+uc_model: main.models.qwen
 `
 
 func loadRegisterConfigText(t *testing.T, text string, overrides ...string) (*registerConfig, error) {
@@ -124,9 +124,9 @@ func TestLoadRegisterConfigChecksFlagsByName(t *testing.T) {
 		wantErr string
 	}{
 		{"an empty model source", registerOptions{ucModel: "a.b.c", flagsSet: map[string]bool{modelSourceFlag: true}}, "--model-source cannot be empty"},
-		{"an empty model over a file", registerOptions{file: "unused.yaml", flagsSet: map[string]bool{ucModelNameFlag: true}}, "--uc-model-name cannot be empty"},
+		{"an empty model over a file", registerOptions{file: "unused.yaml", flagsSet: map[string]bool{ucModelFlag: true}}, "--uc-model cannot be empty"},
 		{"a bad model source", registerOptions{modelSource: "/dbfs/w", ucModel: "a.b.c"}, `--model-source must be a Unity Catalog volume directory as /Volumes/<catalog>/<schema>/<volume>/<path>, of at most 1024 characters, got "/dbfs/w"`},
-		{"a bad model", registerOptions{modelSource: "/Volumes/a/b/c/w", ucModel: "qwen"}, `--uc-model-name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got "qwen"`},
+		{"a bad model", registerOptions{modelSource: "/Volumes/a/b/c/w", ucModel: "qwen"}, `--uc-model must be a Unity Catalog model name as <catalog>.<schema>.<model>, got "qwen"`},
 		{"a logged model", registerOptions{modelSource: "models:/m-1", ucModel: "a.b.c"}, "model_source can't be a logged model yet"},
 	}
 	for _, tt := range tests {
@@ -144,7 +144,7 @@ func TestLoadRegisterConfigNeedsAFileOrBothFlags(t *testing.T) {
 		{ucModel: "a.b.c"},
 	} {
 		_, err := loadRegisterConfig(t.Context(), opts)
-		assert.ErrorContains(t, err, "set --file, or both --model-source and --uc-model-name")
+		assert.ErrorContains(t, err, "set --file, or both --model-source and --uc-model")
 	}
 	_, err := loadRegisterConfig(t.Context(), registerOptions{modelSource: "/Volumes/a/b/c/w", ucModel: "a.b.c", overrides: []string{"engine.task=x"}})
 	assert.ErrorContains(t, err, "--override applies to a file")
@@ -161,9 +161,9 @@ func TestRegisterConfigValidation(t *testing.T) {
 		{"path outside volumes", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/dbfs/weights"), "model_source must be a Unity Catalog volume directory"},
 		{"path too long", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/Volumes/"+strings.Repeat("a", 1100)), "of at most 1024 characters"},
 		{"path too long in characters", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/Volumes/"+strings.Repeat("é", 1020)), "model_source must be a Unity Catalog volume directory"},
-		{"no model name", dropLine("uc_model_name:"), `uc_model_name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got ""`},
-		{"bad model name", replaceFirst("uc_model_name: main.models.qwen", "uc_model_name: qwen"), "uc_model_name must be a Unity Catalog model name"},
-		{"backticked model name", replaceFirst("uc_model_name: main.models.qwen", "uc_model_name: main.models.`qwen`"), "uc_model_name must be a Unity Catalog model name"},
+		{"no model name", dropLine("uc_model:"), `uc_model must be a Unity Catalog model name as <catalog>.<schema>.<model>, got ""`},
+		{"bad model name", replaceFirst("uc_model: main.models.qwen", "uc_model: qwen"), "uc_model must be a Unity Catalog model name"},
+		{"backticked model name", replaceFirst("uc_model: main.models.qwen", "uc_model: main.models.`qwen`"), "uc_model must be a Unity Catalog model name"},
 		{"engine without a command", dropLine("  command:"), "engine.command is required"},
 		{"empty command", replaceFirst("command: python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080", `command: " "`), "engine.command cannot be empty"},
 		{"command too long", replaceFirst("command: python", "command: python "+strings.Repeat("x", maxServingCommandChars)), "engine.command must be at most 32768 characters"},

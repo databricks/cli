@@ -98,7 +98,7 @@ func TestRegisterCommandText(t *testing.T) {
 	require.NoError(t, runRegisterCmd(t, flags.OutputText, &buf, srv.URL, commandRegisterConfig))
 	out := buf.String()
 	assert.Contains(t, out, "Registering a version of main.models.qwen with idempotency key ")
-	assert.Contains(t, out, "Version 3 of main.models.qwen is ready. To serve it, run:\n  databricks air serve --uc-model-name main.models.qwen --endpoint-name <endpoint> --model-version 3\n")
+	assert.Contains(t, out, "Version 3 of main.models.qwen is ready. To serve it, run:\n  databricks air serve --uc-model main.models.qwen --endpoint-name <endpoint> --model-version 3\n")
 	assert.NotContains(t, out, "Warning")
 }
 
@@ -107,7 +107,7 @@ func TestRegisterDedicatedFromFlags(t *testing.T) {
 
 	var buf bytes.Buffer
 	require.NoError(t, runModelCmd(t, newRegisterCommandWithPollInterval(time.Millisecond), flags.OutputJSON, &buf, srv.URL,
-		"model-source", "/Volumes/main/models/weights/gemma", "uc-model-name", "main.models.gemma"))
+		"model-source", "/Volumes/main/models/weights/gemma", "uc-model", "main.models.gemma"))
 	bodies := fake.requests()
 	require.Len(t, bodies, 1)
 	assert.Nil(t, bodies[0].Engine)
@@ -205,11 +205,11 @@ func TestRegisterReportsErrorsAsJSON(t *testing.T) {
 	assert.False(t, got.Error.Retryable)
 
 	buf.Reset()
-	err = runRegisterCmd(t, flags.OutputJSON, &buf, "", "model_source: /Volumes/a/b/c/w\nuc_model_name: x\n", "dry-run", "true")
+	err = runRegisterCmd(t, flags.OutputJSON, &buf, "", "model_source: /Volumes/a/b/c/w\nuc_model: x\n", "dry-run", "true")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, "INVALID_ARGS", got.Error.Code)
-	assert.Contains(t, got.Error.Message, "uc_model_name must be a Unity Catalog model name")
+	assert.Contains(t, got.Error.Message, "uc_model must be a Unity Catalog model name")
 }
 
 func TestRegisterTimesOutWhileCopyingTheWeights(t *testing.T) {
@@ -311,11 +311,11 @@ func TestRegisterResumeCommand(t *testing.T) {
 	require.NoError(t, err)
 	opts := registerOptions{file: "my register.yaml", overrides: []string{"engine.task=llm/v1/chat"}, ucModel: "main.models.other"}
 	assert.Equal(t,
-		"databricks air register -f "+shellquote.BashArg(filepath.ToSlash(abs))+" --override 'engine.task=llm/v1/chat' --uc-model-name main.models.other --idempotency-key k-1 -p dev",
+		"databricks air register -f "+shellquote.BashArg(filepath.ToSlash(abs))+" --override 'engine.task=llm/v1/chat' --uc-model main.models.other --idempotency-key k-1 -p dev",
 		registerResumeCommand("dev", opts, "k-1"))
 
 	assert.Equal(t,
-		"databricks air register --model-source /Volumes/a/b/c/w --uc-model-name a.b.c --idempotency-key k-2",
+		"databricks air register --model-source /Volumes/a/b/c/w --uc-model a.b.c --idempotency-key k-2",
 		registerResumeCommand("", registerOptions{modelSource: "/Volumes/a/b/c/w", ucModel: "a.b.c"}, "k-2"))
 }
 
