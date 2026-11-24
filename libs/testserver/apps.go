@@ -258,6 +258,34 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 	return Response{Body: maskInputOnly(app)}
 }
 
+// AppsUpdateThumbnail sets thumbnail_url, the only trace of the image the real API returns.
+func (s *FakeWorkspace) AppsUpdateThumbnail(name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+	app.ThumbnailUrl = "/ajax-api/2.0/thumbnails/raw/apps/" + app.Id + "/SMALL_DEFAULT.png"
+	s.Apps[name] = app
+
+	return Response{Body: apps.AppThumbnail{}}
+}
+
+// AppsDeleteThumbnail clears thumbnail_url.
+func (s *FakeWorkspace) AppsDeleteThumbnail(name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+	app.ThumbnailUrl = ""
+	s.Apps[name] = app
+
+	return Response{}
+}
+
 // AppsGet returns the app, keeping DELETING resources visible so callers can
 // observe transient state (matches the cloud DELETE lifecycle).
 func (s *FakeWorkspace) AppsGet(name string) Response {
