@@ -57,11 +57,12 @@ use_home() {
     echo "{\"id\": \"${2:-treatment-machine}\"}" > "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
 }
 
-# gate true|false writes a compatibility manifest into the CLI cache with that
-# auto_install flag. A fresh cache file replaces the remote manifest.
+# gate true|false [SKILLS] writes a compatibility manifest into the CLI cache
+# with that auto_install flag and skills version SKILLS (default: latest). A
+# fresh cache file replaces the remote manifest.
 gate() {
     "$mkdir_bin" -p "$DATABRICKS_CACHE_DIR"
-    echo "{\"0.0.0\": {\"appkit\": \"0.84.0\", \"skills\": \"latest\", \"auto_install\": $1}}" > "$DATABRICKS_CACHE_DIR/compat-manifest.json"
+    echo "{\"0.0.0\": {\"appkit\": \"0.84.0\", \"skills\": \"${2:-latest}\", \"auto_install\": $1}}" > "$DATABRICKS_CACHE_DIR/compat-manifest.json"
 }
 
 # cursor_skills lists the skills installed for Cursor.
