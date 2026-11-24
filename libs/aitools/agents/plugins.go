@@ -12,6 +12,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+	"github.com/tailscale/hujson"
 	"golang.org/x/mod/semver"
 )
 
@@ -247,4 +249,134 @@ func claudePluginInstalls(ctx context.Context, a *Agent) ([]pluginInstall, bool,
 		found = true
 	}
 	return all, found, nil
+}
+
+// DatabricksPluginConfigured reports whether the agent's own records show an
+// installed databricks plugin, from any marketplace, for an agent whose plugin
+// manifest the CLI cannot read (Codex, Copilot). The records are the ones
+// `codex plugin add` and `copilot plugin install` write and their remove and
+// uninstall commands delete, so it finds a plugin installed without
+// `databricks aitools`, and reading it needs no agent CLI. Both agents install
+// plugins for the user only. A plugin disabled in the agent's settings still
+// counts. Other agents report false; an error means the config exists but
+// could not be read.
+func (a *Agent) DatabricksPluginConfigured(ctx context.Context) (bool, error) {
+	if a.pluginConfigured == nil {
+		return false, nil
+	}
+	return a.pluginConfigured(ctx)
+}
+
+// codexPluginConfigured reports whether Codex has the databricks plugin
+// installed. As of Codex CLI 0.171.0, `codex plugin list` reports a plugin as
+// installed only when both of its records exist: the
+// [plugins."<id>@<marketplace>"] table of config.toml (the file codexMCPPath
+// resolves), which holds its settings, and a version directory in its cache
+// (see codexPluginCached). The two can diverge, e.g. a table left behind after
+// the cache was deleted, and then Codex loads no plugin. A missing config
+// reports false.
+func codexPluginConfigured(ctx context.Context) (bool, error) {
+	path, err := codexMCPPath(ctx)
+	if err != nil {
+		return false, err
+	}
+	data, err := readIfExists(path)
+	if data == nil || err != nil {
+		return false, err
+	}
+	var config struct {
+		Plugins map[string]toml.Primitive `toml:"plugins"`
+	}
+	if _, err := toml.Decode(string(data), &config); err != nil {
+		return false, fmt.Errorf("parse %s: %w", filepath.ToSlash(path), err)
+	}
+	for key := range config.Plugins {
+		id, marketplace, _ := strings.Cut(key, "@")
+		if id != databricksPluginID || marketplace == "" {
+			continue
+		}
+		cached, err := codexPluginCached(filepath.Dir(path), marketplace, id)
+		if err != nil || cached {
+			return cached, err
+		}
+	}
+	return false, nil
+}
+
+// codexPluginCached reports whether Codex's plugin cache has an installed
+// version of the plugin: a directory under
+// <codexHome>/plugins/cache/<marketplace>/<id>/, one per version, which
+// `codex plugin add` creates and `codex plugin remove` deletes. A file there is
+// not a version. A missing cache reports false.
+func codexPluginCached(codexHome, marketplace, id string) (bool, error) {
+	entries, err := os.ReadDir(filepath.Join(codexHome, "plugins", "cache", marketplace, id))
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// copilotPluginConfigured reads the installedPlugins list of Copilot CLI's
+// config.json, one entry per installed plugin as of Copilot CLI 1.0.109. The
+// file starts with comments. An entry records the plugin's files in a separate
+// cache_path directory, which can be missing while the entry stays (e.g.
+// https://github.com/github/copilot-cli/issues/4039, or a deleted cache), and
+// then Copilot loads no plugin; so an entry counts only when its cache_path is
+// an existing directory. A missing file reports false.
+func copilotPluginConfigured(ctx context.Context) (bool, error) {
+	path, err := copilotConfigPath(ctx)
+	if err != nil {
+		return false, err
+	}
+	data, err := readIfExists(path)
+	if data == nil || err != nil {
+		return false, err
+	}
+	data, err = hujson.Standardize(data)
+	if err != nil {
+		return false, fmt.Errorf("parse %s: %w", filepath.ToSlash(path), err)
+	}
+	var config struct {
+		InstalledPlugins []struct {
+			Name      string `json:"name"`
+			CachePath string `json:"cache_path"`
+		} `json:"installedPlugins"`
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return false, fmt.Errorf("parse %s: %w", filepath.ToSlash(path), err)
+	}
+	for _, p := range config.InstalledPlugins {
+		if p.Name != databricksPluginID || p.CachePath == "" {
+			continue
+		}
+		info, err := os.Stat(p.CachePath)
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return false, err
+		}
+		if info.IsDir() {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// readIfExists reads path, returning nil data and no error when it does not
+// exist.
+func readIfExists(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	return data, err
 }

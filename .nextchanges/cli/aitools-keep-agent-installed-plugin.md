@@ -1,0 +1,1 @@
+* `databricks aitools install` and the automatic install no longer add skill files for Codex or GitHub Copilot when the agent's CLI is not on PATH but the agent already has the Databricks plugin, including one installed with the agent's own CLI, so the agent no longer loads every Databricks skill twice.

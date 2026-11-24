@@ -2033,6 +2033,30 @@ func TestPluginAlreadyInstalledUsesTheStateWhenTheManifestIsUnreadable(t *testin
 	assert.True(t, pluginAlreadyInstalled(t.Context(), claude, installer.ScopeGlobal))
 }
 
+// Codex records a plugin installed with its own CLI in config.toml and in its
+// plugin cache, which the CLI's state never sees. Only both records together
+// are an installed plugin. An unreadable config leaves the state to decide.
+func TestPluginAlreadyInstalledReadsCodexConfig(t *testing.T) {
+	home := t.TempDir()
+	isolateAgents(t, "HOME", home, "USERPROFILE", home)
+	codex := agents.ByName(agents.NameCodex)
+	config := filepath.Join(home, ".codex", "config.toml")
+	require.NoError(t, os.MkdirAll(filepath.Dir(config), 0o755))
+	assert.False(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeGlobal))
+
+	require.NoError(t, os.WriteFile(config, []byte("[plugins.\"databricks@databricks-agent-skills\"]\nenabled = true\n"), 0o600))
+	assert.False(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeGlobal), "a table without the cache")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex", "plugins", "cache", "databricks-agent-skills", "databricks", "0.2.50"), 0o755))
+	assert.True(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeGlobal))
+
+	require.NoError(t, os.WriteFile(config, []byte("[plugins\n"), 0o600))
+	assert.False(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeGlobal))
+	require.NoError(t, installer.RecordPluginInstalls(t.Context(), installer.ScopeGlobal, map[string]installer.PluginRecord{
+		agents.NameCodex: {Marketplace: "databricks-agent-skills", Plugin: "databricks"},
+	}, "v0.2.6"))
+	assert.True(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeGlobal))
+}
+
 func TestPluginAlreadyInstalledReadsTheScopeState(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)

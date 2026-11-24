@@ -174,10 +174,8 @@ By default this installs the databricks plugin through each agent's own CLI
 (Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
 (` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files, and so does a
 detected plugin agent whose CLI is not on PATH (for example a desktop or IDE
-install) and is not named with --agents, unless it already has the plugin. For
-Claude Code that is read from its own plugin list; for Codex and GitHub Copilot
-only a plugin installed by 'databricks aitools' is known, so one installed
-another way shows every skill twice next to the skill files. A named agent
+install) and is not named with --agents, unless it already has the plugin,
+which is read from the agent's own plugin list or config. A named agent
 whose CLI is not on PATH fails; add --skills-only to give it skill files.
 
 Escape hatches:
@@ -745,7 +743,9 @@ func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly,
 // manifest, the manifest decides, as in agents.DatabricksTooling: a plugin
 // removed with the agent's own CLI leaves the CLI's record behind. Otherwise,
 // or when the manifest exists but cannot be read, the CLI's install state for
-// the scope does.
+// the scope does, together with the plugin the agent's own config records
+// (Codex, Copilot), which covers one installed without the CLI. Those agents
+// have a user scope only (see mapAgentScope), so the scope is global.
 func pluginAlreadyInstalled(ctx context.Context, a *agents.Agent, scope string) bool {
 	if a.HasPluginManifestReader() {
 		active, err := manifestPluginActive(ctx, a, scope)
@@ -754,7 +754,11 @@ func pluginAlreadyInstalled(ctx context.Context, a *agents.Agent, scope string) 
 		}
 		log.Debugf(ctx, "Could not read the plugin manifest of %s, using the install state: %v", a.DisplayName, err)
 	}
-	return installer.PluginRecorded(ctx, scope, a.Name)
+	configured, err := a.DatabricksPluginConfigured(ctx)
+	if err != nil {
+		log.Debugf(ctx, "Could not read the plugin config of %s, using the install state: %v", a.DisplayName, err)
+	}
+	return configured || installer.PluginRecorded(ctx, scope, a.Name)
 }
 
 // manifestPluginActive reports whether the agent's own plugin manifest has a
