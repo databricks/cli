@@ -18,6 +18,7 @@ func TestAppPathsVisitor(t *testing.T) {
 					App: apps.App{
 						SourceCodePath: "foo",
 					},
+					ThumbnailPath: "thumbnail.png",
 				},
 			},
 		},
@@ -26,6 +27,7 @@ func TestAppPathsVisitor(t *testing.T) {
 	actual := collectVisitedPaths(t, root, VisitAppPaths)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.apps.app0.source_code_path"),
+		dyn.MustPathFromString("resources.apps.app0.thumbnail_path"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)

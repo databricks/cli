@@ -57,6 +57,12 @@ type App struct {
 	// This allows users to define app configuration directly in the bundle YAML instead of maintaining a separate app.yaml file.
 	Config *AppConfig `json:"config,omitempty"`
 
+	// ThumbnailPath is the local path of a PNG or JPEG image shown for the app in the Apps UI.
+	ThumbnailPath string `json:"thumbnail_path,omitempty"`
+
+	// ThumbnailContent is the base64-encoded image read from ThumbnailPath (see ConfigureAppThumbnail).
+	ThumbnailContent string `json:"thumbnail_content,omitempty" bundle:"internal"`
+
 	Permissions []AppPermission `json:"permissions,omitempty"`
 }
 
