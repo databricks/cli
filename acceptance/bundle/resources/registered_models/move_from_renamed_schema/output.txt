@@ -63,7 +63,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
       },
       "schema_name": {
         "action": "recreate",
-        "reason": "id_field",
+        "reason": "parent",
         "old": "test-schema1-[UNIQUE_NAME]",
         "new": "test-schema2-[UNIQUE_NAME]",
         "remote": "test-schema1-[UNIQUE_NAME]"
