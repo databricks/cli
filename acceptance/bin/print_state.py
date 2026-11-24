@@ -155,8 +155,9 @@ def get_resources(target):
 
 def get_file_resources(target):
     """resources.json's resources in get_resources' shape, or {} without a direct-engine state file."""
-    filename = get_state_file(target, False)
-    if not filename or not filename.endswith("resources.json") or not os.path.exists(filename):
+    # Not get_state_file: it prefers a leftover terraform.tfstate, and recording is direct-only.
+    filename = next((x for x in get_state_files(target, False) or [] if x.endswith("resources.json")), None)
+    if not filename or not os.path.exists(filename):
         return {}
     result = {}
     for key, value in (json.loads(open(filename).read()).get("state") or {}).items():
@@ -174,13 +175,12 @@ def get_resources_for_lookup(target):
     Recording is best effort: when the deployment create fails (a quota rejection, a dropped
     connection), the deploy still succeeds with resources.json as the authoritative state. Without
     the fallback every later state read comes back empty and the failure cascades into commands
-    run with empty IDs, including cleanups that then leak resources. The note goes to the test log
-    (SuppressLines in bundle/test.toml): the deploy's own warning already decides whether the test
-    fails, so a rejection still fails it and a tolerated dropped connection does not.
+    run with empty IDs, including cleanups that then leak resources. The note stays in the test
+    output, so a run that recorded nothing still fails, on one line, rather than passing on file
+    state.
     """
-    recorded = get_resources(target)
-    if recorded or get_deployment_id(target):
-        return recorded
+    if get_deployment_id(target):
+        return get_resources(target)
     file_resources = get_file_resources(target)
     if file_resources:
         print("Note: no deployment recorded in deployment history, reading resources.json", file=sys.stderr)
