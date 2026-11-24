@@ -107,19 +107,19 @@ func runStatus(state *jobs.RunState) string {
 
 func displayRunStatus(run *jobs.Run) string {
 	status := runStatus(run.State)
-	if runWaitingForCompute(run) {
+	if runAppearsPending(run) {
 		return "PENDING"
 	}
 	return status
 }
 
-// runWaitingForCompute reports whether a run is waiting for accelerator
-// compute: it is pending itself, or running while its lead task waits to start.
+// runAppearsPending reports whether a run is pending itself, or running while
+// its lead task waits to start. It does not identify why the task is waiting.
 // A run that is queued, blocked on an upstream task or waiting to retry at run
 // level reports that state instead. A task of a multi-task run carries its own
 // state (see taskRun): PENDING while it waits to start, BLOCKED while it waits
 // on an upstream task.
-func runWaitingForCompute(run *jobs.Run) bool {
+func runAppearsPending(run *jobs.Run) bool {
 	if run.State == nil || run.State.ResultState != "" {
 		return false
 	}
@@ -149,8 +149,8 @@ func detailedDisplayRunStatus(run *jobs.Run, statusMessage string) string {
 	if run.State != nil && run.State.ResultState == "" && statusMessage != "" {
 		return statusMessage
 	}
-	if runWaitingForCompute(run) {
-		return waitingForComputeStatus
+	if runAppearsPending(run) {
+		return waitingForWorkloadStatus
 	}
 	return displayRunStatus(run)
 }

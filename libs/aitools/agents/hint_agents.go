@@ -35,6 +35,7 @@ type PluginRecordedFunc func(ctx context.Context, agentName string) bool
 // hinted; the throttle bounds that to once per session or per TTL.
 func agentInstallHint(a *Agent, pluginRecorded PluginRecordedFunc) *agentHint {
 	return &agentHint{
+		agentName: a.Name,
 		installed: func(ctx context.Context) bool {
 			recorded := func() bool { return pluginRecorded(ctx, a.Name) }
 			return a.DatabricksTooling(ctx, recorded) != ToolingNone

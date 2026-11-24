@@ -62,6 +62,8 @@ func TestAutoInstallPrompt(t *testing.T) {
 		stdinPiped       bool
 		stdoutRedirected bool
 		stderrRedirected bool
+		// inContainer makes the run one in a container.
+		inContainer bool
 
 		wantPrompt  bool
 		wantStderr  []string
@@ -234,6 +236,23 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantState: autoinstall.State{ID: "treatment-machine"},
 		},
 		{
+			// `docker run -t` without `-i`: a terminal that never delivers
+			// the answer, in a home that may not outlive the container.
+			name:        "a terminal in a container skips without asking",
+			inContainer: true,
+			input:       "\n",
+			wantState:   autoinstall.State{ID: "treatment-machine"},
+		},
+		{
+			name:        "a coding agent in a container installs without asking",
+			agent:       "CLAUDECODE",
+			inContainer: true,
+			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
+			wantSkills:  true,
+			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
+		},
+		{
 			// Holdout and treatment machines both wait for a run that can ask.
 			name:             "a holdout machine that cannot ask waits too",
 			state:            `{"id": "holdout-machine"}`,
@@ -254,6 +273,9 @@ func TestAutoInstallPrompt(t *testing.T) {
 				dir := filepath.Join(home, ".databricks", "aitools", "skills")
 				require.NoError(t, os.MkdirAll(dir, 0o755))
 				require.NoError(t, os.WriteFile(filepath.Join(dir, ".state.json"), []byte(tc.installState), 0o600))
+			}
+			if tc.inContainer {
+				inContainer = func() bool { return true }
 			}
 			t.Setenv("TERM", "xterm")
 			for k, v := range tc.env {
@@ -658,6 +680,9 @@ func setupAutoInstallHome(t *testing.T, state string, env ...string) string {
 	isolateAgents(t, kv...)
 	t.Cleanup(func() { now = time.Now })
 	now = func() time.Time { return autoInstallTestNow }
+	// The test itself may run in a container.
+	t.Cleanup(func() { inContainer = autoinstall.InContainer })
+	inContainer = func() bool { return false }
 
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".cursor"), 0o755))
 	if state == "" {
