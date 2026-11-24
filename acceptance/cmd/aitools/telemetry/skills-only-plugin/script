@@ -1,0 +1,19 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+# The committed home has Claude Code with the databricks plugin and Cursor.
+sethome home
+# Agent config overrides from the host would make auto-detection find agents
+# outside the isolated HOME; keep every agent's config dir inside it.
+unset CLAUDE_CONFIG_DIR PI_CODING_AGENT_DIR GEMINI_CLI_HOME GOOSE_PATH_ROOT
+export XDG_CONFIG_HOME="${USERPROFILE:-$HOME}/.config"
+export APPDATA="${USERPROFILE:-$HOME}/AppData/Roaming"
+
+title "a named agent that already has the plugin gets no skill files, and the run fails"
+musterr trace $CLI aitools install --skills-only --scope=global --agents=claude-code
+trace print_telemetry
+
+title "a detected agent that already has the plugin is skipped; the other agents get skill files"
+trace $CLI aitools install --skills-only --scope=global
+trace print_telemetry
+
+title "Claude Code still has only the plugin"
+trace ls "${USERPROFILE:-$HOME}/.claude"
