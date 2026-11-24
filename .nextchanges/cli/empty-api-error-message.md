@@ -1,1 +1,1 @@
-* Show the HTTP status, error code and endpoint when an API error response has no message, instead of a bare `Error: `. ([#7800](https://github.com/databricks/cli/pull/7800))
+* Show the HTTP status, error code and endpoint (or the file path for the Files API) when an API error has no message, instead of a bare `Error: `. ([#7800](https://github.com/databricks/cli/pull/7800), [#7839](https://github.com/databricks/cli/pull/7839))

@@ -1,1 +1,0 @@
-* Offer `--output-dir` with the code directory's parent when `databricks air convert-to-dabs` finds a git-pinned `code_source` outside the bundle directory but below its repository's top level, instead of asking only to move the code inside the bundle. ([#7866](https://github.com/databricks/cli/pull/7866))
