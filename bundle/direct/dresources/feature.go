@@ -39,14 +39,15 @@ func (r *ResourceFeature) DoCreate(ctx context.Context, config *ml.Feature) (str
 		// The feature is keyed by full_name, which the bundle chooses and the API keeps unique. UC
 		// stores the name lowercased, which is also the id a successful create returns.
 		fullName := strings.ToLower(config.FullName)
-		response, err = recoverCreate(ctx, createRecovery[ml.Feature]{
+		response, err = recoverCreate(ctx, createRecovery[ml.Feature, *ml.Feature]{
 			name:  "feature " + fullName,
 			start: start,
 			get: func(ctx context.Context) (*ml.Feature, error) {
 				return r.client.FeatureEngineering.GetFeature(ctx, ml.GetFeatureRequest{FullName: fullName})
 			},
 			createTime: func(found *ml.Feature) (time.Time, bool) { return sdkTime(found.CreatedAt) },
-			create:     create,
+			use:        useFound[ml.Feature],
+			create:     repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

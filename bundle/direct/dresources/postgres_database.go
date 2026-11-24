@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -98,7 +99,7 @@ func (r *ResourcePostgresDatabase) DoRead(ctx context.Context, id string) (*Post
 }
 
 func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *PostgresDatabaseState) (string, *PostgresDatabaseRemote, error) {
-	waiter, err := r.client.Postgres.CreateDatabase(ctx, postgres.CreateDatabaseRequest{
+	req := postgres.CreateDatabaseRequest{
 		DatabaseId: config.DatabaseId,
 		Parent:     config.Parent,
 		Database: postgres.Database{
@@ -115,18 +116,60 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 		},
 		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateDatabase(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
+	return remote.Name, remote, nil
+}
 
-	// Wait for the database to be ready (long-running operation)
+// waitCreated waits for the create operation of a database that a create request returned.
+func (r *ResourcePostgresDatabase) waitCreated(ctx context.Context, waiter postgres.CreateDatabaseOperationInterface) (*PostgresDatabaseRemote, error) {
 	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
-		return "", nil, err
+		return nil, err
+	}
+	return makePostgresDatabaseRemote(result), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate.
+func (r *ResourcePostgresDatabase) recoverFailedCreate(ctx context.Context, req postgres.CreateDatabaseRequest, start time.Time, createErr error) (string, *PostgresDatabaseRemote, error) {
+	if req.DatabaseId == "" {
+		return "", nil, createErr
+	}
+	// A database found after a replace may predate it, and repeating a replace is safe.
+	if req.ReplaceExisting {
+		return "", nil, retrySafe(createErr)
 	}
 
-	remote := makePostgresDatabaseRemote(result)
+	name := req.Parent + "/databases/" + req.DatabaseId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Database, *PostgresDatabaseRemote]{
+		name:  "database " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Database, error) {
+			return r.client.Postgres.GetDatabase(ctx, postgres.GetDatabaseRequest{Name: name})
+		},
+		createTime: func(found *postgres.Database) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		use: func(_ context.Context, found *postgres.Database) (*PostgresDatabaseRemote, error) {
+			return makePostgresDatabaseRemote(found), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresDatabaseRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateDatabase(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresDatabaseRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
+	if err != nil {
+		return "", nil, err
+	}
 	return remote.Name, remote, nil
 }
 

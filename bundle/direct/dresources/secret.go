@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -73,9 +74,31 @@ func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret
 
 // DoCreate creates a new UC secret.
 func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (string, *catalog.Secret, error) {
-	response, err := r.client.SecretsUc.CreateSecret(ctx, catalog.CreateSecretRequest{
-		Secret: *state,
-	})
+	create := func(ctx context.Context) (*catalog.Secret, error) {
+		return r.client.SecretsUc.CreateSecret(ctx, catalog.CreateSecretRequest{
+			Secret: *state,
+		})
+	}
+	start := time.Now()
+	response, err := create(ctx)
+	if err != nil {
+		// The full name is chosen by the bundle and unique in the metastore.
+		fullName := state.CatalogName + "." + state.SchemaName + "." + state.Name
+		response, err = recoverCreate(ctx, createRecovery[catalog.Secret, *catalog.Secret]{
+			name:  "secret " + fullName,
+			start: start,
+			get: func(ctx context.Context) (*catalog.Secret, error) {
+				return r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
+					FullName:        fullName,
+					IncludeValue:    true,
+					ForceSendFields: nil,
+				})
+			},
+			createTime: func(found *catalog.Secret) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			use:        useFound[catalog.Secret],
+			create:     repeatCreate(create),
+		}, err)
+	}
 	if err != nil || response == nil {
 		return "", nil, err
 	}

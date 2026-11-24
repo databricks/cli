@@ -317,7 +317,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 // dashboard to look up.
 func (r *ResourceDashboard) recoverFailedCreate(ctx context.Context, config *DashboardState, start time.Time, create func(context.Context) (*dashboards.Dashboard, error), createErr error) (*dashboards.Dashboard, error) {
 	filePath := path.Join(ensureWorkspacePrefix(config.ParentPath), config.DisplayName+".lvdash.json")
-	return recoverCreate(ctx, createRecovery[dashboards.Dashboard]{
+	return recoverCreate(ctx, createRecovery[dashboards.Dashboard, *dashboards.Dashboard]{
 		name:  "dashboard " + filePath,
 		start: start,
 		get: func(ctx context.Context) (*dashboards.Dashboard, error) {
@@ -334,7 +334,8 @@ func (r *ResourceDashboard) recoverFailedCreate(ctx context.Context, config *Das
 			created, err := time.Parse(time.RFC3339, found.CreateTime)
 			return created, err == nil
 		},
-		create: create,
+		use:    useFound[dashboards.Dashboard],
+		create: repeatCreate(create),
 	}, createErr)
 }
 

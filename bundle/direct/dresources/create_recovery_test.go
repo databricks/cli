@@ -106,6 +106,12 @@ func TestCreateRecoveryRejectsResourceThatPredatesRequest(t *testing.T) {
 	requireStatus(t, err, 504)
 }
 
+func TestCreateRecoveryAllowsClockSkew(t *testing.T) {
+	s := &featureCreateScript{t: t, creates: []any{featureTimeout}, gets: []any{testFeature(time.Now().Add(-30 * time.Second))}}
+	_, _, err := createTestFeature(t, s, t.Context())
+	require.NoError(t, err)
+}
+
 func TestCreateRecoveryKeepsCreateErrorMessage(t *testing.T) {
 	timeout := featureError(504, "DEADLINE_EXCEEDED", "The request timed out.")
 	s := &featureCreateScript{t: t, creates: []any{timeout}, gets: []any{testFeature(time.Now().Add(-time.Hour))}}

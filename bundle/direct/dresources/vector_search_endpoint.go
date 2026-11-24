@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -82,43 +80,38 @@ func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*
 	return newVectorSearchEndpointRemote(info), nil
 }
 
-// DoCreate retries transient errors itself rather than marking them retrySafe: the backend
-// can answer 504 TEMPORARILY_UNAVAILABLE after it has already created the endpoint, and the
-// retry is then rejected as already existing. In that case the endpoint is used if it was
-// created after the first attempt started; an older one (another user's endpoint, or the
-// old endpoint of a recreate that is still being deleted) keeps failing the deploy.
 func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
-	start := time.Now()
-	afterTransient := false
-	info, err := retry.With(ctx, retry.IsTransient, func() (*vectorsearch.EndpointInfo, error) {
+	create := func(ctx context.Context) (*vectorsearch.EndpointInfo, error) {
 		waiter, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
-		if err == nil {
-			return waiter.Response, nil
+		if err != nil {
+			return nil, err
 		}
-		if afterTransient && isAlreadyExists(err) {
-			info, getErr := r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, config.Name)
-			if getErr != nil {
-				return nil, getErr
-			}
-			if !createdSince(info, start) {
-				return nil, err
-			}
-			log.Warnf(ctx, "vector search endpoint %q was created by an earlier attempt that failed with a transient error, using it", config.Name)
-			return info, nil
-		}
-		afterTransient = afterTransient || retry.IsTransient(ctx, err)
-		return nil, err
-	})
+		return waiter.Response, nil
+	}
+	start := time.Now()
+	info, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The backend can answer 504 TEMPORARILY_UNAVAILABLE after it has created the endpoint.
+		// Endpoint names are chosen by the bundle and unique in the workspace; an older endpoint
+		// (another user's, or the old one of a recreate that is still being deleted) keeps failing
+		// the deploy.
+		info, err = recoverCreate(ctx, createRecovery[vectorsearch.EndpointInfo, *vectorsearch.EndpointInfo]{
+			name:  "vector search endpoint " + config.Name,
+			start: start,
+			get: func(ctx context.Context) (*vectorsearch.EndpointInfo, error) {
+				return r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, config.Name)
+			},
+			createTime: func(found *vectorsearch.EndpointInfo) (time.Time, bool) {
+				return unixMilliTime(found.CreationTimestamp)
+			},
+			use:    useFound[vectorsearch.EndpointInfo],
+			create: repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	return config.Name, newVectorSearchEndpointRemote(info), nil
-}
-
-// createdSince reports whether the endpoint was created no earlier than start, the time of the
-// first create attempt, so that it can only have been created by that attempt.
-func createdSince(info *vectorsearch.EndpointInfo, start time.Time) bool {
-	return info.CreationTimestamp >= start.Add(-createTimeSkew).UnixMilli()
 }
 
 func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {

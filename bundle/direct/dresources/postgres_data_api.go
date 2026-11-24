@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -117,7 +118,7 @@ func (r *ResourcePostgresDataApi) DoRead(ctx context.Context, id string) (*Postg
 // DoCreate enables the Data API on the parent database. If it is already
 // enabled the API returns ALREADY_EXISTS; adopt it with `bundle deployment bind`.
 func (r *ResourcePostgresDataApi) DoCreate(ctx context.Context, config *PostgresDataApiState) (string, *PostgresDataApiRemote, error) {
-	waiter, err := r.client.Postgres.CreateDataApi(ctx, postgres.CreateDataApiRequest{
+	req := postgres.CreateDataApiRequest{
 		Parent: config.Parent,
 		DataApi: postgres.DataApi{
 			Spec: &config.DataApiDataApiSpec,
@@ -130,17 +131,53 @@ func (r *ResourcePostgresDataApi) DoCreate(ctx context.Context, config *Postgres
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateDataApi(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
+	return remote.Name, remote, nil
+}
 
+// waitCreated waits for the create operation of a Data API that a create request returned.
+func (r *ResourcePostgresDataApi) waitCreated(ctx context.Context, waiter postgres.CreateDataApiOperationInterface) (*PostgresDataApiRemote, error) {
 	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
+		return nil, err
+	}
+	return makePostgresDataApiRemote(result), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate. A database has at
+// most one Data API, named after the database.
+func (r *ResourcePostgresDataApi) recoverFailedCreate(ctx context.Context, req postgres.CreateDataApiRequest, start time.Time, createErr error) (string, *PostgresDataApiRemote, error) {
+	name := req.Parent + "/data-api"
+	remote, err := recoverCreate(ctx, createRecovery[postgres.DataApi, *PostgresDataApiRemote]{
+		name:  "data API " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.DataApi, error) {
+			return r.client.Postgres.GetDataApi(ctx, postgres.GetDataApiRequest{Name: name})
+		},
+		createTime: func(found *postgres.DataApi) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		use: func(_ context.Context, found *postgres.DataApi) (*PostgresDataApiRemote, error) {
+			return makePostgresDataApiRemote(found), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresDataApiRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateDataApi(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresDataApiRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
+	if err != nil {
 		return "", nil, err
 	}
-
-	remote := makePostgresDataApiRemote(result)
 	return remote.Name, remote, nil
 }
 

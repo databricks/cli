@@ -2,14 +2,13 @@ package dresources
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/retry"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -129,17 +128,20 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	if err != nil {
 		return r.recoverFailedCreate(ctx, req, start, err)
 	}
-	return r.waitCreated(ctx, waiter)
-}
-
-// waitCreated waits for the create operation of a project that a create request returned.
-func (r *ResourcePostgresProject) waitCreated(ctx context.Context, waiter postgres.CreateProjectOperationInterface) (string, *PostgresProjectRemote, error) {
-	result, err := waitCreateOperation(ctx, waiter.Wait)
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
-	remote := makePostgresProjectRemote(result)
 	return remote.Name, remote, nil
+}
+
+// waitCreated waits for the create operation of a project that a create request returned.
+func (r *ResourcePostgresProject) waitCreated(ctx context.Context, waiter postgres.CreateProjectOperationInterface) (*PostgresProjectRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresProjectRemote(result), nil
 }
 
 // recoverFailedCreate handles a create request that failed; see recoverPostgresCreate. Repeating
@@ -147,36 +149,36 @@ func (r *ResourcePostgresProject) waitCreated(ctx context.Context, waiter postgr
 // the project, so look for it before repeating. Without a project_id there is no name to look up;
 // the API rejects such a request with 400 anyway.
 func (r *ResourcePostgresProject) recoverFailedCreate(ctx context.Context, req postgres.CreateProjectRequest, start time.Time, createErr error) (string, *PostgresProjectRemote, error) {
-	if ctx.Err() != nil || !retry.IsTransient(ctx, createErr) || req.ProjectId == "" {
+	if req.ProjectId == "" {
 		return "", nil, createErr
 	}
 
 	name := "projects/" + req.ProjectId
-	return recoverPostgresCreate(ctx, postgresCreateRecovery[postgres.Project, *PostgresProjectRemote]{
-		name: name,
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Project, *PostgresProjectRemote]{
+		name:  "project " + name,
+		start: start,
 		get: func(ctx context.Context) (*postgres.Project, error) {
 			return r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: name})
 		},
-		create: func(ctx context.Context) (func() (string, *PostgresProjectRemote, error), error) {
+		createTime: func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		use: func(ctx context.Context, project *postgres.Project) (*PostgresProjectRemote, error) {
+			if err := r.waitDefaultBranchReady(ctx, project); err != nil {
+				return nil, err
+			}
+			return makePostgresProjectRemote(project), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresProjectRemote, error), error) {
 			waiter, err := r.client.Postgres.CreateProject(ctx, req)
 			if err != nil {
 				return nil, err
 			}
-			return func() (string, *PostgresProjectRemote, error) { return r.waitCreated(ctx, waiter) }, nil
-		},
-		use: func(ctx context.Context, project *postgres.Project) (string, *PostgresProjectRemote, error) {
-			if !createdByRequestAt(project.CreateTime, start) {
-				return "", nil, fmt.Errorf("%w; project %s exists but was not created by this deployment", createErr, project.Name)
-			}
-			if err := r.waitDefaultBranchReady(ctx, project); err != nil {
-				return "", nil, err
-			}
-			// Info, not Warn: the deploy got the project it asked for, so there is nothing to act on.
-			log.Infof(ctx, "using project %s, created despite the failed create request: %s", project.Name, createErr)
-			remote := makePostgresProjectRemote(project)
-			return remote.Name, remote, nil
+			return func() (*PostgresProjectRemote, error) { return r.waitCreated(ctx, waiter) }, nil
 		},
 	}, createErr)
+	if err != nil {
+		return "", nil, err
+	}
+	return remote.Name, remote, nil
 }
 
 // waitDefaultBranchReady stands in for the create operation that a recovered project's failed

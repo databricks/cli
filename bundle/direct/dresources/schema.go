@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
@@ -61,7 +62,25 @@ func (r *ResourceSchema) DoRead(ctx context.Context, id string) (*catalog.Schema
 }
 
 func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (string, *catalog.SchemaInfo, error) {
-	response, err := r.client.Schemas.Create(ctx, config.CreateSchema)
+	create := func(ctx context.Context) (*catalog.SchemaInfo, error) {
+		return r.client.Schemas.Create(ctx, config.CreateSchema)
+	}
+	start := time.Now()
+	response, err := create(ctx)
+	if err != nil {
+		// The full name is chosen by the bundle and unique in the metastore.
+		fullName := config.CatalogName + "." + config.Name
+		response, err = recoverCreate(ctx, createRecovery[catalog.SchemaInfo, *catalog.SchemaInfo]{
+			name:  "schema " + fullName,
+			start: start,
+			get: func(ctx context.Context) (*catalog.SchemaInfo, error) {
+				return r.client.Schemas.GetByFullName(ctx, fullName)
+			},
+			createTime: func(found *catalog.SchemaInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			use:        useFound[catalog.SchemaInfo],
+			create:     repeatCreate(create),
+		}, err)
+	}
 	if err != nil || response == nil {
 		return "", nil, err
 	}

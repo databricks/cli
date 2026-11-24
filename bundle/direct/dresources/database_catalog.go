@@ -60,7 +60,7 @@ type foundDatabaseCatalog struct {
 // request may have created the catalog anyway. The catalog name is unique in the metastore, so it
 // names the catalog to look up.
 func (r *ResourceDatabaseCatalog) recoverFailedCreate(ctx context.Context, name string, start time.Time, create func(context.Context) (*foundDatabaseCatalog, error), createErr error) (*foundDatabaseCatalog, error) {
-	return recoverCreate(ctx, createRecovery[foundDatabaseCatalog]{
+	return recoverCreate(ctx, createRecovery[foundDatabaseCatalog, *foundDatabaseCatalog]{
 		name:  "database catalog " + name,
 		start: start,
 		get: func(ctx context.Context) (*foundDatabaseCatalog, error) {
@@ -79,13 +79,9 @@ func (r *ResourceDatabaseCatalog) recoverFailedCreate(ctx context.Context, name 
 			}
 			return &foundDatabaseCatalog{catalog: dbCatalog, createdAt: ucCatalog.CreatedAt}, nil
 		},
-		createTime: func(found *foundDatabaseCatalog) (time.Time, bool) {
-			if found.createdAt == 0 {
-				return time.Time{}, false
-			}
-			return time.UnixMilli(found.createdAt), true
-		},
-		create: create,
+		createTime: func(found *foundDatabaseCatalog) (time.Time, bool) { return unixMilliTime(found.createdAt) },
+		use:        useFound[foundDatabaseCatalog],
+		create:     repeatCreate(create),
 	}, createErr)
 }
 

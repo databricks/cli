@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -73,9 +74,27 @@ func (*ResourceRegisteredModel) KeyedSlices() map[string]any {
 }
 
 func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.CreateRegisteredModelRequest) (string, *catalog.RegisteredModelInfo, error) {
-	response, err := r.client.RegisteredModels.Create(ctx, *config)
+	create := func(ctx context.Context) (*catalog.RegisteredModelInfo, error) {
+		return r.client.RegisteredModels.Create(ctx, *config)
+	}
+	start := time.Now()
+	response, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The full name is chosen by the bundle and unique in the metastore.
+		fullName := config.CatalogName + "." + config.SchemaName + "." + config.Name
+		response, err = recoverCreate(ctx, createRecovery[catalog.RegisteredModelInfo, *catalog.RegisteredModelInfo]{
+			name:  "registered model " + fullName,
+			start: start,
+			get: func(ctx context.Context) (*catalog.RegisteredModelInfo, error) {
+				return r.client.RegisteredModels.GetByFullName(ctx, fullName)
+			},
+			createTime: func(found *catalog.RegisteredModelInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			use:        useFound[catalog.RegisteredModelInfo],
+			create:     repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	return response.FullName, response, nil

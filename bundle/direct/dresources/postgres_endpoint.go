@@ -138,7 +138,7 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 }
 
 func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
-	waiter, err := r.client.Postgres.CreateEndpoint(ctx, postgres.CreateEndpointRequest{
+	req := postgres.CreateEndpointRequest{
 		EndpointId: config.EndpointId,
 		Parent:     config.Parent,
 		Endpoint: postgres.Endpoint{
@@ -156,23 +156,61 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 		},
 		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateEndpoint(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
+	return remote.Name, remote, nil
+}
 
-	// Wait for the operation to complete
+// waitCreated waits for the create operation of an endpoint that a create request returned, then
+// for the endpoint's reconciliation.
+func (r *ResourcePostgresEndpoint) waitCreated(ctx context.Context, waiter postgres.CreateEndpointOperationInterface) (*PostgresEndpointRemote, error) {
 	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
-		return "", nil, err
+		return nil, err
+	}
+	return r.waitForReconciliation(ctx, result.Name)
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate.
+func (r *ResourcePostgresEndpoint) recoverFailedCreate(ctx context.Context, req postgres.CreateEndpointRequest, start time.Time, createErr error) (string, *PostgresEndpointRemote, error) {
+	if req.EndpointId == "" {
+		return "", nil, createErr
+	}
+	// An endpoint found after a replace may predate it, and repeating a replace is safe.
+	if req.ReplaceExisting {
+		return "", nil, retrySafe(createErr)
 	}
 
-	// Wait for reconciliation to complete
-	remote, err := r.waitForReconciliation(ctx, result.Name)
+	name := req.Parent + "/endpoints/" + req.EndpointId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Endpoint, *PostgresEndpointRemote]{
+		name:  "endpoint " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Endpoint, error) {
+			return r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
+		},
+		createTime: func(found *postgres.Endpoint) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		use: func(ctx context.Context, found *postgres.Endpoint) (*PostgresEndpointRemote, error) {
+			return r.waitForReconciliation(ctx, found.Name)
+		},
+		create: func(ctx context.Context) (func() (*PostgresEndpointRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateEndpoint(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresEndpointRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
 	if err != nil {
 		return "", nil, err
 	}
-
 	return remote.Name, remote, nil
 }
 
