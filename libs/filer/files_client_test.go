@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -541,7 +542,7 @@ func TestFilesClientDeleteNotFoundAfterRetry(t *testing.T) {
 		// A throttled attempt was not applied, so the 404 means the path is missing.
 		{http.StatusTooManyRequests, false},
 	} {
-		t.Run(fmt.Sprint(tc.status), func(t *testing.T) {
+		t.Run(strconv.Itoa(tc.status), func(t *testing.T) {
 			server := testserver.New(t)
 			server.Handle("DELETE", "/api/2.0/fs/files/{path...}", failThenNotFound(tc.status))
 			server.Handle("DELETE", "/api/2.0/fs/directories/{path...}", failThenNotFound(tc.status))
