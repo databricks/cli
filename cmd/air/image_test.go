@@ -85,57 +85,6 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
 	assert.Contains(t, stderr.String(), "Pushed image")
-	assert.NotContains(t, stderr.String(), "WORKDIR")
-}
-
-func TestRunImagePushWarnsWhenImageSetsWorkingDir(t *testing.T) {
-	tests := []struct {
-		name       string
-		workingDir string
-		warn       bool
-	}{
-		{name: "unset", workingDir: ""},
-		{name: "root", workingDir: "/"},
-		{name: "set", workingDir: "/app", warn: true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd, _, stderr := newImagePushTestCommand(t, "workspace")
-			deps := imagePushDeps{
-				configureDocker: func(context.Context, string) (string, error) {
-					return "123.container.us-west-2.cloud.databricks.test", nil
-				},
-				lookPath: func(string) (string, error) { return "docker", nil },
-				runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, _ string, args ...string) error {
-					switch strings.Join(args[:2], " ") {
-					case "image ls":
-						_, err := io.WriteString(out, "image-id\n")
-						return err
-					case "image inspect":
-						_, err := io.WriteString(out, "linux/amd64|"+tt.workingDir+"\n")
-						return err
-					}
-					return nil
-				},
-			}
-
-			err := runImagePush(cmd, &imagePushOptions{
-				source:   "example/trainer:v1",
-				catalog:  "main",
-				schema:   "training",
-				artifact: "trainer",
-			}, deps)
-			require.NoError(t, err)
-
-			warning := "Warning: source image example/trainer:v1 sets WORKDIR /app; use absolute paths in your command and scripts."
-			if tt.warn {
-				assert.Contains(t, stderr.String(), warning)
-			} else {
-				assert.NotContains(t, stderr.String(), "WORKDIR")
-			}
-			assert.Contains(t, stderr.String(), "Pushed image")
-		})
-	}
 }
 
 func TestRegistryHostFromDockerConfigureOutput(t *testing.T) {

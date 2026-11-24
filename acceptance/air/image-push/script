@@ -32,6 +32,10 @@ title "image with WORKDIR warns but is pushed"
 export DOCKER_TEST_MODE=workdir
 trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
+title "image with WORKDIR / does not warn"
+export DOCKER_TEST_MODE=workdir-root
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
 title "daemon failure must not pull"
 export DOCKER_TEST_MODE=daemon-error
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training

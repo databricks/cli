@@ -20,6 +20,7 @@ case "$1 $2" in
         ;;
       arm64) printf 'linux/arm64|\n' ;;
       workdir) printf 'linux/amd64|/app\n' ;;
+      workdir-root) printf 'linux/amd64|/\n' ;;
       *) printf 'linux/amd64|\n' ;;
     esac
     ;;

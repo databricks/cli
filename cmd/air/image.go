@@ -206,7 +206,8 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	if platform != airImagePlatform {
 		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
 	}
-	// / is Docker's default WORKDIR and cannot break relative paths.
+	// Skip the warning when WORKDIR is unset or /: docker run starts in / for both,
+	// so relative paths are least likely to depend on it.
 	if workingDir != "" && workingDir != "/" {
 		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s; use absolute paths in your command and scripts.", resolved.source, workingDir))
 	}
