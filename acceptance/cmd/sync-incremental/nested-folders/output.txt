@@ -1,6 +1,7 @@
 
 === New file in nested folders
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
 Uploaded dir1/dir2/dir3
@@ -17,6 +18,7 @@ dir1/dir2/dir3/foo.txt
 
 === Delete the file; the empty remote folders are removed too
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Deleted dir1
 Deleted dir1/dir2
@@ -29,6 +31,7 @@ Initial Sync Complete
 >>> snapshot_files
 
 === Spaces, plus and hash in folder and file names
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
@@ -45,6 +48,7 @@ FILE dir1/a b+c/c+d e/e+f g#i.txt
 dir1/a b+c/c+d e/e+f g#i.txt
 
 === Delete the file with special characters
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Deleted dir1

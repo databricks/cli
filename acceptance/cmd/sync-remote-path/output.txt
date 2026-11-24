@@ -1,15 +1,18 @@
 
 === A repo path must exist
 
+
 >>> musterr [CLI] sync src /Repos/[USERNAME]/doesnt-exist-[UNIQUE_NAME]
 Error: /Repos/[USERNAME]/doesnt-exist-[UNIQUE_NAME] does not exist; please create it first
 
 === So must the repo a nested path points into
 
+
 >>> musterr [CLI] sync src /Repos/[USERNAME]/doesnt-exist-[UNIQUE_NAME]/nested/directory
 Error: /Repos/[USERNAME]/doesnt-exist-[UNIQUE_NAME] does not exist; please create it first
 
 === Syncing into an existing repo works
+
 
 >>> [CLI] sync src /Repos/[USERNAME]/sync-repo-[UNIQUE_NAME]
 Action: PUT: foo.txt
@@ -17,6 +20,7 @@ Initial Sync Complete
 Uploaded foo.txt
 
 === A missing folder nested under the repo is created
+
 
 >>> [CLI] sync src /Repos/[USERNAME]/sync-repo-[UNIQUE_NAME]/nested/directory
 Action: PUT: foo.txt
@@ -27,6 +31,7 @@ Uploaded foo.txt
 DIRECTORY
 
 === A missing workspace folder is created
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Action: PUT: foo.txt

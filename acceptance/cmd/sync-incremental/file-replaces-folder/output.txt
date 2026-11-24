@@ -1,6 +1,7 @@
 
 === Create foo/bar.txt
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
 Uploaded foo
@@ -15,6 +16,7 @@ foo/bar.txt
 
 === Delete foo/bar.txt and the foo folder
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Deleted foo
 Deleted foo/bar.txt
@@ -25,6 +27,7 @@ Initial Sync Complete
 >>> snapshot_files
 
 === Create a file named foo where the folder used to be
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete

@@ -1,6 +1,7 @@
 
 === Python notebook is uploaded without its extension
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
 Uploaded foo.py
@@ -12,6 +13,7 @@ NOTEBOOK foo PYTHON
 foo.py
 
 === Turn the notebook into a plain Python file
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Deleted foo
@@ -26,6 +28,7 @@ foo.py
 
 === Delete the plain Python file
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Deleted foo.py
 Initial Sync Complete
@@ -35,6 +38,7 @@ Initial Sync Complete
 >>> snapshot_files
 
 === Plain Python file
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
@@ -48,6 +52,7 @@ bar.py
 
 === Turn the plain Python file into a notebook
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Deleted bar.py
 Initial Sync Complete
@@ -60,6 +65,7 @@ NOTEBOOK bar PYTHON
 bar.py
 
 === Delete the notebook
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Deleted bar

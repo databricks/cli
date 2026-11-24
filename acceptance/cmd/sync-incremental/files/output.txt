@@ -1,12 +1,14 @@
 
 === Initial sync of an empty directory
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
 
 >>> remote_tree
 
 === New file
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
@@ -26,6 +28,7 @@ foo.txt
 
 === Write to file
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
 Uploaded foo.txt
@@ -34,6 +37,7 @@ Uploaded foo.txt
 {"statement": "Mi Gente"}
 
 === Write again
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
@@ -44,10 +48,12 @@ Uploaded foo.txt
 
 === Sync without changes uploads nothing
 
+
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Initial Sync Complete
 
 === Full sync uploads unchanged files again
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME] --full
 Initial Sync Complete
@@ -57,6 +63,7 @@ Uploaded foo.txt
 {"statement": "Young Dumb & Broke"}
 
 === Delete
+
 
 >>> [CLI] sync src /Users/[USERNAME]/sync-[UNIQUE_NAME]
 Deleted foo.txt
