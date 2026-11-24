@@ -15,7 +15,7 @@ title "Deploy a schema with a registered model and a secret in it"
 trace $CLI bundle deploy
 print_requests.py //unity-catalog &> LOG.deploy_requests
 
-title "Rename the schema. UC moves the model and the secret with it; the model follows the rename, the secret cannot yet, so it is recreated where it moved"
+title "Rename the schema. UC moves the model and the secret with it, and both follow the rename without a request"
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 trace $CLI bundle plan
 trace $CLI bundle deploy --auto-approve
