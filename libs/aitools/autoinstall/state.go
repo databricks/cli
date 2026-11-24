@@ -38,7 +38,8 @@ type State struct {
 
 	// LastAttempt is when the last of Attempts started. The next attempt
 	// waits until a delay after it has passed (see Decide). It is zero once
-	// LastVersion is settled.
+	// LastVersion is settled, and when no install started (a failed gate
+	// lookup uses up the attempts of LastVersion without one).
 	LastAttempt time.Time `json:"last_attempt,omitzero"`
 
 	// OptedOut turns auto-install off for every later version. It is set by

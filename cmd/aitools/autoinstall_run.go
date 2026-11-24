@@ -216,6 +216,8 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		log.Debugf(ctx, "auto-install: skipped: %v", err)
 		return nil
 	}
+	// Planning before the lock took time; the run is decided from here.
+	in.Now = now()
 	id := in.State.ID
 	if id == "" {
 		// Saved before it decides anything, so this run and one that cannot
@@ -253,7 +255,8 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 			// looks the gate up again. The feature may be off, so nothing is
 			// reported.
 			log.Debugf(ctx, "auto-install: could not resolve the gate, not trying again for this version: %v", err)
-			if err := autoinstall.Record(ctx, version, autoinstall.MaxAttempts, id, in.Now); err != nil {
+			// No install started, so there is no last attempt.
+			if err := autoinstall.Record(ctx, version, autoinstall.MaxAttempts, id, time.Time{}); err != nil {
 				log.Debugf(ctx, "auto-install: could not save the state: %v", err)
 			}
 			return sig

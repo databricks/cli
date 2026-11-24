@@ -124,10 +124,6 @@ func Decide(in Inputs) Reason {
 		return ReasonRetriesExhausted
 	case in.State.LastVersion == in.Version && in.State.Attempts == 0:
 		return ReasonAlreadyRan
-	// A source or agent CLI that stays broken would otherwise make every
-	// following command wait for a failing attempt.
-	case in.State.LastVersion == in.Version && !retryDue(in.State, in.Now):
-		return ReasonRetryNotDue
 	// A newer CLI already ran here, e.g. an IDE ships its own older CLI next
 	// to the user's: alternating between the two must not run on every
 	// command.
@@ -137,6 +133,11 @@ func Decide(in Inputs) Reason {
 		return ReasonSkippedCI
 	case in.EnvOptOut, in.State.OptedOut:
 		return ReasonSkippedOptOut
+	// A source or agent CLI that stays broken would otherwise make every
+	// following command wait for a failing attempt. The wait is for the
+	// install only: CI and the opt-out settle the version during it.
+	case in.State.LastVersion == in.Version && !retryDue(in.State, in.Now):
+		return ReasonRetryNotDue
 	case !in.GateOn:
 		return ReasonGateOff
 	case InHoldout(in.Bucket):

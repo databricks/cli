@@ -370,7 +370,7 @@ func TestAutoInstallLooksTheGateUpOncePerVersion(t *testing.T) {
 		return state
 	}
 
-	want := autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, LastAttempt: autoInstallTestNow, ID: "treatment-machine"}
+	want := autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}
 	assert.Equal(t, want, run())
 	assert.Equal(t, want, run())
 	assert.Equal(t, 1, lookups)
@@ -408,7 +408,7 @@ func TestAutoInstallStopsWhenTheGateLookupIsInterrupted(t *testing.T) {
 	assert.Equal(t, process.InterruptSignals(), caught)
 	assert.Empty(t, telemetry.BufferedEvents(ctx))
 	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
-	want := autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, LastAttempt: autoInstallTestNow, ID: "treatment-machine"}
+	want := autoinstall.State{LastVersion: "1.30.0", Attempts: autoinstall.MaxAttempts, ID: "treatment-machine"}
 	state, err := autoinstall.Load(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, want, state)

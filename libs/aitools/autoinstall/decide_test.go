@@ -48,9 +48,15 @@ func TestDecide(t *testing.T) {
 		{name: "same version, retries exhausted while waiting", modify: func(in *Inputs) {
 			in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts, LastAttempt: in.Now}
 		}, want: ReasonRetriesExhausted},
-		{name: "retry wait before CI and the gate", modify: func(in *Inputs) {
+		{name: "CI before the retry wait", modify: func(in *Inputs) {
 			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
 			in.CI = true
+		}, want: ReasonSkippedCI},
+		{name: "opt-out before the retry wait", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now, OptedOut: true}
+		}, want: ReasonSkippedOptOut},
+		{name: "retry wait before the gate", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
 			in.GateOn = false
 		}, want: ReasonRetryNotDue},
 		{name: "new version while the old one waits", modify: func(in *Inputs) {
