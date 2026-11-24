@@ -1,0 +1,25 @@
+title "Create a schema carrying the owner property that SQL's CREATE SCHEMA leaves on it"
+trace $CLI schemas create --json '{"name": "schema_sql_owner", "catalog_name": "main", "properties": {"owner": "root"}}' | jq '{full_name, properties}'
+
+title "Bind it: the config matches, so there is nothing to confirm"
+trace $CLI bundle deployment bind schema1 main.schema_sql_owner
+
+title "Plan is a no-op"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
+title "The undeclared owner property is skipped as a backend default"
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1
+
+title "Deploying twice changes nothing"
+trace $CLI bundle deploy
+trace $CLI bundle deploy
+
+title "No UpdateSchema call was sent"
+trace print_requests.py --method PATCH //unity-catalog/schemas
+
+title "A property declared next to it is still planned and sent"
+trace update_file.py databricks.yml "# PROPERTIES" "properties: {team: data}"
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1
+trace $CLI bundle deploy
+trace print_requests.py --method PATCH //unity-catalog/schemas
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"

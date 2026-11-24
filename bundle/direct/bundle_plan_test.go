@@ -176,6 +176,81 @@ func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
 	}
 }
 
+// A schema created with SQL carries properties.owner = "root" that no config declares (#6986).
+// Unlike the test above this reads the real schemas.yml: the rule's key and pinned value are
+// the fix. Only that remote-only value is a backend default; an owner the config declares or
+// stops declaring, another value and any other undeclared key still plan an update.
+func TestSchemaOwnerPropertyBackendDefault(t *testing.T) {
+	adapter, err := dresources.NewAdapter(dresources.SupportedResources["schemas"], "schemas", nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		field    string
+		ch       *deployplan.ChangeDesc
+		expected deployplan.ActionType
+	}{
+		{
+			// No properties in the config: structdiff reports the whole remote map.
+			name:     "undeclared owner alone",
+			field:    "properties",
+			ch:       &deployplan.ChangeDesc{Remote: map[string]string{"owner": "root"}},
+			expected: deployplan.Skip,
+		},
+		{
+			name:  "undeclared owner next to managed defaults",
+			field: "properties",
+			ch: &deployplan.ChangeDesc{Remote: map[string]string{
+				"owner": "root",
+				"unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true",
+			}},
+			expected: deployplan.Skip,
+		},
+		{
+			// The config declares other properties: structdiff reports each key.
+			name:     "undeclared owner next to declared properties",
+			field:    "properties['owner']",
+			ch:       &deployplan.ChangeDesc{Remote: "root"},
+			expected: deployplan.Skip,
+		},
+		{
+			name:     "undeclared owner with another value",
+			field:    "properties['owner']",
+			ch:       &deployplan.ChangeDesc{Remote: "alice"},
+			expected: deployplan.Update,
+		},
+		{
+			name:     "undeclared owner next to another undeclared property",
+			field:    "properties",
+			ch:       &deployplan.ChangeDesc{Remote: map[string]string{"owner": "root", "team": "data"}},
+			expected: deployplan.Update,
+		},
+		{
+			name:     "declared owner differs from remote",
+			field:    "properties['owner']",
+			ch:       &deployplan.ChangeDesc{Old: "dabs", New: "dabs", Remote: "root"},
+			expected: deployplan.Update,
+		},
+		{
+			name:     "declared owner removed from config",
+			field:    "properties['owner']",
+			ch:       &deployplan.ChangeDesc{Old: "root", New: nil, Remote: "root"},
+			expected: deployplan.Update,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			changes := deployplan.Changes{tt.field: tt.ch}
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil, nil))
+			assert.Equal(t, tt.expected, tt.ch.Action)
+			if tt.expected == deployplan.Skip {
+				assert.Equal(t, deployplan.ReasonBackendDefault, tt.ch.Reason)
+			}
+		})
+	}
+}
+
 // A field present in StateType but absent from RemoteType (input-only, e.g. external
 // locations' skip_validation) reads back nil, so a coincidental new == remote must NOT
 // trip RemoteAlreadySet — that would skip a real local change. A field present in RemoteType

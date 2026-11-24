@@ -16,6 +16,13 @@ backend_defaults:
   # Without this, every subsequent plan produces an Update whose payload is empty,
   # and UC rejects it with "UpdateSchema Nothing to update".
   - field: properties['unity.catalog.managed.*.defaults.*']
+  # A schema created with SQL (CREATE SCHEMA) reads back properties.owner = "root" although
+  # nobody declared it. Without this, binding such a schema plans an update on every deploy,
+  # and that update cannot clear the key: a config without properties sends none. Any other
+  # owner value, and an owner the config declares, still take part in drift detection.
+  # https://github.com/databricks/cli/issues/6986
+  - field: properties['owner']
+    values: ["root"]
 # Assigned by the backend and kept across renames: lets the plan find a schema renamed outside the
 # bundle or by an interrupted deploy (see InternalIDField).
 internal_id_field: schema_id
