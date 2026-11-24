@@ -133,17 +133,20 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	if err != nil {
 		return r.recoverFailedCreate(ctx, req, start, err)
 	}
-	return r.waitCreated(ctx, waiter)
-}
-
-// waitCreated waits for the create operation of a branch that a create request returned.
-func (r *ResourcePostgresBranch) waitCreated(ctx context.Context, waiter postgres.CreateBranchOperationInterface) (string, *PostgresBranchRemote, error) {
-	result, err := waitCreateOperation(ctx, waiter.Wait)
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
-	remote := makePostgresBranchRemote(result)
 	return remote.Name, remote, nil
+}
+
+// waitCreated waits for the create operation of a branch that a create request returned.
+func (r *ResourcePostgresBranch) waitCreated(ctx context.Context, waiter postgres.CreateBranchOperationInterface) (*PostgresBranchRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresBranchRemote(result), nil
 }
 
 // Tuning for waitBranchReady, variables so that tests can shorten them.
@@ -154,33 +157,38 @@ var (
 	branchReadyPollInterval = 5 * time.Second
 )
 
-// recoverFailedCreate handles a create request that failed; see recoverPostgresCreate.
+// recoverFailedCreate handles a create request that failed; see recoverCreate.
 func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, req postgres.CreateBranchRequest, start time.Time, createErr error) (string, *PostgresBranchRemote, error) {
-	if ctx.Err() != nil || !retry.IsTransient(ctx, createErr) {
-		return "", nil, createErr
-	}
 	// A branch found after a replace may predate it, and repeating a replace is safe.
 	if req.ReplaceExisting {
 		return "", nil, retrySafe(createErr)
 	}
 
 	name := req.Parent + "/branches/" + req.BranchId
-	return recoverPostgresCreate(ctx, postgresCreateRecovery[postgres.Branch, *PostgresBranchRemote]{
-		name: name,
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Branch, *PostgresBranchRemote]{
+		name:  "branch " + name,
+		start: start,
 		get: func(ctx context.Context) (*postgres.Branch, error) {
 			return r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
 		},
-		create: func(ctx context.Context) (func() (string, *PostgresBranchRemote, error), error) {
+		createTime:      func(found *postgres.Branch) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
+		use: func(ctx context.Context, branch *postgres.Branch) (*PostgresBranchRemote, error) {
+			return r.useRecoveredBranch(ctx, branch, createErr)
+		},
+		create: func(ctx context.Context) (func() (*PostgresBranchRemote, error), error) {
 			waiter, err := r.client.Postgres.CreateBranch(ctx, req)
 			if err != nil {
 				return nil, err
 			}
-			return func() (string, *PostgresBranchRemote, error) { return r.waitCreated(ctx, waiter) }, nil
-		},
-		use: func(ctx context.Context, branch *postgres.Branch) (string, *PostgresBranchRemote, error) {
-			return r.useRecoveredBranch(ctx, branch, start, createErr)
+			return func() (*PostgresBranchRemote, error) { return r.waitCreated(ctx, waiter) }, nil
 		},
 	}, createErr)
+	if err != nil {
+		return "", nil, err
+	}
+	return remote.Name, remote, nil
 }
 
 func readBranch(ctx context.Context, client *databricks.WorkspaceClient, name string) (*postgres.Branch, error) {
@@ -195,24 +203,17 @@ func readBranch(ctx context.Context, client *databricks.WorkspaceClient, name st
 // success path: a WaitAfterCreate would read every created branch once more. Once the branch is
 // known to be ours, it is returned even when the wait ends early, so that state records it and the
 // next deploy does not fail with ALREADY_EXISTS.
-func (r *ResourcePostgresBranch) useRecoveredBranch(ctx context.Context, branch *postgres.Branch, start time.Time, createErr error) (string, *PostgresBranchRemote, error) {
-	if !createdByRequestAt(branch.CreateTime, start) {
-		return "", nil, fmt.Errorf("%w; branch %s exists but was not created by this deployment", createErr, branch.Name)
-	}
-
+func (r *ResourcePostgresBranch) useRecoveredBranch(ctx context.Context, branch *postgres.Branch, createErr error) (*PostgresBranchRemote, error) {
 	branch, err := waitBranchReady(ctx, r.client, branch)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	// Other states, such as DELETED or ARCHIVED, will not become READY.
 	if state := branchState(branch); state != postgres.BranchStatusStateReady && state != postgres.BranchStatusStateInit {
-		return "", nil, fmt.Errorf("%w; branch %s exists in state %q", createErr, branch.Name, state)
+		return nil, fmt.Errorf("%w; branch %s exists in state %q", createErr, branch.Name, state)
 	}
-	// Info, not Warn: the deploy got the branch it asked for, so there is nothing to act on.
-	log.Infof(ctx, "using branch %s, created despite the failed create request: %s", branch.Name, createErr)
-	remote := makePostgresBranchRemote(branch)
-	return remote.Name, remote, nil
+	return makePostgresBranchRemote(branch), nil
 }
 
 // waitBranchReady polls branch while it is in INIT, up to branchReadyTimeout, and returns the last

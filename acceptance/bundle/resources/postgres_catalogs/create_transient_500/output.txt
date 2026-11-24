@@ -33,7 +33,7 @@ GET /api/2.0/postgres/catalogs/lakebase_test/operations/[UUID]
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created postgres_projects.my_project
-Warn: deploying resources.postgres_catalogs.my_catalog: checking whether catalogs/lakebase_test was created: Fault injected by test.
+Warn: deploying resources.postgres_catalogs.my_catalog: checking whether catalog catalogs/lakebase_test was created: Fault injected by test.
 Error: cannot create resources.postgres_catalogs.my_catalog: Fault injected by test. (500 INTERNAL_ERROR)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/catalogs?catalog_id=lakebase_test
