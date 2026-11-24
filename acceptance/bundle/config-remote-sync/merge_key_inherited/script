@@ -17,8 +17,10 @@ for task in r["tasks"]:
     if task["task_key"] == "b_task":
         task["min_retry_interval_millis"] = 5000
         del task["max_retries"]
-        task["depends_on"] = [d for d in task["depends_on"] if d["task_key"] != "prep"]
+        task["depends_on"] = [d for d in task["depends_on"] if d["task_key"] != "prep"] + [{"task_key": "a_task", "outcome": "true"}]
         task["notebook_task"]["base_parameters"]["input_file_name"] = "other"
+    if task["task_key"] == "c_task":
+        task["depends_on"] = [d for d in task["depends_on"] if d["task_key"] != "setup"] + [{"task_key": "a_task"}]
 for cluster in r["job_clusters"]:
     if cluster["job_cluster_key"] == "derived":
         del cluster["new_cluster"]["num_workers"]
@@ -37,3 +39,6 @@ title "Configuration changes"
 trace diff.py databricks.yml.backup databricks.yml
 trace diff.py pipeline.yml.backup pipeline.yml
 rm databricks.yml.backup pipeline.yml.backup
+
+title "Effective configuration after the sync"
+$CLI bundle validate -o json | jq '.resources.jobs.my_job | {timeout_seconds, b_task: (.tasks[] | select(.task_key == "b_task") | {max_retries, min_retry_interval_millis, depends_on, input_file_name: .notebook_task.base_parameters.input_file_name})}'

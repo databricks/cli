@@ -329,14 +329,15 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				scope := destination.scopeKey()
 
 				if isRename {
-					result = append(result, renameKeyChange(blocks, *block, scope, indices,
+					// A sequence inherited through a merge key has no element to rewrite here.
+					if written, _ := docs.written(block.file, blocks.candidatePath(*block, resolvedPath.Parent()), ""); !written {
+						unwritten = true
+						break
+					}
+					fieldResult = append(fieldResult, renameKeyChange(blocks, *block, scope, indices,
 						resolvedPath, mergedIndexPath, rename, destChange))
 					continue
 				}
-
-				resolvedPath = indices.place(scope, resolvedPath, destChange.Operation)
-
-				writePath, altWritePath := writeAddress(blocks, block, targetName, resolvedPath)
 
 				// A change routed to a block has a known destination file even when the leaf
 				// itself is new, but "defined in the config" must still be decided by
@@ -345,6 +346,43 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				isDefinedInConfig := filePath != ""
 				if block != nil && isDefinedInConfig {
 					filePath = block.file
+				}
+
+				// The merged config can locate a key the file does not write at this path,
+				// e.g. one inherited through a merge key, which the patcher cannot reach.
+				// Checked before the index bookkeeping, so a skipped change shifts nothing.
+				var addPath string
+				_, addressesKey := resolvedPath.StringKey()
+				editsField := isDefinedInConfig && (destChange.Operation == OperationRemove || destChange.Operation == OperationReplace)
+				addsElement := !isDefinedInConfig && destChange.Operation == OperationAdd && !addressesKey && block != nil
+				if editsField || addsElement {
+					checkPath, checkFile := resolvedPath, filePath
+					if !addressesKey {
+						// An element is never inherited on its own, but its sequence can be.
+						checkPath = resolvedPath.Parent()
+					}
+					if addsElement {
+						checkFile = block.file
+					}
+					writePath, altWritePath := writeAddress(blocks, block, targetName, checkPath)
+					key, parentPath := docs.written(checkFile, writePath, altWritePath)
+					if !key && addressesKey && destChange.Operation == OperationReplace && parentPath != "" {
+						destChange.Operation = OperationAdd
+						configChange.Operation = OperationAdd
+						addPath = parentPath
+					} else if !key {
+						unwritten = true
+						break
+					}
+				}
+
+				resolvedPath = indices.place(scope, resolvedPath, destChange.Operation)
+
+				writePath, altWritePath := writeAddress(blocks, block, targetName, resolvedPath)
+				if addPath != "" {
+					// Written next to the merge key, the key overrides the inherited value
+					// for this mapping only.
+					writePath, altWritePath = addPath, ""
 				}
 
 				if !isDefinedInConfig {
@@ -378,29 +416,6 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					log.Debugf(ctx, "Field %s has no location, using %s", fullPath, filePath)
 				}
 
-				// The merged config can locate a key the file does not write at this path,
-				// e.g. one inherited through a merge key, which the patcher cannot reach.
-				if isDefinedInConfig && (destChange.Operation == OperationRemove || destChange.Operation == OperationReplace) {
-					checkPath, checkAltPath := writePath, altWritePath
-					_, addressesKey := resolvedPath.StringKey()
-					if !addressesKey {
-						// An element's index may already be shifted past the file's by
-						// earlier changes, so the sequence holding it is looked up instead.
-						checkPath, checkAltPath = writeAddress(blocks, block, targetName, resolvedPath.Parent())
-					}
-					key, addPath := docs.written(filePath, checkPath, checkAltPath)
-					if !key && addressesKey && destChange.Operation == OperationReplace && addPath != "" {
-						// Written next to the merge key, the key overrides the inherited value
-						// for this mapping only.
-						destChange.Operation = OperationAdd
-						configChange.Operation = OperationAdd
-						writePath, altWritePath = addPath, ""
-					} else if !key {
-						unwritten = true
-						break
-					}
-				}
-
 				if (destChange.Operation == OperationAdd || destChange.Operation == OperationReplace) && b.SyncRootPath != "" {
 					destChange = &ConfigChangeDesc{
 						Operation: destChange.Operation,
@@ -421,6 +436,10 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				log.Debugf(ctx, "config-remote-sync: skipping %s: the key is not written where it is defined", fullPath)
 				configChange.Operation = OperationSkip
 				skipped++
+				if isRename {
+					resourceChanges[rename.addPath].Operation = OperationSkip
+					skipped++
+				}
 				continue
 			}
 			result = append(result, fieldResult...)
