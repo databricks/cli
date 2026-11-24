@@ -62,8 +62,11 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 			},
 			createTime:    func(found *catalog.ExternalLocationInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
 			alreadyExists: isAlreadyExists,
-			use:           useFound[catalog.ExternalLocationInfo],
-			create:        repeatCreate(create),
+			createdByCaller: func(ctx context.Context, found *catalog.ExternalLocationInfo) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.ExternalLocationInfo],
+			create: repeatCreate(create),
 		}, err)
 	}
 	if err != nil || response == nil {

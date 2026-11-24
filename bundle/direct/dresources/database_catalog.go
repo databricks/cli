@@ -79,10 +79,11 @@ func (r *ResourceDatabaseCatalog) recoverFailedCreate(ctx context.Context, name 
 			}
 			return &foundDatabaseCatalog{catalog: dbCatalog, createdAt: ucCatalog.CreatedAt}, nil
 		},
-		createTime:    func(found *foundDatabaseCatalog) (time.Time, bool) { return unixMilliTime(found.createdAt) },
-		alreadyExists: isAlreadyExists,
-		use:           useFound[foundDatabaseCatalog],
-		create:        repeatCreate(create),
+		createTime:      func(found *foundDatabaseCatalog) (time.Time, bool) { return unixMilliTime(found.createdAt) },
+		alreadyExists:   isAlreadyExists,
+		createdByCaller: nil,
+		use:             useFound[foundDatabaseCatalog],
+		create:          repeatCreate(create),
 	}, createErr)
 }
 

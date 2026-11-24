@@ -109,10 +109,11 @@ func (r *ResourceModelProviderService) DoCreate(ctx context.Context, config *res
 			get: func(ctx context.Context) (*catalog.ModelProviderService, error) {
 				return r.client.AiGateway.GetModelProviderService(ctx, catalog.GetModelProviderServiceRequest{Name: modelProviderServiceNamePrefix + id})
 			},
-			createTime:    func(found *catalog.ModelProviderService) (time.Time, bool) { return sdkTime(found.CreateTime) },
-			alreadyExists: isAlreadyExists,
-			use:           useFound[catalog.ModelProviderService],
-			create:        repeatCreate(create),
+			createTime:      func(found *catalog.ModelProviderService) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[catalog.ModelProviderService],
+			create:          repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

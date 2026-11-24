@@ -82,8 +82,11 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *CatalogState) (s
 			},
 			createTime:    func(found *catalog.CatalogInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
 			alreadyExists: isAlreadyExists,
-			use:           useFound[catalog.CatalogInfo],
-			create:        repeatCreate(create),
+			createdByCaller: func(ctx context.Context, found *catalog.CatalogInfo) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.CatalogInfo],
+			create: repeatCreate(create),
 		}, err)
 	}
 	if err != nil || response == nil {

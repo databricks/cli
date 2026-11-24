@@ -197,8 +197,9 @@ func (r *ResourcePostgresEndpoint) recoverFailedCreate(ctx context.Context, req 
 		get: func(ctx context.Context) (*postgres.Endpoint, error) {
 			return r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
 		},
-		createTime:    func(found *postgres.Endpoint) (time.Time, bool) { return sdkTime(found.CreateTime) },
-		alreadyExists: isPostgresAlreadyExists,
+		createTime:      func(found *postgres.Endpoint) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isAlreadyExists,
+		createdByCaller: nil,
 		use: func(ctx context.Context, found *postgres.Endpoint) (*PostgresEndpointRemote, error) {
 			// The endpoint is ours either way, so a wait that ends early only warns: state still
 			// records the endpoint, and the next deploy does not fail with "already exists".

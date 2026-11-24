@@ -159,8 +159,9 @@ func (r *ResourcePostgresProject) recoverFailedCreate(ctx context.Context, req p
 		get: func(ctx context.Context) (*postgres.Project, error) {
 			return r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: name})
 		},
-		createTime:    func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
-		alreadyExists: isPostgresAlreadyExists,
+		createTime:      func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
 		use: func(ctx context.Context, project *postgres.Project) (*PostgresProjectRemote, error) {
 			if err := r.waitDefaultBranchReady(ctx, project); err != nil {
 				return nil, err

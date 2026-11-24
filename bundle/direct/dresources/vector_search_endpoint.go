@@ -104,9 +104,10 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vec
 			createTime: func(found *vectorsearch.EndpointInfo) (time.Time, bool) {
 				return unixMilliTime(found.CreationTimestamp)
 			},
-			alreadyExists: isAlreadyExists,
-			use:           useFound[vectorsearch.EndpointInfo],
-			create:        repeatCreate(create),
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[vectorsearch.EndpointInfo],
+			create:          repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

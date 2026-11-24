@@ -182,8 +182,9 @@ func (r *ResourcePostgresRole) recoverFailedCreate(ctx context.Context, req post
 		get: func(ctx context.Context) (*postgres.Role, error) {
 			return r.client.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
 		},
-		createTime:    func(found *postgres.Role) (time.Time, bool) { return sdkTime(found.CreateTime) },
-		alreadyExists: isPostgresAlreadyExists,
+		createTime:      func(found *postgres.Role) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
 		use: func(_ context.Context, found *postgres.Role) (*PostgresRoleRemote, error) {
 			return makePostgresRoleRemote(found), nil
 		},

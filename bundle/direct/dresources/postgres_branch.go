@@ -171,8 +171,9 @@ func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, req po
 		get: func(ctx context.Context) (*postgres.Branch, error) {
 			return r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
 		},
-		createTime:    func(found *postgres.Branch) (time.Time, bool) { return sdkTime(found.CreateTime) },
-		alreadyExists: isPostgresAlreadyExists,
+		createTime:      func(found *postgres.Branch) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
 		use: func(ctx context.Context, branch *postgres.Branch) (*PostgresBranchRemote, error) {
 			return r.useRecoveredBranch(ctx, branch, createErr)
 		},

@@ -144,8 +144,9 @@ func (r *ResourcePostgresCatalog) recoverFailedCreate(ctx context.Context, req p
 		get: func(ctx context.Context) (*postgres.Catalog, error) {
 			return r.client.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: name})
 		},
-		createTime:    func(found *postgres.Catalog) (time.Time, bool) { return sdkTime(found.CreateTime) },
-		alreadyExists: isPostgresAlreadyExists,
+		createTime:      func(found *postgres.Catalog) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
 		use: func(_ context.Context, found *postgres.Catalog) (*PostgresCatalogRemote, error) {
 			return makePostgresCatalogRemote(found), nil
 		},

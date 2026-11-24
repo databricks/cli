@@ -96,8 +96,11 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 			},
 			createTime:    func(found *catalog.Secret) (time.Time, bool) { return sdkTime(found.CreateTime) },
 			alreadyExists: isAlreadyExists,
-			use:           useFound[catalog.Secret],
-			create:        repeatCreate(create),
+			createdByCaller: func(ctx context.Context, found *catalog.Secret) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.Secret],
+			create: repeatCreate(create),
 		}, err)
 	}
 	if err != nil || response == nil {

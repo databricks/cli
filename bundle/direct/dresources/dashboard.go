@@ -334,9 +334,10 @@ func (r *ResourceDashboard) recoverFailedCreate(ctx context.Context, config *Das
 			created, err := time.Parse(time.RFC3339, found.CreateTime)
 			return created, err == nil
 		},
-		alreadyExists: isAlreadyExists,
-		use:           useFound[dashboards.Dashboard],
-		create:        repeatCreate(create),
+		alreadyExists:   isAlreadyExists,
+		createdByCaller: nil,
+		use:             useFound[dashboards.Dashboard],
+		create:          repeatCreate(create),
 	}, createErr)
 }
 
