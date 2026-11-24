@@ -1,0 +1,9 @@
+export NO_COLOR=1
+
+# The symlink is created here rather than committed: the acceptance harness copies
+# test inputs with filepath.Walk, which reads a symlinked directory as a file.
+ln -s shared template/linked
+
+musterr $CLI bundle init .
+
+trace find.py 'linked|shared'
