@@ -135,18 +135,24 @@ func skipsAutoInstall(cmd *cobra.Command) bool {
 	return false
 }
 
-func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
-	version := autoinstall.Version(ctx)
-	in := autoinstall.Inputs{
+// autoInstallInputs returns the decision inputs that need neither the state
+// nor the gate.
+func autoInstallInputs(ctx context.Context, skippedCommand bool) autoinstall.Inputs {
+	return autoinstall.Inputs{
 		SkippedCommand: skippedCommand,
 		OnRuntime:      dbr.RunsOnRuntime(ctx),
 		CacheDisabled:  autoinstall.CacheDisabled(ctx),
-		Version:        version,
+		Version:        autoinstall.Version(ctx),
 		RootInUserHome: rootInUserHome(ctx),
 		CI:             agents.InCI(ctx),
 		// A "no" earlier in this process counts even if storing it failed.
 		EnvOptOut: autoinstall.EnvOptedOut(ctx) || autoinstall.Declined(),
 	}
+}
+
+func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
+	in := autoInstallInputs(ctx, skippedCommand)
+	version := in.Version
 	// What never auto-installs skips before the state is read, and without a
 	// log line: these are most runs. Root in a user's home is rare, and a user
 	// who always runs the CLI under sudo needs a way to see why nothing
@@ -532,8 +538,9 @@ func (t toolsPlan) fresh() bool {
 // planTools plans what `databricks aitools install --scope=global` runs
 // without prompts, for the agents whose config directory exists. An existing
 // global installation is updated as `databricks aitools update --scope=global`
-// does instead, which keeps its downgrade guard, keeps the skills whose files
-// the user modified at their version, and does not migrate skills to plugins.
+// does instead, which keeps its downgrade guard, also keeps an installed
+// release newer than a pinned one, keeps the skills whose files the user
+// modified at their version, and does not migrate skills to plugins.
 // Planning reads only local state; prior is the auto-install state.
 func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) {
 	globalDir, err := installer.GlobalSkillsDir(ctx)
@@ -627,8 +634,12 @@ func updateTools(ctx context.Context, globalDir string, before *installer.Instal
 	uctx := telemetry.WithNewLogger(ctx)
 	uctx = context.WithValue(uctx, funnelKey{}, &commandFunnel{command: protos.AitoolsCommandUpdate})
 	uctx = context.WithValue(uctx, telemetryAuthKey{}, &telemetryAuth{})
-	if err := runUpdate(uctx, updateFlags{scope: installer.ScopeGlobal, keepModified: true}); err != nil {
-		return installResult{}, err
+	updateErr := runUpdate(uctx, updateFlags{scope: installer.ScopeGlobal, keepModified: true})
+	// The update refuses the raw skills after it updated the plugins, so a
+	// refusal still reports the plugins it changed.
+	_, refused := errors.AsType[*installer.RefusedError](updateErr)
+	if updateErr != nil && !refused {
+		return installResult{}, updateErr
 	}
 	after, err := installer.LoadState(globalDir)
 	if err != nil {
@@ -638,9 +649,14 @@ func updateTools(ctx context.Context, globalDir string, before *installer.Instal
 	if after != nil {
 		result.agents = changedAgents(ctx, before, after)
 	}
-	if len(result.agents) > 0 {
-		result.outcome = protos.AitoolsAutoInstallOutcomeInstalled
+	if len(result.agents) == 0 {
+		// Nothing changed: the caller reports a refusal as kept.
+		return result, updateErr
 	}
+	if refused {
+		log.Debugf(ctx, "auto-install: kept the installed skills: %v", updateErr)
+	}
+	result.outcome = protos.AitoolsAutoInstallOutcomeInstalled
 	return result, nil
 }
 

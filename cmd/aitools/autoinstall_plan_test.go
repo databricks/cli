@@ -1,6 +1,8 @@
 package aitools
 
 import (
+	"context"
+	"errors"
 	"maps"
 	"os"
 	"path/filepath"
@@ -9,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -160,4 +163,47 @@ func TestSkipsAutoInstall(t *testing.T) {
 	for _, cmd := range []*cobra.Command{jobsList, authDescribe} {
 		assert.False(t, skipsAutoInstall(cmd), cmd.CommandPath())
 	}
+}
+
+// The update runs the plugin updates before it refuses the raw skills, so a
+// refusal still reports the plugins it updated.
+func TestUpdateToolsReportsPluginsUpdatedBeforeARefusal(t *testing.T) {
+	autoInstallHome(t)
+	noTelemetryAuth(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.3.0")
+	resetUpdatePluginSeams(t)
+	dir := saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})
+	before, err := installer.LoadState(dir)
+	require.NoError(t, err)
+
+	origUpdateSkills := updateSkillsFn
+	t.Cleanup(func() { updateSkillsFn = origUpdateSkills })
+	updateSkillsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.UpdateOptions) (*installer.UpdateResult, error) {
+		return nil, &installer.RefusedError{Err: errors.New("keeping the installed skills")}
+	}
+	pluginUpdated := false
+	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) {
+		if !pluginUpdated {
+			return nil, nil
+		}
+		state, err := installer.LoadState(dir)
+		require.NoError(t, err)
+		rec := state.Plugins[agents.NameClaudeCode]
+		rec.Version = "0.3.0"
+		state.Plugins[agents.NameClaudeCode] = rec
+		require.NoError(t, installer.SaveState(dir, state))
+		return []installer.PluginUpdate{{Agent: "Claude Code", Version: "0.3.0"}}, nil
+	}
+	ctx := cmdio.MockDiscard(t.Context())
+
+	// Nothing changed: the refusal is returned, which auto-install reports
+	// as kept.
+	_, err = updateTools(ctx, dir, before)
+	assert.ErrorAs(t, err, new(*installer.RefusedError))
+
+	pluginUpdated = true
+	result, err := updateTools(ctx, dir, before)
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeInstalled, result.outcome)
+	assert.Equal(t, []string{"Claude Code"}, result.agents)
 }
