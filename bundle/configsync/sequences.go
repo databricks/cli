@@ -62,7 +62,10 @@ func (b sourceBlock) scopeKey() string {
 type blockResolver struct {
 	// blocks holds one parsed file per contributing file, keyed by block, so a
 	// path relative to a block can be looked up inside it.
-	blocks     map[sourceBlock]dyn.Value
+	blocks map[sourceBlock]dyn.Value
+	// sources holds each parsed file's YAML, which still tells a written key from one
+	// inherited through a merge key.
+	sources    map[string][]byte
 	target     string
 	byLocation map[diag.Location]sourceBlock
 }
@@ -81,6 +84,7 @@ func newBlockResolver(ctx context.Context, b *bundle.Bundle) *blockResolver {
 
 	r := &blockResolver{
 		blocks:     make(map[sourceBlock]dyn.Value),
+		sources:    make(map[string][]byte),
 		target:     b.Config.Bundle.Target,
 		byLocation: make(map[diag.Location]sourceBlock),
 	}
@@ -97,6 +101,7 @@ func newBlockResolver(ctx context.Context, b *bundle.Bundle) *blockResolver {
 			log.Debugf(ctx, "config-remote-sync: cannot parse %s, treating its sequences as unsplit: %v", file, diags.Error())
 			continue
 		}
+		r.sources[file] = contents
 		r.registerBlock(parsed.Value(), sourceBlock{file: file})
 		if r.target != "" {
 			r.registerBlock(parsed.Value(), sourceBlock{override: true, file: file})
@@ -240,6 +245,17 @@ func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
 		}
 	}
 	return sourceBlock{}, false
+}
+
+// replacesKey reports whether change routes to one block that writes the key it
+// addresses, so it can be written there as a replace.
+func (r *blockResolver) replacesKey(change resolvedChange) bool {
+	destinations, err := routeChange(r, change, false)
+	if err != nil || len(destinations) != 1 || destinations[0].block == nil {
+		return false
+	}
+	block := *destinations[0].block
+	return yamlKeyReplaceable(r.sources[block.file], r.candidatePath(block, destinations[0].path))
 }
 
 // indexWithinBlock returns the position of element inside block, where sequencePath is

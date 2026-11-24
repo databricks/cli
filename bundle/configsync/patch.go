@@ -112,7 +112,7 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			opType := yamlpatch.OperationAdd
 			// A key the file writes as null is absent from the merged config, so the change
 			// arrives as an add; it replaces the existing key, as in RFC 6902.
-			if yamlKeyExists(content, fieldPathCandidate) {
+			if yamlKeyReplaceable(content, fieldPathCandidate) {
 				opType = yamlpatch.OperationReplace
 			}
 			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
@@ -410,9 +410,11 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 	return nil, nil
 }
 
-// yamlKeyExists reports whether fieldPath ends at a mapping key the YAML already has.
-// An add at a sequence index inserts rather than replaces, so only keys count.
-func yamlKeyExists(content []byte, fieldPath string) bool {
+// yamlKeyReplaceable reports whether fieldPath ends at a mapping key the YAML writes
+// itself, outside any anchor. An add at a sequence index inserts rather than replaces,
+// and a key inherited through a merge key has no node of its own, so only written keys
+// count. Replacing anchored content could alter aliases or leave dangling references.
+func yamlKeyReplaceable(content []byte, fieldPath string) bool {
 	pattern, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
 		return false
@@ -426,12 +428,15 @@ func yamlKeyExists(content []byte, fieldPath string) bool {
 	}
 	current := doc.Content[0]
 	for _, part := range pattern.AsSlice() {
+		if current.Anchor != "" {
+			return false
+		}
 		current, _ = yamlChild(current, (*structpath.PathNode)(part))
 		if current == nil {
 			return false
 		}
 	}
-	return true
+	return current.Anchor == ""
 }
 
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,

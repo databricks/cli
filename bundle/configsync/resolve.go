@@ -294,14 +294,16 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			// A mutator can clear or rebuild a field the file declares (OverrideCompute
 			// drops job_cluster_key), leaving no source location. The pre-resolved config
 			// still has it, so the change replaces it in the block it is declared in.
-			// Only a value written in a block counts: one from a YAML anchor has no key
-			// of its own to replace there.
+			// Only a key the block writes, outside any anchor, counts: one inherited through
+			// a YAML merge key has no key of its own to replace there, so it is added as before.
 			if blocks != nil && resolved.leaf.Location().File == "" && configChange.Operation != OperationRemove &&
 				!slices.ContainsFunc(resolved.steps, func(s sequenceStep) bool { return s.newElement }) {
 				if declared, ok := preResolvedValueAt(preResolved, mergedIndexPath.String()); ok {
-					if _, inBlock := blocks.winningBlock(declared); inBlock {
-						resolved.leaf = declared
-						resolved.operation = OperationReplace
+					replaced := resolved
+					replaced.leaf = declared
+					replaced.operation = OperationReplace
+					if blocks.replacesKey(replaced) {
+						resolved = replaced
 						configChange.Operation = OperationReplace
 					}
 				}
