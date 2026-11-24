@@ -135,18 +135,24 @@ func skipsAutoInstall(cmd *cobra.Command) bool {
 	return false
 }
 
-func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
-	version := autoinstall.Version(ctx)
-	in := autoinstall.Inputs{
+// autoInstallInputs returns the decision inputs that need neither the state
+// nor the gate.
+func autoInstallInputs(ctx context.Context, skippedCommand bool) autoinstall.Inputs {
+	return autoinstall.Inputs{
 		SkippedCommand: skippedCommand,
 		OnRuntime:      dbr.RunsOnRuntime(ctx),
 		CacheDisabled:  autoinstall.CacheDisabled(ctx),
-		Version:        version,
+		Version:        autoinstall.Version(ctx),
 		RootInUserHome: rootInUserHome(ctx),
 		CI:             agents.InCI(ctx),
 		// A "no" earlier in this process counts even if storing it failed.
 		EnvOptOut: autoinstall.EnvOptedOut(ctx) || autoinstall.Declined(),
 	}
+}
+
+func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
+	in := autoInstallInputs(ctx, skippedCommand)
+	version := in.Version
 	// What never auto-installs skips before the state is read, and without a
 	// log line: these are most runs. Root in a user's home is rare, and a user
 	// who always runs the CLI under sudo needs a way to see why nothing
