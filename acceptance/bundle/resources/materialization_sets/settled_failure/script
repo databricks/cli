@@ -28,7 +28,8 @@ trace set_action
 
 title "The delete settles FAILED the same way: the destroy fails with the operation's error and"
 title "keeps the set, and the features that depend on it, in state."
-trace musterr $CLI bundle destroy --auto-approve
+# The two dependency errors are reported in either order.
+trace musterr $CLI bundle destroy --auto-approve 2>&1 | sort_blocks.py
 trace print_state.py | gron.py | grep __id__
 
 rm -f out.requests.txt out.plan.json
