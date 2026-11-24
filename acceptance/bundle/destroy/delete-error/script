@@ -9,11 +9,11 @@ update_file.py databricks.yml "    bar:
 " ""
 fault.py "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
 errcode trace $CLI bundle deploy
-trace $CLI jobs get $bar_id | jq -r .settings.name
-trace print_state.py | jq -r '.state | keys[]'
+trace $CLI jobs get $bar_id | gron.py | grep settings.name
+trace print_state.py | gron.py | grep __id__
 
 title "destroy: the delete of foo is rejected with 400"
 fault.py --body-contains "\"job_id\":$foo_id}" "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
 errcode trace $CLI bundle destroy --auto-approve
-trace $CLI jobs get $foo_id | jq -r .settings.name
+trace $CLI jobs get $foo_id | gron.py | grep settings.name
 trace find.py '\.databricks/.*resources.*\.json'

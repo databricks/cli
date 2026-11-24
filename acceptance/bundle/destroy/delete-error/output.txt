@@ -15,10 +15,10 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> [CLI] jobs get [BAR_ID]
-bar-[UNIQUE_NAME]
+json.settings.name = "bar-[UNIQUE_NAME]";
 
 >>> print_state.py
-resources.jobs.foo
+json.state.resources.jobs.foo.__id__ = "[FOO_ID]";
 
 === destroy: the delete of foo is rejected with 400
 
@@ -31,6 +31,6 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 >>> [CLI] jobs get [FOO_ID]
-foo-[UNIQUE_NAME]
+json.settings.name = "foo-[UNIQUE_NAME]";
 
 >>> find.py \.databricks/.*resources.*\.json

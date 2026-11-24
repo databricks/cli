@@ -1,9 +1,4 @@
-Cloud = false
-Badness = "When the backend rejects a delete with an error other than not-found or permission-denied, deploy and destroy drop the resource from state and succeed, so the job stays in the workspace untracked. They should fail with the delete error and keep the resource in state, as the DMS=true run does."
+Badness = "When the backend rejects a delete and a re-read does not confirm the resource is gone, deploy and destroy drop the resource from state and succeed, so the job stays in the workspace untracked. They should fail with the delete error and keep the resource in state, as the DMS=true run does."
 
 # The DMS=true run already fails on the rejected delete, so it is excluded until both agree.
 EnvMatrix.DMS = []
-
-Ignore = [
-    "databricks.yml",
-]
