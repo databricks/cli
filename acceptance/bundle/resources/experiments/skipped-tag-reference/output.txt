@@ -1,0 +1,39 @@
+
+=== Deploy an experiment and a job that reads its tag
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/skipped-tag-reference/default/files...
+Created experiments.e
+Created jobs.reader
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [READER_ID]
+tag is initial
+
+=== Point the tag at a new job: experiment tag changes are ignored, so the experiment is skipped
+
+>>> [CLI] bundle plan
+create jobs.new_job
+update jobs.reader
+
+Plan: 1 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/skipped-tag-reference/default/files...
+Created jobs.new_job
+Updated jobs.reader
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 1 unchanged
+
+=== The reader still has the tag the experiment holds
+
+>>> [CLI] jobs get [READER_ID]
+tag is initial
+
+=== Plan after the deploy
+
+>>> [CLI] bundle plan
+update jobs.reader
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged

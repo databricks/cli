@@ -1,0 +1,2 @@
+Badness = "A reference to a skipped experiment's tag whose value is itself a reference to a new job is resolved only after apply, so the second deploy updates the reader job to the value it already has. Experiment tag changes are ignored, so the experiment keeps its old tag, while references resolve against the configured value: once the new job exists, the plan updates the reader job to the new job's ID, a tag value the experiment never gets."
+Cloud = false

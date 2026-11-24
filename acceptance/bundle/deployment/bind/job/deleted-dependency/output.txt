@@ -1,0 +1,60 @@
+
+=== Deploy the upstream job, then delete it outside of the bundle
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-deleted-dependency/default/files...
+Created jobs.upstream
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs delete [UPSTREAM_ID]
+
+=== Add a job that references the deleted upstream job
+
+=== Bind records the job; the deleted upstream stays in the state
+
+>>> [CLI] bundle deployment bind job_1 [EXTERNAL_JOB_ID] --auto-approve
+Successfully bound job with an id '[EXTERNAL_JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> jq .state | map_values({__id__, depends_on, description: .state.description}) .databricks/bundle/default/resources.json
+{
+  "resources.jobs.job_1": {
+    "__id__": "[EXTERNAL_JOB_ID]",
+    "depends_on": [
+      {
+        "node": "resources.jobs.upstream",
+        "label": "${resources.jobs.upstream.id}"
+      }
+    ],
+    "description": "runs after ${resources.jobs.upstream.id}"
+  },
+  "resources.jobs.upstream": {
+    "__id__": "[UPSTREAM_ID]",
+    "depends_on": null,
+    "description": null
+  }
+}
+
+=== Deploy recreates the upstream job and updates the bound job
+
+>>> [CLI] bundle plan
+update jobs.job_1
+create jobs.upstream
+
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-deleted-dependency/default/files...
+Created jobs.upstream
+Updated jobs.job_1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [EXTERNAL_JOB_ID]
+runs after [UPSTREAM_ID_2]
+
+=== Nothing is left to deploy
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

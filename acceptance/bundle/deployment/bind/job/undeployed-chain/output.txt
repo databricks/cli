@@ -1,0 +1,38 @@
+
+=== Bind a job whose dependency, not deployed yet, references another job that is not deployed yet
+
+>>> [CLI] bundle deployment bind job_1 [EXTERNAL_JOB_ID] --auto-approve
+Successfully bound job with an id '[EXTERNAL_JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> jq .state | map_values({__id__, depends_on, description: .state.description}) .databricks/bundle/default/resources.json
+{
+  "resources.jobs.job_1": {
+    "__id__": "[EXTERNAL_JOB_ID]",
+    "depends_on": [
+      {
+        "node": "resources.jobs.middle",
+        "label": "${resources.jobs.middle.id}"
+      }
+    ],
+    "description": "runs after ${resources.jobs.middle.id}"
+  }
+}
+
+=== Deploy creates both dependencies and updates the bound job
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-undeployed-chain/default/files...
+Created jobs.leaf
+Created jobs.middle
+Updated jobs.job_1
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] jobs get [EXTERNAL_JOB_ID]
+runs after [MIDDLE_ID]
+
+=== Nothing is left to deploy
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged

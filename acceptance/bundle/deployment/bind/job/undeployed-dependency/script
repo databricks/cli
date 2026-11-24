@@ -1,0 +1,27 @@
+title "Deploy the bundle with only the upstream job"
+trace $CLI bundle deploy
+
+title "Add a job that references both the deployed job and a job that is not deployed yet"
+update_file.py databricks.yml "#TO_ADD:" ""
+job_id=$($CLI jobs create --json '{"name": "external job"}' | jq -r '.job_id')
+add_repl "$job_id" EXTERNAL_JOB_ID
+
+title "Bind without auto-approve shows the changes and does not touch the state"
+trace errcode $CLI bundle deployment bind job_1 $job_id
+trace jq '.state | keys' .databricks/bundle/default/resources.json
+trace assert_not_exists.py .databricks/bundle/default/resources.json.temp-bind
+
+title "Bind with auto-approve records the job and its dependencies"
+trace $CLI bundle deployment bind job_1 $job_id --auto-approve
+trace jq '{serial, job_1: .state["resources.jobs.job_1"] | {__id__, depends_on, description: .state.description}}' .databricks/bundle/default/resources.json
+trace ls .databricks/bundle/default
+
+title "Deploy creates the new upstream and updates the bound job"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+read_id.py deployed > /dev/null
+read_id.py new_upstream > /dev/null
+trace $CLI jobs get $job_id | jq -r .settings.description
+
+title "Nothing is left to deploy"
+trace $CLI bundle plan
