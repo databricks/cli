@@ -1,4 +1,4 @@
-Badness = "run_as is still set even though it's not in bundle and not in reset request"
+Badness = "After run_as is removed from the job and the bundle is redeployed, the jobs/reset request has no run_as but jobs get still returns run_as.user_name deco-test-user@databricks.com. Removing run_as should make the job run as the deploying user again."
 Ignore = [".databricks/.gitignore"]
 
 Cloud = true

@@ -1,1 +1,1 @@
-Badness = "This complains about deployment state, but more important issue is that here is no bundle config at all, it should complain about that."
+Badness = "bundle run foo on a bundle that defines no resource foo says 'resource not found or not yet deployed. Did you forget to run bundle deploy?'; it should say that no resource with key foo is defined in the bundle, since deploying would not help."
