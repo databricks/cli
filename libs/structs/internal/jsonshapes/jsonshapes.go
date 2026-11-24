@@ -190,12 +190,12 @@ func Shapes() []Shape {
 	return []Shape{
 		{
 			Name:       "doubly embedded",
-			Value:      &DoublyEmbedded{MiddleWithLeaf: MiddleWithLeaf{Leaf: Leaf{Value: "v"}}, Own: "o"},
+			Value:      &DoublyEmbedded{Value: "v", Own: "o"},
 			JSONFields: []string{"value", "own"},
 		},
 		{
 			Name:       "shallower embed wins",
-			Value:      &ShallowWins{ShallowValue: ShallowValue{Value: "shallow"}, DeepHolder: DeepHolder{Leaf: Leaf{Value: "deep"}}},
+			Value:      &ShallowWins{Value: "shallow", Leaf: Leaf{Value: "deep"}},
 			JSONFields: []string{"value"},
 			// Both walks visit each declaration, so a shadowed field is reported twice while the
 			// wire format carries one value.
@@ -264,14 +264,14 @@ func Shapes() []Shape {
 		},
 		{
 			Name:       "tagged embed is a named field",
-			Value:      &TaggedEmbed{Leaf: Leaf{Value: "v"}, Own: "o"},
+			Value:      &TaggedEmbed{Value: "v", Own: "o"},
 			JSONFields: []string{"leaf.value", "own"},
 			// Not flattened, so the outer object has no "value" member.
 			Unreachable: []string{"value"},
 		},
 		{
 			Name:       "option-only embed stays flattened",
-			Value:      &OptionOnlyEmbed{Leaf: Leaf{Value: "v"}, Own: "o"},
+			Value:      &OptionOnlyEmbed{Value: "v", Own: "o"},
 			JSONFields: []string{"value", "own"},
 		},
 		{
