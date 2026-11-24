@@ -27,6 +27,7 @@ Destroy: 1 deleted
 .databricks/bundle
 .databricks/bundle/default
 .databricks/bundle/default/deployment.json
+.databricks/bundle/default/released-deploy-locks.json
 
 === Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)
 

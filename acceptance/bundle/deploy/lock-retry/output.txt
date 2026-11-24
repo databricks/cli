@@ -31,6 +31,18 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 ["POST","false"]
 ["POST","false"]
 
+=== A late lock write lands after the deploy that sent it released the lock: the next deploy replaces that lock, and its delete is not replayed after a 503
+
+>>> [CLI] bundle deploy
+Warn: retrying after 503 Service Unavailable from POST /api/2.0/workspace/delete
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+["POST","workspace-files/import-file"]
+["POST","workspace/delete"]
+["POST","workspace-files/import-file"]
+["POST","workspace/delete"]
+
 === Lock is held by another deployer: the retry gets a conflict and the error names the holder
 
 >>> [CLI] bundle deploy
