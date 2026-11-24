@@ -51,6 +51,10 @@ type DeploymentBundle struct {
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
 
+	// bindResourceKey is the resource a bind plan records (see calculateBindPlan): planning makes
+	// its entry a state-only update at the ID in the state, whatever the diff.
+	bindResourceKey string
+
 	// refTypes maps a resource key to the type of the resource each of its pure-reference
 	// fields references, recorded before resolveReferences drops them (see addParentMoves).
 	refTypes sync.Map

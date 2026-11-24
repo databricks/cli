@@ -422,11 +422,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 			if missing {
-				// The state was recorded without the internal ID (by a CLI from before it was, or by
-				// bind): applying only records it, from the remote state.
+				// The state was written without the internal ID (by an older CLI, on deploy or bind):
+				// applying only records it, from the remote state.
 				action = deployplan.Update
 				entry.StateOnly = true
 			}
+		}
+		if resourceKey == b.bindResourceKey {
+			// The resource being bound: applying records the config as its state at the bound ID,
+			// which the state the plan is applied to does not have yet. The changes a deploy would
+			// make are planned afterwards, against the state the bind leaves.
+			action = deployplan.Update
+			entry.StateOnly = true
+			entry.ID = dbentry.ID
 		}
 
 		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether

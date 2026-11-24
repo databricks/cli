@@ -41,12 +41,13 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	oldID := db.GetResourceID(d.ResourceKey)
+	if planEntry.ID != "" {
+		// The plan found the resource at the ID its config gives it: a rename moved it, or a bind
+		// records it at the ID it was bound to.
+		oldID = planEntry.ID
+	}
 	if oldID == "" {
 		return errors.New("state entry not found")
-	}
-	if planEntry.ID != "" {
-		// The plan found the resource at the ID its config gives it: a rename moved it.
-		oldID = planEntry.ID
 	}
 
 	switch actionType {
@@ -284,7 +285,8 @@ func (d *DeploymentUnit) Rekey(ctx context.Context, db *dstate.DeploymentState, 
 }
 
 // RecordState saves the state at its ID without a backend call. A state-only update does this to
-// record the internal ID the state lacks, from the plan's remote state.
+// record the internal ID the state lacks, or the state of a resource a bind records; saveState takes
+// the internal ID from the plan's remote state.
 func (d *DeploymentUnit) RecordState(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
 	err := d.saveState(ctx, db, id, newState, d.DependsOn, planEntry.RemoteState)
 	if err != nil {

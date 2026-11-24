@@ -13,7 +13,7 @@
 Successfully bound schema with an id 'main.test-schema-[UUID]'
 Run 'bundle deploy' to deploy changes to your workspace
 {
-  "schema_id_recorded": false
+  "schema_id_recorded": true
 }
 
 === Deploy bundle: 

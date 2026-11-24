@@ -126,7 +126,8 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 type PlanEntry struct {
 	// ID is set when the resource is at another ID than the one in state: a rename moved it there
 	// (see findMoved), or a parent renamed in this plan moves it before it is recreated (see
-	// addParentMoves). Applying the entry addresses the resource at ID.
+	// addParentMoves), or a bind records it at the ID it was bound to. Applying the entry addresses
+	// the resource at ID.
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
@@ -145,9 +146,12 @@ type PlanEntry struct {
 	//   - an UpdateWithID that only follows a parent's rename (or a rename found by the plan):
 	//     the backend already moved the resource, so applying it records the state under the
 	//     ID IDFromState gives it. It is left out of the textual plan and counted as unchanged.
-	//   - an Update of an otherwise unchanged resource whose state lacks its internal ID (recorded
-	//     before the ID was, or by bind): applying it records the ID from the remote state. It is
+	//   - an Update of an otherwise unchanged resource whose state lacks its internal ID (written by
+	//     an older CLI, which did not record it on deploy or bind): applying it records the ID from
+	//     the remote state. It is
 	//     likewise left out of the textual plan and counted as unchanged.
+	//   - an Update of the resource a bind plan records: applying it saves the config as the
+	//     resource's state at ID, which the state does not have yet.
 	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
