@@ -271,12 +271,18 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 	return nil
 }
 
-// followParentRename records the resource at the ID its parent's rename moved it to, before the
-// update applies the resource's own changes there. The parent is applied first, so the move has
-// already happened: if the update then fails, or the deploy is interrupted, the state still points
-// at the resource. Without this, the next plan would find nothing at the old ID, and a resource
-// with no internal ID could not be found at its new one. It returns the ID to update at.
+// followParentRename records a resource with no internal ID (a model, a secret) at the ID its
+// parent's rename moved it to, before the update applies the resource's own changes there. The
+// parent is applied first, so the move has already happened: if the update then fails, or the
+// deploy is interrupted, the state still points at the resource. Without this, the next plan
+// would find nothing at the old ID and nothing to recognize the resource by at its new one. A
+// resource with an internal ID needs none of this: the plan finds it there (see findMoved). It
+// returns the ID to update at.
 func (d *DeploymentUnit) followParentRename(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) (string, error) {
+	if d.Adapter.HasInternalID() {
+		return oldID, nil
+	}
+
 	var parentPaths []*structpath.PathNode
 	for pathString, ch := range planEntry.Changes {
 		if ch.Reason != deployplan.ReasonParentRenamed {
