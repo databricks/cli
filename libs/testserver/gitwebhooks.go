@@ -41,11 +41,8 @@ func (s *FakeWorkspace) GitWebhooksUpsert(req Request) Response {
 		return gitWebhooksBadRequest(fmt.Sprintf("request parsing error: %s", err))
 	}
 	config := request.TriggerConfig
-	if request.RepoURL == "" || request.GitProvider == "" || config == nil || config.PushEvent == nil || config.DabsDeploy == nil {
-		return gitWebhooksBadRequest("repo_url, git_provider, trigger_config.push_event and trigger_config.dabs_deploy are required")
-	}
-	if config.DabsDeploy.BundleYmlRepoPath == "" || config.DabsDeploy.DeploymentMode == "" {
-		return gitWebhooksBadRequest("bundle_yml_repo_path and deployment_mode are required")
+	if message := validateGitWebhookTrigger(request.RepoURL, request.GitProvider, config); message != "" {
+		return gitWebhooksBadRequest(message)
 	}
 
 	stored := *config
@@ -70,8 +67,7 @@ func (s *FakeWorkspace) GitWebhooksUpsert(req Request) Response {
 			continue
 		}
 		webhookID = t.webhookID
-		existing := t.trigger.TriggerConfig.DabsDeploy
-		if existing.BundleYmlRepoPath == config.DabsDeploy.BundleYmlRepoPath && existing.DeploymentMode == config.DabsDeploy.DeploymentMode {
+		if sameDabsTarget(t.trigger, config.DabsDeploy) {
 			triggerID = id
 		}
 	}
@@ -93,6 +89,44 @@ func (s *FakeWorkspace) GitWebhooksUpsert(req Request) Response {
 		},
 	}
 	return Response{Body: gitwebhooks.UpsertWebhookTriggerResponse{WebhookID: webhookID, TriggerID: triggerID}}
+}
+
+// GitWebhooksDelete deletes the trigger with the same repository, bundle path and target. Like the
+// service, it succeeds when there is none.
+func (s *FakeWorkspace) GitWebhooksDelete(req Request) Response {
+	var request gitwebhooks.DeleteWebhookTrigger
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return gitWebhooksBadRequest(fmt.Sprintf("request parsing error: %s", err))
+	}
+	if message := validateGitWebhookTrigger(request.RepoURL, request.GitProvider, request.TriggerConfig); message != "" {
+		return gitWebhooksBadRequest(message)
+	}
+
+	defer s.LockUnlock()()
+
+	for id, t := range s.GitWebhookTriggers {
+		if t.trigger.RepoURL == request.RepoURL && sameDabsTarget(t.trigger, request.TriggerConfig.DabsDeploy) {
+			delete(s.GitWebhookTriggers, id)
+		}
+	}
+	return Response{Body: map[string]any{}}
+}
+
+// validateGitWebhookTrigger returns what an upsert or delete request is missing, or "" if nothing.
+// Both require the repo event, which delete does not match on.
+func validateGitWebhookTrigger(repoURL string, provider gitwebhooks.GitProvider, config *gitwebhooks.DeploymentTriggerConfig) string {
+	if repoURL == "" || provider == "" || config == nil || config.PushEvent == nil || config.DabsDeploy == nil {
+		return "repo_url, git_provider, trigger_config.push_event and trigger_config.dabs_deploy are required"
+	}
+	if config.DabsDeploy.BundleYmlRepoPath == "" || config.DabsDeploy.DeploymentMode == "" {
+		return "bundle_yml_repo_path and deployment_mode are required"
+	}
+	return ""
+}
+
+func sameDabsTarget(t gitwebhooks.WebhookTrigger, target *gitwebhooks.DabsDeployTarget) bool {
+	stored := t.TriggerConfig.DabsDeploy
+	return stored.BundleYmlRepoPath == target.BundleYmlRepoPath && stored.DeploymentMode == target.DeploymentMode
 }
 
 // GitWebhooksList lists the triggers that match the filter, ordered by name.

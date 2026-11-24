@@ -6,7 +6,10 @@
 package gitwebhooks
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/databricks/cli/libs/auth"
@@ -59,4 +62,31 @@ func (a *API) listWebhookTriggersPage(ctx context.Context, req ListWebhookTrigge
 	var resp ListWebhookTriggersResponse
 	err := a.client.Do(ctx, http.MethodGet, basePath+"/webhook-triggers", auth.WorkspaceIDHeaders(a.client.Config), nil, req, &resp)
 	return &resp, err
+}
+
+// DeleteWebhookTrigger deletes the trigger and its runner job. Its attempts stay, and only
+// workspace admins can read them.
+func (a *API) DeleteWebhookTrigger(ctx context.Context, req DeleteWebhookTrigger) error {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+	// The SDK sends the fields of a DELETE in the query string, but this endpoint reads them
+	// from the body. So the request carries no data, and the visitor sets the body.
+	return a.client.Do(ctx, http.MethodDelete, basePath+"/trigger", auth.WorkspaceIDHeaders(a.client.Config), nil, nil, nil, withJSONBody(body))
+}
+
+// withJSONBody returns a request visitor that sets body as the request's JSON body. The SDK runs
+// visitors on every attempt, so each retry gets a fresh reader. GetBody lets the transport
+// replay the request on a stale pooled connection, as it does for a body the SDK sets.
+func withJSONBody(body []byte) func(*http.Request) error {
+	return func(r *http.Request) error {
+		r.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(body)), nil
+		}
+		r.Body, _ = r.GetBody()
+		r.ContentLength = int64(len(body))
+		r.Header.Set("Content-Type", "application/json")
+		return nil
+	}
 }
