@@ -3,6 +3,7 @@ package installer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -161,6 +162,73 @@ func TestUpdateKeepModifiedKeepsEditedSkill(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.2.0", state.Skills["databricks-jobs"])
+}
+
+func TestUpdateNoDowngradeRefusesAnOlderPinnedRelease(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// A pinned older release, as the compatibility manifest pins one. It is
+	// refused before its manifest is fetched.
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	unfetchable := &mockManifestSource{fetchErr: errors.New("the manifest was fetched")}
+	_, err := UpdateSkills(ctx, unfetchable, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
+	assert.ErrorAs(t, err, new(*RefusedError))
+	assert.ErrorContains(t, err, "keeping the installed skills 0.2.0, which are newer than the pinned 0.1.5; run 'databricks aitools update' to install 0.1.5")
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, "v0.2.0", state.Release)
+
+	// Without it, the pinned ref is the user's choice.
+	_, err = UpdateSkills(ctx, src, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+	state, err = LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, testSkillsRef, state.Release)
+}
+
+func TestUpdateNoDowngradeInstallsANewerPinnedRelease(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	_, err := UpdateSkills(ctx, src, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
+	require.NoError(t, err)
+	state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Equal(t, "v0.2.0", state.Release)
+}
+
+func TestUpdateNoDowngradeInstallsAPinnedBranch(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// A branch has no release order, so it is not a downgrade.
+	t.Setenv("DATABRICKS_SKILLS_REF", "main")
+	_, err := UpdateSkills(ctx, src, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
+	require.NoError(t, err)
+	state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Equal(t, "main", state.Release)
 }
 
 func TestUpdateCheckDryRun(t *testing.T) {
