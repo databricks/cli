@@ -13,7 +13,7 @@ Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-sche
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 Docker push progress
 Pushed image.
-Compressed image size: 3.1 GB in 2 layers.
+Compressed image size: 3.1 GB (layers: 2).
 For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
@@ -54,7 +54,7 @@ Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.imag
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
-Compressed image size: 3.1 GB in 2 layers.
+Compressed image size: 3.1 GB (layers: 2).
 For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
@@ -73,7 +73,7 @@ Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.imag
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
-Compressed image size: 3.1 GB in 2 layers.
+Compressed image size: 3.1 GB (layers: 2).
 For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 
 >>> jq -e {v, data} [TEST_TMP_DIR]/home/result.json
@@ -102,7 +102,7 @@ Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.imag
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
-Compressed image size: 3.1 GB in 2 layers.
+Compressed image size: 3.1 GB (layers: 2).
 For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
@@ -120,7 +120,7 @@ Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.imag
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
-Compressed image size: 3.1 GB in 2 layers.
+Compressed image size: 3.1 GB (layers: 2).
 For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
@@ -201,7 +201,7 @@ Source image example/image:v1 is 7.1 GB uncompressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 denied: image exceeds the registry size limit
-For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
+If the registry rejected the image for its size, see the Databricks Artifact Registry image limits: https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Error: push image [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1: exit status 1
 
 === pull failure must not be pushed
@@ -335,7 +335,7 @@ Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.imag
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
-Compressed image size: 3.1 GB in 2 layers.
+Compressed image size: 3.1 GB (layers: 2).
 For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 

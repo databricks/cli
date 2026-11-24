@@ -182,7 +182,7 @@ func logCompressedImageSize(ctx context.Context, deps imagePushDeps, dockerPath,
 		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the compressed size of %s: %v", target, err))
 		return
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Compressed image size: %s in %d layers.", formatImageSize(sizeBytes), layers))
+	cmdio.LogString(ctx, fmt.Sprintf("Compressed image size: %s (layers: %d).", formatImageSize(sizeBytes), layers))
 }
 
 type manifestLayers struct {
@@ -204,6 +204,8 @@ type verboseManifest struct {
 
 // compressedImageSize sums the layer sizes in `docker manifest inspect --verbose` output. That
 // output is one object for an image manifest and an array for an index, whose entry for platform is used.
+// The JSON is Docker CLI's ImageManifest (https://github.com/docker/cli/blob/master/cli/manifest/types/types.go),
+// printed by https://github.com/docker/cli/blob/master/cli/command/manifest/inspect.go.
 func compressedImageSize(output []byte, platform string) (int64, int, error) {
 	output = bytes.TrimSpace(output)
 	var entries []verboseManifest
@@ -323,16 +325,17 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 		return fmt.Errorf("tag source image %s: %w", resolved.source, err)
 	}
 	// DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
-	limitsLink := "For Databricks Artifact Registry image limits, see " + darLimitationsURL(w.Config)
+	limitsURL := darLimitationsURL(w.Config)
 	cmdio.LogProgress(ctx, "Pushing image to "+target)
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "push", target); err != nil {
-		cmdio.LogString(ctx, limitsLink)
+		// A push can fail for many reasons, so the link is offered without naming size as the cause.
+		cmdio.LogString(ctx, "If the registry rejected the image for its size, see the Databricks Artifact Registry image limits: "+limitsURL)
 		return fmt.Errorf("push image %s: %w", target, err)
 	}
 
 	cmdio.LogString(ctx, "Pushed image.")
 	logCompressedImageSize(ctx, deps, dockerPath, target, platform)
-	cmdio.LogString(ctx, limitsLink)
+	cmdio.LogString(ctx, "For Databricks Artifact Registry image limits, see "+limitsURL)
 	if root.OutputType(cmd) == flags.OutputJSON {
 		return renderEnvelope(ctx, struct {
 			UnityCatalogImage string `json:"unity_catalog_image"`
