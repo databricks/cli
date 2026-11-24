@@ -481,6 +481,7 @@ func TestApplyChangeAddToExistingKey(t *testing.T) {
 	}{
 		{"scalar", "tasks:\n  - task_key: main\n    job_cluster_key: old\n", "tasks[0].job_cluster_key", "tasks: [{task_key: main, job_cluster_key: value}]"},
 		{"null", "parameters:\n  - name: p\n    value:\n", "parameters[0].value", "parameters: [{name: p, value: value}]"},
+		{"sequence index inserts", "parent:\n  - a\n", "parent[0]", "parent: [value, a]"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{

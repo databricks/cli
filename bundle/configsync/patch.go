@@ -109,21 +109,17 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 				Value: fieldChange.Change.Value,
 			}})
 		case OperationAdd:
+			opType := yamlpatch.OperationAdd
+			// The merged config can lack a key the file declares, e.g. when OverrideCompute
+			// clears job_cluster_key, so an add replaces an existing key as in RFC 6902.
+			if yamlKeyExists(content, fieldPathCandidate) {
+				opType = yamlpatch.OperationReplace
+			}
 			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-				Type:  yamlpatch.OperationAdd,
+				Type:  opType,
 				Path:  path,
 				Value: fieldChange.Change.Value,
 			}})
-
-			// The merged config can lack a key the file declares, e.g. when OverrideCompute
-			// clears job_cluster_key, so an add replaces an existing key as in RFC 6902.
-			if isKeyExistsError(patchErr) {
-				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-					Type:  yamlpatch.OperationReplace,
-					Path:  path,
-					Value: fieldChange.Change.Value,
-				}})
-			}
 
 			// Collect parent path errors for later retry
 			if patchErr != nil && isParentPathError(patchErr) {
@@ -277,11 +273,6 @@ func isPathNotFoundError(err error) bool {
 	return strings.Contains(msg, "does not exist")
 }
 
-// isKeyExistsError checks if error indicates an add to a mapping key that is already there.
-func isKeyExistsError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "already exists and can not be added")
-}
-
 // extractMissingPath extracts the missing path from error message like:
 // "op add /a/b/c/d: parent path /a/b does not exist"
 // Returns: "/a/b"
@@ -417,6 +408,30 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 		return nil, nil
 	}
 	return nil, nil
+}
+
+// yamlKeyExists reports whether fieldPath ends at a mapping key the YAML already has.
+// An add at a sequence index inserts rather than replaces, so only keys count.
+func yamlKeyExists(content []byte, fieldPath string) bool {
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return false
+	}
+	if _, ok := pattern.StringKey(); !ok {
+		return false
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil || len(doc.Content) != 1 {
+		return false
+	}
+	current := doc.Content[0]
+	for _, part := range pattern.AsSlice() {
+		current, _ = yamlChild(current, (*structpath.PathNode)(part))
+		if current == nil {
+			return false
+		}
+	}
+	return true
 }
 
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,
