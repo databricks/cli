@@ -5,11 +5,19 @@ include:
   - pipeline.yml
 
 targets:
+  staging:
+    mode: development
+    resources:
+      jobs:
+        my_job: &job_overrides
+          timeout_seconds: 600
   default:
     default: true
     mode: development
-  staging:
-    mode: development
+    resources:
+      jobs:
+        my_job:
+          <<: *job_overrides
 
 resources:
   jobs:

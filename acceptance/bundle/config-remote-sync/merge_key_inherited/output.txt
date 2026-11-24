@@ -15,6 +15,7 @@ Resource: resources.jobs.my_job
   tasks[task_key='b_task'].max_retries: skip
   tasks[task_key='b_task'].min_retry_interval_millis: add
   tasks[task_key='b_task'].notebook_task.base_parameters['input_file_name']: add
+  timeout_seconds: skip
 
 Resource: resources.pipelines.my_pipeline
   clusters: skip
@@ -26,7 +27,14 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -23,7 +23,10 @@
+@@ -18,5 +18,5 @@
+       jobs:
+         my_job:
+-          <<: *job_overrides
++          !!merge <<: *job_overrides
+
+ resources:
+@@ -31,7 +31,10 @@
          - job_cluster_key: derived
            new_cluster:
 -            <<: *base_cluster
@@ -38,7 +46,7 @@ Resource: resources.pipelines.my_pipeline
 +              min_workers: 1
        tasks:
          - &base_task
-@@ -36,9 +39,11 @@
+@@ -44,9 +47,11 @@
              base_parameters: &base_params
                input_file_name: original
 -        - <<: *base_task

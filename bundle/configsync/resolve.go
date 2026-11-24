@@ -382,12 +382,13 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				// indices may already be shifted past the file's by earlier changes.
 				_, addressesKey := resolvedPath.StringKey()
 				if isDefinedInConfig && addressesKey && (destChange.Operation == OperationRemove || destChange.Operation == OperationReplace) {
-					key, parent := docs.written(filePath, writePath, altWritePath)
-					if !key && destChange.Operation == OperationReplace && parent {
+					key, addPath := docs.written(filePath, writePath, altWritePath)
+					if !key && destChange.Operation == OperationReplace && addPath != "" {
 						// Written next to the merge key, the key overrides the inherited value
 						// for this mapping only.
 						destChange.Operation = OperationAdd
 						configChange.Operation = OperationAdd
+						writePath, altWritePath = addPath, ""
 					} else if !key {
 						unwritten = true
 						break
