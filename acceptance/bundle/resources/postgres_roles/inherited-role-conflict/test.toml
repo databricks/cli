@@ -1,7 +1,6 @@
 RecordRequests = false
-Badness = "A bundle that declares a Postgres role which already exists on the branch (as on a child branch, which inherits its parent's roles) plans a create, and deploy fails with 400 'role with that name already exists'. The only way out is `bundle deployment bind` (see inherited-role-bind); the bundle should be able to take over the existing role, e.g. with a replace_existing option."
+# Expected: without replace_existing the create conflicts with the existing role;
+# see replace_existing (takes the role over) and inherited-role-bind.
 
 # Inheritance is staged locally via unbind; not run on cloud.
 Cloud = false
-
-# Deploy error wording differs between engines; the conflict itself is engine-agnostic.
