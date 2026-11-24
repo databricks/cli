@@ -10,27 +10,45 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/delete-error-[UNIQUE_NAME]/default/files...
-Deleted jobs.bar
+Error: cannot delete resources.jobs.bar: deleting id=[BAR_ID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/delete
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
+
+Exit code: 1
 
 >>> [CLI] jobs get [BAR_ID]
 bar-[UNIQUE_NAME]
 
 >>> print_state.py
+resources.jobs.bar
 resources.jobs.foo
 
 === destroy: the delete of foo is rejected with 400
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.jobs.bar
   delete resources.jobs.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/delete-error-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted
+Error: cannot delete resources.jobs.foo: deleting id=[FOO_ID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/delete
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
+
+Exit code: 1
 
 >>> [CLI] jobs get [FOO_ID]
 foo-[UNIQUE_NAME]
 
 >>> find.py \.databricks/.*resources.*\.json
+.databricks/bundle/default/resources.json
