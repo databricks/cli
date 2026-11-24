@@ -48,9 +48,12 @@ const (
 // messages are surfaced.
 const statusMessageType = "STATUS"
 
-// waitingForComputeStatus is the fallback shown while a PENDING run waits for
-// accelerator compute.
+// waitingForComputeStatus is the normalized form of AIR's capacity status.
 const waitingForComputeStatus = "Waiting for accelerator compute capacity to become available..."
+
+// waitingForWorkloadStatus avoids inferring why a Jobs run or task appears
+// pending when AIR does not provide a current status message.
+const waitingForWorkloadStatus = "Waiting for the latest workload status..."
 
 // normalizeStatusMessage returns the payload of a "STATUS:<payload>" message,
 // normalized for display (trailing "." stripped, "..." suffix added), or "" for
@@ -106,10 +109,11 @@ type logRequest struct {
 	tailLines int
 	// downloadTo, when set, writes logs to that directory instead of stdout.
 	downloadTo string
-	// staticView renders a one-shot tail instead of following the run. Set for a
-	// past retry of an active run: that attempt's logs are immutable, so streaming
-	// would poll forever waiting for the run (not the attempt) to finish.
+	// staticView renders snapshots and immutable past retries without following an active run.
 	staticView bool
+	// printOnce prints an active run's available logs and exits instead of
+	// following it (air logs without --follow).
+	printOnce bool
 	// boundInitialLogs limits existing output before following an active run.
 	boundInitialLogs bool
 	jsonOutput       bool
@@ -223,7 +227,7 @@ func (s logRunStatus) succeeded() bool {
 	return s.resultState == "SUCCESS"
 }
 
-func (s logRunStatus) waitingForCompute() bool {
+func (s logRunStatus) appearsPending() bool {
 	if s.resultState != "" {
 		return false
 	}
@@ -393,14 +397,14 @@ type bricklensStreamer struct {
 }
 
 // waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
-// message if present, else the compute-capacity message for a PENDING run, else
-// the default "waiting for run to start".
+// message if present, else a neutral message for a run or task that appears
+// pending, else the default "waiting for run to start".
 func (st *bricklensStreamer) waitingSpinnerText() string {
 	if msg := st.serverStatusMessage(); msg != "" {
 		return msg
 	}
-	if st.status.waitingForCompute() {
-		return waitingForComputeStatus
+	if st.status.appearsPending() {
+		return waitingForWorkloadStatus
 	}
 	return fmt.Sprintf("Waiting for run to start (node %d)...", st.req.node)
 }
@@ -457,8 +461,6 @@ func (st *bricklensStreamer) run() (bool, error) {
 	st.fromSec = st.req.fromSeconds(st.status, now)
 	st.streamStartSec = st.fromSec
 
-	// A past retry's logs are immutable: render a one-shot tail rather than
-	// following the still-active run, which would poll forever.
 	if st.req.staticView {
 		return st.drainStatic(st.req.toSeconds(st.status))
 	}
@@ -520,8 +522,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)
 
-		// `air logs` starts an active attachment with a bounded tail; subsequent
-		// polls follow live with dedup so the overlap does not re-print it.
+		// Remember an active attachment's initial tail so overlapping polls do not reprint records.
 		var emitted int
 		var err error
 		if firstIteration && (terminal || st.req.boundInitialLogs) {
@@ -563,8 +564,8 @@ func (st *bricklensStreamer) run() (bool, error) {
 		}
 		if !st.firstLogSeen {
 			// The fetch above found no logs for this still-active run, so refresh the
-			// waiting status with the server-set message (throttled): a run stuck
-			// waiting for compute shows why rather than a generic message. Doing this
+			// waiting status with the server-set message (throttled): a waiting run
+			// shows any AIR-provided detail rather than a generic message. Doing this
 			// after the fetch means attaching to a run that already has logs never
 			// reports it as waiting.
 			if st.updateSpinner != nil {

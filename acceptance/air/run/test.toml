@@ -1,3 +1,8 @@
 [[Server]]
 Pattern = "POST /api/2.0/ai-training/config:validate"
 Response.Body = '{}'
+
+# The bundle loader lists default targets in map order.
+[[Repls]]
+Old = 'marked as default \((dev, dev2|dev2, dev)\)'
+New = 'marked as default ([TARGETS])'

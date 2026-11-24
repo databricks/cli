@@ -1021,16 +1021,6 @@ resources:
                 "dependencies":
                   "description": |-
                     List of pip dependencies, as supported by the version of pip in this environment.
-        "git_source":
-          "$fields":
-            "sparse_checkout":
-              "description": |-
-                PLACEHOLDER
-        "health":
-          "$fields":
-            "rules":
-              "description": |-
-                PLACEHOLDER
         "job_clusters":
           "$fields":
             "new_cluster":
@@ -1134,19 +1124,9 @@ resources:
                 "python_named_params":
                   "description": |-
                     PLACEHOLDER
-            "webhook_notifications":
-              "$fields":
-                "on_duration_warning_threshold_exceeded":
-                  "$fields":
-                    "id":
-                      "description": |-
-                        PLACEHOLDER
         "trigger":
           "$fields":
             "model":
-              "description": |-
-                PLACEHOLDER
-            "table_update":
               "description": |-
                 PLACEHOLDER
     "materialization_sets":
@@ -1901,14 +1881,6 @@ resources:
       "markdown_description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
       "$fields":
-        "channel":
-          "$fields":
-            "dbsql_version":
-              "description": |-
-                PLACEHOLDER
-            "name":
-              "description": |-
-                PLACEHOLDER
         "enable_photon":
           "description": |-
             Configures whether the warehouse should use Photon optimized clusters.
@@ -1947,18 +1919,6 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "tags":
-          "$fields":
-            "custom_tags":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "key":
-                  "description": |-
-                    PLACEHOLDER
-                "value":
-                  "description": |-
-                    PLACEHOLDER
     "synced_database_tables":
       "description": |-
         PLACEHOLDER

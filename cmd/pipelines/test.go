@@ -25,7 +25,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
@@ -36,17 +35,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// newStartTestUpdateRequest returns the Start Update request of a test run.
+// newStartTestUpdateRequest returns the Start Update request of a test run. It always sends
+// test_options, empty to run every test: only a request with test_options is rejected where the
+// testing API is off; without them, the service runs its older test-only update instead.
 func newStartTestUpdateRequest(selection, pytestArgs []string) pipelines.StartUpdate {
-	req := pipelines.StartUpdate{TestOnly: true}
-	if len(selection) > 0 || len(pytestArgs) > 0 {
-		req.TestOptions = &pipelines.PipelineTestOptions{TestSelection: selection, PytestArgs: pytestArgs}
+	return pipelines.StartUpdate{
+		TestOnly:    true,
+		TestOptions: &pipelines.PipelineTestOptions{TestSelection: selection, PytestArgs: pytestArgs},
 	}
-	return req
 }
-
-// pipelinesTestEnvVar enables the experimental pipelines test command.
-const pipelinesTestEnvVar = "DATABRICKS_CLI_PIPELINES_TEST"
 
 const pytestArgHint = "pass pytest arguments with --pytest-arg, for example --pytest-arg=-k --pytest-arg='orders and not slow'"
 
@@ -232,12 +229,32 @@ func startTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelin
 	return response.UpdateId, nil
 }
 
+// pipelineTestNoTestSources is the error class of Start Update for a pipeline without testing.sources.
+const pipelineTestNoTestSources = "PIPELINE_TEST_NO_TEST_SOURCES"
+
+// withDeployHint adds a hint to deploy when Start Update says the pipeline has no test sources but
+// the bundle sets testing: the bundle was changed after its last deploy.
+func withDeployHint(cmd *cobra.Command, t testTarget, err error) error {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !t.bundleHasTesting || !ok {
+		return err
+	}
+	// The class is the error code or, for errors with a generic code, the [CLASS] prefix of the message.
+	if apiErr.ErrorCode != pipelineTestNoTestSources && !strings.Contains(apiErr.Message, pipelineTestNoTestSources) {
+		return err
+	}
+	return fmt.Errorf("%w\nThe bundle sets testing for %s, but the deployed pipeline has none. Run '%s deploy' first", err, t.key, cmd.Parent().CommandPath())
+}
+
 // testTarget is the pipeline a test run is submitted to.
 type testTarget struct {
 	key        string
 	pipelineID string
 	selections []string
 	w          *databricks.WorkspaceClient
+
+	// bundleHasTesting is true when the bundle sets testing for the pipeline.
+	bundleHasTesting bool
 
 	// projectFolder is the deployed folder that test IDs are shown relative to: the bundle's
 	// synchronized files, or root_path. It is "" when unknown.
@@ -338,7 +355,15 @@ func resolveTestTargetInBundle(cmd *cobra.Command, args []string, resume bool) (
 	if err != nil {
 		return testTarget{}, err
 	}
-	return testTarget{key: key, pipelineID: pipelineID, selections: selections, w: b.WorkspaceClient(ctx), projectFolder: filesRoot}, nil
+	pipeline := b.Config.Resources.Pipelines[key]
+	return testTarget{
+		key:              key,
+		pipelineID:       pipelineID,
+		selections:       selections,
+		w:                b.WorkspaceClient(ctx),
+		bundleHasTesting: pipeline != nil && pipeline.Testing != nil,
+		projectFolder:    filesRoot,
+	}, nil
 }
 
 // resumeCommand returns the command that reads the result of the update later. It keeps the
@@ -434,7 +459,7 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 	for {
 		response, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
 		if err != nil {
-			return "", err
+			return "", waitReadError(ctx, err)
 		}
 		if response.Update == nil {
 			return "", fmt.Errorf("no update found with id %s for pipeline %s", updateID, pipelineID)
@@ -445,7 +470,7 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 		// Reading from the last timestamp returns its events again; the run ignores duplicates.
 		events, err := readTestEvents(ctx, w, pipelineID, updateID, lastTimestamp)
 		if err != nil {
-			return "", err
+			return "", waitReadError(ctx, err)
 		}
 		if len(events) > 0 {
 			lastTimestamp = events[len(events)-1].Timestamp
@@ -457,7 +482,7 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 			// Events can become readable after later ones, so read all of them once more.
 			events, err := readTestEvents(ctx, w, pipelineID, updateID, "")
 			if err != nil {
-				return "", err
+				return "", waitReadError(ctx, err)
 			}
 			addTestEvents(run, printer, events)
 			return state, nil
@@ -470,6 +495,18 @@ func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipel
 		case <-time.After(testPollInterval):
 		}
 	}
+}
+
+// waitReadError adds the cause of ctx, such as errTestWaitTimeout, to a read error that ctx's
+// cancellation caused. The SDK rate limiter fails a request on a canceled ctx before sending it,
+// with the bare context error that hides the cause.
+func waitReadError(ctx context.Context, err error) error {
+	if errors.Is(err, context.Canceled) {
+		if cause := context.Cause(ctx); cause != nil && !errors.Is(err, cause) {
+			return fmt.Errorf("%w: %w", cause, err)
+		}
+	}
+	return err
 }
 
 // addTestEvents adds events to the run and prints each case that gets its final outcome.
@@ -542,9 +579,6 @@ type testFlags struct {
 
 // checkTestFlags rejects the flag combinations that pipelines test does not support, before any API call.
 func checkTestFlags(cmd *cobra.Command, args []string, f testFlags) error {
-	if enabled, _ := env.GetBool(cmd.Context(), pipelinesTestEnvVar); !enabled {
-		return fmt.Errorf("pipelines test is experimental. Set %s=true to enable it", pipelinesTestEnvVar)
-	}
 	if cmd.ArgsLenAtDash() >= 0 {
 		return errors.New("the -- separator is not supported: " + pytestArgHint)
 	}
@@ -614,10 +648,8 @@ func notPipelineKeyError(cmd *cobra.Command, b *bundle.Bundle, key string, args 
 func testCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "test [flags] [KEY] [TEST_SELECTION...]",
-		Short: "*Experimental* Run the tests of a pipeline",
+		Short: "*Beta* Run the tests of a pipeline",
 		Long: `Run the tests of a pipeline in a test-only update.
-
-This command is experimental. Set DATABRICKS_CLI_PIPELINES_TEST=true to enable it.
 
 KEY is the unique name of the pipeline, as defined in its YAML file.
 It is required when test selections are given. If there is only one pipeline
@@ -718,7 +750,7 @@ of the deployed snapshot, which changes with each deployment.`,
 			req := newStartTestUpdateRequest(target.selections, f.pytestArgs)
 			updateID, err = startTestUpdate(ctx, target.w, target.pipelineID, req)
 			if err != nil {
-				return report.failed(ctx, withActiveUpdateHint(cmd, target, err))
+				return report.failed(ctx, withDeployHint(cmd, target, withActiveUpdateHint(cmd, target, err)))
 			}
 		} else if err := checkTestUpdate(ctx, target.w, target.pipelineID, updateID); err != nil {
 			return report.failed(ctx, err)
@@ -736,8 +768,7 @@ of the deployed snapshot, which changes with each deployment.`,
 		defer stopReads()
 		state, err := waitForTestUpdate(readCtx, target.w, target.pipelineID, updateID, run, printer)
 		if err != nil {
-			// A read that the timeout interrupts fails with the bare context error, so the cause tells.
-			isTimeout := errors.Is(context.Cause(readCtx), errTestWaitTimeout)
+			isTimeout := errors.Is(err, errTestWaitTimeout) || errors.Is(context.Cause(readCtx), errTestWaitTimeout)
 			resumeCmd := target.resumeCommand(cmd, updateID)
 			if !isTimeout && waitCtx.Err() == nil {
 				// The SDK client already retries transient errors, so the read failed for good.

@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	defaultGatewayPort = "2222"
 	// sshIncludeFileName is the sandbox-managed file referenced by the
 	// user's ~/.ssh/config. The file is fully owned: we rewrite it on
 	// every `sandbox register`, so manual edits to it will not survive.

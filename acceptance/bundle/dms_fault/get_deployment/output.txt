@@ -16,7 +16,9 @@
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
   Warn: Could not read deployment history: Fault injected by test.
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
-  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=2
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Could not enable deployment history for this deploy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
   Updated jobs.foo
   Updated pipelines.bar
   Files: 3 uploaded, 0 deleted
@@ -91,20 +93,20 @@
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
   Warn: Could not read deployment history: Fault injected by test.
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
-  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=9
-  Updated jobs.foo
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Could not enable deployment history for this deploy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
   Updated pipelines.bar
   Files: 6 uploaded, 0 deleted
-  Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+  Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 === deployment_history: false
 
 >>> bundle deploy --auto-approve
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
   Updated jobs.foo
-  Updated pipelines.bar
   Files: 2 uploaded, 0 deleted
-  Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+  Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 === deployment_history: true
 
@@ -113,7 +115,9 @@
   Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
   Warn: Could not read deployment history: Fault injected by test.
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]/files...
-  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=11
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Could not enable deployment history for this deploy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
   Updated jobs.foo
   Files: 2 uploaded, 0 deleted
   Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
@@ -132,6 +136,9 @@
 
   All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-fault-get_deployment-commands-[UNIQUE_NAME]
 
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: retrying after 500 Internal Server Error from GET /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+  Warn: Could not record deployment history for this destroy: failed to create deployment: deployment [DEPLOYMENT_ID] already exists
   Destroy: 2 deleted
 
 === deployment_history: false

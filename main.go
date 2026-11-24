@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd"
 	"github.com/databricks/cli/cmd/aitools"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 
 	// Registers a disk-cached HostMetadataResolver factory on the SDK so every
@@ -29,10 +30,11 @@ func main() {
 	// which imports it. It is wired here, not in a package init, for the same
 	// reason as DATABRICKS_CLI_PATH above.
 	autoinstall.Run = aitools.AutoInstall
+	autoinstall.InstallsFor = aitools.AutoInstallsFor
 
 	ctx := context.Background()
 	err := cmd.New(ctx).Execute(ctx, os.Args[1:])
 	if err != nil {
-		os.Exit(1)
+		os.Exit(root.ExitStatus(err))
 	}
 }

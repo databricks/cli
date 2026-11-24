@@ -79,7 +79,8 @@ type updateFlags struct {
 	project, global              bool
 	// keepModified is not a flag: auto-install sets it (see
 	// installer.UpdateOptions.KeepModified). It also keeps the raw skills of
-	// agents that have, or could get, the plugin.
+	// agents that have, or could get, the plugin, and refuses a downgrade
+	// (installer.UpdateOptions.NoDowngrade).
 	keepModified bool
 }
 
@@ -219,6 +220,7 @@ func runUpdate(ctx context.Context, f updateFlags) error {
 				Scope:   scope,
 
 				KeepModified: f.keepModified,
+				NoDowngrade:  f.keepModified,
 			}
 			opts.Skills = skills
 
@@ -297,6 +299,10 @@ func pluginMigrationCandidatesForScope(ctx context.Context, scope string, state 
 		}
 		if state != nil {
 			if _, alreadyPlugin := state.Plugins[agent.Name]; alreadyPlugin {
+				continue
+			}
+			// The user chose raw skills over the plugin (install --skills-only).
+			if slices.Contains(state.SkillsOnlyAgents, agent.Name) {
 				continue
 			}
 		}

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -38,12 +39,12 @@ func interval(ctx context.Context) time.Duration {
 	return time.Duration(ms) * time.Millisecond
 }
 
-// IsTransient returns true for 5xx and 408 errors that the SDK did not already retry, and for
-// the SDK's client-side inactivity timeout.
+// IsTransient returns true for 5xx and 408 errors that the SDK did not already retry, for the
+// SDK's client-side inactivity timeout, and for an HTTP/2 connection closed by its health check.
 // The SDK retries 504s matching its allTransientErrors patterns (e.g. "deadline exceeded");
 // this covers the remaining 504s like TEMPORARILY_UNAVAILABLE.
 func IsTransient(ctx context.Context, err error) bool {
-	if isInactivityTimeout(err) {
+	if isInactivityTimeout(err) || isConnectionLost(err) {
 		return true
 	}
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
@@ -71,6 +72,18 @@ func isInactivityTimeout(err error) bool {
 	}
 	msg := urlErr.Err.Error()
 	return strings.HasPrefix(msg, "request timed out after ") && strings.HasSuffix(msg, " of inactivity")
+}
+
+// isConnectionLost reports whether the HTTP/2 health check closed the connection because a ping went
+// unanswered (see libs/httptransport). It replaces the inactivity timeout for a request on
+// a dead connection, with the same uncertainty about whether the server applied it, and the retry
+// goes out on a new connection.
+//
+// We match the message because net/http builds it with errors.New in closeForLostPing and exports
+// no sentinel error or type for it.
+func isConnectionLost(err error) bool {
+	urlErr, ok := errors.AsType[*url.Error](err)
+	return ok && urlErr.Err.Error() == "http2: client connection lost"
 }
 
 // transientReadMessages are the transport errors, matched by message, that are worth retrying on
@@ -132,11 +145,11 @@ func retryMessage(err error) string {
 	msg := "retrying after " + err.Error()
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
 		endpoint := ""
-		if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
-			req := rw.Response.Request
-			endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
+		if e := diag.FormatAPIErrorEndpoint(apiErr); e != "" {
+			endpoint = " from " + e
 		}
-		msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
+		status := diag.FormatAPIErrorStatus(apiErr)
+		msg = fmt.Sprintf("retrying after %s%s", status, endpoint)
 		// Include the context the caller added to the error, e.g. the path of the file being written.
 		if err.Error() != apiErr.Error() {
 			msg += ": " + err.Error()

@@ -25,6 +25,7 @@ const (
 	ReasonOnRuntime        Reason = "on_runtime"
 	ReasonCacheDisabled    Reason = "cache_disabled"
 	ReasonDevelopmentBuild Reason = "development_build"
+	ReasonRootInUserHome   Reason = "root_in_user_home"
 	ReasonAlreadyRan       Reason = "already_ran"
 	ReasonRetriesExhausted Reason = "retries_exhausted"
 
@@ -43,7 +44,7 @@ const (
 // settles the version. A run that is not due changes nothing.
 func (r Reason) Due() bool {
 	switch r {
-	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonAlreadyRan, ReasonRetriesExhausted:
+	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted:
 		return false
 	case ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun:
 		return true
@@ -65,6 +66,10 @@ type Inputs struct {
 
 	// Version is the running CLI version.
 	Version string
+
+	// RootInUserHome is set when the CLI runs as root in a home directory
+	// that another user owns (see RootInUserHome).
+	RootInUserHome bool
 
 	// State is the persisted state: last version, attempts and opt-out.
 	State State
@@ -100,6 +105,10 @@ func Decide(in Inputs) Reason {
 	// they would trigger on every build.
 	case build.IsDevelopmentVersion(in.Version):
 		return ReasonDevelopmentBuild
+	// Root under sudo with HOME kept would leave files the user cannot
+	// change in the user's home.
+	case in.RootInUserHome:
+		return ReasonRootInUserHome
 	case in.State.LastVersion == in.Version && in.State.Attempts >= MaxAttempts:
 		return ReasonRetriesExhausted
 	case in.State.LastVersion == in.Version && in.State.Attempts == 0:

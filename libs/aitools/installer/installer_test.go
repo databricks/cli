@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"syscall"
@@ -442,7 +443,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
 	require.NotNil(t, state)
-	assert.Equal(t, schemaVersionV2, state.SchemaVersion)
+	assert.Equal(t, CurrentSchemaVersion, state.SchemaVersion)
 	assert.Equal(t, testSkillsRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
@@ -458,6 +459,50 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Using skills version")
 	assert.Contains(t, stderr.String(), "Fetching skills manifest...")
 	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
+}
+
+// --skills-only records the agents that could have had the plugin (their CLI
+// is on PATH), so update keeps them on raw skills. An agent whose CLI is
+// missing is not recorded: install suggests --skills-only for it, and update
+// migrates it once the CLI is there. A later install without --skills-only
+// keeps the record: it says nothing about the user's choice.
+func TestInstallSkillsForAgentsRecordsSkillsOnlyAgents(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	src := &mockManifestSource{manifest: testManifest()}
+
+	origLookPath := agents.LookPath
+	t.Cleanup(func() { agents.LookPath = origLookPath })
+	agents.LookPath = func(name string) (string, error) {
+		if name == "plugin-agent-cli" {
+			return filepath.Join("/usr/bin", name), nil
+		}
+		return "", exec.ErrNotFound
+	}
+
+	plain := testAgent(tmp)
+	withPlugin := testAgent(tmp)
+	withPlugin.Name = "plugin-agent"
+	withPlugin.Binary = "plugin-agent-cli"
+	withPlugin.Plugin = &agents.PluginSpec{}
+	cliMissing := testAgent(tmp)
+	cliMissing.Name = "cli-missing-agent"
+	cliMissing.Binary = "cli-missing-agent-cli"
+	cliMissing.Plugin = &agents.PluginSpec{}
+	targets := []*agents.Agent{withPlugin, cliMissing, plain}
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+
+	require.NoError(t, InstallSkillsForAgents(ctx, src, targets, InstallOptions{SkillsOnly: true}))
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"plugin-agent"}, state.SkillsOnlyAgents)
+
+	require.NoError(t, InstallSkillsForAgents(ctx, src, targets, InstallOptions{}))
+	state, err = LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"plugin-agent"}, state.SkillsOnlyAgents)
 }
 
 func setupSkillsFallback(t *testing.T, latestErr error) (ManifestSource, string) {
@@ -1293,6 +1338,8 @@ func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
 
 func TestInstallKeepsNameWhenRepoDirChanges(t *testing.T) {
 	tmp := setupTestHome(t)
+	// Pin the ref so the install doesn't look up the latest release on GitHub.
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 	ctx := cmdio.MockDiscard(t.Context())
 	agent := testAgent(tmp)
 	var fetchedFrom []string
@@ -1653,4 +1700,41 @@ func TestInstallAllSkillsWithNoSkillToInstall(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	require.NoError(t, InstallAllSkills(ctx))
 	assert.Contains(t, stderr.String(), NoSkillsResolvedMessage)
+}
+
+// TestLegacyTargetedInstallBlockedWithMCPOnlyState checks that MCP records in the state file do not
+// count as tracked skills, so skills on disk without a skills record still block a targeted install.
+func TestLegacyTargetedInstallBlockedWithMCPOnlyState(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
+	require.NoError(t, SaveMCPState(globalDir, &MCPState{Servers: []MCPEntry{{Name: "github-logfood"}}}))
+
+	src := &mockManifestSource{manifest: testManifest()}
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{testAgent(tmp)}, InstallOptions{
+		SpecificSkills: []string{"databricks-sql"},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "legacy install detected")
+}
+
+// TestInstallSpecificSkillWithEmptyStateFile checks that an empty state file, as an update that pruned
+// every skill leaves, does not count as a legacy install, so a targeted install still runs.
+func TestInstallSpecificSkillWithEmptyStateFile(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-old"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(globalDir, ".state.json"), []byte(`{"schema_version": 2, "skills": {}}`+"\n"), 0o600))
+
+	err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{testAgent(tmp)}, InstallOptions{
+		SpecificSkills: []string{"databricks-sql"},
+	})
+	require.NoError(t, err)
 }

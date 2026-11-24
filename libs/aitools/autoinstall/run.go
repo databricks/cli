@@ -35,10 +35,6 @@ const (
 	// and rewritten.
 	stateLockFileName = "auto-install.json.lock"
 
-	// stateLockWait bounds the wait for the state lock. A live holder keeps it
-	// only to read or rewrite a small file.
-	stateLockWait = time.Second
-
 	// lockRetryInterval is how often a held lock is tried again.
 	lockRetryInterval = 10 * time.Millisecond
 )
@@ -180,6 +176,10 @@ func lock(ctx context.Context, name string, wait time.Duration) (unlock func(), 
 		time.Sleep(lockRetryInterval)
 	}
 }
+
+// stateLockWait bounds the wait for the state lock. A live holder keeps it
+// only to read or rewrite a small file. Tests that queue many holders raise it.
+var stateLockWait = time.Second
 
 // errLockHeld is the error of tryLockFile when another process holds the lock.
 var errLockHeld = errors.New("held by another CLI process")

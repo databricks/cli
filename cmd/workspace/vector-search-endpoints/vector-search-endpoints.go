@@ -587,20 +587,22 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
 
 	cmd.Flags().Var(&retrieveUserVisibleMetricsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.EndTime, "end-time", retrieveUserVisibleMetricsReq.EndTime, `End time for metrics query.`)
-	cmd.Flags().IntVar(&retrieveUserVisibleMetricsReq.GranularityInSeconds, "granularity-in-seconds", retrieveUserVisibleMetricsReq.GranularityInSeconds, `Granularity in seconds.`)
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.EndTime, "end-time", retrieveUserVisibleMetricsReq.EndTime, `End of the time range.`)
+	cmd.Flags().IntVar(&retrieveUserVisibleMetricsReq.GranularityInSeconds, "granularity-in-seconds", retrieveUserVisibleMetricsReq.GranularityInSeconds, `Requested interval between data points, in seconds.`)
 	// TODO: array: metrics
-	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.PageToken, "page-token", retrieveUserVisibleMetricsReq.PageToken, `Token for pagination.`)
-	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.StartTime, "start-time", retrieveUserVisibleMetricsReq.StartTime, `Start time for metrics query.`)
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.PageToken, "page-token", retrieveUserVisibleMetricsReq.PageToken, `Not used.`)
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.StartTime, "start-time", retrieveUserVisibleMetricsReq.StartTime, `Start of the time range.`)
 
 	cmd.Use = "retrieve-user-visible-metrics NAME"
 	cmd.Short = `Retrieve user-visible metrics for an endpoint.`
 	cmd.Long = `Retrieve user-visible metrics for an endpoint.
 
-  Retrieve user-visible metrics for an endpoint
+  Retrieve time series of usage and health metrics for an endpoint and its
+  indexes, such as request counts, request latency percentiles and endpoint
+  utilization.
 
   Arguments:
-    NAME: AI Search endpoint name`
+    NAME: Name of the endpoint whose metrics to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
