@@ -20,6 +20,14 @@ Warn: Patched whl: mypkg-1.0-py3-none-any.whl -> mypkg-1.0+[UNIX_TIME_NANOS]-py3
 100644 mypkg-1.0+[UNIX_TIME_NANOS].dist-info/WHEEL
 100644 mypkg-1.0+[UNIX_TIME_NANOS].dist-info/RECORD
 
+>>> unzip -p mypkg-1.0+[UNIX_TIME_NANOS]-py3-none-any.whl *.dist-info/RECORD
+mypkg/__init__.py,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+mypkg/bin/tool,sha256=v2ZM-E8A9u12FkyEV_3q-OTe5Ucibp_8-CdOLSJG_tk,20
+mypkg-1.0+[UNIX_TIME_NANOS].data/scripts/myscript,sha256=hBm4q2DrIhmBHyNlsEOtLzUV-COB2WZmBDPl2f_HZ9w,24
+mypkg-1.0+[UNIX_TIME_NANOS].dist-info/METADATA,sha256=e3__8kyEVFvZWWhRcjLp4e0SO-iF-e_jzf_twQUI9J0,67
+mypkg-1.0+[UNIX_TIME_NANOS].dist-info/WHEEL,sha256=GOJWfGKy_s7ZRMtmrMyJFvIHxzo0gLZVhGWWyTqB6uo,75
+mypkg-1.0+[UNIX_TIME_NANOS].dist-info/RECORD,,
+
 === Wheel whose distribution name contains its version:
 
 >>> [CLI] selftest patchwhl lib2-2-py3-none-any.whl

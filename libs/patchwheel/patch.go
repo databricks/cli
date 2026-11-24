@@ -33,6 +33,7 @@ func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 	// METADATA is an email-style message: the headers end at the first empty line and the
 	// rest is the description, which may contain lines that look like headers.
 	inHeaders := true
+	replaced := 0
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		if len(line) == 0 {
@@ -44,6 +45,7 @@ func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 				return nil, fmt.Errorf("unexpected version in METADATA: %s (expected %s)", strings.TrimSpace(string(line)), oldVersion)
 			}
 			buf.WriteString(string(versionKey) + " " + newVersion + "\n")
+			replaced++
 		} else {
 			buf.Write(line)
 			buf.WriteString("\n")
@@ -51,6 +53,9 @@ func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err
+	}
+	if replaced != 1 {
+		return nil, fmt.Errorf("expected one Version header in METADATA, found %d", replaced)
 	}
 	return buf.Bytes(), nil
 }
@@ -62,7 +67,7 @@ func patchRecord(r io.Reader, renamePath func(string) string, metadataPath, meta
 	var buf bytes.Buffer
 	for scanner.Scan() {
 		line := scanner.Bytes()
-		if len(bytes.TrimSpace(line)) == 0 {
+		if len(line) == 0 {
 			continue
 		}
 
