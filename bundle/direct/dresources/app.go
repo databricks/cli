@@ -272,7 +272,7 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 	if desiredStarted {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
 		if !alreadyStarted {
-			startedApp, err := r.startApp(ctx, id)
+			startedApp, err := appdeploy.Start(ctx, r.client, id, nil)
 			if err != nil {
 				return err
 			}
@@ -302,44 +302,6 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 
 	return nil
 }
-
-// startApp starts the app compute and waits for it to become active. A start of an app whose
-// compute is not STOPPED is rejected with 400 BAD_REQUEST ("Cannot start app X as its compute
-// is in ACTIVE state"). That happens when apply retries DoUpdate after a transient error in the
-// start waiter: the first start already went through, so the compute is ACTIVE, or still
-// STARTING if the retry came before it finished.
-func (r *ResourceApp) startApp(ctx context.Context, id string) (*apps.App, error) {
-	startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
-	if err == nil {
-		return startWaiter.Get()
-	}
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	if !ok || apiErr.StatusCode != http.StatusBadRequest {
-		return nil, err
-	}
-	app, getErr := r.client.Apps.GetByName(ctx, id)
-	if getErr != nil {
-		// Wrap only getErr so that apply's retry sees it: a transient read failure leaves
-		// the compute state unknown, and the 400 alone would make the failure permanent.
-		return nil, fmt.Errorf("reading app after start was rejected (%s): %w", err.Error(), getErr)
-	}
-	if app.ComputeStatus == nil {
-		return nil, err
-	}
-	switch app.ComputeStatus.State {
-	case apps.ComputeStateActive:
-		log.Debugf(ctx, "app %s compute is already active, ignoring start error: %s", id, err)
-		return app, nil
-	case apps.ComputeStateStarting:
-		log.Debugf(ctx, "app %s compute is already starting, waiting for it instead: %s", id, err)
-		return r.client.Apps.WaitGetAppActive(ctx, id, appStartTimeout, nil)
-	default:
-		return nil, err
-	}
-}
-
-// appStartTimeout matches the SDK's default wait for Apps.Start.
-const appStartTimeout = 20 * time.Minute
 
 // hasAppChanges reports whether the plan entry contains any Update changes to fields that
 // belong to the App Update API. source_code_path and config (command/env) are deploy-only
