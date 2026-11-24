@@ -190,10 +190,16 @@ func TestLockKeepsLockNotReleasedHere(t *testing.T) {
 type deleteFailingFiler struct {
 	filer.Filer
 	deletes int
+
+	// onDelete runs on every delete, e.g. to move the clock as a slow, retried delete does.
+	onDelete func()
 }
 
 func (f *deleteFailingFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
 	f.deletes++
+	if f.onDelete != nil {
+		f.onDelete()
+	}
 	return &url.Error{Op: "Post", URL: "https://example.com/" + path, Err: errors.New("request timed out after 1m30s of inactivity")}
 }
 
@@ -326,4 +332,27 @@ func leaveStaleLock(t *testing.T, ctx context.Context, local filer.Filer, releas
 	require.NoError(t, err)
 	require.NoError(t, stale.Unlock(ctx))
 	require.NoError(t, local.Write(ctx, LockFileName, bytes.NewReader(data)))
+}
+
+func TestPendingDeleteWindowStartsWhenUnlockDeleteFails(t *testing.T) {
+	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	released := filepath.Join(t.TempDir(), "released.json")
+	now := time.Now()
+	timeNow = func() time.Time { return now }
+	t.Cleanup(func() { timeNow = time.Now })
+
+	// The SDK can resend the delete for longer than the window before it fails.
+	first := newTestLocker(t, &deleteFailingFiler{Filer: local, onDelete: func() { now = now.Add(pendingDeleteWindow) }})
+	first.ReleasedLocksPath = released
+	require.NoError(t, first.Lock(ctx, false))
+	require.Error(t, first.Unlock(ctx))
+
+	now = now.Add(pendingDeleteWindow - time.Minute)
+	f := &deleteFailingFiler{Filer: local}
+	second := newTestLocker(t, f)
+	second.ReleasedLocksPath = released
+	require.ErrorContains(t, second.Lock(ctx, false), "deploy lock acquired by tester")
+	assert.Equal(t, 0, f.deletes)
 }

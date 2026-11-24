@@ -243,9 +243,9 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 		return errors.New("unlock called when lock is not held")
 	}
 	// Recorded even if the unlock fails: a lock with our ID left behind is stale either way.
-	// deleteSent is set when the delete failed and may still be applied.
-	var deleteSent time.Time
-	defer func() { locker.recordReleased(ctx, deleteSent) }()
+	// deleteFailed is set when the delete failed and may still be applied.
+	var deleteFailed time.Time
+	defer func() { locker.recordReleased(ctx, deleteFailed) }()
 
 	// if allowLockFileNotExist is set, do not throw an error if the lock file does
 	// not exist. This is helpful when destroying a bundle in which case the lock
@@ -259,11 +259,12 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	if err != nil {
 		return fmt.Errorf("unlock called when lock is not held: %w", err)
 	}
-	sent := timeNow()
 	err = locker.filer.Delete(ctx, LockFileName)
 	if err != nil {
 		// The next command must not replace our lock while this delete may still land on its lock.
-		deleteSent = sent
+		// The window starts now, not when the delete was sent: the retrying filer and the SDK may
+		// have been resending it for minutes.
+		deleteFailed = timeNow()
 		return err
 	}
 	locker.Active = false
@@ -274,10 +275,10 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 // only the most recent entries matter.
 const maxReleasedLocks = 20
 
-// pendingDeleteWindow is how long a stale-lock delete that failed may still be applied by the
-// server. Until it passes, no command sends another delete for that lock: if the first delete
-// landed after a second one had removed the lock and a new lock was created, it would remove the
-// new lock. Late requests seen so far landed within a few minutes.
+// pendingDeleteWindow is how long after it failed a delete may still be applied by the server.
+// Until it passes, no command sends another delete for that lock: if the first delete landed after
+// a second one had removed the lock and a new lock was created, it would remove the new lock. Late
+// requests seen so far landed within a few minutes.
 const pendingDeleteWindow = 15 * time.Minute
 
 // timeNow is replaced in tests.
@@ -289,8 +290,9 @@ type releasedLocks struct {
 	// first.
 	Released []uuid.UUID `json:"released"`
 
-	// PendingDeletes maps the ID of a lock to the time a delete for it was sent, for deletes that
-	// failed and may still be applied: a stale-lock delete, or the delete of a failed Unlock.
+	// PendingDeletes maps the ID of a lock to the time a delete for it failed (or was sent, while
+	// it is in flight), for deletes that may still be applied: a stale-lock delete, or the delete
+	// of a failed Unlock.
 	PendingDeletes map[uuid.UUID]time.Time `json:"pending_deletes,omitempty"`
 }
 
@@ -326,26 +328,26 @@ func (locker *Locker) writeReleased(released releasedLocks) error {
 	return atomicfile.Write(locker.ReleasedLocksPath, data, 0o600, atomicfile.MkDir(0o700))
 }
 
-// recordReleased adds our ID to ReleasedLocksPath, with deleteSent as a pending delete of our
-// lock unless it is zero. Failing to record it only means that a late write, if one lands, needs
+// recordReleased adds our ID to ReleasedLocksPath, with a pending delete of our lock that failed
+// at deleteFailed unless it is zero. Failing to record it only means that a late write, if one lands, needs
 // --force-lock to clear, so errors are logged and not returned.
-func (locker *Locker) recordReleased(ctx context.Context, deleteSent time.Time) {
+func (locker *Locker) recordReleased(ctx context.Context, deleteFailed time.Time) {
 	if locker.ReleasedLocksPath == "" {
 		return
 	}
 	id := locker.State.ID
 	released := locker.readReleased(ctx)
-	if slices.Contains(released.Released, id) && deleteSent.IsZero() {
+	if slices.Contains(released.Released, id) && deleteFailed.IsZero() {
 		return
 	}
 	if !slices.Contains(released.Released, id) {
 		released.Released = append(released.Released, id)
 	}
-	if !deleteSent.IsZero() {
+	if !deleteFailed.IsZero() {
 		if released.PendingDeletes == nil {
 			released.PendingDeletes = map[uuid.UUID]time.Time{}
 		}
-		released.PendingDeletes[id] = deleteSent
+		released.PendingDeletes[id] = deleteFailed
 	}
 	if err := locker.writeReleased(released); err != nil {
 		log.Warnf(ctx, "Failed to record released deploy lock: %v", err)
@@ -402,7 +404,7 @@ func (locker *Locker) removeStaleLock(ctx context.Context) bool {
 			return struct{}{}, errStaleLockDeletePending
 		}
 		if sent, ok := released.PendingDeletes[id]; ok && timeNow().Sub(sent) < pendingDeleteWindow {
-			log.Infof(ctx, "Not removing stale deploy lock %s: a delete sent at %v may still be applied", id, sent)
+			log.Infof(ctx, "Not removing stale deploy lock %s: a delete that failed at %v may still be applied", id, sent)
 			return struct{}{}, errLockNotStale
 		}
 		if released.PendingDeletes == nil {
@@ -421,8 +423,15 @@ func (locker *Locker) removeStaleLock(ctx context.Context) bool {
 			if err := locker.writeReleased(released); err != nil {
 				log.Warnf(ctx, "Failed to record released deploy locks: %v", err)
 			}
-		} else if isRetriableStaleLockError(ctx, err) {
-			return struct{}{}, deletePendingError{err}
+		} else {
+			// The window starts when the delete returned.
+			released.PendingDeletes[id] = timeNow()
+			if err := locker.writeReleased(released); err != nil {
+				log.Warnf(ctx, "Failed to record released deploy locks: %v", err)
+			}
+			if isRetriableStaleLockError(ctx, err) {
+				return struct{}{}, deletePendingError{err}
+			}
 		}
 		return struct{}{}, err
 	})
