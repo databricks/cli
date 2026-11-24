@@ -383,11 +383,15 @@ func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestina
 func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) ([]routeDestination, error) {
 	// Without a resolver, or with no sequence on the path, the resolved path is written
 	// as-is in whichever file the resource was found in. An edit of a located field still
-	// goes to its winning definition when that writes the key, or a target override that
-	// also declares it would keep the old value.
+	// goes to its winning definition, or a target override that also declares it would
+	// keep the old value. When that definition cannot be replaced safely, writing another
+	// copy would change nothing.
 	if blocks == nil || len(resolved.steps) == 0 {
 		if blocks != nil && resolved.operation != OperationRemove {
-			if block, ok := blocks.winningBlock(resolved.leaf); ok && blocks.writesKey(block, resolved.path) {
+			if block, ok := blocks.winningBlock(resolved.leaf); ok {
+				if !blocks.writesKey(block, resolved.path) {
+					return nil, fmt.Errorf("%w: the winning definition has no key of its own outside an anchor", errAmbiguousBlock)
+				}
 				return []routeDestination{{block: &block, path: resolved.path}}, nil
 			}
 		}

@@ -9,9 +9,9 @@ edit_resource.py jobs $job_id <<PYEDIT
 r["max_concurrent_runs"] = 10
 PYEDIT
 
-title "Sync keeps the target's anchor"
+title "Sync leaves the anchored target value unapplied"
 cp databricks.yml databricks.yml.backup
 trace $CLI bundle config-remote-sync -t dev --save
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
-trace $CLI bundle validate -t dev -o json | jq .resources.jobs.my_job.timeout_seconds
+trace $CLI bundle validate -t dev -o json | jq -c ".resources.jobs.my_job | {max_concurrent_runs, timeout_seconds}"

@@ -5,7 +5,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change the field remotely
 
-=== Sync keeps the target's anchor
+=== Sync leaves the anchored target value unapplied
 
 >>> [CLI] bundle config-remote-sync -t dev --save
 Detected changes in 1 resource(s):
@@ -16,18 +16,9 @@ Resource: resources.jobs.my_job
 
 
 >>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -8,5 +8,5 @@
-   jobs:
-     my_job:
--      max_concurrent_runs: 1
-+      max_concurrent_runs: 10
-       tasks:
-         - task_key: main
 
 >>> [CLI] bundle validate -t dev -o json
-2
+{"max_concurrent_runs":2,"timeout_seconds":2}
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
