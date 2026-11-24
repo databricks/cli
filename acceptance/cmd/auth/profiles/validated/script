@@ -1,0 +1,11 @@
+sethome "./home"
+
+# The test server accepts any token, so "accepted" validates. "rejected" logs in
+# with databricks-cli but has no cached token, so its validation fails.
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+
+title "Validated profiles (JSON output)"
+trace $CLI auth profiles --output json
+
+title "Validated profiles (text output)"
+trace $CLI auth profiles

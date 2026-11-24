@@ -86,7 +86,8 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	// Validation runs from here on, so every return below reports a result.
+	// Validation runs from here on, so every return below reports a result;
+	// the text template fails on a nil Valid.
 	c.Valid = new(false)
 
 	configType := auth.ResolveConfigType(cfg)
@@ -134,9 +135,10 @@ func newProfilesCommand() *cobra.Command {
 		Short: "Lists profiles from ~/.databrickscfg",
 		Annotations: map[string]string{
 			// With --skip-validate nothing is validated, so the Valid column is
-			// omitted instead of reporting NO for every profile.
-			// bool dereferences .Valid; {{if .Valid}} would be true even for a
-			// failed validation, because any non-nil pointer is truthy.
+			// omitted instead of reporting NO for every profile. Otherwise Load
+			// always sets Valid, which text/template dereferences to call bool.
+			// {{if .Valid}} would print YES for a failed check, because a
+			// non-nil pointer is truthy.
 			"template": cmdio.Heredoc(`
 			{{header "Name"}}	{{header "Host"}}{{if not .SkipValidate}}	{{header "Valid"}}{{end}}
 			{{range .Profiles}}{{.Name | green}}{{if .Default}} (Default){{end}}	{{.Host|cyan}}{{if not $.SkipValidate}}	{{bool .Valid}}{{end}}

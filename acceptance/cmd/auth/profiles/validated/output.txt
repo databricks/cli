@@ -1,0 +1,29 @@
+
+=== Validated profiles (JSON output)
+
+>>> [CLI] auth profiles --output json
+{
+  "profiles": [
+    {
+      "name": "accepted",
+      "host": "[DATABRICKS_URL]",
+      "cloud": "aws",
+      "auth_type": "pat",
+      "valid": true
+    },
+    {
+      "name": "rejected",
+      "host": "[DATABRICKS_URL]",
+      "cloud": "aws",
+      "auth_type": "databricks-cli",
+      "valid": false
+    }
+  ]
+}
+
+=== Validated profiles (text output)
+
+>>> [CLI] auth profiles
+Name      Host                    Valid
+accepted  [DATABRICKS_URL]  YES
+rejected  [DATABRICKS_URL]  NO

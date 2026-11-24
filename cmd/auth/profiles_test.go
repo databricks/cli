@@ -1,22 +1,17 @@
 package auth
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -413,84 +408,4 @@ func TestProfileLoadReportsFailedValidation(t *testing.T) {
 			assert.Equal(t, new(false), p.Valid)
 		})
 	}
-}
-
-// runProfilesCommand runs `auth profiles` with args and returns its stdout.
-func runProfilesCommand(t *testing.T, output flags.Output, args ...string) string {
-	t.Helper()
-	cmd := newProfilesCommand()
-	var stdout bytes.Buffer
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), output, nil, &stdout, io.Discard, "", cmd.Annotations["template"]))
-	cmd.SetContext(ctx)
-	require.NoError(t, cmd.ParseFlags(args))
-	require.NoError(t, cmd.RunE(cmd, nil))
-	return stdout.String()
-}
-
-// jsonProfiles decodes the profiles in `auth profiles --output json` as maps,
-// so a test can tell an absent key from a false one.
-func jsonProfiles(t *testing.T, out string) []map[string]any {
-	t.Helper()
-	var doc struct {
-		Profiles []map[string]any `json:"profiles"`
-	}
-	require.NoError(t, json.Unmarshal([]byte(out), &doc))
-	return doc.Profiles
-}
-
-// textCells splits text output into the whitespace-separated cells of each line.
-func textCells(out string) [][]string {
-	var rows [][]string
-	for line := range strings.Lines(out) {
-		rows = append(rows, strings.Fields(line))
-	}
-	return rows
-}
-
-func TestProfilesCommandRendersValid(t *testing.T) {
-	accepted := newWorkspaceServer(t, "ws-acct")
-	rejected := newRejectingServer(t, nil)
-
-	dir := t.TempDir()
-	configFile := filepath.Join(dir, ".databrickscfg")
-	t.Setenv("HOME", dir)
-	if runtime.GOOS == "windows" {
-		t.Setenv("USERPROFILE", dir)
-	}
-	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	content := "[accepted]\nhost = " + accepted.URL + "\ntoken = test-token\n\n" +
-		"[rejected]\nhost = " + rejected.URL + "\ntoken = test-token\n"
-	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
-
-	t.Run("json", func(t *testing.T) {
-		valid := map[string]any{}
-		for _, p := range jsonProfiles(t, runProfilesCommand(t, flags.OutputJSON)) {
-			valid[p["name"].(string)] = p["valid"]
-		}
-		assert.Equal(t, map[string]any{"accepted": true, "rejected": false}, valid)
-	})
-
-	t.Run("json with --skip-validate", func(t *testing.T) {
-		profiles := jsonProfiles(t, runProfilesCommand(t, flags.OutputJSON, "--skip-validate"))
-		require.Len(t, profiles, 2)
-		for _, p := range profiles {
-			assert.NotContains(t, p, "valid", "profile %v", p["name"])
-		}
-	})
-
-	t.Run("text", func(t *testing.T) {
-		assert.Equal(t, [][]string{
-			{"Name", "Host", "Valid"},
-			{"accepted", accepted.URL, "YES"},
-			{"rejected", rejected.URL, "NO"},
-		}, textCells(runProfilesCommand(t, flags.OutputText)))
-	})
-
-	t.Run("text with --skip-validate", func(t *testing.T) {
-		assert.Equal(t, [][]string{
-			{"Name", "Host"},
-			{"accepted", accepted.URL},
-			{"rejected", rejected.URL},
-		}, textCells(runProfilesCommand(t, flags.OutputText, "--skip-validate")))
-	})
 }
