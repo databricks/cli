@@ -79,7 +79,8 @@ type updateFlags struct {
 	project, global              bool
 	// keepModified is not a flag: auto-install sets it (see
 	// installer.UpdateOptions.KeepModified). It also keeps the raw skills of
-	// agents that have, or could get, the plugin.
+	// agents that have, or could get, the plugin, and refuses a downgrade
+	// (installer.UpdateOptions.NoDowngrade).
 	keepModified bool
 }
 
@@ -219,6 +220,7 @@ func runUpdate(ctx context.Context, f updateFlags) error {
 				Scope:   scope,
 
 				KeepModified: f.keepModified,
+				NoDowngrade:  f.keepModified,
 			}
 			opts.Skills = skills
 
