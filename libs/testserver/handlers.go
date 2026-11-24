@@ -562,6 +562,9 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations", func(req Request) any {
 		return req.Workspace.ListOperations(req.Vars["deployment_id"], req.Vars["version_id"])
 	})
+	server.Handle("GET", "/api/2.0/bundle/enrollments:check", func(req Request) any {
+		return dmsCheckEnrollments(req.URL.Query()["features"])
+	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
