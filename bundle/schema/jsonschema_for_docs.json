@@ -221,6 +221,11 @@
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.294.0"
                   },
+                  "thumbnail_path": {
+                    "description": "The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.28.0"
+                  },
                   "usage_policy_id": {
                     "description": "[Public Preview] ID of the usage policy that the app's compute usage is attributed to. Alternative to\n`budget_policy_id`.",
                     "$ref": "#/$defs/string",
@@ -826,16 +831,16 @@
               },
               "resources.DataQualityMonitor": {
                 "type": "object",
-                "description": "Monitor for the data quality of unity catalog entities such as schema or table.",
+                "description": "A data quality monitor on a Unity Catalog object. A `schema` monitor runs anomaly detection on the tables in the\nschema and is configured through `anomaly_detection_config`. A `table` monitor profiles a single table and is\nconfigured through `data_profiling_config`.",
                 "properties": {
                   "anomaly_detection_config": {
-                    "description": "Anomaly Detection Configuration, applicable to `schema` object types.",
+                    "description": "Anomaly detection settings. Required when `object_type` is `schema`. When reading a `table` monitor, this holds\nthe settings of the parent schema's monitor if the schema has one.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.AnomalyDetectionConfig",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.24.0"
                   },
                   "data_profiling_config": {
-                    "description": "Data Profiling Configuration, applicable to `table` object types. Exactly one `Analysis Configuration`\nmust be present.",
+                    "description": "Data profiling settings. Required when `object_type` is `table`. Exactly one of `inference_log`, `time_series`\nor `snapshot` must be set.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingConfig",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.24.0"
@@ -1284,19 +1289,19 @@
                     "x-since-version": "v1.9.0"
                   },
                   "custom_tags": {
-                    "description": "Additional tags for pool resources. Databricks will tag all pool resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags",
+                    "description": "Additional tags for pool resources. Databricks will tag all pool resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`, and clusters backed\nby the pool inherit them. When editing a pool, omitting this field or passing an empty map\nkeeps the existing tags, and a non-empty map replaces them. Notes:\n\n- Currently, Databricks allows at most 45 custom tags",
                     "$ref": "#/$defs/map/string",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.9.0"
                   },
                   "disk_spec": {
-                    "description": "Defines the specification of the disks that will be attached to all spark containers.",
+                    "description": "Defines the specification of the disks that will be attached to all spark containers.\nThe disk specification cannot be changed after the pool is created.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DiskSpec",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.9.0"
                   },
                   "enable_elastic_disk": {
-                    "description": "Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire\nadditional disk space when its Spark workers are running low on disk space. In AWS, this\nfeature requires specific AWS permissions to function correctly - refer to the User Guide for\nmore details.",
+                    "description": "Autoscaling Local Storage: when enabled, the instances in this pool will dynamically acquire\nadditional disk space when their Spark workers are running low on disk space. In AWS, this\nfeature requires specific AWS permissions to function correctly; see\nhttps://docs.databricks.com/aws/en/compute/pools#autoscaling-local-storage for details.\nThis setting cannot be changed after the pool is created.",
                     "$ref": "#/$defs/bool",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.9.0"
@@ -1325,13 +1330,13 @@
                     "x-since-version": "v1.9.0"
                   },
                   "max_capacity": {
-                    "description": "Maximum number of outstanding instances to keep in the pool, including both instances used by\nclusters and idle instances. Clusters that require further instance provisioning will fail during\nupsize requests.",
+                    "description": "Maximum number of outstanding instances to keep in the pool, including both instances used by\nclusters and idle instances. Clusters that require further instance provisioning will fail during\nupsize requests. If unset, the pool size is not capped.",
                     "$ref": "#/$defs/int",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.9.0"
                   },
                   "min_idle_instances": {
-                    "description": "Minimum number of idle instances to keep in the instance pool",
+                    "description": "Minimum number of idle instances to keep in the instance pool. These instances do not\nterminate regardless of `idle_instance_autotermination_minutes`, and the pool provisions\nreplacements when clusters consume them. Defaults to 0.",
                     "$ref": "#/$defs/int",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.9.0"
@@ -1343,7 +1348,7 @@
                     "x-since-version": "v1.9.0"
                   },
                   "node_type_id": {
-                    "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.\nThe node type cannot be changed after the pool is created.",
+                    "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in clusters that use this pool. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the [clusters/listNodeTypes](https://docs.databricks.com/api/workspace/clusters/listnodetypes) API call.\nThe node type cannot be changed after the pool is created.",
                     "$ref": "#/$defs/string",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.9.0"
@@ -1355,13 +1360,13 @@
                     "x-since-version": "v1.9.0"
                   },
                   "preloaded_docker_images": {
-                    "description": "Custom Docker Image BYOC",
+                    "description": "A list containing at most one custom Docker image to preload on the pool's idle instances.\nClusters that use Databricks Container Services with the preloaded image start faster.\nThe list cannot be changed after the pool is created.",
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/compute.DockerImage",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.9.0"
                   },
                   "preloaded_spark_versions": {
-                    "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.",
+                    "description": "A list containing at most one preloaded Spark image version for the pool. Pool-backed clusters started\nwith the preloaded Spark version will start faster. A list of available Spark versions\ncan be retrieved by using the [clusters/sparkVersions](https://docs.databricks.com/api/workspace/clusters/sparkversions) API call.\nThe list cannot be changed after the pool is created.",
                     "$ref": "#/$defs/slice/string",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.9.0"
@@ -1509,10 +1514,9 @@
                     "x-since-version": "v0.229.0"
                   },
                   "parent_path": {
-                    "description": "[Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.",
+                    "description": "[Beta] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a parent folder.\n\nExample: /Workspace/Projects/my_project",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true,
+                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v1.7.0"
                   },
                   "performance_target": {
@@ -2238,7 +2242,7 @@
                 "type": "object",
                 "properties": {
                   "allow_duplicate_names": {
-                    "description": "If false, deployment will fail if name conflicts with that of another pipeline.",
+                    "description": "If false, deployment will fail if name conflicts with that of another pipeline.\n\nIgnored when `parent_path` is set. A pipeline in a workspace folder must have a name that is\nunique within that folder, and creation fails if the folder already contains an object with the\nsame name.",
                     "$ref": "#/$defs/bool",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.261.0"
@@ -2367,10 +2371,9 @@
                     "x-since-version": "v1.2.0"
                   },
                   "parent_path": {
-                    "description": "[Private Preview] Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a workspace object.",
+                    "description": "[Beta] Path of the pipeline parent folder in workspace file tree.\n\nIf absent, the pipeline doesn't have a parent folder.\n\nExample: /Workspace/Projects/my_project",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true,
+                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v1.21.0"
                   },
                   "permissions": {
@@ -2417,7 +2420,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "serverless_compute_id": {
-                    "description": "[Private Preview] Serverless compute ID specified by the user for serverless pipelines.",
+                    "description": "[Private Preview] Serverless compute ID specified by the user for serverless pipelines.\nUse compute_policy_id instead. Only one of these fields may be set.",
                     "$ref": "#/$defs/string",
                     "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
@@ -3395,7 +3398,7 @@
                     "x-since-version": "v1.12.0"
                   },
                   "owner": {
-                    "description": "The owner of the secret. Defaults to the creating principal on creation. Can be updated to\ntransfer ownership of the secret to another principal.",
+                    "description": "The owner of the secret. It cannot be set when creating a secret and defaults to the creating\nprincipal. Set it in UpdateSecret to transfer ownership of the secret to another principal.",
                     "$ref": "#/$defs/string",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.12.0"
@@ -3503,7 +3506,7 @@
                     "x-since-version": "v0.260.0"
                   },
                   "channel": {
-                    "description": "Channel Details",
+                    "description": "Channel that determines which Databricks SQL version the warehouse runs.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Channel",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.260.0"
@@ -3515,7 +3518,7 @@
                     "x-since-version": "v0.260.0"
                   },
                   "creator_name": {
-                    "description": "warehouse creator name",
+                    "description": "Name of the user who created the warehouse. Set by the server and ignored in\nrequests.",
                     "$ref": "#/$defs/string",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.260.0"
@@ -3546,10 +3549,9 @@
                     "x-since-version": "v0.268.0"
                   },
                   "max_dbu": {
-                    "description": "[Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.\nMust be at least the minimum DBU for the selected warehouse size and no greater\nthan the configured DBU limit. Actual capacity may be below this ceiling.",
+                    "description": "[Beta] Maximum autoscaling capacity of a Real-Time SQL warehouse, in DBU per hour.\nMust be at least the minimum DBU for the selected warehouse size and no greater\nthan the configured DBU limit. Actual capacity may be below this ceiling.",
                     "$ref": "#/$defs/int",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true,
+                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v1.23.0"
                   },
                   "max_num_clusters": {
@@ -3565,7 +3567,7 @@
                     "x-since-version": "v0.260.0"
                   },
                   "name": {
-                    "description": "Logical name for the cluster.\n\nSupported values:\n- Must be unique within an org.\n- Must be less than 100 characters.",
+                    "description": "Logical name for the warehouse.\n\nSupported values:\n- Must be unique within an org.\n- Must be 1 to 100 characters.",
                     "$ref": "#/$defs/string",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.260.0"
@@ -3584,15 +3586,15 @@
                     "x-since-version": "v1.23.0"
                   },
                   "spot_instance_policy": {
-                    "description": "Configurations whether the endpoint should use spot instances.",
+                    "description": "Configures whether the warehouse should use spot instances. COST_OPTIMIZED uses\nspot instances where the cloud provider supports them, and RELIABILITY_OPTIMIZED\nuses on-demand instances only.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.260.0"
                   },
                   "statement_timeout": {
-                    "description": "[Public Preview] Warehouse statement timeout in seconds.",
+                    "description": "Maximum time in seconds that a statement can run on this warehouse before it is\ncancelled. Set to 0 to remove the warehouse-level timeout. Changing the value of a\nrunning warehouse restarts it. See\nhttps://docs.databricks.com/aws/en/sql/language-manual/parameters/statement_timeout.",
                     "$ref": "#/$defs/int",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
+                    "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.21.0"
                   },
                   "tags": {
@@ -3602,7 +3604,7 @@
                     "x-since-version": "v0.260.0"
                   },
                   "warehouse_type": {
-                    "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,\nyou must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
+                    "description": "Warehouse type: `PRO`, `CLASSIC`, or `REALTIME`. For serverless compute,\nuse `PRO` or `REALTIME` with `enable_serverless_compute=true`.\n`REALTIME` requires serverless compute and Photon; `enable_photon` defaults to `true`.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.260.0"
@@ -4831,6 +4833,7 @@
           "service": {
             "apps.AppDeployment": {
               "type": "object",
+              "description": "A deployment of an app's source code, taken from a workspace path or a Git reference. When a\ndeployment succeeds, it becomes the app's active deployment. See\nhttps://docs.databricks.com/aws/en/dev-tools/databricks-apps/deploy.",
               "properties": {
                 "command": {
                   "description": "The command with which to run the app. This will override the command specified in the app.yaml file.",
@@ -4839,19 +4842,19 @@
                   "x-since-version": "v0.283.0"
                 },
                 "deployment_id": {
-                  "description": "The unique id of the deployment.",
+                  "description": "The unique ID of the deployment. Databricks generates the ID when the deployment is created.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.239.0"
                 },
                 "env_vars": {
-                  "description": "The environment variables to set in the app runtime environment. This will override the environment variables specified in the app.yaml file.",
+                  "description": "The environment variables to set in the app runtime environment. This will override the environment variables specified in the app.yaml file.\nResponses return only the variable names, not their values.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.EnvVar",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.283.0"
                 },
                 "git_source": {
-                  "description": "Git repository to use as the source for the app deployment.",
+                  "description": "Git repository to use as the source for the app deployment. The repository itself is configured\non the app, so set only the branch, tag or commit here, and optionally `source_code_path`.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.283.0"
@@ -4864,13 +4867,13 @@
                   "x-since-version": "v1.21.0"
                 },
                 "mode": {
-                  "description": "The mode of which the deployment will manage the source code.",
+                  "description": "The mode in which the deployment manages the source code. The mode defaults to `SNAPSHOT`, which\nis the only supported mode.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.239.0"
                 },
                 "source_code_path": {
-                  "description": "The workspace file system path of the source code used to create the app deployment. This is different from\n`deployment_artifacts.source_code_path`, which is the path used by the deployed app. The former refers\nto the original source code location of the app in the workspace during deployment creation, whereas\nthe latter provides a system generated stable snapshotted source code path used by the deployment.",
+                  "description": "The workspace file system path of the source code used to create the app deployment. This is different from\n`deployment_artifacts.source_code_path`, which is the path used by the deployed app. The former refers\nto the original source code location of the app in the workspace during deployment creation, whereas\nthe latter provides a system generated stable snapshotted source code path used by the deployment.\nSet either `source_code_path` or `git_source`, not both. If neither is set, the deployment reuses\nthe source of the app's active deployment.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.239.0"
@@ -6832,7 +6835,7 @@
               "type": "object",
               "properties": {
                 "principal": {
-                  "description": "The principal (user email address or group name).\nFor deleted principals, `principal` is empty while `principal_id` is populated.",
+                  "description": "The principal (user email address or group name).",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.294.0"
@@ -7824,7 +7827,7 @@
                   "x-since-version": "v1.9.0"
                 },
                 "zone_id": {
-                  "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method.\n\nSet this field to \"auto\" to enable Auto-AZ, in which case Databricks selects the availability\nzone for each cluster independently when the cluster launches, and retries another zone if the\ncluster can't be fulfilled because of insufficient capacity or quota. All nodes in a cluster\nland in the same zone, and different clusters backed by the pool can run in different zones.\n\nYou can change the zone on an existing pool. New clusters use the updated zone, and existing\nclusters keep the zone they launched with.",
+                  "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at pool creation, and if not specified, a default zone will be used.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method.\n\nSet this field to \"auto\" to enable Auto-AZ, in which case Databricks selects the availability\nzone for each cluster independently when the cluster launches, and retries another zone if the\ncluster can't be fulfilled because of insufficient capacity or quota. All nodes in a cluster\nland in the same zone, and different clusters backed by the pool can run in different zones.\n\nYou can change the zone on an existing pool. New clusters use the updated zone, and existing\nclusters keep the zone they launched with.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.9.0"
@@ -8556,7 +8559,7 @@
               "description": "Anomaly Detection Configurations.",
               "properties": {
                 "excluded_table_full_names": {
-                  "description": "[Beta] List of fully qualified table names to exclude from anomaly detection.",
+                  "description": "[Beta] List of fully qualified table names to exclude from anomaly detection. Format: `catalog.schema.table_name`.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.24.0"
@@ -8581,7 +8584,7 @@
                   "x-since-version": "v1.24.0"
                 },
                 "timezone_id": {
-                  "description": "A Java timezone id. The schedule for a job will be resolved with respect to this timezone.\nSee `Java TimeZone \u003chttp://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html\u003e`_ for details.\nThe timezone id (e.g., ``America/Los_Angeles``) in which to evaluate the quartz expression.",
+                  "description": "The Java timezone ID in which the cron expression is evaluated. See\n[Java TimeZone](https://docs.oracle.com/javase/8/docs/api/java/util/TimeZone.html) for the supported IDs.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -8606,43 +8609,43 @@
               "description": "Data Profiling Configurations.",
               "properties": {
                 "assets_dir": {
-                  "description": "Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+                  "description": "The absolute workspace path of the directory where the monitor's assets, such as\nthe dashboard, are stored. The UI and the Python APIs normally prepopulate a default user location.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "baseline_table_name": {
-                  "description": "Baseline table name.\nBaseline data is used to compute drift from the data in the monitored `table_name`.\nThe baseline table and the monitored table shall have the same schema.",
+                  "description": "The fully qualified name of a baseline table. Format: `catalog.schema.table_name`.\nDrift metrics compare the monitored table against the baseline data, so the two tables must have the same\nschema.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "custom_metrics": {
-                  "description": "Custom metrics.",
+                  "description": "Custom metrics to compute in addition to the built-in ones. See\n[custom metrics](https://docs.databricks.com/aws/en/data-governance/unity-catalog/data-quality-monitoring/data-profiling/custom-metrics).",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingCustomMetric",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "inference_log": {
-                  "description": "`Analysis Configuration` for monitoring inference log tables.",
+                  "description": "Profiles an inference log table, which stores the requests and predictions of a model. Metrics are\ncomputed per time window and include model quality metrics.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.InferenceLogConfig",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "notification_settings": {
-                  "description": "Field for specifying notification settings.",
+                  "description": "Who to notify about this monitor's refreshes. Only `on_failure` with\n`email_addresses` is supported here.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationSettings",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "output_schema_id": {
-                  "description": "ID of the schema where output tables are created.",
+                  "description": "The UUID of the Unity Catalog schema where the profile and drift metrics tables\nare created.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "schedule": {
-                  "description": "The cron schedule.",
+                  "description": "The schedule on which the monitor refreshes its metrics. Refreshes can also be\ntriggered on demand through the Refresh resource.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.CronSchedule",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -8654,25 +8657,25 @@
                   "x-since-version": "v1.24.0"
                 },
                 "slicing_exprs": {
-                  "description": "List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[“col_1”, “col_2 \u003e 10”]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
+                  "description": "List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[\"col_1\", \"col_2 \u003e 10\"]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col_1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "snapshot": {
-                  "description": "`Analysis Configuration` for monitoring snapshot tables.",
+                  "description": "Profiles the full contents of the table. Metrics are computed over all rows at each refresh.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.SnapshotConfig",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "time_series": {
-                  "description": "`Analysis Configuration` for monitoring time series tables.",
+                  "description": "Profiles a time series table. Metrics are computed per time window, as defined by `timestamp_column`\nand `granularities`.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.TimeSeriesConfig",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "warehouse_id": {
-                  "description": "Optional argument to specify the warehouse for dashboard creation. If not specified, the first running\nwarehouse will be used.",
+                  "description": "The ID of the SQL warehouse used to create the dashboard. If not specified, the first running warehouse the\ncaller can access is used.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -8694,7 +8697,7 @@
                   "x-since-version": "v1.24.0"
                 },
                 "input_columns": {
-                  "description": "A list of column names in the input table the metric should be computed for.\nCan use ``\":table\"`` to indicate that the metric needs information from multiple columns.",
+                  "description": "A list of column names in the input table the metric should be computed for.\nCan use `\":table\"` to indicate that the metric needs information from multiple columns.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -8706,13 +8709,13 @@
                   "x-since-version": "v1.24.0"
                 },
                 "output_data_type": {
-                  "description": "The output type of the custom metric.",
+                  "description": "Specifies the Spark SQL data type of the metric value, either as a plain type name or as a JSON-encoded\nStructField.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "type": {
-                  "description": "The type of the custom metric.",
+                  "description": "The type of the custom metric. `DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE` metrics depend only on the\ncolumns of the input table, `DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED` metrics depend only on previously\ncomputed aggregate metrics, and `DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT` metrics depend on previously computed\naggregate or derived metrics.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.DataProfilingCustomMetricType",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -8758,31 +8761,31 @@
                   "x-since-version": "v1.24.0"
                 },
                 "label_column": {
-                  "description": "Column for the label.",
+                  "description": "Column containing the ground truth for the model's predictions.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "model_id_column": {
-                  "description": "Column for the model identifier.",
+                  "description": "Column containing the ID of the model that produced each prediction. A slice is created automatically for\neach distinct model ID.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "prediction_column": {
-                  "description": "Column for the prediction.",
+                  "description": "Column containing the model's predicted values.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "problem_type": {
-                  "description": "Problem type the model aims to solve.",
+                  "description": "The type of problem the model solves. It determines which model quality metrics are computed.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.InferenceProblemType",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
                 },
                 "timestamp_column": {
-                  "description": "Column for the timestamp.",
+                  "description": "Column containing the timestamp of each inference request. Its type must be TIMESTAMP or convertible to a\ntimestamp.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -8822,7 +8825,7 @@
                   "x-since-version": "v1.24.0"
                 },
                 "email_addresses": {
-                  "description": "The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.",
+                  "description": "The list of email addresses to send the notification to. A maximum of 5 email addresses is supported.\nOnly supported on table monitors, via `data_profiling_config`; rejected on schema monitors.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -8835,7 +8838,7 @@
               "description": "Settings for sending notifications on the data quality monitoring.",
               "properties": {
                 "on_failure": {
-                  "description": "Destinations to send notifications on failure/timeout.",
+                  "description": "Recipients to notify when a refresh of the monitor fails or times out. Only supported on table\nmonitors, via `data_profiling_config`, and only `email_addresses` is accepted there.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dataquality.NotificationDestination",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -8865,7 +8868,7 @@
                   "x-since-version": "v1.24.0"
                 },
                 "timestamp_column": {
-                  "description": "Column for the timestamp.",
+                  "description": "Column containing the timestamp of each row. Its type must be TIMESTAMP or convertible to a timestamp.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.24.0"
@@ -9230,10 +9233,12 @@
               "type": "string",
               "description": "Scheduling priority class for a workload — its priority and preemptability\nwhen the scheduler ranks pending work.",
               "enum": [
-                "BEST_EFFORT",
-                "NORMAL"
+                "NORMAL",
+                "HIGH",
+                "PREEMPTABLE"
               ],
               "enumDescriptions": [
+                "[Private Preview]",
                 "[Private Preview]",
                 "[Private Preview]"
               ]
@@ -10791,7 +10796,7 @@
                   "x-since-version": "v1.1.0"
                 },
                 "parameters": {
-                  "description": "[Private Preview] An ordered list of task parameters.\nTODO(JOBS-30885): Add limits for parameters.",
+                  "description": "[Private Preview] An ordered list of task parameters.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTaskParameter",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
@@ -12560,6 +12565,31 @@
                 "full_name"
               ]
             },
+            "ml.EntityBinding": {
+              "type": "object",
+              "description": "Binds one entity column of a Lookup's upstream Feature to the input that supplies its\nvalues.",
+              "properties": {
+                "entity": {
+                  "description": "[Private Preview] Specifies the entity column of the upstream Feature.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                },
+                "input": {
+                  "description": "[Private Preview] Specifies where the column's values come from.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.InputReference",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "entity",
+                "input"
+              ]
+            },
             "ml.EntityColumn": {
               "type": "object",
               "properties": {
@@ -12941,6 +12971,20 @@
                   "doNotSuggest": true,
                   "x-since-version": "v1.22.0",
                   "deprecated": true
+                },
+                "lookup": {
+                  "description": "[Private Preview] Looks up an upstream Feature using entity values from other Features or the request.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.Lookup",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                },
+                "secondary_keys": {
+                  "description": "[Private Preview] Selects the secondary key values an upstream Feature has stored for the request's entity.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.SecondaryKeys",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
                 }
               },
               "additionalProperties": false
@@ -13066,6 +13110,20 @@
                 "column",
                 "parameter"
               ]
+            },
+            "ml.InputReference": {
+              "type": "object",
+              "description": "The input that supplies a value. A value from the request comes from a Feature whose source is\na RequestSource.",
+              "properties": {
+                "feature": {
+                  "description": "[Private Preview] Specifies another Feature whose output supplies the value.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureReference",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                }
+              },
+              "additionalProperties": false
             },
             "ml.JobContext": {
               "type": "object",
@@ -13212,6 +13270,31 @@
                 }
               },
               "additionalProperties": false
+            },
+            "ml.Lookup": {
+              "type": "object",
+              "description": "Looks up an upstream Feature using entity values bound from other Features or from the\nrequest. When a binding is an array, such as the output of a SecondaryKeys Feature, returns\none value per position as an array aligned with that binding.\nThe Feature's source must be a FeatureViewSource that includes `feature` and every Feature\nreferenced in `entities`.\nCurrently, exactly one entity must be bound to a Feature: a SecondaryKeys Feature whose key has\nthe same name as that entity. Its target can be `feature` or another Feature. Every other entity\nmust be bound to a request column of the same name. Names are compared without struct prefixes,\nso `user_id` matches `value.user_id`. A FeatureSpec can't also look up `feature` with all of its\nentities supplied.",
+              "properties": {
+                "entities": {
+                  "description": "[Private Preview] One binding per entity column of the upstream Feature. Every entity column must be\nbound exactly once.",
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.EntityBinding",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                },
+                "feature": {
+                  "description": "[Private Preview] The upstream Feature to look up.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureReference",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "entities",
+                "feature"
+              ]
             },
             "ml.MaterializationFailureNotification": {
               "type": "object",
@@ -13708,6 +13791,39 @@
                 "[Private Preview]",
                 "[Private Preview]",
                 "[Private Preview]"
+              ]
+            },
+            "ml.SecondaryKeys": {
+              "type": "object",
+              "description": "Returns the values of one entity column that an upstream Feature has stored for the\nrequest's other entity columns, as an array. For example, given a Feature with entities\n(user_id, ad_id), returns the ad_ids stored for the requested user_id.\nThe Feature's source must be a FeatureViewSource that includes `feature`.",
+              "properties": {
+                "feature": {
+                  "description": "[Private Preview] The upstream Feature whose stored keys are selected.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.FeatureReference",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                },
+                "key": {
+                  "description": "[Private Preview] The entity column of the upstream Feature to return values for. It is not supplied\nby the request.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                },
+                "max_keys": {
+                  "description": "[Private Preview] Maximum number of keys to return per entity, in primary key order. Must not exceed the\nworkspace limit.",
+                  "$ref": "#/$defs/int64",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.28.0"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "feature",
+                "key",
+                "max_keys"
               ]
             },
             "ml.SlidingWindow": {
@@ -14220,10 +14336,9 @@
                   "x-since-version": "v0.298.0"
                 },
                 "google_ads_options": {
-                  "description": "[Private Preview] Google Ads specific options for ingestion (object-level).\nWhen set, these values override the corresponding fields in GoogleAdsConfig\n(source_configurations).",
+                  "description": "[Beta] Google Ads specific options for ingestion (object-level).\nWhen set, these values override the corresponding fields in GoogleAdsConfig\n(source_configurations).",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsOptions",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.298.0"
                 },
                 "jira_options": {
@@ -14609,10 +14724,9 @@
               "type": "object",
               "properties": {
                 "manager_account_id": {
-                  "description": "[Private Preview] (Required) Manager Account ID (also called MCC Account ID) used to list and access\ncustomer accounts under this manager account. This is required for fetching the list\nof customer accounts during source selection.\nIf the same field is also set in the object-level GoogleAdsOptions (connector_options),\nthe object-level value takes precedence over this top-level config.",
+                  "description": "[Beta] (Required) Manager Account ID (also called MCC Account ID) used to list and access\ncustomer accounts under this manager account. This is required for fetching the list\nof customer accounts during source selection.\nIf the same field is also set in the object-level GoogleAdsOptions (connector_options),\nthe object-level value takes precedence over this top-level config.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 }
               },
@@ -14623,31 +14737,27 @@
               "description": "User-defined custom report for the Google Ads connector. Mirrors the\nresource + fields + segments + metrics model that Google Ads GAQL exposes.\nThe customer account this report runs against is supplied by the source\nschema (namespace), not by this message. The whole message is gated by\nthe parent GoogleAdsOptions.custom_report_options stage; per-field stage\nannotations are intentionally omitted.\nOnly supported on table-type objects: a custom report requires a\ndestination table, so it cannot be specified at the schema/source level.",
               "properties": {
                 "metrics": {
-                  "description": "[Private Preview] (Optional) Metric fields to select (e.g. \"metrics.clicks\",\n\"metrics.cost_micros\"). Multiple values are joined into the GAQL\nSELECT clause.",
+                  "description": "[Beta] (Optional) Metric fields to select (e.g. \"metrics.clicks\",\n\"metrics.cost_micros\"). Multiple values are joined into the GAQL\nSELECT clause.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.9.0"
                 },
                 "resource": {
-                  "description": "[Private Preview] (Required) Google Ads resource to query (e.g. \"ad_group_ad\",\n\"keyword_view\", \"search_term_view\"). Must be a resource that has\nmetrics. Values are validated against Google Ads' field-service\ncatalog at pipeline plan time.",
+                  "description": "[Beta] (Required) Google Ads resource to query (e.g. \"ad_group_ad\",\n\"keyword_view\", \"search_term_view\"). Must be a resource that has\nmetrics. Values are validated against Google Ads' field-service\ncatalog at pipeline plan time.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.9.0"
                 },
                 "resource_fields": {
-                  "description": "[Private Preview] (Optional) Resource fields to select, in fully-qualified GAQL form\n(e.g. \"ad_group_ad.ad.id\", \"ad_group_ad.status\"). Multiple values are\njoined into the GAQL SELECT clause.",
+                  "description": "[Beta] (Optional) Resource fields to select, in fully-qualified GAQL form\n(e.g. \"ad_group_ad.ad.id\", \"ad_group_ad.status\"). Multiple values are\njoined into the GAQL SELECT clause.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.9.0"
                 },
                 "segments": {
-                  "description": "[Private Preview] (Optional) Segment fields to select (e.g. \"segments.date\",\n\"segments.device\"). Must include at least one of segments.date,\nsegments.week, or segments.month — that segment is used as the\nincremental cursor for the table.",
+                  "description": "[Beta] (Optional) Segment fields to select (e.g. \"segments.date\",\n\"segments.device\"). Must include at least one of segments.date,\nsegments.week, or segments.month — that segment is used as the\nincremental cursor for the table.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.9.0"
                 }
               },
@@ -14661,31 +14771,27 @@
               "description": "Google Ads specific options for ingestion (object-level).\nWhen set, these values override the corresponding fields in GoogleAdsConfig\n(source_configurations).",
               "properties": {
                 "custom_report_options": {
-                  "description": "[Private Preview] (Optional) Custom report definition. When set, the table is treated as a\nuser-defined Google Ads custom report: the connector synthesizes a GAQL\nquery from the resource, fields, segments, and metrics specified here.\nWhen unset, the table must match one of the connector's prebuilt sources.",
+                  "description": "[Beta] (Optional) Custom report definition. When set, the table is treated as a\nuser-defined Google Ads custom report: the connector synthesizes a GAQL\nquery from the resource, fields, segments, and metrics specified here.\nWhen unset, the table must match one of the connector's prebuilt sources.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsCustomReportOptions",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.9.0"
                 },
                 "lookback_window_days": {
-                  "description": "[Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.\nIf not specified, defaults to 30 days.",
+                  "description": "[Beta] (Optional) Number of days to look back for report tables to capture late-arriving data.\nIf not specified, defaults to 30 days.",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.298.0"
                 },
                 "manager_account_id": {
-                  "description": "[Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list\nand access customer accounts under this manager account.\nOverrides GoogleAdsConfig.manager_account_id from source_configurations when set.",
+                  "description": "[Beta] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list\nand access customer accounts under this manager account.\nOverrides GoogleAdsConfig.manager_account_id from source_configurations when set.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.298.0"
                 },
                 "sync_start_date": {
-                  "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 2 years of historical data.",
+                  "description": "[Beta] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 2 years of historical data.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.298.0"
                 }
               },
@@ -15024,7 +15130,7 @@
                 "[Beta]",
                 "[Public Preview]",
                 "[Beta]",
-                "[Private Preview]",
+                "[Beta]",
                 "[Public Preview]",
                 "[Public Preview]",
                 "[Public Preview]",
@@ -16202,7 +16308,7 @@
                   "x-since-version": "v0.229.0"
                 },
                 "destination_schema": {
-                  "description": "[Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.",
+                  "description": "[Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails if a table with the same name already exists.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
@@ -16329,10 +16435,9 @@
                   "x-since-version": "v0.267.0"
                 },
                 "google_ads_config": {
-                  "description": "[Private Preview]",
+                  "description": "[Beta]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsConfig",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 }
               },
@@ -16642,7 +16747,7 @@
             },
             "pipelines.Transformer": {
               "type": "object",
-              "description": "Specifies how to transform binary data into structured data.",
+              "description": "One step that transforms a column: either decodes data into structured data (`format`) or\nreshapes an already-decoded column (`operation`).",
               "properties": {
                 "avro_options": {
                   "description": "[Beta]",
@@ -16651,7 +16756,7 @@
                   "x-since-version": "v1.18.0"
                 },
                 "format": {
-                  "description": "[Beta] Required: the wire format of the data.",
+                  "description": "[Beta] The format to decode the input column from.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat",
                   "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
@@ -18583,11 +18688,13 @@
               "description": "Configures the channel name and DBSQL version of the warehouse. CHANNEL_NAME_CUSTOM should be chosen only when `dbsql_version` is specified.",
               "properties": {
                 "dbsql_version": {
+                  "description": "Databricks SQL version to pin to. Set it if and only if name is\nCHANNEL_NAME_CUSTOM.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.260.0"
                 },
                 "name": {
+                  "description": "Channel to follow. CHANNEL_NAME_CURRENT is the default, and CHANNEL_NAME_PREVIEW\ncarries the upcoming Databricks SQL release for testing.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ChannelName",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.260.0"
@@ -18629,7 +18736,7 @@
                 "",
                 "",
                 "",
-                "[Private Preview]"
+                "[Beta]"
               ]
             },
             "sql.CronSchedule": {
@@ -18676,11 +18783,13 @@
               "type": "object",
               "properties": {
                 "key": {
+                  "description": "Tag key. Keys must be unique within the warehouse and cannot use the keys that\nDatabricks reserves for the tags it sets automatically.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.260.0"
                 },
                 "value": {
+                  "description": "Tag value. Keys and values must follow the tagging rules of the cloud provider.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.260.0"
@@ -18692,6 +18801,7 @@
               "type": "object",
               "properties": {
                 "custom_tags": {
+                  "description": "User-defined tags, applied in addition to the tags Databricks sets automatically.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.260.0"
@@ -18900,13 +19010,13 @@
               "description": "The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`",
               "properties": {
                 "dns_name": {
-                  "description": "The DNS of the KeyVault",
+                  "description": "The DNS name of the key vault, for example ``https://my-key-vault.vault.azure.net/``.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.252.0"
                 },
                 "resource_id": {
-                  "description": "The resource id of the azure KeyVault that user wants to associate the scope with.",
+                  "description": "The Azure resource ID of the key vault to associate with the scope.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.252.0"
@@ -18920,7 +19030,7 @@
             },
             "workspace.ScopeBackendType": {
               "type": "string",
-              "description": "The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes\nwill be supported in a later release.",
+              "description": "The types of secret scope backends in the Secret Manager.",
               "enum": [
                 "DATABRICKS",
                 "AZURE_KEYVAULT"
@@ -19594,6 +19704,12 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.DefaultValue"
+                }
+              },
+              "ml.EntityBinding": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.EntityBinding"
                 }
               },
               "ml.EntityColumn": {
