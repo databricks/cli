@@ -42,6 +42,7 @@ type Config struct {
 	Origin           string
 	Token            string
 	TokenProvider    TokenProvider
+	RoutingCookie    string
 	AppStatusChecker AppStatusChecker
 	Search           string
 	Sources          map[string]struct{}
@@ -66,6 +67,7 @@ func Run(ctx context.Context, cfg Config) error {
 		origin:           cfg.Origin,
 		token:            cfg.Token,
 		tokenProvider:    cfg.TokenProvider,
+		routingCookie:    cfg.RoutingCookie,
 		appStatusChecker: cfg.AppStatusChecker,
 		search:           cfg.Search,
 		sources:          cfg.Sources,
@@ -89,6 +91,7 @@ type logStreamer struct {
 	origin           string
 	token            string
 	tokenProvider    TokenProvider
+	routingCookie    string
 	appStatusChecker AppStatusChecker
 	search           string
 	sources          map[string]struct{}
@@ -178,6 +181,9 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*int, error) {
 	headers.Set("User-Agent", s.userAgent)
 	if s.origin != "" {
 		headers.Set("Origin", s.origin)
+	}
+	if s.routingCookie != "" {
+		headers.Set("Cookie", s.routingCookie)
 	}
 
 	conn, resp, err := s.dialer.DialContext(ctx, s.url, headers)
