@@ -289,6 +289,13 @@ func TestPluginFailureTextKeepsTheRunsFlags(t *testing.T) {
 	assert.Equal(t, "Install or update the Claude Code CLI so 'claude' is on PATH, then re-run 'databricks aitools install --scope=global --agents=claude-code --experimental --output json'. Or install skill files instead: databricks aitools install --scope=global --agents=claude-code --skills-only --experimental --output json", recovery)
 }
 
+func TestSkipRecoveryForAgentWithPluginKeepsTheScope(t *testing.T) {
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	inv := installInvocation{scope: installer.ScopeProject, agents: "claude-code,cursor", skillsOnly: true, skills: "databricks-jobs"}
+	it := agentPlanItem{agent: claude, delivery: deliverySkip, pluginRemoval: "remove the plugin first with 'databricks aitools uninstall --scope=project --agents=claude-code'"}
+	assert.Equal(t, "To use skill files instead, remove the plugin first with 'databricks aitools uninstall --scope=project --agents=claude-code', then run: databricks aitools install --scope=project --agents=claude-code --skills-only --skills=databricks-jobs", skipRecovery(inv, it))
+}
+
 func TestSkipRecoveryNamesOnlyTheAgentInTheGlobalScope(t *testing.T) {
 	cursor := agents.ByName(agents.NameCursor)
 	inv := installInvocation{scope: installer.ScopeProject, agents: "claude-code,cursor", skillsOnly: true, experimental: true}

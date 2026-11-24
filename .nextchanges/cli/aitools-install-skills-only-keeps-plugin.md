@@ -1,0 +1,1 @@
+* `databricks aitools install --skills-only` now skips an agent that already has the databricks plugin instead of writing skill files next to it, which made the agent load every Databricks skill twice; the output says how to switch to skill files.
