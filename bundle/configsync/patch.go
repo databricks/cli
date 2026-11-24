@@ -115,6 +115,16 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 				Value: fieldChange.Change.Value,
 			}})
 
+			// The merged config can lack a key the file declares, e.g. when OverrideCompute
+			// clears job_cluster_key, so an add replaces an existing key as in RFC 6902.
+			if isKeyExistsError(patchErr) {
+				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+					Type:  yamlpatch.OperationReplace,
+					Path:  path,
+					Value: fieldChange.Change.Value,
+				}})
+			}
+
 			// Collect parent path errors for later retry
 			if patchErr != nil && isParentPathError(patchErr) {
 				if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
@@ -265,6 +275,11 @@ func isPathNotFoundError(err error) bool {
 	}
 	msg := err.Error()
 	return strings.Contains(msg, "does not exist")
+}
+
+// isKeyExistsError checks if error indicates an add to a mapping key that is already there.
+func isKeyExistsError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "already exists and can not be added")
 }
 
 // extractMissingPath extracts the missing path from error message like:
