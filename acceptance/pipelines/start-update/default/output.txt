@@ -6,6 +6,18 @@
   "update_id": "[UUID][1]"
 }
 
+=== --no-wait is the default
+
+>>> [CLI] pipelines start-update [UUID][0] --no-wait
+{
+  "update_id": "[UUID][2]"
+}
+
+=== --wait and --no-wait cannot be combined
+
+>>> musterr [CLI] pipelines start-update [UUID][0] --wait --no-wait
+Error: if any flags in the group [wait no-wait] are set none of the others can be; [no-wait wait] were all set
+
 === --timeout requires --wait
 
 >>> musterr [CLI] pipelines start-update [UUID][0] --timeout 5m

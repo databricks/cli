@@ -149,6 +149,9 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	}, nil
 }
 
+// ErrPipelineUpdateFailed is returned by [WaitForPipelineUpdate] when the update fails.
+var ErrPipelineUpdateFailed = errors.New("update failed")
+
 // WaitForPipelineUpdate polls the update until it ends and logs its progress events.
 // It returns an error if the update fails or is canceled, after logging the error
 // events of a failed update.
@@ -191,9 +194,9 @@ func WaitForPipelineUpdate(ctx context.Context, w *databricks.WorkspaceClient, p
 			log.Infof(ctx, "Update has failed!")
 			err := logErrorEvent(ctx, w, pipelineID, updateID)
 			if err != nil {
-				return err
+				return fmt.Errorf("%w; listing its error events failed: %w", ErrPipelineUpdateFailed, err)
 			}
-			return errors.New("update failed")
+			return ErrPipelineUpdateFailed
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
 			log.Infof(ctx, "Update has completed successfully!")

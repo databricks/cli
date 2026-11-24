@@ -84,9 +84,19 @@ With a PIPELINE_ID: Stops the pipeline identified by the UUID using the API.`
 // returns an error if the update fails or is canceled.
 func startUpdateOverride(cmd *cobra.Command, req *pipelines.StartUpdate) {
 	var wait bool
+	var noWait bool
 	var timeout time.Duration
 	cmd.Flags().BoolVar(&wait, "wait", false, "Wait for the update to complete. Fails if the update fails or is canceled.")
-	cmd.Flags().DurationVar(&timeout, "timeout", 0, "With --wait, stop waiting after this duration, for example 30m. The update keeps running.")
+	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Return as soon as the update starts. This is the default.")
+	cmd.Flags().DurationVar(&timeout, "timeout", 0, "With --wait, stop waiting after this duration, for example 100s. The update keeps running.")
+	cmd.MarkFlagsMutuallyExclusive("wait", "no-wait")
+
+	cmd.Long += `
+
+  With --wait, the command logs the update's progress until it ends, and fails
+  if the update fails or is canceled. Set --timeout to bound the wait below the
+  time limit of the caller, for example --wait --timeout 100s for a 2 minute
+  limit.`
 
 	originalRunE := cmd.RunE
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -141,10 +151,13 @@ func waitForStartedUpdate(ctx context.Context, w *databricks.WorkspaceClient, pi
 	}
 
 	err := run.WaitForPipelineUpdate(ctx, w, pipelineID, updateID)
-	if err != nil && errors.Is(context.Cause(ctx), errStartUpdateTimeout) {
-		return fmt.Errorf("update %s did not complete within %s; it keeps running", updateID, timeout)
+	if !errors.Is(err, context.Canceled) || !errors.Is(context.Cause(ctx), errStartUpdateTimeout) {
+		return err
 	}
-	return err
+	if errors.Is(err, run.ErrPipelineUpdateFailed) {
+		return fmt.Errorf("update %s failed; its error details could not be retrieved within the %s timeout", updateID, timeout)
+	}
+	return fmt.Errorf("stopped waiting for update %s after %s; the update was not canceled. Check its state with: databricks pipelines get-update %s %s", updateID, timeout, pipelineID, updateID)
 }
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)

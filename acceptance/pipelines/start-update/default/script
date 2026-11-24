@@ -1,6 +1,12 @@
 title "Without --wait, start-update returns the update ID right away"
 trace $CLI pipelines start-update $pipeline_id
 
+title "--no-wait is the default"
+trace $CLI pipelines start-update $pipeline_id --no-wait
+
+title "--wait and --no-wait cannot be combined"
+trace musterr $CLI pipelines start-update $pipeline_id --wait --no-wait
+
 title "--timeout requires --wait"
 trace musterr $CLI pipelines start-update $pipeline_id --timeout 5m
 

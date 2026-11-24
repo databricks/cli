@@ -5,4 +5,4 @@
 {
   "update_id": "[UUID][1]"
 }
-Error: update [UUID][1] did not complete within 2s; it keeps running
+Error: stopped waiting for update [UUID][1] after 2s; the update was not canceled. Check its state with: databricks pipelines get-update [UUID][0] [UUID][1]
