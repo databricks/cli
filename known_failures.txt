@@ -36,3 +36,4 @@ acceptance TestAccept/bundle/resources/alerts/basic/DMS=
 acceptance TestAccept/bundle/resources/alerts/basic/DMS=true
 acceptance TestAccept/bundle/resources/alerts/with_file/DMS=
 acceptance TestAccept/bundle/resources/alerts/with_file/DMS=true
+acceptance TestAccept/bundle/resources/vector_search_endpoints/drift/recreated_same_name/DMS=true  # go/cli/dashboard/error/102, backend bug, added 2026-11-24
