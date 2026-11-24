@@ -67,6 +67,18 @@ The command exits with code 1 when every removal it attempts fails.`,
 			}
 			funnel.setScope(scope)
 
+			// Auto-install only ever installs in global scope. A run that is
+			// installing would put back what this removes, so the uninstall
+			// does not run alongside one; a run that starts later sees the
+			// opt-out stored below.
+			if scope == installer.ScopeGlobal {
+				unlock, err := lockAutoInstall(ctx)
+				if err != nil {
+					return err
+				}
+				defer unlock()
+			}
+
 			opts := installer.UninstallOptions{
 				Scope:           scope,
 				KeepMarketplace: keepMarketplace,
@@ -163,6 +175,17 @@ The command exits with code 1 when every removal it attempts fails.`,
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills")
 	markScopeBoolsDeprecated(cmd)
 	return instrumentCommand(cmd, protos.AitoolsCommandUninstall)
+}
+
+// lockAutoInstall takes the auto-install lock. It fails while a run holds it
+// rather than waiting: the run is short, and the user can run the command
+// again when it finishes.
+func lockAutoInstall(ctx context.Context) (unlock func(), err error) {
+	unlock, err = autoinstall.Lock(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("an automatic installation of Databricks AI tools is running; run this command again when it finishes: %w", err)
+	}
+	return unlock, nil
 }
 
 // confirmUninstall asks the user to confirm a destructive uninstall, printing

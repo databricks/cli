@@ -184,3 +184,52 @@ func TestChildEnvCarriesTheRefusal(t *testing.T) {
 	declined.Store(true)
 	assert.Equal(t, []string{"HOME=/home/user", EnvVar + "=false"}, ChildEnv(environ))
 }
+
+func TestLockExcludesRuns(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+
+	// A run holds the lock: Lock fails at once instead of waiting.
+	release, ok := TryLock(ctx)
+	require.True(t, ok)
+	_, err := Lock(ctx)
+	assert.ErrorIs(t, err, errLockHeld)
+	release()
+
+	unlock, err := Lock(ctx)
+	require.NoError(t, err)
+	_, ok = TryLock(ctx)
+	assert.False(t, ok, "a run must not start while Lock holds the lock")
+	unlock()
+}
+
+func TestLockWithoutLocks(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+
+	// No run can take the lock there, so the command goes ahead.
+	orig := tryLock
+	t.Cleanup(func() { tryLock = orig })
+	tryLock = func(*os.File) error { return errors.New("no locks here") }
+	unlock, err := Lock(ctx)
+	require.NoError(t, err)
+	unlock()
+}
+
+func TestStartAttemptStopsAtAnOptOut(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	at := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	started, err := StartAttempt(ctx, "1.30.0", 1, "machine", at)
+	require.NoError(t, err)
+	assert.True(t, started)
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: at, ID: "machine"}, s)
+
+	require.NoError(t, SetOptedOut(ctx, true))
+	started, err = StartAttempt(ctx, "1.30.0", 2, "machine", at)
+	require.NoError(t, err)
+	assert.False(t, started)
+	s, err = Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: at, OptedOut: true, ID: "machine"}, s, "the attempt is not counted")
+}
