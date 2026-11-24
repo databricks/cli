@@ -1,2 +1,2 @@
-Badness = "After deploy, bundle summary shows jobs.foo's name unresolved ('Name: ${resources.jobs.变量.id}'); it should show the deployed name with the id filled in."
+Badness = "The test is titled 'Unicode job names resolve in resources references' but records nothing that shows the resolution: RecordRequests = false, and bundle summary prints 'Name: ${resources.jobs.变量.id}' because it never resolves resource references (ASCII keys too, see synced_database_tables/basic). It should record the jobs/create request for foo to show the resolved id."
 RecordRequests = false

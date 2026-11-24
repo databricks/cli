@@ -25,7 +25,7 @@ trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
 
 rm "$OUT_REQUESTS"
 
-# Uncomment once 'recreate' bug is fixed
+# Uncomment once the dashboards 'recreate' bug is fixed, see https://github.com/databricks/cli/pull/3966
 #title "Update databricks.yml, run plan & update"
 #trace update_file.py databricks.yml dashboard DASHBOARD
 #trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan

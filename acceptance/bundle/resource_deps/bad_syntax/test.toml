@@ -1,2 +1,2 @@
-Badness = "The malformed reference ${resources.volumes.bar.bad..syntax} is not reported by validate, plan or deploy: it is kept as a literal string and deploy creates volumes.foo with it. It should be rejected as invalid reference syntax."
+Badness = "The malformed reference ${resources.volumes.bar.bad..syntax} is not reported: validate, plan and deploy all accept it, and deploy succeeds (out.deploy.txt ends with 'Unexpected success'). It should be rejected as invalid reference syntax."
 RecordRequests = false

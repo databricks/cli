@@ -13,7 +13,6 @@ title "Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
 trace $CLI bundle deploy
-# per-engine output file because terraform adds output-only and server-side defaults fields into request and direct does not
 trace print_requests.py --nostamp //jobs > out.deploy2.requests.json
 trace $CLI bundle plan
 
