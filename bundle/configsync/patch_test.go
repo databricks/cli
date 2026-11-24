@@ -538,3 +538,48 @@ func TestApplyChangeMaterializesPrimaryNullParent(t *testing.T) {
 		})
 	}
 }
+
+func TestSourceDocsWritten(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "databricks.yml")
+	require.NoError(t, os.WriteFile(file, []byte(`base: &base
+  a: 1
+  nested:
+    x: 1
+alias: *base
+merged:
+  <<: *base
+  b: 2
+anchored: &anchored
+  <<: *base
+targets:
+  dev:
+    merged:
+      <<: *base
+`), 0o644))
+
+	for _, tc := range []struct {
+		name, path, altPath string
+		key                 bool
+		addPath             string
+	}{
+		{"written", "merged.b", "", true, "merged.b"},
+		{"inherited", "merged.a", "", false, "merged.a"},
+		{"inherited parent", "merged.nested.x", "", false, ""},
+		{"through alias", "alias.a", "", true, ""},
+		{"under anchor", "anchored.a", "", false, ""},
+		{"written in anchor", "base.a", "", true, ""},
+		{"missing parent", "missing.a", "", false, ""},
+		{"alternative only", "missing.a", "targets.dev.merged.a", false, "targets.dev.merged.a"},
+		{"both scopes", "merged.a", "targets.dev.merged.a", false, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			key, addPath := sourceDocs{}.written(file, tc.path, tc.altPath)
+			assert.Equal(t, tc.key, key)
+			assert.Equal(t, tc.addPath, addPath)
+		})
+	}
+
+	key, addPath := sourceDocs{}.written(filepath.Join(t.TempDir(), "missing.yml"), "a.b", "")
+	assert.True(t, key)
+	assert.Empty(t, addPath)
+}

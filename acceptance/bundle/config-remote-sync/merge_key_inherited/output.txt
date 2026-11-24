@@ -12,6 +12,7 @@ Detected changes in 2 resource(s):
 Resource: resources.jobs.my_job
   job_clusters[job_cluster_key='derived'].new_cluster.autoscale: add
   job_clusters[job_cluster_key='derived'].new_cluster.num_workers: skip
+  tasks[task_key='b_task'].depends_on[task_key='prep']: skip
   tasks[task_key='b_task'].max_retries: skip
   tasks[task_key='b_task'].min_retry_interval_millis: add
   tasks[task_key='b_task'].notebook_task.base_parameters['input_file_name']: add
@@ -45,8 +46,8 @@ Resource: resources.pipelines.my_pipeline
 +              max_workers: 2
 +              min_workers: 1
        tasks:
-         - &base_task
-@@ -50,9 +53,11 @@
+         - task_key: prep
+@@ -61,9 +64,11 @@
              base_parameters: &base_params
                input_file_name: ${var.input_a}
 -        - <<: *base_task

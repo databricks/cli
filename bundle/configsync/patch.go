@@ -438,8 +438,8 @@ func (d sourceDocs) written(file, writePath, altWritePath string) (key bool, add
 	return key || altKey, addPath
 }
 
-// keyWrittenAt follows aliases like the patcher does, but a parent reached through one
-// is shared with the anchor and does not count as a place to add the key.
+// keyWrittenAt follows aliases like the patcher does, but a parent reached through one, or
+// under an anchor, is shared with whatever merges it and is no place to add the key.
 func keyWrittenAt(root *yaml.Node, fieldPath string) (key, parent bool) {
 	path, err := structpath.ParsePath(fieldPath)
 	if err != nil {
@@ -447,14 +447,17 @@ func keyWrittenAt(root *yaml.Node, fieldPath string) (key, parent bool) {
 	}
 	parts := path.AsSlice()
 	current := root
-	viaAlias := false
+	shared := false
 	for i, part := range parts {
 		if current.Kind == yaml.AliasNode {
 			current = current.Alias
-			viaAlias = true
+			shared = true
+		}
+		if current.Anchor != "" {
+			shared = true
 		}
 		if i == len(parts)-1 {
-			parent = current.Kind == yaml.MappingNode && !viaAlias
+			parent = current.Kind == yaml.MappingNode && !shared
 		}
 		current, _ = yamlChild(current, part)
 		if current == nil {

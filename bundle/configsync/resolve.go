@@ -378,12 +378,18 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					log.Debugf(ctx, "Field %s has no location, using %s", fullPath, filePath)
 				}
 
-				// Sequence elements are never inherited through a merge key, and their
-				// indices may already be shifted past the file's by earlier changes.
-				_, addressesKey := resolvedPath.StringKey()
-				if isDefinedInConfig && addressesKey && (destChange.Operation == OperationRemove || destChange.Operation == OperationReplace) {
-					key, addPath := docs.written(filePath, writePath, altWritePath)
-					if !key && destChange.Operation == OperationReplace && addPath != "" {
+				// The merged config can locate a key the file does not write at this path,
+				// e.g. one inherited through a merge key, which the patcher cannot reach.
+				if isDefinedInConfig && (destChange.Operation == OperationRemove || destChange.Operation == OperationReplace) {
+					checkPath, checkAltPath := writePath, altWritePath
+					_, addressesKey := resolvedPath.StringKey()
+					if !addressesKey {
+						// An element's index may already be shifted past the file's by
+						// earlier changes, so the sequence holding it is looked up instead.
+						checkPath, checkAltPath = writeAddress(blocks, block, targetName, resolvedPath.Parent())
+					}
+					key, addPath := docs.written(filePath, checkPath, checkAltPath)
+					if !key && addressesKey && destChange.Operation == OperationReplace && addPath != "" {
 						// Written next to the merge key, the key overrides the inherited value
 						// for this mapping only.
 						destChange.Operation = OperationAdd
