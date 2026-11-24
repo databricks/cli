@@ -357,8 +357,10 @@ func TestInstallSkillsOnlySkipsAgentWithPlugin(t *testing.T) {
 		args []string
 		bins []string
 		// marketplaces are the marketplaces of the databricks plugin entries in
-		// Claude Code's manifest, each in user scope; nil is the official one.
+		// Claude Code's manifest, each in user scope, and managed those with a
+		// managed-scope record; nil for both is the official one in user scope.
 		marketplaces []string
+		managed      []string
 		recorded     bool
 		wantErr      string
 		wantSkills   [][]string
@@ -410,17 +412,44 @@ func TestInstallSkillsOnlySkipsAgentWithPlugin(t *testing.T) {
 			wantErr:      skipErr,
 			wantRecovery: "To use skill files instead, remove the databricks plugin in Claude Code first ('claude' is not on PATH, so this CLI cannot remove it)" + skillsOnly,
 		},
+		{
+			name:         "managed plugin",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			bins:         []string{"claude"},
+			managed:      []string{"claude-plugins-official"},
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, ask an administrator to remove the databricks plugin first (your organization manages it for Claude Code, so you cannot remove it)" + skillsOnly,
+		},
+		{
+			name:         "managed plugin with agent CLI not on PATH",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			managed:      []string{"claude-plugins-official"},
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, ask an administrator to remove the databricks plugin first (your organization manages it for Claude Code, so you cannot remove it)" + skillsOnly,
+		},
+		{
+			name:         "managed plugin and one in user scope",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			bins:         []string{"claude"},
+			marketplaces: []string{"claude-plugins-official"},
+			managed:      []string{"claude-plugins-official"},
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, remove the plugin first with 'claude plugin uninstall databricks@claude-plugins-official --scope user' (this CLI did not install it), and ask an administrator to remove the one your organization manages" + skillsOnly,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			isolateAgents(t)
 			home := setupTestAgents(t)
-			if tc.marketplaces == nil {
+			if tc.marketplaces == nil && tc.managed == nil {
 				writeClaudeManifest(t, home, "user", "")
 			} else {
-				entries := map[string]any{}
+				entries := map[string][]map[string]string{}
 				for _, m := range tc.marketplaces {
-					entries["databricks@"+m] = []map[string]string{{"scope": "user"}}
+					entries["databricks@"+m] = append(entries["databricks@"+m], map[string]string{"scope": "user"})
+				}
+				for _, m := range tc.managed {
+					entries["databricks@"+m] = append(entries["databricks@"+m], map[string]string{"scope": "managed"})
 				}
 				manifest, err := json.Marshal(map[string]any{"plugins": entries})
 				require.NoError(t, err)
@@ -492,6 +521,63 @@ func TestInstallSkillsOnlyRecoveryForAgentWithoutManifestReader(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, *calls, 1)
 	assert.Equal(t, []string{agents.NameCodex}, (*calls)[0].agents)
+}
+
+// A plugin the CLI recorded but that was removed in the agent itself leaves a
+// stale record. A --skills-only run then gives the agent skill files, so it
+// drops the record, as the fallback for an agent whose CLI is missing does;
+// otherwise list and update keep treating the agent as a plugin agent.
+func TestInstallSkillsOnlyDropsStalePluginRecord(t *testing.T) {
+	for _, bins := range [][]string{nil, {"claude"}} {
+		t.Run(fmt.Sprintf("bins=%v", bins), func(t *testing.T) {
+			isolateAgents(t)
+			home := setupTestAgents(t)
+			// Claude Code's manifest no longer has the databricks plugin.
+			require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude", "plugins"), 0o755))
+			require.NoError(t, os.WriteFile(filepath.Join(home, ".claude", "plugins", "installed_plugins.json"), []byte(`{"plugins":{}}`), 0o600))
+			rec := installer.PluginRecord{Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: agentScopeUser, Version: "0.2.9"}
+			require.NoError(t, installer.RecordPluginInstalls(t.Context(), installer.ScopeGlobal, map[string]installer.PluginRecord{agents.NameClaudeCode: rec}, ""))
+			fakeBinsOnPath(t, bins...)
+			calls := setupInstallMock(t)
+
+			_, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--skills-only", "--scope", "global", "--agents", "claude-code")
+			require.NoError(t, err)
+			require.Len(t, *calls, 1)
+			assert.Equal(t, []string{agents.NameClaudeCode}, (*calls)[0].agents)
+			assert.False(t, installer.PluginRecorded(t.Context(), installer.ScopeGlobal, agents.NameClaudeCode))
+		})
+	}
+}
+
+// A detected agent that keeps its plugin under --skills-only is set up, so a
+// run with only such agents succeeds. A named one fails: it asked for skill
+// files it cannot get.
+func TestExecutePlanSkillsOnlyKeptPlugin(t *testing.T) {
+	setupTestAgents(t)
+	forbidSkillsInstall(t)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	ctx := cmdio.MockDiscard(t.Context())
+	opts := installer.InstallOptions{Scope: installer.ScopeGlobal}
+	inv := installInvocation{scope: installer.ScopeGlobal, skillsOnly: true}
+	item := agentPlanItem{
+		agent:         claude,
+		delivery:      deliverySkip,
+		reason:        "already has the databricks plugin; skill files next to it would show every skill twice",
+		pluginRemoval: "remove the plugin first with 'databricks aitools uninstall --scope=global --agents=claude-code'",
+	}
+
+	outcomes, err := executePlan(ctx, nil, []agentPlanItem{item}, opts, inv, false)
+	require.NoError(t, err)
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, outcomeKept, outcomes[0].status)
+	assert.Equal(t, deliveryPlugin, outcomes[0].delivery)
+	assert.True(t, onlyKeptPlugins(outcomes))
+
+	item.explicit = true
+	outcomes, err = executePlan(ctx, nil, []agentPlanItem{item}, opts, inv, false)
+	require.ErrorContains(t, err, "Claude Code: already has the databricks plugin")
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, outcomeSkipped, outcomes[0].status)
 }
 
 func TestMapAgentScope(t *testing.T) {

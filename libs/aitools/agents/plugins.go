@@ -26,6 +26,11 @@ const (
 	claudeScopeLocal   = "local"
 )
 
+// ClaudeScopeManaged is Claude Code's install scope for a plugin the
+// organization deploys through managed settings. Only an administrator can
+// remove such a plugin.
+const ClaudeScopeManaged = "managed"
+
 // pluginInstall is one install record in an agent's plugin manifest. A plugin
 // installed in more than one scope has several records. Claude Code documents
 // the record's scope and version and what each scope covers:
