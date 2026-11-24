@@ -31,7 +31,7 @@ Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.
 
 === docker commands
 image ls --quiet nvidia/cuda:13.4.1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} nvidia/cuda:13.4.1
 tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 
@@ -224,33 +224,33 @@ Error: invalid image repository name: catalog.schema.artifact must be 255 charac
 
 === all docker commands
 image ls --quiet nvidia/cuda:13.4.1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} nvidia/cuda:13.4.1
 tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 image ls --quiet example/image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 pull --platform linux/amd64 example/image:v1
 
 === in a Claude Code session the auth docker configure child adds no install hint

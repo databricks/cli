@@ -199,7 +199,7 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	}
 
 	var inspected bytes.Buffer
-	if err := deps.runCommand(ctx, nil, &inspected, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}}", resolved.source); err != nil {
+	if err := deps.runCommand(ctx, nil, &inspected, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}}", resolved.source); err != nil {
 		return fmt.Errorf("inspect source image %s: %w", resolved.source, err)
 	}
 	platform, workingDir, _ := strings.Cut(strings.TrimSpace(inspected.String()), "|")

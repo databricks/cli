@@ -74,7 +74,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	target := "123.container.us-west-2.cloud.databricks.test/main.training.cuda:13.4.1"
 	assert.Equal(t, []recordedImageCommand{
 		{executable: "/usr/bin/docker", args: []string{"image", "ls", "--quiet", "nvidia/cuda:13.4.1"}},
-		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Config.WorkingDir}}", "nvidia/cuda:13.4.1"}},
+		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
 	}, commands)
