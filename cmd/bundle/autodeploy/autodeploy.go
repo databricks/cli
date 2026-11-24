@@ -17,9 +17,6 @@ and the target (-t).
 
 Example:
   databricks bundle auto-deploy create -t prod --branch main`,
-
-		// Hidden until the git-webhooks API is public.
-		Hidden: true,
 	}
 
 	cmd.AddCommand(newCreateCommand())
