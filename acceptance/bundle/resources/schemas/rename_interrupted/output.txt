@@ -31,7 +31,13 @@ Exit code: [KILLED]
   }
 }
 
-=== The volume's new path was recorded before its update, so the plan updates it there
+=== The volume is gone from its recorded path, so the plan looks for it at its path in config
+
+>>> print_state.py
+{
+  "__id__": "main.test-schema-[UNIQUE_NAME].myvolume",
+  "volume_id": "[VOLUME_ID]"
+}
 
 >>> [CLI] bundle plan --output json
 {
@@ -77,13 +83,14 @@ Exit code: [KILLED]
     }
   },
   "resources.volumes.volume1": {
+    "id": "main.test-schema-renamed-[UNIQUE_NAME].myvolume",
     "depends_on": [
       {
         "node": "resources.schemas.schema1",
         "label": "${resources.schemas.schema1.name}"
       }
     ],
-    "action": "update",
+    "action": "update_id",
     "new_state": {
       "value": {
         "catalog_name": "main",
@@ -111,6 +118,13 @@ Exit code: [KILLED]
         "old": "c1",
         "new": "c2",
         "remote": "c1"
+      },
+      "schema_name": {
+        "action": "skip",
+        "reason": "remote_already_set",
+        "old": "test-schema-[UNIQUE_NAME]",
+        "new": "test-schema-renamed-[UNIQUE_NAME]",
+        "remote": "test-schema-renamed-[UNIQUE_NAME]"
       },
       "storage_location": {
         "action": "skip",
