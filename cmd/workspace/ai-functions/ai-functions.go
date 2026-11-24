@@ -22,13 +22,13 @@ var cmdOverrides []func(*cobra.Command)
 // Spec declares the command for this service.
 var Spec = root.CommandSpec{
 	Use:     "ai-functions",
-	Short:   `Transform and enrich data with AI on Databricks.`,
+	Short:   `Transform and enrich data with AI.`,
 	GroupID: "aifunctions",
 	Build:   buildCommand,
 }
 
 func buildCommand(ctx context.Context, cmd *cobra.Command) {
-	cmd.Long = `Transform and enrich data with AI on Databricks.`
+	cmd.Long = `Transform and enrich data with AI.`
 	cmd.RunE = root.ReportUnknownSubcommand
 
 	cmd.Annotations = map[string]string{
@@ -75,9 +75,9 @@ func newAiClassify() *cobra.Command {
 	cmd.Short = `Classify text into labels.`
 	cmd.Long = `Classify text into labels.
 
-  Classifies content according to a set of provided labels. For REST API
-  requests, the default rate limit is 1,200 requests per minute per workspace.
-  Contact your Databricks account team to request a higher limit.`
+  Classifies content according to a set of provided labels. The AI Classify REST
+  API has a default rate limit of 1,200 requests per minute per workspace.
+  Contact your account team to request a higher limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -150,9 +150,9 @@ Get fast structured decisions.
 
   Turn text and structured data into decisions your application can use. Define
   questions and criteria to choose an option, estimate a probability, or assign
-  a score given a provided state. For REST API requests, the default rate limit
-  is 1,200 requests per minute per workspace. Contact your Databricks account
-  team to request a higher limit.`
+  a score given a provided state. The AI Decide REST API has a default rate
+  limit of 1,200 requests per minute per workspace. Contact your account team to
+  request a higher limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -222,9 +222,8 @@ func newAiExtract() *cobra.Command {
 	cmd.Long = `Extract structured data from text.
 
   Extracts structured data from text and documents according to a provided
-  schema. For REST API requests, the default rate limit is 120 requests per
-  minute per workspace. Contact your Databricks account team to request a higher
-  limit.`
+  schema. The AI Extract REST API has a default rate limit of 120 requests per
+  minute per workspace. Contact your account team to request a higher limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -381,10 +380,11 @@ func newCancelBatch() *cobra.Command {
 Cancel a batch.
 
   Starts the asynchronous cancellation of a batch. Requests in progress are
-  drained first. Cancellation is best effort, so the batch can still complete.
+  stopped, and the results of the requests that finished are kept. Cancellation
+  is best effort, so the batch can still complete.
 
   Arguments:
-    NAME: Resource name of the batch. Format: batch_<id>.`
+    NAME: Unique identifier of the batch. Format: batch_<id>.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -462,7 +462,7 @@ Create a batch.
       is a directory, the file is <path>/<name>_output.jsonl. Each line is the
       result of one request, in the form {"custom_id": ..., "response": ...},
       or {"custom_id": ..., "error": {"type": ..., "message": ...}} for a
-      request that failed.`
+      request that failed or did not finish.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -550,7 +550,7 @@ Get a batch.
   Gets the latest status and progress of a batch.
 
   Arguments:
-    NAME: Resource name of the batch. Format: batch_<id>.`
+    NAME: Unique identifier of the batch. Format: batch_<id>.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

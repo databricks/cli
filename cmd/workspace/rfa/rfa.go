@@ -227,6 +227,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 
 	// TODO: complex arg: destination_source_securable
 	// TODO: array: destinations
+	// TODO: complex arg: url_configuration
 
 	cmd.Use = "update-access-request-destinations UPDATE_MASK SECURABLE"
 	cmd.Short = `*Public Preview* Update Access Request Destinations.`
@@ -247,6 +248,13 @@ Update Access Request Destinations.
   The supported securable types are: "metastore", "catalog", "schema", "table",
   "external_location", "connection", "credential", "function",
   "registered_model", and "volume".
+
+  On a metastore that has a **url_configuration**, its URLs are shared by every
+  workspace, while emails and webhooks are still saved per workspace. There, a
+  URL destination replaces the configuration's **redirect_url** and clears its
+  **dynamic_url**, so requests that used the **dynamic_url** go to the new URL.
+  An update that has no URL destination and does not set **url_configuration**
+  clears both URLs, in every workspace.
 
   Arguments:
     UPDATE_MASK: The paths of the field mask are not evaluated, because an update always
