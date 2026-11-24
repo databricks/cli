@@ -1,1 +1,1 @@
-* `air run` with `mlflow_experiment_directory` reads the directory while it confirms the signed-in user, so the check no longer adds a round trip before submit. The directory is still created only after that confirmation.
+* `air run` with `mlflow_experiment_directory` reads the directory while it confirms the signed-in user, so the check no longer adds a round trip before submit. The directory is still created only after that confirmation. ([#7905](https://github.com/databricks/cli/pull/7905))
