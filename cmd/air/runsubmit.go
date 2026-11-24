@@ -354,6 +354,13 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
+	// The experiment directory read needs no home path, so it runs while Me does; the
+	// create, if the directory is missing, is a write and waits for the join after staging.
+	experimentDir := ""
+	if cfg.MLflowExperimentDirectory != nil {
+		experimentDir = *cfg.MLflowExperimentDirectory
+	}
+	joinExperimentDir := startExperimentDirectoryCheck(ctx, w, experimentDir)
 	// Without a snapshot, a relaunch with identical files can reuse the launch dir
 	// an earlier launch from this machine uploaded. A first launch of any content
 	// takes the unchanged path below, with no extra server call.
@@ -502,11 +509,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
-	experimentDir := ""
-	if cfg.MLflowExperimentDirectory != nil {
-		experimentDir = *cfg.MLflowExperimentDirectory
-	}
-	if err := ensureExperimentDirectory(ctx, w, experimentDir); err != nil {
+	if err := joinExperimentDir(); err != nil {
 		return 0, "", err
 	}
 

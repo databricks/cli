@@ -137,6 +137,64 @@ func TestEnsureExperimentDirectory(t *testing.T) {
 	require.ErrorContains(t, err, "is not a directory")
 }
 
+// experimentDirServer answers get-status 404 for a missing directory, 500 for any
+// path in failPaths, and records mkdirs calls. statted receives a value when
+// get-status is served, so a test can wait for the read without joining it.
+func experimentDirServer(t *testing.T, failPaths map[string]bool, mkdirs *int, statted chan<- struct{}) *databricks.WorkspaceClient {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.0/workspace/mkdirs":
+			*mkdirs++
+			_, _ = w.Write([]byte(`{}`))
+		case "/api/2.0/workspace/get-status":
+			p := r.URL.Query().Get("path")
+			if failPaths[p] {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error_code":"INTERNAL_ERROR","message":"boom"}`))
+				return
+			}
+			statted <- struct{}{}
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"not found"}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return newTestWorkspaceClient(t, srv.URL)
+}
+
+func TestStartExperimentDirectoryCheckCreatesOnlyWhenJoined(t *testing.T) {
+	const dir = "/Workspace/Users/me/exp"
+	var mkdirs int
+	statted := make(chan struct{}, 1)
+	w := experimentDirServer(t, nil, &mkdirs, statted)
+
+	// The read may run before Me, but the create must wait for the join.
+	join := startExperimentDirectoryCheck(t.Context(), w, dir)
+	<-statted
+	assert.Equal(t, 0, mkdirs, "no write before the join")
+	require.NoError(t, join())
+	assert.Equal(t, 1, mkdirs, "the missing directory is created by the join")
+}
+
+func TestStartExperimentDirectoryCheckSurfacesReadError(t *testing.T) {
+	const dir = "/Workspace/Users/me/exp"
+	var mkdirs int
+	w := experimentDirServer(t, map[string]bool{dir: true}, &mkdirs, make(chan struct{}, 1))
+	err := startExperimentDirectoryCheck(t.Context(), w, dir)()
+	require.ErrorContains(t, err, "failed to check experiment_directory")
+	assert.Equal(t, 0, mkdirs, "a failed read creates nothing")
+}
+
+func TestStartExperimentDirectoryCheckEmptyIsNoop(t *testing.T) {
+	var mkdirs int
+	w := experimentDirServer(t, nil, &mkdirs, make(chan struct{}, 1))
+	require.NoError(t, startExperimentDirectoryCheck(t.Context(), w, "")())
+	assert.Equal(t, 0, mkdirs)
+}
+
 // launchFilesServer answers get-status with the size of each path in files and
 // 404 for any other path.
 func launchFilesServer(t *testing.T, files map[string]int) *databricks.WorkspaceClient {
