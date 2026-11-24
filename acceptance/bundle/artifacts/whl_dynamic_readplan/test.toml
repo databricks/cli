@@ -1,0 +1,15 @@
+Badness = "deploy --plan patches only the first wheel each artifact glob matches, without keeping only the latest version: it uploads the patched old 0.0.1 wheel and the unpatched 0.0.2 and other_test_code wheels, while the job references patched 0.0.2 and other_test_code wheels that are never uploaded. It should upload exactly the patched wheels the job references, like plain deploy."
+
+# --plan is direct-engine only; saved plans don't carry the deployment stamp.
+EnvMatrix.DMS = [""]
+EnvMatrix.READPLAN = ["1"]
+RecordRequests = true
+
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/reset"
+Response.Body = '{}'
+
