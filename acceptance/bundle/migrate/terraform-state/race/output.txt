@@ -1,7 +1,7 @@
 
 === Replay a prior terraform deployment
 
->>> replay_tfstate.py [TESTROOT]/bundle/migrate/user-agent/race/../terraform-requests.json [TESTROOT]/bundle/migrate/user-agent/race/../terraform.tfstate
+>>> replay_tfstate.py [TESTROOT]/bundle/migrate/terraform-state/race/../terraform-requests.json [TESTROOT]/bundle/migrate/terraform-state/race/../terraform.tfstate
 
 === Deploy where the local terraform state disappears between the pull and the migration
 
@@ -13,6 +13,6 @@ Error: migrating Terraform state to the direct engine: terraform state [TEST_TMP
 >>> print_migration_telemetry
 direct_migrate_state_missing true
 
->>> print_engines
-2 engine/direct GET /api/2.0/workspace/export
-1 engine/direct POST /telemetry-ext
+>>> print_request_paths
+2 GET /api/2.0/workspace/export
+1 POST /telemetry-ext
