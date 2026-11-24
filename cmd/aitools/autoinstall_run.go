@@ -52,6 +52,9 @@ var gateOn = autoinstall.GateOn
 // rootInUserHome is autoinstall.RootInUserHome; tests replace it.
 var rootInUserHome = autoinstall.RootInUserHome
 
+// inContainer is autoinstall.InContainer; tests replace it.
+var inContainer = autoinstall.InContainer
+
 // notifyInterrupt catches sigs: it returns a context that is canceled when
 // the CLI receives one of them, and a function that stops catching them and
 // returns the signal received, or nil. Tests replace it.
@@ -354,9 +357,12 @@ func autoInstallAsks() bool {
 
 // canAsk reports whether the question can be seen and answered: see
 // cmdio.IsLinePromptSupported. A CLI process that the CLI started itself does
-// not ask either; the parent asks after its own command.
+// not ask either; the parent asks after its own command. Nor does a run in a
+// container: `docker run -t` without `-i` gives it a terminal that never
+// delivers an answer, and a container's home often keeps no state, so the
+// unanswered question would wait promptTimeout on every run.
 func canAsk(ctx context.Context) bool {
-	return cmdio.IsLinePromptSupported(ctx) && !agents.IsSelfExec(ctx)
+	return cmdio.IsLinePromptSupported(ctx) && !agents.IsSelfExec(ctx) && !inContainer()
 }
 
 // skipUnaskable skips a run that would ask before installing but cannot: the
@@ -365,7 +371,7 @@ func canAsk(ctx context.Context) bool {
 // ask does. A machine with no stored ID gets one, so that such runs do not
 // draw a new holdout bucket each time.
 func skipUnaskable(ctx context.Context, storedID string) {
-	log.Debugf(ctx, "auto-install: skipped: cannot ask (a stream is not a terminal, the CLI runs in the background or for another CLI process, or stdin is in use)")
+	log.Debugf(ctx, "auto-install: skipped: cannot ask (a stream is not a terminal, the CLI runs in the background, in a container or for another CLI process, or stdin is in use)")
 	if storedID != "" {
 		return
 	}

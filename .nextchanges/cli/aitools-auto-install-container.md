@@ -1,0 +1,1 @@
+* Automatic installation of Databricks AI tools no longer asks whether to install when the CLI runs in a Docker or Podman container, where `docker run -t` without `-i` gives it a terminal that cannot answer and every run waited a minute for the answer. In a container, run `databricks aitools install` to install them; coding agents there still get the tools without a question.
