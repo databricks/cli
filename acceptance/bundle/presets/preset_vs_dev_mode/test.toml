@@ -1,1 +1,1 @@
-Badness = "Contrary to documentation, setting both presets and dev mode results in error"
+Badness = "presets.trigger_pause_status: UNPAUSED in a 'mode: development' target fails with 'cannot set trigger pause status to UNPAUSED by default', although the documentation says presets override the development-mode defaults; it should be accepted and leave triggers unpaused."
