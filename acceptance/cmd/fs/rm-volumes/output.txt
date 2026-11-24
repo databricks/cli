@@ -18,3 +18,5 @@ Exit code: 1
 
 >>> [CLI] fs ls dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir
 sub
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir/sub
