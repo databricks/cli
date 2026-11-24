@@ -1,0 +1,57 @@
+
+=== Text fallback
+
+>>> [CLI] air get 123
+Warn: air get: could not download training config /Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/training_config.yaml: Path (/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/training_config.yaml) doesn't exist.
+
+╭─ Metadata ─────────────────────────────────────────────────────╮
+│                                                                │
+│  Run ID        123                                             │
+│  Status        ● Waiting for the latest workload status...     │
+│  Submitted     N/A                                             │
+│  Retries       0                                               │
+│  Max Retries   0                                               │
+│  Duration      N/A                                             │
+│  Experiment    my-exp                                          │
+│  MLflow Run    N/A                                             │
+│  User          user@example.com                                │
+│  Accelerators  1x A10                                          │
+│  Environment   N/A                                             │
+│                                                                │
+╰────────────────────────────────────────────────────────────────╯
+
+Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
+
+=== JSON contract
+
+>>> [CLI] air get 123 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "task_key": "train",
+    "status": "PENDING",
+    "started_at": null,
+    "duration_seconds": null,
+    "attempt_number": 0,
+    "experiment_name": "my-exp",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": null,
+    "mlflow_experiment_id": null,
+    "mlflow_run_id": null,
+    "est_remaining_seconds": null,
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": null,
+    "base_environment": null,
+    "max_retries": {
+      "limit": 0,
+      "source": "reported"
+    },
+    "mlflow_run_name": null,
+    "sweep": null
+  }
+}

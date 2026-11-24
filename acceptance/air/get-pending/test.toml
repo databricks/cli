@@ -4,8 +4,7 @@
 Pattern = "HEAD /"
 Response.Body = ''
 
-# The Jobs API reports the parent run as RUNNING while its task still waits for
-# compute in the queue.
+# The Jobs API reports the parent run as RUNNING while its task is still QUEUED.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
@@ -33,10 +32,4 @@ Response.Body = '''
     }
   ]
 }
-'''
-
-[[Server]]
-Pattern = "GET /api/2.2/jobs/runs/get-output"
-Response.Body = '''
-{"ai_runtime_task_output": {"status_message": "STATUS:Waiting for GPU compute capacity to become available."}}
 '''
