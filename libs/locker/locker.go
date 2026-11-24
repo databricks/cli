@@ -166,7 +166,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 	err := locker.lock(ctx, isForced)
 	if err != nil {
 		// We do not hold the lock, but a write that timed out may still create it later.
-		locker.recordReleased(ctx)
+		locker.recordReleased(ctx, time.Time{})
 	}
 	return err
 }
@@ -243,7 +243,9 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 		return errors.New("unlock called when lock is not held")
 	}
 	// Recorded even if the unlock fails: a lock with our ID left behind is stale either way.
-	defer locker.recordReleased(ctx)
+	// deleteSent is set when the delete failed and may still be applied.
+	var deleteSent time.Time
+	defer func() { locker.recordReleased(ctx, deleteSent) }()
 
 	// if allowLockFileNotExist is set, do not throw an error if the lock file does
 	// not exist. This is helpful when destroying a bundle in which case the lock
@@ -257,8 +259,11 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	if err != nil {
 		return fmt.Errorf("unlock called when lock is not held: %w", err)
 	}
+	sent := timeNow()
 	err = locker.filer.Delete(ctx, LockFileName)
 	if err != nil {
+		// The next command must not replace our lock while this delete may still land on its lock.
+		deleteSent = sent
 		return err
 	}
 	locker.Active = false
@@ -284,8 +289,8 @@ type releasedLocks struct {
 	// first.
 	Released []uuid.UUID `json:"released"`
 
-	// PendingDeletes maps the ID of a stale lock to the time a delete for it was sent, for deletes
-	// that may still be applied.
+	// PendingDeletes maps the ID of a lock to the time a delete for it was sent, for deletes that
+	// failed and may still be applied: a stale-lock delete, or the delete of a failed Unlock.
 	PendingDeletes map[uuid.UUID]time.Time `json:"pending_deletes,omitempty"`
 }
 
@@ -321,17 +326,27 @@ func (locker *Locker) writeReleased(released releasedLocks) error {
 	return atomicfile.Write(locker.ReleasedLocksPath, data, 0o600, atomicfile.MkDir(0o700))
 }
 
-// recordReleased adds our ID to ReleasedLocksPath. Failing to record it only means that a late
-// write, if one lands, needs --force-lock to clear, so errors are logged and not returned.
-func (locker *Locker) recordReleased(ctx context.Context) {
+// recordReleased adds our ID to ReleasedLocksPath, with deleteSent as a pending delete of our
+// lock unless it is zero. Failing to record it only means that a late write, if one lands, needs
+// --force-lock to clear, so errors are logged and not returned.
+func (locker *Locker) recordReleased(ctx context.Context, deleteSent time.Time) {
 	if locker.ReleasedLocksPath == "" {
 		return
 	}
+	id := locker.State.ID
 	released := locker.readReleased(ctx)
-	if slices.Contains(released.Released, locker.State.ID) {
+	if slices.Contains(released.Released, id) && deleteSent.IsZero() {
 		return
 	}
-	released.Released = append(released.Released, locker.State.ID)
+	if !slices.Contains(released.Released, id) {
+		released.Released = append(released.Released, id)
+	}
+	if !deleteSent.IsZero() {
+		if released.PendingDeletes == nil {
+			released.PendingDeletes = map[uuid.UUID]time.Time{}
+		}
+		released.PendingDeletes[id] = deleteSent
+	}
 	if err := locker.writeReleased(released); err != nil {
 		log.Warnf(ctx, "Failed to record released deploy lock: %v", err)
 	}
