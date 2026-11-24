@@ -35,7 +35,9 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 // EnsureRemotePathIsUsable checks if the specified path is nested under
 // expected base paths and if it is a directory or repository.
 // If dryRun is set, a missing remote directory is not created.
-func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User, dryRun bool) error {
+// It reports whether the remote path was missing, in which case nothing that
+// was synchronized to it before is there anymore.
+func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User, dryRun bool) (bool, error) {
 	var err error
 
 	// TODO: we should cache CurrentUser.Me at the SDK level
@@ -43,42 +45,44 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	if me == nil {
 		me, err = wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 
 	// Ensure that the remote path exists.
 	// If it is a repo, it has to exist.
 	// If it is a workspace path, it may not exist.
+	missing := false
 	info, err := getStatusWithRetry(ctx, wsc, remotePath)
 	if err != nil {
 		// We only deal with 404s below.
 		if !apierr.IsMissing(err) {
-			return err
+			return false, err
 		}
+		missing = true
 
 		// If the path is nested under a repo, the repo has to exist.
 		if strings.HasPrefix(remotePath, "/Repos/") {
 			repoPath := repoPathForPath(me, remotePath)
 			_, err = getStatusWithRetry(ctx, wsc, repoPath)
 			if err != nil && apierr.IsMissing(err) {
-				return fmt.Errorf("%s does not exist; please create it first", repoPath)
+				return false, fmt.Errorf("%s does not exist; please create it first", repoPath)
 			}
 		}
 
 		// A dry run must not create the missing directory; nothing left to validate.
 		if dryRun {
-			return nil
+			return true, nil
 		}
 
 		// The workspace path doesn't exist. Create it and try again.
 		err = wsc.Workspace.MkdirsByPath(ctx, remotePath)
 		if err != nil {
-			return fmt.Errorf("unable to create directory at %s: %w", remotePath, err)
+			return false, fmt.Errorf("unable to create directory at %s: %w", remotePath, err)
 		}
 		info, err = getStatusWithRetry(ctx, wsc, remotePath)
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 
@@ -92,8 +96,8 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 
 	// We expect the object at path to be a directory or a repo.
 	if info.ObjectType == workspace.ObjectTypeDirectory || info.ObjectType == workspace.ObjectTypeRepo {
-		return nil
+		return missing, nil
 	}
 
-	return fmt.Errorf("%s points to a %s", remotePath, strings.ToLower(info.ObjectType.String()))
+	return false, fmt.Errorf("%s points to a %s", remotePath, strings.ToLower(info.ObjectType.String()))
 }

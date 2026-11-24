@@ -85,9 +85,10 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 
 	WriteGitIgnore(ctx, opts.LocalRoot.Native())
 
+	remotePathMissing := false
 	if !opts.NoValidateRemotePath {
 		// Verify that the remote path we're about to synchronize to is valid and allowed.
-		err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser, opts.DryRun)
+		remotePathMissing, err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser, opts.DryRun)
 		if err != nil {
 			return nil, err
 		}
@@ -102,8 +103,11 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 
 	// For full sync, we start with an empty snapshot.
 	// For incremental sync, we try to load an existing snapshot to start from.
+	// A snapshot of a remote path that was missing is stale: the path was deleted
+	// after the last sync (e.g. in the workspace UI), so every file has to be
+	// uploaded again (https://github.com/databricks/cli/issues/1976).
 	var snapshot *Snapshot
-	if opts.Full {
+	if opts.Full || remotePathMissing {
 		snapshot, err = newSnapshot(ctx, &opts)
 		if err != nil {
 			return nil, fmt.Errorf("unable to instantiate new sync snapshot: %w", err)
@@ -112,6 +116,16 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		snapshot, err = loadOrNewSnapshot(ctx, &opts)
 		if err != nil {
 			return nil, fmt.Errorf("unable to load sync snapshot: %w", err)
+		}
+	}
+
+	if remotePathMissing && !opts.DryRun {
+		// The remote path exists again by now, so the next run would trust the stale
+		// snapshot file. Remove it here instead of relying on this run to overwrite it:
+		// "bundle validate" only lists the files, and a failed upload does not save.
+		err = snapshot.remove()
+		if err != nil {
+			return nil, err
 		}
 	}
 

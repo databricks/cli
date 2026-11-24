@@ -133,6 +133,15 @@ func (s *Snapshot) Save(ctx context.Context) error {
 	return nil
 }
 
+// remove deletes the snapshot file from disk, if there is one.
+func (s *Snapshot) remove() error {
+	err := os.Remove(s.snapshotPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove sync snapshot from disk: %w", err)
+	}
+	return nil
+}
+
 func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 	snapshot, err := newSnapshot(ctx, opts)
 	if err != nil {
