@@ -1,0 +1,41 @@
+
+=== The create request times out but the service was created: deploy uses the service
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created model_services.ms1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //model-services
+POST /api/2.1/unity-catalog/model-services
+GET /api/2.1/unity-catalog/model-services/main.myschema.myservice
+
+=== The create request is cancelled and the service was not created: deploy repeats the create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.model_services.ms1: retrying after 499 from POST /api/2.1/unity-catalog/model-services
+Created model_services.ms1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //model-services
+POST /api/2.1/unity-catalog/model-services
+GET /api/2.1/unity-catalog/model-services/main.myschema.myservice
+POST /api/2.1/unity-catalog/model-services
+
+=== The create request times out after creating the service and the lookup misses it: the repeated create gets ALREADY_EXISTS and the next lookup finds the service
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.model_services.ms1: retrying after 504 Gateway Timeout from POST /api/2.1/unity-catalog/model-services
+Created model_services.ms1
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //model-services
+POST /api/2.1/unity-catalog/model-services
+GET /api/2.1/unity-catalog/model-services/main.myschema.myservice
+POST /api/2.1/unity-catalog/model-services
+GET /api/2.1/unity-catalog/model-services/main.myschema.myservice

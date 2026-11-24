@@ -46,6 +46,41 @@ def parse_lines(cmd):
     return [x.strip() for x in result.stdout.split("\n") if x.strip()]
 
 
+def go_dirs(paths, filter_nested):
+    """Return ./dir patterns for the directories of the Go files among paths.
+
+    Skips testdata and, with filter_nested, nested modules. Keeps only
+    directories that still contain a Go file, so a package whose last Go file
+    was deleted is dropped.
+    """
+    dirs = set()
+    for filename in paths:
+        if "/testdata/" in filename:
+            continue
+        if filename.endswith(".go"):
+            d = os.path.dirname(filename)
+            if filter_nested and in_nested_module(d):
+                continue
+            dirs.add(d)
+
+    return ["./" + d for d in sorted(dirs) if os.path.isdir(d) and any(n.endswith(".go") for n in os.listdir(d))]
+
+
+def changed_go_dirs(ref, filter_nested=True):
+    """Return ./dir patterns for the Go packages changed since the merge base with ref, or None if git diff fails.
+
+    Diff the merge base against the working tree so we only see files changed
+    on this branch, not files that advanced on the ref since the branch point.
+    Unlike testmask's three-dot "ref...HEAD" form (tools/testmask/git.go), this
+    includes the dirty tree's uncommitted changes. --no-renames lists both sides
+    of a rename, so the package a file moved out of is selected too.
+    """
+    changed = parse_lines(["git", "diff", "--name-only", "--no-renames", "--merge-base", ref, "--", "."])
+    if changed is None:
+        return None
+    return go_dirs(changed, filter_nested)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ref", default="main", help="Reference to calculate diff against.")
@@ -66,12 +101,6 @@ def main():
     if gitroot:
         os.chdir(gitroot[0])
 
-    # Diff the merge base against the working tree so we only lint files changed
-    # on this branch, not files that advanced on the ref since the branch point.
-    # Unlike testmask's three-dot "ref...HEAD" form (tools/testmask/git.go), this
-    # includes the dirty tree's uncommitted changes, which is the point of --fix.
-    changed = parse_lines(["git", "diff", "--name-only", "--merge-base", args.ref, "--", "."])
-
     cmd = args.args[:]
 
     # `golangci-lint run` typechecks against the target go.mod and errors on
@@ -79,21 +108,12 @@ def main():
     # cross-module safe. Apply the nested-module filter only for `run`.
     filter_nested = "run" in cmd
 
-    if changed is not None:
-        # We need to pass packages to golangci-lint, not individual files.
-        # QQQ for lint we should also pass all dependent packages
-        dirs = set()
-        for filename in changed:
-            if "/testdata/" in filename:
-                continue
-            if filename.endswith(".go"):
-                d = os.path.dirname(filename)
-                if filter_nested and in_nested_module(d):
-                    continue
-                dirs.add(d)
+    # The diff includes the dirty tree's uncommitted changes, which is the point of --fix.
+    # We need to pass packages to golangci-lint, not individual files.
+    # QQQ for lint we should also pass all dependent packages
+    dirs = changed_go_dirs(args.ref, filter_nested)
 
-        dirs = ["./" + d for d in sorted(dirs) if os.path.exists(d)]
-
+    if dirs is not None:
         if not dirs:
             sys.exit(0)
 

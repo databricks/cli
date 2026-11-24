@@ -46,3 +46,16 @@ auth_type = databricks-cli
 workspace_id = 900800700600
 ENDCFG
 printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token
+
+title "Recorded profile for the workspace"
+cp token-cache.json "$HOME/.databricks/token-cache.json"
+cat >> "$HOME/.databrickscfg" <<ENDCFG
+
+[__settings__]
+docker_profile.$registry_host = duplicate
+ENDCFG
+printf '%s\n' "$registry_host" | trace $CLI auth docker token --no-force-refresh | jq -S .
+
+title "Recorded profile that no longer exists"
+update_file.py "$HOME/.databrickscfg" "docker_profile.$registry_host = duplicate" "docker_profile.$registry_host = gone"
+printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token

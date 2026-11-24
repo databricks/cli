@@ -127,6 +127,9 @@ func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage
 	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
 	key := arg.GetCacheKey()
 	if err := tokenStore.Put(key, storage.Entry{Token: token}); err != nil {
+		// This includes storage.ErrAccessTokenNotStored, which a refresh treats
+		// as stored: a failed login can be run again, while a refresh has to
+		// keep the refresh token that the server just replaced.
 		storeErr := fmt.Errorf("store token: %w", err)
 		// The profile is already saved, but the old token may still be present.
 		// Delete it so later commands cannot use it with the updated profile.

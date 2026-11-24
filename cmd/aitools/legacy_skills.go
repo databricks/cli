@@ -39,10 +39,11 @@ func newLegacySkillsInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:        "install [skill-name]",
 		Short:      "Install Databricks skills for detected coding agents",
-		Deprecated: `use "databricks aitools install --skills <name>" instead.`,
+		Deprecated: `use "databricks aitools install --skills-only --skills <name>" instead.`,
 		Args:       cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			installCmd := NewInstallCmd()
+			// Its --skills-only is not the user's choice, so it is not recorded.
+			installCmd := newInstallCmd(false)
 			installCmd.SetContext(cmd.Context())
 			// Root prints the returned error; the detached command must not print
 			// it, or its usage, a second time.

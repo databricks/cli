@@ -23,7 +23,7 @@ class TimeSeriesConfig:
 
     timestamp_column: VariableOr[str]
     """
-    Column for the timestamp.
+    Column containing the timestamp of each row. Its type must be TIMESTAMP or convertible to a timestamp.
     """
 
     granularities: VariableOrList[AggregationGranularity] = field(default_factory=list)
@@ -44,7 +44,7 @@ class TimeSeriesConfigDict(TypedDict, total=False):
 
     timestamp_column: VariableOr[str]
     """
-    Column for the timestamp.
+    Column containing the timestamp of each row. Its type must be TIMESTAMP or convertible to a timestamp.
     """
 
     granularities: VariableOrList[AggregationGranularityParam]

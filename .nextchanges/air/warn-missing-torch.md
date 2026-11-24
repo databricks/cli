@@ -1,1 +1,0 @@
-* `air run` (including `--dry-run`) now warns before submitting when the `code_source` imports `torch` but PyTorch is not declared: the environment is the Standard environment (version 5 or later) with no `torch` dependency, so the run may fail after it waits for a GPU. ([#7656](https://github.com/databricks/cli/pull/7656))

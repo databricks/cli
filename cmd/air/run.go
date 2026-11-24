@@ -13,11 +13,14 @@ import (
 	"unicode/utf8"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +58,7 @@ func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
 func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []string, cfg *runConfig, idempotencyToken string, timeout time.Duration) (context.Context, error) {
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		if err := root.MustWorkspaceClient(cmd, args); err != nil {
-			return ctx, err
+			return ctx, &workspaceClientError{err}
 		}
 		ctx = cmd.Context()
 	}
@@ -65,12 +68,67 @@ func validateDryRunInWorkspace(ctx context.Context, cmd *cobra.Command, args []s
 	if err != nil {
 		unavailable, retryable := classifyValidationFailure(err)
 		if !unavailable {
+			// The current-user lookup rejects only bad credentials, even with a 403.
+			if errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied) {
+				return ctx, &validationAuthenticationError{err}
+			}
 			return ctx, err
 		}
 		return ctx, asValidationUnavailable(err, retryable)
 	}
 
 	return ctx, validateDryRunConfig(ctx, w, cfg, commandPath, submittedContainers(cfg, funcDir), idempotencyToken, timeout)
+}
+
+// workspaceClientError marks a --dry-run failure to build the workspace client,
+// so RunE classifies it with renderWorkspaceClientError rather than as a
+// validation error.
+type workspaceClientError struct {
+	err error
+}
+
+func (e *workspaceClientError) Error() string { return e.err.Error() }
+func (e *workspaceClientError) Unwrap() error { return e.err }
+
+// renderWorkspaceClientError renders a failure to build the workspace client.
+// Bundle diagnostics that were already printed pass through, as in air get. A
+// missing profile, rejected credentials, or a failure that may pass on retry
+// (network, timeout, 429, 5xx) go through authError, and an expired login is
+// UNAUTHENTICATED. Any other setup failure (an unknown or account-only profile,
+// for example) is a config mistake that a retry can't fix, so it is
+// INVALID_ARGS rather than authError's retryable fallback. Text mode keeps the
+// original error.
+func renderWorkspaceClientError(ctx context.Context, cmd *cobra.Command, err error) error {
+	_, transient := classifyValidationFailure(err)
+	_, expiredLogin := errors.AsType[*u2m.InvalidRefreshTokenError](err)
+	switch {
+	case errors.Is(err, root.ErrAlreadyPrinted), root.OutputType(cmd) != flags.OutputJSON:
+		return err
+	case expiredLogin:
+		return renderError(ctx, cmd, "UNAUTHENTICATED", "PERMANENT", false, err)
+	case errors.Is(err, config.ErrCannotConfigureDefault), errors.Is(err, apierr.ErrUnauthenticated), errors.Is(err, apierr.ErrPermissionDenied), transient:
+		return authError(ctx, cmd, err)
+	}
+	return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+}
+
+// renderDryRunCallerError renders a --dry-run failure that is the caller's to
+// fix, keeping credential and permission failures apart from config errors so
+// agents don't edit a valid config. A 401 or 403 from the current-user lookup
+// and a 401 from config:validate go through authError, as in air get. A 403
+// from config:validate is PERMISSION_DENIED: the same credentials just passed the
+// current-user lookup. Text mode keeps the original error.
+func renderDryRunCallerError(ctx context.Context, cmd *cobra.Command, err error) error {
+	_, credentialsRejected := errors.AsType[*validationAuthenticationError](err)
+	switch {
+	case root.OutputType(cmd) != flags.OutputJSON:
+		return err
+	case credentialsRejected || errors.Is(err, apierr.ErrUnauthenticated):
+		return authError(ctx, cmd, err)
+	case errors.Is(err, apierr.ErrPermissionDenied):
+		return renderError(ctx, cmd, "PERMISSION_DENIED", "PERMANENT", false, err)
+	}
+	return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 }
 
 func newRunCommand() *cobra.Command {
@@ -145,7 +203,7 @@ databricks-ai-runtime skill:
 	cmd.Flags().BoolVar(&watch, "watch", false, "Stream logs until the run completes")
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config against the workspace without submitting a run")
-	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used (max 64 characters)")
 	_ = cmd.MarkFlagRequired("file")
 
 	// --dry-run authenticates after local parsing and validation so syntax, unknown
@@ -154,7 +212,10 @@ databricks-ai-runtime skill:
 		if dryRun {
 			return nil
 		}
-		return root.MustWorkspaceClient(cmd, args)
+		if err := root.MustWorkspaceClient(cmd, args); err != nil {
+			return renderWorkspaceClientError(cmd.Context(), cmd, err)
+		}
+		return nil
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -162,7 +223,7 @@ databricks-ai-runtime skill:
 
 		cfg, err := loadRunConfigWithOverrides(ctx, file, overrides)
 		if err != nil {
-			return err
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 		}
 
 		if msg := missingTorchWarning(ctx, cfg, file); msg != "" {
@@ -175,19 +236,22 @@ databricks-ai-runtime skill:
 			if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 				count, err := countSnapshotFiles(ctx, cfg.CodeSource.Snapshot, file)
 				if err != nil {
-					return err
+					return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
 				}
 				snapshotFileCount = &count
 			}
 			idempotencyToken := effectiveIdempotencyToken(idempotencyKey, cfg)
 			ctx, validationErr := validateDryRunInWorkspace(ctx, cmd, args, cfg, idempotencyToken, validationTimeout)
 			if err := validateIdempotencyToken(idempotencyToken); err != nil {
-				return err
+				return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false, err)
+			}
+			if clientErr, ok := errors.AsType[*workspaceClientError](validationErr); ok {
+				return renderWorkspaceClientError(ctx, cmd, clientErr.err)
 			}
 			if validationErr != nil {
 				unavailable, ok := validationUnavailable(validationErr)
 				if !ok {
-					return validationErr
+					return renderDryRunCallerError(ctx, cmd, validationErr)
 				}
 				kind := "PERMANENT"
 				if unavailable.retryable {
@@ -324,7 +388,7 @@ func loadComputeOptionsForHelp(cmd *cobra.Command, args []string) []computeOptio
 }
 
 func airLogsCommand(profile, runID string) string {
-	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID)}
+	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID), "--follow"}
 	if profile != "" {
 		args = append(args, "-p", shellquote.BashArg(profile))
 	}

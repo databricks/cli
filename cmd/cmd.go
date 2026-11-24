@@ -8,6 +8,7 @@ import (
 	aitoolscmd "github.com/databricks/cli/cmd/aitools"
 	"github.com/databricks/cli/cmd/psql"
 	ssh "github.com/databricks/cli/experimental/ssh/cmd"
+	sandboxssh "github.com/databricks/cli/experimental/ssh/sandbox"
 
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"
@@ -91,6 +92,16 @@ func New(ctx context.Context) *root.Tree {
 	return cli
 }
 
+func sandboxSpec() root.CommandSpec {
+	spec := sandbox.Spec
+	spec.Build = func(ctx context.Context, cmd *cobra.Command) {
+		sandbox.Spec.Build(ctx, cmd)
+		deps := sandboxssh.CommandDependencies{ResolveName: sandbox.ResolveSSHName, Complete: sandbox.CompleteSandboxIDs}
+		cmd.AddCommand(sandboxssh.NewServerCommand(), sandboxssh.NewSSHCommand(deps), sandboxssh.NewSSHSetupCommand(deps))
+	}
+	return spec
+}
+
 // topLevelSpecs returns the specs of the CLI's top-level commands.
 func topLevelSpecs() []root.CommandSpec {
 	specs := []root.CommandSpec{
@@ -108,7 +119,7 @@ func topLevelSpecs() []root.CommandSpec {
 		configure.Spec,
 		fs.Spec,
 		labs.Spec,
-		sandbox.Spec,
+		sandboxSpec(),
 		sync.Spec,
 		version.Spec,
 		quickstart.Spec,

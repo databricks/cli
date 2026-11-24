@@ -29,6 +29,13 @@ func TestTryLockExcludesOtherRuns(t *testing.T) {
 func TestRecordKeepsConcurrentOptOut(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 
+	// The 21 writers take the lock one at a time, and on a slow runner each
+	// holds it long enough that the last ones would give up after the
+	// default wait.
+	orig := stateLockWait
+	t.Cleanup(func() { stateLockWait = orig })
+	stateLockWait = time.Minute
+
 	// Without the state lock, a Record that read the state before the opt-out
 	// was saved would write opted_out=false back.
 	var wg sync.WaitGroup

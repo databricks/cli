@@ -41,6 +41,15 @@ func TestSetupLocalServerlessProvision(t *testing.T) {
 		t.Skipf("uv not found on PATH (%v)", err)
 	}
 
+	// Give `uv python install` its own install dir: it rewrites the minor-version
+	// links of every managed Python in the dir, which on Windows means deleting and
+	// recreating junctions. Concurrent uv users of the shared dir (the acceptance
+	// harness builds its wheel at the same time) then fail to import the stdlib.
+	pythonDir := t.TempDir()
+	t.Setenv("UV_PYTHON_INSTALL_DIR", filepath.Join(pythonDir, "installs"))
+	t.Setenv("UV_PYTHON_BIN_DIR", filepath.Join(pythonDir, "bin"))
+	t.Setenv("UV_PYTHON_INSTALL_REGISTRY", "0")
+
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx,
 		"environments", "setup-local",
 		"--serverless-version", testServerlessVersion,

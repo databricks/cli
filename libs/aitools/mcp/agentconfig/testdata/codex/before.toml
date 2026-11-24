@@ -1,0 +1,9 @@
+# Codex settings. This comment is kept.
+model = "gpt-5"
+
+[projects."/work"]
+trust_level = "trusted"
+
+[mcp_servers.other]
+command = "npx"
+args = ["-y", "other-mcp"]

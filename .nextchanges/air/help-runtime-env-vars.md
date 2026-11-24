@@ -1,1 +1,0 @@
-* `air run -h config` now lists the environment variables AI Runtime sets on every node (such as `MLFLOW_RUN_ID` and `CODE_SOURCE_PATH`), and `air logs --help` notes that `--download-to` cannot be combined with `--tail` or `--minutes`. ([#7655](https://github.com/databricks/cli/pull/7655))

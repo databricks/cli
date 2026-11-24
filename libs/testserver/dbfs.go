@@ -185,7 +185,7 @@ func (s *FakeWorkspace) DbfsAddBlock(req Request) Response {
 	defer s.LockUnlock()()
 	h, ok := s.dbfsState().handles[request.Handle]
 	if !ok {
-		return dbfsError(404, "RESOURCE_DOES_NOT_EXIST", fmt.Sprintf("No handle %d.", request.Handle))
+		return dbfsError(404, "RESOURCE_DOES_NOT_EXIST", fmt.Sprintf("No such stream with handle: %d.", request.Handle))
 	}
 	if len(data) > dbfsMaxBlockSize {
 		return dbfsError(400, "MAX_BLOCK_SIZE_EXCEEDED", fmt.Sprintf("Block size %d exceeds the maximum of %d bytes.", len(data), dbfsMaxBlockSize))
@@ -203,7 +203,7 @@ func (s *FakeWorkspace) DbfsClose(req Request) Response {
 	d := s.dbfsState()
 	h, ok := d.handles[request.Handle]
 	if !ok {
-		return dbfsError(404, "RESOURCE_DOES_NOT_EXIST", fmt.Sprintf("No handle %d.", request.Handle))
+		return dbfsError(404, "RESOURCE_DOES_NOT_EXIST", fmt.Sprintf("No such stream with handle: %d.", request.Handle))
 	}
 	delete(d.handles, request.Handle)
 	d.files[h.path] = dbfsFile{data: h.data, modTime: nowMilli()}

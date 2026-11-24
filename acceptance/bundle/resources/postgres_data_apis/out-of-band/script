@@ -9,7 +9,7 @@ data_api_name="${database_name}/data-api"
 title "Deploy enables the Data API"
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
-trace $CLI postgres get-data-api "${data_api_name}" | data_api_fields
+trace retry $CLI postgres get-data-api "${data_api_name}" | data_api_fields
 
 title "Change the spec out of band"
 trace $CLI postgres update-data-api "${data_api_name}" spec --json '{"spec": {"db_schemas": ["public"], "db_max_rows": 7}}' | data_api_fields
@@ -17,7 +17,7 @@ trace $CLI postgres update-data-api "${data_api_name}" spec --json '{"spec": {"d
 title "Plan detects the change from status, and deploy restores the config"
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace $CLI postgres get-data-api "${data_api_name}" | data_api_fields
+trace retry $CLI postgres get-data-api "${data_api_name}" | data_api_fields
 trace $CLI bundle plan
 
 title "Disable the Data API out of band"
@@ -26,4 +26,4 @@ trace $CLI postgres delete-data-api "${data_api_name}"
 title "Plan detects the Data API is gone and re-creates it"
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace $CLI postgres get-data-api "${data_api_name}" | data_api_fields
+trace retry $CLI postgres get-data-api "${data_api_name}" | data_api_fields

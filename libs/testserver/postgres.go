@@ -1604,7 +1604,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 	name := "catalogs/" + catalogID
 
 	if _, exists := s.PostgresCatalogs[name]; exists {
-		return postgresErrorResponse(409, "ALREADY_EXISTS", "catalog with such id already exists")
+		return postgresErrorResponse(400, "CATALOG_ALREADY_EXISTS", fmt.Sprintf("Catalog '%s' already exists", catalogID))
 	}
 
 	now := nowTime()

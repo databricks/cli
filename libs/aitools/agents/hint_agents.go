@@ -23,7 +23,7 @@ type PluginRecordedFunc func(ctx context.Context, agentName string) bool
 
 // agentInstallHint returns the hint for a non-Claude registry agent. The text
 // is hintText plus --agents and --scope. An agent caller never sees install's
-// prompts (installPromptsSupported), so --agents is what matters: it targets
+// prompts (promptsSupported), so --agents is what matters: it targets
 // the calling agent even when it isn't detected on this machine, instead of
 // every detected one. --scope global only makes the non-interactive default
 // explicit.
@@ -35,6 +35,7 @@ type PluginRecordedFunc func(ctx context.Context, agentName string) bool
 // hinted; the throttle bounds that to once per session or per TTL.
 func agentInstallHint(a *Agent, pluginRecorded PluginRecordedFunc) *agentHint {
 	return &agentHint{
+		agentName: a.Name,
 		installed: func(ctx context.Context) bool {
 			recorded := func() bool { return pluginRecorded(ctx, a.Name) }
 			return a.DatabricksTooling(ctx, recorded) != ToolingNone
