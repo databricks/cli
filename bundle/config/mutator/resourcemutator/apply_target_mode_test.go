@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/knowledge"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
+	"github.com/databricks/databricks-sdk-go/service/domains"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -192,6 +194,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				ClusterPolicies: map[string]*resources.ClusterPolicy{
 					"cluster_policy1": {CreatePolicy: compute.CreatePolicy{Name: "cluster_policy1"}},
+				},
+				Domains: map[string]*resources.Domain{
+					"domain1": {Domain: domains.Domain{TagKey: "domain1"}},
+				},
+				Pages: map[string]*resources.Page{
+					"page1": {Page: knowledge.Page{Domain: "domains/domain1", DisplayName: "page1"}},
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
@@ -458,6 +466,12 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Genie Spaces
 	assert.Equal(t, "[dev lennart] geniespace1", b.Config.Resources.GenieSpaces["geniespace1"].Title)
 
+	// Page 1: the title takes the prefix.
+	assert.Equal(t, "[dev lennart] page1", b.Config.Resources.Pages["page1"].DisplayName)
+
+	// Domain 1: the tag key names an existing governed tag, so it takes no prefix.
+	assert.Equal(t, "domain1", b.Config.Resources.Domains["domain1"].TagKey)
+
 	// Alert 1: has schedule without pause status set - should be paused
 	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)
 	assert.Equal(t, sql.SchedulePauseStatusPaused, b.Config.Resources.Alerts["alert1"].Schedule.PauseStatus)
@@ -572,6 +586,8 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	// label, so the rename matrix doesn't apply. Reflection still finds a
 	// Name field on these via embedded SDK types, hence the explicit skip.
 	notUserNamed := []string{
+		"Domains",
+		"Pages",
 		"Apps",
 		"Features",
 		"FeatureSpecs",

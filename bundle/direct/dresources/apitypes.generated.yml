@@ -18,6 +18,8 @@ database_catalogs: database.DatabaseCatalog
 
 database_instances: database.DatabaseInstance
 
+domains: domains.Domain
+
 experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
@@ -47,6 +49,8 @@ model_services: catalog.CreateModelServiceRequest
 model_serving_endpoints: serving.CreateServingEndpoint
 
 models: ml.CreateModelRequest
+
+pages: ml.TestRegistryWebhookResponse
 
 pipelines: pipelines.CreatePipeline
 

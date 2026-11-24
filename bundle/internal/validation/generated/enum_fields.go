@@ -81,6 +81,8 @@ var EnumFields = map[string][]string{
 	"resources.database_instances.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 	"resources.database_instances.*.state":                {"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"},
 
+	"resources.domains.*.icon.name": {"ADDRESS_BOOK", "ALARM", "ARROWS_IN", "ATOM", "BALLOON", "BANK", "BARRICADE", "BASKET", "BRIDGE", "CACTUS", "CALL_BELL", "CARROT", "CHART_PIE_SLICE", "CITY", "CLOUD", "COINS", "COMPASS_ROSE", "CRANE_TOWER", "CROWN", "CUBE_TRANSPARENT", "FADERS", "FLAG_BANNER_FOLD", "FLAG_CHECKERED", "GAVEL", "HAMBURGER", "HEAD_CIRCUIT", "HOURGLASS_HIGH", "INTERSECT_THREE", "MICROSCOPE", "MOON_STARS", "PACKAGE", "PARACHUTE", "PEPPER", "PIGGY_BANK", "PILL", "PLANET", "PLANT", "PLUGS_CONNECTED", "POPCORN", "PRESENTATION_CHART", "PUZZLE_PIECE", "RAINBOW", "RANKING", "RECEIPT", "ROCKET", "RULER", "SAILBOAT", "SCALES", "SCAN_SMILEY", "SCROLL", "SHIELD_CHECKERED", "SNEAKER", "SNOWFLAKE", "SOLAR_ROOF", "SPEEDOMETER", "STAMP", "STEPS", "STRATEGY", "SWORD", "TELEVISION_SIMPLE", "TENT", "TICKET", "TRACTOR", "TRAFFIC_CONE", "TRAIN", "TREE_EVERGREEN", "TREE_STRUCTURE", "TROLLEY_SUITCASE", "TROPHY", "TRUCK_TRAILER", "USERS_THREE", "VECTOR_THREE"},
+
 	"resources.experiments.*.permissions[*].level": {"CAN_EDIT", "CAN_MANAGE", "CAN_READ"},
 
 	"resources.external_locations.*.encryption_details.sse_encryption_details.algorithm": {"AWS_SSE_KMS", "AWS_SSE_S3"},
@@ -225,6 +227,8 @@ var EnumFields = map[string][]string{
 	"resources.model_serving_endpoints.*.telemetry_config.enabled_telemetry_features[*]":                                  {"TELEMETRY_FEATURE_INFERENCE_TABLE", "TELEMETRY_FEATURE_LOGS", "TELEMETRY_FEATURE_METRICS", "TELEMETRY_FEATURE_TRACES"},
 
 	"resources.models.*.permissions[*].level": {"CAN_EDIT", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_STAGING_VERSIONS", "CAN_READ"},
+
+	"resources.pages.*.state": {"DRAFT", "PUBLISHED"},
 
 	"resources.pipelines.*.clusters[*].autoscale.mode":                                                                                                  {"ENHANCED", "LEGACY"},
 	"resources.pipelines.*.clusters[*].aws_attributes.availability":                                                                                     {"ON_DEMAND", "SPOT", "SPOT_WITH_FALLBACK"},

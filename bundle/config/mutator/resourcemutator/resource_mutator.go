@@ -117,6 +117,10 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Ensures genie space parent paths have the required /Workspace prefix
 		GenieSpaceFixups(),
 
+		// Reads (typed): b.Config.Resources.Pages (checks page configurations)
+		// Updates (typed): b.Config.Resources.Pages[].Synonyms (trims, deduplicates and sorts synonyms)
+		PageFixups(),
+
 		// Reads (typed): b.Config.Permissions (validates permission levels)
 		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (reads existing permissions)
 		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (adds permissions from bundle-level configuration)
@@ -195,6 +199,10 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Reads (dynamic): resources.genie_spaces.*.file_path
 		// Updates (dynamic): resources.genie_spaces.*.serialized_space
 		ConfigureGenieSpaceSerializedSpace(),
+
+		// Reads (dynamic): resources.pages.*.file_path
+		// Updates (dynamic): resources.pages.*.body
+		ConfigurePageBody(),
 
 		// Reads (dynamic): resources.cluster_policies.*.definition
 		// Updates (dynamic): resources.cluster_policies.*.definition (inline YAML -> JSON string)

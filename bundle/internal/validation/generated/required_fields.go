@@ -94,6 +94,9 @@ var RequiredFields = map[string][]string{
 	"resources.database_instances.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.database_instances.*.permissions[*]":          {"level"},
 
+	"resources.domains.*":                         {"tag_key"},
+	"resources.domains.*.lifecycle.depends_on[*]": {"resource"},
+
 	"resources.experiments.*":                                  {"name"},
 	"resources.experiments.*.lifecycle.depends_on[*]":          {"resource"},
 	"resources.experiments.*.permissions[*]":                   {"level"},
@@ -391,6 +394,9 @@ var RequiredFields = map[string][]string{
 	"resources.models.*":                         {"name"},
 	"resources.models.*.lifecycle.depends_on[*]": {"resource"},
 	"resources.models.*.permissions[*]":          {"level"},
+
+	"resources.pages.*":                         {"display_name", "domain"},
+	"resources.pages.*.lifecycle.depends_on[*]": {"resource"},
 
 	"resources.pipelines.*.clusters[*].autoscale":                                                                               {"max_workers", "min_workers"},
 	"resources.pipelines.*.clusters[*].cluster_log_conf.dbfs":                                                                   {"destination"},

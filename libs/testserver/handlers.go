@@ -792,6 +792,46 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
 	})
 
+	// Domains:
+
+	server.Handle("POST", "/api/2.0/domains", func(req Request) any {
+		return req.Workspace.DomainCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/domains", func(req Request) any {
+		return req.Workspace.DomainList(req)
+	})
+
+	server.Handle("GET", "/api/2.0/domains/{domain_id}", func(req Request) any {
+		return req.Workspace.DomainGet(req.Vars["domain_id"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/domains/{domain_id}", func(req Request) any {
+		return req.Workspace.DomainUpdate(req, req.Vars["domain_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/domains/{domain_id}", func(req Request) any {
+		return req.Workspace.DomainDelete(req, req.Vars["domain_id"])
+	})
+
+	// Knowledge pages:
+
+	server.Handle("POST", "/api/2.0/knowledge/pages", func(req Request) any {
+		return req.Workspace.PageCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/knowledge/pages/{page_id}", func(req Request) any {
+		return req.Workspace.PageGet(req.Vars["page_id"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/knowledge/pages/{page_id}", func(req Request) any {
+		return req.Workspace.PageUpdate(req, req.Vars["page_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/knowledge/pages/{page_id}", func(req Request) any {
+		return req.Workspace.PageDelete(req.Vars["page_id"])
+	})
+
 	// Apps:
 
 	server.Handle("POST", "/api/2.0/apps/{name}/deployments", func(req Request) any {

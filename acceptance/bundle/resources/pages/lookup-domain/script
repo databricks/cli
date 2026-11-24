@@ -1,0 +1,19 @@
+title "The domain is not part of the bundle: it is created outside of it"
+DOMAIN_ID=$($CLI domains create-domain Payments | jq -r .domain_id)
+print_requests.py > /dev/null
+
+title "The lookup resolves the tag key of the domain to its ID"
+trace $CLI bundle validate -o json | jq '{variable: .variables.payments_domain.value, domain: .resources.pages.chargeback.domain}'
+
+trace $CLI bundle deploy
+trace print_requests.py //knowledge
+
+title "Destroying the bundle deletes the page and keeps the domain"
+trace $CLI bundle destroy --auto-approve
+trace $CLI domains get-domain domains/$DOMAIN_ID | jq '{tag_key}'
+
+title "A lookup of a domain that does not exist is an error"
+trace update_file.py databricks.yml "domain: Payments" "domain: Finance"
+trace musterr $CLI bundle validate
+
+rm -f out.requests.txt

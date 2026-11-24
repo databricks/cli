@@ -286,6 +286,17 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		genieSpace.Title = prefix + genieSpace.Title
 	}
 
+	// Pages: Prefix
+	for _, page := range r.Pages {
+		if page == nil {
+			continue
+		}
+		page.DisplayName = prefix + page.DisplayName
+	}
+
+	// Domains: No presets. A domain is identified by its governed tag key, which must
+	// match an existing governed tag and so cannot take a prefix.
+
 	// Apps: No presets
 
 	// Alerts: Prefix, TriggerPauseStatus

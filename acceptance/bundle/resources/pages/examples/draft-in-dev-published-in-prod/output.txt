@@ -1,0 +1,54 @@
+
+=== The domain is owned by another team and exists before the bundle is deployed
+
+=== In development the page is a draft, and its title carries the name of the developer
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/payments_glossary/dev/files...
+Created pages.chargeback
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] api get /api/2.0/knowledge/pages/[UUID][0]
+{
+  "display_name": "[dev [USERNAME]] Chargeback",
+  "state": "DRAFT"
+}
+
+=== In production the page is published
+
+>>> [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/payments_glossary/prod/files...
+Created pages.chargeback
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] api get /api/2.0/knowledge/pages/[UUID][1]
+{
+  "display_name": "Chargeback",
+  "state": "PUBLISHED"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pages.chargeback
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.chargeback
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/payments_glossary/dev
+
+Destroy: 1 deleted
+
+>>> [CLI] bundle destroy -t prod --auto-approve
+The following resources will be deleted:
+  delete resources.pages.chargeback
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.chargeback
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/payments_glossary/prod
+
+Destroy: 1 deleted

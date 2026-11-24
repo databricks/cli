@@ -1,0 +1,42 @@
+trace $CLI bundle deploy
+trace print_requests.py //domains
+
+title "Summary shows the domain ID"
+trace $CLI bundle summary
+
+title "Verify deployment"
+PAYMENTS_ID=$($CLI bundle summary -o json | jq -r .resources.domains.payments.id)
+FRAUD_ID=$($CLI bundle summary -o json | jq -r .resources.domains.fraud.id)
+trace $CLI domains get-domain domains/$PAYMENTS_ID | jq '{name, tag_key, subtitle, icon, effective_draft}'
+trace $CLI domains get-domain domains/$FRAUD_ID | jq '{name, tag_key, parent_domain_id}'
+
+title "A second plan has no changes"
+trace $CLI bundle plan
+
+title "Update the subtitle (should update in place, and leave draft alone)"
+trace update_file.py databricks.yml "Payment processing data" "Payments data"
+trace $CLI bundle deploy
+trace print_requests.py //domains
+
+title "Mark the domain as a draft"
+trace update_file.py databricks.yml "description: Everything about payments." "draft: true"
+trace $CLI bundle deploy
+trace print_requests.py //domains
+trace $CLI domains get-domain domains/$PAYMENTS_ID | jq '{subtitle, description, effective_draft}'
+trace $CLI bundle plan
+
+title "Publish the domain again (an explicit false is written)"
+trace update_file.py databricks.yml "draft: true" "draft: false"
+trace $CLI bundle deploy
+trace print_requests.py //domains
+trace $CLI domains get-domain domains/$PAYMENTS_ID | jq '{effective_draft}'
+trace $CLI bundle plan
+
+title "Change the tag key (should plan a recreate)"
+trace update_file.py databricks.yml "Payments/Fraud" "Payments/Risk"
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //domains
+
+rm -f out.requests.txt

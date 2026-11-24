@@ -22,6 +22,7 @@ __all__ = [
     data_quality_monitor_mutator,
     database_catalog_mutator,
     database_instance_mutator,
+    domain_mutator,
     external_location_mutator,
     feature_mutator,
     feature_spec_mutator,
@@ -105,6 +106,7 @@ class Resources:
     def add_diagnostic_error(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostic_warning(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostics(self, other: Diagnostics) -> None
+    def add_domain(self, resource_name: str, domain: DomainParam, *, location: Union[Location, None] = None) -> None
     def add_external_location(self, resource_name: str, external_location: ExternalLocationParam, *, location: Union[Location, None] = None) -> None
     def add_feature(self, resource_name: str, feature: FeatureParam, *, location: Union[Location, None] = None) -> None
     def add_feature_spec(self, resource_name: str, feature_spec: FeatureSpecParam, *, location: Union[Location, None] = None) -> None
@@ -143,6 +145,7 @@ class Resources:
     @property database_catalogs -> dict[str, DatabaseCatalog]
     @property database_instances -> dict[str, DatabaseInstance]
     @property diagnostics -> Diagnostics
+    @property domains -> dict[str, Domain]
     @property experiments -> dict[str, MlflowExperiment]
     @property external_locations -> dict[str, ExternalLocation]
     @property feature_specs -> dict[str, FeatureSpec]
@@ -221,6 +224,10 @@ def database_catalog_mutator(function: Callable) -> ResourceMutator[DatabaseCata
 @overload def database_instance_mutator(function: Callable[[Bundle, DatabaseInstance], DatabaseInstance]) -> ResourceMutator[DatabaseInstance]
 @overload def database_instance_mutator(function: Callable[[DatabaseInstance], DatabaseInstance]) -> ResourceMutator[DatabaseInstance]
 def database_instance_mutator(function: Callable) -> ResourceMutator[DatabaseInstance]
+
+@overload def domain_mutator(function: Callable[[Bundle, Domain], Domain]) -> ResourceMutator[Domain]
+@overload def domain_mutator(function: Callable[[Domain], Domain]) -> ResourceMutator[Domain]
+def domain_mutator(function: Callable) -> ResourceMutator[Domain]
 
 @overload def external_location_mutator(function: Callable[[Bundle, ExternalLocation], ExternalLocation]) -> ResourceMutator[ExternalLocation]
 @overload def external_location_mutator(function: Callable[[ExternalLocation], ExternalLocation]) -> ResourceMutator[ExternalLocation]
@@ -342,6 +349,7 @@ singular_name=dashboard plural_name=dashboards resource_type=Dashboard
 singular_name=data_quality_monitor plural_name=data_quality_monitors resource_type=DataQualityMonitor
 singular_name=database_catalog plural_name=database_catalogs resource_type=DatabaseCatalog
 singular_name=database_instance plural_name=database_instances resource_type=DatabaseInstance
+singular_name=domain plural_name=domains resource_type=Domain
 singular_name=external_location plural_name=external_locations resource_type=ExternalLocation
 singular_name=feature plural_name=features resource_type=Feature
 singular_name=feature_spec plural_name=feature_specs resource_type=FeatureSpec

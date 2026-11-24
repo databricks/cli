@@ -29,6 +29,7 @@ EnvMatrix.INPUT_CONFIG = [
     "data_quality_monitor.yml.tmpl",
     "database_catalog.yml.tmpl",
     "database_instance.yml.tmpl",
+    "domain.yml.tmpl",
     "experiment.yml.tmpl",
     "external_location.yml.tmpl",
     "feature.yml.tmpl",
@@ -48,6 +49,7 @@ EnvMatrix.INPUT_CONFIG = [
     "job_with_task.yml.tmpl",
     "model.yml.tmpl",
     "model_with_permissions.yml.tmpl",
+    "page.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
     "model_serving_endpoint_telemetry.yml.tmpl",
     "pipeline.yml.tmpl",
@@ -125,6 +127,13 @@ EnvMatrixExclude.no_data_quality_monitor_on_cloud = ["CONFIG_Cloud=true", "INPUT
 # Deployment history has no "feature_specs." resource-key prefix, so the deploy fails before the
 # resource is created; see dmsResourceTypes in libs/testserver/bundledeployments.go.
 EnvMatrixExclude.no_feature_spec_dms = ["DMS=true", "INPUT_CONFIG=feature_spec.yml.tmpl"]
+# Same for the "domains." and "pages." prefixes.
+EnvMatrixExclude.no_domain_dms = ["DMS=true", "INPUT_CONFIG=domain.yml.tmpl"]
+EnvMatrixExclude.no_page_dms = ["DMS=true", "INPUT_CONFIG=page.yml.tmpl"]
+# Creating a domain needs the Manage Discover permission and an existing governed tag,
+# which the test workspaces do not provide, so these configs run locally only.
+EnvMatrixExclude.no_domain_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=domain.yml.tmpl"]
+EnvMatrixExclude.no_page_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=page.yml.tmpl"]
 # Same for the "postgres_data_apis." prefix.
 EnvMatrixExclude.no_postgres_data_api_dms = ["DMS=true", "INPUT_CONFIG=postgres_data_api.yml.tmpl"]
 

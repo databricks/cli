@@ -6,11 +6,13 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/knowledge"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
+	"github.com/databricks/databricks-sdk-go/service/domains"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -38,6 +40,8 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
 		"resources.model_services.test_model_service":                           {ID: "main.default.test_model_service"},
 		"resources.data_quality_monitors.test_data_quality_monitor":             {ID: "table,uuid-1"},
+		"resources.domains.test_domain":                                         {ID: "domain-1"},
+		"resources.pages.test_page":                                             {ID: "page-1"},
 		"resources.mcp_services.test_mcp_service":                               {ID: "main.default.test_mcp_service"},
 		"resources.model_provider_services.test_model_provider_service":         {ID: "main.default.test_model_provider_service"},
 		"resources.registered_models.test_registered_model":                     {ID: "1"},
@@ -182,6 +186,12 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "table,uuid-1", config.Resources.DataQualityMonitors["test_data_quality_monitor"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.DataQualityMonitors["test_data_quality_monitor"].ModifiedStatus)
+
+	assert.Equal(t, "domain-1", config.Resources.Domains["test_domain"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Domains["test_domain"].ModifiedStatus)
+
+	assert.Equal(t, "page-1", config.Resources.Pages["test_page"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Pages["test_page"].ModifiedStatus)
 
 	assert.Equal(t, "main.default.test_mcp_service", config.Resources.McpServices["test_mcp_service"].ID)
 	assert.Equal(t, "main.default.test_model_provider_service", config.Resources.ModelProviderServices["test_model_provider_service"].ID)
@@ -490,6 +500,16 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					Monitor: dataquality.Monitor{ObjectType: "table", ObjectId: "uuid-1"},
 				},
 			},
+			Domains: map[string]*resources.Domain{
+				"test_domain": {
+					Domain: domains.Domain{TagKey: "test_domain"},
+				},
+			},
+			Pages: map[string]*resources.Page{
+				"test_page": {
+					Page: knowledge.Page{DisplayName: "test_page"},
+				},
+			},
 			McpServices: map[string]*resources.McpService{
 				"test_mcp_service": {
 					McpServiceConfig: resources.McpServiceConfig{
@@ -625,6 +645,12 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.DataQualityMonitors["test_data_quality_monitor"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DataQualityMonitors["test_data_quality_monitor"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.Domains["test_domain"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Domains["test_domain"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.Pages["test_page"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Pages["test_page"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.McpServices["test_mcp_service"].ID)
 	assert.Empty(t, config.Resources.ModelProviderServices["test_model_provider_service"].ID)
@@ -1119,6 +1145,22 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					Monitor: dataquality.Monitor{ObjectType: "table", ObjectId: "uuid-3"},
 				},
 			},
+			Domains: map[string]*resources.Domain{
+				"test_domain": {
+					Domain: domains.Domain{TagKey: "test_domain"},
+				},
+				"test_domain_new": {
+					Domain: domains.Domain{TagKey: "test_domain_new"},
+				},
+			},
+			Pages: map[string]*resources.Page{
+				"test_page": {
+					Page: knowledge.Page{DisplayName: "test_page"},
+				},
+				"test_page_new": {
+					Page: knowledge.Page{DisplayName: "test_page_new"},
+				},
+			},
 			McpServices: map[string]*resources.McpService{
 				"test_mcp_service": {
 					McpServiceConfig: resources.McpServiceConfig{
@@ -1216,6 +1258,10 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.model_services.test_model_service_old":                   {ID: "main.default.test_model_service_old"},
 		"resources.data_quality_monitors.test_data_quality_monitor":         {ID: "table,uuid-1"},
 		"resources.data_quality_monitors.test_data_quality_monitor_old":     {ID: "table,uuid-2"},
+		"resources.domains.test_domain":                                     {ID: "domain-1"},
+		"resources.domains.test_domain_old":                                 {ID: "domain-2"},
+		"resources.pages.test_page":                                         {ID: "page-1"},
+		"resources.pages.test_page_old":                                     {ID: "page-2"},
 		"resources.mcp_services.test_mcp_service":                           {ID: "main.default.test_mcp_service"},
 		"resources.model_provider_services.test_model_provider_service":     {ID: "main.default.test_model_provider_service"},
 		"resources.mcp_services.test_mcp_service_old":                       {ID: "main.default.test_mcp_service_old"},
@@ -1458,6 +1504,20 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.DataQualityMonitors["test_data_quality_monitor_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.DataQualityMonitors["test_data_quality_monitor_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DataQualityMonitors["test_data_quality_monitor_new"].ModifiedStatus)
+
+	assert.Equal(t, "domain-1", config.Resources.Domains["test_domain"].ID)
+	assert.Empty(t, config.Resources.Domains["test_domain"].ModifiedStatus)
+	assert.Equal(t, "domain-2", config.Resources.Domains["test_domain_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Domains["test_domain_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Domains["test_domain_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Domains["test_domain_new"].ModifiedStatus)
+
+	assert.Equal(t, "page-1", config.Resources.Pages["test_page"].ID)
+	assert.Empty(t, config.Resources.Pages["test_page"].ModifiedStatus)
+	assert.Equal(t, "page-2", config.Resources.Pages["test_page_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Pages["test_page_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Pages["test_page_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Pages["test_page_new"].ModifiedStatus)
 
 	assert.Equal(t, "main.default.test_mcp_service", config.Resources.McpServices["test_mcp_service"].ID)
 	assert.Equal(t, "main.default.test_model_provider_service", config.Resources.ModelProviderServices["test_model_provider_service"].ID)

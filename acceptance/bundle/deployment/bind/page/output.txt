@@ -1,0 +1,69 @@
+
+=== Create the domain and the page outside the bundle
+
+>>> [CLI] bundle deployment bind chargeback [UUID] --auto-approve
+Successfully bound page with an id '[UUID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bind-page
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-page/default
+Resources:
+  Pages:
+    chargeback:
+      Name: Chargeback
+      URL:  [DATABRICKS_URL]/discover/pages/[UUID]?w=[WORKSPACE_ID]
+
+=== The body of the bound page differs from the config, so the deploy updates it in place
+
+>>> [CLI] bundle plan
+update pages.chargeback
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-page/default/files...
+Updated pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //knowledge
+{
+  "method": "PATCH",
+  "path": "/api/2.0/knowledge/pages/[UUID]",
+  "q": {
+    "update_mask": "display_name,body,synonyms,description"
+  },
+  "body": {
+    "body": "A reversal of a card payment.",
+    "description": "",
+    "display_name": "Chargeback",
+    "synonyms": []
+  }
+}
+
+=== The page keeps the state it had: the config does not set one
+
+>>> [CLI] api get /api/2.0/knowledge/pages/[UUID]
+{
+  "display_name": "Chargeback",
+  "body": "A reversal of a card payment.",
+  "state": "PUBLISHED"
+}
+
+=== After unbind the page is no longer part of the bundle, so destroy leaves it alone
+
+>>> [CLI] bundle deployment unbind chargeback
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-page/default
+
+Destroy: 0 deleted
+
+>>> [CLI] api get /api/2.0/knowledge/pages/[UUID]
+{
+  "display_name": "Chargeback"
+}

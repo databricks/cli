@@ -1,0 +1,8 @@
+bundle:
+  name: test-bind-domain
+
+resources:
+  domains:
+    payments:
+      tag_key: Payments
+      subtitle: Payment processing data

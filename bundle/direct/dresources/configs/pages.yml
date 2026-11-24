@@ -1,0 +1,25 @@
+# The Knowledge Pages API is not part of the SDK, so there is no generated file with field
+# behaviors for pages. The API's output-only fields are declared here instead.
+ignore_remote_changes:
+  - field: name
+    reason: output_only
+  - field: create_time
+    reason: output_only
+  - field: update_time
+    reason: output_only
+
+backend_defaults:
+  # A page is created as a draft unless state says otherwise.
+  - field: state
+  # A page is owned by whoever creates it unless owner_ids says otherwise.
+  - field: owner_ids
+
+stable_output_fields:
+  # name ("pages/{page_id}") is backend-assigned at creation and immutable;
+  # see the stable_output_fields doc in config.go.
+  - field: name
+
+# "body" holds the Markdown of the page, which is never read back from state,
+# so we persist only its content hash.
+hashed_fields:
+  - body

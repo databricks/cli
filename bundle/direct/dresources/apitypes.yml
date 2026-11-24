@@ -36,3 +36,8 @@ postgres_roles: postgres.RoleRoleSpec
 # the spec from status, which echoes the configuration in effect. The field
 # rules are hand-written in configs/postgres_data_apis.yml instead.
 postgres_data_apis: null
+
+# The Knowledge Pages API is not in the OpenAPI spec the generator reads, so the
+# field-overlap heuristic would pick an unrelated type. The field rules are
+# hand-written in configs/pages.yml instead.
+pages: null

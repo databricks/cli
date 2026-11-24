@@ -1,0 +1,187 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created domains.payments
+Created pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //knowledge
+{
+  "method": "POST",
+  "path": "/api/2.0/knowledge/pages",
+  "q": {
+    "request_id": "[UUID][0]"
+  },
+  "body": {
+    "body": "# Chargeback\n\nA reversal of a card payment, initiated by the cardholder's bank.",
+    "description": "A reversal of a card payment.",
+    "display_name": "Chargeback",
+    "domain": "domains/[UUID][1]",
+    "synonyms": [
+      "dispute",
+      "reversal"
+    ]
+  }
+}
+
+=== Summary shows the page ID
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Domains:
+    payments:
+      Name: Payments
+      URL:  [DATABRICKS_URL]/discover/manage/domains/[UUID][1]?w=[WORKSPACE_ID]
+  Pages:
+    chargeback:
+      Name: Chargeback
+      URL:  [DATABRICKS_URL]/discover/pages/[UUID][2]?w=[WORKSPACE_ID]
+
+=== Verify deployment (a page is a draft unless the config says otherwise)
+
+>>> [CLI] api get /api/2.0/knowledge/pages/[UUID][2]
+{
+  "name": "pages/[UUID][2]",
+  "display_name": "Chargeback",
+  "description": "A reversal of a card payment.",
+  "synonyms": [
+    "dispute",
+    "reversal"
+  ],
+  "state": "DRAFT",
+  "owner_ids": [
+    "[USERID]"
+  ],
+  "body": "# Chargeback\n\nA reversal of a card payment, initiated by the cardholder's bank."
+}
+
+=== A second plan has no changes
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Update the body and the description (should update in place, and leave the state alone)
+
+>>> update_file.py databricks.yml initiated by the cardholder's bank started by the bank of the cardholder
+
+>>> update_file.py databricks.yml description: A reversal of a card payment. description: A payment that was reversed.
+
+>>> [CLI] bundle plan
+update pages.chargeback
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //knowledge
+{
+  "method": "PATCH",
+  "path": "/api/2.0/knowledge/pages/[UUID][2]",
+  "q": {
+    "update_mask": "display_name,body,synonyms,description"
+  },
+  "body": {
+    "body": "# Chargeback\n\nA reversal of a card payment, started by the bank of the cardholder.",
+    "description": "A payment that was reversed.",
+    "display_name": "Chargeback",
+    "synonyms": [
+      "dispute",
+      "reversal"
+    ]
+  }
+}
+
+>>> [CLI] api get /api/2.0/knowledge/pages/[UUID][2]
+{
+  "description": "A payment that was reversed.",
+  "state": "DRAFT",
+  "body": "# Chargeback\n\nA reversal of a card payment, started by the bank of the cardholder."
+}
+
+=== Publish the page
+
+>>> update_file.py databricks.yml display_name: Chargeback display_name: Chargeback
+      state: PUBLISHED
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated pages.chargeback
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //knowledge
+{
+  "method": "PATCH",
+  "path": "/api/2.0/knowledge/pages/[UUID][2]",
+  "q": {
+    "update_mask": "display_name,body,synonyms,description,state"
+  },
+  "body": {
+    "body": "# Chargeback\n\nA reversal of a card payment, started by the bank of the cardholder.",
+    "description": "A payment that was reversed.",
+    "display_name": "Chargeback",
+    "state": "PUBLISHED",
+    "synonyms": [
+      "dispute",
+      "reversal"
+    ]
+  }
+}
+
+>>> [CLI] api get /api/2.0/knowledge/pages/[UUID][2]
+{
+  "state": "PUBLISHED"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== A change made outside of the bundle shows up in the plan
+
+>>> [CLI] api patch /api/2.0/knowledge/pages/[UUID][2]?update_mask=body --json {"body": "edited in the UI"}
+{
+  "body": "edited in the UI"
+}
+
+>>> [CLI] bundle plan
+update pages.chargeback
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.domains.payments
+  delete resources.pages.chargeback
+
+This action will result in the deletion of the following domains.
+Deleting a domain also deletes its subdomains. The governed tag of a domain and the tags
+on assets are kept:
+  delete resources.domains.payments
+
+This action will result in the deletion of the following pages.
+A deleted page cannot be restored:
+  delete resources.pages.chargeback
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted
+
+>>> print_requests.py //knowledge //domains
+{
+  "method": "DELETE",
+  "path": "/api/2.0/knowledge/pages/[UUID][2]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/domains/[UUID][1]"
+}
