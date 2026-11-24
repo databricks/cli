@@ -108,6 +108,20 @@ func (r *readRetrier) IsRetriable(err error) (time.Duration, bool) {
 	return r.cappedRetrier.IsRetriable(err)
 }
 
+// deleteRetrier is a cappedRetrier that records whether it retried. A delete
+// whose earlier attempt was applied but answered with a retriable error (e.g. a
+// 504 from a gateway) gets 404 on the retry; the path is then gone as asked.
+type deleteRetrier struct {
+	cappedRetrier
+	retried bool
+}
+
+func (r *deleteRetrier) IsRetriable(err error) (time.Duration, bool) {
+	delay, ok := r.cappedRetrier.IsRetriable(err)
+	r.retried = r.retried || ok
+	return delay, ok
+}
+
 // As of 19th Feb 2024, the Files API backend has a rate limit of 10 concurrent
 // requests and 100 QPS. We limit the number of concurrent requests to 5 to
 // avoid hitting the rate limit.
@@ -240,6 +254,13 @@ func (w *FilesClient) newReadRetrier() ops.Retrier {
 // retry is the call option that retries a files/v2 call on throttling.
 func (w *FilesClient) retry() call.Option {
 	return call.WithRetrier(w.newRetrier)
+}
+
+// deleteRetry is retry for deletes. The returned retrier tells whether the
+// call was retried.
+func (w *FilesClient) deleteRetry() (call.Option, *deleteRetrier) {
+	r := &deleteRetrier{cappedRetrier: cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesRetryStatusCodes})}}
+	return call.WithRetrier(func() ops.Retrier { return r }), r
 }
 
 // readRetry is retry for read-only calls, which are also retried on 500.
@@ -555,7 +576,8 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath}, w.retry())
+	retryOpt, retrier := w.deleteRetry()
+	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath}, retryOpt)
 
 	// Return early on success.
 	if err == nil {
@@ -564,6 +586,10 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 
 	// This files delete API returns a 404 if the specified path does not exist.
 	if httpStatus(err) == http.StatusNotFound {
+		// After a retry, the 404 means an earlier attempt deleted the file.
+		if retrier.retried {
+			return nil
+		}
 		return fileDoesNotExistError{absPath}
 	}
 
@@ -581,7 +607,8 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath}, w.retry())
+	retryOpt, retrier := w.deleteRetry()
+	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath}, retryOpt)
 
 	// Return early on success.
 	if err == nil {
@@ -603,6 +630,10 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 	// directory; treat it as a not-found error so recursive delete can consider
 	// its goal satisfied.
 	if httpStatus(err) == http.StatusNotFound {
+		// After a retry, the 404 means an earlier attempt deleted the directory.
+		if retrier.retried {
+			return nil
+		}
 		return noSuchDirectoryError{absPath}
 	}
 	return describeFilesError(err, "delete", absPath)
