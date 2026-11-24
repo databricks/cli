@@ -106,18 +106,21 @@ Resource: resources.jobs.readd_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -25,7 +25,7 @@
+@@ -25,8 +25,8 @@
      readd_job:
        tasks:
 -        - task_key: a
 -          notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/a
+-        - task_key: z
+-          notebook_task:
 +        - notebook_task:
-+            notebook_path: /Users/{{workspace_user_name}}/k
++            notebook_path: /Users/[USERNAME]/m
++          task_key: m
++        - notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/k
 +          task_key: z
-         - task_key: z
-           notebook_task:
-readd_job config: z
+readd_job config: m z
 readd_job remote: m z
 
 >>> [CLI] bundle destroy --auto-approve
