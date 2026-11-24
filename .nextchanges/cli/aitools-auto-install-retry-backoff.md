@@ -1,1 +1,0 @@
-* Wait before retrying a failed automatic install of Databricks AI tools, starting at 5 minutes and doubling after each failure, so a skills source or coding agent CLI that stays broken no longer slows down each of the next commands. ([#7900](https://github.com/databricks/cli/pull/7900))

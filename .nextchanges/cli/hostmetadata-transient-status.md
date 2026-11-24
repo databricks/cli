@@ -1,1 +1,0 @@
-* Log `/.well-known/databricks-config` fetch failures with a transient HTTP status (408, 429, or 5xx other than 501) at debug level instead of as a warning, like timeouts. ([#7912](https://github.com/databricks/cli/pull/7912))

@@ -1,1 +1,0 @@
-* `air run -o json` now reports config-validation errors as a JSON error envelope, with `UNAUTHENTICATED`, `INVALID_ARGS` or the new `PERMISSION_DENIED` code. ([#7864](https://github.com/databricks/cli/pull/7864))

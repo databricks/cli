@@ -1,1 +1,0 @@
-* `databricks ssh connect` to serverless CPU compute now defaults to environment version 5, so the first connection after upgrading starts a new server; pass `--environment-version 4` to keep the old one. ([#7847](https://github.com/databricks/cli/pull/7847))

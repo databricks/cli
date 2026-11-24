@@ -1,1 +1,0 @@
-* Allow `databricks auth docker configure` when several profiles match one workspace; the chosen profile is recorded for the registry and shown by `databricks auth docker host`. ([#7383](https://github.com/databricks/cli/pull/7383))

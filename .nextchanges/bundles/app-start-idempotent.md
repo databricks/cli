@@ -1,1 +1,0 @@
-* `bundle deploy` and `bundle run` for apps now succeed when the app's compute is already active or starting, and deploy the app when the deployment triggered by start failed. ([#7709](https://github.com/databricks/cli/pull/7709), [#7780](https://github.com/databricks/cli/pull/7780))

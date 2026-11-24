@@ -1,1 +1,0 @@
-* Fix `databricks auth login` failing with `data passed to Set was too big` on macOS and Windows for OAuth tokens too large for one keyring item. ([#7845](https://github.com/databricks/cli/pull/7845))
