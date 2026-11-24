@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 
+	"github.com/databricks/cli/libs/gitwebhooks"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -328,6 +329,10 @@ type FakeWorkspace struct {
 	// GitWebhookTriggers holds auto-deploy triggers, keyed by trigger ID.
 	GitWebhookTriggers map[string]*fakeWebhookTrigger
 
+	// GitWebhookAttempts holds the auto-deploy attempts of each trigger ID, newest first. They stay
+	// when their trigger is deleted.
+	GitWebhookAttempts map[string][]gitwebhooks.AutoDeployAttempt
+
 	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
 	// serves, generated on first use. See sshTunnelHostKey.
 	sshTunnelHostKeyPEM []byte
@@ -600,6 +605,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DmsDeployments:            map[string]*DmsDeployment{},
 		DmsDeploymentNodes:        map[string]string{},
 		GitWebhookTriggers:        map[string]*fakeWebhookTrigger{},
+		GitWebhookAttempts:        map[string][]gitwebhooks.AutoDeployAttempt{},
 		Alerts:                    map[string]sql.AlertV2{},
 		PurgedAlertIDs:            map[string]bool{},
 		Experiments:               map[string]ml.GetExperimentResponse{},

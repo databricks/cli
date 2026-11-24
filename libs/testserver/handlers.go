@@ -582,6 +582,12 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/git-webhooks/trigger", func(req Request) any {
 		return req.Workspace.GitWebhooksDelete(req)
 	})
+	server.Handle("GET", "/api/2.0/git-webhooks/webhook-triggers/{trigger_id}/attempts", func(req Request) any {
+		return req.Workspace.GitWebhooksListAttempts(req, req.Vars["trigger_id"])
+	})
+	server.Handle("GET", "/api/2.0/git-webhooks/webhook-triggers/{trigger_id}/attempts/{attempt_id}", func(req Request) any {
+		return req.Workspace.GitWebhooksGetAttempt(req.Vars["trigger_id"], req.Vars["attempt_id"])
+	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob

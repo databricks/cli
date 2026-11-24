@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	databricksclient "github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/listing"
 )
 
@@ -89,4 +90,36 @@ func withJSONBody(body []byte) func(*http.Request) error {
 		r.Header.Set("Content-Type", "application/json")
 		return nil
 	}
+}
+
+// ListAutoDeployAttempts lists the attempts of a trigger, newest first.
+func (a *API) ListAutoDeployAttempts(ctx context.Context, req ListAutoDeployAttemptsRequest) listing.Iterator[AutoDeployAttempt] {
+	return listing.NewIterator(
+		&req,
+		a.listAutoDeployAttemptsPage,
+		func(resp *ListAutoDeployAttemptsResponse) []AutoDeployAttempt {
+			return resp.AutoDeployAttempts
+		},
+		func(resp *ListAutoDeployAttemptsResponse) *ListAutoDeployAttemptsRequest {
+			if resp.NextPageToken == "" {
+				return nil
+			}
+			req.PageToken = resp.NextPageToken
+			return &req
+		},
+	)
+}
+
+func (a *API) listAutoDeployAttemptsPage(ctx context.Context, req ListAutoDeployAttemptsRequest) (*ListAutoDeployAttemptsResponse, error) {
+	var resp ListAutoDeployAttemptsResponse
+	path := basePath + "/" + httpclient.EncodeMultiSegmentPathParameter(req.Parent) + "/attempts"
+	err := a.client.Do(ctx, http.MethodGet, path, auth.WorkspaceIDHeaders(a.client.Config), nil, req, &resp)
+	return &resp, err
+}
+
+func (a *API) GetAutoDeployAttempt(ctx context.Context, req GetAutoDeployAttemptRequest) (*AutoDeployAttempt, error) {
+	var resp AutoDeployAttempt
+	path := basePath + "/" + httpclient.EncodeMultiSegmentPathParameter(req.Name)
+	err := a.client.Do(ctx, http.MethodGet, path, auth.WorkspaceIDHeaders(a.client.Config), nil, nil, &resp)
+	return &resp, err
 }

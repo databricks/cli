@@ -19,7 +19,7 @@ type fakeWebhookTrigger struct {
 	trigger   gitwebhooks.WebhookTrigger
 }
 
-// gitWebhooksPageSize is small so that a list of two triggers already takes two pages.
+// gitWebhooksPageSize is small so that a list of two items already takes two pages.
 const gitWebhooksPageSize = 1
 
 func gitWebhooksBadRequest(message string) Response {
@@ -74,19 +74,36 @@ func (s *FakeWorkspace) GitWebhooksUpsert(req Request) Response {
 	if webhookID == "" {
 		webhookID = nextUUID()
 	}
-	if triggerID == "" {
+	isNew := triggerID == ""
+	if isNew {
 		triggerID = nextUUID()
 	}
 
 	stored.TriggerID = triggerID
-	s.GitWebhookTriggers[triggerID] = &fakeWebhookTrigger{
-		webhookID: webhookID,
-		trigger: gitwebhooks.WebhookTrigger{
-			Name:          "webhook-triggers/" + triggerID,
-			RepoURL:       request.RepoURL,
-			GitProvider:   request.GitProvider,
+	trigger := gitwebhooks.WebhookTrigger{
+		Name:          "webhook-triggers/" + triggerID,
+		RepoURL:       request.RepoURL,
+		GitProvider:   request.GitProvider,
+		TriggerConfig: &stored,
+	}
+	s.GitWebhookTriggers[triggerID] = &fakeWebhookTrigger{webhookID: webhookID, trigger: trigger}
+
+	// A new trigger deploys the branch's head right away. The fake has no runner, so the
+	// attempt stays queued.
+	if isNew {
+		attemptID := nextUUID()
+		s.GitWebhookAttempts[triggerID] = []gitwebhooks.AutoDeployAttempt{{
+			Name:          trigger.Name + "/attempts/" + attemptID,
+			TriggerID:     triggerID,
+			AttemptID:     attemptID,
+			AttemptStatus: "ATTEMPT_STATUS_QUEUED",
+			CreateTime:    nextTimestamp(),
+			RepoURL:       trigger.RepoURL,
+			GitProvider:   trigger.GitProvider,
 			TriggerConfig: &stored,
-		},
+			// The service names the runner job of every DABs attempt, from when it is queued.
+			DabsResult: &gitwebhooks.DabsAttemptResult{JobID: nextID()},
+		}}
 	}
 	return Response{Body: gitwebhooks.UpsertWebhookTriggerResponse{WebhookID: webhookID, TriggerID: triggerID}}
 }
@@ -136,13 +153,6 @@ func (s *FakeWorkspace) GitWebhooksList(req Request) Response {
 	if err != nil {
 		return gitWebhooksError(400, "INVALID_PARAMETER_VALUE", err.Error())
 	}
-	offset := 0
-	if token := query.Get("page_token"); token != "" {
-		offset, err = strconv.Atoi(token)
-		if err != nil {
-			return gitWebhooksError(400, "INVALID_PARAMETER_VALUE", "invalid page_token")
-		}
-	}
 
 	defer s.LockUnlock()()
 
@@ -156,13 +166,66 @@ func (s *FakeWorkspace) GitWebhooksList(req Request) Response {
 		return strings.Compare(a.Name, b.Name)
 	})
 
-	offset = min(offset, len(matched))
-	end := min(offset+gitWebhooksPageSize, len(matched))
-	resp := gitwebhooks.ListWebhookTriggersResponse{WebhookTriggers: matched[offset:end]}
-	if end < len(matched) {
-		resp.NextPageToken = strconv.Itoa(end)
+	page, next, err := gitWebhooksPage(matched, query.Get("page_token"))
+	if err != nil {
+		return gitWebhooksError(400, "INVALID_PARAMETER_VALUE", err.Error())
 	}
-	return Response{Body: resp}
+	return Response{Body: gitwebhooks.ListWebhookTriggersResponse{WebhookTriggers: page, NextPageToken: next}}
+}
+
+// GitWebhooksListAttempts lists the attempts of a trigger, newest first. The fake's caller is not a
+// workspace admin, so a deleted trigger's attempts are gone.
+func (s *FakeWorkspace) GitWebhooksListAttempts(req Request, triggerID string) Response {
+	defer s.LockUnlock()()
+
+	if _, ok := s.GitWebhookTriggers[triggerID]; !ok {
+		return gitWebhookTriggerNotFound(triggerID)
+	}
+	page, next, err := gitWebhooksPage(s.GitWebhookAttempts[triggerID], req.URL.Query().Get("page_token"))
+	if err != nil {
+		return gitWebhooksError(400, "INVALID_PARAMETER_VALUE", err.Error())
+	}
+	return Response{Body: gitwebhooks.ListAutoDeployAttemptsResponse{AutoDeployAttempts: page, NextPageToken: next}}
+}
+
+// GitWebhooksGetAttempt returns an attempt of a trigger. Like listing, it treats the attempts of a
+// deleted trigger as gone, which they are to a caller that is not a workspace admin.
+func (s *FakeWorkspace) GitWebhooksGetAttempt(triggerID, attemptID string) Response {
+	defer s.LockUnlock()()
+
+	if _, ok := s.GitWebhookTriggers[triggerID]; !ok {
+		return gitWebhookTriggerNotFound(triggerID)
+	}
+	for _, attempt := range s.GitWebhookAttempts[triggerID] {
+		if attempt.AttemptID == attemptID {
+			return Response{Body: attempt}
+		}
+	}
+	return gitWebhooksError(404, "NOT_FOUND", fmt.Sprintf("Auto-deploy attempt 'webhook-triggers/%s/attempts/%s' does not exist", triggerID, attemptID))
+}
+
+func gitWebhookTriggerNotFound(triggerID string) Response {
+	return gitWebhooksError(404, "NOT_FOUND", fmt.Sprintf("Webhook trigger 'webhook-triggers/%s' does not exist", triggerID))
+}
+
+// gitWebhooksPage returns the page of items that starts at the offset in token, and the token of
+// the next page.
+func gitWebhooksPage[T any](items []T, token string) ([]T, string, error) {
+	offset := 0
+	if token != "" {
+		var err error
+		offset, err = strconv.Atoi(token)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page_token: %s", token)
+		}
+	}
+	offset = min(offset, len(items))
+	end := min(offset+gitWebhooksPageSize, len(items))
+	next := ""
+	if end < len(items) {
+		next = strconv.Itoa(end)
+	}
+	return items[offset:end], next, nil
 }
 
 // parseGitWebhooksFilter parses the subset of AIP-160 that the service supports: `field = value`
