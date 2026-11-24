@@ -166,7 +166,7 @@ func UninstallSkillsWithResult(ctx context.Context, opts UninstallOptions) (*Uni
 			}
 			removeCanonical = !hasRemainingSkillExposure(ctx, name, canonicalDir, scope, cwd, opts.Agents)
 		} else {
-			changed = removeSymlinksFromAgents(ctx, name, canonicalDir, scope, cwd)
+			changed = removeSkillEntriesFromAgents(ctx, name, canonicalDir, scope, cwd, state)
 		}
 		// A targeted agent that keeps its entry still has the skill, so removing
 		// the canonical dir alone is no change for it.
@@ -362,11 +362,13 @@ func untrackedSkillAgents(ctx context.Context, skillName string, agentNames []st
 	return found, len(found) > 0
 }
 
-// removeSymlinksFromAgents removes a skill's symlink from all agent directories
-// in the registry, but only if the entry is a symlink pointing into canonicalDir.
-// Non-symlink directories are left untouched to avoid deleting user-managed content.
-// It reports whether it removed any symlink.
-func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string) bool {
+// removeSkillEntriesFromAgents removes a skill's entry from all agent
+// directories in the registry when it is ours: a symlink into canonicalDir, or a
+// copied dir whose contents match the checksums recorded in state. User-modified
+// copies, third-party dirs, symlinks pointing elsewhere, and copies with no
+// recorded provenance (v1 state) are left untouched.
+// It reports whether it removed any entry.
+func removeSkillEntriesFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string, state *InstallState) bool {
 	removed := false
 	for _, agent := range agents.Registry {
 		if scope == ScopeProject && !agent.SupportsProjectScope {
@@ -379,8 +381,7 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scop
 
 		destDir := filepath.Join(agentDir, skillName)
 
-		// Use Lstat to detect symlinks (Stat follows them).
-		fi, err := os.Lstat(destDir)
+		_, err = os.Lstat(destDir)
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
@@ -389,36 +390,18 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scop
 			continue
 		}
 
-		if fi.Mode()&os.ModeSymlink == 0 {
-			log.Debugf(ctx, "Skipping non-symlink %s for %s", destDir, agent.DisplayName)
+		if !exposureRemovable(destDir, canonicalDir, skillName, state) {
+			log.Debugf(ctx, "Skipping unmanaged skill %s for %s", destDir, agent.DisplayName)
 			continue
 		}
 
-		target, err := os.Readlink(destDir)
-		if err != nil {
-			log.Warnf(ctx, "Failed to read symlink %s: %v", destDir, err)
+		// RemoveAll on a symlink removes the link, not its target.
+		if err := os.RemoveAll(destDir); err != nil {
+			log.Warnf(ctx, "Failed to remove %s: %v", destDir, err)
 			continue
 		}
-
-		// Resolve relative symlinks to absolute for comparison.
-		absTarget := target
-		if !filepath.IsAbs(target) {
-			absTarget = filepath.Join(filepath.Dir(destDir), target)
-			absTarget = filepath.Clean(absTarget)
-		}
-
-		// Only remove if the symlink points into our canonical dir.
-		if !strings.HasPrefix(absTarget, canonicalDir+string(os.PathSeparator)) && absTarget != canonicalDir {
-			log.Debugf(ctx, "Skipping symlink %s (points to %s, not %s)", destDir, absTarget, canonicalDir)
-			continue
-		}
-
-		if err := os.Remove(destDir); err != nil {
-			log.Warnf(ctx, "Failed to remove symlink %s: %v", destDir, err)
-		} else {
-			removed = true
-			log.Debugf(ctx, "Removed %q from %s", skillName, agent.DisplayName)
-		}
+		removed = true
+		log.Debugf(ctx, "Removed %q from %s", skillName, agent.DisplayName)
 	}
 	return removed
 }
