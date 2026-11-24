@@ -41,3 +41,15 @@ resources:
         - task_key: c
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/c
+
+    # A removal, an addition into the slot it frees, and a replace of the task after
+    # it, all in one sync. The replace comes from a rename synced earlier without a
+    # deploy, so the state still has the old key.
+    readd_job:
+      tasks:
+        - task_key: a
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/a
+        - task_key: k
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/k
