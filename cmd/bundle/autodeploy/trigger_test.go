@@ -24,3 +24,7 @@ func TestInferProvider(t *testing.T) {
 		assert.Equal(t, tc.ok, ok, tc.url)
 	}
 }
+
+func TestQuote(t *testing.T) {
+	assert.Equal(t, `"a\"b\\c"`, quote(`a"b\c`))
+}

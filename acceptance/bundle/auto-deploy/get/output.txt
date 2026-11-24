@@ -1,0 +1,49 @@
+
+=== A target without a trigger
+
+>>> musterr [CLI] bundle auto-deploy get
+Error: target dev has no auto-deploy trigger that you can view. To create one, run: databricks bundle auto-deploy create -t dev
+
+=== The target's trigger
+
+>>> [CLI] bundle auto-deploy get
+Trigger ID: [UUID][0]
+Repository: https://github.com/acme/repo
+Bundle:     databricks.yml
+Target:     dev
+Branch:     main
+Deploy as:  its creator
+
+>>> [CLI] bundle auto-deploy get -t prod -o json
+{
+  "name": "webhook-triggers/[UUID][1]",
+  "repo_url": "https://github.com/acme/repo",
+  "git_provider": "GITHUB",
+  "trigger_config": {
+    "push_event": {
+      "branch": "main"
+    },
+    "dabs_deploy": {
+      "bundle_yml_repo_path": "databricks.yml",
+      "deployment_mode": "prod",
+      "deploy_as": {
+        "service_principal_client_id": "[UUID][2]"
+      }
+    },
+    "trigger_id": "[UUID][1]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/git-webhooks/webhook-triggers",
+  "q": {
+    "filter": "repo_url = \"https://github.com/acme/repo\" AND trigger_config.dabs_deploy.bundle_yml_repo_path = \"databricks.yml\" AND trigger_config.dabs_deploy.deployment_mode = \"dev\""
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/git-webhooks/webhook-triggers",
+  "q": {
+    "filter": "repo_url = \"https://github.com/acme/repo\" AND trigger_config.dabs_deploy.bundle_yml_repo_path = \"databricks.yml\" AND trigger_config.dabs_deploy.deployment_mode = \"prod\""
+  }
+}

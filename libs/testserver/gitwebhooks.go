@@ -3,6 +3,9 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/libs/gitwebhooks"
 )
@@ -16,10 +19,17 @@ type fakeWebhookTrigger struct {
 	trigger   gitwebhooks.WebhookTrigger
 }
 
+// gitWebhooksPageSize is small so that a list of two triggers already takes two pages.
+const gitWebhooksPageSize = 1
+
 func gitWebhooksBadRequest(message string) Response {
+	return gitWebhooksError(400, "BAD_REQUEST", message)
+}
+
+func gitWebhooksError(statusCode int, errorCode, message string) Response {
 	return Response{
-		StatusCode: 400,
-		Body:       map[string]string{"error_code": "BAD_REQUEST", "message": message},
+		StatusCode: statusCode,
+		Body:       map[string]string{"error_code": errorCode, "message": message},
 	}
 }
 
@@ -83,4 +93,94 @@ func (s *FakeWorkspace) GitWebhooksUpsert(req Request) Response {
 		},
 	}
 	return Response{Body: gitwebhooks.UpsertWebhookTriggerResponse{WebhookID: webhookID, TriggerID: triggerID}}
+}
+
+// GitWebhooksList lists the triggers that match the filter, ordered by name.
+func (s *FakeWorkspace) GitWebhooksList(req Request) Response {
+	query := req.URL.Query()
+	terms, err := parseGitWebhooksFilter(query.Get("filter"))
+	if err != nil {
+		return gitWebhooksError(400, "INVALID_PARAMETER_VALUE", err.Error())
+	}
+	offset := 0
+	if token := query.Get("page_token"); token != "" {
+		offset, err = strconv.Atoi(token)
+		if err != nil {
+			return gitWebhooksError(400, "INVALID_PARAMETER_VALUE", "invalid page_token")
+		}
+	}
+
+	defer s.LockUnlock()()
+
+	var matched []gitwebhooks.WebhookTrigger
+	for _, t := range s.GitWebhookTriggers {
+		if gitWebhookTriggerMatches(t.trigger, terms) {
+			matched = append(matched, t.trigger)
+		}
+	}
+	slices.SortFunc(matched, func(a, b gitwebhooks.WebhookTrigger) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	offset = min(offset, len(matched))
+	end := min(offset+gitWebhooksPageSize, len(matched))
+	resp := gitwebhooks.ListWebhookTriggersResponse{WebhookTriggers: matched[offset:end]}
+	if end < len(matched) {
+		resp.NextPageToken = strconv.Itoa(end)
+	}
+	return Response{Body: resp}
+}
+
+// parseGitWebhooksFilter parses the subset of AIP-160 that the service supports: `field = value`
+// terms joined by AND, with string values in double quotes.
+func parseGitWebhooksFilter(filter string) (map[string]string, error) {
+	terms := map[string]string{}
+	if filter == "" {
+		return terms, nil
+	}
+	for term := range strings.SplitSeq(filter, " AND ") {
+		field, value, ok := strings.Cut(term, " = ")
+		if !ok {
+			return nil, fmt.Errorf("unsupported filter term: %s", term)
+		}
+		if _, ok := gitWebhookFilterFields[field]; !ok {
+			return nil, fmt.Errorf("unsupported filter field: %s", field)
+		}
+		// String values are quoted. git_provider is an enum, which is not.
+		if field != "git_provider" {
+			unquoted, err := strconv.Unquote(value)
+			if err != nil || !strings.HasPrefix(value, `"`) {
+				return nil, fmt.Errorf("invalid string in filter: %s", value)
+			}
+			value = unquoted
+		}
+		terms[field] = value
+	}
+	return terms, nil
+}
+
+func gitWebhookTriggerMatches(t gitwebhooks.WebhookTrigger, terms map[string]string) bool {
+	for field, value := range terms {
+		if gitWebhookFilterFields[field](t) != value {
+			return false
+		}
+	}
+	return true
+}
+
+// gitWebhookFilterFields are the filter fields that the fake supports. The fake only stores DABs
+// triggers, so their DABs target is always set.
+var gitWebhookFilterFields = map[string]func(gitwebhooks.WebhookTrigger) string{
+	"repo_url": func(t gitwebhooks.WebhookTrigger) string {
+		return t.RepoURL
+	},
+	"git_provider": func(t gitwebhooks.WebhookTrigger) string {
+		return string(t.GitProvider)
+	},
+	"trigger_config.dabs_deploy.bundle_yml_repo_path": func(t gitwebhooks.WebhookTrigger) string {
+		return t.TriggerConfig.DabsDeploy.BundleYmlRepoPath
+	},
+	"trigger_config.dabs_deploy.deployment_mode": func(t gitwebhooks.WebhookTrigger) string {
+		return t.TriggerConfig.DabsDeploy.DeploymentMode
+	},
 }

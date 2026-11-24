@@ -66,9 +66,15 @@ type DeployAsIdentity struct {
 // DabsDeployTarget deploys a bundle target. The service keys a DABs trigger on
 // BundleYmlRepoPath and DeploymentMode, which is the bundle target.
 type DabsDeployTarget struct {
-	BundleYmlRepoPath string            `json:"bundle_yml_repo_path"`
-	DeploymentMode    string            `json:"deployment_mode"`
-	DeployAs          *DeployAsIdentity `json:"deploy_as,omitempty"`
+	BundleYmlRepoPath string `json:"bundle_yml_repo_path"`
+	DeploymentMode    string `json:"deployment_mode"`
+
+	// A user can only deploy as themselves, so a response sets DeployAs only to a service
+	// principal. Unset means the trigger's creator.
+	DeployAs *DeployAsIdentity `json:"deploy_as,omitempty"`
+
+	// BundleDeploymentID is output only, and unset until an attempt reports it.
+	BundleDeploymentID string `json:"bundle_deployment_id,omitempty"`
 }
 
 // DeploymentTriggerConfig combines the event that triggers a deploy with what it deploys.
@@ -99,4 +105,15 @@ type UpsertWebhookTrigger struct {
 type UpsertWebhookTriggerResponse struct {
 	WebhookID string `json:"webhook_id,omitempty"`
 	TriggerID string `json:"trigger_id,omitempty"`
+}
+
+type ListWebhookTriggersRequest struct {
+	// Filter is an AIP-160 expression: `field = value` terms joined by AND.
+	Filter    string `json:"-" url:"filter,omitempty"`
+	PageToken string `json:"-" url:"page_token,omitempty"`
+}
+
+type ListWebhookTriggersResponse struct {
+	WebhookTriggers []WebhookTrigger `json:"webhook_triggers,omitempty"`
+	NextPageToken   string           `json:"next_page_token,omitempty"`
 }
