@@ -273,8 +273,9 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 }
 
 // TestFollowsParentRename pins when an ID field that references a renamed parent is
-// re-keyed (update_id) instead of recreated: only a provided_id_field of a resource with
-// DoUpdateWithID, and only if it was under that parent before the rename.
+// re-keyed (update_id) instead of recreated: only a provided_id_field that is also one of the
+// resource's parent_id_fields, of a resource with DoUpdateWithID, and only if it was under that
+// parent before the rename.
 func TestFollowsParentRename(t *testing.T) {
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
