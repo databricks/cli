@@ -80,6 +80,12 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "reason": "empty",
     "remote": 0
   },
+  "id": {
+    "action": "skip",
+    "reason": "internal_id",
+    "old": "[UUID]",
+    "remote": "[UUID]"
+  },
   "isolation_mode": {
     "action": "skip",
     "reason": "backend_default",

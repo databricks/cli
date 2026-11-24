@@ -1,8 +1,14 @@
-Badness = "The plan does not look for a catalog renamed outside the bundle, so it creates it again: the create fails with CATALOG_ALREADY_EXISTS on every deploy, and destroy leaves the renamed catalog behind. Same on main."
 Cloud = true
+EnvMatrix.READPLAN = ["", "1"]
 
 Ignore = [
     ".databricks",
     ".gitignore",
     "databricks.yml",
 ]
+
+# When READPLAN=1, "bundle deploy" is called as "bundle deploy --plan .databricks/plan.json".
+# Normalize so both variants produce identical output.
+[[Repls]]
+Old = ' --plan .databricks/plan.json'
+New = ''

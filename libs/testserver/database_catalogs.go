@@ -55,7 +55,7 @@ func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 
 	// The catalog is registered in Unity Catalog, which is the only place its create time shows.
 	now := nowMilli()
-	s.Catalogs[databaseCatalog.Name] = catalog.CatalogInfo{
+	s.Catalogs[databaseCatalog.Name] = fakeCatalog{
 		Name:        databaseCatalog.Name,
 		FullName:    databaseCatalog.Name,
 		CreatedAt:   now,
@@ -65,6 +65,7 @@ func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 		Owner:       s.CurrentUser().UserName,
 		MetastoreId: nextUUID(),
 		CatalogType: catalog.CatalogTypeManagedOnlineCatalog,
+		Id:          nextUUID(),
 	}
 
 	return Response{
