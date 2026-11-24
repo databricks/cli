@@ -447,6 +447,21 @@ func TestMaybeHint_NativeHint(t *testing.T) {
 			cmd:        func() *cobra.Command { return authDockerCmd("configure [PROFILE]") },
 		},
 		{
+			// On air subcommands the text is the AI Runtime skill line.
+			name:       "air command prints native then air text",
+			env:        map[string]string{claudeChildSessionEnv: "1"},
+			wantStderr: wantNativeHint + "\n" + airHintText + "\n",
+			cmd:        func() *cobra.Command { return airCmd() },
+		},
+		{
+			name: "air command with the skill installed prints nothing",
+			env:  map[string]string{claudeChildSessionEnv: "1"},
+			cmd:  func() *cobra.Command { return airCmd() },
+			setup: func(t *testing.T, home string) {
+				writeClaudeSkill(t, home, airSkillName)
+			},
+		},
+		{
 			// air images push runs `auth docker configure` and embeds its
 			// output in an error; the child must add nothing to it.
 			name: "CLI self-exec child prints nothing",
@@ -768,6 +783,263 @@ func TestMaybeHint_InstalledLogsNothing(t *testing.T) {
 
 	MaybeHint(ctx, regularCmd(), noPluginRecorded)
 	assert.Empty(t, telemetry.BufferedEvents(ctx))
+}
+
+// --- AI Runtime skill hint on air subcommands ---
+
+func airCmd() *cobra.Command { return commandAt("air list") }
+
+// writeProjectPluginManifest writes a manifest with one project-scope install
+// covering projectPath. Marshaled, not interpolated, so Windows paths with
+// backslashes stay valid JSON.
+func writeProjectPluginManifest(t *testing.T, home, projectPath string) {
+	manifest, err := json.Marshal(map[string]any{
+		"plugins": map[string]any{
+			"databricks@claude-plugins-official": []any{map[string]string{
+				"scope":       "project",
+				"projectPath": projectPath,
+			}},
+		},
+	})
+	require.NoError(t, err)
+	writePluginManifest(t, home, string(manifest))
+}
+
+// assertAIRHinted checks for exactly the AI Runtime skill line and one
+// hint-shown event of kind INSTALL_TEXT.
+func assertAIRHinted(t *testing.T, ctx context.Context, stderr *bytes.Buffer) {
+	t.Helper()
+	assert.Equal(t, airHintText+"\n", stderr.String())
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
+}
+
+// assertNothingHinted checks for no hint line and no telemetry event.
+func assertNothingHinted(t *testing.T, ctx context.Context, stderr *bytes.Buffer) {
+	t.Helper()
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
+func TestAIRHintText(t *testing.T) {
+	// The hint names the skill, says what it is for, and offers both the install
+	// and a no-install preview, on one line.
+	assert.Contains(t, airHintText, "install the databricks-ai-runtime skill")
+	assert.Contains(t, airHintText, "workload configuration and run debugging")
+	assert.Contains(t, airHintText, "databricks aitools install --skills-only --skills databricks-ai-runtime")
+	assert.Contains(t, airHintText, "replace --skills-only with --path <dir>")
+	assert.NotContains(t, airHintText, "\n")
+}
+
+// TestMaybeHint_NonAIRCommandsKeepGenericHint pins the scoping: outside air,
+// Claude Code gets the generic install hint it always got, never the AI
+// Runtime skill line.
+func TestMaybeHint_NonAIRCommandsKeepGenericHint(t *testing.T) {
+	setClaudeAgent(t)
+	for _, path := range []string{
+		"clusters list", "jobs list", "bundle deploy", "workspace list",
+		// The bare air node only renders help (the footer carries the tip), and
+		// the hidden alias points users at `databricks air`; neither is an air
+		// subcommand, so they keep the generic hint.
+		"air",
+		"experimental air",
+	} {
+		t.Run(path, func(t *testing.T) {
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			MaybeHint(ctx, commandAt(path), noPluginRecorded)
+			assert.Equal(t, hintText+"\n", stderr.String())
+			assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
+			assert.NotContains(t, stderr.String(), airHintText)
+		})
+	}
+}
+
+// Hint-exempt non-air commands stay exactly as main keeps them: no hint of
+// either kind. auth profiles is here because it was the original complaint
+// this PR's scoping answers; main's exemption list now covers it.
+func TestMaybeHint_ExemptNonAIRCommandsSilent(t *testing.T) {
+	setClaudeAgent(t)
+	for _, path := range []string{
+		"auth profiles", "current-user me", "version",
+	} {
+		t.Run(path, func(t *testing.T) {
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			MaybeHint(ctx, commandAt(path), noPluginRecorded)
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, hintKinds(t, ctx))
+		})
+	}
+}
+
+// Every runnable air subcommand, at any depth, gets the skill-specific hint.
+func TestMaybeHint_AIRSubcommandsHint(t *testing.T) {
+	setClaudeAgent(t)
+	for _, path := range []string{
+		"air run", "air get", "air list", "air logs", "air cancel",
+		"air convert-to-dabs", "air images", "air images push", "air pools", "air pools list",
+	} {
+		t.Run(path, func(t *testing.T) {
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			MaybeHint(ctx, commandAt(path), noPluginRecorded)
+			assertAIRHinted(t, ctx, stderr)
+		})
+	}
+}
+
+// Only the databricks-ai-runtime skill itself, in a location Claude Code loads
+// for this working directory, silences the skill hint.
+func TestMaybeHint_AIRSkillDetection(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		setup    func(t *testing.T, home, cwd string)
+		wantHint bool
+	}{
+		{"nothing installed", func(t *testing.T, home, cwd string) {}, true},
+		{"skill in Claude's own skills dir", func(t *testing.T, home, cwd string) {
+			writeClaudeSkill(t, home, airSkillName)
+		}, false},
+		{"skill in the project skills dir", func(t *testing.T, home, cwd string) {
+			require.NoError(t, os.MkdirAll(filepath.Join(cwd, ".claude", "skills", airSkillName), 0o755))
+		}, false},
+		{"other databricks skills only", func(t *testing.T, home, cwd string) {
+			writeClaudeSkill(t, home, "databricks")
+			writeClaudeSkill(t, home, "databricks-jobs")
+		}, true},
+		{"a file named like the skill", func(t *testing.T, home, cwd string) {
+			dir := filepath.Join(home, ".claude", "skills")
+			require.NoError(t, os.MkdirAll(dir, 0o755))
+			require.NoError(t, os.WriteFile(filepath.Join(dir, airSkillName), nil, 0o600))
+		}, true},
+		{"shared canonical store", func(t *testing.T, home, cwd string) {
+			writeCanonicalSkill(t, home, airSkillName)
+		}, true},
+		{"shared legacy store", func(t *testing.T, home, cwd string) {
+			require.NoError(t, os.MkdirAll(filepath.Join(home, LegacySkillsDir, airSkillName), 0o755))
+		}, true},
+		{"plugin for this project", func(t *testing.T, home, cwd string) {
+			writeProjectPluginManifest(t, home, cwd)
+		}, false},
+		{"plugin for an unrelated project", func(t *testing.T, home, cwd string) {
+			writeProjectPluginManifest(t, home, t.TempDir())
+		}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// A fresh project per case: the project-skills fixtures write into
+			// the working directory and must not leak between cases.
+			setClaudeAgent(t)
+			home := t.TempDir()
+			ctx, stderr := claudeCtx(t, home)
+			ctx = telemetry.WithNewLogger(ctx)
+			cwd, err := os.Getwd()
+			require.NoError(t, err)
+			tc.setup(t, home, cwd)
+
+			MaybeHint(ctx, airCmd(), noPluginRecorded)
+			if tc.wantHint {
+				assertAIRHinted(t, ctx, stderr)
+			} else {
+				assertNothingHinted(t, ctx, stderr)
+			}
+		})
+	}
+}
+
+// A project-scoped skill at the repository root still counts when the CLI runs
+// in a subdirectory, as Claude Code loads it there.
+func TestMaybeHint_AIRSkillInRepositoryRoot(t *testing.T) {
+	setClaudeAgent(t)
+	home := t.TempDir()
+	ctx, stderr := claudeCtx(t, home)
+	ctx = telemetry.WithNewLogger(ctx)
+	root, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Join(root, ".claude", "skills", airSkillName), 0o755))
+	sub := filepath.Join(root, "training", "configs")
+	require.NoError(t, os.MkdirAll(sub, 0o755))
+	t.Chdir(sub)
+
+	MaybeHint(ctx, airCmd(), noPluginRecorded)
+	assertNothingHinted(t, ctx, stderr)
+}
+
+func TestAIRSkillAvailable_LogsPluginDetection(t *testing.T) {
+	// Clears the host's CLAUDE_CONFIG_DIR, which would move the manifest.
+	testutil.SetAgentEnv(t)
+	t.Chdir(t.TempDir())
+	home := t.TempDir()
+	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"version":"0.2.6"}]}}`)
+
+	// Capture debug output by installing a text logger on the context.
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: log.LevelDebug})
+	ctx := log.NewContext(t.Context(), slog.New(handler))
+	ctx = env.WithUserHomeDir(ctx, home)
+
+	assert.True(t, airSkillAvailable(ctx))
+
+	assert.Contains(t, buf.String(), "Databricks plugin active for Claude Code")
+	assert.Contains(t, buf.String(), "skipping AI Runtime skill hint")
+}
+
+// With a session id the first hinted command is the only one; without one
+// (older Claude Code) every air command is hinted. The throttle is shared with
+// the generic hint, so a hint already shown on a non-air command also silences
+// the air one for the rest of the session.
+func TestMaybeHint_AIRSessionThrottle(t *testing.T) {
+	setClaudeAgent(t)
+	home := t.TempDir()
+	cacheDir := t.TempDir()
+	newCtx := func() (context.Context, *bytes.Buffer) {
+		ctx, stderr := claudeCtx(t, home)
+		ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
+		ctx = env.Set(ctx, claudeSessionEnv, "session-abc")
+		ctx = telemetry.WithNewLogger(ctx)
+		return ctx, stderr
+	}
+
+	ctx1, stderr1 := newCtx()
+	MaybeHint(ctx1, airCmd(), noPluginRecorded)
+	assertAIRHinted(t, ctx1, stderr1)
+
+	// Same session, second air command: stays quiet.
+	ctx2, stderr2 := newCtx()
+	MaybeHint(ctx2, commandAt("air run"), noPluginRecorded)
+	assertNothingHinted(t, ctx2, stderr2)
+
+	// Another session: the air hint prints again.
+	ctx3, stderr3 := newCtx()
+	ctx3 = env.Set(ctx3, claudeSessionEnv, "session-def")
+	MaybeHint(ctx3, commandAt("air run"), noPluginRecorded)
+	assertAIRHinted(t, ctx3, stderr3)
+
+	// A generic hint shown on a non-air command consumes the same session's
+	// marker, so a later air command stays quiet.
+	ctx4, stderr4 := newCtx()
+	ctx4 = env.Set(ctx4, claudeSessionEnv, "session-ghi")
+	MaybeHint(ctx4, commandAt("clusters list"), noPluginRecorded)
+	assert.Equal(t, hintText+"\n", stderr4.String())
+	ctx5, stderr5 := newCtx()
+	ctx5 = env.Set(ctx5, claudeSessionEnv, "session-ghi")
+	MaybeHint(ctx5, airCmd(), noPluginRecorded)
+	assertNothingHinted(t, ctx5, stderr5)
+}
+
+func TestHintForCommand(t *testing.T) {
+	air := hintForCommand(airCmd(), claudeAgentProvider, noPluginRecorded)
+	require.NotNil(t, air)
+	assert.Equal(t, airHintText, air.text)
+
+	// Outside air Claude Code keeps the generic hint.
+	regular := hintForCommand(regularCmd(), claudeAgentProvider, noPluginRecorded)
+	require.NotNil(t, regular)
+	assert.Equal(t, hintText, regular.text)
+
+	// Other agents are untouched on air subcommands.
+	cursor := hintForCommand(airCmd(), "cursor", noPluginRecorded)
+	require.NotNil(t, cursor)
+	assert.Equal(t, agentInstallHint(ByName(NameCursor), noPluginRecorded).text, cursor.text)
 }
 
 // writeProjectSkill creates a project-scoped Claude skill symlink.

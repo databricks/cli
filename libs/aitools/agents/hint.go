@@ -2,6 +2,8 @@ package agents
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -20,6 +22,16 @@ const (
 	// is deliberately chosen to be effective at helping agents; change it only
 	// after thorough testing.
 	hintText = "Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install"
+
+	// airSkillName is the agent skill for `databricks air`.
+	airSkillName = "databricks-ai-runtime"
+
+	// airHintText recommends the AI Runtime skill on the commands it helps with.
+	// It names the skill and what it buys the agent, so a coding agent can tell
+	// the hint is about the task at hand rather than generic setup, and offers a
+	// --path preview so the agent can read the skill without installing anything.
+	airHintText = "Tip: install the " + airSkillName + " skill for workload configuration and run debugging: databricks aitools install --skills-only --skills " + airSkillName +
+		". To preview it first, replace --skills-only with --path <dir>."
 
 	// claudeAgentProvider is the useragent.AgentProvider() value for Claude Code.
 	// The SDK maps the CLAUDECODE env var to this product name.
@@ -48,6 +60,12 @@ const (
 	// detection it keeps the native hint out of CI: Claude Code never prompts in
 	// unattended runs.
 	ciEnv = "CI"
+
+	// airCommandName is the top-level command whose runnable subcommands swap
+	// the generic install hint for the AI Runtime skill recommendation. Bare
+	// `databricks air` and `--help` render help without running the pre-run
+	// hook; the air help footer carries the same recommendation there.
+	airCommandName = "air"
 
 	// authCommandName and tokenCommandName name `databricks auth token`, the
 	// credential helper the SDKs and Terraform run. They embed its stderr
@@ -174,6 +192,28 @@ func hintForAgent(provider string, pluginRecorded PluginRecordedFunc) *agentHint
 	}
 }
 
+// hintForCommand returns the hint due for cmd. On a runnable `databricks air`
+// subcommand Claude Code gets the AI Runtime skill recommendation instead of
+// the generic install hint: the skill is what helps with air work, and naming
+// it lets the agent tell the hint is about the task at hand rather than
+// generic setup. The plugin suggestion (native) is shared with the generic
+// hint. Other agents keep their generic install hint everywhere: the aitools
+// installer has no per-agent AI Runtime variant to offer them.
+func hintForCommand(cmd *cobra.Command, provider string, pluginRecorded PluginRecordedFunc) *agentHint {
+	hint := hintForAgent(provider, pluginRecorded)
+	if hint != nil && provider == claudeAgentProvider && isAIRSubcommand(cmd) {
+		return &agentHint{
+			installed:  airSkillAvailable,
+			text:       airHintText,
+			textKind:   protos.AitoolsHintKindInstallText,
+			sessionEnv: claudeSessionEnv,
+			native:     claudeNativeHintLine,
+			nativeKind: protos.AitoolsHintKindClaudeCodeNative,
+		}
+	}
+	return hint
+}
+
 // isHintedAgent reports whether MaybeHint hints the agent with this
 // useragent.AgentProvider() value. It defers to hintForAgent so both follow
 // the same dispatch; pluginRecorded is only read when the hint's installed
@@ -191,11 +231,16 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 }
 
 // MaybeHint recommends installing the Databricks AI tooling when a supported
-// agent drives the CLI without it installed. It is a no-op for human callers,
-// unsupported agents, hint-exempt commands (isHintExemptCommand), the `auth
-// token` and `auth docker token` credential helpers, a CLI process the CLI
-// started itself, when there is no output stream, and once the tooling is
-// present.
+// agent drives the CLI without it installed. On a runnable `databricks air`
+// subcommand Claude Code instead gets the AI Runtime skill recommendation,
+// which names the skill, what it covers, and how to preview it: an agent
+// running air has an AI Runtime task for that skill to help with. It is a
+// no-op for human callers, unsupported agents, hint-exempt commands
+// (isHintExemptCommand), the `auth token` and `auth docker token` credential
+// helpers, a CLI process the CLI started itself, when there is no output
+// stream, and once the tooling is present. Bare `databricks air` and
+// `--help` render help without running the pre-run hook; the air help footer
+// carries the same recommendation there.
 // The agent-native line (if any) and the model-facing text are throttled
 // independently, per session or, for agents without a session id, per agent
 // on this machine (fallbackKey). Both hint-shown events follow the text's
@@ -206,7 +251,7 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 // telemetry event for each hint line shown, which makes a command that resolved
 // auth upload telemetry at exit.
 func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRecordedFunc) {
-	hint := hintForAgent(useragent.AgentProvider(), pluginRecorded)
+	hint := hintForCommand(cmd, useragent.AgentProvider(), pluginRecorded)
 	if hint == nil {
 		return
 	}
@@ -353,6 +398,19 @@ func isHintExemptCommand(cmd *cobra.Command) bool {
 	return false
 }
 
+// isAIRSubcommand reports whether cmd sits under the top-level air command
+// (`databricks air list`, `databricks air pools list`, ...), excluding air
+// itself. Matching on the top-level ancestor keeps hidden aliases such as
+// `databricks experimental air` out.
+func isAIRSubcommand(cmd *cobra.Command) bool {
+	for c := cmd; c.HasParent(); c = c.Parent() {
+		if !c.Parent().HasParent() {
+			return c != cmd && c.Name() == airCommandName
+		}
+	}
+	return false
+}
+
 // claudeToolingInstalled reports whether Claude Code has Databricks AI tooling
 // in its own locations (see Agent.DatabricksTooling): the databricks plugin, or
 // databricks skills in Claude's skills dirs. Skills present only in the shared
@@ -377,6 +435,54 @@ func claudeToolingInstalled(ctx context.Context) bool {
 		log.Debugf(ctx, "Databricks plugin detected for Claude Code; skipping install hint")
 	}
 	return tooling != ToolingNone
+}
+
+// airSkillAvailable reports whether Claude Code has the AI Runtime skill in a
+// location it loads for the current working directory: the databricks plugin
+// (which bundles every Databricks skill) installed for every project or for
+// this one, or a databricks-ai-runtime skill dir in Claude's own skills dir or
+// in the project skills dir of cwd or a parent up to the repository root.
+// Other Databricks skills do not count: they don't cover air, and this hint
+// recommends installing exactly this skill. Skills in the shared
+// ~/.databricks/aitools/skills store don't count either, because Claude Code
+// doesn't load them from there (see DatabricksTooling). Any read/parse failure
+// reports false, so an unreadable state errs toward hinting.
+func airSkillAvailable(ctx context.Context) bool {
+	claude := ByName(NameClaudeCode)
+	if claude == nil {
+		// claude-code is always in the registry; this guard keeps the hint
+		// best-effort rather than panicking in a persistent pre-run hook.
+		return false
+	}
+	cwd := ""
+	if wd, err := os.Getwd(); err == nil {
+		cwd = resolvePath(wd)
+	}
+	if claude.pluginInstalls != nil {
+		if active, _ := claude.DatabricksPluginActiveIn(ctx, cwd); active {
+			log.Debugf(ctx, "Databricks plugin active for Claude Code in %q; skipping AI Runtime skill hint", cwd)
+			return true
+		}
+	}
+	if dir, err := claude.SkillsDir(ctx); err == nil && airSkillDirInstalled(dir) {
+		return true
+	}
+	if claude.SupportsProjectScope && cwd != "" {
+		for _, dir := range projectDirs(cwd) {
+			if airSkillDirInstalled(claude.ProjectSkillsDir(dir)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// airSkillDirInstalled reports whether dir holds the AI Runtime skill as a
+// directory. Stat follows the symlinks the installer may leave in place of
+// copies.
+func airSkillDirInstalled(dir string) bool {
+	info, err := os.Stat(filepath.Join(dir, airSkillName))
+	return err == nil && info.IsDir()
 }
 
 // throttleKey returns the cache key throttling the hint: the session id behind
