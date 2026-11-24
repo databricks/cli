@@ -1,3 +1,5 @@
+Badness = "Removing the catalog while the schema still references ${resources.catalogs.bar.name} fails planning with an internal error ('action is \"delete\" missing new_state') after the files were already uploaded, so the --auto-approve prompt this test is meant to cover is never reached. It should report a user-facing error that the reference points to a resource being deleted, before uploading."
+
 Cloud = true
 RecordRequests = false
 
