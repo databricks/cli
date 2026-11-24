@@ -1,0 +1,50 @@
+
+=== The workspace is enrolled, so the first deploy records history
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-check-unavailable-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/enrollments:check",
+  "q": {
+    "features": "record_history_auto"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "body": {
+    "display_name": "dms-check-unavailable-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-check-unavailable-[UNIQUE_NAME]/default/state",
+    "target_name": "default",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-check-unavailable-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-check-unavailable-[UNIQUE_NAME]/default"
+    }
+  }
+}
+
+=== The enrollment check starts failing: the deploy still succeeds and the bundle keeps recording
+
+>>> fault.py GET /api/2.0/bundle/enrollments:check 500 0 1000
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-check-unavailable-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle/enrollments --get
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/enrollments:check",
+  "q": {
+    "features": "record_history_auto"
+  }
+}
+
+>>> [CLI] bundle plan -o json
+json.features.deployment_history_shadow = {};

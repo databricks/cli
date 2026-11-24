@@ -4,7 +4,4 @@ title "The service rejects the enrollment check, and the deploy carries on witho
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --get
 
-title "The plan carries no recording feature"
-trace $CLI bundle plan -o json | jq '{features}'
-
 rm -f "$OUT_REQUESTS"

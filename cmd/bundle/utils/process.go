@@ -35,6 +35,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
@@ -261,14 +262,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
 
-	// Set when the bundle leaves recording to the workspace's enrollment; see recordsDeploymentHistory.
-	var autoEnrolled <-chan bool
+	// The workspace's answer on recording by default, asked only when the bundle makes no choice
+	// of its own; see recordsDeploymentHistory.
+	var autoEnrollment <-chan enrollment
 
 	if shouldReadState {
 		// Asked before the state pull so the answer is in by the time it is needed.
 		if opts.Deploy || opts.PreDeployChecks {
 			if _, explicit := deploymentHistoryChoice(ctx, b); !explicit {
-				autoEnrolled = checkAutoEnrollment(ctx, b.WorkspaceClient(ctx))
+				autoEnrollment = checkAutoEnrollment(ctx, b.WorkspaceClient(ctx), enrollmentCheckTimeout)
 			}
 		}
 
@@ -384,6 +386,22 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
+		// --plan: load the precomputed plan before choosing the state mode, which can follow it.
+		// Artifact uploads are handled inside Deploy by extracting remote paths from the plan's
+		// new_state and finding the matching local files.
+		if opts.ReadPlanPath != "" {
+			var err error
+			plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			currentVersion := build.GetInfo().Version
+			if plan.CLIVersion != currentVersion {
+				log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
+			}
+		}
+
 		stateMode := dstate.WritingFile
 		switch {
 		case stateDesc.IsDMS():
@@ -391,7 +409,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			stateMode = dstate.WritingDeploymentHistoryOnly
 		case opts.Deploy || opts.PreDeployChecks:
 			// Deploy and plan follow the current configuration.
-			if recordsDeploymentHistory(ctx, b, autoEnrolled) {
+			if recordsDeploymentHistory(ctx, b, autoEnrollment, plan) {
 				stateMode = dstate.WritingDeploymentHistoryShadow
 				if b.DeploymentBundle.StateDB.Data.Features == nil {
 					b.DeploymentBundle.StateDB.Data.Features = make(map[string]struct{})
@@ -487,21 +505,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		// --plan: the engine is now known and the state is open, so validate and load the
-		// precomputed plan. Artifact uploads are handled inside Deploy by extracting remote
-		// paths from the plan's new_state and finding the matching local files.
-		if opts.ReadPlanPath != "" {
-			var err error
-			plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
-			if err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
-			currentVersion := build.GetInfo().Version
-			if plan.CLIVersion != currentVersion {
-				log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
-			}
-
+		// --plan: the engine is now known and the state is open, so validate the precomputed plan.
+		if plan != nil {
 			if err := direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
@@ -716,31 +721,56 @@ func deploymentHistoryChoice(ctx context.Context, b *bundle.Bundle) (enabled, ex
 }
 
 // recordsDeploymentHistory reports whether this deploy or plan records history: the bundle's own
-// setting when it has one, otherwise the workspace's enrollment.
-func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle, autoEnrolled <-chan bool) bool {
+// setting when it has one, otherwise the workspace's enrollment. When the service could not be
+// asked, the bundle keeps doing what it did before - what the saved plan was built for, or what
+// the loaded state records - so one failed check neither invalidates a saved plan nor drops a
+// recording bundle out of history.
+func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle, autoEnrollment <-chan enrollment, plan *deployplan.Plan) bool {
 	if enabled, explicit := deploymentHistoryChoice(ctx, b); explicit {
 		return enabled
 	}
-	return autoEnrolled != nil && <-autoEnrolled
+	if answer := <-autoEnrollment; answer != enrollmentUnknown {
+		return answer == enrolled
+	}
+	if plan != nil {
+		_, recorded := plan.Features[dstate.FeatureDeploymentHistoryShadow]
+		return recorded
+	}
+	return b.DeploymentBundle.StateDB.RecordsHistory()
 }
+
+// enrollment is the workspace's answer on recording deployment history by default.
+type enrollment int
+
+const (
+	// enrollmentUnknown means the service could not be asked.
+	enrollmentUnknown enrollment = iota
+	enrolled
+	notEnrolled
+)
 
 // enrollmentCheckTimeout caps the wait for the enrollment answer, so a slow service cannot
 // hold up a deploy.
 const enrollmentCheckTimeout = 5 * time.Second
 
 // checkAutoEnrollment asks, in the background, whether the workspace records deployment history
-// by default. A failed check reads as not enrolled: a workspace the service does not serve
-// rejects the call, and that must not fail a deploy that never asked for history.
-func checkAutoEnrollment(ctx context.Context, w *databricks.WorkspaceClient) <-chan bool {
-	result := make(chan bool, 1)
+// by default. The check never fails a deploy that did not ask for history.
+func checkAutoEnrollment(ctx context.Context, w *databricks.WorkspaceClient, timeout time.Duration) <-chan enrollment {
+	result := make(chan enrollment, 1)
 	go func() {
-		ctx, cancel := context.WithTimeout(ctx, enrollmentCheckTimeout)
+		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		enrollments, err := dms.CheckEnrollments(ctx, w, dms.FeatureRecordHistoryAuto)
-		if err != nil {
+		switch {
+		case err == nil && enrollments[dms.FeatureRecordHistoryAuto]:
+			result <- enrolled
+		case err == nil, errors.Is(err, apierr.ErrPermissionDenied), errors.Is(err, apierr.ErrNotFound):
+			// The service answered no, does not serve this workspace, or predates the API.
+			result <- notEnrolled
+		default:
 			log.Debugf(ctx, "Could not check deployment history enrollment: %s", err)
+			result <- enrollmentUnknown
 		}
-		result <- enrollments[dms.FeatureRecordHistoryAuto]
 	}()
 	return result
 }

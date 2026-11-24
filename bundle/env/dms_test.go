@@ -15,12 +15,13 @@ func TestDeploymentHistoryEnv(t *testing.T) {
 	}{
 		{"true", true, true},
 		{"false", false, true},
-		// Only "true" and "false" count, so a near miss is no choice.
+		// Only "true" turns recording on, so a near miss turns it off.
+		{"0", false, true},
+		{"1", false, true},
+		{"TRUE", false, true},
+		{"yes", false, true},
+		// Empty is no choice, like unset.
 		{"", false, false},
-		{"0", false, false},
-		{"1", false, false},
-		{"TRUE", false, false},
-		{"yes", false, false},
 	} {
 		ctx := env.Set(t.Context(), DeploymentHistoryVariable, tc.value)
 		enabled, explicit := DeploymentHistoryChoice(ctx, nil)

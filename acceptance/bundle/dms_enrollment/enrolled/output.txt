@@ -31,8 +31,4 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 === The plan carries the recording feature
 
 >>> [CLI] bundle plan -o json
-{
-  "features": {
-    "deployment_history_shadow": {}
-  }
-}
+json.features.deployment_history_shadow = {};
