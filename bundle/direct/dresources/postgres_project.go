@@ -5,10 +5,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go"
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -144,7 +143,7 @@ func (r *ResourcePostgresProject) waitCreated(ctx context.Context, waiter postgr
 	return makePostgresProjectRemote(result), nil
 }
 
-// recoverFailedCreate handles a create request that failed; see recoverPostgresCreate. Repeating
+// recoverFailedCreate handles a create request that failed; see recoverCreate. Repeating
 // the request without looking first fails with "already exists" when the failed request did create
 // the project, so look for it before repeating. Without a project_id there is no name to look up;
 // the API rejects such a request with 400 anyway.
@@ -160,7 +159,8 @@ func (r *ResourcePostgresProject) recoverFailedCreate(ctx context.Context, req p
 		get: func(ctx context.Context) (*postgres.Project, error) {
 			return r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: name})
 		},
-		createTime: func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		createTime:    func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists: isPostgresAlreadyExists,
 		use: func(ctx context.Context, project *postgres.Project) (*PostgresProjectRemote, error) {
 			if err := r.waitDefaultBranchReady(ctx, project); err != nil {
 				return nil, err

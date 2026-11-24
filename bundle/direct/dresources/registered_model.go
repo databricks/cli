@@ -88,9 +88,10 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 			get: func(ctx context.Context) (*catalog.RegisteredModelInfo, error) {
 				return r.client.RegisteredModels.GetByFullName(ctx, fullName)
 			},
-			createTime: func(found *catalog.RegisteredModelInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
-			use:        useFound[catalog.RegisteredModelInfo],
-			create:     repeatCreate(create),
+			createTime:    func(found *catalog.RegisteredModelInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			use:           useFound[catalog.RegisteredModelInfo],
+			create:        repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

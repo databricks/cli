@@ -109,9 +109,10 @@ func (r *ResourceMcpService) DoCreate(ctx context.Context, config *resources.Mcp
 			get: func(ctx context.Context) (*catalog.McpService, error) {
 				return r.client.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: mcpServiceNamePrefix + id})
 			},
-			createTime: func(found *catalog.McpService) (time.Time, bool) { return sdkTime(found.CreateTime) },
-			use:        useFound[catalog.McpService],
-			create:     repeatCreate(create),
+			createTime:    func(found *catalog.McpService) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			alreadyExists: isAlreadyExists,
+			use:           useFound[catalog.McpService],
+			create:        repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

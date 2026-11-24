@@ -76,9 +76,10 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (str
 			get: func(ctx context.Context) (*catalog.SchemaInfo, error) {
 				return r.client.Schemas.GetByFullName(ctx, fullName)
 			},
-			createTime: func(found *catalog.SchemaInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
-			use:        useFound[catalog.SchemaInfo],
-			create:     repeatCreate(create),
+			createTime:    func(found *catalog.SchemaInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			use:           useFound[catalog.SchemaInfo],
+			create:        repeatCreate(create),
 		}, err)
 	}
 	if err != nil || response == nil {

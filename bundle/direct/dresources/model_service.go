@@ -115,9 +115,10 @@ func (r *ResourceModelService) DoCreate(ctx context.Context, config *resources.M
 			get: func(ctx context.Context) (*catalog.ModelService, error) {
 				return r.client.AiGateway.GetModelService(ctx, catalog.GetModelServiceRequest{Name: modelServiceNamePrefix + id})
 			},
-			createTime: func(found *catalog.ModelService) (time.Time, bool) { return sdkTime(found.CreateTime) },
-			use:        useFound[catalog.ModelService],
-			create:     repeatCreate(create),
+			createTime:    func(found *catalog.ModelService) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			alreadyExists: isAlreadyExists,
+			use:           useFound[catalog.ModelService],
+			create:        repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

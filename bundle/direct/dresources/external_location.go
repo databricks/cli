@@ -60,9 +60,10 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 			get: func(ctx context.Context) (*catalog.ExternalLocationInfo, error) {
 				return r.client.ExternalLocations.GetByName(ctx, config.Name)
 			},
-			createTime: func(found *catalog.ExternalLocationInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
-			use:        useFound[catalog.ExternalLocationInfo],
-			create:     repeatCreate(create),
+			createTime:    func(found *catalog.ExternalLocationInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			use:           useFound[catalog.ExternalLocationInfo],
+			create:        repeatCreate(create),
 		}, err)
 	}
 	if err != nil || response == nil {

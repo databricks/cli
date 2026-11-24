@@ -157,7 +157,7 @@ var (
 	branchReadyPollInterval = 5 * time.Second
 )
 
-// recoverFailedCreate handles a create request that failed; see recoverPostgresCreate.
+// recoverFailedCreate handles a create request that failed; see recoverCreate.
 func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, req postgres.CreateBranchRequest, start time.Time, createErr error) (string, *PostgresBranchRemote, error) {
 	// A branch found after a replace may predate it, and repeating a replace is safe.
 	if req.ReplaceExisting {
@@ -171,7 +171,8 @@ func (r *ResourcePostgresBranch) recoverFailedCreate(ctx context.Context, req po
 		get: func(ctx context.Context) (*postgres.Branch, error) {
 			return r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
 		},
-		createTime: func(found *postgres.Branch) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		createTime:    func(found *postgres.Branch) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists: isPostgresAlreadyExists,
 		use: func(ctx context.Context, branch *postgres.Branch) (*PostgresBranchRemote, error) {
 			return r.useRecoveredBranch(ctx, branch, createErr)
 		},

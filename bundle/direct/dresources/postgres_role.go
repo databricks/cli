@@ -4,10 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -164,7 +163,7 @@ func (r *ResourcePostgresRole) waitCreated(ctx context.Context, waiter postgres.
 	return makePostgresRoleRemote(result), nil
 }
 
-// recoverFailedCreate handles a create request that failed; see recoverPostgresCreate. Role
+// recoverFailedCreate handles a create request that failed; see recoverCreate. Role
 // creates on a just-created branch are answered with 500 INTERNAL_ERROR now and then, and the
 // request may have created the role anyway, so look for it before repeating the request.
 func (r *ResourcePostgresRole) recoverFailedCreate(ctx context.Context, req postgres.CreateRoleRequest, start time.Time, createErr error) (string, *PostgresRoleRemote, error) {
@@ -183,7 +182,8 @@ func (r *ResourcePostgresRole) recoverFailedCreate(ctx context.Context, req post
 		get: func(ctx context.Context) (*postgres.Role, error) {
 			return r.client.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
 		},
-		createTime: func(found *postgres.Role) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		createTime:    func(found *postgres.Role) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists: isPostgresAlreadyExists,
 		use: func(_ context.Context, found *postgres.Role) (*PostgresRoleRemote, error) {
 			return makePostgresRoleRemote(found), nil
 		},

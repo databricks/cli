@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -58,12 +60,22 @@ var createRecoveryOptOut = map[string]string{
 	"database_instances":   "candidate: instance names are unique and the read response has creation_time; not done yet",
 	"experiments":          "candidate: experiment names are unique and the read response has creation_time, but libs/testserver has neither get-by-name nor creation_time",
 	"models":               "candidate: model names are unique and the read response has creation_timestamp, but libs/testserver does not set it",
+	"postgres_data_apis":   "candidate: a database has one Data API, but the read response takes its spec from the status, which can be empty while it is being enabled, so a recovered Data API needs a wait the create operation would otherwise do",
 }
 
 // mutatingRequest is the method and path of a request that is not a read.
 type mutatingRequest struct {
 	method string
 	path   string
+}
+
+// idSegment matches a path segment that holds an id the backend assigned, such as a job id or a
+// UUID: those differ between the test servers.
+var idSegment = regexp.MustCompile(`/[0-9a-f-]*[0-9][0-9a-f-]*(/|$)`)
+
+// withoutIDs returns the request with the ids in its path replaced by a placeholder.
+func (r mutatingRequest) withoutIDs() mutatingRequest {
+	return mutatingRequest{r.method, idSegment.ReplaceAllString(r.path, "/{id}$1")}
 }
 
 // faultTransport records the mutating requests sent once armed, and fails the one at index failAt
@@ -144,13 +156,12 @@ func newFaultClient(t *testing.T) (*databricks.WorkspaceClient, *faultTransport)
 }
 
 // doCreateLikeApply calls DoCreate and, like DeploymentUnit.Create in bundle/direct/apply.go,
-// repeats it while it fails with a transient error marked retrySafe. repeated reports whether it did.
+// repeats it while IsRetrySafe. repeated reports whether it did.
 func doCreateLikeApply(ctx context.Context, adapter *Adapter, state any) (id string, repeated bool, err error) {
 	id, err = retry.With(ctx, func(ctx context.Context, err error) bool {
-		_, ok := errors.AsType[*RetrySafeError](err)
-		retry := ok && retry.IsTransient(ctx, err)
-		repeated = repeated || retry
-		return retry
+		safe := IsRetrySafe(ctx, err)
+		repeated = repeated || safe
+		return safe
 	}, func() (string, error) {
 		id, _, err := adapter.DoCreate(ctx, state)
 		return id, err
@@ -200,10 +211,12 @@ func TestCreateRecoveryCoverage(t *testing.T) {
 					transport.arm(failAt, applied)
 					id, repeated, err := doCreateLikeApply(ctx, adapter, state)
 					require.NotNil(t, transport.injected, "DoCreate sent fewer mutating requests than on success")
-					require.Equal(t, createReq.method, transport.injected.method, "DoCreate sent other requests than on success")
+					require.Equal(t, createReq.withoutIDs(), transport.injected.withoutIDs(), "DoCreate sent other requests than on success")
 
 					if reason, ok := createRecoveryOptOut[resourceType]; ok {
-						assert.Error(t, err, "%s recovers from a failed %s %s; remove it from createRecoveryOptOut (%s)", resourceType, createReq.method, createReq.path, reason)
+						apiErr, isAPIErr := errors.AsType[*apierr.APIError](err)
+						require.True(t, isAPIErr && apiErr.StatusCode == http.StatusGatewayTimeout,
+							"%s recovers from a failed %s %s or fails for another reason (%v); if it recovers, remove it from createRecoveryOptOut (%s)", resourceType, createReq.method, createReq.path, err, reason)
 						return
 					}
 					require.NoError(t, err, "%s does not recover from a failed %s %s; call recoverCreate in DoCreate, or add it to createRecoveryOptOut with the reason", resourceType, createReq.method, createReq.path)

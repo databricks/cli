@@ -148,7 +148,8 @@ func (r *ResourcePostgresSyncedTable) recoverFailedCreate(ctx context.Context, r
 		get: func(ctx context.Context) (*postgres.SyncedTable, error) {
 			return r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: name})
 		},
-		createTime: func(found *postgres.SyncedTable) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		createTime:    func(found *postgres.SyncedTable) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists: isPostgresAlreadyExists,
 		use: func(_ context.Context, found *postgres.SyncedTable) (*PostgresSyncedTableRemote, error) {
 			return makePostgresSyncedTableRemote(found), nil
 		},

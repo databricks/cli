@@ -1,6 +1,11 @@
 package dresources
 
-import "errors"
+import (
+	"context"
+	"errors"
+
+	"github.com/databricks/cli/libs/retry"
+)
 
 // RetrySafeError wraps an error to signal that the failed DoCreate is safe to retry.
 type RetrySafeError struct {
@@ -17,6 +22,13 @@ func retrySafe(err error) error {
 		return nil
 	}
 	return &RetrySafeError{err: err}
+}
+
+// IsRetrySafe reports whether a failed DoCreate may be repeated: the resource marked the error
+// retrySafe and the error is transient.
+func IsRetrySafe(ctx context.Context, err error) bool {
+	_, ok := errors.AsType[*RetrySafeError](err)
+	return ok && retry.IsTransient(ctx, err)
 }
 
 // UnwrapRetrySafe removes the retrySafe wrapper, returning the underlying error.

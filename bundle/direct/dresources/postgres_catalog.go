@@ -5,10 +5,9 @@ import (
 	"strings"
 	"time"
 
-	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
@@ -130,7 +129,7 @@ func (r *ResourcePostgresCatalog) waitCreated(ctx context.Context, waiter postgr
 	return makePostgresCatalogRemote(result), nil
 }
 
-// recoverFailedCreate handles a create request that failed; see recoverPostgresCreate. Catalog
+// recoverFailedCreate handles a create request that failed; see recoverCreate. Catalog
 // creates are answered with 500 INTERNAL_ERROR now and then (observed on AWS and GCP, 2026-11),
 // and the request may have created the catalog anyway, so look for it before repeating the request.
 func (r *ResourcePostgresCatalog) recoverFailedCreate(ctx context.Context, req postgres.CreateCatalogRequest, start time.Time, createErr error) (string, *PostgresCatalogRemote, error) {
@@ -145,7 +144,8 @@ func (r *ResourcePostgresCatalog) recoverFailedCreate(ctx context.Context, req p
 		get: func(ctx context.Context) (*postgres.Catalog, error) {
 			return r.client.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: name})
 		},
-		createTime: func(found *postgres.Catalog) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		createTime:    func(found *postgres.Catalog) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists: isPostgresAlreadyExists,
 		use: func(_ context.Context, found *postgres.Catalog) (*PostgresCatalogRemote, error) {
 			return makePostgresCatalogRemote(found), nil
 		},

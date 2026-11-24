@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
@@ -196,9 +197,20 @@ func (r *ResourcePostgresEndpoint) recoverFailedCreate(ctx context.Context, req 
 		get: func(ctx context.Context) (*postgres.Endpoint, error) {
 			return r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
 		},
-		createTime: func(found *postgres.Endpoint) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		createTime:    func(found *postgres.Endpoint) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists: isPostgresAlreadyExists,
 		use: func(ctx context.Context, found *postgres.Endpoint) (*PostgresEndpointRemote, error) {
-			return r.waitForReconciliation(ctx, found.Name)
+			// The endpoint is ours either way, so a wait that ends early only warns: state still
+			// records the endpoint, and the next deploy does not fail with "already exists".
+			remote, err := r.waitForReconciliation(ctx, found.Name)
+			if err != nil {
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
+				log.Warnf(ctx, "waiting for endpoint %s to reconcile: %s", found.Name, err)
+				return makePostgresEndpointRemote(found), nil
+			}
+			return remote, nil
 		},
 		create: func(ctx context.Context) (func() (*PostgresEndpointRemote, error), error) {
 			waiter, err := r.client.Postgres.CreateEndpoint(ctx, req)

@@ -33,6 +33,9 @@ type createRecovery[T, R any] struct {
 	// use turns a found resource that this deployment created into the result, e.g. by waiting for
 	// it to become ready.
 	use func(ctx context.Context, found *T) (R, error)
+	// alreadyExists reports whether a repeated create request failed because the name is taken:
+	// isAlreadyExists, or isPostgresAlreadyExists for Lakebase resources.
+	alreadyExists func(err error) bool
 	// create repeats the create request. On success it returns finish, which completes the create,
 	// e.g. by waiting for the operation the request started. An error from finish is not a failed
 	// create request, so it is returned as is.
@@ -113,7 +116,7 @@ func recoverCreate[T, R any](ctx context.Context, rc createRecovery[T, R], creat
 		if err == nil {
 			return finish()
 		}
-		if !isUncertainCreateError(ctx, err) && !isAlreadyExists(err) {
+		if !isUncertainCreateError(ctx, err) && !rc.alreadyExists(err) {
 			return zero, err
 		}
 		lastErr = err
@@ -184,18 +187,24 @@ func (e *recoveryError) Unwrap() error { return e.err }
 // isAlreadyExists reports whether a create request failed because the resource exists. Features,
 // dashboards, vector search endpoints, AI Gateway services (checked for model provider services)
 // and Lakebase branches answer with 409 ALREADY_EXISTS, serving endpoints with 400
-// RESOURCE_ALREADY_EXISTS, database catalogs with 400 CATALOG_ALREADY_EXISTS (observed on AWS,
-// 2026-11), and Lakebase projects with 400 BAD_REQUEST and "A project with this resource name
-// already exists in the workspace." A repeated request that fails this way is followed by another
-// lookup, which checks the create time, so a broad match cannot take over a resource.
+// RESOURCE_ALREADY_EXISTS and database catalogs with 400 CATALOG_ALREADY_EXISTS (observed on AWS,
+// 2026-11).
 func isAlreadyExists(err error) bool {
 	if errors.Is(err, apierr.ErrAlreadyExists) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
 		return true
 	}
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	if !ok {
-		return false
+	return ok && apiErr.ErrorCode == "CATALOG_ALREADY_EXISTS"
+}
+
+// isPostgresAlreadyExists is isAlreadyExists for Lakebase resources. Besides 409 ALREADY_EXISTS,
+// projects answer a create of an existing project with 400 BAD_REQUEST and "A project with this
+// resource name already exists in the workspace." The API has no error code for it, so match the
+// message.
+func isPostgresAlreadyExists(err error) bool {
+	if isAlreadyExists(err) {
+		return true
 	}
-	return apiErr.ErrorCode == "CATALOG_ALREADY_EXISTS" ||
-		apiErr.StatusCode == http.StatusBadRequest && strings.Contains(apiErr.Message, "already exists")
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode == http.StatusBadRequest && strings.Contains(apiErr.Message, "already exists")
 }
