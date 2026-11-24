@@ -7,7 +7,7 @@ import (
 )
 
 func TestRelativeScriptWarning(t *testing.T) {
-	snapshot := []string{"train.py", "src/main.py", "configs/base.yaml"}
+	snapshot := []string{"train.py", "src/main.py", "configs/base.yaml", "scripts/train.sh", "launch.sh"}
 	cases := []struct {
 		name    string
 		command string
@@ -15,23 +15,32 @@ func TestRelativeScriptWarning(t *testing.T) {
 		suggest string // the path suggested under $CODE_SOURCE_PATH
 	}{
 		{"bare script", "python train.py", "train.py", "train.py"},
-		{"dot-slash script", "./train.py --epochs 1", "./train.py", "train.py"},
+		{"python3 with flags", "python3 -u train.py --epochs 1", "train.py", "train.py"},
+		{"dot-slash script", "python ./train.py", "./train.py", "train.py"},
 		{"quoted nested script", `torchrun --nproc_per_node=8 "src/main.py"`, "src/main.py", "src/main.py"},
-		{"flag value with equals", "python -m mod --config=configs/base.yaml", "configs/base.yaml", "configs/base.yaml"},
-		{"flag value with space", "python -m mod --config configs/base.yaml", "configs/base.yaml", "configs/base.yaml"},
-		{"quoted flag value with equals", `python -m mod --config="configs/base.yaml"`, "configs/base.yaml", "configs/base.yaml"},
+		{"flag value with space", "torchrun --nproc_per_node 8 train.py", "train.py", "train.py"},
+		{"accelerate launch", "accelerate launch --num_processes 2 src/main.py", "src/main.py", "src/main.py"},
+		{"deepspeed", "deepspeed train.py", "train.py", "train.py"},
+		{"bash script", "bash scripts/train.sh", "scripts/train.sh", "scripts/train.sh"},
+		{"after an earlier command", `pip install -r "$CODE_SOURCE_PATH/req.txt"&&python train.py`, "train.py", "train.py"},
+		{"environment assignment prefix", "NCCL_DEBUG=INFO python train.py", "train.py", "train.py"},
+		{"path before a comment", "python train.py # entrypoint", "train.py", "train.py"},
 		{"code source path variable", `python "$CODE_SOURCE_PATH/train.py"`, "", ""},
 		{"absolute path", "python /opt/train.py", "", ""},
-		{"environment assignment", "SCRIPT=train.py python -m mod", "", ""},
-		{"not in snapshot", "python other.py", "", ""},
+		{"module", "python -m mod --config configs/base.yaml", "", ""},
+		{"not in snapshot", "python other.py configs/base.yaml", "", ""},
 		{"parent directory", "python ../tools/prep.py", "", ""},
-		{"directory", "ls src", "", ""},
+		{"not a launcher", "./train.py --epochs 1", "", ""},
+		{"echo", `echo "Launching train.py"`, "", ""},
+		{"env -C", `env -C "$CODE_SOURCE_PATH" python train.py`, "", ""},
+		{"uv run --directory", `uv run --directory "$CODE_SOURCE_PATH" python train.py`, "", ""},
+		{"wrapper", "./launch.sh train.py", "", ""},
 		{"cd into code source first", `cd "$CODE_SOURCE_PATH" && python train.py`, "", ""},
 		{"subshell cd", `(cd "$CODE_SOURCE_PATH" && python train.py --epochs 1)`, "", ""},
 		{"pushd", `pushd "$CODE_SOURCE_PATH"; python train.py`, "", ""},
 		{"glued cd", `pip install -r "$CODE_SOURCE_PATH/req.txt"&&cd "$CODE_SOURCE_PATH" && python train.py`, "", ""},
 		{"comment", `python "$CODE_SOURCE_PATH/train.py" # was train.py`, "", ""},
-		{"path before a comment", "python train.py # entrypoint", "train.py", "train.py"},
+		{"comment before a command", `echo hi # python train.py`, "", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -41,8 +50,8 @@ func TestRelativeScriptWarning(t *testing.T) {
 				assert.Empty(t, got)
 				return
 			}
-			assert.Contains(t, got, "Warning: command refers to \""+tc.word+"\"")
-			assert.Contains(t, got, "Consider \"$CODE_SOURCE_PATH/"+tc.suggest+"\" instead.")
+			assert.Contains(t, got, "Warning: command may refer to \""+tc.word+"\"")
+			assert.Contains(t, got, "If it does, \"$CODE_SOURCE_PATH/"+tc.suggest+"\" is safer.")
 		})
 	}
 }
@@ -55,8 +64,8 @@ func TestRelativeScriptWarningContainers(t *testing.T) {
 		{Name: "worker", Command: &worker},
 	}}
 	got := relativeScriptWarning(cfg, []string{"train.py"})
-	assert.Contains(t, got, "Warning: containers[worker].command refers to \"train.py\"")
-	assert.Contains(t, got, "Consider \"$CODE_SOURCE_PATH/train.py\" instead.")
+	assert.Contains(t, got, "Warning: containers[worker].command may refer to \"train.py\"")
+	assert.Contains(t, got, "If it does, \"$CODE_SOURCE_PATH/train.py\" is safer.")
 	assert.Contains(t, got, "https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command")
 	assert.Contains(t, got, "https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command")
 }

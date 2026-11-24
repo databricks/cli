@@ -1,1 +1,1 @@
-* `air run --dry-run` warns when `command` refers to a file by a path relative to `code_source.root_path`, suggests `$CODE_SOURCE_PATH/<file>` and links the docs for command paths. ([#7865](https://github.com/databricks/cli/pull/7865))
+* `air run --dry-run` warns when a script launcher such as `python` or `torchrun` in `command` may run a file by a path relative to `code_source.root_path`, suggests `$CODE_SOURCE_PATH/<file>` and links the docs for command paths. ([#7865](https://github.com/databricks/cli/pull/7865))
