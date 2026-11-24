@@ -249,6 +249,7 @@ class Pipeline(Resource):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
+    Use compute_policy_id instead. Only one of these fields may be set.
     """
 
     storage: VariableOrOptional[str] = None
@@ -479,6 +480,7 @@ class PipelineDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
+    Use compute_policy_id instead. Only one of these fields may be set.
     """
 
     storage: VariableOrOptional[str]

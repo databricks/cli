@@ -402,9 +402,10 @@ func mergeAgents(installed, project []*agents.Agent) []*agents.Agent {
 // agent. That is an agent the CLI recorded a plugin install for, or one whose
 // own manifest shows a plugin serving the scope (see manifestPluginActive) while
 // its CLI is missing: install keeps such a plugin, without recording it. With
-// the CLI on PATH, raw skills next to the plugin are the user's choice (install
-// --skills-only), so they are refreshed as before. manifestPlugins lists the
-// agents excluded for their manifest.
+// the CLI on PATH, raw skills next to the plugin are the user's choice (an
+// install --skills-only from before it skipped an agent with the plugin, or
+// one run before the plugin was added), so they are refreshed as before.
+// manifestPlugins lists the agents excluded for their manifest.
 func excludePluginAgents(ctx context.Context, scope string, installed []*agents.Agent, state *installer.InstallState) (fileAgents, manifestPlugins []*agents.Agent) {
 	fileAgents = make([]*agents.Agent, 0, len(installed))
 	for _, a := range installed {

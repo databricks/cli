@@ -43,6 +43,7 @@ func buildCommand(ctx context.Context, cmd *cobra.Command) {
 	cmd.AddCommand(newCreateCatalogConfig())
 	cmd.AddCommand(newDeleteCatalogConfig())
 	cmd.AddCommand(newGetCatalogConfig())
+	cmd.AddCommand(newRescanCatalog())
 	cmd.AddCommand(newUpdateCatalogConfig())
 
 	// Apply optional overrides to this command.
@@ -251,6 +252,77 @@ func newGetCatalogConfig() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getCatalogConfigOverrides {
 		fn(cmd, &getCatalogConfigReq)
+	}
+
+	return cmd
+}
+
+// start rescan-catalog command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var rescanCatalogOverrides []func(
+	*cobra.Command,
+	*dataclassification.RescanCatalogRequest,
+)
+
+func newRescanCatalog() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var rescanCatalogReq dataclassification.RescanCatalogRequest
+
+	cmd.Use = "rescan-catalog NAME"
+	cmd.Short = `*Beta* Rescan a catalog.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Rescan a catalog.
+
+  Rescan the tables in a catalog's Data Classification scope that changed since
+  their last scan.
+
+  The rescan uses the catalog's current classifiers and follows its config
+  (schema selection) and SKIP tags. Tables with no commits since their last scan
+  are skipped. Views and tables without a Delta commit history keep their
+  regular rescan schedule. The call returns once the rescan is scheduled;
+  scanning runs in the background. If a scan of the catalog is running, the call
+  cancels it and starts a new run. - Data Classification must be enabled for the
+  catalog. - The call must come from the workspace where Data Classification was
+  enabled.
+
+  Arguments:
+    NAME: Resource name of the catalog, in the format: catalogs/{catalog_name}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		rescanCatalogReq.Name = args[0]
+
+		response, err := w.DataClassification.RescanCatalog(ctx, rescanCatalogReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range rescanCatalogOverrides {
+		fn(cmd, &rescanCatalogReq)
 	}
 
 	return cmd

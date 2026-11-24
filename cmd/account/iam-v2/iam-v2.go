@@ -1320,6 +1320,20 @@ func newGetExternalGroup() *cobra.Command {
   added. Requires automatic identity management. If your account has group
   visibility filters, the group must match them.
 
+  To control how fresh the synced data is, send a Cache-Control request
+  header:
+
+  - no-cache syncs from your IdP before the call returns. - max-age=<n>,
+  max-stale=0 syncs from your IdP before the call returns if the last sync is
+  more than <n> seconds old.
+
+  Without the header, the call skips the sync if the last sync is within the
+  default freshness window. Databricks might sync more often than you request.
+  If you send max-age without max-stale=0, the call can return the data from
+  the last sync and sync in the background. Databricks ignores other
+  Cache-Control directives. A forced sync makes the call wait for your IdP. A
+  forced sync on every call adds load on your IdP and can hit rate limits.
+
   Arguments:
     NAME: The resource name of the external group, in the format
       accounts/{account_id}/external-groups/{external_group_id}.`
@@ -1383,6 +1397,20 @@ func newGetExternalServicePrincipal() *cobra.Command {
   isn't in your account yet, it's added. Requires automatic identity management
   with Microsoft Entra ID as your IdP.
 
+  To control how fresh the synced data is, send a Cache-Control request
+  header:
+
+  - no-cache syncs from your IdP before the call returns. - max-age=<n>,
+  max-stale=0 syncs from your IdP before the call returns if the last sync is
+  more than <n> seconds old.
+
+  Without the header, the call skips the sync if the last sync is within the
+  default freshness window. Databricks might sync more often than you request.
+  If you send max-age without max-stale=0, the call can return the data from
+  the last sync and sync in the background. Databricks ignores other
+  Cache-Control directives. A forced sync makes the call wait for your IdP. A
+  forced sync on every call adds load on your IdP and can hit rate limits.
+
   Arguments:
     NAME: The resource name of the external service principal, in the format
       accounts/{account_id}/external-service-principals/{external_service_principal_id}.`
@@ -1444,6 +1472,20 @@ func newGetExternalUser() *cobra.Command {
   Gets a user by their ID in your identity provider (IdP) and syncs their
   details and group memberships from your IdP. If the user isn't in your account
   yet, they're added. Requires automatic identity management.
+
+  To control how fresh the synced data is, send a Cache-Control request
+  header:
+
+  - no-cache syncs from your IdP before the call returns. - max-age=<n>,
+  max-stale=0 syncs from your IdP before the call returns if the last sync is
+  more than <n> seconds old.
+
+  Without the header, the call skips the sync if the last sync is within the
+  default freshness window. Databricks might sync more often than you request.
+  If you send max-age without max-stale=0, the call can return the data from
+  the last sync and sync in the background. Databricks ignores other
+  Cache-Control directives. A forced sync makes the call wait for your IdP. A
+  forced sync on every call adds load on your IdP and can hit rate limits.
 
   Arguments:
     NAME: The resource name of the external user, in the format
@@ -1961,8 +2003,13 @@ func newListDirectGroupMembers() *cobra.Command {
 	cmd.Long = `List direct group members.
 
   Lists the direct members of a group, sorted by display name, with where each
-  membership comes from. Members in your identity provider who haven't been
-  added to Databricks aren't included.
+  membership comes from. Results combine memberships added in Databricks (in the
+  UI, through the API, or through SCIM provisioning) with, if automatic identity
+  management is on and the group has an external_id, memberships from your
+  identity provider (IdP). Only members in your Databricks account are returned:
+  an IdP member of the group appears only if that user, service principal, or
+  group has been added to Databricks. Nested groups aren't expanded. To get the
+  full membership, list the direct members of each member group.
 
   Arguments:
     PARENT: The resource name of the group, in the format
@@ -2262,9 +2309,13 @@ func newListTransitiveParentGroups() *cobra.Command {
 	cmd.Long = `List all transitive parent groups of a principal.
 
   Lists every group that a user, service principal, or group belongs to,
-  directly or through other groups, sorted by Databricks ID. If automatic
-  identity management is on, the principal's group memberships are synced from
-  your identity provider first.
+  directly or through other groups, sorted by Databricks ID. Results combine
+  memberships from every source: added in the UI, through the API, through SCIM
+  provisioning, or synced from your identity provider (IdP) by automatic
+  identity management. Only groups that exist in your Databricks account are
+  returned, not every group that the principal belongs to in your IdP. If
+  automatic identity management is on, only the principal's own group
+  memberships are refreshed from your IdP before the list is read.
 
   Arguments:
     PARENT: The user, service principal, or group whose parent groups to list, in the
@@ -2575,6 +2626,20 @@ Resolve an external group in the Databricks account.
   added. Requires automatic identity management. If your account has group
   visibility filters, the group must match them.
 
+  To control how fresh the synced data is, send a Cache-Control request
+  header:
+
+  - no-cache syncs from your IdP before the call returns. - max-age=<n>,
+  max-stale=0 syncs from your IdP before the call returns if the last sync is
+  more than <n> seconds old.
+
+  Without the header, the call skips the sync if the last sync is within the
+  default freshness window. Databricks might sync more often than you request.
+  If you send max-age without max-stale=0, the call can return the data from
+  the last sync and sync in the background. Databricks ignores other
+  Cache-Control directives. A forced sync makes the call wait for your IdP. A
+  forced sync on every call adds load on your IdP and can hit rate limits.
+
   Arguments:
     EXTERNAL_ID: The ID of the group in your IdP.`
 
@@ -2663,6 +2728,20 @@ Resolve an external service principal in the Databricks account.
   isn't in your account yet, it's added. Requires automatic identity management
   with Microsoft Entra ID as your IdP.
 
+  To control how fresh the synced data is, send a Cache-Control request
+  header:
+
+  - no-cache syncs from your IdP before the call returns. - max-age=<n>,
+  max-stale=0 syncs from your IdP before the call returns if the last sync is
+  more than <n> seconds old.
+
+  Without the header, the call skips the sync if the last sync is within the
+  default freshness window. Databricks might sync more often than you request.
+  If you send max-age without max-stale=0, the call can return the data from
+  the last sync and sync in the background. Databricks ignores other
+  Cache-Control directives. A forced sync makes the call wait for your IdP. A
+  forced sync on every call adds load on your IdP and can hit rate limits.
+
   Arguments:
     EXTERNAL_ID: The ID of the service principal in your IdP.`
 
@@ -2749,6 +2828,20 @@ Resolve an external user in the Databricks account.
   Gets a user by their ID in your identity provider (IdP) and syncs their
   details and group memberships from your IdP. If the user isn't in your account
   yet, they're added. Requires automatic identity management.
+
+  To control how fresh the synced data is, send a Cache-Control request
+  header:
+
+  - no-cache syncs from your IdP before the call returns. - max-age=<n>,
+  max-stale=0 syncs from your IdP before the call returns if the last sync is
+  more than <n> seconds old.
+
+  Without the header, the call skips the sync if the last sync is within the
+  default freshness window. Databricks might sync more often than you request.
+  If you send max-age without max-stale=0, the call can return the data from
+  the last sync and sync in the background. Databricks ignores other
+  Cache-Control directives. A forced sync makes the call wait for your IdP. A
+  forced sync on every call adds load on your IdP and can hit rate limits.
 
   Arguments:
     EXTERNAL_ID: The ID of the user in your IdP.`

@@ -451,13 +451,15 @@ func newCreateRule() *cobra.Command {
 	// TODO: array: references
 	cmd.Flags().StringVar(&createRuleReq.Rule.RunAsPrincipal, "run-as-principal", createRuleReq.Rule.RunAsPrincipal, `The principal whose identity this rule's job runs as, given as a user email or service-principal application ID.`)
 	cmd.Flags().StringVar(&createRuleReq.Rule.Runbook, "runbook", createRuleReq.Rule.Runbook, `Long-form operational guidance carried from the authored rule metadata.`)
+	// TODO: complex arg: schedule
 	// TODO: complex arg: status
+	// TODO: complex arg: streaming
 	var suppressUntilTimeParam string
 	cmd.Flags().StringVar(&suppressUntilTimeParam, "suppress-until-time", suppressUntilTimeParam, `If set, this rule's signals do not open new alerts until the given time.`)
 	// TODO: complex arg: timerange
 	// TODO: complex arg: updated_by
 
-	cmd.Use = "create-rule CATALOG_NAME SCHEMA_NAME RULE_NAME SEVERITY FIDELITY SCHEDULE OUTPUT"
+	cmd.Use = "create-rule CATALOG_NAME SCHEMA_NAME RULE_NAME SEVERITY FIDELITY OUTPUT"
 	cmd.Short = `*Beta* Create a rule.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -480,7 +482,6 @@ Create a rule.
       Critical.
     FIDELITY: Signal quality for this rule.
       Supported values: [FIDELITY_DEVELOPMENT, FIDELITY_HIGH, FIDELITY_INVESTIGATIVE, FIDELITY_MEDIUM]
-    SCHEDULE: When the rule executes.
     OUTPUT: What to record in each signal.`
 
 	cmd.Annotations = make(map[string]string)
@@ -491,11 +492,11 @@ Create a rule.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'catalog_name', 'schema_name', 'rule_name', 'severity', 'fidelity', 'schedule', 'output' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'catalog_name', 'schema_name', 'rule_name', 'severity', 'fidelity', 'output' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(7)
+		check := root.ExactArgs(6)
 		return check(cmd, args)
 	}
 
@@ -536,16 +537,9 @@ Create a rule.
 
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[5], &createRuleReq.Rule.Schedule)
+			_, err = fmt.Sscan(args[5], &createRuleReq.Rule.Output)
 			if err != nil {
-				return fmt.Errorf("invalid SCHEDULE: %s", args[5])
-			}
-
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[6], &createRuleReq.Rule.Output)
-			if err != nil {
-				return fmt.Errorf("invalid OUTPUT: %s", args[6])
+				return fmt.Errorf("invalid OUTPUT: %s", args[5])
 			}
 
 		}
@@ -2385,13 +2379,15 @@ func newUpdateRule() *cobra.Command {
 	// TODO: array: references
 	cmd.Flags().StringVar(&updateRuleReq.Rule.RunAsPrincipal, "run-as-principal", updateRuleReq.Rule.RunAsPrincipal, `The principal whose identity this rule's job runs as, given as a user email or service-principal application ID.`)
 	cmd.Flags().StringVar(&updateRuleReq.Rule.Runbook, "runbook", updateRuleReq.Rule.Runbook, `Long-form operational guidance carried from the authored rule metadata.`)
+	// TODO: complex arg: schedule
 	// TODO: complex arg: status
+	// TODO: complex arg: streaming
 	var suppressUntilTimeParam string
 	cmd.Flags().StringVar(&suppressUntilTimeParam, "suppress-until-time", suppressUntilTimeParam, `If set, this rule's signals do not open new alerts until the given time.`)
 	// TODO: complex arg: timerange
 	// TODO: complex arg: updated_by
 
-	cmd.Use = "update-rule NAME UPDATE_MASK CATALOG_NAME SCHEMA_NAME RULE_NAME SEVERITY FIDELITY SCHEDULE OUTPUT"
+	cmd.Use = "update-rule NAME UPDATE_MASK CATALOG_NAME SCHEMA_NAME RULE_NAME SEVERITY FIDELITY OUTPUT"
 	cmd.Short = `*Beta* Update a rule.`
 	cmd.Long = `This command is in Beta and may change without notice.
 
@@ -2417,7 +2413,6 @@ Update a rule.
       Critical.
     FIDELITY: Signal quality for this rule.
       Supported values: [FIDELITY_DEVELOPMENT, FIDELITY_HIGH, FIDELITY_INVESTIGATIVE, FIDELITY_MEDIUM]
-    SCHEDULE: When the rule executes.
     OUTPUT: What to record in each signal.`
 
 	cmd.Annotations = make(map[string]string)
@@ -2428,11 +2423,11 @@ Update a rule.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'catalog_name', 'schema_name', 'rule_name', 'severity', 'fidelity', 'schedule', 'output' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'catalog_name', 'schema_name', 'rule_name', 'severity', 'fidelity', 'output' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(9)
+		check := root.ExactArgs(8)
 		return check(cmd, args)
 	}
 
@@ -2478,16 +2473,9 @@ Update a rule.
 
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[7], &updateRuleReq.Rule.Schedule)
+			_, err = fmt.Sscan(args[7], &updateRuleReq.Rule.Output)
 			if err != nil {
-				return fmt.Errorf("invalid SCHEDULE: %s", args[7])
-			}
-
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[8], &updateRuleReq.Rule.Output)
-			if err != nil {
-				return fmt.Errorf("invalid OUTPUT: %s", args[8])
+				return fmt.Errorf("invalid OUTPUT: %s", args[7])
 			}
 
 		}

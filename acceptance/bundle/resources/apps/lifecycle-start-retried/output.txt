@@ -1,0 +1,50 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-start-retried/default/files...
+Created apps.mykey
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== the deploy succeeds, though its start was answered with a 504
+
+>>> update_file.py databricks.yml started: false started: true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-start-retried/default/files...
+✓ Deployment succeeded
+Updated apps.mykey
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== start was sent twice; the second was rejected because the compute was already ACTIVE
+
+>>> print_requests.py //apps ^//api/2.0/bundle --del-body url
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/start",
+  "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/start",
+  "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/myapp/deployments",
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-start-retried/default/files/app"
+  }
+}
+
+>>> [CLI] apps get myapp
+"ACTIVE"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.mykey
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-start-retried/default
+
+Destroy: 1 deleted

@@ -2,14 +2,21 @@ package appdeploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	sdkapps "github.com/databricks/databricks-sdk-go/service/apps"
 )
+
+// StartTimeout matches the SDK's default wait for Apps.Start.
+const StartTimeout = 20 * time.Minute
 
 func logProgress(ctx context.Context, msg string) {
 	if msg == "" {
@@ -97,6 +104,44 @@ func waitForDeployment(ctx context.Context, w *databricks.WorkspaceClient, appNa
 		return false, nil
 	}
 	return err == nil, err
+}
+
+// Start starts the app compute and waits for it to become active. onProgress, if not nil, is
+// called on every poll while waiting.
+//
+// A start of an app whose compute is not STOPPED is rejected with 400 BAD_REQUEST ("Cannot start
+// app X as its compute is in ACTIVE state"). That happens when the caller's view of the compute
+// is stale: a retried deploy after the first start went through, or another client starting the
+// app concurrently. On such a rejection the app is read once: an ACTIVE compute is returned as is,
+// a STARTING one is waited for, and any other state keeps the original error.
+func Start(ctx context.Context, w *databricks.WorkspaceClient, appName string, onProgress func(*sdkapps.App)) (*sdkapps.App, error) {
+	wait, err := w.Apps.Start(ctx, sdkapps.StartAppRequest{Name: appName})
+	if err == nil {
+		return wait.OnProgress(onProgress).Get()
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.StatusCode != http.StatusBadRequest {
+		return nil, err
+	}
+	app, getErr := w.Apps.GetByName(ctx, appName)
+	if getErr != nil {
+		// Wrap only getErr so that callers that retry transient errors see it: a failed read
+		// leaves the compute state unknown, and the 400 alone would make the failure permanent.
+		return nil, fmt.Errorf("reading app after start was rejected (%s): %w", err.Error(), getErr)
+	}
+	if app.ComputeStatus == nil {
+		return nil, err
+	}
+	switch app.ComputeStatus.State {
+	case sdkapps.ComputeStateActive:
+		log.Debugf(ctx, "app %s compute is already active, ignoring start error: %s", appName, err)
+		return app, nil
+	case sdkapps.ComputeStateStarting:
+		log.Debugf(ctx, "app %s compute is already starting, waiting for it instead: %s", appName, err)
+		return w.Apps.WaitGetAppActive(ctx, appName, StartTimeout, onProgress)
+	default:
+		return nil, err
+	}
 }
 
 // Deploy deploys the app using the provided deployment request.
