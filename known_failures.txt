@@ -27,7 +27,7 @@ acceptance TestAccept/bundle/resources/apps/lifecycle-started-omitted/DMS=  # go
 acceptance TestAccept/bundle/resources/apps/lifecycle-started-toggle/DMS=
 acceptance TestAccept/bundle/resources/apps/lifecycle-started-toggle/DMS=true
 
-# go/cli/dashboard/error/3781 go/cli/dashboard/error/3782: Azure workspace alert quota (5000) reached by leaked test alerts, waiting for workspace cleanup, added 2026-11-19
+# go/cli/dashboard/error/3781 go/cli/dashboard/error/3782: workspace alert quota (5000) reached on Azure (11-18), GCP (11-20) and AWS (11-21) by leaked test alerts, waiting for workspace cleanup, added 2026-11-19
 acceptance TestAccept/bundle/deployment/bind/alert/DMS=
 acceptance TestAccept/bundle/deployment/bind/alert/DMS=true
 acceptance TestAccept/bundle/generate/alert/DMS=
