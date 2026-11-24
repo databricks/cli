@@ -211,3 +211,47 @@ func TestLockReplacesLockLeftByFailedUnlock(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, second.State.ID, state.ID)
 }
+
+// deleteThenTimeoutFiler applies the first delete but answers it with a timeout, and runs
+// afterDelete in between, as when another deployer takes the lock before the retry.
+type deleteThenTimeoutFiler struct {
+	filer.Filer
+	afterDelete func()
+	deletes     int
+}
+
+func (f *deleteThenTimeoutFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
+	f.deletes++
+	err := f.Filer.Delete(ctx, path, mode...)
+	if f.deletes > 1 || err != nil {
+		return err
+	}
+	f.afterDelete()
+	return &url.Error{Op: "Post", URL: "https://example.com/" + path, Err: errors.New("request timed out after 1m30s of inactivity")}
+}
+
+func TestStaleLockRemovalKeepsLockTakenBeforeRetry(t *testing.T) {
+	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	released := filepath.Join(t.TempDir(), "released.json")
+
+	// A lock released by an earlier command in this checkout is left behind.
+	first := newTestLocker(t, &deleteFailingFiler{Filer: local})
+	first.ReleasedLocksPath = released
+	require.NoError(t, first.Lock(ctx, false))
+	require.Error(t, first.Unlock(ctx))
+
+	other := newTestLocker(t, local)
+	f := &deleteThenTimeoutFiler{Filer: local, afterDelete: func() {
+		require.NoError(t, other.Lock(ctx, false))
+	}}
+	second := newTestLocker(t, retry.Filer(f))
+	second.ReleasedLocksPath = released
+	err = second.Lock(ctx, false)
+	require.ErrorContains(t, err, "deploy lock acquired by tester")
+	assert.Equal(t, 1, f.deletes)
+	state, err := second.GetActiveLockState(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, other.State.ID, state.ID)
+}

@@ -293,22 +293,38 @@ func (locker *Locker) recordReleased(ctx context.Context) {
 	}
 }
 
+// errLockNotStale stops removeStaleLock when the lock no longer carries a released ID.
+var errLockNotStale = errors.New("deploy lock is not stale")
+
 // removeStaleLock deletes the remote lock if it carries an ID from ReleasedLocksPath: a write
 // that timed out in an earlier command was applied after that command released the lock. It
-// reports whether it deleted the lock. A lock taken between the read and the delete is lost: one
-// from --force-lock, which already gives up exclusive access, or one from a second CLI process in
-// this checkout that removed the same stale lock first.
+// reports whether the stale lock is gone. A lock taken between a read and the delete that follows
+// it is lost: one from --force-lock, which already gives up exclusive access, or one from a second
+// CLI process in this checkout that removed the same stale lock first.
 func (locker *Locker) removeStaleLock(ctx context.Context) bool {
 	released := locker.readReleased(ctx)
 	if len(released) == 0 {
 		return false
 	}
-	activeLockState, err := locker.GetActiveLockState(ctx)
-	if err != nil || !slices.Contains(released, activeLockState.ID) {
-		return false
+	// The retrying filer would repeat a failed delete blindly. An attempt that failed may still
+	// have deleted the stale lock, and another deployer may have taken the lock since, so every
+	// attempt reads the lock again and deletes it only if it is still stale.
+	deleteFiler := locker.filer
+	if u, ok := deleteFiler.(interface{ Unwrap() filer.Filer }); ok {
+		deleteFiler = u.Unwrap()
 	}
-	log.Infof(ctx, "Removing stale deploy lock %s acquired at %v: it was released before", activeLockState.ID, activeLockState.AcquisitionTime)
-	return locker.filer.Delete(ctx, LockFileName) == nil
+	_, err := retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+		activeLockState, err := locker.GetActiveLockState(ctx)
+		if err != nil {
+			return struct{}{}, err
+		}
+		if !slices.Contains(released, activeLockState.ID) {
+			return struct{}{}, errLockNotStale
+		}
+		log.Infof(ctx, "Removing stale deploy lock %s acquired at %v: it was released before", activeLockState.ID, activeLockState.AcquisitionTime)
+		return struct{}{}, deleteFiler.Delete(ctx, LockFileName)
+	})
+	return err == nil || errors.Is(err, fs.ErrNotExist)
 }
 
 func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
