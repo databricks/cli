@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -154,6 +155,16 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 			requiredResourcesDashboard(w, &e, x0)
 		}
 	}
+	if len(v.DataQualityMonitors) > 0 {
+		c := n.child("data_quality_monitors")
+		for k0, x0 := range v.DataQualityMonitors {
+			if k0 == "" {
+				continue
+			}
+			e := c.child(k0)
+			requiredResourcesDataQualityMonitor(w, &e, x0)
+		}
+	}
 	if len(v.DatabaseCatalogs) > 0 {
 		c := n.child("database_catalogs")
 		for k0, x0 := range v.DatabaseCatalogs {
@@ -192,6 +203,16 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 			}
 			e := c.child(k0)
 			requiredResourcesExternalLocation(w, &e, x0)
+		}
+	}
+	if len(v.FeatureSpecs) > 0 {
+		c := n.child("feature_specs")
+		for k0, x0 := range v.FeatureSpecs {
+			if k0 == "" {
+				continue
+			}
+			e := c.child(k0)
+			requiredResourcesFeatureSpec(w, &e, x0)
 		}
 	}
 	if len(v.Features) > 0 {
@@ -242,6 +263,16 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 			}
 			e := c.child(k0)
 			requiredResourcesJob(w, &e, x0)
+		}
+	}
+	if len(v.MaterializationSets) > 0 {
+		c := n.child("materialization_sets")
+		for k0, x0 := range v.MaterializationSets {
+			if k0 == "" {
+				continue
+			}
+			e := c.child(k0)
+			requiredResourcesMaterializationSet(w, &e, x0)
 		}
 	}
 	if len(v.McpServices) > 0 {
@@ -322,6 +353,16 @@ func requiredConfigResources(w *walker, n *node, v *config.Resources) {
 			}
 			e := c.child(k0)
 			requiredResourcesPostgresCatalog(w, &e, x0)
+		}
+	}
+	if len(v.PostgresDataApis) > 0 {
+		c := n.child("postgres_data_apis")
+		for k0, x0 := range v.PostgresDataApis {
+			if k0 == "" {
+				continue
+			}
+			e := c.child(k0)
+			requiredResourcesPostgresDataApi(w, &e, x0)
 		}
 	}
 	if len(v.PostgresDatabases) > 0 {
@@ -564,6 +605,13 @@ func requiredResourcesApp(w *walker, n *node, v *resources.App) {
 	if c := n.child("default_git_source"); c.exists() {
 		requiredAppsGitSource(w, &c, v.App.DefaultGitSource)
 	}
+	if len(v.App.EffectiveResources) > 0 {
+		c := n.child("effective_resources")
+		for i0 := range v.App.EffectiveResources {
+			e := c.elem(i0)
+			requiredAppsAppResource(w, &e, &v.App.EffectiveResources[i0])
+		}
+	}
 	if c := n.child("git_repository"); c.exists() {
 		requiredAppsGitRepository(w, &c, v.App.GitRepository)
 	}
@@ -689,6 +737,24 @@ func requiredResourcesDashboard(w *walker, n *node, v *resources.Dashboard) {
 	}
 }
 
+func requiredResourcesDataQualityMonitor(w *walker, n *node, v *resources.DataQualityMonitor) {
+	if v == nil {
+		v = &resources.DataQualityMonitor{}
+	}
+	if !(v.Monitor.ObjectId != "") && !n.has("object_id") {
+		w.missing(n, "object_id")
+	}
+	if !(v.Monitor.ObjectType != "") && !n.has("object_type") {
+		w.missing(n, "object_type")
+	}
+	if c := n.child("data_profiling_config"); c.exists() {
+		requiredDataqualityDataProfilingConfig(w, &c, v.Monitor.DataProfilingConfig)
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
+}
+
 func requiredResourcesDatabaseCatalog(w *walker, n *node, v *resources.DatabaseCatalog) {
 	if v == nil {
 		v = &resources.DatabaseCatalog{}
@@ -763,6 +829,28 @@ func requiredResourcesExternalLocation(w *walker, n *node, v *resources.External
 	}
 	if c := n.child("lifecycle"); c.exists() {
 		requiredResourcesLifecycle(w, &c, &v.Lifecycle)
+	}
+}
+
+func requiredResourcesFeatureSpec(w *walker, n *node, v *resources.FeatureSpec) {
+	if v == nil {
+		v = &resources.FeatureSpec{}
+	}
+	if !(v.FeatureSpec.Name != "") && !n.has("name") {
+		w.missing(n, "name")
+	}
+	if c := n.child("extra_pip_requirements"); c.exists() {
+		requiredMlPipRequirements(w, &c, v.FeatureSpec.ExtraPipRequirements)
+	}
+	if len(v.FeatureSpec.Features) > 0 {
+		c := n.child("features")
+		for i0 := range v.FeatureSpec.Features {
+			e := c.elem(i0)
+			requiredMlFeatures(w, &e, &v.FeatureSpec.Features[i0])
+		}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
 	}
 }
 
@@ -935,6 +1023,22 @@ func requiredResourcesJob(w *walker, n *node, v *resources.Job) {
 	}
 	if c := n.child("webhook_notifications"); c.exists() {
 		requiredJobsWebhookNotifications(w, &c, v.JobSettings.WebhookNotifications)
+	}
+}
+
+func requiredResourcesMaterializationSet(w *walker, n *node, v *resources.MaterializationSet) {
+	if v == nil {
+		v = &resources.MaterializationSet{}
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
+	if len(v.MaterializationSet.MaterializedFeatures) > 0 {
+		c := n.child("materialized_features")
+		for i0 := range v.MaterializationSet.MaterializedFeatures {
+			e := c.elem(i0)
+			requiredMlMaterializedFeature(w, &e, &v.MaterializationSet.MaterializedFeatures[i0])
+		}
 	}
 }
 
@@ -1116,6 +1220,18 @@ func requiredResourcesPostgresCatalog(w *walker, n *node, v *resources.PostgresC
 	}
 	if !(v.PostgresCatalogConfig.CatalogId != "") && !n.has("catalog_id") {
 		w.missing(n, "catalog_id")
+	}
+	if c := n.child("lifecycle"); c.exists() {
+		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
+	}
+}
+
+func requiredResourcesPostgresDataApi(w *walker, n *node, v *resources.PostgresDataApi) {
+	if v == nil {
+		v = &resources.PostgresDataApi{}
+	}
+	if !(v.PostgresDataApiConfig.Parent != "") && !n.has("parent") {
+		w.missing(n, "parent")
 	}
 	if c := n.child("lifecycle"); c.exists() {
 		requiredResourcesLifecycle(w, &c, &v.BaseResource.Lifecycle)
@@ -1519,6 +1635,39 @@ func requiredAppsGitSource(w *walker, n *node, v *apps.GitSource) {
 	}
 }
 
+func requiredAppsAppResource(w *walker, n *node, v *apps.AppResource) {
+	if v == nil {
+		v = &apps.AppResource{}
+	}
+	if !(v.Name != "") && !n.has("name") {
+		w.missing(n, "name")
+	}
+	if c := n.child("database"); c.exists() {
+		requiredAppsAppResourceDatabase(w, &c, v.Database)
+	}
+	if c := n.child("experiment"); c.exists() {
+		requiredAppsAppResourceExperiment(w, &c, v.Experiment)
+	}
+	if c := n.child("genie_space"); c.exists() {
+		requiredAppsAppResourceGenieSpace(w, &c, v.GenieSpace)
+	}
+	if c := n.child("job"); c.exists() {
+		requiredAppsAppResourceJob(w, &c, v.Job)
+	}
+	if c := n.child("secret"); c.exists() {
+		requiredAppsAppResourceSecret(w, &c, v.Secret)
+	}
+	if c := n.child("serving_endpoint"); c.exists() {
+		requiredAppsAppResourceServingEndpoint(w, &c, v.ServingEndpoint)
+	}
+	if c := n.child("sql_warehouse"); c.exists() {
+		requiredAppsAppResourceSqlWarehouse(w, &c, v.SqlWarehouse)
+	}
+	if c := n.child("uc_securable"); c.exists() {
+		requiredAppsAppResourceUcSecurable(w, &c, v.UcSecurable)
+	}
+}
+
 func requiredAppsGitRepository(w *walker, n *node, v *apps.GitRepository) {
 	if v == nil {
 		v = &apps.GitRepository{}
@@ -1550,39 +1699,6 @@ func requiredResourcesAppPermission(w *walker, n *node, v *resources.AppPermissi
 	}
 	if !(v.Level != "") && !n.has("level") {
 		w.missing(n, "level")
-	}
-}
-
-func requiredAppsAppResource(w *walker, n *node, v *apps.AppResource) {
-	if v == nil {
-		v = &apps.AppResource{}
-	}
-	if !(v.Name != "") && !n.has("name") {
-		w.missing(n, "name")
-	}
-	if c := n.child("database"); c.exists() {
-		requiredAppsAppResourceDatabase(w, &c, v.Database)
-	}
-	if c := n.child("experiment"); c.exists() {
-		requiredAppsAppResourceExperiment(w, &c, v.Experiment)
-	}
-	if c := n.child("genie_space"); c.exists() {
-		requiredAppsAppResourceGenieSpace(w, &c, v.GenieSpace)
-	}
-	if c := n.child("job"); c.exists() {
-		requiredAppsAppResourceJob(w, &c, v.Job)
-	}
-	if c := n.child("secret"); c.exists() {
-		requiredAppsAppResourceSecret(w, &c, v.Secret)
-	}
-	if c := n.child("serving_endpoint"); c.exists() {
-		requiredAppsAppResourceServingEndpoint(w, &c, v.ServingEndpoint)
-	}
-	if c := n.child("sql_warehouse"); c.exists() {
-		requiredAppsAppResourceSqlWarehouse(w, &c, v.SqlWarehouse)
-	}
-	if c := n.child("uc_securable"); c.exists() {
-		requiredAppsAppResourceUcSecurable(w, &c, v.UcSecurable)
 	}
 }
 
@@ -1688,6 +1804,31 @@ func requiredComputeWorkloadType(w *walker, n *node, v *compute.WorkloadType) {
 	}
 }
 
+func requiredDataqualityDataProfilingConfig(w *walker, n *node, v *dataquality.DataProfilingConfig) {
+	if v == nil {
+		v = &dataquality.DataProfilingConfig{}
+	}
+	if !(v.OutputSchemaId != "") && !n.has("output_schema_id") {
+		w.missing(n, "output_schema_id")
+	}
+	if len(v.CustomMetrics) > 0 {
+		c := n.child("custom_metrics")
+		for i0 := range v.CustomMetrics {
+			e := c.elem(i0)
+			requiredDataqualityDataProfilingCustomMetric(w, &e, &v.CustomMetrics[i0])
+		}
+	}
+	if c := n.child("inference_log"); c.exists() {
+		requiredDataqualityInferenceLogConfig(w, &c, v.InferenceLog)
+	}
+	if c := n.child("schedule"); c.exists() {
+		requiredDataqualityCronSchedule(w, &c, v.Schedule)
+	}
+	if c := n.child("time_series"); c.exists() {
+		requiredDataqualityTimeSeriesConfig(w, &c, v.TimeSeries)
+	}
+}
+
 func requiredResourcesMlflowExperimentPermission(w *walker, n *node, v *resources.MlflowExperimentPermission) {
 	if v == nil {
 		v = &resources.MlflowExperimentPermission{}
@@ -1703,6 +1844,30 @@ func requiredMlExperimentTraceLocation(w *walker, n *node, v *ml.ExperimentTrace
 	}
 	if c := n.child("uc_trace_location"); c.exists() {
 		requiredMlUcTraceLocation(w, &c, v.UcTraceLocation)
+	}
+}
+
+func requiredMlPipRequirements(w *walker, n *node, v *ml.PipRequirements) {
+	if v == nil {
+		v = &ml.PipRequirements{}
+	}
+	if !(v.Requirements != nil) && !n.has("requirements") {
+		w.missing(n, "requirements")
+	}
+}
+
+func requiredMlFeatures(w *walker, n *node, v *ml.Features) {
+	if v == nil {
+		v = &ml.Features{}
+	}
+	if c := n.child("declarative_feature"); c.exists() {
+		requiredMlDeclarativeFeature(w, &c, v.DeclarativeFeature)
+	}
+	if c := n.child("feature_function"); c.exists() {
+		requiredMlFeatureFunction(w, &c, v.FeatureFunction)
+	}
+	if c := n.child("feature_lookup"); c.exists() {
+		requiredMlFeatureLookup(w, &c, v.FeatureLookup)
 	}
 }
 
@@ -1735,6 +1900,12 @@ func requiredMlFunction(w *walker, n *node, v *ml.Function) {
 			requiredMlFunctionExtraParameter(w, &e, &v.ExtraParameters[i0])
 		}
 	}
+	if c := n.child("lookup"); c.exists() {
+		requiredMlLookup(w, &c, v.Lookup)
+	}
+	if c := n.child("secondary_keys"); c.exists() {
+		requiredMlSecondaryKeys(w, &c, v.SecondaryKeys)
+	}
 }
 
 func requiredMlDataSource(w *walker, n *node, v *ml.DataSource) {
@@ -1746,6 +1917,9 @@ func requiredMlDataSource(w *walker, n *node, v *ml.DataSource) {
 	}
 	if c := n.child("feature_view_source"); c.exists() {
 		requiredMlFeatureViewSource(w, &c, v.FeatureViewSource)
+	}
+	if c := n.child("iceberg_table_source"); c.exists() {
+		requiredMlIcebergTableSource(w, &c, v.IcebergTableSource)
 	}
 	if c := n.child("kafka_source"); c.exists() {
 		requiredMlKafkaSource(w, &c, v.KafkaSource)
@@ -1932,6 +2106,9 @@ func requiredJobsTask(w *walker, n *node, v *jobs.Task) {
 	if !(v.TaskKey != "") && !n.has("task_key") {
 		w.missing(n, "task_key")
 	}
+	if c := n.child("ai_function_task"); c.exists() {
+		requiredJobsAiFunctionTask(w, &c, v.AiFunctionTask)
+	}
 	if c := n.child("ai_runtime_task"); c.exists() {
 		requiredJobsAiRuntimeTask(w, &c, v.AiRuntimeTask)
 	}
@@ -2003,6 +2180,9 @@ func requiredJobsTriggerSettings(w *walker, n *node, v *jobs.TriggerSettings) {
 	if c := n.child("file_arrival"); c.exists() {
 		requiredJobsFileArrivalTriggerConfiguration(w, &c, v.FileArrival)
 	}
+	if c := n.child("job_completion"); c.exists() {
+		requiredJobsJobCompletionTriggerConfiguration(w, &c, v.JobCompletion)
+	}
 	if c := n.child("model"); c.exists() {
 		requiredJobsModelTriggerConfiguration(w, &c, v.Model)
 	}
@@ -2026,6 +2206,9 @@ func requiredJobsTriggerConfiguration(w *walker, n *node, v *jobs.TriggerConfigu
 	}
 	if c := n.child("file_arrival"); c.exists() {
 		requiredJobsFileArrivalTriggerConfiguration(w, &c, v.FileArrival)
+	}
+	if c := n.child("job_completion"); c.exists() {
+		requiredJobsJobCompletionTriggerConfiguration(w, &c, v.JobCompletion)
 	}
 	if c := n.child("model"); c.exists() {
 		requiredJobsModelTriggerConfiguration(w, &c, v.Model)
@@ -2096,6 +2279,21 @@ func requiredJobsWebhookNotifications(w *walker, n *node, v *jobs.WebhookNotific
 			e := c.elem(i0)
 			requiredJobsWebhook(w, &e, &v.OnSuccess[i0])
 		}
+	}
+}
+
+func requiredMlMaterializedFeature(w *walker, n *node, v *ml.MaterializedFeature) {
+	if v == nil {
+		v = &ml.MaterializedFeature{}
+	}
+	if !(v.FeatureName != "") && !n.has("feature_name") {
+		w.missing(n, "feature_name")
+	}
+	if c := n.child("offline_store_config"); c.exists() {
+		requiredMlOfflineStoreConfig(w, &c, v.OfflineStoreConfig)
+	}
+	if c := n.child("online_store_config"); c.exists() {
+		requiredMlOnlineStoreConfig(w, &c, v.OnlineStoreConfig)
 	}
 }
 
@@ -2778,6 +2976,72 @@ func requiredComputeWorkspaceStorageInfo(w *walker, n *node, v *compute.Workspac
 	}
 }
 
+func requiredDataqualityDataProfilingCustomMetric(w *walker, n *node, v *dataquality.DataProfilingCustomMetric) {
+	if v == nil {
+		v = &dataquality.DataProfilingCustomMetric{}
+	}
+	if !(v.Definition != "") && !n.has("definition") {
+		w.missing(n, "definition")
+	}
+	if !(v.InputColumns != nil) && !n.has("input_columns") {
+		w.missing(n, "input_columns")
+	}
+	if !(v.Name != "") && !n.has("name") {
+		w.missing(n, "name")
+	}
+	if !(v.OutputDataType != "") && !n.has("output_data_type") {
+		w.missing(n, "output_data_type")
+	}
+	if !(v.Type != "") && !n.has("type") {
+		w.missing(n, "type")
+	}
+}
+
+func requiredDataqualityInferenceLogConfig(w *walker, n *node, v *dataquality.InferenceLogConfig) {
+	if v == nil {
+		v = &dataquality.InferenceLogConfig{}
+	}
+	if !(v.Granularities != nil) && !n.has("granularities") {
+		w.missing(n, "granularities")
+	}
+	if !(v.ModelIdColumn != "") && !n.has("model_id_column") {
+		w.missing(n, "model_id_column")
+	}
+	if !(v.PredictionColumn != "") && !n.has("prediction_column") {
+		w.missing(n, "prediction_column")
+	}
+	if !(v.ProblemType != "") && !n.has("problem_type") {
+		w.missing(n, "problem_type")
+	}
+	if !(v.TimestampColumn != "") && !n.has("timestamp_column") {
+		w.missing(n, "timestamp_column")
+	}
+}
+
+func requiredDataqualityCronSchedule(w *walker, n *node, v *dataquality.CronSchedule) {
+	if v == nil {
+		v = &dataquality.CronSchedule{}
+	}
+	if !(v.QuartzCronExpression != "") && !n.has("quartz_cron_expression") {
+		w.missing(n, "quartz_cron_expression")
+	}
+	if !(v.TimezoneId != "") && !n.has("timezone_id") {
+		w.missing(n, "timezone_id")
+	}
+}
+
+func requiredDataqualityTimeSeriesConfig(w *walker, n *node, v *dataquality.TimeSeriesConfig) {
+	if v == nil {
+		v = &dataquality.TimeSeriesConfig{}
+	}
+	if !(v.Granularities != nil) && !n.has("granularities") {
+		w.missing(n, "granularities")
+	}
+	if !(v.TimestampColumn != "") && !n.has("timestamp_column") {
+		w.missing(n, "timestamp_column")
+	}
+}
+
 func requiredMlUcTraceLocation(w *walker, n *node, v *ml.UcTraceLocation) {
 	if v == nil {
 		v = &ml.UcTraceLocation{}
@@ -2787,6 +3051,57 @@ func requiredMlUcTraceLocation(w *walker, n *node, v *ml.UcTraceLocation) {
 	}
 	if !(v.Schema != "") && !n.has("schema") {
 		w.missing(n, "schema")
+	}
+}
+
+func requiredMlDeclarativeFeature(w *walker, n *node, v *ml.DeclarativeFeature) {
+	if v == nil {
+		v = &ml.DeclarativeFeature{}
+	}
+	if !(v.Feature != "") && !n.has("feature") {
+		w.missing(n, "feature")
+	}
+}
+
+func requiredMlFeatureFunction(w *walker, n *node, v *ml.FeatureFunction) {
+	if v == nil {
+		v = &ml.FeatureFunction{}
+	}
+	if !(v.Udf != "") && !n.has("udf") {
+		w.missing(n, "udf")
+	}
+	if len(v.InputBindings) > 0 {
+		c := n.child("input_bindings")
+		for i0 := range v.InputBindings {
+			e := c.elem(i0)
+			requiredMlFeatureFunctionInputBinding(w, &e, &v.InputBindings[i0])
+		}
+	}
+}
+
+func requiredMlFeatureLookup(w *walker, n *node, v *ml.FeatureLookup) {
+	if v == nil {
+		v = &ml.FeatureLookup{}
+	}
+	if !(v.LookupKeys != nil) && !n.has("lookup_keys") {
+		w.missing(n, "lookup_keys")
+	}
+	if !(v.Table != "") && !n.has("table") {
+		w.missing(n, "table")
+	}
+	if len(v.DefaultValues) > 0 {
+		c := n.child("default_values")
+		for i0 := range v.DefaultValues {
+			e := c.elem(i0)
+			requiredMlDefaultValue(w, &e, &v.DefaultValues[i0])
+		}
+	}
+	if len(v.RenameOutputs) > 0 {
+		c := n.child("rename_outputs")
+		for i0 := range v.RenameOutputs {
+			e := c.elem(i0)
+			requiredMlRenameOutput(w, &e, &v.RenameOutputs[i0])
+		}
 	}
 }
 
@@ -2887,6 +3202,46 @@ func requiredMlFunctionExtraParameter(w *walker, n *node, v *ml.FunctionExtraPar
 	}
 }
 
+func requiredMlLookup(w *walker, n *node, v *ml.Lookup) {
+	if v == nil {
+		v = &ml.Lookup{}
+	}
+	if !(v.Entities != nil) && !n.has("entities") {
+		w.missing(n, "entities")
+	}
+	if !n.has("feature") {
+		w.missing(n, "feature")
+	}
+	if len(v.Entities) > 0 {
+		c := n.child("entities")
+		for i0 := range v.Entities {
+			e := c.elem(i0)
+			requiredMlEntityBinding(w, &e, &v.Entities[i0])
+		}
+	}
+	if c := n.child("feature"); c.exists() {
+		requiredMlFeatureReference(w, &c, &v.Feature)
+	}
+}
+
+func requiredMlSecondaryKeys(w *walker, n *node, v *ml.SecondaryKeys) {
+	if v == nil {
+		v = &ml.SecondaryKeys{}
+	}
+	if !n.has("feature") {
+		w.missing(n, "feature")
+	}
+	if !(v.Key != "") && !n.has("key") {
+		w.missing(n, "key")
+	}
+	if !(v.MaxKeys != 0) && !n.has("max_keys") {
+		w.missing(n, "max_keys")
+	}
+	if c := n.child("feature"); c.exists() {
+		requiredMlFeatureReference(w, &c, &v.Feature)
+	}
+}
+
 func requiredMlDeltaTableSource(w *walker, n *node, v *ml.DeltaTableSource) {
 	if v == nil {
 		v = &ml.DeltaTableSource{}
@@ -2906,6 +3261,15 @@ func requiredMlFeatureViewSource(w *walker, n *node, v *ml.FeatureViewSource) {
 			e := c.elem(i0)
 			requiredMlFeatureReference(w, &e, &v.FeatureReferences[i0])
 		}
+	}
+}
+
+func requiredMlIcebergTableSource(w *walker, n *node, v *ml.IcebergTableSource) {
+	if v == nil {
+		v = &ml.IcebergTableSource{}
+	}
+	if !(v.FullName != "") && !n.has("full_name") {
+		w.missing(n, "full_name")
 	}
 }
 
@@ -3038,11 +3402,32 @@ func requiredJobsSqlConditionConfiguration(w *walker, n *node, v *jobs.SqlCondit
 	if v == nil {
 		v = &jobs.SqlConditionConfiguration{}
 	}
-	if !(v.SqlQueryId != "") && !n.has("sql_query_id") {
-		w.missing(n, "sql_query_id")
-	}
 	if !(v.WarehouseId != "") && !n.has("warehouse_id") {
 		w.missing(n, "warehouse_id")
+	}
+}
+
+func requiredJobsAiFunctionTask(w *walker, n *node, v *jobs.AiFunctionTask) {
+	if v == nil {
+		v = &jobs.AiFunctionTask{}
+	}
+	if !n.has("output") {
+		w.missing(n, "output")
+	}
+	if c := n.child("ai_classify"); c.exists() {
+		requiredJobsAiClassifyFunction(w, &c, v.AiClassify)
+	}
+	if c := n.child("ai_extract"); c.exists() {
+		requiredJobsAiExtractFunction(w, &c, v.AiExtract)
+	}
+	if c := n.child("ai_parse_document"); c.exists() {
+		requiredJobsAiParseDocumentFunction(w, &c, v.AiParseDocument)
+	}
+	if c := n.child("delta_table"); c.exists() {
+		requiredJobsDeltaTableSource(w, &c, v.DeltaTable)
+	}
+	if c := n.child("volume"); c.exists() {
+		requiredJobsVolumeSource(w, &c, v.Volume)
 	}
 }
 
@@ -3224,6 +3609,22 @@ func requiredJobsFileArrivalTriggerConfiguration(w *walker, n *node, v *jobs.Fil
 	}
 }
 
+func requiredJobsJobCompletionTriggerConfiguration(w *walker, n *node, v *jobs.JobCompletionTriggerConfiguration) {
+	if v == nil {
+		v = &jobs.JobCompletionTriggerConfiguration{}
+	}
+	if !(v.Jobs != nil) && !n.has("jobs") {
+		w.missing(n, "jobs")
+	}
+	if len(v.Jobs) > 0 {
+		c := n.child("jobs")
+		for i0 := range v.Jobs {
+			e := c.elem(i0)
+			requiredJobsJobCompletionTriggerConfigurationMonitoredJob(w, &e, &v.Jobs[i0])
+		}
+	}
+}
+
 func requiredJobsModelTriggerConfiguration(w *walker, n *node, v *jobs.ModelTriggerConfiguration) {
 	if v == nil {
 		v = &jobs.ModelTriggerConfiguration{}
@@ -3281,6 +3682,39 @@ func requiredJobsWebhook(w *walker, n *node, v *jobs.Webhook) {
 	}
 	if !(v.Id != "") && !n.has("id") {
 		w.missing(n, "id")
+	}
+}
+
+func requiredMlOfflineStoreConfig(w *walker, n *node, v *ml.OfflineStoreConfig) {
+	if v == nil {
+		v = &ml.OfflineStoreConfig{}
+	}
+	if !(v.CatalogName != "") && !n.has("catalog_name") {
+		w.missing(n, "catalog_name")
+	}
+	if !(v.SchemaName != "") && !n.has("schema_name") {
+		w.missing(n, "schema_name")
+	}
+	if !(v.TableNamePrefix != "") && !n.has("table_name_prefix") {
+		w.missing(n, "table_name_prefix")
+	}
+}
+
+func requiredMlOnlineStoreConfig(w *walker, n *node, v *ml.OnlineStoreConfig) {
+	if v == nil {
+		v = &ml.OnlineStoreConfig{}
+	}
+	if !(v.CatalogName != "") && !n.has("catalog_name") {
+		w.missing(n, "catalog_name")
+	}
+	if !(v.OnlineStoreName != "") && !n.has("online_store_name") {
+		w.missing(n, "online_store_name")
+	}
+	if !(v.SchemaName != "") && !n.has("schema_name") {
+		w.missing(n, "schema_name")
+	}
+	if !(v.TableNamePrefix != "") && !n.has("table_name_prefix") {
+		w.missing(n, "table_name_prefix")
 	}
 }
 
@@ -3553,6 +3987,39 @@ func requiredSqlAlertV2OperandColumn2(w *walker, n *node, v *sql.AlertV2OperandC
 	}
 }
 
+func requiredMlFeatureFunctionInputBinding(w *walker, n *node, v *ml.FeatureFunctionInputBinding) {
+	if v == nil {
+		v = &ml.FeatureFunctionInputBinding{}
+	}
+	if !(v.BoundFeature != "") && !n.has("bound_feature") {
+		w.missing(n, "bound_feature")
+	}
+	if !(v.Parameter != "") && !n.has("parameter") {
+		w.missing(n, "parameter")
+	}
+}
+
+func requiredMlDefaultValue(w *walker, n *node, v *ml.DefaultValue) {
+	if v == nil {
+		v = &ml.DefaultValue{}
+	}
+	if !(v.Feature != "") && !n.has("feature") {
+		w.missing(n, "feature")
+	}
+}
+
+func requiredMlRenameOutput(w *walker, n *node, v *ml.RenameOutput) {
+	if v == nil {
+		v = &ml.RenameOutput{}
+	}
+	if !(v.Feature != "") && !n.has("feature") {
+		w.missing(n, "feature")
+	}
+	if !(v.Output != "") && !n.has("output") {
+		w.missing(n, "output")
+	}
+}
+
 func requiredMlApproxCountDistinctFunction(w *walker, n *node, v *ml.ApproxCountDistinctFunction) {
 	if v == nil {
 		v = &ml.ApproxCountDistinctFunction{}
@@ -3733,6 +4200,21 @@ func requiredMlInputBinding(w *walker, n *node, v *ml.InputBinding) {
 	}
 }
 
+func requiredMlEntityBinding(w *walker, n *node, v *ml.EntityBinding) {
+	if v == nil {
+		v = &ml.EntityBinding{}
+	}
+	if !(v.Entity != "") && !n.has("entity") {
+		w.missing(n, "entity")
+	}
+	if !n.has("input") {
+		w.missing(n, "input")
+	}
+	if c := n.child("input"); c.exists() {
+		requiredMlInputReference(w, &c, &v.Input)
+	}
+}
+
 func requiredMlFeatureReference(w *walker, n *node, v *ml.FeatureReference) {
 	if v == nil {
 		v = &ml.FeatureReference{}
@@ -3776,6 +4258,57 @@ func requiredMlFlatSchema(w *walker, n *node, v *ml.FlatSchema) {
 	}
 }
 
+func requiredJobsAiClassifyFunction(w *walker, n *node, v *jobs.AiClassifyFunction) {
+	if v == nil {
+		v = &jobs.AiClassifyFunction{}
+	}
+	if !(v.Version != "") && !n.has("version") {
+		w.missing(n, "version")
+	}
+	if c := n.child("inline_labels"); c.exists() {
+		requiredJobsAiClassifyFunctionInlineLabels(w, &c, v.InlineLabels)
+	}
+}
+
+func requiredJobsAiExtractFunction(w *walker, n *node, v *jobs.AiExtractFunction) {
+	if v == nil {
+		v = &jobs.AiExtractFunction{}
+	}
+	if !(v.Version != "") && !n.has("version") {
+		w.missing(n, "version")
+	}
+}
+
+func requiredJobsAiParseDocumentFunction(w *walker, n *node, v *jobs.AiParseDocumentFunction) {
+	if v == nil {
+		v = &jobs.AiParseDocumentFunction{}
+	}
+	if !(v.Version != "") && !n.has("version") {
+		w.missing(n, "version")
+	}
+}
+
+func requiredJobsDeltaTableSource(w *walker, n *node, v *jobs.DeltaTableSource) {
+	if v == nil {
+		v = &jobs.DeltaTableSource{}
+	}
+	if !(v.InputColumn != "") && !n.has("input_column") {
+		w.missing(n, "input_column")
+	}
+	if !(v.TableName != "") && !n.has("table_name") {
+		w.missing(n, "table_name")
+	}
+}
+
+func requiredJobsVolumeSource(w *walker, n *node, v *jobs.VolumeSource) {
+	if v == nil {
+		v = &jobs.VolumeSource{}
+	}
+	if !(v.VolumePath != "") && !n.has("volume_path") {
+		w.missing(n, "volume_path")
+	}
+}
+
 func requiredJobsDeploymentSpec(w *walker, n *node, v *jobs.DeploymentSpec) {
 	if v == nil {
 		v = &jobs.DeploymentSpec{}
@@ -3803,6 +4336,9 @@ func requiredJobsTask2(w *walker, n *node, v *jobs.Task) {
 	}
 	if !(v.TaskKey != "") && !n.has("task_key") {
 		w.missing(n, "task_key")
+	}
+	if c := n.child("ai_function_task"); c.exists() {
+		requiredJobsAiFunctionTask(w, &c, v.AiFunctionTask)
 	}
 	if c := n.child("ai_runtime_task"); c.exists() {
 		requiredJobsAiRuntimeTask(w, &c, v.AiRuntimeTask)
@@ -3910,6 +4446,18 @@ func requiredJobsSqlTaskQuery(w *walker, n *node, v *jobs.SqlTaskQuery) {
 	}
 	if !(v.QueryId != "") && !n.has("query_id") {
 		w.missing(n, "query_id")
+	}
+}
+
+func requiredJobsJobCompletionTriggerConfigurationMonitoredJob(w *walker, n *node, v *jobs.JobCompletionTriggerConfigurationMonitoredJob) {
+	if v == nil {
+		v = &jobs.JobCompletionTriggerConfigurationMonitoredJob{}
+	}
+	if !(v.JobId != "") && !n.has("job_id") {
+		w.missing(n, "job_id")
+	}
+	if !(v.WorkspaceId != "") && !n.has("workspace_id") {
+		w.missing(n, "workspace_id")
 	}
 }
 
@@ -4130,6 +4678,15 @@ func requiredPipelinesAutoFullRefreshPolicy(w *walker, n *node, v *pipelines.Aut
 	}
 }
 
+func requiredMlInputReference(w *walker, n *node, v *ml.InputReference) {
+	if v == nil {
+		v = &ml.InputReference{}
+	}
+	if c := n.child("feature"); c.exists() {
+		requiredMlFeatureReference2(w, &c, v.Feature)
+	}
+}
+
 func requiredMlFieldDefinition(w *walker, n *node, v *ml.FieldDefinition) {
 	if v == nil {
 		v = &ml.FieldDefinition{}
@@ -4139,6 +4696,22 @@ func requiredMlFieldDefinition(w *walker, n *node, v *ml.FieldDefinition) {
 	}
 	if !(v.Name != "") && !n.has("name") {
 		w.missing(n, "name")
+	}
+}
+
+func requiredJobsAiClassifyFunctionInlineLabels(w *walker, n *node, v *jobs.AiClassifyFunctionInlineLabels) {
+	if v == nil {
+		v = &jobs.AiClassifyFunctionInlineLabels{}
+	}
+	if !(v.Labels != nil) && !n.has("labels") {
+		w.missing(n, "labels")
+	}
+	if len(v.Labels) > 0 {
+		c := n.child("labels")
+		for i0 := range v.Labels {
+			e := c.elem(i0)
+			requiredJobsAiClassifyFunctionLabel(w, &e, &v.Labels[i0])
+		}
 	}
 }
 
@@ -4310,6 +4883,24 @@ func requiredPipelinesConnectorOptions(w *walker, n *node, v *pipelines.Connecto
 	}
 	if c := n.child("rabbitmq_options"); c.exists() {
 		requiredPipelinesRabbitmqOptions(w, &c, v.RabbitmqOptions)
+	}
+}
+
+func requiredMlFeatureReference2(w *walker, n *node, v *ml.FeatureReference) {
+	if v == nil {
+		v = &ml.FeatureReference{}
+	}
+	if !(v.Feature != "") && !n.has("feature") {
+		w.missing(n, "feature")
+	}
+}
+
+func requiredJobsAiClassifyFunctionLabel(w *walker, n *node, v *jobs.AiClassifyFunctionLabel) {
+	if v == nil {
+		v = &jobs.AiClassifyFunctionLabel{}
+	}
+	if !(v.Name != "") && !n.has("name") {
+		w.missing(n, "name")
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -22,6 +23,8 @@ import (
 )
 
 var enumValuesAppsAppDeploymentMode = []string{"AUTO_SYNC", "SNAPSHOT"}
+
+var enumValuesAppsAppDeploymentScanStatus = []string{"APP_DEPLOYMENT_SCAN_STATUS_CLEAN", "APP_DEPLOYMENT_SCAN_STATUS_FINDINGS", "APP_DEPLOYMENT_SCAN_STATUS_NOT_SCANNED", "APP_DEPLOYMENT_SCAN_STATUS_PARTIAL", "APP_DEPLOYMENT_SCAN_STATUS_UNAVAILABLE"}
 
 var enumValuesAppsAppDeploymentState = []string{"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"}
 
@@ -55,6 +58,8 @@ var enumValuesAppsComputeSize = []string{"LARGE", "MEDIUM", "XLARGE"}
 
 var enumValuesAppsComputeState = []string{"ACTIVE", "DELETING", "ERROR", "STARTING", "STOPPED", "STOPPING", "UPDATING"}
 
+var enumValuesCatalogCatalogIsolationMode = []string{"ISOLATED", "OPEN"}
+
 var enumValuesCatalogModelProviderServiceConfigExternalModelProviderType = []string{"EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK", "EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC", "EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI", "EXTERNAL_MODEL_PROVIDER_TYPE_BEDROCK_MANTLE", "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM", "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE", "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY", "EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI"}
 
 var enumValuesCatalogModelServiceConfigDestinationConfigDestinationType = []string{"DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL", "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL", "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL"}
@@ -64,8 +69,6 @@ var enumValuesCatalogMonitorCronSchedulePauseStatus = []string{"PAUSED", "UNPAUS
 var enumValuesCatalogMonitorInferenceLogProblemType = []string{"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"}
 
 var enumValuesCatalogMonitorMetricType = []string{"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"}
-
-var enumValuesCatalogPrivilege = []string{"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_LOCATION", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"}
 
 var enumValuesCatalogRateLimitRateLimitKey = []string{"RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"}
 
@@ -127,11 +130,25 @@ var enumValuesDatabaseSyncedTableSpecPgSpecificType = []string{"PG_SPECIFIC_TYPE
 
 var enumValuesDatabaseSyncedTableState = []string{"SYNCED_TABLED_OFFLINE", "SYNCED_TABLE_OFFLINE_FAILED", "SYNCED_TABLE_ONLINE", "SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE", "SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE", "SYNCED_TABLE_ONLINE_PIPELINE_FAILED", "SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE", "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES", "SYNCED_TABLE_PROVISIONING", "SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT", "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES"}
 
+var enumValuesDataqualityAggregationGranularity = []string{"AGGREGATION_GRANULARITY_1_DAY", "AGGREGATION_GRANULARITY_1_HOUR", "AGGREGATION_GRANULARITY_1_MONTH", "AGGREGATION_GRANULARITY_1_WEEK", "AGGREGATION_GRANULARITY_1_YEAR", "AGGREGATION_GRANULARITY_2_WEEKS", "AGGREGATION_GRANULARITY_30_MINUTES", "AGGREGATION_GRANULARITY_3_WEEKS", "AGGREGATION_GRANULARITY_4_WEEKS", "AGGREGATION_GRANULARITY_5_MINUTES"}
+
+var enumValuesDataqualityCronSchedulePauseStatus = []string{"CRON_SCHEDULE_PAUSE_STATUS_PAUSED", "CRON_SCHEDULE_PAUSE_STATUS_UNPAUSED"}
+
+var enumValuesDataqualityDataProfilingCustomMetricType = []string{"DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE", "DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED", "DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT"}
+
+var enumValuesDataqualityDataProfilingStatus = []string{"DATA_PROFILING_STATUS_ACTIVE", "DATA_PROFILING_STATUS_DELETE_PENDING", "DATA_PROFILING_STATUS_ERROR", "DATA_PROFILING_STATUS_FAILED", "DATA_PROFILING_STATUS_PENDING"}
+
+var enumValuesDataqualityInferenceProblemType = []string{"INFERENCE_PROBLEM_TYPE_CLASSIFICATION", "INFERENCE_PROBLEM_TYPE_REGRESSION"}
+
 var enumValuesExecExecutableType = []string{"bash", "sh", "cmd"}
 
 var enumValuesIamPermissionLevel = []string{"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"}
 
-var enumValuesJobsAiRuntimeTaskPriorityClass = []string{"BEST_EFFORT", "CRITICAL", "NORMAL"}
+var enumValuesJobsAiExtractFunctionMode = []string{"MODE_PRECISION"}
+
+var enumValuesJobsAiParseDocumentFunctionDescriptionElementType = []string{"DESCRIPTION_ELEMENT_TYPE_ALL", "DESCRIPTION_ELEMENT_TYPE_FIGURE"}
+
+var enumValuesJobsAiRuntimeTaskPriorityClass = []string{"HIGH", "NORMAL", "PREEMPTABLE"}
 
 var enumValuesJobsAuthenticationMethod = []string{"OAUTH", "PAT"}
 
@@ -146,6 +163,8 @@ var enumValuesJobsDayOfWeek = []string{"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY",
 var enumValuesJobsFormat = []string{"MULTI_TASK", "SINGLE_TASK"}
 
 var enumValuesJobsGitProvider = []string{"awsCodeCommit", "azureDevOpsServices", "bitbucketCloud", "bitbucketServer", "gitHub", "gitHubEnterprise", "gitLab", "gitLabEnterpriseEdition"}
+
+var enumValuesJobsJobCompletionTriggerConfigurationIfStatus = []string{"DONE", "FAILED", "SUCCESS"}
 
 var enumValuesJobsJobDeploymentKind = []string{"BUNDLE", "SYSTEM_MANAGED"}
 
@@ -181,15 +200,23 @@ var enumValuesJobsSubscriptionAttachmentPageAttachmentPageSelection = []string{"
 
 var enumValuesJobsTaskRetryMode = []string{"NEVER", "ON_FAILURE"}
 
+var enumValuesMlCronScheduleMode = []string{"DERIVED", "MANUAL"}
+
 var enumValuesMlExperimentPermissionLevel = []string{"CAN_EDIT", "CAN_MANAGE", "CAN_READ"}
 
 var enumValuesMlFunctionFunctionType = []string{"APPROX_COUNT_DISTINCT", "APPROX_PERCENTILE", "AVG", "COUNT", "FIRST", "FUNCTION_TYPE_UNSPECIFIED", "LAST", "MAX", "MIN", "STDDEV_POP", "STDDEV_SAMP", "SUM", "VAR_POP", "VAR_SAMP"}
+
+var enumValuesMlMaterializedFeaturePipelineScheduleState = []string{"ACTIVE", "PAUSED", "SNAPSHOT"}
 
 var enumValuesMlRegisteredModelPermissionLevel = []string{"CAN_EDIT", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_STAGING_VERSIONS", "CAN_READ"}
 
 var enumValuesMlScalarDataType = []string{"BINARY", "BOOLEAN", "DATE", "DECIMAL", "DOUBLE", "FLOAT", "INTEGER", "LONG", "SHORT", "STRING", "TIMESTAMP"}
 
 var enumValuesMlSdpSourceState = []string{"ERROR", "PENDING", "RESOLVED"}
+
+var enumValuesMlStreamingModeStreamingModeType = []string{"STREAMING_MODE_TYPE_MBM", "STREAMING_MODE_TYPE_RTM"}
+
+var enumValuesMlTableTriggerTableTriggerCondition = []string{"TABLE_TRIGGER_CONDITION_ALL_UPDATED", "TABLE_TRIGGER_CONDITION_ANY_UPDATED"}
 
 var enumValuesPipelinesConnectorType = []string{"CDC", "QUERY_BASED"}
 
@@ -203,7 +230,7 @@ var enumValuesPipelinesFileIngestionOptionsSchemaEvolutionMode = []string{"ADD_N
 
 var enumValuesPipelinesGoogleDriveOptionsGoogleDriveEntityType = []string{"FILE", "FILE_METADATA", "PERMISSION"}
 
-var enumValuesPipelinesIngestionSourceType = []string{"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ONEDRIVE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"}
+var enumValuesPipelinesIngestionSourceType = []string{"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_ADS", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ONEDRIVE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SMARTSHEET", "SQLSERVER", "TERADATA", "TIKTOK_ADS", "WORKDAY_RAAS", "ZENDESK"}
 
 var enumValuesPipelinesLinkedInAdsOptionsLinkedInAdsCustomReportOptionsLinkedInAdsEntityGranularity = []string{"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"}
 
@@ -238,6 +265,8 @@ var enumValuesPostgresDayOfWeek = []string{"FRIDAY", "MONDAY", "SATURDAY", "SUND
 var enumValuesPostgresEndpointType = []string{"ENDPOINT_TYPE_READ_ONLY", "ENDPOINT_TYPE_READ_WRITE"}
 
 var enumValuesPostgresNewPipelineSpecPipelineChannel = []string{"CURRENT", "PREVIEW"}
+
+var enumValuesPostgresOpenApiMode = []string{"OPEN_API_MODE_DISABLED", "OPEN_API_MODE_IGNORE_PRIVILEGES"}
 
 var enumValuesPostgresRoleAuthMethod = []string{"LAKEBASE_OAUTH_V1", "NO_LOGIN", "PG_PASSWORD_SCRAM_SHA_256"}
 
@@ -427,6 +456,16 @@ func enumConfigResources(w *walker, n *node, v *config.Resources) {
 			enumResourcesDashboard(w, &e, x0)
 		}
 	}
+	if len(v.DataQualityMonitors) > 0 {
+		c := n.child("data_quality_monitors")
+		for k0, x0 := range v.DataQualityMonitors {
+			if k0 == "" {
+				continue
+			}
+			e := c.child(k0)
+			enumResourcesDataQualityMonitor(w, &e, x0)
+		}
+	}
 	if len(v.DatabaseInstances) > 0 {
 		c := n.child("database_instances")
 		for k0, x0 := range v.DatabaseInstances {
@@ -507,6 +546,16 @@ func enumConfigResources(w *walker, n *node, v *config.Resources) {
 			enumResourcesJob(w, &e, x0)
 		}
 	}
+	if len(v.MaterializationSets) > 0 {
+		c := n.child("materialization_sets")
+		for k0, x0 := range v.MaterializationSets {
+			if k0 == "" {
+				continue
+			}
+			e := c.child(k0)
+			enumResourcesMaterializationSet(w, &e, x0)
+		}
+	}
 	if len(v.McpServices) > 0 {
 		c := n.child("mcp_services")
 		for k0, x0 := range v.McpServices {
@@ -565,6 +614,16 @@ func enumConfigResources(w *walker, n *node, v *config.Resources) {
 			}
 			e := c.child(k0)
 			enumResourcesPipeline(w, &e, x0)
+		}
+	}
+	if len(v.PostgresDataApis) > 0 {
+		c := n.child("postgres_data_apis")
+		for k0, x0 := range v.PostgresDataApis {
+			if k0 == "" {
+				continue
+			}
+			e := c.child(k0)
+			enumResourcesPostgresDataApi(w, &e, x0)
 		}
 	}
 	if len(v.PostgresEndpoints) > 0 {
@@ -627,26 +686,6 @@ func enumConfigResources(w *walker, n *node, v *config.Resources) {
 			enumResourcesQualityMonitor(w, &e, x0)
 		}
 	}
-	if len(v.RegisteredModels) > 0 {
-		c := n.child("registered_models")
-		for k0, x0 := range v.RegisteredModels {
-			if k0 == "" {
-				continue
-			}
-			e := c.child(k0)
-			enumResourcesRegisteredModel(w, &e, x0)
-		}
-	}
-	if len(v.Schemas) > 0 {
-		c := n.child("schemas")
-		for k0, x0 := range v.Schemas {
-			if k0 == "" {
-				continue
-			}
-			e := c.child(k0)
-			enumResourcesSchema(w, &e, x0)
-		}
-	}
 	if len(v.SecretScopes) > 0 {
 		c := n.child("secret_scopes")
 		for k0, x0 := range v.SecretScopes {
@@ -655,16 +694,6 @@ func enumConfigResources(w *walker, n *node, v *config.Resources) {
 			}
 			e := c.child(k0)
 			enumResourcesSecretScope(w, &e, x0)
-		}
-	}
-	if len(v.Secrets) > 0 {
-		c := n.child("secrets")
-		for k0, x0 := range v.Secrets {
-			if k0 == "" {
-				continue
-			}
-			e := c.child(k0)
-			enumResourcesSecret(w, &e, x0)
 		}
 	}
 	if len(v.SqlWarehouses) > 0 {
@@ -768,6 +797,13 @@ func enumResourcesApp(w *walker, n *node, v *resources.App) {
 	if c := n.child("compute_status"); c.exists() {
 		enumAppsComputeStatus(w, &c, v.App.ComputeStatus)
 	}
+	if len(v.App.EffectiveResources) > 0 {
+		c := n.child("effective_resources")
+		for i0 := range v.App.EffectiveResources {
+			e := c.elem(i0)
+			enumAppsAppResource(w, &e, &v.App.EffectiveResources[i0])
+		}
+	}
 	if c := n.child("pending_deployment"); c.exists() {
 		enumAppsAppDeployment(w, &c, v.App.PendingDeployment)
 	}
@@ -791,13 +827,7 @@ func enumResourcesCatalog(w *walker, n *node, v *resources.Catalog) {
 	if v == nil {
 		v = &resources.Catalog{}
 	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
-	}
+	w.enumField(n, "isolation_mode", string(v.IsolationMode), enumValuesCatalogCatalogIsolationMode)
 }
 
 func enumResourcesClusterPolicy(w *walker, n *node, v *resources.ClusterPolicy) {
@@ -853,6 +883,15 @@ func enumResourcesDashboard(w *walker, n *node, v *resources.Dashboard) {
 	}
 }
 
+func enumResourcesDataQualityMonitor(w *walker, n *node, v *resources.DataQualityMonitor) {
+	if v == nil {
+		v = &resources.DataQualityMonitor{}
+	}
+	if c := n.child("data_profiling_config"); c.exists() {
+		enumDataqualityDataProfilingConfig(w, &c, v.Monitor.DataProfilingConfig)
+	}
+}
+
 func enumResourcesDatabaseInstance(w *walker, n *node, v *resources.DatabaseInstance) {
 	if v == nil {
 		v = &resources.DatabaseInstance{}
@@ -886,13 +925,6 @@ func enumResourcesExternalLocation(w *walker, n *node, v *resources.ExternalLoca
 	}
 	if c := n.child("encryption_details"); c.exists() {
 		enumCatalogEncryptionDetails(w, &c, v.CreateExternalLocation.EncryptionDetails)
-	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
 	}
 }
 
@@ -1008,19 +1040,25 @@ func enumResourcesJob(w *walker, n *node, v *resources.Job) {
 	}
 }
 
+func enumResourcesMaterializationSet(w *walker, n *node, v *resources.MaterializationSet) {
+	if v == nil {
+		v = &resources.MaterializationSet{}
+	}
+	if len(v.MaterializationSet.MaterializedFeatures) > 0 {
+		c := n.child("materialized_features")
+		for i0 := range v.MaterializationSet.MaterializedFeatures {
+			e := c.elem(i0)
+			enumMlMaterializedFeature(w, &e, &v.MaterializationSet.MaterializedFeatures[i0])
+		}
+	}
+}
+
 func enumResourcesMcpService(w *walker, n *node, v *resources.McpService) {
 	if v == nil {
 		v = &resources.McpService{}
 	}
 	if c := n.child("config"); c.exists() {
 		enumCatalogMcpServiceConfig(w, &c, v.McpServiceConfig.Config)
-	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
 	}
 }
 
@@ -1031,13 +1069,6 @@ func enumResourcesModelProviderService(w *walker, n *node, v *resources.ModelPro
 	if c := n.child("config"); c.exists() {
 		enumCatalogModelProviderServiceConfig(w, &c, v.ModelProviderServiceConfig.Config)
 	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
-	}
 }
 
 func enumResourcesModelService(w *walker, n *node, v *resources.ModelService) {
@@ -1046,13 +1077,6 @@ func enumResourcesModelService(w *walker, n *node, v *resources.ModelService) {
 	}
 	if c := n.child("config"); c.exists() {
 		enumCatalogModelServiceConfig(w, &c, v.ModelServiceConfig.Config)
-	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
 	}
 }
 
@@ -1125,6 +1149,13 @@ func enumResourcesPipeline(w *walker, n *node, v *resources.Pipeline) {
 	if c := n.child("restart_window"); c.exists() {
 		enumPipelinesRestartWindow(w, &c, v.CreatePipeline.RestartWindow)
 	}
+}
+
+func enumResourcesPostgresDataApi(w *walker, n *node, v *resources.PostgresDataApi) {
+	if v == nil {
+		v = &resources.PostgresDataApi{}
+	}
+	w.enumField(n, "openapi_mode", string(v.PostgresDataApiConfig.DataApiDataApiSpec.OpenapiMode), enumValuesPostgresOpenApiMode)
 }
 
 func enumResourcesPostgresEndpoint(w *walker, n *node, v *resources.PostgresEndpoint) {
@@ -1218,32 +1249,6 @@ func enumResourcesQualityMonitor(w *walker, n *node, v *resources.QualityMonitor
 	}
 }
 
-func enumResourcesRegisteredModel(w *walker, n *node, v *resources.RegisteredModel) {
-	if v == nil {
-		v = &resources.RegisteredModel{}
-	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
-	}
-}
-
-func enumResourcesSchema(w *walker, n *node, v *resources.Schema) {
-	if v == nil {
-		v = &resources.Schema{}
-	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
-	}
-}
-
 func enumResourcesSecretScope(w *walker, n *node, v *resources.SecretScope) {
 	if v == nil {
 		v = &resources.SecretScope{}
@@ -1254,19 +1259,6 @@ func enumResourcesSecretScope(w *walker, n *node, v *resources.SecretScope) {
 		for i0 := range v.Permissions {
 			e := c.elem(i0)
 			enumResourcesSecretScopePermission(w, &e, &v.Permissions[i0])
-		}
-	}
-}
-
-func enumResourcesSecret(w *walker, n *node, v *resources.Secret) {
-	if v == nil {
-		v = &resources.Secret{}
-	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
 		}
 	}
 }
@@ -1323,13 +1315,6 @@ func enumResourcesVectorSearchIndex(w *walker, n *node, v *resources.VectorSearc
 	if c := n.child("delta_sync_index_spec"); c.exists() {
 		enumVectorsearchDeltaSyncVectorIndexSpecRequest(w, &c, v.CreateVectorIndexRequest.DeltaSyncIndexSpec)
 	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
-	}
 	w.enumField(n, "index_subtype", string(v.CreateVectorIndexRequest.IndexSubtype), enumValuesVectorsearchIndexSubtype)
 	w.enumField(n, "index_type", string(v.CreateVectorIndexRequest.IndexType), enumValuesVectorsearchVectorIndexType)
 }
@@ -1337,13 +1322,6 @@ func enumResourcesVectorSearchIndex(w *walker, n *node, v *resources.VectorSearc
 func enumResourcesVolume(w *walker, n *node, v *resources.Volume) {
 	if v == nil {
 		v = &resources.Volume{}
-	}
-	if len(v.Grants) > 0 {
-		c := n.child("grants")
-		for i0 := range v.Grants {
-			e := c.elem(i0)
-			enumCatalogPrivilegeAssignment(w, &e, &v.Grants[i0])
-		}
 	}
 	w.enumField(n, "volume_type", string(v.CreateVolumeRequestContent.VolumeType), enumValuesCatalogVolumeType)
 }
@@ -1375,6 +1353,7 @@ func enumAppsAppDeployment(w *walker, n *node, v *apps.AppDeployment) {
 		v = &apps.AppDeployment{}
 	}
 	w.enumField(n, "mode", string(v.Mode), enumValuesAppsAppDeploymentMode)
+	w.enumField(n, "scan_status", string(v.ScanStatus), enumValuesAppsAppDeploymentScanStatus)
 	if c := n.child("status"); c.exists() {
 		enumAppsAppDeploymentStatus(w, &c, v.Status)
 	}
@@ -1392,13 +1371,6 @@ func enumAppsComputeStatus(w *walker, n *node, v *apps.ComputeStatus) {
 		v = &apps.ComputeStatus{}
 	}
 	w.enumField(n, "state", string(v.State), enumValuesAppsComputeState)
-}
-
-func enumResourcesAppPermission(w *walker, n *node, v *resources.AppPermission) {
-	if v == nil {
-		v = &resources.AppPermission{}
-	}
-	w.enumField(n, "level", string(v.Level), enumValuesAppsAppPermissionLevel)
 }
 
 func enumAppsAppResource(w *walker, n *node, v *apps.AppResource) {
@@ -1437,17 +1409,11 @@ func enumAppsAppResource(w *walker, n *node, v *apps.AppResource) {
 	}
 }
 
-func enumCatalogPrivilegeAssignment(w *walker, n *node, v *catalog.PrivilegeAssignment) {
+func enumResourcesAppPermission(w *walker, n *node, v *resources.AppPermission) {
 	if v == nil {
-		v = &catalog.PrivilegeAssignment{}
+		v = &resources.AppPermission{}
 	}
-	if len(v.Privileges) > 0 {
-		c := n.child("privileges")
-		for i0 := range v.Privileges {
-			e := c.elem(i0)
-			w.enumElem(&e, string(v.Privileges[i0]), enumValuesCatalogPrivilege)
-		}
-	}
+	w.enumField(n, "level", string(v.Level), enumValuesAppsAppPermissionLevel)
 }
 
 func enumResourcesClusterPolicyPermission(w *walker, n *node, v *resources.ClusterPolicyPermission) {
@@ -1485,6 +1451,29 @@ func enumResourcesClusterPermission(w *walker, n *node, v *resources.ClusterPerm
 		v = &resources.ClusterPermission{}
 	}
 	w.enumField(n, "level", string(v.Level), enumValuesComputeClusterPermissionLevel)
+}
+
+func enumDataqualityDataProfilingConfig(w *walker, n *node, v *dataquality.DataProfilingConfig) {
+	if v == nil {
+		v = &dataquality.DataProfilingConfig{}
+	}
+	if len(v.CustomMetrics) > 0 {
+		c := n.child("custom_metrics")
+		for i0 := range v.CustomMetrics {
+			e := c.elem(i0)
+			enumDataqualityDataProfilingCustomMetric(w, &e, &v.CustomMetrics[i0])
+		}
+	}
+	if c := n.child("inference_log"); c.exists() {
+		enumDataqualityInferenceLogConfig(w, &c, v.InferenceLog)
+	}
+	if c := n.child("schedule"); c.exists() {
+		enumDataqualityCronSchedule(w, &c, v.Schedule)
+	}
+	w.enumField(n, "status", string(v.Status), enumValuesDataqualityDataProfilingStatus)
+	if c := n.child("time_series"); c.exists() {
+		enumDataqualityTimeSeriesConfig(w, &c, v.TimeSeries)
+	}
 }
 
 func enumResourcesMlflowExperimentPermission(w *walker, n *node, v *resources.MlflowExperimentPermission) {
@@ -1630,6 +1619,9 @@ func enumJobsTask(w *walker, n *node, v *jobs.Task) {
 	if v == nil {
 		v = &jobs.Task{}
 	}
+	if c := n.child("ai_function_task"); c.exists() {
+		enumJobsAiFunctionTask(w, &c, v.AiFunctionTask)
+	}
 	if c := n.child("ai_runtime_task"); c.exists() {
 		enumJobsAiRuntimeTask(w, &c, v.AiRuntimeTask)
 	}
@@ -1676,6 +1668,9 @@ func enumJobsTriggerSettings(w *walker, n *node, v *jobs.TriggerSettings) {
 	if v == nil {
 		v = &jobs.TriggerSettings{}
 	}
+	if c := n.child("job_completion"); c.exists() {
+		enumJobsJobCompletionTriggerConfiguration(w, &c, v.JobCompletion)
+	}
 	if c := n.child("model"); c.exists() {
 		enumJobsModelTriggerConfiguration(w, &c, v.Model)
 	}
@@ -1698,6 +1693,9 @@ func enumJobsTriggerConfiguration(w *walker, n *node, v *jobs.TriggerConfigurati
 	if c := n.child("continuous"); c.exists() {
 		enumJobsContinuousTriggerConfiguration(w, &c, v.Continuous)
 	}
+	if c := n.child("job_completion"); c.exists() {
+		enumJobsJobCompletionTriggerConfiguration(w, &c, v.JobCompletion)
+	}
 	if c := n.child("model"); c.exists() {
 		enumJobsModelTriggerConfiguration(w, &c, v.Model)
 	}
@@ -1710,6 +1708,22 @@ func enumJobsTriggerConfiguration(w *walker, n *node, v *jobs.TriggerConfigurati
 	}
 	if c := n.child("table_update"); c.exists() {
 		enumJobsTableUpdateTriggerConfiguration(w, &c, v.TableUpdate)
+	}
+}
+
+func enumMlMaterializedFeature(w *walker, n *node, v *ml.MaterializedFeature) {
+	if v == nil {
+		v = &ml.MaterializedFeature{}
+	}
+	if c := n.child("cron_schedule_trigger"); c.exists() {
+		enumMlCronSchedule(w, &c, v.CronScheduleTrigger)
+	}
+	w.enumField(n, "pipeline_schedule_state", string(v.PipelineScheduleState), enumValuesMlMaterializedFeaturePipelineScheduleState)
+	if c := n.child("streaming_mode"); c.exists() {
+		enumMlStreamingMode(w, &c, v.StreamingMode)
+	}
+	if c := n.child("table_trigger"); c.exists() {
+		enumMlTableTrigger(w, &c, v.TableTrigger)
 	}
 }
 
@@ -2103,6 +2117,47 @@ func enumAppsAppResourceUcSecurable(w *walker, n *node, v *apps.AppResourceUcSec
 	w.enumField(n, "securable_type", string(v.SecurableType), enumValuesAppsAppResourceUcSecurableUcSecurableType)
 }
 
+func enumDataqualityDataProfilingCustomMetric(w *walker, n *node, v *dataquality.DataProfilingCustomMetric) {
+	if v == nil {
+		v = &dataquality.DataProfilingCustomMetric{}
+	}
+	w.enumField(n, "type", string(v.Type), enumValuesDataqualityDataProfilingCustomMetricType)
+}
+
+func enumDataqualityInferenceLogConfig(w *walker, n *node, v *dataquality.InferenceLogConfig) {
+	if v == nil {
+		v = &dataquality.InferenceLogConfig{}
+	}
+	if len(v.Granularities) > 0 {
+		c := n.child("granularities")
+		for i0 := range v.Granularities {
+			e := c.elem(i0)
+			w.enumElem(&e, string(v.Granularities[i0]), enumValuesDataqualityAggregationGranularity)
+		}
+	}
+	w.enumField(n, "problem_type", string(v.ProblemType), enumValuesDataqualityInferenceProblemType)
+}
+
+func enumDataqualityCronSchedule(w *walker, n *node, v *dataquality.CronSchedule) {
+	if v == nil {
+		v = &dataquality.CronSchedule{}
+	}
+	w.enumField(n, "pause_status", string(v.PauseStatus), enumValuesDataqualityCronSchedulePauseStatus)
+}
+
+func enumDataqualityTimeSeriesConfig(w *walker, n *node, v *dataquality.TimeSeriesConfig) {
+	if v == nil {
+		v = &dataquality.TimeSeriesConfig{}
+	}
+	if len(v.Granularities) > 0 {
+		c := n.child("granularities")
+		for i0 := range v.Granularities {
+			e := c.elem(i0)
+			w.enumElem(&e, string(v.Granularities[i0]), enumValuesDataqualityAggregationGranularity)
+		}
+	}
+}
+
 func enumCatalogSseEncryptionDetails(w *walker, n *node, v *catalog.SseEncryptionDetails) {
 	if v == nil {
 		v = &catalog.SseEncryptionDetails{}
@@ -2180,6 +2235,18 @@ func enumJobsSqlConditionConfiguration(w *walker, n *node, v *jobs.SqlConditionC
 		v = &jobs.SqlConditionConfiguration{}
 	}
 	w.enumField(n, "trigger_mode", string(v.TriggerMode), enumValuesJobsSqlConditionTriggerMode)
+}
+
+func enumJobsAiFunctionTask(w *walker, n *node, v *jobs.AiFunctionTask) {
+	if v == nil {
+		v = &jobs.AiFunctionTask{}
+	}
+	if c := n.child("ai_extract"); c.exists() {
+		enumJobsAiExtractFunction(w, &c, v.AiExtract)
+	}
+	if c := n.child("ai_parse_document"); c.exists() {
+		enumJobsAiParseDocumentFunction(w, &c, v.AiParseDocument)
+	}
 }
 
 func enumJobsAiRuntimeTask(w *walker, n *node, v *jobs.AiRuntimeTask) {
@@ -2281,6 +2348,13 @@ func enumJobsSqlTask(w *walker, n *node, v *jobs.SqlTask) {
 	}
 }
 
+func enumJobsJobCompletionTriggerConfiguration(w *walker, n *node, v *jobs.JobCompletionTriggerConfiguration) {
+	if v == nil {
+		v = &jobs.JobCompletionTriggerConfiguration{}
+	}
+	w.enumField(n, "if_status", string(v.IfStatus), enumValuesJobsJobCompletionTriggerConfigurationIfStatus)
+}
+
 func enumJobsModelTriggerConfiguration(w *walker, n *node, v *jobs.ModelTriggerConfiguration) {
 	if v == nil {
 		v = &jobs.ModelTriggerConfiguration{}
@@ -2310,6 +2384,27 @@ func enumJobsContinuousTriggerConfiguration(w *walker, n *node, v *jobs.Continuo
 		enumJobsMaintenanceWindow(w, &c, v.MaintenanceWindow)
 	}
 	w.enumField(n, "task_retry_mode", string(v.TaskRetryMode), enumValuesJobsTaskRetryMode)
+}
+
+func enumMlCronSchedule(w *walker, n *node, v *ml.CronSchedule) {
+	if v == nil {
+		v = &ml.CronSchedule{}
+	}
+	w.enumField(n, "mode", string(v.Mode), enumValuesMlCronScheduleMode)
+}
+
+func enumMlStreamingMode(w *walker, n *node, v *ml.StreamingMode) {
+	if v == nil {
+		v = &ml.StreamingMode{}
+	}
+	w.enumField(n, "mode", string(v.Mode), enumValuesMlStreamingModeStreamingModeType)
+}
+
+func enumMlTableTrigger(w *walker, n *node, v *ml.TableTrigger) {
+	if v == nil {
+		v = &ml.TableTrigger{}
+	}
+	w.enumField(n, "condition", string(v.Condition), enumValuesMlTableTriggerTableTriggerCondition)
 }
 
 func enumCatalogRateLimit(w *walker, n *node, v *catalog.RateLimit) {
@@ -2476,6 +2571,26 @@ func enumMlFlatSchema(w *walker, n *node, v *ml.FlatSchema) {
 	}
 }
 
+func enumJobsAiExtractFunction(w *walker, n *node, v *jobs.AiExtractFunction) {
+	if v == nil {
+		v = &jobs.AiExtractFunction{}
+	}
+	w.enumField(n, "mode", string(v.Mode), enumValuesJobsAiExtractFunctionMode)
+}
+
+func enumJobsAiParseDocumentFunction(w *walker, n *node, v *jobs.AiParseDocumentFunction) {
+	if v == nil {
+		v = &jobs.AiParseDocumentFunction{}
+	}
+	if len(v.DescriptionElementTypes) > 0 {
+		c := n.child("description_element_types")
+		for i0 := range v.DescriptionElementTypes {
+			e := c.elem(i0)
+			w.enumElem(&e, string(v.DescriptionElementTypes[i0]), enumValuesJobsAiParseDocumentFunctionDescriptionElementType)
+		}
+	}
+}
+
 func enumJobsDeploymentSpec(w *walker, n *node, v *jobs.DeploymentSpec) {
 	if v == nil {
 		v = &jobs.DeploymentSpec{}
@@ -2497,6 +2612,9 @@ func enumJobsSubscription(w *walker, n *node, v *jobs.Subscription) {
 func enumJobsTask2(w *walker, n *node, v *jobs.Task) {
 	if v == nil {
 		v = &jobs.Task{}
+	}
+	if c := n.child("ai_function_task"); c.exists() {
+		enumJobsAiFunctionTask(w, &c, v.AiFunctionTask)
 	}
 	if c := n.child("ai_runtime_task"); c.exists() {
 		enumJobsAiRuntimeTask(w, &c, v.AiRuntimeTask)
