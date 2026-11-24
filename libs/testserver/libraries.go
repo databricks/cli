@@ -56,8 +56,15 @@ func (s *FakeWorkspace) LibrariesUninstall(req Request) any {
 func (s *FakeWorkspace) LibrariesClusterStatus(req Request, clusterId string) any {
 	defer s.LockUnlock()()
 
+	// Unlike the cluster GET, cluster-status does not report a missing cluster as not found.
 	if _, ok := s.Clusters[clusterId]; !ok {
-		return Response{StatusCode: http.StatusNotFound}
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    fmt.Sprintf("Cluster %s does not exist", clusterId),
+			},
+		}
 	}
 
 	installed := s.ClusterLibraries[clusterId]

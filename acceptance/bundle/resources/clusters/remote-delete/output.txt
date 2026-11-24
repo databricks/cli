@@ -1,0 +1,36 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created clusters.mycluster
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Permanently delete the cluster outside the bundle
+
+>>> [CLI] clusters permanent-delete [MYCLUSTER_ID]
+
+=== Plan recreates the missing cluster
+
+>>> [CLI] bundle plan
+create clusters.mycluster
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== Deploy recreates it
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created clusters.mycluster
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
