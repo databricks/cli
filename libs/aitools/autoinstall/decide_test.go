@@ -111,7 +111,6 @@ func TestRetryDue(t *testing.T) {
 		{name: "the last wait", attempts: MaxAttempts - 1, since: 5 * time.Minute << (MaxAttempts - 2), want: true},
 		{name: "before the last wait ends", attempts: MaxAttempts - 1, since: 5*time.Minute<<(MaxAttempts-2) - time.Second, want: false},
 		{name: "last attempt in the future", attempts: 1, since: -time.Second, want: true},
-		{name: "negative attempts", attempts: -1, since: 5 * time.Minute, want: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

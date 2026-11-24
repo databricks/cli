@@ -159,7 +159,7 @@ func TestRecordStoresTheLastFailedAttempt(t *testing.T) {
 	require.NoError(t, Record(ctx, "1.30.0", 2, "machine", at))
 	s, err := Load(ctx)
 	require.NoError(t, err)
-	assert.True(t, at.Equal(s.LastAttempt), "got %v", s.LastAttempt)
+	assert.Equal(t, at.UTC(), s.LastAttempt)
 
 	require.NoError(t, Record(ctx, "1.30.0", 0, "machine", at))
 	s, err = Load(ctx)

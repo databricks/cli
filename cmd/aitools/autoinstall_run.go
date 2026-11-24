@@ -271,7 +271,8 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		now:         in.Now,
 	}
 	if !reason.Due() {
-		// Another process settled the version while this one waited.
+		// Another process settled the version or recorded a failed attempt
+		// while this one waited.
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
 		return nil
 	}

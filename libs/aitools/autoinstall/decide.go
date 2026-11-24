@@ -153,8 +153,7 @@ func Decide(in Inputs) Reason {
 // would otherwise last until the clock caught up.
 func retryDue(s State, now time.Time) bool {
 	since := now.Sub(s.LastAttempt)
-	// A hand-edited negative count would make the shift panic.
-	return since < 0 || since >= firstRetryDelay<<max(s.Attempts-1, 0)
+	return since < 0 || since >= firstRetryDelay<<(s.Attempts-1)
 }
 
 // InHoldout reports whether a machine in bucket belongs to the holdout.

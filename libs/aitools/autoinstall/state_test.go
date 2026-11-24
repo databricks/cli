@@ -42,6 +42,17 @@ func TestLoadCorruptFileFails(t *testing.T) {
 	assert.ErrorContains(t, err, "parse ")
 }
 
+func TestLoadNegativeAttemptsFails(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	path := filepath.Join(home, ".databricks", "aitools", stateFileName)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(`{"last_version": "1.30.0", "attempts": -1}`), 0o600))
+
+	_, err := Load(ctx)
+	assert.ErrorContains(t, err, "negative attempts -1")
+}
+
 func TestSetOptedOutKeepsOtherFields(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 	require.NoError(t, save(ctx, State{LastVersion: "1.2.3", Attempts: 2}))

@@ -103,6 +103,10 @@ func load(ctx context.Context) (State, error) {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return State{}, fmt.Errorf("parse %s: %w", filepath.ToSlash(path), err)
 	}
+	// The retry wait shifts by the count, which panics when it is negative.
+	if s.Attempts < 0 {
+		return State{}, fmt.Errorf("parse %s: negative attempts %d", filepath.ToSlash(path), s.Attempts)
+	}
 	return s, nil
 }
 
