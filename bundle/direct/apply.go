@@ -73,11 +73,8 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
 	var newID string
 	var remoteState any
-	_, err := retry.With(ctx, func(ctx context.Context, err error) bool {
-		// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
-		_, ok := errors.AsType[*dresources.RetrySafeError](err)
-		return ok && retry.IsTransient(ctx, err)
-	}, func() (struct{}, error) {
+	// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
+	_, err := retry.With(ctx, dresources.IsRetrySafe, func() (struct{}, error) {
 		var e error
 		newID, remoteState, e = d.Adapter.DoCreate(ctx, newState)
 		return struct{}{}, e

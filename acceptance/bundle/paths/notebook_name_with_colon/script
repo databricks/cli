@@ -1,0 +1,4 @@
+# Windows does not allow colons in file names, so the notebook is not committed.
+echo '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 0}' > "New Notebook 12:17:43.ipynb"
+trace $CLI bundle validate -o json | jq '.resources.jobs.job.tasks[0].notebook_task.notebook_path'
+rm "New Notebook 12:17:43.ipynb"

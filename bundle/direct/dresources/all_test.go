@@ -1151,7 +1151,9 @@ func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgA
 	require.Empty(t, relevantChanges, msgAndArgs...)
 }
 
-func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+// prepareTestState creates the resources group depends on and returns the state DoCreate takes,
+// built from the group's fixture in testDeps or testConfig.
+func prepareTestState(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) any {
 	var inputConfig any
 	var err error
 
@@ -1191,6 +1193,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		ss.RelativePath = ss.BundleID + "/" + hash
 		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath + "/" + snapshot.ContentSubdir
 	}
+
+	return newState
+}
+
+func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+	newState := prepareTestState(t, group, adapter, client)
 
 	ctx := t.Context()
 

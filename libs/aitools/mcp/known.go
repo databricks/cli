@@ -1,6 +1,10 @@
 package mcp
 
-import "strings"
+import (
+	"maps"
+	"slices"
+	"strings"
+)
 
 // SystemAILocation is the schema that ships the Databricks managed MCP services.
 const SystemAILocation = "system.ai"
@@ -59,6 +63,11 @@ var knownSystemAI = map[string]KnownService{
 		Label: "Microsoft 365", Summary: "SharePoint, Outlook, Teams",
 		Note: "Scopes ending in .All usually need tenant admin consent.",
 	},
+}
+
+// KnownLeaves returns the leaf names of the system.ai services in the CLI's table, sorted.
+func KnownLeaves() []string {
+	return slices.Sorted(maps.Keys(knownSystemAI))
 }
 
 // KnownOf returns the CLI's description of a service, or nil when it is not a system.ai service in the table. The leaf

@@ -65,11 +65,11 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 	cmd.Long = `Get a workspace setting.
 
   Get a setting value at workspace level. See
-  :method:settingsv2/listworkspacesettingsmetadata for list of setting available
-  via public APIs.
+  :method:settingsv2/listworkspacesettingsmetadata for the list of settings
+  available via public APIs.
 
   Arguments:
-    NAME: Name of the setting`
+    NAME: Name of the setting to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -230,15 +230,15 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	cmd.Long = `Update a workspace setting.
 
   Patch a setting value at workspace level. See
-  :method:settingsv2/listworkspacesettingsmetadata for list of setting available
-  via public APIs at workspace level. To determine the correct field to include
-  in a patch request, refer to the type field of the setting returned in the
-  :method:settingsv2/listworkspacesettingsmetadata response.
+  :method:settingsv2/listworkspacesettingsmetadata for the list of settings
+  available via public APIs at workspace level. To determine the correct field
+  to include in a patch request, refer to the type field of the setting returned
+  in the :method:settingsv2/listworkspacesettingsmetadata response.
 
   Note: Page refresh is required for changes to take effect in UI.
 
   Arguments:
-    NAME: Name of the setting`
+    NAME: Name of the setting to update.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

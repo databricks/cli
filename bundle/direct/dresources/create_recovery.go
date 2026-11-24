@@ -3,12 +3,15 @@ package dresources
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 )
@@ -18,8 +21,9 @@ import (
 const createTimeSkew = time.Minute
 
 // createRecovery describes a create request that failed, for a resource whose name the bundle
-// chooses and the API keeps unique. T is the SDK type the create and the lookup return.
-type createRecovery[T any] struct {
+// chooses and the API keeps unique. T is the SDK type the lookup returns and R the result of
+// DoCreate's create step; for most resources R is *T (see useFound and repeatCreate).
+type createRecovery[T, R any] struct {
 	// name identifies the resource in messages, e.g. the endpoint name or the dashboard path.
 	name string
 	// start is when the first create request was sent.
@@ -28,8 +32,36 @@ type createRecovery[T any] struct {
 	get func(ctx context.Context) (*T, error)
 	// createTime returns when the found resource was created, or false if the response omits it.
 	createTime func(found *T) (time.Time, bool)
-	// create repeats the create request.
-	create func(ctx context.Context) (*T, error)
+	// use turns a found resource that this deployment created into the result, e.g. by waiting for
+	// it to become ready.
+	use func(ctx context.Context, found *T) (R, error)
+	// alreadyExists reports whether a repeated create request failed because the name is taken:
+	// isAlreadyExists, or isPostgresAlreadyExists for the Lakebase resources that answer with a 400.
+	alreadyExists func(err error) bool
+	// createdByCaller, if set, reports whether the found resource was created by the deploying
+	// user. Within the create-time window, it tells our resource apart from one another user
+	// created under the same name.
+	createdByCaller func(ctx context.Context, found *T) (bool, error)
+	// create repeats the create request. On success it returns finish, which completes the create,
+	// e.g. by waiting for the operation the request started. An error from finish is not a failed
+	// create request, so it is returned as is.
+	create func(ctx context.Context) (finish func() (R, error), err error)
+}
+
+// useFound is createRecovery.use for a create whose result is the resource the lookup returns.
+func useFound[T any](_ context.Context, found *T) (*T, error) {
+	return found, nil
+}
+
+// repeatCreate is createRecovery.create for a create request that returns the resource itself.
+func repeatCreate[T any](create func(ctx context.Context) (*T, error)) func(ctx context.Context) (func() (*T, error), error) {
+	return func(ctx context.Context) (func() (*T, error), error) {
+		created, err := create(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return func() (*T, error) { return created, nil }, nil
+	}
 }
 
 // recoverCreate handles a create request that failed with createErr. A slow create is answered
@@ -40,9 +72,14 @@ type createRecovery[T any] struct {
 // earlier request has landed in the meantime, so the next look finds it.
 //
 // Errors that leave no doubt about the outcome, and a done context, are returned as is.
-func recoverCreate[T any](ctx context.Context, rc createRecovery[T], createErr error) (*T, error) {
+//
+// This is the one implementation of this recovery; TestCreateRecoveryCoverage checks that every
+// resource either uses it, marks an idempotent create retrySafe, or is listed in
+// createRecoveryOptOut.
+func recoverCreate[T, R any](ctx context.Context, rc createRecovery[T, R], createErr error) (R, error) {
+	var zero R
 	if ctx.Err() != nil || !isUncertainCreateError(ctx, createErr) {
-		return nil, createErr
+		return zero, createErr
 	}
 
 	lastErr := createErr
@@ -51,38 +88,52 @@ func recoverCreate[T any](ctx context.Context, rc createRecovery[T], createErr e
 			return rc.get(ctx)
 		})
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return zero, ctx.Err()
 		}
 		if err == nil {
 			// Without the time check, a resource that existed before the deploy would be taken over:
 			// our request would have failed with "already exists" only if it reached that check.
 			created, ok := rc.createTime(found)
 			if !ok {
-				return nil, &recoveryError{msg: rc.name + " exists but has no create time, so it is not known to be created by this deployment", err: createErr}
+				return zero, &recoveryError{msg: rc.name + " exists but has no create time, so it is not known to be created by this deployment", err: createErr}
 			}
 			if created.Before(rc.start.Add(-createTimeSkew)) {
-				return nil, &recoveryError{msg: rc.name + " exists but was not created by this deployment", err: createErr}
+				return zero, &recoveryError{msg: rc.name + " exists but was not created by this deployment", err: createErr}
+			}
+			if rc.createdByCaller != nil {
+				ours, err := rc.createdByCaller(ctx, found)
+				if err != nil {
+					log.Warnf(ctx, "checking who created %s: %s", rc.name, err)
+					return zero, createErr
+				}
+				if !ours {
+					return zero, &recoveryError{msg: rc.name + " exists but was created by another user", err: createErr}
+				}
+			}
+			result, err := rc.use(ctx, found)
+			if err != nil {
+				return zero, err
 			}
 			// Info, not Warn: the deploy got the resource it asked for, so there is nothing to act on.
 			log.Infof(ctx, "using %s, created despite the failed create request: %s", rc.name, strings.TrimSpace(diag.FormatAPIErrorSummary(createErr)))
-			return found, nil
+			return result, nil
 		}
 		if !apierr.IsMissing(err) {
 			log.Warnf(ctx, "checking whether %s was created: %s", rc.name, err)
-			return nil, createErr
+			return zero, createErr
 		}
 		if attempt > retry.MaxRetries {
-			return nil, lastErr
+			return zero, lastErr
 		}
 		if err := retry.Pause(ctx, lastErr); err != nil {
-			return nil, err
+			return zero, err
 		}
-		created, err := rc.create(ctx)
+		finish, err := rc.create(ctx)
 		if err == nil {
-			return created, nil
+			return finish()
 		}
-		if !isUncertainCreateError(ctx, err) && !isAlreadyExists(err) {
-			return nil, err
+		if !isUncertainCreateError(ctx, err) && !rc.alreadyExists(err) {
+			return zero, err
 		}
 		lastErr = err
 	}
@@ -126,6 +177,12 @@ func sdkTime(t *sdktime.Time) (time.Time, bool) {
 	return t.AsTime(), true
 }
 
+// unixMilliTime converts a create time in Unix milliseconds for createRecovery.createTime. Zero
+// means the response omits it.
+func unixMilliTime(ms int64) (time.Time, bool) {
+	return time.UnixMilli(ms), ms != 0
+}
+
 // recoveryError says why a resource found after a failed create request is not used, and wraps
 // that request's error so the bundle error output still shows its status code and details. The
 // 504s these requests get carry an empty message, so the message is left out when it is empty.
@@ -144,13 +201,38 @@ func (e *recoveryError) Error() string {
 func (e *recoveryError) Unwrap() error { return e.err }
 
 // isAlreadyExists reports whether a create request failed because the resource exists. Features,
-// dashboards, vector search endpoints and AI Gateway services (checked for model provider services)
-// answer with 409 ALREADY_EXISTS, serving endpoints with 400 RESOURCE_ALREADY_EXISTS and database
-// catalogs with 400 CATALOG_ALREADY_EXISTS (observed on AWS, 2026-11).
+// dashboards, vector search endpoints, AI Gateway services (checked for model provider services)
+// and Lakebase branches answer with 409 ALREADY_EXISTS; serving endpoints, Unity Catalog volumes and
+// registered models with 400 RESOURCE_ALREADY_EXISTS; database catalogs and Unity Catalog catalogs
+// with 400 CATALOG_ALREADY_EXISTS; Unity Catalog schemas with 400 SCHEMA_ALREADY_EXISTS (observed
+// on AWS, 2026-11).
 func isAlreadyExists(err error) bool {
 	if errors.Is(err, apierr.ErrAlreadyExists) || errors.Is(err, apierr.ErrResourceAlreadyExists) {
 		return true
 	}
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	return ok && apiErr.ErrorCode == "CATALOG_ALREADY_EXISTS"
+	return ok && (apiErr.ErrorCode == "CATALOG_ALREADY_EXISTS" || apiErr.ErrorCode == "SCHEMA_ALREADY_EXISTS")
+}
+
+// createdByCurrentUser is createRecovery.createdByCaller for resources whose read response names
+// the principal that created them, as Unity Catalog's created_by does: a user name, or the
+// application id of a service principal.
+func createdByCurrentUser(ctx context.Context, client *databricks.WorkspaceClient, createdBy string) (bool, error) {
+	me, err := iamutil.GetCurrentUser(ctx, client)
+	if err != nil {
+		return false, err
+	}
+	return createdBy == me.UserName, nil
+}
+
+// isPostgresAlreadyExists is isAlreadyExists for Lakebase resources. Besides 409 ALREADY_EXISTS,
+// projects, databases and roles answer a create of an existing name with 400 BAD_REQUEST, e.g. "A
+// project with this resource name already exists in the workspace." The API has no error code for
+// it, so match the message.
+func isPostgresAlreadyExists(err error) bool {
+	if isAlreadyExists(err) {
+		return true
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode == http.StatusBadRequest && strings.Contains(apiErr.Message, "already exists")
 }

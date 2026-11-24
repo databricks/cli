@@ -22,8 +22,7 @@ type FastFeedbackLog struct {
 
 	UserAgent string `json:"user_agent,omitempty"`
 
-	// Feedback text written by the user. Unlike other telemetry it is user-authored
-	// by design: the user asked to send it, and confirms it first when an AI agent
-	// wrote it.
+	// Feedback text supplied by a user or an AI agent. Unlike other telemetry,
+	// feedback deliberately includes the submitted message.
 	Text string `json:"text,omitempty"`
 }

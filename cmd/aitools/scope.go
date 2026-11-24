@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
@@ -212,7 +211,8 @@ func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool, gl
 	// No flags: auto-detect.
 	switch {
 	case hasGlobal && hasProject:
-		if !cmdio.IsPromptSupported(ctx) {
+		if !promptsSupported(ctx) {
+			logSkippedPromptNote(ctx)
 			return nil, withCategory(errors.New("skills are installed in both global and project scopes; use --scope=global, --scope=project, or --scope=both to specify which to update"), protos.AitoolsErrorCategoryInvalidFlags)
 		}
 		scopes, err := promptUpdateScopeSelection(ctx)
@@ -262,7 +262,8 @@ func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool,
 	// No flags: auto-detect.
 	switch {
 	case hasGlobal && hasProject:
-		if !cmdio.IsPromptSupported(ctx) {
+		if !promptsSupported(ctx) {
+			logSkippedPromptNote(ctx)
 			return "", withCategory(errors.New("skills are installed in both global and project scopes; use --scope=global or --scope=project to specify which to uninstall"), protos.AitoolsErrorCategoryInvalidFlags)
 		}
 		scope, err := promptUninstallScopeSelection(ctx)

@@ -108,7 +108,7 @@ class ConnectorOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Google Ads specific options for ingestion (object-level).
+    [Beta] Google Ads specific options for ingestion (object-level).
     When set, these values override the corresponding fields in GoogleAdsConfig
     (source_configurations).
     """
@@ -238,7 +238,7 @@ class ConnectorOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Google Ads specific options for ingestion (object-level).
+    [Beta] Google Ads specific options for ingestion (object-level).
     When set, these values override the corresponding fields in GoogleAdsConfig
     (source_configurations).
     """

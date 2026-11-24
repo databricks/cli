@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -23,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
@@ -193,6 +195,7 @@ func TestBuildPlanDeliveries(t *testing.T) {
 	opencode := &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
 	targets := []*agents.Agent{claude, cursor, opencode}
 
+	stubPluginAlreadyInstalled(t, false)
 	plan := buildPlan(t.Context(), targets, installer.ScopeGlobal, false, false)
 	assert.Equal(t, deliveryPlugin, plan[0].delivery)
 	assert.Equal(t, agentScopeUser, plan[0].scope)
@@ -317,6 +320,266 @@ func TestBuildPlanProjectScopeSkipsFilesOnlyAgent(t *testing.T) {
 	assert.Equal(t, deliverySkills, globalPlan[0].delivery)
 }
 
+func TestBuildPlanSkillsOnlySkipsAgentWithPlugin(t *testing.T) {
+	// The test agent has no manifest reader, so the removal step is the CLI's
+	// uninstall (see TestInstallSkillsOnlySkipsAgentWithPlugin for the others).
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	fakeBinsOnPath(t, "claude")
+	stubPluginAlreadyInstalled(t, true)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectScope: true}
+
+	for _, scope := range []string{installer.ScopeGlobal, installer.ScopeProject} {
+		plan := buildPlan(t.Context(), []*agents.Agent{claude, cursor}, scope, true, false)
+		assert.Equal(t, deliverySkip, plan[0].delivery, scope)
+		assert.Equal(t, "already has the databricks plugin; skill files next to it would show every skill twice", plan[0].reason, scope)
+		assert.Equal(t, "remove the plugin first with 'databricks aitools uninstall --scope="+scope+" --agents=claude-code'", plan[0].pluginRemoval, scope)
+		// Only a plugin agent can have the plugin.
+		assert.Equal(t, deliverySkills, plan[1].delivery, scope)
+	}
+
+	// Without --skills-only the agent gets the plugin as before.
+	plan := buildPlan(t.Context(), []*agents.Agent{claude}, installer.ScopeGlobal, false, false)
+	assert.Equal(t, deliveryPlugin, plan[0].delivery)
+}
+
+func TestInstallSkillsOnlySkipsAgentWithPlugin(t *testing.T) {
+	const (
+		skipErr    = "Claude Code: already has the databricks plugin; skill files next to it would show every skill twice"
+		skillsOnly = ", then run: databricks aitools install --scope=global --agents=claude-code --skills-only"
+		// A plugin added in Claude Code itself is only in Claude Code's manifest.
+		agentStep = "To use skill files instead, remove the plugin first with 'claude plugin uninstall databricks@claude-plugins-official --scope user' (this CLI did not install it)" + skillsOnly
+	)
+	tests := []struct {
+		name string
+		args []string
+		bins []string
+		// marketplaces are the marketplaces of the databricks plugin entries in
+		// Claude Code's manifest, each in user scope, and managed those with a
+		// managed-scope record; nil for both is the official one in user scope.
+		marketplaces []string
+		managed      []string
+		recorded     bool
+		wantErr      string
+		wantSkills   [][]string
+		wantRecovery string
+	}{
+		{
+			name:         "plugin from another marketplace",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			bins:         []string{"claude"},
+			marketplaces: []string{"databricks-agent-skills"},
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, remove the plugin first with 'claude plugin uninstall databricks@databricks-agent-skills --scope user' (this CLI did not install it)" + skillsOnly,
+		},
+		{
+			name:         "plugin recorded by this CLI and one from another marketplace",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			bins:         []string{"claude"},
+			marketplaces: []string{"claude-plugins-official", "databricks-agent-skills"},
+			recorded:     true,
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, remove the plugin first with 'databricks aitools uninstall --scope=global --agents=claude-code', then 'claude plugin uninstall databricks@databricks-agent-skills --scope user'" + skillsOnly,
+		},
+		{
+			name:         "named agent fails",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			bins:         []string{"claude"},
+			wantErr:      skipErr,
+			wantRecovery: agentStep,
+		},
+		{
+			name:         "detected agent is skipped",
+			args:         []string{"--skills-only", "--scope", "global"},
+			bins:         []string{"claude"},
+			wantSkills:   [][]string{{agents.NameCursor}},
+			wantRecovery: agentStep,
+		},
+		{
+			name:         "plugin recorded by this CLI",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			bins:         []string{"claude"},
+			recorded:     true,
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, remove the plugin first with 'databricks aitools uninstall --scope=global --agents=claude-code'" + skillsOnly,
+		},
+		{
+			name:         "agent CLI not on PATH",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			recorded:     true,
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, remove the databricks plugin in Claude Code first ('claude' is not on PATH, so this CLI cannot remove it)" + skillsOnly,
+		},
+		{
+			name:         "managed plugin",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			bins:         []string{"claude"},
+			managed:      []string{"claude-plugins-official"},
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, ask an administrator to remove the databricks plugin first (your organization manages it for Claude Code, so you cannot remove it)" + skillsOnly,
+		},
+		{
+			name:         "managed plugin with agent CLI not on PATH",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			managed:      []string{"claude-plugins-official"},
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, ask an administrator to remove the databricks plugin first (your organization manages it for Claude Code, so you cannot remove it)" + skillsOnly,
+		},
+		{
+			name:         "managed plugin and one in user scope",
+			args:         []string{"--skills-only", "--scope", "global", "--agents", "claude-code"},
+			bins:         []string{"claude"},
+			marketplaces: []string{"claude-plugins-official"},
+			managed:      []string{"claude-plugins-official"},
+			wantErr:      skipErr,
+			wantRecovery: "To use skill files instead, remove the plugin first with 'claude plugin uninstall databricks@claude-plugins-official --scope user' (this CLI did not install it), and ask an administrator to remove the one your organization manages" + skillsOnly,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateAgents(t)
+			home := setupTestAgents(t)
+			if tc.marketplaces == nil && tc.managed == nil {
+				writeClaudeManifest(t, home, "user", "")
+			} else {
+				entries := map[string][]map[string]string{}
+				for _, m := range tc.marketplaces {
+					entries["databricks@"+m] = append(entries["databricks@"+m], map[string]string{"scope": "user"})
+				}
+				for _, m := range tc.managed {
+					entries["databricks@"+m] = append(entries["databricks@"+m], map[string]string{"scope": "managed"})
+				}
+				manifest, err := json.Marshal(map[string]any{"plugins": entries})
+				require.NoError(t, err)
+				require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude", "plugins"), 0o755))
+				require.NoError(t, os.WriteFile(filepath.Join(home, ".claude", "plugins", "installed_plugins.json"), manifest, 0o600))
+			}
+			fakeBinsOnPath(t, tc.bins...)
+			if tc.recorded {
+				rec := installer.PluginRecord{Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: agentScopeUser, Version: "0.2.9"}
+				require.NoError(t, installer.RecordPluginInstalls(t.Context(), installer.ScopeGlobal, map[string]installer.PluginRecord{agents.NameClaudeCode: rec}, ""))
+			}
+			calls := setupInstallMock(t)
+
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			_, err := runInstall(t, ctx, tc.args...)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			var installed [][]string
+			for _, c := range *calls {
+				installed = append(installed, c.agents)
+			}
+			assert.Equal(t, tc.wantSkills, installed)
+			assert.Contains(t, stderr.String(), "Skipped Claude Code: already has the databricks plugin; skill files next to it would show every skill twice\n  "+tc.wantRecovery+"\n")
+		})
+	}
+}
+
+// Codex has no manifest reader, so only the CLI's record says it has the
+// plugin. With its CLI missing, the printed step goes through the CLI's
+// uninstall, which clears the record, and following it lets --skills-only
+// install skill files.
+func TestInstallSkillsOnlyRecoveryForAgentWithoutManifestReader(t *testing.T) {
+	isolateAgents(t)
+	home := setupTestAgents(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o755))
+	rec := installer.PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Version: "0.2.9"}
+	require.NoError(t, installer.RecordPluginInstalls(t.Context(), installer.ScopeGlobal, map[string]installer.PluginRecord{agents.NameCodex: rec}, ""))
+	calls := setupInstallMock(t)
+	args := []string{"--skills-only", "--scope", "global", "--agents", "codex"}
+
+	fakeBinsOnPath(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	_, err := runInstall(t, ctx, args...)
+	require.ErrorContains(t, err, "Codex CLI: already has the databricks plugin; skill files next to it would show every skill twice")
+	assert.Contains(t, stderr.String(), "  To use skill files instead, put 'codex' on PATH and remove the plugin with 'databricks aitools uninstall --scope=global --agents=codex' first (only that clears this CLI's record of it), then run: databricks aitools install --scope=global --agents=codex --skills-only\n")
+	assert.Empty(t, *calls)
+
+	// Follow the step: put the CLI on PATH and run the uninstall.
+	fakeBinsOnPath(t, "codex")
+	stubCtx, stub := process.WithStub(cmdio.MockDiscard(t.Context()))
+	stub.WithCallback(func(*exec.Cmd) error { return nil })
+	cmd := NewUninstallCmd()
+	cmd.SetContext(stubCtx)
+	cmd.SetArgs([]string{"--scope=global", "--agents=codex"})
+	require.NoError(t, cmd.Execute())
+	// The stub reports the resolved binary's base name, which fakeBinsOnPath
+	// gives an .exe suffix on Windows.
+	codexBin := "codex"
+	if runtime.GOOS == "windows" {
+		codexBin += ".exe"
+	}
+	assert.Contains(t, stub.Commands(), codexBin+" plugin remove databricks@databricks-agent-skills")
+	assert.False(t, installer.PluginRecorded(t.Context(), installer.ScopeGlobal, agents.NameCodex))
+
+	_, err = runInstall(t, cmdio.MockDiscard(t.Context()), args...)
+	require.NoError(t, err)
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{agents.NameCodex}, (*calls)[0].agents)
+}
+
+// A plugin the CLI recorded but that was removed in the agent itself leaves a
+// stale record. A --skills-only run then gives the agent skill files, so it
+// drops the record, as the fallback for an agent whose CLI is missing does;
+// otherwise list and update keep treating the agent as a plugin agent.
+func TestInstallSkillsOnlyDropsStalePluginRecord(t *testing.T) {
+	for _, bins := range [][]string{nil, {"claude"}} {
+		t.Run(fmt.Sprintf("bins=%v", bins), func(t *testing.T) {
+			isolateAgents(t)
+			home := setupTestAgents(t)
+			// Claude Code's manifest no longer has the databricks plugin.
+			require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude", "plugins"), 0o755))
+			require.NoError(t, os.WriteFile(filepath.Join(home, ".claude", "plugins", "installed_plugins.json"), []byte(`{"plugins":{}}`), 0o600))
+			rec := installer.PluginRecord{Marketplace: "claude-plugins-official", Plugin: "databricks", Scope: agentScopeUser, Version: "0.2.9"}
+			require.NoError(t, installer.RecordPluginInstalls(t.Context(), installer.ScopeGlobal, map[string]installer.PluginRecord{agents.NameClaudeCode: rec}, ""))
+			fakeBinsOnPath(t, bins...)
+			calls := setupInstallMock(t)
+
+			_, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--skills-only", "--scope", "global", "--agents", "claude-code")
+			require.NoError(t, err)
+			require.Len(t, *calls, 1)
+			assert.Equal(t, []string{agents.NameClaudeCode}, (*calls)[0].agents)
+			assert.False(t, installer.PluginRecorded(t.Context(), installer.ScopeGlobal, agents.NameClaudeCode))
+		})
+	}
+}
+
+// A detected agent that keeps its plugin under --skills-only is set up, so a
+// run with only such agents succeeds. A named one fails: it asked for skill
+// files it cannot get.
+func TestExecutePlanSkillsOnlyKeptPlugin(t *testing.T) {
+	setupTestAgents(t)
+	forbidSkillsInstall(t)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	ctx := cmdio.MockDiscard(t.Context())
+	opts := installer.InstallOptions{Scope: installer.ScopeGlobal}
+	inv := installInvocation{scope: installer.ScopeGlobal, skillsOnly: true}
+	item := agentPlanItem{
+		agent:         claude,
+		delivery:      deliverySkip,
+		reason:        "already has the databricks plugin; skill files next to it would show every skill twice",
+		pluginRemoval: "remove the plugin first with 'databricks aitools uninstall --scope=global --agents=claude-code'",
+	}
+
+	outcomes, err := executePlan(ctx, nil, []agentPlanItem{item}, opts, inv, false)
+	require.NoError(t, err)
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, outcomeKept, outcomes[0].status)
+	assert.Equal(t, deliveryPlugin, outcomes[0].delivery)
+	assert.True(t, onlyKeptPlugins(outcomes))
+
+	item.explicit = true
+	outcomes, err = executePlan(ctx, nil, []agentPlanItem{item}, opts, inv, false)
+	require.ErrorContains(t, err, "Claude Code: already has the databricks plugin")
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, outcomeSkipped, outcomes[0].status)
+}
+
 func TestMapAgentScope(t *testing.T) {
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex")
@@ -335,6 +598,8 @@ func TestMapAgentScope(t *testing.T) {
 }
 
 func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude", "codex")
 	orig := installPluginForAgentFn
@@ -373,7 +638,42 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	assert.NotErrorIs(t, err, errNoAgentSetUp)
 }
 
+// An install that tries the plugin for an agent the user had put on raw skills
+// ends that choice even when the plugin install fails, so update tries the
+// plugin again. The choice of an agent not asked for the plugin stays.
+func TestExecutePlanFailedPluginForgetsSkillsOnlyChoice(t *testing.T) {
+	setupTestAgents(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	fakeBinsOnPath(t, "claude")
+	orig := installPluginForAgentFn
+	t.Cleanup(func() { installPluginForAgentFn = orig })
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed}
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	dir, err := installer.GlobalSkillsDir(ctx)
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(dir, &installer.InstallState{
+		SchemaVersion:    installer.CurrentSchemaVersion,
+		Release:          "v0.2.5",
+		Skills:           map[string]string{"databricks": "0.2.5"},
+		SkillsOnlyAgents: []string{agents.NameClaudeCode, agents.NameCodex},
+	}))
+
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	plan := buildPlan(t.Context(), []*agents.Agent{claude}, installer.ScopeGlobal, false, false)
+	_, err = executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, installInvocation{scope: installer.ScopeGlobal}, true)
+	require.ErrorIs(t, err, errNoAgentSetUp)
+
+	st, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{agents.NameCodex}, st.SkillsOnlyAgents)
+}
+
 func TestExecutePlanNothingInstalledIsAnError(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude")
 	orig := installPluginForAgentFn
@@ -506,6 +806,8 @@ func TestExecutePlanNoSkillsToInstall(t *testing.T) {
 }
 
 func TestExecutePlanNoSkillsToInstallWithPluginFailures(t *testing.T) {
+	// A failed plugin install rewrites the install state; keep it off the real HOME.
+	setupTestAgents(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	fakeBinsOnPath(t, "claude")
 	setupPluginMock(t)
@@ -906,6 +1208,7 @@ func TestInstallSkillsOnlyAllAgents(t *testing.T) {
 	require.Len(t, *calls, 1)
 	assert.Len(t, (*calls)[0].agents, 2)
 	assert.Nil(t, (*calls)[0].opts.SpecificSkills)
+	assert.True(t, (*calls)[0].opts.SkillsOnly)
 }
 
 func TestInstallSkillsOnlySpecificSkills(t *testing.T) {

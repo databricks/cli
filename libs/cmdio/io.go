@@ -132,13 +132,6 @@ func IsInputTTY(ctx context.Context) bool {
 	return c.capabilities.stdinIsTTY
 }
 
-// IsErrorTTY reports whether stderr is a terminal, so that the user sees the
-// messages and questions written there. Like IsInputTTY, it ignores TERM=dumb.
-func IsErrorTTY(ctx context.Context) bool {
-	c := fromContext(ctx)
-	return c.capabilities.stderrIsTTY
-}
-
 // IsPagerSupported reports whether stdin, stdout, and stderr are all interactive
 // terminals. This is the requirement for a full-screen or navigable output
 // program: unlike IsPromptSupported it also checks stdout, so it returns false

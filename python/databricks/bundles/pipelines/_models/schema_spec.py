@@ -34,7 +34,7 @@ class SchemaSpec:
 
     destination_schema: VariableOr[str]
     """
-    [Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
+    [Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails if a table with the same name already exists.
     """
 
     connector_options: VariableOrOptional[ConnectorOptions] = None
@@ -87,7 +87,7 @@ class SchemaSpecDict(TypedDict, total=False):
 
     destination_schema: VariableOr[str]
     """
-    [Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
+    [Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails if a table with the same name already exists.
     """
 
     connector_options: VariableOrOptional[ConnectorOptionsParam]

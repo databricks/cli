@@ -261,7 +261,7 @@ func TestDetailedDisplayRunStatus(t *testing.T) {
 		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}}},
 	}
 	assert.Equal(t, "Waiting for GPU capacity...", detailedDisplayRunStatus(waiting, "Waiting for GPU capacity..."))
-	assert.Equal(t, waitingForComputeStatus, detailedDisplayRunStatus(waiting, ""))
+	assert.Equal(t, waitingForWorkloadStatus, detailedDisplayRunStatus(waiting, ""))
 
 	started := &jobs.Run{
 		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
