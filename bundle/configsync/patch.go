@@ -110,8 +110,8 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			}})
 		case OperationAdd:
 			opType := yamlpatch.OperationAdd
-			// The merged config can lack a key the file declares, e.g. when OverrideCompute
-			// clears job_cluster_key, so an add replaces an existing key as in RFC 6902.
+			// A key the file writes as null is absent from the merged config, so the change
+			// arrives as an add; it replaces the existing key, as in RFC 6902.
 			if yamlKeyExists(content, fieldPathCandidate) {
 				opType = yamlpatch.OperationReplace
 			}

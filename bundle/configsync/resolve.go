@@ -199,7 +199,8 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 // the caller can record it: the command runs unattended, so a change that silently
 // disappears looks identical to one that was written. preResolved is the merged
 // config with ${...} references still literal, used to detect variable-reference
-// ancestors.
+// ancestors and to find fields a mutator cleared, which are replaced where the file
+// declares them.
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes, preResolved dyn.Value) ([]FieldChange, int, error) {
 	var result []FieldChange
 	skipped := 0
@@ -293,11 +294,16 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			// A mutator can clear or rebuild a field the file declares (OverrideCompute
 			// drops job_cluster_key), leaving no source location. The pre-resolved config
 			// still has it, so the change replaces it in the block it is declared in.
-			if resolved.leaf.Location().File == "" && configChange.Operation != OperationRemove {
+			// Only a value written in a block counts: one from a YAML anchor has no key
+			// of its own to replace there.
+			if blocks != nil && resolved.leaf.Location().File == "" && configChange.Operation != OperationRemove &&
+				!slices.ContainsFunc(resolved.steps, func(s sequenceStep) bool { return s.newElement }) {
 				if declared, ok := preResolvedValueAt(preResolved, mergedIndexPath.String()); ok {
-					resolved.leaf = declared
-					resolved.operation = OperationReplace
-					configChange.Operation = OperationReplace
+					if _, inBlock := blocks.winningBlock(declared); inBlock {
+						resolved.leaf = declared
+						resolved.operation = OperationReplace
+						configChange.Operation = OperationReplace
+					}
 				}
 			}
 
