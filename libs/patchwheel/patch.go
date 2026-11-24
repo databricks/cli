@@ -30,9 +30,15 @@ func findFile(r *zip.ReadCloser, filename string) *zip.File {
 func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 	scanner := bufio.NewScanner(r)
 	var buf bytes.Buffer
+	// METADATA is an email-style message: the headers end at the first empty line and the
+	// rest is the description, which may contain lines that look like headers.
+	inHeaders := true
 	for scanner.Scan() {
 		line := scanner.Bytes()
-		if versionValue, ok := bytes.CutPrefix(line, versionKey); ok {
+		if len(line) == 0 {
+			inHeaders = false
+		}
+		if versionValue, ok := bytes.CutPrefix(line, versionKey); ok && inHeaders {
 			foundVersion := string(bytes.TrimSpace(versionValue))
 			if foundVersion != oldVersion {
 				return nil, fmt.Errorf("unexpected version in METADATA: %s (expected %s)", strings.TrimSpace(string(line)), oldVersion)
@@ -49,10 +55,9 @@ func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// patchRecord updates RECORD content: it replaces the old dist-info prefix with the new one
-// in all file paths and, for the METADATA entry, updates the hash and size.
-func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash string, metadataSize int) ([]byte, error) {
-	metadataPath := newDistInfoPrefix + "METADATA"
+// patchRecord updates RECORD content: it renames every path with renamePath and, for the
+// METADATA entry (metadataPath, after renaming), updates the hash and size.
+func patchRecord(r io.Reader, renamePath func(string) string, metadataPath, metadataHash string, metadataSize int) ([]byte, error) {
 	scanner := bufio.NewScanner(r)
 	var buf bytes.Buffer
 	for scanner.Scan() {
@@ -70,11 +75,7 @@ func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash
 			continue
 		}
 
-		origPath := parts[0]
-		pathSuffix, hasDistPrefix := strings.CutPrefix(origPath, oldDistInfoPrefix)
-		if hasDistPrefix {
-			parts[0] = newDistInfoPrefix + pathSuffix
-		}
+		parts[0] = renamePath(parts[0])
 
 		if metadataPath == parts[0] {
 			parts[1] = "sha256=" + metadataHash
@@ -98,6 +99,8 @@ func patchRecord(r io.Reader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash
 // METADATA: Version field is updated
 // RECORD: METADATA entry is updated with correct hash and size
 // <dist>-<version>.dist-info directory is renamed to <dist>-<newVersion>.dist-info
+// <dist>-<version>.data directory, if present, is renamed to <dist>-<newVersion>.data
+// File modes of all entries are preserved.
 //
 // The function is idempotent: repeated calls with the same input will produce the same output.
 // If the target wheel already exists, it returns the path to the existing wheel without redoing the patching.
@@ -164,10 +167,17 @@ func PatchWheel(path, outputDir string) (string, bool, error) {
 	metadataHash := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(h.Sum(nil))
 	metadataSize := len(newMetadata)
 
-	// Compute the new dist-info directory prefix.
-	newDistInfoPrefix := strings.Replace(oldDistInfoPrefix, wheelInfo.Version, newVersion, 1)
-	if newDistInfoPrefix == oldDistInfoPrefix {
-		return "", false, fmt.Errorf("unexpected dist-info directory format: %s (version=%s)", oldDistInfoPrefix, wheelInfo.Version)
+	newDistInfoPrefix := wheelInfo.Distribution + "-" + newVersion + ".dist-info/"
+	oldDataPrefix := wheelInfo.Distribution + "-" + wheelInfo.Version + ".data/"
+	newDataPrefix := wheelInfo.Distribution + "-" + newVersion + ".data/"
+	renamePath := func(name string) string {
+		if suffix, ok := strings.CutPrefix(name, oldDistInfoPrefix); ok {
+			return newDistInfoPrefix + suffix
+		}
+		if suffix, ok := strings.CutPrefix(name, oldDataPrefix); ok {
+			return newDataPrefix + suffix
+		}
+		return name
 	}
 
 	recordReader, err := recordFile.Open()
@@ -176,7 +186,7 @@ func PatchWheel(path, outputDir string) (string, bool, error) {
 	}
 	defer recordReader.Close()
 
-	newRecord, err := patchRecord(recordReader, oldDistInfoPrefix, newDistInfoPrefix, metadataHash, metadataSize)
+	newRecord, err := patchRecord(recordReader, renamePath, newDistInfoPrefix+"METADATA", metadataHash, metadataSize)
 	if err != nil {
 		return "", false, err
 	}
@@ -192,14 +202,13 @@ func PatchWheel(path, outputDir string) (string, bool, error) {
 
 	zipw := zip.NewWriter(outFile)
 	for _, f := range r.File {
-		// If the file is inside the old dist-info directory, update its name.
-		newName := f.Name
-		if strings.HasPrefix(f.Name, oldDistInfoPrefix) {
-			newName = newDistInfoPrefix + f.Name[len(oldDistInfoPrefix):]
-		}
 		header := &zip.FileHeader{
-			Name:   newName,
+			Name:   renamePath(f.Name),
 			Method: f.Method,
+			// Installers (pip, uv) restore the executable bit from the unix mode in
+			// ExternalAttrs; CreatorVersion says which OS the attributes are for.
+			CreatorVersion: f.CreatorVersion,
+			ExternalAttrs:  f.ExternalAttrs,
 		}
 
 		header.Modified = f.ModTime()
