@@ -10,7 +10,6 @@ print_state.py > out.new_state.json
 
 rm "$OUT_REQUESTS"
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
-# Badness: known issue with dashboards, will show up as 'recreate' see https://github.com/databricks/cli/pull/3966
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "1 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "1 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json | nostamp > out.plan_after_migrate.json

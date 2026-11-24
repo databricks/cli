@@ -19,7 +19,6 @@ trace $CLI bundle plan
 
 title "Fetch job ID and verify remote state"
 
-# Badness: output should not be different per engine; investigate if it's the same on cloud
 trace $CLI jobs get $foo_id | nostamp > out.get_foo.json
 trace $CLI jobs get $bar_id | nostamp
 rm "$OUT_REQUESTS"
