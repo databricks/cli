@@ -1,0 +1,42 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+SCHEMA="main.test-schema-${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with a registered model in it"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+add_repl "$($CLI registered-models get "$SCHEMA.mymodel" | jq -r .created_at)" MODEL_CREATED_AT
+
+title "Rename the model: it is renamed in place, not recreated"
+trace update_file.py databricks.yml "name: mymodel" "name: mymodel2"
+# Drop the remote_state fields that differ between clouds or from the test server.
+trace $CLI bundle plan --output json | tee .databricks/plan.json | jq .plan | normalize_uc_payload.py created_at updated_at updated_by metastore_id browse_only effective_predictive_optimization_flag storage_location
+trace $CLI bundle deploy $(readplanarg .databricks/plan.json)
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "$SCHEMA.mymodel2" | jq '{full_name, created_at}'
+
+title "Rename the model and change its comment in one deploy: both go in one PATCH"
+trace update_file.py databricks.yml "name: mymodel2" "name: mymodel3"
+trace update_file.py databricks.yml "comment: c1" "comment: c2"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "$SCHEMA.mymodel3" | jq '{full_name, comment, created_at}'
+
+title "Rename the schema and change the model's comment in one deploy. UC moves the model with the schema: its new path is recorded first, then one PATCH sets the comment there"
+trace update_file.py databricks.yml test-schema- test-schema-renamed-
+trace update_file.py databricks.yml "comment: c2" "comment: c3"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "main.test-schema-renamed-${UNIQUE_NAME}.mymodel3" | jq '{full_name, comment, created_at}'
+
+title "The state tracks the new name and the plan is a no-op"
+trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
+trace $CLI bundle plan
