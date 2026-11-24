@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Remove every task except keep remotely"
+edit_resource.py jobs $job_id <<EOF
+r["tasks"] = [task for task in r["tasks"] if task["task_key"] == "keep"]
+EOF
+
+title "Remove a, b and c and rename z to y remotely, keep stays"
+rename_job_id="$(read_id.py rename_job)"
+edit_resource.py jobs $rename_job_id <<EOF
+r["tasks"] = [task for task in r["tasks"] if task["task_key"] in ("keep", "z")]
+for task in r["tasks"]:
+    if task["task_key"] == "z":
+        task["task_key"] = "y"
+EOF
+
+title "Sync"
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Tasks left in databricks.yml"
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Plan after the sync"
+trace $CLI bundle plan

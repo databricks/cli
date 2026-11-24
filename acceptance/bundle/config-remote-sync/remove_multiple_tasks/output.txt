@@ -1,0 +1,88 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Created jobs.rename_job
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove every task except keep remotely
+
+=== Remove a, b and c and rename z to y remotely, keep stays
+
+=== Sync
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='a']: remove
+  tasks[task_key='b']: remove
+  tasks[task_key='c']: remove
+  tasks[task_key='d']: remove
+
+Resource: resources.jobs.rename_job
+  tasks[task_key='a']: remove
+  tasks[task_key='b']: remove
+  tasks[task_key='c']: remove
+  tasks[task_key='y']: add
+  tasks[task_key='z']: remove
+
+
+
+=== Tasks left in databricks.yml
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -8,36 +8,14 @@
+     my_job:
+       tasks:
+-        - task_key: keep
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/keep
+-        - task_key: a
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/a
+-        - task_key: b
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/b
+         - task_key: d
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/d
+-        - task_key: c
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/c
+-
+     # The same with a rename in place of the last removal.
+     rename_job:
+       tasks:
+-        - task_key: keep
++        - task_key: y
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/keep
+-        - task_key: a
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/a
+-        - task_key: b
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/b
+         - task_key: z
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/z
+-        - task_key: c
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/c
+
+=== Plan after the sync
+
+>>> [CLI] bundle plan
+update jobs.my_job
+update jobs.rename_job
+
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.jobs.rename_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted
