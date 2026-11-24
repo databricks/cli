@@ -109,13 +109,13 @@ func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
 
 	val, err := jsonloader.LoadJSON(f, filePath)
 	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse variables file %s: %w", filePath, err))
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse variables file %s: %w", filepath.ToSlash(filePath), err))
 	}
 
 	if val.Kind() != dyn.KindMap {
 		return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  fmt.Sprintf("failed to parse variables file %s: invalid format", filePath),
+			Summary:  fmt.Sprintf("failed to parse variables file %s: invalid format", filepath.ToSlash(filePath)),
 			Detail:   "Variables file must be a JSON object with the following format:\n{\"var1\": \"value1\", \"var2\": \"value2\"}",
 		})
 	}
