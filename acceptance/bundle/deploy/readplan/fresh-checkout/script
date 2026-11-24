@@ -1,0 +1,23 @@
+BUNDLE_PATH="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default"
+
+trace $CLI bundle deploy
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "$BUNDLE_PATH/state/deployment.json" | jq -c '{seq, files: [.files[].local_path] | sort}'
+
+title "Remove b.py from the bundle and save a plan"
+trace rm b.py
+trace $CLI bundle plan -o json > tmp.plan.json
+
+title "Apply the plan from a fresh checkout (no .databricks cache, as in a separate CI job)"
+trace rm -rf .databricks
+trace $CLI bundle deploy --plan tmp.plan.json
+
+title "Is b.py, removed from the bundle, still in the workspace?"
+trace errcode env MSYS_NO_PATHCONV=1 $CLI workspace get-status "$BUNDLE_PATH/files/b.py" | jq -c '{path}'
+
+title "Remote deployment state"
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "$BUNDLE_PATH/state/deployment.json" | jq -c '{seq, files: [.files[].local_path] | sort}'
+
+title "A regular deploy afterwards"
+trace $CLI bundle deploy
+trace errcode env MSYS_NO_PATHCONV=1 $CLI workspace get-status "$BUNDLE_PATH/files/b.py" | jq -c '{path}'
+trace MSYS_NO_PATHCONV=1 $CLI workspace export "$BUNDLE_PATH/state/deployment.json" | jq -c '{seq, files: [.files[].local_path] | sort}'
