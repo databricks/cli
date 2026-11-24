@@ -162,13 +162,13 @@ func runMcpSignIn(ctx context.Context, errOut io.Writer, flagValue, service stri
 	}
 	// A server pinned to a config file names that file in the hints, as add does.
 	pinnedFile := mcp.PinnedFile(entry, configFile)
-	w, err := profileClient(ctx, profileName, configFile, pinnedFile)
+	w, authorization, err := profileClient(ctx, profileName, configFile, pinnedFile)
 	if err != nil {
 		return err
 	}
 	out.Host = w.Config.Host
 	err = action(ctx, errOut, w, out, pinnedFile)
-	setUploadConfig(ctx, profileName, configFile, w.Config)
+	setUploadConfig(ctx, profileName, configFile, w.Config, authorization)
 	return err
 }
 

@@ -171,7 +171,7 @@ func logRemoveEvent(ctx context.Context, out *removeOutput) {
 		telemetry.SkipUpload(ctx)
 		return
 	}
-	setUploadConfig(ctx, out.profile.profile, out.profile.path, nil, targets...)
+	setUploadConfig(ctx, out.profile.profile, out.profile.path, nil, "", targets...)
 }
 
 // runMcpRemove removes the chosen servers from the agent configs and records the result. Results are printed

@@ -1401,7 +1401,7 @@ func TestProfileClientRefusesAccountOnlyProfile(t *testing.T) {
 			home := withHome(t)
 			writeHomeConfig(t, home, "[acct]\n"+tt.config)
 
-			_, err := profileClient(t.Context(), "acct", filepath.Join(home, ".databrickscfg"), "")
+			_, _, err := profileClient(t.Context(), "acct", filepath.Join(home, ".databrickscfg"), "")
 			if tt.refused {
 				assert.ErrorContains(t, err, "profile \"acct\" is account-level")
 				return

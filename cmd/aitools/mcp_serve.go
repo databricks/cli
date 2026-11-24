@@ -224,11 +224,13 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
 	agent := proxyAgentType(f.agent)
+	var authorization string
 	cfg, entry, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
-		Profile: profileName,
-		Service: f.service,
-		State:   state,
-		Stderr:  cmd.ErrOrStderr(),
+		Profile:              profileName,
+		Service:              f.service,
+		State:                state,
+		Stderr:               cmd.ErrOrStderr(),
+		CaptureAuthorization: func(header string) { authorization = header },
 	})
 	if err != nil {
 		return serveBindFailure(cmd, profileName, err)
@@ -271,7 +273,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	// token, so a session idle past the token's life would lose its start. The upload authenticates with the profile as it
 	// was bound here, with a config of its own that never refreshes a token, since the session's config refreshes its token.
 	if logMcpEvent(ctx, proxyStartedEvent(agent, f.service)) {
-		setUploadConfig(ctx, profileName, cfg.ConfigFile, cfg)
+		setUploadConfig(ctx, profileName, cfg.ConfigFile, cfg, authorization)
 		uploadAtStart(ctx, cmd, start)
 		if ctx.Err() != nil {
 			telemetry.SkipUpload(ctx)
@@ -300,10 +302,8 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	return err
 }
 
-// dropUploadIfRebound drops the exit upload when check, the binding check of each token fetch (see bindingCheck), finds
-// that the profile no longer names the host that serve bound. The upload's token comes from the token cache, which is
-// keyed by profile name alone, so after a re-point it would be the new host's token, sent to the bound host. remove drops
-// its upload for a drifted binding the same way.
+// dropUploadIfRebound drops exit telemetry if the profile no longer matches
+// the workspace that serve bound. It uses the same check as each token fetch.
 func dropUploadIfRebound(ctx context.Context, check func() error, profileName string) {
 	if err := checkBindingWithRetry(check); err != nil {
 		log.Debugf(ctx, "telemetry: profile %s no longer matches the binding serve started with; not uploading telemetry", profileName)

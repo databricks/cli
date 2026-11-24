@@ -306,7 +306,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	// and the agents are chosen before the first request.
 	pickingServices := len(names) == 0
 	var w *databricks.WorkspaceClient
-	var workspaceID string
+	var workspaceID, authorization string
 	var picked []mcp.Service
 	if pickingServices {
 		if err := mcp.CheckProfile(profileName, configFile); err != nil {
@@ -332,7 +332,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	}
 	// Without --names the services are picked from the workspace, and then checked like the named ones.
 	if pickingServices {
-		w, workspaceID, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
+		w, workspaceID, authorization, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
 		if err != nil {
 			return err
 		}
@@ -367,7 +367,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 		return err
 	}
 	if !pickingServices {
-		w, workspaceID, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
+		w, workspaceID, authorization, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
 		if err != nil {
 			return err
 		}
@@ -431,7 +431,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if req.login || req.askLogin {
 		signErr = signInInstalled(ctx, cmd.ErrOrStderr(), w, req, plans, servers)
 	}
-	setUploadConfig(ctx, profileName, configFile, w.Config)
+	setUploadConfig(ctx, profileName, configFile, w.Config, authorization)
 	return errors.Join(recordErr, signErr, agentFailureError(req, servers))
 }
 
@@ -444,18 +444,18 @@ func serviceFullNames(services []mcp.Service) []string {
 	return names
 }
 
-// connectWorkspace returns a client for the profile and the ID of its workspace, and sets the host in out.
-func connectWorkspace(ctx context.Context, out *addOutput, profileName, configFile, pinned string) (*databricks.WorkspaceClient, string, error) {
-	w, err := profileClient(ctx, profileName, configFile, pinned)
+// connectWorkspace returns the bound client, workspace ID and Authorization header, and sets the host in out.
+func connectWorkspace(ctx context.Context, out *addOutput, profileName, configFile, pinned string) (*databricks.WorkspaceClient, string, string, error) {
+	w, authorization, err := profileClient(ctx, profileName, configFile, pinned)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	out.Host = w.Config.Host
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		return nil, "", describeRequestError(profileName, pinned, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
+		return nil, "", "", describeRequestError(profileName, pinned, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
-	return w, workspaceID, nil
+	return w, workspaceID, authorization, nil
 }
 
 // checkBindings returns the first failure of CheckBinding for the services, which makes no request.
@@ -565,15 +565,15 @@ func withExistingProfiles(ctx context.Context, state *mcp.State, profileName str
 	return fmt.Errorf("%w\nExisting profiles: %s", err, strings.Join(profiles.Names(), ", "))
 }
 
-// profileClient returns a workspace client bound to exactly the named profile in configFile. Its config is the one
-// Bind builds, so the environment's credentials are never sent to the profile's host.
-func profileClient(ctx context.Context, name, configFile, pinnedFile string) (*databricks.WorkspaceClient, error) {
+// profileClient returns a workspace client bound to exactly the named profile
+// in configFile, alongside the Authorization header obtained during binding.
+func profileClient(ctx context.Context, name, configFile, pinnedFile string) (*databricks.WorkspaceClient, string, error) {
 	cfg, err := mcp.BoundConfig(name, configFile)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if err := checkWorkspaceProfile(name, configFile, cfg); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	return boundClient(ctx, cfg, name, pinnedFile)
 }
@@ -588,16 +588,17 @@ func checkWorkspaceProfile(name, configFile string, cfg *config.Config) error {
 	return nil
 }
 
-// boundClient returns a workspace client for cfg, a bound config of the named profile, once cfg has a credential.
-func boundClient(ctx context.Context, cfg *config.Config, name, pinnedFile string) (*databricks.WorkspaceClient, error) {
+// boundClient returns the workspace client and Authorization header for the bound config.
+func boundClient(ctx context.Context, cfg *config.Config, name, pinnedFile string) (*databricks.WorkspaceClient, string, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	if err := mcp.AuthenticateBound(ctx, cfg, name, pinnedFile); err != nil {
-		return nil, err
+	authorization, err := mcp.AuthenticateBound(ctx, cfg, name, pinnedFile)
+	if err != nil {
+		return nil, "", err
 	}
-	return w, nil
+	return w, authorization, nil
 }
 
 // describeRequestError classifies a failed request to the profile's workspace. A credential the workspace

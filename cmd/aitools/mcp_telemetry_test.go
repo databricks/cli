@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"net/http"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -238,7 +239,7 @@ func TestSetUploadConfigSkipsUnverifiedCredentials(t *testing.T) {
 			bound: &config.Config{Host: "https://adb-1.test", WorkspaceID: "222", AuthType: "pat"},
 		},
 		{
-			name:  "profile-keyed OAuth token cannot verify workspace",
+			name:  "missing bound OAuth token",
 			cfg:   "[logfood]\nhost = https://adb-1.test\nauth_type = databricks-cli\n",
 			bound: &config.Config{Host: "https://adb-1.test", AuthType: "databricks-cli"},
 		},
@@ -247,11 +248,28 @@ func TestSetUploadConfigSkipsUnverifiedCredentials(t *testing.T) {
 			home := withHome(t)
 			writeHomeConfig(t, home, tc.cfg)
 			ctx := telemetry.WithNewLogger(t.Context())
-			setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"), tc.bound)
+			setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"), tc.bound, "")
 			_, uploads := telemetry.UploadConfig(ctx)
 			assert.False(t, uploads)
 		})
 	}
+}
+
+func TestSetUploadConfigUsesBoundOAuthToken(t *testing.T) {
+	home := withHome(t)
+	writeHomeConfig(t, home, "[logfood]\nhost = https://adb-1.test\nworkspace_id = 222\nauth_type = databricks-cli\n")
+	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
+	bound := &config.Config{Host: "https://adb-1.test", WorkspaceID: "222", AuthType: "databricks-cli"}
+	setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"), bound, "Bearer test-bound-token")
+
+	cfg, uploads := telemetry.UploadConfig(ctx)
+	require.True(t, uploads)
+	assert.Equal(t, bound.Host, cfg.Host)
+	assert.Equal(t, bound.WorkspaceID, cfg.WorkspaceID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.Host+"/telemetry-ext", nil)
+	require.NoError(t, err)
+	require.NoError(t, cfg.Authenticate(req))
+	assert.Equal(t, "Bearer test-bound-token", req.Header.Get("Authorization"))
 }
 
 // TestSetUploadConfigLogsNoWarningForFailedHostMetadata checks that an upload whose host metadata lookup fails warns
@@ -275,7 +293,7 @@ func TestSetUploadConfigLogsNoWarningForFailedHostMetadata(t *testing.T) {
 	t.Cleanup(func() { slog.SetDefault(defaultLogger) })
 
 	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
-	setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"), nil)
+	setUploadConfig(ctx, "logfood", filepath.Join(home, ".databrickscfg"), nil, "")
 	_, uploads := telemetry.UploadConfig(ctx)
 	assert.True(t, uploads)
 	assert.Empty(t, warnings.String())

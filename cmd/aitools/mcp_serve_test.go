@@ -710,15 +710,37 @@ func serveRunContext(t *testing.T) context.Context {
 // TestMcpServeUploadsProxyStartedAtStart checks that serve uploads its PROXY_STARTED while it still serves, so a serve that
 // is killed, or whose token expires while it idles, has sent it. The exit upload does not send it again.
 func TestMcpServeUploadsProxyStartedAtStart(t *testing.T) {
+	for _, authType := range []string{"pat", "databricks-cli"} {
+		t.Run(authType, func(t *testing.T) {
+			testMcpServeUploadsProxyStartedAtStart(t, authType)
+		})
+	}
+}
+
+func testMcpServeUploadsProxyStartedAtStart(t *testing.T, authType string) {
+	t.Helper()
 	home := withHome(t)
-	server, uploaded := newEchoMCPServerWithUploads(t)
-	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nworkspace_id = 222\nauth_type = pat\ntoken = dapi-bound\n")
+	const token = "test-bound-token"
+	server, uploaded := newEchoMCPServerWithUploads(t, "Bearer "+token)
+	profile := "[logfood]\nhost = " + server.URL + "\nworkspace_id = 222\nauth_type = " + authType + "\n"
+	if authType == "databricks-cli" {
+		t.Setenv(storage.EnvVar, string(storage.StorageModePlaintext))
+		store, err := storage.NewFileStore(t.Context())
+		require.NoError(t, err)
+		require.NoError(t, store.Put(testProfile, storage.Entry{
+			Token: &oauth2.Token{AccessToken: token, Expiry: time.Now().Add(time.Hour)},
+		}))
+	} else {
+		profile += "token = " + token + "\n"
+	}
+	writeHomeConfig(t, home, profile)
 
 	parent := newMCPTestRoot()
 	parent.SetErr(&bytes.Buffer{})
 	var stdout lockedBuffer
 	parent.SetOut(&stdout)
 	in, stdin := io.Pipe()
+	t.Cleanup(func() { stdin.Close() })
 	parent.SetIn(in)
 	parent.SetArgs([]string{"mcp", "serve", "--profile", testProfile, "--service", testService})
 	ctx := serveRunContext(t)
@@ -739,8 +761,7 @@ func TestMcpServeUploadsProxyStartedAtStart(t *testing.T) {
 }
 
 // TestMcpServeDropsUploadAfterRepoint checks that a profile re-pointed at another host during the session leaves serve
-// with no upload config at exit, even when no request ran after the re-point. The upload's token comes from the token
-// cache by profile name, so it would be the new host's token, sent to the bound host.
+// with no upload config at exit, even when no request ran after the re-point.
 func TestMcpServeDropsUploadAfterRepoint(t *testing.T) {
 	home := withHome(t)
 	server := newEchoMCPServer(t)
@@ -945,7 +966,7 @@ func echoMCP(w http.ResponseWriter, r *http.Request) {
 
 // newEchoMCPServerWithUploads is newEchoMCPServer that also takes telemetry uploads. The function it returns gives the
 // operation of each AitoolsMcpEvent the uploads carried so far, in order.
-func newEchoMCPServerWithUploads(t *testing.T) (*httptest.Server, func() []protos.AitoolsMcpOperation) {
+func newEchoMCPServerWithUploads(t *testing.T, wantAuthorization string) (*httptest.Server, func() []protos.AitoolsMcpOperation) {
 	t.Helper()
 	var mu sync.Mutex
 	var operations []protos.AitoolsMcpOperation
@@ -954,6 +975,7 @@ func newEchoMCPServerWithUploads(t *testing.T) (*httptest.Server, func() []proto
 			echoMCP(w, r)
 			return
 		}
+		assert.Equal(t, wantAuthorization, r.Header.Get("Authorization"))
 		var body telemetry.RequestBody
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			w.WriteHeader(http.StatusBadRequest)

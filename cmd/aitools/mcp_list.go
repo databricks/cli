@@ -519,7 +519,8 @@ func profileCheckClient(ctx context.Context, p *mcpListProfile, login string) (*
 	if err := checkWorkspaceProfile(p.Profile, p.configPath, cfg); err != nil {
 		return nil, err
 	}
-	return boundClient(ctx, cfg, p.Profile, login)
+	w, _, err := boundClient(ctx, cfg, p.Profile, login)
+	return w, err
 }
 
 // tokenStatus is the --check result of a profile's token. A credential that the workspace or the profile refuses is

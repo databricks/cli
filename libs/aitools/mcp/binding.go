@@ -47,6 +47,8 @@ type BindOptions struct {
 	State   *State
 	// Stderr receives the notice printed when no install record exists. It must not be nil.
 	Stderr io.Writer
+	// CaptureAuthorization receives the Authorization header obtained during binding, when set.
+	CaptureAuthorization func(string)
 }
 
 // BindError is a failed binding check. Its message is the text printed to stderr.
@@ -91,8 +93,12 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	if entry == nil {
 		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
 	}
-	if err := AuthenticateBound(ctx, cfg, opts.Profile, PinnedFile(entry, configFile)); err != nil {
+	authorization, err := AuthenticateBound(ctx, cfg, opts.Profile, PinnedFile(entry, configFile))
+	if err != nil {
 		return nil, nil, err
+	}
+	if opts.CaptureAuthorization != nil {
+		opts.CaptureAuthorization(authorization)
 	}
 	return cfg, entry, nil
 }
@@ -171,18 +177,19 @@ func resolveBound(cfg *config.Config) (*config.Config, error) {
 
 // AuthenticateBound checks that cfg, from BoundConfig for profileName, has a credential. A credential the profile cannot
 // provide is AUTH_FAILED, with the login command for the profile. pinnedFile is the config file an entry pins the
-// profile to, or "" when there is none; the login command names it.
-func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pinnedFile string) error {
+// profile to, or "" when there is none; the login command names it. It returns
+// the Authorization header from that authentication for callers that need it.
+func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pinnedFile string) (string, error) {
 	// Authenticate only writes headers onto req, which is never sent. The request takes
 	// the command's context, as in cmd/root/auth.go.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
 	if err != nil {
-		return uncategorizedError(err)
+		return "", uncategorizedError(err)
 	}
 	if err := cfg.Authenticate(req); err != nil {
-		return AuthErrorIn(profileName, pinnedFile, err)
+		return "", AuthErrorIn(profileName, pinnedFile, err)
 	}
-	return nil
+	return req.Header.Get("Authorization"), nil
 }
 
 // PinnedFile returns the config file that a hint for entry must name, or "" when the hint's command reads the same file

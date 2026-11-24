@@ -14,17 +14,13 @@ import (
 )
 
 // setUploadConfig prepares telemetry after the command has resolved its workspace.
-// For offline removal, bound is nil and only a token in the profile itself can
-// be used. The CLI OAuth cache keys tokens by profile name across config files.
-func setUploadConfig(ctx context.Context, profileName, configFile string, bound *config.Config, recorded ...mcp.Entry) {
+// For offline removal, bound is nil and only a token in the profile itself can be used.
+func setUploadConfig(ctx context.Context, profileName, configFile string, bound *config.Config, authorization string, recorded ...mcp.Entry) {
 	if telemetry.Disabled(ctx) {
 		return
 	}
 	if bound != nil {
-		// A fresh CLI OAuth credential lookup can pick up a different profile's
-		// token after the command authenticated. Only use a credential strategy
-		// tied to the resolved config.
-		if bound.AuthType == "" || bound.AuthType == (auth.CLICredentials{}).Name() {
+		if bound.AuthType == "" {
 			telemetry.SkipUpload(ctx)
 			return
 		}
@@ -60,7 +56,21 @@ func setUploadConfig(ctx context.Context, profileName, configFile string, bound 
 			telemetry.SkipUpload(ctx)
 			return
 		}
-		cfg.AuthType = bound.AuthType
+		if bound.AuthType == (auth.CLICredentials{}).Name() {
+			// The CLI OAuth cache is keyed by profile name across config files.
+			// Reuse the exact bearer token obtained during binding, with a
+			// static strategy that cannot look up or refresh an OAuth token.
+			token, ok := strings.CutPrefix(authorization, "Bearer ")
+			if !ok || token == "" {
+				telemetry.SkipUpload(ctx)
+				return
+			}
+			cfg.Token = token
+			cfg.Credentials = config.PatCredentials{}
+			cfg.AuthType = cfg.Credentials.Name()
+		} else {
+			cfg.AuthType = bound.AuthType
+		}
 	}
 	telemetry.SetUploadConfig(ctx, cfg)
 }
