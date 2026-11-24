@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle deploy
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+1577836800000000000-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+1577836800000000000-py310-none-any.whl...
+Error: unable to open [TEST_TMP_DIR]/.databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+1577836800000000000-py3-none-any.whl: no such file or directory
+
+
+Exit code: 1
+
+=== Each task should reference its own patched wheel
+
+>>> print_requests.py //api/2.2/jobs/create
+
+=== Both patched wheels should be in the cache
+
+>>> find.py .databricks/.*whl
+.databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+1577836800000000000-py310-none-any.whl
