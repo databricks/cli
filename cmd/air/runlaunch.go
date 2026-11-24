@@ -190,54 +190,37 @@ func (s *launchSpeculation) abort() {
 	_ = s.group.Wait()
 }
 
-// ensureExperimentDirectory creates experimentDir if it is missing, matching the
-// CLI's convention for its other artifact directories. Without this, a missing
-// parent surfaces only as a server-side INTERNAL_ERROR after the run is wasted.
-// An empty dir means the default (/Users/<user>/...), which always exists.
-func ensureExperimentDirectory(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string) error {
-	return startExperimentDirectoryCheck(ctx, w, experimentDir)()
-}
-
 // startExperimentDirectoryCheck reads experimentDir in the background and returns
-// the function that creates it if missing. Only the read runs before Me; the
-// returned function is called once, after Me, and does the write.
+// the function that creates it if missing, matching the CLI's convention for its
+// other artifact directories. Without the create, a missing parent surfaces only as
+// a server-side INTERNAL_ERROR after the run is wasted. Only the read runs before
+// Me; the returned function is called once, after Me, and does the write. An empty
+// dir means the default (/Users/<user>/...), which always exists.
 func startExperimentDirectoryCheck(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string) func() error {
 	if experimentDir == "" {
 		return func() error { return nil }
 	}
-	joinStatus := prefetch(func() (*workspace.ObjectInfo, error) {
-		return w.Workspace.GetStatusByPath(ctx, experimentDir)
-	})
+	type statusResult struct {
+		info *workspace.ObjectInfo
+		err  error
+	}
+	// Buffered, so an early return from the submit does not block the goroutine.
+	status := make(chan statusResult, 1)
+	go func() {
+		info, err := w.Workspace.GetStatusByPath(ctx, experimentDir)
+		status <- statusResult{info, err}
+	}()
 	return func() error {
-		info, err := joinStatus()
-		if errors.Is(err, apierr.ErrNotFound) {
+		r := <-status
+		if errors.Is(r.err, apierr.ErrNotFound) {
 			return w.Workspace.MkdirsByPath(ctx, experimentDir)
 		}
-		if err != nil {
-			return fmt.Errorf("failed to check experiment_directory %q: %w", experimentDir, err)
+		if r.err != nil {
+			return fmt.Errorf("failed to check experiment_directory %q: %w", experimentDir, r.err)
 		}
-		if info.ObjectType != workspace.ObjectTypeDirectory {
-			return fmt.Errorf("experiment_directory %q is not a directory (object_type=%s)", experimentDir, info.ObjectType)
+		if r.info.ObjectType != workspace.ObjectTypeDirectory {
+			return fmt.Errorf("experiment_directory %q is not a directory (object_type=%s)", experimentDir, r.info.ObjectType)
 		}
 		return nil
-	}
-}
-
-// prefetch runs fn in the background and returns the function that waits for its
-// result; call it once. The result is buffered, so an early return does not leak a
-// blocked goroutine.
-func prefetch[T any](fn func() (T, error)) func() (T, error) {
-	type result struct {
-		value T
-		err   error
-	}
-	done := make(chan result, 1)
-	go func() {
-		value, err := fn()
-		done <- result{value, err}
-	}()
-	return func() (T, error) {
-		r := <-done
-		return r.value, r.err
 	}
 }

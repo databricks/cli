@@ -115,25 +115,25 @@ databricks_internal_user_workspace_dir = /Workspace/second
 	})
 }
 
-func TestEnsureExperimentDirectory(t *testing.T) {
+func TestExperimentDirectoryCheck(t *testing.T) {
 	ctx := t.Context()
 	w := newFakeWorkspaceClient(t)
 
 	// Empty means default (always exists) — no API call, no error.
-	require.NoError(t, ensureExperimentDirectory(ctx, w, ""))
+	require.NoError(t, startExperimentDirectoryCheck(ctx, w, "")())
 
 	// A missing path is created.
-	require.NoError(t, ensureExperimentDirectory(ctx, w, "/Workspace/Users/me/exp"))
+	require.NoError(t, startExperimentDirectoryCheck(ctx, w, "/Workspace/Users/me/exp")())
 
 	// An existing directory is accepted as-is.
 	require.NoError(t, w.Workspace.MkdirsByPath(ctx, "/Workspace/Users/me/existing"))
-	require.NoError(t, ensureExperimentDirectory(ctx, w, "/Workspace/Users/me/existing"))
+	require.NoError(t, startExperimentDirectoryCheck(ctx, w, "/Workspace/Users/me/existing")())
 
 	// A path that exists but is a file is rejected.
 	fc, err := filer.NewWorkspaceFilesClient(w, "/Workspace/Users/me")
 	require.NoError(t, err)
 	require.NoError(t, fc.Write(ctx, "afile", strings.NewReader("x")))
-	err = ensureExperimentDirectory(ctx, w, "/Workspace/Users/me/afile")
+	err = startExperimentDirectoryCheck(ctx, w, "/Workspace/Users/me/afile")()
 	require.ErrorContains(t, err, "is not a directory")
 }
 
