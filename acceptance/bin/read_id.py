@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl, id_repl_name
-from print_state import get_resources_for_lookup, get_state_file
+from print_state import get_direct_state_file, get_resources, get_state_file, use_file_state
 
 
 def get_id_terraform(filename, name):
@@ -44,7 +44,7 @@ def get_id_recorded(target, name):
     uniqueness across types. So list and match on the leaf instead. Switching to GET is a
     reasonable follow-up; it likely needs the service to key resources by name as well.
     """
-    resources = get_resources_for_lookup(target)
+    resources = get_resources(target)
     for key, value in resources.items():
         if key.split(".")[1] == name:
             return value["id"]
@@ -72,7 +72,10 @@ def main():
     args = parser.parse_args()
 
     if os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true":
-        id = get_id_recorded(args.target, args.name)
+        if use_file_state(args.target):
+            id = get_id_direct(get_direct_state_file(args.target), args.name)
+        else:
+            id = get_id_recorded(args.target, args.name)
     else:
         filename = get_state_file(args.target, args.backup)
         if filename.endswith(".tfstate"):

@@ -12,3 +12,9 @@ title "The next resource update also succeeds while history version creation fai
 trace update_file.py databricks.yml 'name: foo' 'name: renamed'
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --get --oneline
+
+title "Deployment history lists no resources, so the state helpers read resources.json"
+trace replace_ids.py
+trace read_state.py jobs foo id name
+job_id=$(read_id.py foo)
+echo "job_id is set: ${job_id:+yes}"
