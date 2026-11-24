@@ -84,7 +84,7 @@ Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.local
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image example/image:v1
-Warning: source image example/image:v1 sets WORKDIR /app; use absolute paths in your command and scripts.
+Warning: source image example/image:v1 sets WORKDIR /app. Relative paths in your command and scripts depend on the working directory, so use absolute paths.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
