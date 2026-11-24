@@ -84,7 +84,9 @@ Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.local
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image example/image:v1
-Warning: source image example/image:v1 sets WORKDIR /app. Relative paths in your command and scripts only resolve against it when the command runs from that directory, so use absolute paths.
+Warning: source image example/image:v1 sets WORKDIR /app. Use absolute paths in your command and scripts. See how AI Runtime command paths work:
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command
+  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress

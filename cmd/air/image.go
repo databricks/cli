@@ -199,6 +199,7 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	}
 
 	var inspected bytes.Buffer
+	// {{with .Config}} keeps an image with no config from failing the template (https://docs.docker.com/engine/cli/formatting/).
 	if err := deps.runCommand(ctx, nil, &inspected, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}}", resolved.source); err != nil {
 		return fmt.Errorf("inspect source image %s: %w", resolved.source, err)
 	}
@@ -208,7 +209,9 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	}
 	// With no WORKDIR or WORKDIR /, relative paths don't depend on a directory the image chose.
 	if workingDir != "" && workingDir != "/" {
-		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s. Relative paths in your command and scripts only resolve against it when the command runs from that directory, so use absolute paths.", resolved.source, workingDir))
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s. Use absolute paths in your command and scripts. See how AI Runtime command paths work:\n"+
+			"  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command\n"+
+			"  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command", resolved.source, workingDir))
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
