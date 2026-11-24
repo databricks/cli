@@ -139,6 +139,11 @@ class App(Resource):
     effect when the app is next deployed.
     """
 
+    thumbnail_path: VariableOrOptional[str] = None
+    """
+    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
+    """
+
     usage_policy_id: VariableOrOptional[str] = None
     """
     [Public Preview] ID of the usage policy that the app's compute usage is attributed to. Alternative to
@@ -256,6 +261,11 @@ class AppDict(TypedDict, total=False):
     """
     Destinations that receive the app's OpenTelemetry logs, metrics and traces. Changes take
     effect when the app is next deployed.
+    """
+
+    thumbnail_path: VariableOrOptional[str]
+    """
+    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
     """
 
     usage_policy_id: VariableOrOptional[str]

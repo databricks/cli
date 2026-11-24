@@ -33,40 +33,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
->>> print_requests.py --get //jobs/get
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID][3] interactive/none engine/direct lineage/5MDu0ewFJPg auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.2/jobs/get",
-  "q": {
-    "job_id": "[TEST_JOB_ID]"
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID][4] interactive/none engine/direct lineage/5MDu0ewFJPg auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.2/jobs/get",
-  "q": {
-    "job_id": "[TEST_JOB_ID]"
-  }
-}
-
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
-
->>> print_requests.py --get //jobs/get
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID][5] interactive/none engine/direct lineage/5MDu0ewFJPg auth/pat"
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID][5] interactive/none engine/direct lineage/5MDu0ewFJPg auth/pat"
 
 === Should show that it's already migrated
 
@@ -110,8 +80,8 @@ Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 >>> replay_tfstate.py .databricks/terraform-prod-requests.json .databricks/terraform-prod.tfstate -t prod
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod
-[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID][6]"
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID][3]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod --force-pull
-terraform.tfstate: remote terraform state serial=5 lineage="[UUID][6]"
-[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID][6]"
+terraform.tfstate: remote terraform state serial=5 lineage="[UUID][3]"
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID][3]"

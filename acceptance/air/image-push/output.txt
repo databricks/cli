@@ -34,7 +34,7 @@ Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.
 
 === docker commands
 image ls --quiet nvidia/cuda:13.4.1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} nvidia/cuda:13.4.1
 tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
@@ -84,6 +84,45 @@ For Databricks Artifact Registry image limits, see https://docs.databricks.com/a
     "registry_image": "[WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1"
   }
 }
+
+=== image with WORKDIR warns but is pushed
+
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Source image example/image:v1 is 7.1 GB uncompressed.
+Warning: source image example/image:v1 sets WORKDIR /app. Use absolute paths in your command and scripts. See how AI Runtime command paths work:
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command
+  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Compressed image size: 3.1 GB in 2 layers.
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
+
+=== image with WORKDIR / does not warn
+
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Source image example/image:v1 is 7.1 GB uncompressed.
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Compressed image size: 3.1 GB in 2 layers.
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 === daemon failure must not pull
 
@@ -237,35 +276,45 @@ Error: invalid image repository name: catalog.schema.artifact must be 255 charac
 
 === all docker commands
 image ls --quiet nvidia/cuda:13.4.1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} nvidia/cuda:13.4.1
 tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 image ls --quiet example/image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 pull --platform linux/amd64 example/image:v1

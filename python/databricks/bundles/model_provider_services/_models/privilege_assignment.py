@@ -22,7 +22,6 @@ class PrivilegeAssignment:
     principal: VariableOrOptional[str] = None
     """
     The principal (user email address or group name).
-    For deleted principals, `principal` is empty while `principal_id` is populated.
     """
 
     privileges: VariableOrList[Privilege] = field(default_factory=list)
@@ -44,7 +43,6 @@ class PrivilegeAssignmentDict(TypedDict, total=False):
     principal: VariableOrOptional[str]
     """
     The principal (user email address or group name).
-    For deleted principals, `principal` is empty while `principal_id` is populated.
     """
 
     privileges: VariableOrList[PrivilegeParam]

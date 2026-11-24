@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptrace"
+	"slices"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 	"uuid"
@@ -38,7 +40,42 @@ func Disabled(ctx context.Context) bool {
 	return env.Get(ctx, disableEnvVar) != ""
 }
 
-func Log(ctx context.Context, event protos.DatabricksCliLog) {
+// SetUploadConfig sets the config that Upload authenticates with, in place of the one cmdctx.ConfigUsed holds. A command
+// sets it once its own binding checks have passed, so that the upload authenticates with the profile the command bound.
+// Like Log, it is a no-op without a logger.
+func SetUploadConfig(ctx context.Context, cfg *config.Config) {
+	if l, ok := loggerFromContext(ctx); ok {
+		l.upload = cfg
+	}
+}
+
+// SkipUpload makes Upload send nothing for the run, whatever config the run has, including the one cmdctx.ConfigUsed
+// holds. A command calls it when the profile it bound no longer matches, so that no config may stand in for it. Like Log,
+// it is a no-op without a logger.
+func SkipUpload(ctx context.Context) {
+	if l, ok := loggerFromContext(ctx); ok {
+		l.skipUpload = true
+	}
+}
+
+// UploadConfig returns the config that Upload authenticates with: the one SetUploadConfig set, else the one
+// cmdctx.ConfigUsed holds. It returns false when the run has no config, or when SkipUpload was called.
+func UploadConfig(ctx context.Context) (*config.Config, bool) {
+	l, ok := loggerFromContext(ctx)
+	if !ok || l.skipUpload {
+		return nil, false
+	}
+	if l.upload != nil {
+		return l.upload, true
+	}
+	if cmdctx.HasConfigUsed(ctx) {
+		return cmdctx.ConfigUsed(ctx), true
+	}
+	return nil, false
+}
+
+// Log buffers an event and reports whether a telemetry logger was present.
+func Log(ctx context.Context, event protos.DatabricksCliLog) bool {
 	// A missing logger means telemetry was never initialized on this context
 	// (e.g. a command invoked outside the normal cmd/root setup). Dropping the
 	// event is the right call: telemetry is best-effort and must never crash a
@@ -46,14 +83,23 @@ func Log(ctx context.Context, event protos.DatabricksCliLog) {
 	l, ok := loggerFromContext(ctx)
 	if !ok {
 		log.Debugf(ctx, "telemetry logger not found in the context; dropping event")
-		return
+		return false
 	}
 	l.log(event)
+	return true
 }
 
 type logger struct {
+	// mu guards logs, which the goroutines of a command's MCP proxy write concurrently.
+	mu               sync.Mutex
 	logs             []protos.FrontendLog
 	stateLineageHash string
+
+	// upload is the config Upload authenticates with, as SetUploadConfig set it. Nil leaves cmdctx.ConfigUsed to it.
+	upload *config.Config
+
+	// skipUpload is set by SkipUpload. It takes precedence over upload and cmdctx.ConfigUsed.
+	skipUpload bool
 
 	// running counts the goroutines that Upload started and stopped waiting
 	// for, which may still be using the config (see within).
@@ -77,11 +123,27 @@ func StateLineageHash(ctx context.Context) string {
 }
 
 func (l *logger) log(event protos.DatabricksCliLog) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	l.logs = append(l.logs, protos.FrontendLog{
 		FrontendLogEventID: uuid.New().String(),
 		Entry: protos.FrontendLogEntry{
 			DatabricksCliLog: event,
 		},
+	})
+}
+
+// forget removes the sent events from the buffer, so that a later Upload does not send them again. It matches them by
+// ID, since a proxy goroutine may have logged more events after the copy Upload sent was taken.
+func (l *logger) forget(sent []protos.FrontendLog) {
+	ids := make(map[string]bool, len(sent))
+	for _, s := range sent {
+		ids[s.FrontendLogEventID] = true
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.logs = slices.DeleteFunc(l.logs, func(e protos.FrontendLog) bool {
+		return ids[e.FrontendLogEventID]
 	})
 }
 
@@ -97,9 +159,15 @@ const (
 	waitBetweenRetries = 200 * time.Millisecond
 )
 
+// Upload sends the events logged on ctx. It removes the batch when the service
+// accepts every event in it.
 func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	l := fromContext(ctx)
-	if len(l.logs) == 0 {
+	// Upload works on a copy, so that setting the execution context does not write the events a proxy goroutine may append to.
+	l.mu.Lock()
+	logs := slices.Clone(l.logs)
+	l.mu.Unlock()
+	if len(logs) == 0 {
 		log.Debugf(ctx, "no telemetry logs to upload")
 		return nil
 	}
@@ -111,16 +179,17 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	}
 
 	// Set the execution context for all logs.
-	for i := range l.logs {
-		l.logs[i].Entry.DatabricksCliLog.ExecutionContext = &ec
+	for i := range logs {
+		logs[i].Entry.DatabricksCliLog.ExecutionContext = &ec
 	}
 
-	protoLogs, err := marshalLogs(l.logs)
+	protoLogs, err := marshalLogs(logs)
 	if err != nil {
 		return err
 	}
 
-	if !cmdctx.HasConfigUsed(ctx) {
+	cfg, ok := UploadConfig(ctx)
+	if !ok {
 		log.Debugf(ctx, "no auth config available; skipping telemetry upload")
 		return nil
 	}
@@ -132,7 +201,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		return errors.New("a previous telemetry upload is still running")
 	}
 
-	timeout, err := uploadTimeout(ctx, l.logs)
+	timeout, err := uploadTimeout(ctx, logs)
 	if err != nil {
 		return err
 	}
@@ -147,7 +216,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	}
 
 	apiClient, err := within(ctx, &l.running, func() (*client.DatabricksClient, error) {
-		return newAPIClient(cmdctx.ConfigUsed(ctx), &l.running, true)
+		return newAPIClient(cfg, &l.running, true)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
@@ -167,6 +236,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		// All logs were uploaded successfully.
 		if err == nil && resp.NumProtoSuccess >= int64(len(protoLogs)) {
 			log.Debugf(ctx, "All %d logs uploaded successfully", len(protoLogs))
+			l.forget(logs)
 			return nil
 		}
 
@@ -427,15 +497,17 @@ func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs 
 	return resp, nil
 }
 
-// BufferedEvents returns the events logged on ctx, or nil when ctx has no
-// logger. Upload does not clear them. Tests in other packages use it to assert
-// what a command logs without uploading; cmd/aitools uses it to skip waiting
-// for telemetry auth when there is nothing to upload.
+// BufferedEvents returns the events logged on ctx and not yet uploaded, or nil
+// when ctx has no logger. Tests in other packages use it to assert what a
+// command logs without uploading; cmd/aitools uses it to skip waiting for
+// telemetry auth when there is nothing to upload.
 func BufferedEvents(ctx context.Context) []protos.DatabricksCliLog {
 	l, ok := loggerFromContext(ctx)
 	if !ok {
 		return nil
 	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	out := make([]protos.DatabricksCliLog, len(l.logs))
 	for i, fl := range l.logs {
 		out[i] = fl.Entry.DatabricksCliLog

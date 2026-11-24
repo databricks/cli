@@ -76,7 +76,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	target := "123.container.us-west-2.cloud.databricks.test/main.training.cuda:13.4.1"
 	assert.Equal(t, []recordedImageCommand{
 		{executable: "/usr/bin/docker", args: []string{"image", "ls", "--quiet", "nvidia/cuda:13.4.1"}},
-		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Size}}", "nvidia/cuda:13.4.1"}},
+		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
 		{executable: "/usr/bin/docker", args: []string{"manifest", "inspect", "--verbose", target}},
@@ -92,7 +92,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 
 // fakeImageInspect answers the docker image inspect format runImagePush uses for a linux/amd64 image.
 func fakeImageInspect(sizeBytes string) string {
-	return "linux/amd64|" + sizeBytes + "\n"
+	return "linux/amd64|" + sizeBytes + "|\n"
 }
 
 func TestFormatImageSize(t *testing.T) {

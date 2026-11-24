@@ -167,7 +167,7 @@ Agent Bricks
   supervisor-agents                      *Beta* Manage legacy Supervisor Agents and related resources.
 
 AI Functions
-  ai-functions                           Transform and enrich data with AI on Databricks.
+  ai-functions                           Transform and enrich data with AI.
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.

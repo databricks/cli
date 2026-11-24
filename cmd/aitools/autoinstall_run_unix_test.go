@@ -32,12 +32,16 @@ const autoInstallSignalHelperEnv = "AITOOLS_TEST_SIGNAL_HELPER"
 // gateLookupStarted is what the helper prints when its gate lookup starts.
 const gateLookupStarted = "looking the gate up"
 
-// TestMain runs the hook when TestAutoInstallEndsByTheSignal re-executes the
-// test binary as the helper.
-func TestMain(m *testing.M) {
+func init() {
+	runTestHelper = runAutoInstallSignalHelperProcess
+}
+
+// runAutoInstallSignalHelperProcess runs the hook when
+// TestAutoInstallEndsByTheSignal re-executes the test binary as the helper.
+func runAutoInstallSignalHelperProcess() {
 	step := os.Getenv(autoInstallSignalHelperEnv)
 	if step == "" {
-		os.Exit(m.Run())
+		return
 	}
 	// The root command ends the CLI by the signal that the hook returns;
 	// exiting normally fails the test.
@@ -48,6 +52,8 @@ func TestMain(m *testing.M) {
 }
 
 func runAutoInstallSignalHelper(step string) os.Signal {
+	// The helper is a new process: it has the real clock, not the test's.
+	now = func() time.Time { return autoInstallTestNow }
 	if step == "lookup" {
 		// Only the signal ends the lookup.
 		gateTimeout = time.Hour

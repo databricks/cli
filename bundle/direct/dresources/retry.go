@@ -1,6 +1,9 @@
 package dresources
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 // RetrySafeError wraps an error to signal that the failed DoCreate is safe to retry.
 type RetrySafeError struct {
@@ -17,6 +20,14 @@ func retrySafe(err error) error {
 		return nil
 	}
 	return &RetrySafeError{err: err}
+}
+
+// IsRetrySafe reports whether a failed DoCreate may be repeated: the resource marked the error
+// retrySafe, and the error leaves it unknown whether the request was applied (the errors
+// recoverCreate handles).
+func IsRetrySafe(ctx context.Context, err error) bool {
+	_, ok := errors.AsType[*RetrySafeError](err)
+	return ok && isUncertainCreateError(ctx, err)
 }
 
 // UnwrapRetrySafe removes the retrySafe wrapper, returning the underlying error.

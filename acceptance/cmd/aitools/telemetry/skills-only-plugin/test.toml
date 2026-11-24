@@ -1,0 +1,1 @@
+Badness = "Skipping an agent that already has the databricks plugin is a known, deliberate skip, but telemetry reports it as error_category UNCATEGORIZED in agent_results (and in the FINISHED event when the agent is named), the same as an unknown failure; it should get its own category, as the scope skips do (UNSUPPORTED_SCOPE)."

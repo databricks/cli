@@ -2,16 +2,21 @@ package mcp_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/mcp"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -46,7 +51,24 @@ func bindingTestConfig(t *testing.T, contents string) string {
 	t.Setenv("DATABRICKS_TOKEN", "dapi-env-token")
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "other")
 	t.Setenv("DATABRICKS_AUTH_TYPE", "basic")
+	bindingTestNoFixtureHostMetadata(t)
 	return path
+}
+
+// bindingTestNoFixtureHostMetadata answers the host-metadata lookup of a .test host with no metadata, so a bind against
+// the fixture hosts of these tests does not send a request out of the test binary. A test's own server is still asked.
+func bindingTestNoFixtureHostMetadata(t *testing.T) {
+	orig := config.DefaultHostMetadataResolverFactory
+	t.Cleanup(func() { config.DefaultHostMetadataResolverFactory = orig })
+	config.DefaultHostMetadataResolverFactory = func(cfg *config.Config) config.HostMetadataResolver {
+		return func(ctx context.Context, host string) (*config.HostMetadata, error) {
+			u, err := url.Parse(host)
+			if err == nil && strings.HasSuffix(u.Hostname(), ".test") {
+				return nil, nil
+			}
+			return cfg.DefaultHostMetadataResolver()(ctx, host)
+		}
+	}
 }
 
 func bindingTestProfileContents(token string) string {
@@ -985,4 +1007,18 @@ func TestConfigFileCommandUsesForwardSlashes(t *testing.T) {
 	path := filepath.Join("work", "cfg", "logfood.cfg")
 	assert.Equal(t, "DATABRICKS_CONFIG_FILE="+filepath.ToSlash(path)+" databricks auth login --profile logfood",
 		mcp.ConfigFileCommand(path, "databricks auth login --profile logfood"))
+}
+
+// TestBoundUploadConfigNeverRefreshes checks that the config of a telemetry upload never refreshes a token, and that the
+// config a serve session binds keeps the default chain.
+func TestBoundUploadConfigNeverRefreshes(t *testing.T) {
+	cfgPath := bindingTestConfig(t, bindingTestProfileContents(bindingTestToken))
+
+	upload, err := mcp.BoundUploadConfig(t.Context(), bindingTestProfile, cfgPath, time.Second)
+	require.NoError(t, err)
+	assert.Equal(t, auth.CredentialsWithoutRefresh(), upload.Credentials)
+
+	session, err := mcp.BoundConfigWithin(bindingTestProfile, cfgPath, time.Second)
+	require.NoError(t, err)
+	assert.Nil(t, session.Credentials, "the session leaves Credentials unset, so the SDK keeps the default chain")
 }
