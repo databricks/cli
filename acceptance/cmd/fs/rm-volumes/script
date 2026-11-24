@@ -2,10 +2,8 @@ VOLUME="fs-rm-${UNIQUE_NAME}"
 DIR="dbfs:/Volumes/main/default/${VOLUME}/dir"
 $CLI volumes create main default "${VOLUME}" MANAGED > /dev/null
 $CLI fs mkdir ${DIR}/sub
-echo hello > hello.txt
 $CLI fs cp hello.txt ${DIR}/one.txt > /dev/null
 $CLI fs cp hello.txt ${DIR}/sub/two.txt > /dev/null
-rm hello.txt
 
 title "rm of a file whose DELETE is applied but answered with a 504"
 fault.py --after-handler "DELETE /api/2.0/fs/files/**" 504 0 1
