@@ -13,6 +13,7 @@ import json
 import os
 import posixpath
 import subprocess
+import sys
 
 from nostamp import scrub
 
@@ -150,6 +151,39 @@ def get_resources(target):
         page_token = listed.get("next_page_token")
         if not page_token:
             return result
+
+
+def get_file_resources(target):
+    """resources.json's resources in get_resources' shape, or {} without a direct-engine state file."""
+    filename = get_state_file(target, False)
+    if not filename or not filename.endswith("resources.json") or not os.path.exists(filename):
+        return {}
+    result = {}
+    for key, value in (json.loads(open(filename).read()).get("state") or {}).items():
+        result[key.removeprefix("resources.")] = {
+            "id": value.get("__id__"),
+            "state": value.get("state") or {},
+            "depends_on": value.get("depends_on") or [],
+        }
+    return result
+
+
+def get_resources_for_lookup(target):
+    """get_resources, falling back to resources.json when no deployment is recorded at all.
+
+    Recording is best effort: when the service rejects the create (e.g. a workspace quota), the
+    deploy still succeeds with resources.json as the authoritative state, and the deploy's warning
+    already fails the test. Without the fallback every later ID lookup returns nothing and the
+    failure cascades into commands run with empty IDs, including cleanups that then leak resources.
+    The note keeps the fallback visible in the test output.
+    """
+    recorded = get_resources(target)
+    if recorded or get_deployment_id(target):
+        return recorded
+    file_resources = get_file_resources(target)
+    if file_resources:
+        print("Note: no deployment recorded in deployment history, reading IDs from resources.json", file=sys.stderr)
+    return file_resources
 
 
 def get_recorded_state(target):

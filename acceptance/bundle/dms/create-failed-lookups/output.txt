@@ -1,0 +1,36 @@
+
+=== The service rejects the deployment create, as it does when the workspace hits its deployment limit
+
+>>> fault.py POST /api/2.0/bundle/deployments 400 0 1000 RESOURCE_LIMIT_EXCEEDED
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-create-failed-lookups-[UNIQUE_NAME]/default/files...
+Warn: Could not enable deployment history for this deploy: failed to create deployment: Fault injected by test.
+Created jobs.foo
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Nothing is recorded, so the ID lookups read resources.json instead of returning nothing
+Note: no deployment recorded in deployment history, reading IDs from resources.json
+job_id is set: yes
+
+>>> read_state.py jobs foo id name
+Note: no deployment recorded in deployment history, reading IDs from resources.json
+jobs foo id='[FOO_ID]' name='foo-[UNIQUE_NAME]'
+
+>>> replace_ids.py
+Note: no deployment recorded in deployment history, reading IDs from resources.json
+
+=== The ID works for a later command
+
+>>> [CLI] jobs get [FOO_ID]
+foo-[UNIQUE_NAME]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-create-failed-lookups-[UNIQUE_NAME]/default
+
+Warn: Could not record deployment history for this destroy: failed to create deployment: Fault injected by test.
+Destroy: 1 deleted
