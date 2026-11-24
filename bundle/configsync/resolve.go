@@ -410,9 +410,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				})
 			}
 			if unwritten {
-				// Removing or replacing the key would mean editing what other mappings
-				// inherit too, so a removal that reaches only some definitions is not
-				// written at all.
+				// A removal that reaches only some definitions leaves the value in place.
 				log.Debugf(ctx, "config-remote-sync: skipping %s: the key is not written where it is defined", fullPath)
 				configChange.Operation = OperationSkip
 				skipped++

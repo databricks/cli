@@ -404,15 +404,13 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 	return nil, nil
 }
 
-// sourceDocs caches the YAML documents changes are written to, parsed as nodes so that
-// a lookup sees the keys a file spells out rather than the merged configuration.
+// sourceDocs caches files parsed as nodes, which unlike the merged configuration do not
+// hold keys inherited through a merge key ('<<: *anchor'): the patcher cannot reach those.
 type sourceDocs map[string]*yaml.Node
 
-// written reports whether any candidate path's key is written in file, and whether the
-// mapping that would hold it is. A key inherited through a merge key ('<<: *anchor') is
-// not, so the patcher can neither replace nor remove it there. A file that cannot be
-// read counts as written, leaving the outcome to the patcher.
-func (d sourceDocs) written(file string, candidates ...string) (key, parent bool) {
+// written reports whether the key is written at either path, and whether the mapping that
+// would hold it is. An unreadable file counts as written, leaving the outcome to the patcher.
+func (d sourceDocs) written(file, writePath, altWritePath string) (key, parent bool) {
 	doc, ok := d[file]
 	if !ok {
 		doc = &yaml.Node{}
@@ -425,13 +423,10 @@ func (d sourceDocs) written(file string, candidates ...string) (key, parent bool
 	if doc == nil {
 		return true, true
 	}
-	for _, candidate := range candidates {
-		if candidate == "" {
-			continue
-		}
-		candidateKey, candidateParent := keyWrittenAt(doc.Content[0], candidate)
-		key = key || candidateKey
-		parent = parent || candidateParent
+	key, parent = keyWrittenAt(doc.Content[0], writePath)
+	if altWritePath != "" {
+		altKey, altParent := keyWrittenAt(doc.Content[0], altWritePath)
+		key, parent = key || altKey, parent || altParent
 	}
 	return key, parent
 }
@@ -439,11 +434,11 @@ func (d sourceDocs) written(file string, candidates ...string) (key, parent bool
 // keyWrittenAt follows aliases like the patcher does, but a parent reached through one
 // is shared with the anchor and does not count as a place to add the key.
 func keyWrittenAt(root *yaml.Node, fieldPath string) (key, parent bool) {
-	pattern, err := structpath.ParsePattern(fieldPath)
+	path, err := structpath.ParsePath(fieldPath)
 	if err != nil {
 		return true, true
 	}
-	parts := pattern.AsSlice()
+	parts := path.AsSlice()
 	current := root
 	viaAlias := false
 	for i, part := range parts {
@@ -454,7 +449,7 @@ func keyWrittenAt(root *yaml.Node, fieldPath string) (key, parent bool) {
 		if i == len(parts)-1 {
 			parent = current.Kind == yaml.MappingNode && !viaAlias
 		}
-		current, _ = yamlChild(current, (*structpath.PathNode)(part))
+		current, _ = yamlChild(current, part)
 		if current == nil {
 			return false, parent
 		}
