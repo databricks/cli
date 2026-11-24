@@ -205,6 +205,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 	skipped := 0
 	targetName := b.Config.Bundle.Target
 	blocks := newBlockResolver(ctx, b)
+	docs := sourceDocs{}
 
 	resourceKeys := slices.Sorted(maps.Keys(configChanges))
 
@@ -309,6 +310,8 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				continue
 			}
 
+			var fieldResult []FieldChange
+			unwritten := false
 			for _, destination := range destinations {
 				block := destination.block
 				resolvedPath := destination.path
@@ -375,6 +378,22 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					log.Debugf(ctx, "Field %s has no location, using %s", fullPath, filePath)
 				}
 
+				// Sequence elements are never inherited through a merge key, and their
+				// indices may already be shifted past the file's by earlier changes.
+				_, addressesKey := resolvedPath.StringKey()
+				if isDefinedInConfig && addressesKey && (destChange.Operation == OperationRemove || destChange.Operation == OperationReplace) {
+					key, parent := docs.written(filePath, writePath, altWritePath)
+					if !key && destChange.Operation == OperationReplace && parent {
+						// Written next to the merge key, the key overrides the inherited value
+						// for this mapping only.
+						destChange.Operation = OperationAdd
+						configChange.Operation = OperationAdd
+					} else if !key {
+						unwritten = true
+						break
+					}
+				}
+
 				if (destChange.Operation == OperationAdd || destChange.Operation == OperationReplace) && b.SyncRootPath != "" {
 					destChange = &ConfigChangeDesc{
 						Operation: destChange.Operation,
@@ -382,7 +401,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					}
 				}
 
-				result = append(result, FieldChange{
+				fieldResult = append(fieldResult, FieldChange{
 					FilePath:     filePath,
 					Change:       destChange,
 					WritePath:    writePath,
@@ -390,6 +409,16 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					originalPath: mergedIndexPath.String(),
 				})
 			}
+			if unwritten {
+				// Removing or replacing the key would mean editing what other mappings
+				// inherit too, so a removal that reaches only some definitions is not
+				// written at all.
+				log.Debugf(ctx, "config-remote-sync: skipping %s: the key is not written where it is defined", fullPath)
+				configChange.Operation = OperationSkip
+				skipped++
+				continue
+			}
+			result = append(result, fieldResult...)
 		}
 	}
 

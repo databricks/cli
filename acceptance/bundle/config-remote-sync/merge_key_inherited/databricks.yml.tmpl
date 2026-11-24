@@ -1,0 +1,44 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+include:
+  - pipeline.yml
+
+targets:
+  default:
+    default: true
+    mode: development
+  staging:
+    mode: development
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: base
+          new_cluster: &base_cluster
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - job_cluster_key: derived
+          new_cluster:
+            <<: *base_cluster
+            spark_conf:
+              spark.speculation: "true"
+      tasks:
+        - &base_task
+          task_key: a_task
+          job_cluster_key: base
+          max_retries: 2
+          min_retry_interval_millis: 1000
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+            base_parameters: &base_params
+              input_file_name: original
+        - <<: *base_task
+          task_key: b_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+            base_parameters:
+              <<: *base_params
+              extra: b

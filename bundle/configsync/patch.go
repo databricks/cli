@@ -404,6 +404,64 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 	return nil, nil
 }
 
+// sourceDocs caches the YAML documents changes are written to, parsed as nodes so that
+// a lookup sees the keys a file spells out rather than the merged configuration.
+type sourceDocs map[string]*yaml.Node
+
+// written reports whether any candidate path's key is written in file, and whether the
+// mapping that would hold it is. A key inherited through a merge key ('<<: *anchor') is
+// not, so the patcher can neither replace nor remove it there. A file that cannot be
+// read counts as written, leaving the outcome to the patcher.
+func (d sourceDocs) written(file string, candidates ...string) (key, parent bool) {
+	doc, ok := d[file]
+	if !ok {
+		doc = &yaml.Node{}
+		content, err := os.ReadFile(file)
+		if err != nil || yaml.Unmarshal(content, doc) != nil || len(doc.Content) != 1 {
+			doc = nil
+		}
+		d[file] = doc
+	}
+	if doc == nil {
+		return true, true
+	}
+	for _, candidate := range candidates {
+		if candidate == "" {
+			continue
+		}
+		candidateKey, candidateParent := keyWrittenAt(doc.Content[0], candidate)
+		key = key || candidateKey
+		parent = parent || candidateParent
+	}
+	return key, parent
+}
+
+// keyWrittenAt follows aliases like the patcher does, but a parent reached through one
+// is shared with the anchor and does not count as a place to add the key.
+func keyWrittenAt(root *yaml.Node, fieldPath string) (key, parent bool) {
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return true, true
+	}
+	parts := pattern.AsSlice()
+	current := root
+	viaAlias := false
+	for i, part := range parts {
+		if current.Kind == yaml.AliasNode {
+			current = current.Alias
+			viaAlias = true
+		}
+		if i == len(parts)-1 {
+			parent = current.Kind == yaml.MappingNode && !viaAlias
+		}
+		current, _ = yamlChild(current, (*structpath.PathNode)(part))
+		if current == nil {
+			return false, parent
+		}
+	}
+	return true, parent
+}
+
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,
 // clearing FlowStyle on every node from root to leaf (inclusive).
 func clearFlowStyleAlongPath(doc *yaml.Node, pathStr string) {
