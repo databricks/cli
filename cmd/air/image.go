@@ -198,12 +198,20 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 		cmdio.LogString(ctx, "Using local source image "+resolved.source)
 	}
 
-	var platform bytes.Buffer
-	if err := deps.runCommand(ctx, nil, &platform, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", resolved.source); err != nil {
+	var inspected bytes.Buffer
+	// {{with .Config}} keeps an image with no config from failing the template (https://docs.docker.com/engine/cli/formatting/).
+	if err := deps.runCommand(ctx, nil, &inspected, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}}", resolved.source); err != nil {
 		return fmt.Errorf("inspect source image %s: %w", resolved.source, err)
 	}
-	if got := strings.TrimSpace(platform.String()); got != airImagePlatform {
-		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, got, airImagePlatform, airImagePlatform)
+	platform, workingDir, _ := strings.Cut(strings.TrimSpace(inspected.String()), "|")
+	if platform != airImagePlatform {
+		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
+	}
+	// With no WORKDIR or WORKDIR /, relative paths don't depend on a directory the image chose.
+	if workingDir != "" && workingDir != "/" {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s. Use absolute paths in your command and scripts. See how AI Runtime command paths work:\n"+
+			"  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command\n"+
+			"  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command", resolved.source, workingDir))
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)

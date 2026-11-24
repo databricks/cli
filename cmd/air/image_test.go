@@ -56,7 +56,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 				_, err := io.WriteString(out, "image-id\n")
 				return err
 			case "image inspect":
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, "linux/amd64|\n")
 				return err
 			}
 			return nil
@@ -74,7 +74,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	target := "123.container.us-west-2.cloud.databricks.test/main.training.cuda:13.4.1"
 	assert.Equal(t, []recordedImageCommand{
 		{executable: "/usr/bin/docker", args: []string{"image", "ls", "--quiet", "nvidia/cuda:13.4.1"}},
-		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", "nvidia/cuda:13.4.1"}},
+		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{with .Config}}{{.WorkingDir}}{{end}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
 	}, commands)
@@ -111,7 +111,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 		runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, executable string, args ...string) error {
 			commands = append(commands, recordedImageCommand{executable: executable, args: args})
 			if args[0] == "image" && args[1] == "inspect" {
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, "linux/amd64|\n")
 				return err
 			}
 			return nil
