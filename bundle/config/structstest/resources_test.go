@@ -25,12 +25,12 @@ var knownDivergences = map[string][]string{}
 // reports a change at the path twice. Ratcheted by name: fixing structwalk to resolve a name
 // the way encoding/json does empties these, and a new shadowed field has to be added here.
 var walkDuplicates = map[string][]string{
-	"job_runs":       {"lifecycle.prevent_destroy"},
+	"job_runs":       {"lifecycle.prevent_destroy", "lifecycle.depends_on[0].resource"},
 	"pipelines":      {"id"},
-	"clusters":       {"lifecycle.prevent_destroy"},
-	"apps":           {"id", "url", "lifecycle.prevent_destroy"},
+	"clusters":       {"lifecycle.prevent_destroy", "lifecycle.depends_on[0].resource"},
+	"apps":           {"id", "url", "lifecycle.prevent_destroy", "lifecycle.depends_on[0].resource"},
 	"alerts":         {"id"},
-	"sql_warehouses": {"lifecycle.prevent_destroy"},
+	"sql_warehouses": {"lifecycle.prevent_destroy", "lifecycle.depends_on[0].resource"},
 }
 
 // freeFormFields lists the any-typed fields of each resource. Everything at or below one is
