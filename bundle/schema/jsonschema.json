@@ -256,6 +256,10 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination",
                         "x-databricks-launch-stage": "GA"
                       },
+                      "thumbnail_path": {
+                        "description": "The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.",
+                        "$ref": "#/$defs/string"
+                      },
                       "usage_policy_id": {
                         "description": "[Public Preview] ID of the usage policy that the app's compute usage is attributed to. Alternative to\n`budget_policy_id`.",
                         "$ref": "#/$defs/string",
