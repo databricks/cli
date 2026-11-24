@@ -479,7 +479,13 @@ func TestInstallSkillsOnlyRecoveryForAgentWithoutManifestReader(t *testing.T) {
 	cmd.SetContext(stubCtx)
 	cmd.SetArgs([]string{"--scope=global", "--agents=codex"})
 	require.NoError(t, cmd.Execute())
-	assert.Contains(t, stub.Commands(), "codex plugin remove databricks@databricks-agent-skills")
+	// The stub reports the resolved binary's base name, which fakeBinsOnPath
+	// gives an .exe suffix on Windows.
+	codexBin := "codex"
+	if runtime.GOOS == "windows" {
+		codexBin += ".exe"
+	}
+	assert.Contains(t, stub.Commands(), codexBin+" plugin remove databricks@databricks-agent-skills")
 	assert.False(t, installer.PluginRecorded(t.Context(), installer.ScopeGlobal, agents.NameCodex))
 
 	_, err = runInstall(t, cmdio.MockDiscard(t.Context()), args...)
