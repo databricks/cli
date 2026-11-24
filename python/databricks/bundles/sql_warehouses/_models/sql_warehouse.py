@@ -109,7 +109,7 @@ class SqlWarehouse(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.
+    [Beta] Maximum autoscaling capacity of a Real-Time SQL warehouse, in DBU per hour.
     Must be at least the minimum DBU for the selected warehouse size and no greater
     than the configured DBU limit. Actual capacity may be below this ceiling.
     """
@@ -179,7 +179,7 @@ class SqlWarehouse(Resource):
 
     statement_timeout: VariableOrOptional[int] = None
     """
-    [Public Preview] Maximum time in seconds that a statement can run on this warehouse before it is
+    Maximum time in seconds that a statement can run on this warehouse before it is
     cancelled. Set to 0 to remove the warehouse-level timeout. Changing the value of a
     running warehouse restarts it. See
     https://docs.databricks.com/aws/en/sql/language-manual/parameters/statement_timeout.
@@ -196,8 +196,9 @@ class SqlWarehouse(Resource):
 
     warehouse_type: VariableOrOptional[CreateWarehouseRequestWarehouseType] = None
     """
-    Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,
-    you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
+    Warehouse type: `PRO`, `CLASSIC`, or `REALTIME`. For serverless compute,
+    use `PRO` or `REALTIME` with `enable_serverless_compute=true`.
+    `REALTIME` requires serverless compute and Photon; `enable_photon` defaults to `true`.
     """
 
     @classmethod
@@ -281,7 +282,7 @@ class SqlWarehouseDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.
+    [Beta] Maximum autoscaling capacity of a Real-Time SQL warehouse, in DBU per hour.
     Must be at least the minimum DBU for the selected warehouse size and no greater
     than the configured DBU limit. Actual capacity may be below this ceiling.
     """
@@ -351,7 +352,7 @@ class SqlWarehouseDict(TypedDict, total=False):
 
     statement_timeout: VariableOrOptional[int]
     """
-    [Public Preview] Maximum time in seconds that a statement can run on this warehouse before it is
+    Maximum time in seconds that a statement can run on this warehouse before it is
     cancelled. Set to 0 to remove the warehouse-level timeout. Changing the value of a
     running warehouse restarts it. See
     https://docs.databricks.com/aws/en/sql/language-manual/parameters/statement_timeout.
@@ -368,8 +369,9 @@ class SqlWarehouseDict(TypedDict, total=False):
 
     warehouse_type: VariableOrOptional[CreateWarehouseRequestWarehouseTypeParam]
     """
-    Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,
-    you must set to `PRO` and also set the field `enable_serverless_compute` to `true`.
+    Warehouse type: `PRO`, `CLASSIC`, or `REALTIME`. For serverless compute,
+    use `PRO` or `REALTIME` with `enable_serverless_compute=true`.
+    `REALTIME` requires serverless compute and Photon; `enable_photon` defaults to `true`.
     """
 
 

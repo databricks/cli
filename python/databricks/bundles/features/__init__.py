@@ -31,6 +31,9 @@ __all__ = [
     "DependsOn",
     "DependsOnDict",
     "DependsOnParam",
+    "EntityBinding",
+    "EntityBindingDict",
+    "EntityBindingParam",
     "EntityColumn",
     "EntityColumnDict",
     "EntityColumnParam",
@@ -67,6 +70,9 @@ __all__ = [
     "InputBinding",
     "InputBindingDict",
     "InputBindingParam",
+    "InputReference",
+    "InputReferenceDict",
+    "InputReferenceParam",
     "JobContext",
     "JobContextDict",
     "JobContextParam",
@@ -88,6 +94,9 @@ __all__ = [
     "LineageContext",
     "LineageContextDict",
     "LineageContextParam",
+    "Lookup",
+    "LookupDict",
+    "LookupParam",
     "MaxFunction",
     "MaxFunctionDict",
     "MaxFunctionParam",
@@ -108,6 +117,9 @@ __all__ = [
     "SdpSource",
     "SdpSourceDict",
     "SdpSourceParam",
+    "SecondaryKeys",
+    "SecondaryKeysDict",
+    "SecondaryKeysParam",
     "SlidingWindow",
     "SlidingWindowDict",
     "SlidingWindowParam",
@@ -194,6 +206,11 @@ from databricks.bundles.features._models.depends_on import (
     DependsOnDict,
     DependsOnParam,
 )
+from databricks.bundles.features._models.entity_binding import (
+    EntityBinding,
+    EntityBindingDict,
+    EntityBindingParam,
+)
 from databricks.bundles.features._models.entity_column import (
     EntityColumn,
     EntityColumnDict,
@@ -254,6 +271,11 @@ from databricks.bundles.features._models.input_binding import (
     InputBindingDict,
     InputBindingParam,
 )
+from databricks.bundles.features._models.input_reference import (
+    InputReference,
+    InputReferenceDict,
+    InputReferenceParam,
+)
 from databricks.bundles.features._models.job_context import (
     JobContext,
     JobContextDict,
@@ -289,6 +311,7 @@ from databricks.bundles.features._models.lineage_context import (
     LineageContextDict,
     LineageContextParam,
 )
+from databricks.bundles.features._models.lookup import Lookup, LookupDict, LookupParam
 from databricks.bundles.features._models.max_function import (
     MaxFunction,
     MaxFunctionDict,
@@ -322,6 +345,11 @@ from databricks.bundles.features._models.sdp_source import (
     SdpSource,
     SdpSourceDict,
     SdpSourceParam,
+)
+from databricks.bundles.features._models.secondary_keys import (
+    SecondaryKeys,
+    SecondaryKeysDict,
+    SecondaryKeysParam,
 )
 from databricks.bundles.features._models.sliding_window import (
     SlidingWindow,

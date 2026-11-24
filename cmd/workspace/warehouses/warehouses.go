@@ -97,7 +97,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().BoolVar(&createReq.EnablePhoton, "enable-photon", createReq.EnablePhoton, `Configures whether the warehouse should use Photon optimized clusters.`)
 	cmd.Flags().BoolVar(&createReq.EnableServerlessCompute, "enable-serverless-compute", createReq.EnableServerlessCompute, `Configures whether the warehouse should use serverless compute.`)
 	cmd.Flags().StringVar(&createReq.InstanceProfileArn, "instance-profile-arn", createReq.InstanceProfileArn, `Deprecated.`)
-	cmd.Flags().IntVar(&createReq.MaxDbu, "max-dbu", createReq.MaxDbu, `Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.`)
+	cmd.Flags().IntVar(&createReq.MaxDbu, "max-dbu", createReq.MaxDbu, `Maximum autoscaling capacity of a Real-Time SQL warehouse, in DBU per hour.`)
 	cmd.Flags().IntVar(&createReq.MaxNumClusters, "max-num-clusters", createReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	cmd.Flags().IntVar(&createReq.MinNumClusters, "min-num-clusters", createReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
 	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Logical name for the warehouse.`)
@@ -105,7 +105,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configures whether the warehouse should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
 	cmd.Flags().IntVar(&createReq.StatementTimeout, "statement-timeout", createReq.StatementTimeout, `Maximum time in seconds that a statement can run on this warehouse before it is cancelled.`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, REALTIME, TYPE_UNSPECIFIED]`)
+	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO, CLASSIC, or REALTIME. Supported values: [CLASSIC, PRO, REALTIME, TYPE_UNSPECIFIED]`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a warehouse.`
@@ -454,7 +454,7 @@ func newEdit() *cobra.Command {
 	cmd.Flags().BoolVar(&editReq.EnablePhoton, "enable-photon", editReq.EnablePhoton, `Configures whether the warehouse should use Photon optimized clusters.`)
 	cmd.Flags().BoolVar(&editReq.EnableServerlessCompute, "enable-serverless-compute", editReq.EnableServerlessCompute, `Configures whether the warehouse should use serverless compute.`)
 	cmd.Flags().StringVar(&editReq.InstanceProfileArn, "instance-profile-arn", editReq.InstanceProfileArn, `Deprecated.`)
-	cmd.Flags().IntVar(&editReq.MaxDbu, "max-dbu", editReq.MaxDbu, `Maximum compute capacity of a real-time SQL warehouse, in DBU per hour.`)
+	cmd.Flags().IntVar(&editReq.MaxDbu, "max-dbu", editReq.MaxDbu, `Maximum autoscaling capacity of a Real-Time SQL warehouse, in DBU per hour.`)
 	cmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	cmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
 	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Logical name for the warehouse.`)
@@ -462,7 +462,7 @@ func newEdit() *cobra.Command {
 	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configures whether the warehouse should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
 	cmd.Flags().IntVar(&editReq.StatementTimeout, "statement-timeout", editReq.StatementTimeout, `Maximum time in seconds that a statement can run on this warehouse before it is cancelled.`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, REALTIME, TYPE_UNSPECIFIED]`)
+	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO, CLASSIC, or REALTIME. Supported values: [CLASSIC, PRO, REALTIME, TYPE_UNSPECIFIED]`)
 
 	cmd.Use = "edit ID"
 	cmd.Short = `Update a warehouse.`

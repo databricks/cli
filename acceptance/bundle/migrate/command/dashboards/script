@@ -14,10 +14,10 @@ rm "$OUT_REQUESTS"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "1 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "1 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json | nostamp > out.plan_after_migrate.json
-trace print_requests.py --get //dashboards | contains.py 'engine/direct' > /dev/null
+rm -f "$OUT_REQUESTS"
 
 trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy --auto-approve
-trace print_requests.py --get //dashboards | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' > /dev/null
+rm -f "$OUT_REQUESTS"
 
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate

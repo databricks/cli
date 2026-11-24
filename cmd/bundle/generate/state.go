@@ -9,13 +9,12 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
-// loadStateForGenerate initializes the bundle, pulls the deployment state, tags the
-// resolved engine in the user agent, and loads the state into the bundle. Shared by the
-// resource-key paths of "generate dashboard" and "generate genie-space" - the only
-// generate commands that resolve a bundle resource against deployment state. Errors are
+// loadStateForGenerate initializes the bundle, pulls the deployment state, and loads the
+// state into the bundle. Shared by the resource-key paths of "generate dashboard" and
+// "generate genie-space" - the only generate commands that resolve a bundle resource
+// against deployment state. Errors are
 // reported through logdiag; callers check logdiag.HasError on the returned context.
 func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context {
 	phases.Initialize(ctx, b)
@@ -32,7 +31,6 @@ func loadStateForGenerate(ctx context.Context, b *bundle.Bundle) context.Context
 	if logdiag.HasError(ctx) {
 		return ctx
 	}
-	ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
 	ctx = utils.WithLineage(ctx, stateDesc)
 
 	var state statemgmt.ExportedResourcesMap

@@ -1,0 +1,7 @@
+RecordRequests = false
+Ignore = [".databricks"]
+
+[[Server]]
+Pattern = "PATCH /api/2.0/apps/{name}/thumbnail"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "Unsupported image"}'''

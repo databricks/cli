@@ -14,6 +14,9 @@ class AiRuntimeTaskPriorityClass(Enum):
 
     NORMAL = "NORMAL"
     HIGH = "HIGH"
+    PREEMPTABLE = "PREEMPTABLE"
 
 
-AiRuntimeTaskPriorityClassParam = Literal["NORMAL", "HIGH"] | AiRuntimeTaskPriorityClass
+AiRuntimeTaskPriorityClassParam = (
+    Literal["NORMAL", "HIGH", "PREEMPTABLE"] | AiRuntimeTaskPriorityClass
+)

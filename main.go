@@ -30,6 +30,7 @@ func main() {
 	// which imports it. It is wired here, not in a package init, for the same
 	// reason as DATABRICKS_CLI_PATH above.
 	autoinstall.Run = aitools.AutoInstall
+	autoinstall.InstallsFor = aitools.AutoInstallsFor
 
 	ctx := context.Background()
 	err := cmd.New(ctx).Execute(ctx, os.Args[1:])
