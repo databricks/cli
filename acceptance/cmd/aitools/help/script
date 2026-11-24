@@ -1,0 +1,20 @@
+title "databricks aitools"
+trace $CLI aitools --help
+for c in install update uninstall list version; do
+  trace $CLI aitools $c --help
+done
+trace $CLI aitools auto-install --help
+for c in enable disable; do
+  trace $CLI aitools auto-install $c --help
+done
+
+title "Deprecated databricks experimental aitools aliases"
+trace $CLI experimental aitools --help
+for c in install update uninstall list version; do
+  trace $CLI experimental aitools $c --help
+done
+
+title "Legacy databricks experimental aitools skills"
+trace $CLI experimental aitools skills --help
+trace $CLI experimental aitools skills install --help
+trace $CLI experimental aitools skills list --help

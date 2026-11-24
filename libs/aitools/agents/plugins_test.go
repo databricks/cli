@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -184,7 +185,7 @@ func TestDatabricksPluginVersionWithoutReader(t *testing.T) {
 
 // Only a project-scope record for the project that contains cwd is the
 // project's own plugin; user and local records are personal.
-func TestDatabricksProjectPluginIn(t *testing.T) {
+func TestDatabricksProjectPluginInstallsIn(t *testing.T) {
 	project, sub := projectFixture(t)
 	other := filepath.Join(filepath.Dir(project), "Other")
 	require.NoError(t, os.Mkdir(other, 0o755))
@@ -200,8 +201,31 @@ func TestDatabricksProjectPluginIn(t *testing.T) {
 		a := &Agent{pluginInstalls: func(context.Context, *Agent) ([]pluginInstall, bool, error) {
 			return []pluginInstall{tc.install}, true, nil
 		}}
-		got, err := a.DatabricksProjectPluginIn(t.Context(), sub)
+		got, err := a.DatabricksProjectPluginInstallsIn(t.Context(), sub)
 		require.NoError(t, err)
-		assert.Equal(t, tc.want, got, "%+v", tc.install)
+		assert.Equal(t, tc.want, len(got) > 0, "%+v", tc.install)
 	}
+}
+
+// Each record names the marketplace of its manifest entry, so the agent's own
+// CLI can be told which install to remove.
+func TestDatabricksPluginInstallsInNamesTheMarketplace(t *testing.T) {
+	project, sub := projectFixture(t)
+	configDir := t.TempDir()
+	writeManifest(t, configDir, `{"plugins":{
+		"databricks@databricks-agent-skills":[{"scope":"user"},{"scope":"project","projectPath":`+strconv.Quote(project)+`}],
+		"databricks@claude-plugins-official":[{"scope":"user"}],
+		"gopls-lsp@claude-plugins-official":[{"scope":"user"}]}}`)
+	a := agentWithConfigDir(configDir)
+
+	installs, err := a.DatabricksPluginInstallsIn(t.Context(), "")
+	require.NoError(t, err)
+	assert.Equal(t, []PluginInstall{
+		{Marketplace: "claude-plugins-official", Scope: "user"},
+		{Marketplace: "databricks-agent-skills", Scope: "user"},
+	}, installs)
+
+	installs, err = a.DatabricksProjectPluginInstallsIn(t.Context(), sub)
+	require.NoError(t, err)
+	assert.Equal(t, []PluginInstall{{Marketplace: "databricks-agent-skills", Scope: "project"}}, installs)
 }

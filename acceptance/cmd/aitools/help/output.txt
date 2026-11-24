@@ -1,0 +1,471 @@
+
+=== databricks aitools
+
+>>> [CLI] aitools --help
+Install Databricks skills and plugins into your coding agent so it can work
+effectively with Databricks resources (bundles, jobs, SQL, and more).
+
+Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity, Pi, Gemini CLI, Goose, Kiro.
+
+Skills and plugins are sourced from
+https://github.com/databricks/databricks-agent-skills
+
+Usage:
+  databricks aitools [command]
+
+Available Commands:
+  auto-install Turn the automatic installation of Databricks AI tools on or off
+  install      Install Databricks skills and plugins for coding agents
+  list         List installed skills and plugins
+  uninstall    Uninstall Databricks skills and plugins
+  update       Update installed skills and plugins
+  version      Show installed skills and plugins version
+
+Flags:
+  -h, --help[=true|false]   help for aitools
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks aitools [command] --help" for more information about a command.
+
+>>> [CLI] aitools install --help
+Install Databricks skills and plugins for detected coding agents.
+
+By default this installs the databricks plugin through each agent's own CLI
+(Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
+(Cursor, OpenCode, Antigravity, Pi, Gemini CLI, Goose, Kiro) get raw skill files, and so does a
+detected plugin agent whose CLI is not on PATH (for example a desktop or IDE
+install) and is not named with --agents, unless it already has the plugin. For
+Claude Code that is read from its own plugin list; for Codex and GitHub Copilot
+only a plugin installed by 'databricks aitools' is known, so one installed
+another way shows every skill twice next to the skill files. A named agent
+whose CLI is not on PATH fails; add --skills-only to give it skill files.
+
+Escape hatches:
+  --skills-only          Force raw skill files for every agent (no plugin; cannot be used with --path).
+                         An agent that already has the plugin is skipped; remove the plugin first.
+  --skills name1,name2   Install only the named skills (with --skills-only/--path).
+  --path <dir>           Write resolved skill files to a directory (no agents, no state).
+
+Agent selection:
+  --agents <name>[,...]  Act only on the named agents (works for undetected ones).
+  (unset, interactive)   A picker over all known agents, detected ones pre-checked.
+  (unset, non-interactive) Act on every detected agent.
+
+Non-interactive runs (no terminal, or called by a coding agent) never prompt:
+scope defaults to global and agents to every detected one. On a terminal, a
+coding agent caller gets a note saying so.
+
+Output:
+  --output json          Emit a structured result instead of text. Requires --scope
+                         and --agents so the command runs without interactive prompts.
+
+The command exits with code 1 when it sets up nothing: no agent is detected,
+every agent is skipped or fails to install, or no skill in the release can be
+installed (also with --path).
+
+Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity, Pi, Gemini CLI, Goose, Kiro
+
+Usage:
+  databricks aitools install [flags]
+
+Examples:
+  # Install a selected skill for coding agents.
+  databricks aitools install --skills-only --skills databricks-ai-runtime
+
+  # Write a selected skill to a custom directory (omit --skills-only).
+  databricks aitools install --skills databricks-ai-runtime --path ./skills
+
+Flags:
+      --agents string               Agents to install for (comma-separated, e.g. claude-code,cursor)
+      --experimental[=true|false]   Include experimental skills
+  -h, --help[=true|false]           help for install
+      --path string                 Write resolved skill files to this directory instead of using --skills-only (no agents, no state)
+      --scope string                Install scope: project or global (default: global, or prompt when interactive)
+      --skills string               Specific skills to install (comma-separated)
+      --skills-only[=true|false]    Force raw skill files for every agent instead of the plugin (cannot be used with --path)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] aitools update --help
+Update installed Databricks skills and plugins to the latest release.
+
+By default, updates all installed skills and auto-installs new skills
+from the manifest. Use --no-new to skip new skills, or --check to
+preview what would change without downloading.
+
+The command exits with code 1 when every update or check it attempts fails.
+
+Usage:
+  databricks aitools update [flags]
+
+Flags:
+      --check[=true|false]      Show what would be updated without downloading
+      --force[=true|false]      Re-download even if versions match
+  -h, --help[=true|false]       help for update
+      --no-new[=true|false]     Don't auto-install new skills from manifest
+      --no-prune[=true|false]   Keep skills that vanished from the manifest instead of removing them
+      --scope string            Update scope: project, global, or both
+      --skills string           Specific skills to update (comma-separated)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] aitools uninstall --help
+Remove installed Databricks skills and plugins from all coding agents.
+
+By default, removes all skills. Use --skills to remove specific skills only.
+
+A global-scope uninstall that removes anything also turns off the automatic
+installation of Databricks AI tools on CLI upgrades; 'databricks aitools auto-install enable'
+turns it back on.
+
+The command exits with code 1 when every removal it attempts fails.
+
+Usage:
+  databricks aitools uninstall [flags]
+
+Flags:
+      --agents string                   Agents to uninstall from (comma-separated, e.g. claude-code,cursor)
+  -h, --help[=true|false]               help for uninstall
+      --keep-marketplace[=true|false]   Keep the marketplace registration when removing a plugin
+      --scope string                    Uninstall scope: project or global
+      --skills string                   Specific skills to uninstall (comma-separated)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] aitools list --help
+List installed skills and plugins
+
+Usage:
+  databricks aitools list [flags]
+
+Flags:
+  -h, --help[=true|false]   help for list
+      --scope string        Scope to show: project, global, or both (default: both)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] aitools version --help
+Show installed skills and plugins version
+
+Usage:
+  databricks aitools version [flags]
+
+Flags:
+  -h, --help[=true|false]   help for version
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] aitools auto-install --help
+Turn the automatic installation of Databricks AI tools on or off.
+
+On the first run of a new CLI version, the CLI can install the Databricks AI
+tools (skills and plugins) for the coding agents already on this machine, as
+'databricks aitools install --scope=global' does, or update an existing
+installation, as 'databricks aitools update' does. It never runs in CI or on
+Databricks Runtime, and only touches the global scope. In a terminal it asks
+before the first install.
+
+It stays off after 'databricks aitools auto-install disable', a global-scope
+'databricks aitools uninstall', a "no" at that prompt, or a "no" to the skills
+prompt of 'databricks apps init', until 'databricks aitools auto-install enable'.
+Setting DATABRICKS_AITOOLS_AUTO_INSTALL to anything but a true value (true, 1, yes,
+on) turns it off in that environment.
+
+Usage:
+  databricks aitools auto-install [flags]
+  databricks aitools auto-install [command]
+
+Available Commands:
+  disable     Turn off the automatic installation of Databricks AI tools
+  enable      Turn the automatic installation of Databricks AI tools back on
+
+Flags:
+  -h, --help[=true|false]   help for auto-install
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks aitools auto-install [command] --help" for more information about a command.
+
+>>> [CLI] aitools auto-install enable --help
+Turn the automatic installation of Databricks AI tools back on
+
+Usage:
+  databricks aitools auto-install enable [flags]
+
+Flags:
+  -h, --help[=true|false]   help for enable
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] aitools auto-install disable --help
+Turn off the automatic installation of Databricks AI tools
+
+Usage:
+  databricks aitools auto-install disable [flags]
+
+Flags:
+  -h, --help[=true|false]   help for disable
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+=== Deprecated databricks experimental aitools aliases
+
+>>> [CLI] experimental aitools --help
+Experimental coding-agent helpers. Skills management is at "databricks aitools".
+
+Usage:
+  databricks experimental aitools [command]
+
+Available Commands:
+  tools       CLI tools for AI agents
+
+Flags:
+  -h, --help[=true|false]   help for aitools
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks experimental aitools [command] --help" for more information about a command.
+
+>>> [CLI] experimental aitools install --help
+Command "install" is deprecated, use "databricks aitools install" instead.
+Install Databricks skills and plugins for detected coding agents.
+
+By default this installs the databricks plugin through each agent's own CLI
+(Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
+(Cursor, OpenCode, Antigravity, Pi, Gemini CLI, Goose, Kiro) get raw skill files, and so does a
+detected plugin agent whose CLI is not on PATH (for example a desktop or IDE
+install) and is not named with --agents, unless it already has the plugin. For
+Claude Code that is read from its own plugin list; for Codex and GitHub Copilot
+only a plugin installed by 'databricks aitools' is known, so one installed
+another way shows every skill twice next to the skill files. A named agent
+whose CLI is not on PATH fails; add --skills-only to give it skill files.
+
+Escape hatches:
+  --skills-only          Force raw skill files for every agent (no plugin; cannot be used with --path).
+                         An agent that already has the plugin is skipped; remove the plugin first.
+  --skills name1,name2   Install only the named skills (with --skills-only/--path).
+  --path <dir>           Write resolved skill files to a directory (no agents, no state).
+
+Agent selection:
+  --agents <name>[,...]  Act only on the named agents (works for undetected ones).
+  (unset, interactive)   A picker over all known agents, detected ones pre-checked.
+  (unset, non-interactive) Act on every detected agent.
+
+Non-interactive runs (no terminal, or called by a coding agent) never prompt:
+scope defaults to global and agents to every detected one. On a terminal, a
+coding agent caller gets a note saying so.
+
+Output:
+  --output json          Emit a structured result instead of text. Requires --scope
+                         and --agents so the command runs without interactive prompts.
+
+The command exits with code 1 when it sets up nothing: no agent is detected,
+every agent is skipped or fails to install, or no skill in the release can be
+installed (also with --path).
+
+Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity, Pi, Gemini CLI, Goose, Kiro
+
+Usage:
+  databricks experimental aitools install [flags]
+
+Examples:
+  # Install a selected skill for coding agents.
+  databricks aitools install --skills-only --skills databricks-ai-runtime
+
+  # Write a selected skill to a custom directory (omit --skills-only).
+  databricks aitools install --skills databricks-ai-runtime --path ./skills
+
+Flags:
+      --agents string               Agents to install for (comma-separated, e.g. claude-code,cursor)
+      --experimental[=true|false]   Include experimental skills
+  -h, --help[=true|false]           help for install
+      --path string                 Write resolved skill files to this directory instead of using --skills-only (no agents, no state)
+      --scope string                Install scope: project or global (default: global, or prompt when interactive)
+      --skills string               Specific skills to install (comma-separated)
+      --skills-only[=true|false]    Force raw skill files for every agent instead of the plugin (cannot be used with --path)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] experimental aitools update --help
+Command "update" is deprecated, use "databricks aitools update" instead.
+Update installed Databricks skills and plugins to the latest release.
+
+By default, updates all installed skills and auto-installs new skills
+from the manifest. Use --no-new to skip new skills, or --check to
+preview what would change without downloading.
+
+The command exits with code 1 when every update or check it attempts fails.
+
+Usage:
+  databricks experimental aitools update [flags]
+
+Flags:
+      --check[=true|false]      Show what would be updated without downloading
+      --force[=true|false]      Re-download even if versions match
+  -h, --help[=true|false]       help for update
+      --no-new[=true|false]     Don't auto-install new skills from manifest
+      --no-prune[=true|false]   Keep skills that vanished from the manifest instead of removing them
+      --scope string            Update scope: project, global, or both
+      --skills string           Specific skills to update (comma-separated)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] experimental aitools uninstall --help
+Command "uninstall" is deprecated, use "databricks aitools uninstall" instead.
+Remove installed Databricks skills and plugins from all coding agents.
+
+By default, removes all skills. Use --skills to remove specific skills only.
+
+A global-scope uninstall that removes anything also turns off the automatic
+installation of Databricks AI tools on CLI upgrades; 'databricks aitools auto-install enable'
+turns it back on.
+
+The command exits with code 1 when every removal it attempts fails.
+
+Usage:
+  databricks experimental aitools uninstall [flags]
+
+Flags:
+      --agents string                   Agents to uninstall from (comma-separated, e.g. claude-code,cursor)
+  -h, --help[=true|false]               help for uninstall
+      --keep-marketplace[=true|false]   Keep the marketplace registration when removing a plugin
+      --scope string                    Uninstall scope: project or global
+      --skills string                   Specific skills to uninstall (comma-separated)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] experimental aitools list --help
+Command "list" is deprecated, use "databricks aitools list" instead.
+List installed skills and plugins
+
+Usage:
+  databricks experimental aitools list [flags]
+
+Flags:
+  -h, --help[=true|false]   help for list
+      --scope string        Scope to show: project, global, or both (default: both)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] experimental aitools version --help
+Command "version" is deprecated, use "databricks aitools version" instead.
+Show installed skills and plugins version
+
+Usage:
+  databricks experimental aitools version [flags]
+
+Flags:
+  -h, --help[=true|false]   help for version
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+=== Legacy databricks experimental aitools skills
+
+>>> [CLI] experimental aitools skills --help
+Command "skills" is deprecated, use "databricks aitools" instead.
+Manage Databricks skills that extend coding agents with Databricks-specific capabilities.
+
+Usage:
+
+Flags:
+  -h, --help[=true|false]   help for skills
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] experimental aitools skills install --help
+Command "install" is deprecated, use "databricks aitools install --skills-only --skills <name>" instead.
+Install Databricks skills for detected coding agents
+
+Usage:
+  databricks experimental aitools skills install [skill-name] [flags]
+
+Flags:
+      --experimental[=true|false]   Include experimental skills
+  -h, --help[=true|false]           help for install
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] experimental aitools skills list --help
+Command "list" is deprecated, use "databricks aitools list" instead.
+List available skills
+
+Usage:
+  databricks experimental aitools skills list [flags]
+
+Flags:
+  -h, --help[=true|false]   help for list
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)

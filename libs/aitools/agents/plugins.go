@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"golang.org/x/mod/semver"
@@ -38,6 +40,17 @@ type pluginInstall struct {
 	// It is not in Claude Code's public docs; Claude Code writes it for those
 	// scopes.
 	ProjectPath string `json:"projectPath"`
+	// Marketplace is the marketplace of the manifest entry the record is
+	// under, from its "<id>@<marketplace>" key.
+	Marketplace string `json:"-"`
+}
+
+// PluginInstall is one databricks plugin install in an agent's own manifest:
+// the marketplace it came from and the agent's install scope, which together
+// name the install to the agent's own plugin CLI.
+type PluginInstall struct {
+	Marketplace string
+	Scope       string
 }
 
 // appliesTo reports whether the agent loads this install when run in cwd:
@@ -141,44 +154,51 @@ func (a *Agent) HasPluginManifestReader() bool {
 // error means the manifest exists but could not be read, so the answer is
 // unknown.
 func (a *Agent) DatabricksPluginActiveIn(ctx context.Context, cwd string) (bool, error) {
-	if a.pluginInstalls == nil {
-		return false, nil
-	}
+	installs, err := a.DatabricksPluginInstallsIn(ctx, cwd)
+	return len(installs) > 0, err
+}
+
+// DatabricksPluginInstallsIn returns the databricks plugin records that
+// DatabricksPluginActiveIn counts for cwd.
+func (a *Agent) DatabricksPluginInstallsIn(ctx context.Context, cwd string) ([]PluginInstall, error) {
 	if cwd != "" {
 		cwd = resolvePath(cwd)
 	}
-	installs, _, err := a.pluginInstalls(ctx, a)
-	if err != nil {
-		return false, err
-	}
-	for _, install := range installs {
-		if install.appliesTo(cwd) {
-			return true, nil
-		}
-	}
-	return false, nil
+	return a.databricksPluginInstalls(ctx, func(install pluginInstall) bool {
+		return install.appliesTo(cwd)
+	})
 }
 
-// DatabricksProjectPluginIn reports whether the agent's own manifest has a
-// project-scope databricks plugin record for the project that contains cwd:
-// the plugin a project shares through its repository. Machine-wide and local
-// records are personal and do not count. A missing manifest reports false; an
-// error means the manifest exists but could not be read.
-func (a *Agent) DatabricksProjectPluginIn(ctx context.Context, cwd string) (bool, error) {
-	if a.pluginInstalls == nil {
-		return false, nil
-	}
+// DatabricksProjectPluginInstallsIn returns the project-scope databricks plugin
+// records for the project that contains cwd: the plugin a project shares
+// through its repository. Machine-wide and local records are personal and do
+// not count. A missing manifest has none; an error means the manifest exists
+// but could not be read.
+func (a *Agent) DatabricksProjectPluginInstallsIn(ctx context.Context, cwd string) ([]PluginInstall, error) {
 	cwd = resolvePath(cwd)
+	return a.databricksPluginInstalls(ctx, func(install pluginInstall) bool {
+		return install.Scope == claudeScopeProject && install.appliesTo(cwd)
+	})
+}
+
+// databricksPluginInstalls returns the databricks plugin records in the
+// agent's own manifest that match keep. An agent without a manifest reader or
+// a missing manifest has none.
+func (a *Agent) databricksPluginInstalls(ctx context.Context, keep func(pluginInstall) bool) ([]PluginInstall, error) {
+	if a.pluginInstalls == nil {
+		return nil, nil
+	}
 	installs, _, err := a.pluginInstalls(ctx, a)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
+	var out []PluginInstall
 	for _, install := range installs {
-		if install.Scope == claudeScopeProject && install.appliesTo(cwd) {
-			return true, nil
+		if keep(install) {
+			out = append(out, PluginInstall{Marketplace: install.Marketplace, Scope: install.Scope})
 		}
 	}
-	return false, nil
+	return out, nil
 }
 
 // claudePluginInstalls reads the databricks plugin's records from Claude Code's
@@ -208,12 +228,18 @@ func claudePluginInstalls(ctx context.Context, a *Agent) ([]pluginInstall, bool,
 	}
 	var all []pluginInstall
 	found := false
-	for key, installs := range manifest.Plugins {
-		id, _, _ := strings.Cut(key, "@")
-		if id == databricksPluginID {
-			all = append(all, installs...)
-			found = true
+	// Sorted keys, so the records of several marketplaces come in a stable
+	// order.
+	for _, key := range slices.Sorted(maps.Keys(manifest.Plugins)) {
+		id, marketplace, _ := strings.Cut(key, "@")
+		if id != databricksPluginID {
+			continue
 		}
+		for _, install := range manifest.Plugins[key] {
+			install.Marketplace = marketplace
+			all = append(all, install)
+		}
+		found = true
 	}
 	return all, found, nil
 }

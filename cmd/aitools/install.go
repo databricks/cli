@@ -135,6 +135,10 @@ type agentPlanItem struct {
 	// a project or local plugin for a global install, or a personal (user or
 	// local) plugin for a project install. That directory sees both.
 	projectPlugin bool
+	// pluginRemoval is set for a plugin agent skipped under --skills-only
+	// because it already has the databricks plugin (deliverySkip only): the
+	// step that removes the plugin, so the agent can get skill files instead.
+	pluginRemoval string
 }
 
 // agentChoice is one row in the interactive agent picker.
@@ -176,6 +180,7 @@ whose CLI is not on PATH fails; add --skills-only to give it skill files.
 
 Escape hatches:
   --skills-only          Force raw skill files for every agent (no plugin; cannot be used with --path).
+                         An agent that already has the plugin is skipped; remove the plugin first.
   --skills name1,name2   Install only the named skills (with --skills-only/--path).
   --path <dir>           Write resolved skill files to a directory (no agents, no state).
 
@@ -677,6 +682,14 @@ func buildPlan(ctx context.Context, targetAgents []*agents.Agent, scope string, 
 func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly, explicit bool) agentPlanItem {
 	item := agentPlanItem{agent: a, explicit: explicit}
 	switch {
+	case skillsOnly && a.Plugin != nil && pluginAlreadyInstalledFn(ctx, a, scope):
+		// Skill files next to the plugin would show every skill twice, as for
+		// an agent whose CLI is missing below. Removing the plugin also removes
+		// its hooks and settings, so that is left to the user.
+		item.delivery = deliverySkip
+		item.reason = "already has the databricks plugin; skill files next to it would show every skill twice"
+		item.skipErrorCategory = protos.AitoolsErrorCategoryUncategorized
+		item.pluginRemoval = pluginRemovalStep(ctx, a, scope)
 	case skillsOnly || a.Plugin == nil:
 		// Raw-skills delivery (no-plugin agents, or --skills-only). Only some agents
 		// support project-scoped skills, so skip the rest up front instead of
@@ -746,14 +759,21 @@ func pluginAlreadyInstalled(ctx context.Context, a *agents.Agent, scope string) 
 // covers it: a machine-wide or local plugin is personal, and teammates would
 // get neither the plugin nor the skill files.
 func manifestPluginActive(ctx context.Context, a *agents.Agent, scope string) (bool, error) {
+	installs, err := manifestPluginInstalls(ctx, a, scope)
+	return len(installs) > 0, err
+}
+
+// manifestPluginInstalls returns the databricks plugin records in the agent's
+// own manifest that manifestPluginActive counts for this install scope.
+func manifestPluginInstalls(ctx context.Context, a *agents.Agent, scope string) ([]agents.PluginInstall, error) {
 	if scope != installer.ScopeProject {
-		return a.DatabricksPluginActiveIn(ctx, "")
+		return a.DatabricksPluginInstallsIn(ctx, "")
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return a.DatabricksProjectPluginIn(ctx, cwd)
+	return a.DatabricksProjectPluginInstallsIn(ctx, cwd)
 }
 
 // projectPluginActive reports whether the agent's own manifest has a databricks

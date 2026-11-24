@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
@@ -462,12 +463,62 @@ func pluginFailureText(ctx context.Context, inv installInvocation, it agentPlanI
 	}
 }
 
-// skipRecovery returns the recovery step for an agent the plan skipped. Every
-// skip is an agent without support for the project scope, so the step is the
-// command that sets up just this agent in the global scope.
+// skipRecovery returns the recovery step for an agent the plan skipped. An
+// agent skipped under --skills-only because it has the plugin gets the steps
+// that replace the plugin with skill files. Every other skip is an agent
+// without support for the project scope, so the step is the command that sets
+// up just this agent in the global scope.
 func skipRecovery(inv installInvocation, it agentPlanItem) string {
+	if it.pluginRemoval != "" {
+		return "To use skill files instead, " + it.pluginRemoval + ", then run: " + skillsOnlyCommand(inv, it)
+	}
 	inv.scope = installer.ScopeGlobal
 	return "To set up " + it.agent.DisplayName + " in the global scope, run: " + installCommand(inv, it)
+}
+
+// pluginRemovalStep is how the user removes the databricks plugin an agent
+// already has. 'databricks aitools uninstall' removes only a plugin recorded in
+// the CLI's install state, runs the agent's CLI to do it, and clears the
+// record. For Claude Code the CLI reads Claude Code's own manifest, so each
+// databricks plugin there that the record does not cover (one added in Claude
+// Code itself, from any marketplace) gets Claude Code's own command, which
+// also needs its CLI on PATH. An agent without a manifest reader has the
+// plugin only as far as the record says (see pluginAlreadyInstalled), so the
+// record has to be cleared through 'databricks aitools uninstall'.
+func pluginRemovalStep(ctx context.Context, a *agents.Agent, scope string) string {
+	uninstall := fmt.Sprintf("databricks aitools uninstall --scope=%s --agents=%s", scope, a.Name)
+	if !a.HasBinary(ctx) {
+		if a.HasPluginManifestReader() {
+			return fmt.Sprintf("remove the databricks plugin in %s first ('%s' is not on PATH, so this CLI cannot remove it)", a.DisplayName, a.Binary)
+		}
+		return fmt.Sprintf("put '%s' on PATH and remove the plugin with '%s' first (only that clears this CLI's record of it)", a.Binary, uninstall)
+	}
+	if !a.HasPluginManifestReader() {
+		return fmt.Sprintf("remove the plugin first with '%s'", uninstall)
+	}
+	installs, err := manifestPluginInstalls(ctx, a, scope)
+	if err != nil {
+		// The skip came from the CLI's record (see pluginAlreadyInstalled).
+		return fmt.Sprintf("remove the plugin first with '%s'", uninstall)
+	}
+	rec, recorded := installer.RecordedPlugin(ctx, scope, a.Name)
+	var steps []string
+	usesUninstall := false
+	for _, install := range installs {
+		if recorded && install.Marketplace == rec.Marketplace && install.Scope == rec.Scope {
+			if !usesUninstall {
+				steps = append(steps, uninstall)
+				usesUninstall = true
+			}
+			continue
+		}
+		steps = append(steps, installer.PluginUninstallCommand(a, install.Marketplace, install.Scope))
+	}
+	step := "remove the plugin first with '" + strings.Join(steps, "', then '") + "'"
+	if !usesUninstall {
+		step += " (this CLI did not install it)"
+	}
+	return step
 }
 
 // cliMissingReason is why an agent whose CLI is not on PATH does not get the
