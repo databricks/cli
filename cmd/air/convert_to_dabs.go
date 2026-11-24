@@ -637,8 +637,17 @@ const (
 	bundlePathMustMove
 )
 
-// existingBundlePath classifies a root, the artifact directory, or one of its sidecars.
-func existingBundlePath(dir, name string) (bundlePathStatus, error) {
+type bundlePathKind int
+
+const (
+	bundleRootPath bundlePathKind = iota
+	bundleAlternateRootPath
+	bundleArtifactDirectoryPath
+	bundleSidecarPath
+)
+
+// existingBundlePath classifies an output using the caller's path kind.
+func existingBundlePath(dir, name string, kind bundlePathKind) (bundlePathStatus, error) {
 	filename := filepath.Join(dir, name)
 	info, err := os.Stat(filename)
 	if errors.Is(err, os.ErrNotExist) {
@@ -653,9 +662,9 @@ func existingBundlePath(dir, name string) (bundlePathStatus, error) {
 		pathErr, _ := errors.AsType[*os.PathError](err)
 		pathErr.Path = filepath.ToSlash(pathErr.Path)
 		return bundlePathFree, pathErr
-	case name == generatedArtifactsDir && info.IsDir():
+	case kind == bundleArtifactDirectoryPath && info.IsDir():
 		return bundlePathFree, nil
-	case info.Mode().IsRegular() && (name == bundleFileName || path.Dir(name) == generatedArtifactsDir):
+	case info.Mode().IsRegular() && (kind == bundleRootPath || kind == bundleSidecarPath):
 		return bundlePathOverwritable, nil
 	default:
 		// Alternate roots and non-regular outputs cannot be replaced with --force.
@@ -664,30 +673,49 @@ func existingBundlePath(dir, name string) (bundlePathStatus, error) {
 }
 
 func checkBundleOutputPaths(dir, experimentName string, artifacts []uploadItem, force bool) error {
-	names := append(slices.Clone(config.FileNames), generatedArtifactsDir)
+	rootStatus, err := existingBundlePath(dir, bundleFileName, bundleRootPath)
+	if err != nil {
+		return err
+	}
+	if rootStatus == bundlePathOverwritable {
+		// Replacing another workload's bundle would plan deletion of its job from shared state.
+		if owner := existingBundleName(filepath.Join(dir, bundleFileName)); owner != "" && owner != experimentName {
+			return fmt.Errorf("%s in %s belongs to bundle %q, not to this workload's bundle %q; pass --output-dir with another directory that contains the code directory", bundleFileName, filepath.ToSlash(dir), owner, experimentName)
+		}
+	}
+	type outputPath struct {
+		name string
+		kind bundlePathKind
+	}
+	paths := make([]outputPath, 0, len(config.FileNames)+1+len(artifacts))
+	for _, name := range config.FileNames {
+		kind := bundleAlternateRootPath
+		if name == bundleFileName {
+			kind = bundleRootPath
+		}
+		paths = append(paths, outputPath{name, kind})
+	}
+	paths = append(paths, outputPath{generatedArtifactsDir, bundleArtifactDirectoryPath})
 	for _, item := range artifacts {
-		names = append(names, path.Join(generatedArtifactsDir, item.name))
+		paths = append(paths, outputPath{path.Join(generatedArtifactsDir, item.name), bundleSidecarPath})
 	}
 
 	var conflicts []string
 	canForce := true
-	for _, name := range names {
-		status, err := existingBundlePath(dir, name)
-		if err != nil {
-			return err
-		}
-		if name == bundleFileName && status == bundlePathOverwritable {
-			// Replacing a sibling workload's bundle would plan deletion of its job from shared state.
-			if owner := existingBundleName(filepath.Join(dir, name)); owner != "" && owner != experimentName {
-				return fmt.Errorf("%s in %s belongs to bundle %q, not to this workload's bundle %q; pass --output-dir with another directory that contains the code directory", name, filepath.ToSlash(dir), owner, experimentName)
+	for _, output := range paths {
+		status := rootStatus
+		if output.kind != bundleRootPath {
+			status, err = existingBundlePath(dir, output.name, output.kind)
+			if err != nil {
+				return err
 			}
 		}
 		if status == bundlePathFree || (force && status == bundlePathOverwritable) {
 			continue
 		}
-		conflicts = append(conflicts, name)
+		conflicts = append(conflicts, output.name)
 		canForce = canForce && status == bundlePathOverwritable
-		if name == generatedArtifactsDir {
+		if output.kind == bundleArtifactDirectoryPath {
 			// A blocked parent must be moved before any of its children can exist.
 			break
 		}

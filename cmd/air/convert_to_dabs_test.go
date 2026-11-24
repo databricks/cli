@@ -158,10 +158,11 @@ func TestConvertToDabsRejectsAlternateRoot(t *testing.T) {
 			name  string
 			force bool
 			files []string
+			want  string
 		}{
-			{"force", true, []string{alias}},
-			{"force-with-canonical", true, []string{canonical, alias, script}},
-			{"with-canonical", false, []string{canonical, alias}},
+			{"force", true, []string{alias}, "%s already exists in %s; move or remove it before converting"},
+			{"force-with-canonical", true, []string{canonical, alias, script}, "%s already exists in %s; move or remove it before converting"},
+			{"with-canonical", false, []string{canonical, alias}, "databricks.yml, %s already exist in %s; move or remove them before converting"},
 		} {
 			t.Run(alias+"/"+tc.name, func(t *testing.T) {
 				dir := t.TempDir()
@@ -171,11 +172,7 @@ func TestConvertToDabsRejectsAlternateRoot(t *testing.T) {
 				}
 
 				_, err := writeBundle(t.Context(), cfg, path, dir, tc.force)
-				want := fmt.Sprintf("%s already exists in %s; move or remove it before converting", alias, filepath.ToSlash(dir))
-				if !tc.force {
-					want = fmt.Sprintf("%s, %s already exist in %s; move or remove them before converting", canonical, alias, filepath.ToSlash(dir))
-				}
-				assert.EqualError(t, err, want)
+				assert.EqualError(t, err, fmt.Sprintf(tc.want, alias, filepath.ToSlash(dir)))
 				for _, name := range tc.files {
 					assert.Equal(t, name, testutil.ReadFile(t, filepath.Join(dir, name)))
 				}
@@ -238,8 +235,7 @@ func TestConvertToDabsPreflightsSidecarDirectory(t *testing.T) {
 			require.NoError(t, os.MkdirAll(commandDir, 0o700))
 
 			_, err = writeBundle(t.Context(), cfg, path, dir, force)
-			require.ErrorContains(t, err, commandScriptName)
-			assert.NotContains(t, err.Error(), "pass --force to overwrite")
+			require.EqualError(t, err, fmt.Sprintf("generated_artifacts/command.sh already exists in %s; move or remove it before converting", filepath.ToSlash(dir)))
 			assert.DirExists(t, commandDir)
 			assert.NoFileExists(t, filepath.Join(dir, "databricks.yml"))
 			assert.NoFileExists(t, filepath.Join(artifactDir, trainingConfigName))
@@ -261,7 +257,7 @@ func TestConvertToDabsPreflightsDanglingSidecar(t *testing.T) {
 	require.NoError(t, os.Symlink("missing", link))
 
 	_, err = writeBundle(t.Context(), cfg, path, dir, false)
-	assert.ErrorContains(t, err, commandScriptName)
+	assert.EqualError(t, err, fmt.Sprintf("generated_artifacts/command.sh already exists in %s; move or remove it before converting", filepath.ToSlash(dir)))
 	target, err := os.Readlink(link)
 	require.NoError(t, err)
 	assert.Equal(t, "missing", target)
@@ -328,8 +324,7 @@ func TestConvertToDabsPreflightsForcedRootDirectory(t *testing.T) {
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "databricks.yml"), 0o700))
 
 	_, err = writeBundle(t.Context(), cfg, path, dir, true)
-	require.ErrorContains(t, err, "databricks.yml")
-	assert.NotContains(t, err.Error(), "--force")
+	require.EqualError(t, err, fmt.Sprintf("databricks.yml already exists in %s; move or remove it before converting", filepath.ToSlash(dir)))
 	assert.NoDirExists(t, filepath.Join(dir, generatedArtifactsDir))
 }
 
