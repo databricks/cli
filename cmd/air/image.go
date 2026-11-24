@@ -208,7 +208,7 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	}
 	// With no WORKDIR or WORKDIR /, relative paths don't depend on a directory the image chose.
 	if workingDir != "" && workingDir != "/" {
-		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s. Relative paths in your command and scripts depend on the working directory, so use absolute paths.", resolved.source, workingDir))
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s. Relative paths in your command and scripts only resolve against it when the command runs from that directory, so use absolute paths.", resolved.source, workingDir))
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
