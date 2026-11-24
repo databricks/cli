@@ -1,1 +1,1 @@
-* `databricks ssh connect` now downloads the SSH server binaries from PyPI when GitHub is unreachable, using `PIP_INDEX_URL` or pip's `index-url` over HTTPS only, and checks SHA-256 digests. ([#7852](https://github.com/databricks/cli/pull/7852))
+* `databricks ssh connect` now downloads the SSH server binaries from PyPI when GitHub is unreachable, using `PIP_INDEX_URL` or `index-url` from the per-user pip config over HTTPS only, and checks SHA-256 digests. ([#7852](https://github.com/databricks/cli/pull/7852))
