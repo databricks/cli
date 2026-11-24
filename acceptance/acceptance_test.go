@@ -106,8 +106,8 @@ const (
 	// It is kept outside of the test directory, otherwise "bundle deploy" uploads it.
 	//
 	// Every line is one replacement encoded as a JSON object: "Old" is a regular expression
-	// (written by the harness), "Literal" is a value to replace verbatim (appended by
-	// add_repl.py). The harness writes its own replacements first, then the scripts add theirs:
+	// (written by the harness), "Literal" is a value to replace as a whole alphanumeric run
+	// (appended by add_repl.py). The harness writes its own replacements first, then the scripts add theirs:
 	//
 	//   $ job_id=100200300
 	//   $ add_repl "$job_id" MY_JOB   # replaces 100200300 with [MY_JOB] in the output
@@ -2144,7 +2144,7 @@ func loadScriptReplacements(t *testing.T, repls *testdiff.ReplacementsContext, r
 			t.Errorf("Incomplete entry in %s: %#v", ReplsEnvVar, line)
 			continue
 		}
-		repls.SetWithOrder(entry.Literal, entry.New, entry.Order)
+		repls.SetWholeWordWithOrder(entry.Literal, entry.New, entry.Order)
 	}
 }
 

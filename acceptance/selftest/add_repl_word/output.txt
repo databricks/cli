@@ -1,0 +1,5 @@
+job [SHORT_ID], commit 33939489e027, number 3390
+job_[SHORT_ID] deploy-[SHORT_ID] /[SHORT_ID]/ [SHORT_ID],[SHORT_ID]
+
+>>> diff.py a.txt b.txt
+diff done
