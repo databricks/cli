@@ -111,4 +111,6 @@ Documentation: https://docs.databricks.com/dev-tools/cli/
 Source: https://github.com/databricks/cli
 
 >>> uvx -q --offline --no-index --find-links wheels --from databricks==1.2.3 databricks --version
-Databricks CLI v[CLI_VERSION]
+script: line 52: uvx: command not found
+
+Exit code: 127
