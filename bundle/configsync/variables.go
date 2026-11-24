@@ -96,6 +96,12 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 			}
 			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
 		case OperationAdd:
+			// A field inherited through a merge key is added next to it, yet the config
+			// defines it, so its references are restored like a replacement's.
+			if fieldValue, ok := preResolvedValueAt(preResolved, fc.originalPath); ok {
+				newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
+				break
+			}
 			siblings, ok := sequenceSiblings(preResolved, fc.originalPath)
 			if !ok {
 				continue

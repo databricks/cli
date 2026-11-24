@@ -17,7 +17,7 @@ for task in r["tasks"]:
     if task["task_key"] == "b_task":
         task["min_retry_interval_millis"] = 5000
         del task["max_retries"]
-        task["notebook_task"]["base_parameters"]["input_file_name"] = "changed"
+        task["notebook_task"]["base_parameters"]["input_file_name"] = "other"
 for cluster in r["job_clusters"]:
     if cluster["job_cluster_key"] == "derived":
         del cluster["new_cluster"]["num_workers"]

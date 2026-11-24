@@ -4,6 +4,12 @@ bundle:
 include:
   - pipeline.yml
 
+variables:
+  input_a:
+    default: original
+  input_b:
+    default: other
+
 targets:
   staging:
     mode: development
@@ -42,7 +48,7 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
             base_parameters: &base_params
-              input_file_name: original
+              input_file_name: ${var.input_a}
         - <<: *base_task
           task_key: b_task
           notebook_task:
