@@ -14,6 +14,7 @@ import (
 	"path"
 	"slices"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -109,26 +110,22 @@ func (r *readRetrier) IsRetriable(err error) (time.Duration, bool) {
 	return r.cappedRetrier.IsRetriable(err)
 }
 
-// deleteRetrier is a cappedRetrier that records whether it retried a delete
-// whose attempt may have been applied: a timeout or a bad gateway can come after
-// the backend deleted the path, whereas 429 and 503 mean it did not act. The retry
-// of an applied delete gets 404; the path is then gone as asked.
+// deleteRetrier is a cappedRetrier that records whether it retried an attempt
+// that may have been applied. A 429 or a refused connection means the backend
+// did not act; after any other retried error (a 5xx or 408 from a gateway, a
+// reset connection) the delete may have gone through, and its retry then gets
+// 404 for a path that is gone as asked. This matches libs/retry, which forgives
+// a 404 after any of its own retries; it does not retry 429 or refused
+// connections.
 type deleteRetrier struct {
 	*cappedRetrier
 	retriedAppliedAttempt bool
 }
 
-// statusesAfterPossiblyAppliedRequest are the retried statuses that a proxy or
-// gateway can return after the backend already handled the request.
-var statusesAfterPossiblyAppliedRequest = []int{
-	http.StatusRequestTimeout, // 408
-	http.StatusBadGateway,     // 502
-	http.StatusGatewayTimeout, // 504
-}
-
 func (r *deleteRetrier) IsRetriable(err error) (time.Duration, bool) {
 	delay, ok := r.cappedRetrier.IsRetriable(err)
-	if ok && slices.Contains(statusesAfterPossiblyAppliedRequest, httpStatus(err)) {
+	notApplied := httpStatus(err) == http.StatusTooManyRequests || errors.Is(err, syscall.ECONNREFUSED)
+	if ok && !notApplied {
 		r.retriedAppliedAttempt = true
 	}
 	return delay, ok
