@@ -17,10 +17,17 @@ trace $CLI bundle plan
 
 # The mismatch the etag masks: the local config stays version 1 while the remote
 # (and the etag guarding it) is version 2. The serialized_space change is
-# recorded but skipped via the etag_based rule.
+# recorded but skipped via the etag_based rule. The plan holds content hashes
+# for serialized_space (hashed_fields), so the versions are read from the
+# config and from the Genie API instead.
 title "serialized_space: local version 1, remote version 2, skipped (etag_based)"
+GENIE_SPACE_ID=$($CLI bundle summary --output json | jq -r '.resources.genie_spaces.foo.id')
+LOCAL_VERSION=$($CLI bundle validate -o json | jq '.resources.genie_spaces.foo.serialized_space | if type == "string" then fromjson else . end | .version')
+REMOTE_VERSION=$($CLI genie get-space $GENIE_SPACE_ID --include-serialized-space -o json | jq '.serialized_space | fromjson | .version')
 $CLI bundle plan -o json | nostamp \
-  | jq '.plan["resources.genie_spaces.foo"].changes.serialized_space
+  | jq --argjson local_version "$LOCAL_VERSION" --argjson remote_version "$REMOTE_VERSION" \
+       '.plan["resources.genie_spaces.foo"].changes.serialized_space
         | {action, reason,
-           local_version: (.new | fromjson | .version),
-           remote_version: (.remote | fromjson | .version)}'
+           local_version: $local_version,
+           remote_version: $remote_version,
+           remote_differs: (.new != .remote)}'
