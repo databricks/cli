@@ -208,6 +208,16 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 		return Response{StatusCode: 404}
 	}
 
+	if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateActive {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "BAD_REQUEST",
+				"message":    fmt.Sprintf("Cannot start app %s as its compute is in ACTIVE state. App compute needs to be STOPPED to start.", name),
+			},
+		}
+	}
+
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStateActive,
 		Message: "App compute is active.",

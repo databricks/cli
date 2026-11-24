@@ -272,11 +272,7 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 	if desiredStarted {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
 		if !alreadyStarted {
-			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
-			if err != nil {
-				return err
-			}
-			startedApp, err := startWaiter.Get()
+			startedApp, err := appdeploy.Start(ctx, r.client, id, nil)
 			if err != nil {
 				return err
 			}
