@@ -8,16 +8,25 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"slices"
 	"time"
 	"uuid"
 
 	"github.com/databricks/cli/libs/atomicfile"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 type UnlockOption int
@@ -53,6 +62,10 @@ const LockFileName = "deploy.lock"
 //     locks might have
 type Locker struct {
 	filer filer.Filer
+
+	// deleteLockOnce deletes the lock file in a single request, without the SDK's own retries.
+	// nil uses filer's unretried Delete, which suits filers that do not retry.
+	deleteLockOnce func(ctx context.Context) error
 
 	// ReleasedLocksPath is a local file listing the IDs of lockers that released the lock or gave
 	// up on taking it. A lock that carries one of these IDs is stale: a lock write that timed out
@@ -306,14 +319,18 @@ func (locker *Locker) removeStaleLock(ctx context.Context) bool {
 	if len(released) == 0 {
 		return false
 	}
-	// The retrying filer would repeat a failed delete blindly. An attempt that failed may still
-	// have deleted the stale lock, and another deployer may have taken the lock since, so every
-	// attempt reads the lock again and deletes it only if it is still stale.
-	deleteFiler := locker.filer
-	if u, ok := deleteFiler.(interface{ Unwrap() filer.Filer }); ok {
-		deleteFiler = u.Unwrap()
+	// Neither the retrying filer nor the SDK may repeat the delete blindly. An attempt that failed
+	// may still have deleted the stale lock, and another deployer may have taken the lock since,
+	// so every attempt reads the lock again and deletes it only if it is still stale.
+	deleteOnce := locker.deleteLockOnce
+	if deleteOnce == nil {
+		deleteFiler := locker.filer
+		if u, ok := deleteFiler.(interface{ Unwrap() filer.Filer }); ok {
+			deleteFiler = u.Unwrap()
+		}
+		deleteOnce = func(ctx context.Context) error { return deleteFiler.Delete(ctx, LockFileName) }
 	}
-	_, err := retry.With(ctx, retry.IsTransient, func() (struct{}, error) {
+	_, err := retry.With(ctx, isRetriableStaleLockError, func() (struct{}, error) {
 		activeLockState, err := locker.GetActiveLockState(ctx)
 		if err != nil {
 			return struct{}{}, err
@@ -322,7 +339,7 @@ func (locker *Locker) removeStaleLock(ctx context.Context) bool {
 			return struct{}{}, errLockNotStale
 		}
 		log.Infof(ctx, "Removing stale deploy lock %s acquired at %v: it was released before", activeLockState.ID, activeLockState.AcquisitionTime)
-		return struct{}{}, deleteFiler.Delete(ctx, LockFileName)
+		return struct{}{}, deleteOnce(ctx)
 	})
 	return err == nil || errors.Is(err, fs.ErrNotExist)
 }
@@ -333,8 +350,14 @@ func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locke
 		return nil, err
 	}
 
+	deleteLockOnce, err := newDeleteLockOnce(w, path.Join(targetDir, LockFileName))
+	if err != nil {
+		return nil, err
+	}
+
 	locker := &Locker{
-		filer: retry.Filer(filer),
+		filer:          retry.Filer(filer),
+		deleteLockOnce: deleteLockOnce,
 
 		TargetDir: targetDir,
 		Active:    false,
@@ -345,4 +368,44 @@ func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locke
 	}
 
 	return locker, nil
+}
+
+// isRetriableStaleLockError reports whether removeStaleLock should try again. Each attempt reads
+// the lock before deleting it, so a retry is safe after any error that may be transient: the ones
+// [retry.IsTransient] covers, the ones the SDK would retry itself (deleteLockOnce turns SDK retries
+// off), and transport errors.
+func isRetriableStaleLockError(ctx context.Context, err error) bool {
+	if retry.IsTransient(ctx, err) {
+		return true
+	}
+	if _, ok := errors.AsType[*url.Error](err); ok {
+		return true
+	}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.IsRetriable(ctx)
+}
+
+// newDeleteLockOnce returns a function that deletes lockPath with one request. The SDK retries a
+// 504, 503 or 429 on its own, and a replayed delete can remove a lock that another deployer took
+// after the first delete was applied. The SDK retries some connection errors whatever
+// ErrorRetriable says, so a minimal retry window is needed to stop after the first attempt.
+func newDeleteLockOnce(w *databricks.WorkspaceClient, lockPath string) (func(ctx context.Context) error, error) {
+	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
+	if err != nil {
+		return nil, err
+	}
+	clientCfg.ErrorRetriable = func(context.Context, error) bool { return false }
+	clientCfg.TransientErrors = nil
+	clientCfg.RetryTimeout = time.Nanosecond
+	apiClient, err := client.NewWithClient(w.Config, httpclient.NewApiClient(clientCfg))
+	if err != nil {
+		return nil, err
+	}
+	return func(ctx context.Context) error {
+		err := apiClient.Do(ctx, http.MethodPost, "/api/2.0/workspace/delete", auth.WorkspaceIDHeaders(w.Config), nil, workspace.Delete{Path: lockPath}, nil)
+		if errors.Is(err, apierr.ErrNotFound) {
+			return fs.ErrNotExist
+		}
+		return err
+	}, nil
 }
