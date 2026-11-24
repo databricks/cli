@@ -1,2 +1,5 @@
 title "backend field errors fail dry-run"
 musterr trace $CLI air run -f valid.yaml --dry-run
+
+title "backend field errors fail dry-run (json)"
+musterr trace $CLI air run -f valid.yaml --dry-run -o json

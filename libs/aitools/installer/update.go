@@ -36,6 +36,13 @@ type UpdateOptions struct {
 	// no record to check against), instead of replacing it. Automatic updates
 	// set it: they must never overwrite what the user changed.
 	KeepModified bool
+
+	// NoDowngrade refuses a release older than the installed one even when
+	// the ref is pinned (by DATABRICKS_SKILLS_REF or the compatibility
+	// manifest). A pinned branch or commit SHA is still installed. Automatic
+	// updates set it: a newer release the user installed is theirs to roll
+	// back.
+	NoDowngrade bool
 }
 
 // UpdateResult describes what UpdateSkills did (or would do in check mode).
@@ -107,6 +114,12 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	if explicit && state.Release == latestTag && !opts.Force {
 		cmdio.LogString(ctx, "Already up to date.")
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
+	}
+
+	// A pinned ref is the ref installed, so it is compared before fetching its
+	// manifest. A branch or commit SHA has no release order to compare.
+	if explicit && opts.NoDowngrade && semver.IsValid(latestTag) && semver.Compare(latestTag, installedRef) < 0 {
+		return nil, &RefusedError{Err: fmt.Errorf("keeping the installed skills %s, which are newer than the pinned %s; run 'databricks aitools update' to install %s", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(latestTag), DisplaySkillsVersion(latestTag))}
 	}
 
 	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, allowFallback && !explicit)

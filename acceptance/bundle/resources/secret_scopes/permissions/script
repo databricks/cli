@@ -8,7 +8,7 @@ export SECRET_SCOPE_NAME="test-scope-permissions-$UNIQUE_NAME"
 
 export NEW_GROUP_NAME="scopes-permissions-group-$UNIQUE_NAME"
 
-trace $CLI groups-v2 create --display-name $NEW_GROUP_NAME --output json | jq '.displayName'
+trace $CLI groups-v2 create --display-name $NEW_GROUP_NAME --output json | tee LOG.group.json | jq '.displayName'
 
 cat > databricks.yml.tmpl <<EOF
 bundle:
@@ -32,6 +32,10 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    # The local test server has no group delete; on cloud the group would otherwise leak.
+    if [ -n "$CLOUD_ENV" ]; then
+        $CLI groups-v2 delete "$(jq -r .id LOG.group.json)" &> LOG.group-delete || true
+    fi
 }
 trap cleanup EXIT
 

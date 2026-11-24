@@ -167,9 +167,17 @@ func pendingLoginKey(cacheKey string) string {
 
 // validateLoginProfileName returns an error if the token of profile name would
 // share its token store key with the pending login of another profile.
+// It also rejects a name that would share a key with a part of another
+// profile's access token.
 func validateLoginProfileName(name string) error {
 	if strings.HasSuffix(name, pendingLoginKeySuffix) {
 		return fmt.Errorf("profile name %q must not end with %s, which marks pending device code logins", name, pendingLoginKeySuffix)
+	}
+	// Windows Credential Manager ignores case in credential names, so a
+	// profile named "dev#Access-Token-0" would share the item of a part of dev.
+	// https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentialw
+	if strings.Contains(strings.ToLower(name), storage.AccessTokenPartMarker) {
+		return fmt.Errorf("profile name %q must not contain %s, which marks the parts of large access tokens", name, storage.AccessTokenPartMarker)
 	}
 	return nil
 }

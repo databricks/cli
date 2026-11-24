@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
@@ -33,6 +34,9 @@ const autoInstallTestManifest = `{
     "databricks-test": {"version": "1.0.0", "description": "Test skill", "files": ["SKILL.md"], "repo_dir": "skills"}
   }
 }`
+
+// autoInstallTestNow is the time of the runs setupAutoInstallHome prepares.
+var autoInstallTestNow = time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
 
 // The interactive prompt needs a terminal, which acceptance tests do not
 // have, so these cases drive the hook the root command runs with stdin as a
@@ -58,6 +62,8 @@ func TestAutoInstallPrompt(t *testing.T) {
 		stdinPiped       bool
 		stdoutRedirected bool
 		stderrRedirected bool
+		// inContainer makes the run one in a container.
+		inContainer bool
 
 		wantPrompt  bool
 		wantStderr  []string
@@ -109,7 +115,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 		{
 			name:         "a planning failure is a failed attempt, retried later",
 			installState: "not json",
-			wantState:    autoinstall.State{LastVersion: "1.30.0", Attempts: 1, ID: "treatment-machine"},
+			wantState:    autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, ID: "treatment-machine"},
 			wantOutcome:  protos.AitoolsAutoInstallOutcomeFailed,
 		},
 		{
@@ -118,7 +124,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantPrompt:  true,
 			input:       "\n",
 			wantStderr:  []string{"Could not install Databricks AI tools. To install them, run: databricks aitools install"},
-			wantState:   autoinstall.State{LastVersion: "1.30.0", Attempts: 1, AcceptedVersion: "1.30.0", Installing: true, ID: "treatment-machine"},
+			wantState:   autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, AcceptedVersion: "1.30.0", Installing: true, ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeFailed,
 		},
 		{
@@ -230,6 +236,23 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantState: autoinstall.State{ID: "treatment-machine"},
 		},
 		{
+			// `docker run -t` without `-i`: a terminal that never delivers
+			// the answer, in a home that may not outlive the container.
+			name:        "a terminal in a container skips without asking",
+			inContainer: true,
+			input:       "\n",
+			wantState:   autoinstall.State{ID: "treatment-machine"},
+		},
+		{
+			name:        "a coding agent in a container installs without asking",
+			agent:       "CLAUDECODE",
+			inContainer: true,
+			wantStderr:  []string{"Installed Databricks AI tools for Cursor."},
+			wantSkills:  true,
+			wantState:   autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"},
+			wantOutcome: protos.AitoolsAutoInstallOutcomeInstalled,
+		},
+		{
 			// Holdout and treatment machines both wait for a run that can ask.
 			name:             "a holdout machine that cannot ask waits too",
 			state:            `{"id": "holdout-machine"}`,
@@ -250,6 +273,9 @@ func TestAutoInstallPrompt(t *testing.T) {
 				dir := filepath.Join(home, ".databricks", "aitools", "skills")
 				require.NoError(t, os.MkdirAll(dir, 0o755))
 				require.NoError(t, os.WriteFile(filepath.Join(dir, ".state.json"), []byte(tc.installState), 0o600))
+			}
+			if tc.inContainer {
+				inContainer = func() bool { return true }
 			}
 			t.Setenv("TERM", "xterm")
 			for k, v := range tc.env {
@@ -433,6 +459,76 @@ func TestNotifyInterruptWithoutASignal(t *testing.T) {
 	assert.ErrorIs(t, ctx.Err(), context.Canceled)
 }
 
+// A failed attempt is retried only after a wait that doubles with each failed
+// attempt, so a source that stays broken does not slow down the commands that
+// follow it. The run is a coding agent's call with no terminal.
+func TestAutoInstallWaitsBeforeARetry(t *testing.T) {
+	setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	skillsURL := os.Getenv("DATABRICKS_SKILLS_BASE_URL")
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", "http://127.0.0.1:1")
+	failed := []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, failed, outcomes)
+	assert.Equal(t, failedAttempts(1, 0), state)
+
+	// Not due: nothing is attempted, recorded or reported.
+	for _, elapsed := range []time.Duration{0, time.Second, 5*time.Minute - time.Second} {
+		outcomes, state = runAutoInstallAt(t, elapsed)
+		assert.Empty(t, outcomes, elapsed)
+		assert.Equal(t, failedAttempts(1, 0), state, elapsed)
+	}
+
+	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
+	assert.Equal(t, failed, outcomes)
+	assert.Equal(t, failedAttempts(2, 5*time.Minute), state)
+
+	// The second wait is twice the first.
+	outcomes, state = runAutoInstallAt(t, 15*time.Minute-time.Second)
+	assert.Empty(t, outcomes)
+	assert.Equal(t, failedAttempts(2, 5*time.Minute), state)
+	outcomes, state = runAutoInstallAt(t, 15*time.Minute)
+	assert.Equal(t, failed, outcomes)
+	assert.Equal(t, failedAttempts(3, 15*time.Minute), state)
+
+	// A clock set back before the last attempt does not hold the retry off
+	// until it catches up.
+	outcomes, state = runAutoInstallAt(t, -time.Hour)
+	assert.Equal(t, failed, outcomes)
+	assert.Equal(t, failedAttempts(4, -time.Hour), state)
+
+	// A new version does not wait for the old one's retry.
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", skillsURL)
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
+	outcomes, state = runAutoInstallAt(t, -time.Hour)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+}
+
+// runAutoInstallAt runs the hook at autoInstallTestNow plus elapsed and returns
+// the reported outcomes and the stored state.
+func runAutoInstallAt(t *testing.T, elapsed time.Duration) ([]protos.AitoolsAutoInstallOutcome, autoinstall.State) {
+	now = func() time.Time { return autoInstallTestNow.Add(elapsed) }
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	runAutoInstallHook(ctx)
+	var outcomes []protos.AitoolsAutoInstallOutcome
+	for _, e := range telemetry.BufferedEvents(ctx) {
+		if e := e.AitoolsAutoInstallEvent; e != nil {
+			outcomes = append(outcomes, e.Outcome)
+		}
+	}
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	return outcomes, state
+}
+
+// failedAttempts is the state after attempts failed first installs of 1.30.0,
+// the last at autoInstallTestNow plus elapsed.
+func failedAttempts(attempts int, elapsed time.Duration) autoinstall.State {
+	return autoinstall.State{LastVersion: "1.30.0", Attempts: attempts, LastAttempt: autoInstallTestNow.Add(elapsed), Installing: true, ID: "treatment-machine"}
+}
+
 // A run that has nothing to install or cannot ask skips before the gate
 // lookup, so a cron job or a job pod does not wait for it on every run. The
 // run has no terminal.
@@ -582,6 +678,11 @@ func setupAutoInstallHome(t *testing.T, state string, env ...string) string {
 		kv = append(kv, "SystemRoot", v)
 	}
 	isolateAgents(t, kv...)
+	t.Cleanup(func() { now = time.Now })
+	now = func() time.Time { return autoInstallTestNow }
+	// The test itself may run in a container.
+	t.Cleanup(func() { inContainer = autoinstall.InContainer })
+	inContainer = func() bool { return false }
 
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".cursor"), 0o755))
 	if state == "" {

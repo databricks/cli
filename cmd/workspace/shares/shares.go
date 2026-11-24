@@ -73,7 +73,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for the share.`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Cloud storage path, within an external location, under which the share stores the notebook files added to it.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a share.`
@@ -216,7 +216,7 @@ func newGet() *cobra.Command {
 
 	var getReq sharing.GetShareRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
+	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Whether to include the share's data objects in the response.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share.`
@@ -420,7 +420,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
-	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share.`)
+	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Cloud storage path, within an external location, under which the share stores the notebook files added to it.`)
 	// TODO: array: updates
 
 	cmd.Use = "update NAME"

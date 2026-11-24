@@ -208,6 +208,16 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 		return Response{StatusCode: 404}
 	}
 
+	if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateActive {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "BAD_REQUEST",
+				"message":    fmt.Sprintf("Cannot start app %s as its compute is in ACTIVE state. App compute needs to be STOPPED to start.", name),
+			},
+		}
+	}
+
 	app.ComputeStatus = &apps.ComputeStatus{
 		State:   apps.ComputeStateActive,
 		Message: "App compute is active.",
@@ -246,6 +256,34 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 	s.Apps[name] = app
 
 	return Response{Body: maskInputOnly(app)}
+}
+
+// AppsUpdateThumbnail sets thumbnail_url, the only trace of the image the real API returns.
+func (s *FakeWorkspace) AppsUpdateThumbnail(name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+	app.ThumbnailUrl = "/ajax-api/2.0/thumbnails/raw/apps/" + app.Id + "/SMALL_DEFAULT.png"
+	s.Apps[name] = app
+
+	return Response{Body: apps.AppThumbnail{}}
+}
+
+// AppsDeleteThumbnail clears thumbnail_url.
+func (s *FakeWorkspace) AppsDeleteThumbnail(name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+	app.ThumbnailUrl = ""
+	s.Apps[name] = app
+
+	return Response{}
 }
 
 // AppsGet returns the app, keeping DELETING resources visible so callers can

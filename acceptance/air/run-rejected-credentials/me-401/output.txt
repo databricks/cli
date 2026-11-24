@@ -1,0 +1,14 @@
+
+=== a 401 from the current-user lookup is rejected credentials (json)
+
+>>> [CLI] air run -f [TESTROOT]/air/run-rejected-credentials/me-401/../valid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "kind": "PERMANENT",
+    "message": "authentication was not successful: failed to resolve current user: Invalid access token.",
+    "retryable": false
+  }
+}
