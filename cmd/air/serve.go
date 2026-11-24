@@ -2,15 +2,11 @@ package aircmd
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -19,171 +15,102 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
 
-// defaultServeTimeout bounds the whole wait: staging a checkpoint's weights and
-// starting the endpoint.
+// defaultServeTimeout bounds the wait for the endpoint: for an update in progress
+// that the new one waits behind, and with --watch, for the endpoint to be ready.
 const defaultServeTimeout = time.Hour
 
-// Errors air serve wraps when it stops waiting. The server keeps working, and
-// the error says how to continue.
-var (
-	errServeInterrupted = errors.New("air serve was interrupted")
-	errServeTimedOut    = errors.New("air serve timed out")
-)
-
-// JSON error codes of air serve's own failures; API errors keep the server's.
+// Statuses of a served version: the endpoint serves it and is ready, or is still
+// updating to serve it.
 const (
-	codeInvalidArgs   = "INVALID_ARGS"
-	codeInterrupted   = "INTERRUPTED"
-	codeTimeout       = "TIMEOUT"
-	codeStagingFailed = "STAGING_FAILED"
-	// codeEndpointNotReady: the endpoint serves the version but isn't ready, which
-	// running air serve again doesn't change.
-	codeEndpointNotReady = "ENDPOINT_NOT_READY"
-	codeInternalError    = "INTERNAL_ERROR"
+	serveStatusReady    = "READY"
+	serveStatusUpdating = "UPDATING"
 )
-
-// apiErrorCodeRe matches an error code the server sent. The SDK fills ErrorCode
-// with "" or "<nil>" when the response body has none.
-var apiErrorCodeRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Z][A-Z_]*$`) })
-
-// serveError carries the JSON error code and retryability of a failure whose
-// message is err's.
-type serveError struct {
-	code      string
-	retryable bool
-	err       error
-}
-
-func (e *serveError) Error() string { return e.err.Error() }
-
-func (e *serveError) Unwrap() error { return e.err }
-
-func withCode(code string, retryable bool, err error) error {
-	return &serveError{code: code, retryable: retryable, err: err}
-}
-
-// servePlan is the deployment a dry run reports.
-type servePlan struct {
-	// Variant is the variant the file is read as: command, dedicated or registered.
-	Variant string `json:"variant"`
-	// Checkpoint is the checkpoint a new version is registered from. It is empty when
-	// the version is already registered.
-	Checkpoint string `json:"checkpoint,omitempty"`
-	// ModelVersion is the version served, empty when a new version is registered, or
-	// when the newest READY version is served, picked when serving.
-	ModelVersion string `json:"model_version,omitempty"`
-	// ServedEntity is the entity the endpoint serves, as the endpoints API takes it.
-	ServedEntity any `json:"served_entity"`
-}
 
 // serveResult is the JSON payload for `air serve`.
 type serveResult struct {
-	Status          string     `json:"status"`
-	DryRun          bool       `json:"dry_run,omitempty"`
-	Plan            *servePlan `json:"plan,omitempty"`
-	RegisteredModel string     `json:"registered_model,omitempty"`
-	ModelVersion    string     `json:"model_version,omitempty"`
-	ModelID         string     `json:"model_id,omitempty"`
-	IdempotencyKey  string     `json:"idempotency_key,omitempty"`
-	// EnvironmentStagingFailed is set when the version's serving environment
-	// couldn't be prepared ahead of time, so the endpoint can be slower to start.
-	EnvironmentStagingFailed bool   `json:"environment_staging_failed,omitempty"`
-	Endpoint                 string `json:"endpoint,omitempty"`
-	EndpointURL              string `json:"endpoint_url,omitempty"`
+	Status       string     `json:"status"`
+	DryRun       bool       `json:"dry_run,omitempty"`
+	Plan         *servePlan `json:"plan,omitempty"`
+	UCModel      string     `json:"uc_model_name,omitempty"`
+	ModelVersion string     `json:"model_version,omitempty"`
+	Endpoint     string     `json:"endpoint,omitempty"`
+	EndpointURL  string     `json:"endpoint_url,omitempty"`
+}
+
+// servePlan is what a dry run reports. A dry run makes no request, so the version
+// isn't read, and the compute it gets isn't known yet.
+type servePlan struct {
+	UCModel  string `json:"uc_model_name"`
+	Endpoint string `json:"endpoint_name"`
+	// ModelVersion is empty when the newest READY version is served, picked when
+	// serving.
+	ModelVersion string `json:"model_version,omitempty"`
 }
 
 // serveOptions are the `air serve` flags.
 type serveOptions struct {
-	file      string
-	overrides []string
-	dryRun    bool
-	// idempotencyKeySet records an explicit --idempotency-key, so an empty value
-	// (say, from an unset shell variable) fails instead of registering anew.
-	idempotencyKeySet  bool
-	idempotencyKey     string
-	retryFailedStaging bool
-	timeout            time.Duration
+	file         string
+	overrides    []string
+	ucModel      string
+	endpoint     string
+	modelVersion string
+	// flagsSet records which of the model, endpoint and version flags were passed, so
+	// an empty value (say, from an unset shell variable) fails instead of falling back
+	// to the file or the newest version.
+	flagsSet map[string]bool
+	watch    bool
+	dryRun   bool
+	timeout  time.Duration
 }
 
 func newServeCommand() *cobra.Command {
-	return newServeCommandWithPollInterval(registrationPollInterval)
-}
-
-func newServeCommandWithPollInterval(pollInterval time.Duration) *cobra.Command {
 	var opts serveOptions
-
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Args:  root.NoArgs,
-		Short: "Register a model in Unity Catalog and serve it on an endpoint",
-		Long: `Register a model in Unity Catalog and serve it on a Model Serving endpoint.
+		Short: "Serve a model version on a Model Serving endpoint",
+		Long: `Serve a version of a Unity Catalog model on a Model Serving endpoint.
 
-The deployment is described by a YAML file (see --file). Its fields say what is
-served, and which variant the file is read as:
-  checkpoint and command   a checkpoint in a volume, served by a command you give
-  checkpoint               a checkpoint served with dedicated inference
-  neither                  a model version already registered in Unity Catalog
+Describe the endpoint in a YAML file (see --file), or name the model and the
+endpoint with --uc-model-name and --endpoint-name. air serve serves the newest
+READY version unless model_version names one, and creates the endpoint if it
+doesn't exist. The compute follows from what the version was registered for:
+dedicated inference for a checkpoint registered without engine, and replicas for
+any other version. Anything the file leaves out of compute takes a default.
 
-For a checkpoint, air serve registers a new version, waits until it is ready,
-then creates or updates the endpoint to serve it and waits until the endpoint is
-ready. For a registered version, it only creates or updates the endpoint.
-
-Registration is idempotent: run air serve again with the idempotency key it
-prints to continue an interrupted deployment. To look up a YAML field, pass
-its path to -h as a separate argument, and see one YAML example per variant
-with -h config:
+air serve returns once the endpoint accepts the update; with --watch it waits
+until the endpoint is ready. To look up a YAML field, pass its path to -h as a
+separate argument:
 
   databricks air serve -h config                 all fields, with examples
-  databricks air serve -h config.compute         one section
-  databricks air serve -h config.checkpoint      one field`,
-		Example: `  # Register a checkpoint and serve it
+  databricks air serve -h config.compute         one section`,
+		Example: `  # Serve the newest READY version, and wait until the endpoint is ready
+  databricks air serve --uc-model-name main.serving.qwen30b_sglang --endpoint-name qwen3-30b --watch
+
+  # Serve a version on the compute a file describes
   databricks air serve -f serve.yaml
 
-  # Validate the config, and show the plan, without changing anything
-  databricks air serve -f serve.yaml --dry-run
-
-  # Continue a deployment that was interrupted
-  databricks air serve -f serve.yaml --idempotency-key 3f6c0b52-4c7e-4d0b-9b8e-0f7ad6a4c2d1`,
+  # Validate the config without changing anything
+  databricks air serve -f serve.yaml --dry-run`,
 		// Hidden until the registration API is available in every workspace.
 		Hidden: true,
 	}
-
-	// cobra passes -h's positional args to the help func before Args/required-flag
-	// validation, so a config path documents a field without needing -f.
-	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
-		fields := c.Flags().Args()
-		if len(fields) == 0 {
-			// Parent() is nil for a detached command (unit tests).
-			if parent := c.Parent(); parent != nil {
-				parent.HelpFunc()(c, args)
-				return
-			}
-			_ = c.Usage()
-			return
-		}
-		field, err := resolveSchemaField(serveSchema(), fields[0])
-		if err != nil {
-			c.PrintErrln("Error:", err)
-			return
-		}
-		renderConfigField(c.OutOrStdout(), serveCommandPath, field, nil)
-	})
+	cmd.SetHelpFunc(schemaHelp(serveSchema, serveCommandPath))
 
 	// List flags in declaration order (most used first) rather than alphabetically.
 	cmd.Flags().SortFlags = false
-	cmd.Flags().StringVarP(&opts.file, "file", "f", "", "Path to the deployment YAML config")
-	cmd.Flags().StringArrayVar(&opts.overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=4 (repeatable)")
-	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "Validate the config, and show the plan, without changing anything")
-	cmd.Flags().StringVar(&opts.idempotencyKey, "idempotency-key", "", "Continue the registration that used this key, instead of registering another version")
-	cmd.Flags().BoolVar(&opts.retryFailedStaging, "retry-failed-staging", false, "Copy a checkpoint's weights again after copying them failed")
-	cmd.Flags().DurationVar(&opts.timeout, "timeout", defaultServeTimeout, "How long to wait for the version and the endpoint to be ready")
-	_ = cmd.MarkFlagRequired("file")
+	cmd.Flags().StringVarP(&opts.file, "file", "f", "", "Path to the serving YAML config")
+	cmd.Flags().StringVar(&opts.ucModel, ucModelNameFlag, "", "Unity Catalog model to serve, overriding the file's uc_model_name")
+	cmd.Flags().StringVar(&opts.endpoint, endpointNameFlag, "", "Serving endpoint to serve on, overriding the file's endpoint_name")
+	cmd.Flags().StringVar(&opts.modelVersion, modelVersionFlag, "", "Version to serve, overriding the file's model_version (default: the newest READY version)")
+	cmd.Flags().BoolVar(&opts.watch, "watch", false, "Wait until the endpoint is ready")
+	cmd.Flags().StringArrayVar(&opts.overrides, "override", nil, "Override a YAML field, e.g. compute.gpu.max_replicas=4 (repeatable)")
+	cmd.Flags().BoolVar(&opts.dryRun, "dry-run", false, "Validate the config without changing anything")
+	cmd.Flags().DurationVar(&opts.timeout, "timeout", defaultServeTimeout, "How long to wait for the endpoint")
 
 	// --dry-run never authenticates, so it reports config mistakes without
 	// credentials.
@@ -195,28 +122,73 @@ with -h config:
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		opts.idempotencyKeySet = cmd.Flags().Changed("idempotency-key")
-		err := runServe(cmd, opts, pollInterval)
-		if err == nil {
-			return nil
-		}
-		code, retryable := serveErrorCode(err)
-		kind := "PERMANENT"
-		if retryable {
-			kind = "TRANSIENT"
-		}
-		return renderError(cmd.Context(), cmd, code, kind, retryable, err)
+		opts.flagsSet = changedFlags(cmd, ucModelNameFlag, endpointNameFlag, modelVersionFlag)
+		return renderModelError(cmd, runServe(cmd, opts))
 	}
 	return cmd
 }
 
-func runServe(cmd *cobra.Command, opts serveOptions, pollInterval time.Duration) error {
-	ctx := cmd.Context()
-	cfg, err := loadServeConfig(ctx, opts.file, opts.overrides)
-	if err != nil {
-		return withCode(codeInvalidArgs, false, err)
+// validateServeFlags checks the model, endpoint and version flags that were passed,
+// naming the flag in the error.
+func validateServeFlags(opts serveOptions) error {
+	for name, value := range map[string]string{ucModelNameFlag: opts.ucModel, endpointNameFlag: opts.endpoint, modelVersionFlag: opts.modelVersion} {
+		if opts.flagsSet[name] && strings.TrimSpace(value) == "" {
+			return fmt.Errorf("--%s cannot be empty", name)
+		}
 	}
-	if err := validateServeFlags(cfg, opts); err != nil {
+	if opts.ucModel != "" {
+		if err := validateUCModelName(opts.ucModel, "--"+ucModelNameFlag); err != nil {
+			return err
+		}
+	}
+	if opts.endpoint != "" && !endpointNameRe().MatchString(opts.endpoint) {
+		return fmt.Errorf("--%s must be a serving endpoint name of letters, digits, '-' and '_', got %q", endpointNameFlag, opts.endpoint)
+	}
+	if opts.modelVersion != "" && !modelVersionRe().MatchString(opts.modelVersion) {
+		return fmt.Errorf("--%s must be a model version number such as 3, got %q", modelVersionFlag, opts.modelVersion)
+	}
+	return nil
+}
+
+// loadServeConfig reads the config from --file, if set, then applies the
+// --uc-model-name, --endpoint-name and --model-version flags over it, and validates
+// the result.
+func loadServeConfig(ctx context.Context, opts serveOptions) (*serveConfig, error) {
+	if err := validateServeFlags(opts); err != nil {
+		return nil, err
+	}
+	cfg := &serveConfig{}
+	switch {
+	case opts.file != "":
+		loaded, _, err := loadModelConfig[serveConfig](ctx, opts.file, opts.overrides, serveSchema())
+		if err != nil {
+			return nil, err
+		}
+		cfg = loaded
+	case len(opts.overrides) > 0:
+		return nil, errors.New("--override applies to a file; set --file, or pass the fields as flags")
+	case opts.ucModel == "" || opts.endpoint == "":
+		return nil, errors.New("set --file, or both --uc-model-name and --endpoint-name")
+	}
+	if opts.ucModel != "" {
+		cfg.UCModel = opts.ucModel
+	}
+	if opts.endpoint != "" {
+		cfg.Endpoint = opts.endpoint
+	}
+	if opts.modelVersion != "" {
+		cfg.ModelVersion = &opts.modelVersion
+	}
+	return cfg, cfg.validate()
+}
+
+func runServe(cmd *cobra.Command, opts serveOptions) error {
+	ctx := cmd.Context()
+	if opts.timeout <= 0 {
+		return withCode(codeInvalidArgs, false, fmt.Errorf("--timeout must be positive, got %s", opts.timeout))
+	}
+	cfg, err := loadServeConfig(ctx, opts)
+	if err != nil {
 		return withCode(codeInvalidArgs, false, err)
 	}
 
@@ -231,124 +203,88 @@ func runServe(cmd *cobra.Command, opts serveOptions, pollInterval time.Duration)
 	ctx, stop := notifyInterrupt(ctx)
 	defer stop()
 
-	result := serveResult{RegisteredModel: cfg.RegisteredModel, Endpoint: cfg.Endpoint}
-	if cfg.registers() {
-		// Fail on an endpoint air serve won't change before copying any weights.
-		if err := checkEndpoint(ctx, w, cfg.Endpoint, cfg.RegisteredModel, cfg.variant() == variantDedicated); err != nil {
-			if stopped := serveStopped(ctx, err); stopped != nil {
-				return fmt.Errorf("%w while checking endpoint %s, before registering anything", stopped, cfg.Endpoint)
-			}
-			return err
-		}
-		result.IdempotencyKey = effectiveIdempotencyToken(opts.idempotencyKey, cfg.IdempotencyToken)
-		resp, err := registerDeployment(ctx, w, cfg, opts, result.IdempotencyKey, pollInterval, !jsonOut)
-		if err != nil {
-			return err
-		}
-		result.ModelVersion, result.ModelID = resp.ModelVersion, resp.ModelID
-		result.EnvironmentStagingFailed = resp.environmentState() == stagingStateFailed
-		if !jsonOut {
-			cmdio.LogString(ctx, fmt.Sprintf("Version %s of %s is ready.", stripControl(resp.ModelVersion), cfg.RegisteredModel))
-			if result.EnvironmentStagingFailed {
-				cmdio.LogString(ctx, "Warning: the version's serving environment couldn't be prepared ahead of time, so the endpoint can be slower to start, or fail to start.")
-			}
-		}
-	} else {
-		version, err := resolveModelVersion(ctx, w, cfg)
-		if err != nil {
-			return err
-		}
-		result.ModelVersion = version
-		if !jsonOut && cfg.ModelVersion == nil {
-			cmdio.LogString(ctx, fmt.Sprintf("Serving version %s, the newest READY version of %s.", version, cfg.RegisteredModel))
-		}
+	version, err := resolveModelVersion(ctx, w, cfg)
+	if err != nil {
+		return err
 	}
-
-	entity, err := cfg.servedEntity(result.ModelVersion)
+	if !jsonOut && cfg.ModelVersion == nil {
+		cmdio.LogString(ctx, fmt.Sprintf("Serving version %s, the newest READY version of %s.", version, cfg.UCModel))
+	}
+	pkg, err := readVersionPackage(ctx, w, cfg.UCModel, version)
+	if err != nil {
+		return err
+	}
+	entity, err := cfg.servedEntity(version, pkg)
 	if err != nil {
 		return withCode(codeInvalidArgs, false, err)
 	}
-	_, err = serveVersion(ctx, w, cfg.Endpoint, entity, !jsonOut)
+
+	ready, err := serveVersion(ctx, w, cfg.Endpoint, entity, opts.watch, !jsonOut)
+	resume := serveResumeCommand(w.Config.Profile, opts, version)
 	if err != nil {
-		resume := serveResumeCommand(w.Config.Profile, opts, result.IdempotencyKey)
-		if stopped := serveStopped(ctx, err); stopped != nil {
-			return fmt.Errorf("%w while waiting for endpoint %s, which keeps updating. To continue, run:\n  %s", stopped, cfg.Endpoint, resume)
+		if stopped := stoppedWaiting(ctx, err); stopped != nil {
+			return fmt.Errorf("air serve %w while waiting for endpoint %s, which keeps updating. To continue, run:\n  %s", stopped, cfg.Endpoint, resume)
 		}
 		if errors.Is(err, errEndpointNotReady) {
 			return err
 		}
-		return fmt.Errorf("serving version %s of %s on endpoint %s failed: %w\n\nTo try again without registering another version, run:\n  %s", result.ModelVersion, cfg.RegisteredModel, cfg.Endpoint, err, resume)
+		failed := fmt.Errorf("serving version %s of %s on endpoint %s failed: %w", version, cfg.UCModel, cfg.Endpoint, err)
+		// A failure the same request would meet again, such as an endpoint serving
+		// another model, gets no retry command.
+		if _, retryable := modelErrorCode(err); !retryable {
+			return failed
+		}
+		return fmt.Errorf("%w\n\nTo try again, run:\n  %s", failed, resume)
 	}
-	result.Status = "READY"
-	result.EndpointURL = endpointQueryURL(w.Config.Host, cfg.Endpoint, cfg.Task)
+	result := serveResult{
+		Status:       serveStatusUpdating,
+		UCModel:      cfg.UCModel,
+		ModelVersion: version,
+		Endpoint:     cfg.Endpoint,
+		EndpointURL:  endpointQueryURL(w.Config.Host, cfg.Endpoint, pkg.task),
+	}
+	if ready {
+		result.Status = serveStatusReady
+	}
 	if jsonOut {
 		return renderEnvelope(ctx, result)
 	}
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "Endpoint %s serves version %s of %s.\n", cfg.Endpoint, result.ModelVersion, cfg.RegisteredModel)
-	fmt.Fprintln(out, "Query it at: "+result.EndpointURL)
+	if ready {
+		fmt.Fprintf(out, "Endpoint %s serves version %s of %s.\nQuery it at: %s\n", cfg.Endpoint, version, cfg.UCModel, result.EndpointURL)
+		return nil
+	}
+	fmt.Fprintf(out, "Endpoint %s is updating to serve version %s of %s, at %s once it's ready. To wait for it, run:\n  %s\n", cfg.Endpoint, version, cfg.UCModel, result.EndpointURL, resume)
 	return nil
 }
 
-// plan is the deployment a dry run reports. A dry run makes no request, so the version
-// a new registration produces isn't known, and a registered model without
-// model_version serves its newest READY version, picked when serving.
-func (c *serveConfig) plan() (servePlan, error) {
-	p := servePlan{Variant: c.variant()}
-	if c.registers() {
-		p.Checkpoint = *c.Checkpoint
-	}
-	if c.ModelVersion != nil {
-		p.ModelVersion = *c.ModelVersion
-	}
-	entity, err := c.servedEntity(p.ModelVersion)
-	if err != nil {
-		return servePlan{}, err
-	}
-	if entity.Dedicated != nil {
-		p.ServedEntity = entity.dedicatedJSON()
-	} else {
-		p.ServedEntity = entity.servingInput()
-	}
-	return p, nil
-}
-
-// renderServeDryRun reports the plan of a valid config, without changing anything.
+// renderServeDryRun reports what a valid config serves, without changing anything.
 func renderServeDryRun(ctx context.Context, cfg *serveConfig, jsonOut bool) error {
-	plan, err := cfg.plan()
-	if err != nil {
-		return withCode(codeInvalidArgs, false, err)
+	plan := servePlan{UCModel: cfg.UCModel, Endpoint: cfg.Endpoint}
+	if cfg.ModelVersion != nil {
+		plan.ModelVersion = *cfg.ModelVersion
 	}
 	if jsonOut {
 		return renderEnvelope(ctx, serveResult{Status: "DRY_RUN_OK", DryRun: true, Plan: &plan})
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Dry run: %s.", cfg.readAs()))
-	switch {
-	case plan.Checkpoint != "":
-		cmdio.LogString(ctx, fmt.Sprintf("Dry run: would register a new version of %s from %s, and serve it.", cfg.RegisteredModel, plan.Checkpoint))
-	case plan.ModelVersion != "":
-		cmdio.LogString(ctx, fmt.Sprintf("Dry run: would serve version %s of %s.", plan.ModelVersion, cfg.RegisteredModel))
-	default:
-		cmdio.LogString(ctx, fmt.Sprintf("Dry run: would serve the newest READY version of %s, picked when serving.", cfg.RegisteredModel))
+	version := "the newest READY version"
+	if plan.ModelVersion != "" {
+		version = "version " + plan.ModelVersion
 	}
-	served, err := json.MarshalIndent(plan.ServedEntity, "  ", "  ")
-	if err != nil {
-		return withCode(codeInternalError, false, err)
-	}
-	cmdio.LogString(ctx, fmt.Sprintf("Dry run: would serve it on endpoint %s as:\n  %s", cfg.Endpoint, served))
+	cmdio.LogString(ctx, fmt.Sprintf("Dry run: would serve %s of %s on endpoint %s, on the compute it was registered for.", version, cfg.UCModel, cfg.Endpoint))
 	cmdio.LogString(ctx, fmt.Sprintf("Dry run: configuration for endpoint %q is valid; nothing was changed.", cfg.Endpoint))
 	return nil
 }
 
-// resolveModelVersion returns the version of a registered model to serve: model_version
-// when the config sets it, else the highest-numbered READY version of the model.
+// resolveModelVersion returns the version to serve: the one the config names, else
+// the highest-numbered READY version of the model.
 func resolveModelVersion(ctx context.Context, w *databricks.WorkspaceClient, cfg *serveConfig) (string, error) {
 	if cfg.ModelVersion != nil {
 		return *cfg.ModelVersion, nil
 	}
-	versions, err := w.ModelVersions.ListAll(ctx, catalog.ListModelVersionsRequest{FullName: cfg.RegisteredModel})
+	versions, err := w.ModelVersions.ListAll(ctx, catalog.ListModelVersionsRequest{FullName: cfg.UCModel})
 	if err != nil {
-		return "", fmt.Errorf("listing the versions of %s: %w", cfg.RegisteredModel, err)
+		return "", fmt.Errorf("listing the versions of %s: %w", cfg.UCModel, err)
 	}
 	newest := 0
 	for _, v := range versions {
@@ -357,162 +293,50 @@ func resolveModelVersion(ctx context.Context, w *databricks.WorkspaceClient, cfg
 		}
 	}
 	if newest == 0 {
-		return "", withCode(codeInvalidArgs, false, fmt.Errorf("%s has no READY version to serve; register and finalize a version, or set model_version", cfg.RegisteredModel))
+		return "", withCode(codeInvalidArgs, false, fmt.Errorf("%s has no READY version to serve; register one with %s, or set model_version", cfg.UCModel, registerCommandPath))
 	}
 	return strconv.Itoa(newest), nil
 }
 
-// registerDeployment registers the version and makes it ready to serve, showing
-// progress on a spinner when show is true. Its errors say how to continue.
-func registerDeployment(ctx context.Context, w *databricks.WorkspaceClient, cfg *serveConfig, opts serveOptions, key string, pollInterval time.Duration, show bool) (*registerModelPackageResponse, error) {
-	// Printed to stderr in every output mode, before the first request, so a run
-	// that is killed can still be continued with this key.
-	cmdio.LogString(ctx, fmt.Sprintf("Registering a version of %s with idempotency key %s", cfg.RegisteredModel, key))
-	req := cfg.registrationRequest(key)
-	req.RetryFailedStaging = opts.retryFailedStaging
-
-	progress := func(*registerModelPackageResponse) {}
-	if show {
-		sp := cmdio.NewSpinner(ctx)
-		defer sp.Close()
-		progress = func(resp *registerModelPackageResponse) {
-			sp.Update(registrationProgress(cfg, resp))
-		}
-	}
-	resp, err := registerAndFinalize(ctx, w, req, pollInterval, progress)
-	if err == nil {
-		return resp, nil
-	}
-	resume := serveResumeCommand(w.Config.Profile, opts, key)
-	if errors.Is(err, errStagingFailed) {
-		return nil, withCode(codeStagingFailed, true, fmt.Errorf("copying the weights in %s into version %s of %s failed. Check that you can read every file, then run:\n  %s --retry-failed-staging", *cfg.Checkpoint, stripControl(resp.ModelVersion), cfg.RegisteredModel, resume))
-	}
-	if stopped := serveStopped(ctx, err); stopped != nil {
-		continuing := ""
-		switch {
-		case resp == nil:
-		case resp.weightsState() == stagingStateSucceeded:
-			continuing = " The weights are copied, so continuing finalizes the version."
-		case resp.weightsState() != "":
-			continuing = " Copying the weights continues meanwhile."
-		}
-		return nil, fmt.Errorf("%w while registering a version of %s.%s To continue, run:\n  %s", stopped, cfg.RegisteredModel, continuing, resume)
-	}
-	if _, ok := errors.AsType[*finalizeError](err); ok {
-		return nil, fmt.Errorf("finalizing version %s of %s failed: %w\n\nTo try again, run:\n  %s", stripControl(resp.ModelVersion), cfg.RegisteredModel, err, resume)
-	}
-	failed := fmt.Errorf("registering a version of %s with idempotency key %s failed: %w", cfg.RegisteredModel, key, err)
-	// A retryable failure is retried with the same key, so no other version is
-	// registered.
-	if _, retryable := serveErrorCode(err); retryable {
-		return nil, fmt.Errorf("%w\n\nTo try again, run:\n  %s", failed, resume)
-	}
-	return nil, failed
-}
-
-// serveStopped returns why air serve stopped waiting, or nil if it didn't. The
-// SDK's endpoint poller reports a canceled context as its own timeout, so the
-// context decides between Ctrl-C and --timeout.
-func serveStopped(ctx context.Context, err error) error {
-	switch {
-	case errors.Is(ctx.Err(), context.Canceled):
-		return errServeInterrupted
-	case errors.Is(ctx.Err(), context.DeadlineExceeded):
-		return errServeTimedOut
-	}
-	if _, ok := errors.AsType[*retries.ErrTimedOut](err); ok {
-		return errServeTimedOut
-	}
-	return nil
-}
-
-// serveErrorCode classifies a failed deployment for the JSON error envelope.
-// Failures that aren't the user's input or the server's answer, such as a lost
-// connection or a failed endpoint update, are worth retrying with the printed
-// command.
-func serveErrorCode(err error) (code string, retryable bool) {
-	switch {
-	case errors.Is(err, errServeInterrupted):
-		return codeInterrupted, true
-	case errors.Is(err, errServeTimedOut):
-		return codeTimeout, true
-	}
-	if coded, ok := errors.AsType[*serveError](err); ok {
-		return coded.code, coded.retryable
-	}
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
-		retryable = apiErr.StatusCode == http.StatusTooManyRequests || apiErr.StatusCode >= http.StatusInternalServerError
-		if !apiErrorCodeRe().MatchString(apiErr.ErrorCode) {
-			return codeInternalError, retryable
-		}
-		return apiErr.ErrorCode, retryable
-	}
-	return codeInternalError, true
-}
-
-// validateServeFlags rejects flags the config's variant can't use.
-func validateServeFlags(cfg *serveConfig, opts serveOptions) error {
-	if opts.timeout <= 0 {
-		return fmt.Errorf("--timeout must be positive, got %s", opts.timeout)
-	}
-	if opts.idempotencyKeySet {
-		if !cfg.registers() {
-			return fmt.Errorf("--idempotency-key applies only when air serve registers a version; %s", cfg.readAs())
-		}
-		if err := validateServeIdempotencyKey(opts.idempotencyKey, "--idempotency-key"); err != nil {
-			return err
-		}
-	}
-	if opts.retryFailedStaging && !cfg.registers() {
-		return fmt.Errorf("--retry-failed-staging applies only to a checkpoint; %s", cfg.readAs())
-	}
-	return nil
-}
-
-// registrationProgress describes a registration response on the spinner.
-func registrationProgress(cfg *serveConfig, resp *registerModelPackageResponse) string {
-	state := resp.weightsState()
-	switch state {
-	case "":
-		return fmt.Sprintf("Registering version %s of %s…", stripControl(resp.ModelVersion), cfg.RegisteredModel)
-	case stagingStateSucceeded:
-		return fmt.Sprintf("Finalizing version %s of %s…", stripControl(resp.ModelVersion), cfg.RegisteredModel)
-	}
-	return fmt.Sprintf("Copying the weights into version %s of %s (%s)…", stripControl(resp.ModelVersion), cfg.RegisteredModel, stripControl(state))
-}
-
-// serveVersion serves entity on the endpoint, showing the endpoint's state on a
-// spinner when show is true.
-func serveVersion(ctx context.Context, w *databricks.WorkspaceClient, name string, entity servedEntity, show bool) (*servingEndpoint, error) {
+// serveVersion serves entity on the endpoint, waiting until it's ready when watch
+// is set, and showing the endpoint's state on a spinner when show is true. It
+// reports whether the endpoint serves entity and is ready.
+func serveVersion(ctx context.Context, w *databricks.WorkspaceClient, name string, entity servedEntity, watch, show bool) (bool, error) {
 	if !show {
-		return serveOnEndpoint(ctx, w, name, entity, nil)
+		return serveOnEndpoint(ctx, w, name, entity, watch, nil)
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("Serving version %s of %s on endpoint %s", entity.EntityVersion, entity.EntityName, name))
 	sp := cmdio.NewSpinner(ctx)
 	defer sp.Close()
-	return serveOnEndpoint(ctx, w, name, entity, func(endpoint *servingEndpoint) {
+	return serveOnEndpoint(ctx, w, name, entity, watch, func(endpoint *servingEndpoint) {
 		if endpoint.State != nil {
 			sp.Update(fmt.Sprintf("Waiting for endpoint %s (%s, %s)…", name, endpoint.State.Ready, endpoint.State.ConfigUpdate))
 		}
 	})
 }
 
-// serveResumeCommand is the command that continues this deployment: the same
-// config (by absolute path, so it runs from any directory), overrides and
-// profile, with the registration's key when it has one. The overrides are part
-// of the request the key was first used with, so they must be repeated.
-func serveResumeCommand(profile string, opts serveOptions, key string) string {
-	file := opts.file
-	if abs, err := filepath.Abs(file); err == nil {
-		file = abs
+// serveResumeCommand is the command that waits for this update: the same config
+// (by absolute path, so it runs from any directory), overrides, flags and profile,
+// with the version served, so a newer one registered meanwhile isn't picked.
+func serveResumeCommand(profile string, opts serveOptions, version string) string {
+	args := []string{serveCommandPath}
+	if opts.file != "" {
+		file := opts.file
+		if abs, err := filepath.Abs(file); err == nil {
+			file = abs
+		}
+		args = append(args, "-f", shellquote.BashArg(filepath.ToSlash(file)))
 	}
-	args := []string{serveCommandPath, "-f", shellquote.BashArg(filepath.ToSlash(file))}
 	for _, override := range opts.overrides {
 		args = append(args, "--override", shellquote.BashArg(override))
 	}
-	if key != "" {
-		args = append(args, "--idempotency-key", shellquote.BashArg(key))
+	if opts.ucModel != "" {
+		args = append(args, "--uc-model-name", shellquote.BashArg(opts.ucModel))
 	}
+	if opts.endpoint != "" {
+		args = append(args, "--endpoint-name", shellquote.BashArg(opts.endpoint))
+	}
+	args = append(args, "--model-version", shellquote.BashArg(version), "--watch")
 	if profile != "" {
 		args = append(args, "-p", shellquote.BashArg(profile))
 	}
@@ -521,15 +345,13 @@ func serveResumeCommand(profile string, opts serveOptions, key string) string {
 
 // endpointQueryURL is the REST URL that queries the endpoint: an audio model's
 // audio route, which takes a multipart upload, or invocations for any other model.
-func endpointQueryURL(host, name string, task *string) string {
+func endpointQueryURL(host, name, task string) string {
 	base := strings.TrimSuffix(host, "/") + "/serving-endpoints/" + name
-	if task != nil {
-		switch *task {
-		case taskAudioTranscriptions:
-			return base + "/audio/transcriptions"
-		case taskAudioTranslations:
-			return base + "/audio/translations"
-		}
+	switch task {
+	case taskAudioTranscriptions:
+		return base + "/audio/transcriptions"
+	case taskAudioTranslations:
+		return base + "/audio/translations"
 	}
 	return base + "/invocations"
 }

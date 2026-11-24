@@ -2,35 +2,21 @@ package aircmd
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/shellquote"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// registeredNoVersionConfig serves the newest READY version of a registered model.
-const registeredNoVersionConfig = `registered_model_name: main.models.qwen
-endpoint_name: qwen-chat
-`
 
 // modelVersionsJSON lists the versions of the test model: 4 is the newest READY one.
 const modelVersionsJSON = `{"model_versions": [
@@ -39,237 +25,223 @@ const modelVersionsJSON = `{"model_versions": [
 	{"version": 4, "status": "READY"}
 ]}`
 
-// withDeadline returns the test's context with a deadline, which air serve
-// always sets from --timeout.
-func withDeadline(t *testing.T) context.Context {
-	ctx, cancel := context.WithTimeout(fastRetries(t.Context()), time.Minute)
-	t.Cleanup(cancel)
-	return ctx
+// fakeServing serves the test model's versions, as Unity Catalog lists them, each
+// version's MLmodel through the Files API, and the serving endpoints API from
+// endpoints. It counts the version listings.
+type fakeServing struct {
+	endpoints *fakeEndpoints
+	mlmodel   string
+	// versions is the version listing, modelVersionsJSON unless a test sets one.
+	versions string
+	mu       sync.Mutex
+	listings int
 }
 
-// serveServer serves registerModelPackage with responses, the staging status
-// and finalizeModelPackage with their defaults, and the serving endpoints API
-// from endpoints.
-func serveServer(t *testing.T, endpoints *fakeEndpoints, responses ...string) (*httptest.Server, *fakeModelServing) {
-	t.Helper()
-	fake := newFakeModelServing(t, responses...)
-	fake.endpoints = endpoints.ServeHTTP
-	return fake.start(), fake
-}
-
-// serveServerWithVersions is serveServer, also serving the model's versions, as
-// the Unity Catalog API lists them, from versionsJSON.
-func serveServerWithVersions(t *testing.T, endpoints *fakeEndpoints, versionsJSON string) (*httptest.Server, *fakeModelServing) {
-	t.Helper()
-	fake := newFakeModelServing(t)
-	fake.endpoints = func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/versions") {
-			_, _ = w.Write([]byte(versionsJSON))
-			return
+func (f *fakeServing) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case strings.HasSuffix(r.URL.Path, "/versions"):
+		f.mu.Lock()
+		f.listings++
+		f.mu.Unlock()
+		versions := f.versions
+		if versions == "" {
+			versions = modelVersionsJSON
 		}
-		endpoints.ServeHTTP(w, r)
+		_, _ = w.Write([]byte(versions))
+	case strings.HasPrefix(r.URL.Path, "/api/2.0/fs/files/Models/main/models/qwen/") && strings.HasSuffix(r.URL.Path, "/MLmodel") && f.mlmodel != "":
+		_, _ = w.Write([]byte(f.mlmodel))
+	case strings.HasPrefix(r.URL.Path, "/api/2.0/fs/files/"):
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error_code": "NOT_FOUND", "message": "The file being accessed is not found."}`))
+	default:
+		f.endpoints.ServeHTTP(w, r)
 	}
-	return fake.start(), fake
 }
 
-// runServeCmd runs `air serve` on config with the given flags. An empty srvURL
-// runs it without a workspace client, as --dry-run does.
+// serveServer serves versions of the test model whose MLmodel is mlmodel, and the
+// serving endpoints API from endpoints.
+func serveServer(t *testing.T, endpoints *fakeEndpoints, mlmodel string) (*httptest.Server, *fakeServing) {
+	t.Helper()
+	fake := &fakeServing{endpoints: endpoints, mlmodel: mlmodel}
+	srv := httptest.NewServer(fake)
+	t.Cleanup(srv.Close)
+	return srv, fake
+}
+
+// runServeCmd runs `air serve` on config with the given flags.
 func runServeCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL, config string, flagValues ...string) error {
 	t.Helper()
-	cmd := withOutput(newServeCommandWithPollInterval(time.Millisecond), out)
-	require.NoError(t, cmd.Flags().Set("file", writeConfigFile(t, "serve.yaml", config)))
-	for i := 0; i < len(flagValues); i += 2 {
-		require.NoError(t, cmd.Flags().Set(flagValues[i], flagValues[i+1]))
-	}
-
-	// JSON tests parse buf, so stderr's progress lines go elsewhere.
-	var stderr io.Writer = buf
-	if out == flags.OutputJSON {
-		stderr = io.Discard
-	}
-	ctx := cmdio.InContext(fastRetries(t.Context()), cmdio.NewIO(t.Context(), out, nil, buf, stderr, "", ""))
-	if srvURL != "" {
-		ctx = cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srvURL))
-	}
-	cmd.SetContext(ctx)
-	cmd.SetOut(buf)
-	return cmd.RunE(cmd, nil)
+	flagValues = append([]string{"file", writeConfigFile(t, "serve.yaml", config)}, flagValues...)
+	return runModelCmd(t, newServeCommand(), out, buf, srvURL, flagValues...)
 }
 
-func TestServeCommandJSON(t *testing.T) {
-	endpoints := newFakeEndpoints(t, nil)
-	srv, fake := serveServer(t, endpoints, stagingInProgress)
-
-	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputJSON, &buf, srv.URL, commandServeConfig, "idempotency-key", "key-1")
-	require.NoError(t, err)
-
+func serveJSON(t *testing.T, buf *bytes.Buffer) serveResult {
+	t.Helper()
 	var got struct {
 		Data serveResult `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
-	assert.Equal(t, serveResult{
-		Status:          "READY",
-		RegisteredModel: "main.models.qwen",
-		ModelVersion:    "3",
-		ModelID:         "m-1",
-		IdempotencyKey:  "key-1",
-		Endpoint:        "qwen-chat",
-		EndpointURL:     srv.URL + "/serving-endpoints/qwen-chat/invocations",
-	}, got.Data)
+	return got.Data
+}
 
-	bodies := fake.requests()
-	require.Len(t, bodies, 1)
-	assert.Equal(t, "key-1", bodies[0].IdempotencyKey)
-	assert.Equal(t, "/Volumes/main/models/weights/qwen3_8b", bodies[0].Checkpoint.VolumePath)
-	assert.Equal(t, []finalizeModelPackageRequest{{RegisteredModel: "main.models.qwen", ModelVersion: "3"}}, fake.finalizeRequests)
+func TestServeNewestReadyVersionOfACommand(t *testing.T) {
+	endpoints := newFakeEndpoints(t, nil)
+	srv, _ := serveServer(t, endpoints, commandMLmodel)
+
+	var buf bytes.Buffer
+	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, minimalServeConfig, "watch", "true"))
+	assert.Equal(t, serveResult{
+		Status:       "READY",
+		UCModel:      "main.models.qwen",
+		ModelVersion: "4",
+		Endpoint:     "qwen-chat",
+		EndpointURL:  srv.URL + "/serving-endpoints/qwen-chat/invocations",
+	}, serveJSON(t, &buf))
 	assert.Equal(t, []string{"create"}, endpoints.writes)
 	served := endpoints.endpoint.Config.ServedEntities[0]
-	assert.Equal(t, "3", served.EntityVersion)
+	assert.Equal(t, "4", served.EntityVersion)
 	assert.Equal(t, "GPU_MEDIUM", served.WorkloadType)
-	assert.Equal(t, map[string]string{"LOG_LEVEL": "info", "HF_TOKEN": "{{secrets/llm/hf_token}}"}, served.EnvironmentVars)
-	// scale_to_zero_enabled: false is sent, not left to the server's default.
+	assert.Equal(t, 4, served.MinProvisionedConcurrency)
+	assert.Equal(t, 4, served.MaxProvisionedConcurrency)
+	// scale_to_zero_enabled: false is sent, not left to the server's default, and the
+	// scale goes as a concurrency range instead of a workload size.
 	require.Len(t, endpoints.rawWrites, 1)
 	assert.Contains(t, endpoints.rawWrites[0], `"scale_to_zero_enabled":false`)
+	assert.NotContains(t, endpoints.rawWrites[0], "workload_size")
+	assert.NotContains(t, endpoints.rawWrites[0], "environment_vars")
 }
 
-func TestServeCommandText(t *testing.T) {
-	srv, _ := serveServer(t, newFakeEndpoints(t, nil), stagingReady)
+func TestServeText(t *testing.T) {
+	srv, _ := serveServer(t, newFakeEndpoints(t, nil), commandMLmodel)
 
 	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig))
+	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, srv.URL, minimalServeConfig, "watch", "true"))
 	out := buf.String()
-	assert.Contains(t, out, "Registering a version of main.models.qwen with idempotency key ")
-	assert.Contains(t, out, "Version 3 of main.models.qwen is ready.")
-	assert.Contains(t, out, "Serving version 3 of main.models.qwen on endpoint qwen-chat")
-	assert.Contains(t, out, "Endpoint qwen-chat serves version 3 of main.models.qwen.\n")
-	assert.Contains(t, out, "Query it at: "+srv.URL+"/serving-endpoints/qwen-chat/invocations\n")
-	assert.NotContains(t, out, "Warning")
+	assert.Contains(t, out, "Serving version 4, the newest READY version of main.models.qwen.")
+	assert.Contains(t, out, "Serving version 4 of main.models.qwen on endpoint qwen-chat")
+	assert.Contains(t, out, "Endpoint qwen-chat serves version 4 of main.models.qwen.\nQuery it at: "+srv.URL+"/serving-endpoints/qwen-chat/invocations\n")
 }
 
-func TestServeDedicatedRegistersAndCreatesTheDedicatedEndpoint(t *testing.T) {
+func TestServeWithoutWatchReturnsWhileTheEndpointUpdates(t *testing.T) {
 	endpoints := newFakeEndpoints(t, nil)
-	srv, fake := serveServer(t, endpoints, stagingReady)
+	endpoints.finalState = serving.EndpointState{Ready: serving.EndpointStateReadyNotReady, ConfigUpdate: serving.EndpointStateConfigUpdateInProgress}
+	srv, _ := serveServer(t, endpoints, commandMLmodel)
 
 	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, dedicatedServeConfig, "idempotency-key", "key-1"))
+	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, minimalServeConfig))
+	got := serveJSON(t, &buf)
+	assert.Equal(t, "UPDATING", got.Status)
+	assert.Equal(t, "4", got.ModelVersion)
+	assert.Equal(t, []string{"create"}, endpoints.writes)
 
-	bodies := fake.requests()
-	require.Len(t, bodies, 1)
-	assert.Nil(t, bodies[0].Checkpoint)
-	assert.Equal(t, &dedicatedCheckpoint{VolumePath: "/Volumes/main/models/weights/qwen3_8b"}, bodies[0].DedicatedCheckpoint)
+	srv, _ = serveServer(t, newFakeEndpoints(t, nil), commandMLmodel)
+	buf.Reset()
+	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, srv.URL, minimalServeConfig))
+	assert.Contains(t, buf.String(), "Endpoint qwen-chat is updating to serve version 4 of main.models.qwen, at "+srv.URL+"/serving-endpoints/qwen-chat/invocations once it's ready. To wait for it, run:\n  databricks air serve -f ")
+	assert.Contains(t, buf.String(), " --model-version 4 --watch\n")
+}
+
+func TestServeADedicatedCheckpoint(t *testing.T) {
+	endpoints := newFakeEndpoints(t, nil)
+	srv, _ := serveServer(t, endpoints, dedicatedMLmodel)
+
+	var buf bytes.Buffer
+	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, minimalServeConfig, "watch", "true"))
 	assert.Equal(t, []string{"create dedicated"}, endpoints.writes)
 	require.Len(t, endpoints.rawWrites, 1)
-	assert.Contains(t, endpoints.rawWrites[0], `"compute_profile":"COMPUTE_PROFILE_LOW_LATENCY"`)
-	assert.NotContains(t, endpoints.rawWrites[0], "scale_to_zero_enabled")
+	assert.JSONEq(t, `{"name": "qwen-chat", "config": {"served_entities": [{
+		"entity_name": "main.models.qwen",
+		"entity_version": "4",
+		"provisioned_model_units": 600,
+		"compute_profile": "COMPUTE_PROFILE_LOW_LATENCY"
+	}]}}`, endpoints.rawWrites[0])
+}
+
+func TestServeALoggedModelOnCPU(t *testing.T) {
+	endpoints := newFakeEndpoints(t, nil)
+	srv, _ := serveServer(t, endpoints, loggedMLmodel)
+
+	var buf bytes.Buffer
+	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, minimalServeConfig, "watch", "true"))
+	assert.Equal(t, "CPU", endpoints.endpoint.Config.ServedEntities[0].WorkloadType)
+}
+
+func TestServeAnAudioCommandReportsItsAudioRoute(t *testing.T) {
+	srv, _ := serveServer(t, newFakeEndpoints(t, nil), replaceFirst("task: llm/v1/chat", "task: llm/v1/audio/transcriptions")(commandMLmodel))
+
+	var buf bytes.Buffer
+	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, minimalServeConfig, "watch", "true"))
+	assert.Equal(t, srv.URL+"/serving-endpoints/qwen-chat/audio/transcriptions", serveJSON(t, &buf).EndpointURL)
+}
+
+func TestServeAGivenVersionDoesntListVersions(t *testing.T) {
+	endpoints := newFakeEndpoints(t, nil)
+	srv, fake := serveServer(t, endpoints, commandMLmodel)
+
+	var buf bytes.Buffer
+	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, srv.URL, gpuServeConfig, "watch", "true"))
+	assert.Zero(t, fake.listings)
 	assert.Equal(t, "3", endpoints.endpoint.Config.ServedEntities[0].EntityVersion)
+	assert.Equal(t, 8, endpoints.endpoint.Config.ServedEntities[0].MaxProvisionedConcurrency)
+	assert.NotContains(t, buf.String(), "newest READY")
 }
 
-func TestServeWarnsWhenTheEnvironmentFailedToStage(t *testing.T) {
-	environmentFailed := strings.Replace(stagingReady, `"environment_artifact": {"state": "SUCCEEDED"}`, `"environment_artifact": {"state": "FAILED"}`, 1)
-	srv, _ := serveServer(t, newFakeEndpoints(t, nil), environmentFailed)
+func TestServeFromFlags(t *testing.T) {
+	endpoints := newFakeEndpoints(t, nil)
+	srv, _ := serveServer(t, endpoints, commandMLmodel)
 
 	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig))
-	assert.Contains(t, buf.String(), "Warning: the version's serving environment couldn't be prepared ahead of time")
+	require.NoError(t, runModelCmd(t, newServeCommand(), flags.OutputJSON, &buf, srv.URL,
+		"uc-model-name", "main.models.qwen", "endpoint-name", "from-flags", "model-version", "2", "watch", "true"))
+	got := serveJSON(t, &buf)
+	assert.Equal(t, "from-flags", got.Endpoint)
+	assert.Equal(t, "2", got.ModelVersion)
 }
 
-func TestServeUsesTheConfigTokenThenANewKey(t *testing.T) {
-	srv, fake := serveServer(t, newFakeEndpoints(t, nil), stagingReady)
+func TestServeRefusesComputeOfTheOtherKindBeforeChangingTheEndpoint(t *testing.T) {
+	endpoints := newFakeEndpoints(t, nil)
+	srv, _ := serveServer(t, endpoints, dedicatedMLmodel)
 
 	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, commandServeConfig+"idempotency_token: from-config\n"))
-	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, commandServeConfig+"idempotency_token: from-config\n", "idempotency-key", "from-flag"))
-	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, commandServeConfig))
-
-	bodies := fake.requests()
-	require.Len(t, bodies, 3)
-	assert.Equal(t, "from-config", bodies[0].IdempotencyKey)
-	assert.Equal(t, "from-flag", bodies[1].IdempotencyKey)
-	assert.Regexp(t, serveIdempotencyKeyRe(), bodies[2].IdempotencyKey)
-	assert.NotContains(t, []string{"from-config", "from-flag"}, bodies[2].IdempotencyKey)
-}
-
-func TestServePrintsTheKeyBeforeRegisteringInJSONMode(t *testing.T) {
-	srv, _ := serveServer(t, newFakeEndpoints(t, nil), conflictResponse)
-
-	var stdout, stderr bytes.Buffer
-	cmd := withOutput(newServeCommandWithPollInterval(time.Millisecond), flags.OutputJSON)
-	require.NoError(t, cmd.Flags().Set("file", writeConfigFile(t, "serve.yaml", commandServeConfig)))
-	require.NoError(t, cmd.Flags().Set("idempotency-key", "key-1"))
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &stdout, &stderr, "", ""))
-	cmd.SetContext(cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL)))
-	require.ErrorIs(t, cmd.RunE(cmd, nil), root.ErrAlreadyPrinted)
-	assert.Equal(t, "Registering a version of main.models.qwen with idempotency key key-1\n", stderr.String())
-	assert.Contains(t, stdout.String(), `"code": "RESOURCE_CONFLICT"`)
-}
-
-func TestServeSendsRetryFailedStaging(t *testing.T) {
-	srv, fake := serveServer(t, newFakeEndpoints(t, nil), stagingInProgress)
-
-	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, commandServeConfig, "retry-failed-staging", "true"))
-	bodies := fake.requests()
-	require.Len(t, bodies, 1)
-	assert.True(t, bodies[0].RetryFailedStaging)
-}
-
-func TestServeFailedStagingSaysHowToRetry(t *testing.T) {
-	srv, _ := serveServer(t, newFakeEndpoints(t, nil), stagingFailed)
-
-	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig, "idempotency-key", "key-1")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "copying the weights in /Volumes/main/models/weights/qwen3_8b into version 3 of main.models.qwen failed")
-	assert.Contains(t, err.Error(), " --idempotency-key key-1 --retry-failed-staging")
-}
-
-func TestServeReportsRegistrationErrors(t *testing.T) {
-	srv, _ := serveServer(t, newFakeEndpoints(t, nil), conflictResponse)
-
-	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig, "idempotency-key", "key-1")
-	assert.ErrorContains(t, err, "registering a version of main.models.qwen with idempotency key key-1 failed: The idempotency key can't be used for this registration")
-}
-
-func TestServeReportsErrorsAsJSON(t *testing.T) {
-	srv, _ := serveServer(t, newFakeEndpoints(t, nil), conflictResponse)
-
-	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputJSON, &buf, srv.URL, commandServeConfig)
+	err := runServeCmd(t, flags.OutputJSON, &buf, srv.URL, gpuServeConfig)
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	var got errorEnvelope
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
-	assert.Equal(t, "RESOURCE_CONFLICT", got.Error.Code)
-	assert.Equal(t, "PERMANENT", got.Error.Kind)
-	assert.False(t, got.Error.Retryable)
-
-	buf.Reset()
-	err = runServeCmd(t, flags.OutputJSON, &buf, "", "registered_model_name: x\n", "dry-run", "true")
-	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, "INVALID_ARGS", got.Error.Code)
-	assert.Contains(t, got.Error.Message, "registered_model_name must be a Unity Catalog model name")
+	assert.Contains(t, got.Error.Message, "compute.gpu can't be set: version 3 of main.models.qwen is a checkpoint registered without engine")
+	assert.Empty(t, endpoints.writes)
 }
 
-func TestServeChecksTheEndpointBeforeRegistering(t *testing.T) {
-	other := testEntity("5")
-	other.EntityName = "main.models.llama"
-	srv, fake := serveServer(t, newFakeEndpoints(t, endpointServing(other, readyState)), stagingReady)
+func TestServeWithoutAReadyVersionFails(t *testing.T) {
+	srv, fake := serveServer(t, newFakeEndpoints(t, nil), commandMLmodel)
+	fake.versions = `{"model_versions": [{"version": 5, "status": "PENDING_REGISTRATION"}]}`
 
 	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig)
-	assert.ErrorContains(t, err, "endpoint qwen-chat serves version 5 of main.models.llama")
-	assert.Empty(t, fake.requests())
+	err := runServeCmd(t, flags.OutputJSON, &buf, srv.URL, minimalServeConfig)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, "INVALID_ARGS", got.Error.Code)
+	assert.Contains(t, got.Error.Message, "main.models.qwen has no READY version to serve; register one with databricks air register, or set model_version")
+}
+
+func TestServeAVersionWithoutAnMLmodelFails(t *testing.T) {
+	endpoints := newFakeEndpoints(t, nil)
+	srv, _ := serveServer(t, endpoints, "")
+
+	var buf bytes.Buffer
+	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, minimalServeConfig)
+	assert.ErrorContains(t, err, "version 4 of main.models.qwen doesn't exist or has no MLmodel, so air serve can't tell what serves it")
+	assert.Empty(t, endpoints.writes)
 }
 
 func TestServeReportsAnEndpointThatIsNotReady(t *testing.T) {
 	endpoints := newFakeEndpoints(t, nil)
 	endpoints.finalState = serving.EndpointState{Ready: serving.EndpointStateReadyNotReady, ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating}
-	srv, _ := serveServer(t, endpoints, stagingReady)
+	srv, _ := serveServer(t, endpoints, commandMLmodel)
 
 	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputJSON, &buf, srv.URL, commandServeConfig, "idempotency-key", "key-1")
+	err := runServeCmd(t, flags.OutputJSON, &buf, srv.URL, minimalServeConfig, "watch", "true")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 	var got errorEnvelope
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
@@ -279,117 +251,37 @@ func TestServeReportsAnEndpointThatIsNotReady(t *testing.T) {
 	assert.NotContains(t, got.Error.Message, "run:")
 }
 
-func TestServeTimesOutWhileCopyingTheWeights(t *testing.T) {
-	srv, fake := serveServer(t, newFakeEndpoints(t, nil), stagingInProgress)
-	fake.statuses = []string{statusInProgress}
-
-	// Polls are spaced as the SDK's rate limiter allows, so the deadline, not the
-	// limiter, stops the wait.
-	var buf bytes.Buffer
-	cmd := withOutput(newServeCommandWithPollInterval(100*time.Millisecond), flags.OutputJSON)
-	require.NoError(t, cmd.Flags().Set("file", writeConfigFile(t, "serve.yaml", commandServeConfig)))
-	require.NoError(t, cmd.Flags().Set("idempotency-key", "key-1"))
-	require.NoError(t, cmd.Flags().Set("timeout", "500ms"))
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &buf, io.Discard, "", ""))
-	cmd.SetContext(cmdctx.SetWorkspaceClient(ctx, newTestWorkspaceClient(t, srv.URL)))
-	require.ErrorIs(t, cmd.RunE(cmd, nil), root.ErrAlreadyPrinted)
-	var got errorEnvelope
-	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
-	assert.Equal(t, "TIMEOUT", got.Error.Code)
-	assert.True(t, got.Error.Retryable)
-	assert.Contains(t, got.Error.Message, "air serve timed out while registering a version of main.models.qwen. Copying the weights continues")
-	assert.Contains(t, got.Error.Message, " --idempotency-key key-1")
-	assert.Len(t, fake.requests(), 1)
-	assert.Empty(t, fake.finalizeRequests)
-}
-
-func TestServeFinalizeFailureSaysHowToRetry(t *testing.T) {
-	srv, fake := serveServer(t, newFakeEndpoints(t, nil), stagingSucceeded)
-	fake.finalizations = []string{notFinalizableResponse}
-
-	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig, "idempotency-key", "key-1")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "finalizing version 3 of main.models.qwen failed: Version 3 of model main.models.qwen can't be finalized yet")
-	assert.Contains(t, err.Error(), "To try again, run:\n  databricks air serve -f ")
-	assert.Contains(t, err.Error(), " --idempotency-key key-1")
-}
-
-func TestServeWarnsWhenTheFinalizedEnvironmentFailedToStage(t *testing.T) {
-	srv, fake := serveServer(t, newFakeEndpoints(t, nil), stagingInProgress)
-	fake.finalizations = []string{strings.Replace(finalizedResponse, `"environment_artifact": {"state": "IN_PROGRESS"}`, `"environment_artifact": {"state": "FAILED"}`, 1)}
-
-	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig))
-	assert.Contains(t, buf.String(), "Warning: the version's serving environment couldn't be prepared ahead of time")
-}
-
-func TestServeRetryableRegistrationFailureSaysHowToRetry(t *testing.T) {
-	srv, fake := serveServer(t, newFakeEndpoints(t, nil), serverErrorResponse)
-
-	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig, "idempotency-key", "key-1")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed: Something went wrong.\n\nTo try again, run:\n  databricks air serve -f ")
-	assert.Contains(t, err.Error(), " --idempotency-key key-1")
-	assert.Len(t, fake.requests(), retry.MaxRetries+1)
-}
-
 func TestServeEndpointFailureSaysHowToRetry(t *testing.T) {
 	endpoints := newFakeEndpoints(t, nil)
 	endpoints.finalState = serving.EndpointState{Ready: serving.EndpointStateReadyNotReady, ConfigUpdate: serving.EndpointStateConfigUpdateUpdateFailed}
-	srv, _ := serveServer(t, endpoints, stagingReady)
+	srv, _ := serveServer(t, endpoints, commandMLmodel)
 
 	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, commandServeConfig, "idempotency-key", "key-1")
+	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, minimalServeConfig, "watch", "true")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "serving version 3 of main.models.qwen on endpoint qwen-chat failed: ")
-	assert.Contains(t, err.Error(), "To try again without registering another version, run:\n  databricks air serve -f ")
-	assert.Contains(t, err.Error(), " --idempotency-key key-1")
+	assert.Contains(t, err.Error(), "serving version 4 of main.models.qwen on endpoint qwen-chat failed: ")
+	assert.Contains(t, err.Error(), "To try again, run:\n  databricks air serve -f ")
+	assert.Contains(t, err.Error(), " --model-version 4 --watch")
 }
 
-func TestServeRegisteredVersionSkipsRegistration(t *testing.T) {
-	endpoints := newFakeEndpoints(t, nil)
-	srv, fake := serveServer(t, endpoints)
+func TestServeRefusesToReplaceAnotherModel(t *testing.T) {
+	other := testEntity("5")
+	other.EntityName = "main.models.llama"
+	endpoints := newFakeEndpoints(t, endpointServing(other, readyState))
+	srv, _ := serveServer(t, endpoints, commandMLmodel)
 
 	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, registeredServeConfig))
-	assert.Empty(t, fake.requests())
-	assert.Equal(t, "7", endpoints.endpoint.Config.ServedEntities[0].EntityVersion)
-	assert.Equal(t, "CPU", endpoints.endpoint.Config.ServedEntities[0].WorkloadType)
-	assert.NotContains(t, buf.String(), "idempotency_key")
+	err := runServeCmd(t, flags.OutputText, &buf, srv.URL, minimalServeConfig)
+	assert.ErrorContains(t, err, "endpoint qwen-chat serves version 5 of main.models.llama")
+	// Running the same command again would fail the same way, so none is suggested.
+	assert.NotContains(t, err.Error(), "run:")
+	assert.Empty(t, endpoints.writes)
 }
 
-func TestServeRegisteredPicksTheNewestReadyVersion(t *testing.T) {
-	endpoints := newFakeEndpoints(t, nil)
-	srv, fake := serveServerWithVersions(t, endpoints, modelVersionsJSON)
-
+func TestServeRefusesAnEmptyVersionFlag(t *testing.T) {
 	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, srv.URL, registeredNoVersionConfig))
-	assert.Empty(t, fake.requests())
-	assert.Equal(t, "4", endpoints.endpoint.Config.ServedEntities[0].EntityVersion)
-	assert.Contains(t, buf.String(), "Serving version 4, the newest READY version of main.models.qwen.")
-}
-
-func TestServeRegisteredGivenVersionWinsOverTheNewestReady(t *testing.T) {
-	endpoints := newFakeEndpoints(t, nil)
-	srv, _ := serveServerWithVersions(t, endpoints, modelVersionsJSON)
-
-	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, srv.URL, registeredServeConfig))
-	assert.Equal(t, "7", endpoints.endpoint.Config.ServedEntities[0].EntityVersion)
-}
-
-func TestServeRegisteredWithoutAReadyVersionFails(t *testing.T) {
-	srv, _ := serveServerWithVersions(t, newFakeEndpoints(t, nil), `{"model_versions": [{"version": 1, "status": "PENDING_REGISTRATION"}]}`)
-
-	var buf bytes.Buffer
-	err := runServeCmd(t, flags.OutputJSON, &buf, srv.URL, registeredNoVersionConfig)
-	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-	var got errorEnvelope
-	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
-	assert.Equal(t, "INVALID_ARGS", got.Error.Code)
-	assert.Contains(t, got.Error.Message, "main.models.qwen has no READY version to serve; register and finalize a version, or set model_version")
+	err := runModelCmd(t, newServeCommand(), flags.OutputText, &buf, "", "uc-model-name", "main.models.qwen", "endpoint-name", "ep", "model-version", "", "dry-run", "true")
+	assert.ErrorContains(t, err, "--model-version cannot be empty")
 }
 
 func TestServeDryRunNeedsNoWorkspace(t *testing.T) {
@@ -398,161 +290,44 @@ func TestServeDryRunNeedsNoWorkspace(t *testing.T) {
 	assert.NoError(t, cmd.PreRunE(cmd, nil))
 
 	var buf bytes.Buffer
-	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, "", commandServeConfig, "dry-run", "true"))
-	out := buf.String()
-	assert.Contains(t, out, "Dry run: the file is read as a checkpoint served by command, because it sets checkpoint and command.")
-	assert.Contains(t, out, "Dry run: would register a new version of main.models.qwen from /Volumes/main/models/weights/qwen3_8b, and serve it.")
-	assert.Contains(t, out, `"workload_type": "GPU_MEDIUM"`)
-	assert.Contains(t, out, `Dry run: configuration for endpoint "qwen-chat" is valid; nothing was changed.`)
+	require.NoError(t, runServeCmd(t, flags.OutputText, &buf, "", minimalServeConfig, "dry-run", "true"))
+	assert.Contains(t, buf.String(), "Dry run: would serve the newest READY version of main.models.qwen on endpoint qwen-chat, on the compute it was registered for.")
+	assert.Contains(t, buf.String(), `Dry run: configuration for endpoint "qwen-chat" is valid; nothing was changed.`)
 
 	buf.Reset()
-	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, "", commandServeConfig, "dry-run", "true"))
-	var got struct {
-		Data serveResult `json:"data"`
-	}
-	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
-	assert.Equal(t, "DRY_RUN_OK", got.Data.Status)
-	assert.True(t, got.Data.DryRun)
-	require.NotNil(t, got.Data.Plan)
-	assert.Equal(t, "command", got.Data.Plan.Variant)
-	assert.Equal(t, "/Volumes/main/models/weights/qwen3_8b", got.Data.Plan.Checkpoint)
-	served, ok := got.Data.Plan.ServedEntity.(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "GPU_MEDIUM", served["workload_type"])
-	assert.Equal(t, false, served["scale_to_zero_enabled"])
-}
-
-func TestServeDryRunShowsEachVariant(t *testing.T) {
-	tests := []struct {
-		name   string
-		config string
-		want   []string
-	}{
-		{
-			"dedicated",
-			dedicatedServeConfig,
-			[]string{
-				"Dry run: the file is read as a dedicated checkpoint, because it sets checkpoint but not command.",
-				"would register a new version of main.models.qwen from /Volumes/main/models/weights/qwen3_8b, and serve it.",
-				`"compute_profile": "COMPUTE_PROFILE_LOW_LATENCY"`,
-				`"provisioned_model_units": 600`,
-			},
-		},
-		{
-			"registered",
-			registeredServeConfig,
-			[]string{
-				"Dry run: the file is read as a registered model, because it sets no checkpoint.",
-				"would serve version 7 of main.models.qwen.",
-				`"workload_type": "CPU"`,
-			},
-		},
-		{
-			"registered without a version",
-			registeredNoVersionConfig,
-			[]string{"would serve the newest READY version of main.models.qwen, picked when serving."},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-			require.NoError(t, runServeCmd(t, flags.OutputText, &buf, "", tt.config, "dry-run", "true"))
-			for _, want := range tt.want {
-				assert.Contains(t, buf.String(), want)
-			}
-		})
-	}
+	require.NoError(t, runServeCmd(t, flags.OutputJSON, &buf, "", gpuServeConfig, "dry-run", "true"))
+	got := serveJSON(t, &buf)
+	assert.Equal(t, "DRY_RUN_OK", got.Status)
+	assert.Equal(t, &servePlan{UCModel: "main.models.qwen", Endpoint: "qwen-chat", ModelVersion: "3"}, got.Plan)
 }
 
 func TestServeFlagValidation(t *testing.T) {
-	tests := []struct {
-		name       string
-		config     string
-		flagValues []string
-		wantErr    string
-	}{
-		{"key for a registered version", registeredServeConfig, []string{"idempotency-key", "k"}, "--idempotency-key applies only when air serve registers a version; the file is read as a registered model, because it sets no checkpoint"},
-		{"bad key", commandServeConfig, []string{"idempotency-key", "a/b"}, "--idempotency-key must be 1 to 128 letters"},
-		{"retry for a registered version", registeredServeConfig, []string{"retry-failed-staging", "true"}, "--retry-failed-staging applies only to a checkpoint; the file is read as a registered model"},
-		{"zero timeout", commandServeConfig, []string{"timeout", "0s"}, "--timeout must be positive"},
-		{"empty key", commandServeConfig, []string{"idempotency-key", ""}, `--idempotency-key must be 1 to 128 letters, digits, '.', '_' or '-', got ""`},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-			err := runServeCmd(t, flags.OutputText, &buf, "", tt.config, append(tt.flagValues, "dry-run", "true")...)
-			assert.ErrorContains(t, err, tt.wantErr)
-		})
-	}
+	var buf bytes.Buffer
+	err := runServeCmd(t, flags.OutputText, &buf, "", minimalServeConfig, "timeout", "0s", "dry-run", "true")
+	assert.ErrorContains(t, err, "--timeout must be positive")
 }
 
 func TestServeResumeCommand(t *testing.T) {
 	abs, err := filepath.Abs("my serve.yaml")
 	require.NoError(t, err)
-	opts := serveOptions{file: "my serve.yaml", overrides: []string{"compute.num_accelerators=4", "task=llm/v1/chat"}}
+	opts := serveOptions{file: "my serve.yaml", overrides: []string{"compute.gpu.max_replicas=4"}, endpoint: "other"}
 	assert.Equal(t,
-		"databricks air serve -f "+shellquote.BashArg(filepath.ToSlash(abs))+" --override 'compute.num_accelerators=4' --override 'task=llm/v1/chat' --idempotency-key k-1 -p dev",
-		serveResumeCommand("dev", opts, "k-1"))
+		"databricks air serve -f "+shellquote.BashArg(filepath.ToSlash(abs))+" --override 'compute.gpu.max_replicas=4' --endpoint-name other --model-version 4 --watch -p dev",
+		serveResumeCommand("dev", opts, "4"))
 
-	abs, err = filepath.Abs("d.yaml")
-	require.NoError(t, err)
-	assert.Equal(t, "databricks air serve -f "+shellquote.BashArg(filepath.ToSlash(abs)), serveResumeCommand("", serveOptions{file: "d.yaml"}, ""))
-}
-
-func TestServeStopped(t *testing.T) {
-	assert.NoError(t, serveStopped(t.Context(), errors.New("boom")))
-
-	canceled, cancel := context.WithCancel(t.Context())
-	cancel()
-	// The SDK's endpoint poller reports Ctrl-C as its own timeout.
-	assert.ErrorIs(t, serveStopped(canceled, &retries.ErrTimedOut{}), errServeInterrupted)
-	assert.ErrorIs(t, serveStopped(canceled, context.Canceled), errServeInterrupted)
-
-	expired, cancelExpired := context.WithTimeout(t.Context(), -time.Second)
-	defer cancelExpired()
-	assert.ErrorIs(t, serveStopped(expired, context.DeadlineExceeded), errServeTimedOut)
-	assert.ErrorIs(t, serveStopped(t.Context(), &retries.ErrTimedOut{}), errServeTimedOut)
-}
-
-func TestServeErrorCode(t *testing.T) {
-	for _, tt := range []struct {
-		name      string
-		err       error
-		code      string
-		retryable bool
-	}{
-		{"interrupted", fmt.Errorf("x: %w", errServeInterrupted), "INTERRUPTED", true},
-		{"timed out", fmt.Errorf("x: %w", errServeTimedOut), "TIMEOUT", true},
-		{"invalid input", withCode(codeInvalidArgs, false, errors.New("registered_model_name must be a Unity Catalog model name")), "INVALID_ARGS", false},
-		{"staging failed", withCode(codeStagingFailed, true, errors.New("copying failed")), "STAGING_FAILED", true},
-		{"server unavailable", fmt.Errorf("x: %w", &apierr.APIError{ErrorCode: "TEMPORARILY_UNAVAILABLE", StatusCode: 503}), "TEMPORARILY_UNAVAILABLE", true},
-		{"bad request", fmt.Errorf("x: %w", &apierr.APIError{ErrorCode: "INVALID_PARAMETER_VALUE", StatusCode: 400}), "INVALID_PARAMETER_VALUE", false},
-		{"5xx without a body", &apierr.APIError{StatusCode: 502}, "INTERNAL_ERROR", true},
-		{"error body without a code", &apierr.APIError{ErrorCode: "<nil>", StatusCode: 400}, "INTERNAL_ERROR", false},
-		{"lost connection", errors.New("connection reset by peer"), "INTERNAL_ERROR", true},
-		{"endpoint not ready", withCode(codeEndpointNotReady, false, errEndpointNotReady), "ENDPOINT_NOT_READY", false},
-	} {
-		code, retryable := serveErrorCode(tt.err)
-		assert.Equal(t, tt.code, code, tt.name)
-		assert.Equal(t, tt.retryable, retryable, tt.name)
-	}
+	assert.Equal(t,
+		"databricks air serve --uc-model-name a.b.c --endpoint-name ep --model-version 2 --watch",
+		serveResumeCommand("", serveOptions{ucModel: "a.b.c", endpoint: "ep"}, "2"))
 }
 
 func TestServeHelpDocumentsAField(t *testing.T) {
 	var out strings.Builder
 	cmd := newServeCommand()
 	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"-h", "config.checkpoint"})
+	cmd.SetArgs([]string{"-h", "config.compute"})
 	require.NoError(t, cmd.Execute())
-	assert.Contains(t, out.String(), "config.checkpoint\n  Unity Catalog volume directory")
-	assert.Contains(t, out.String(), "Required: no")
-
-	out.Reset()
-	cmd = newServeCommand()
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"-h", "config.compute.compute_profile"})
-	require.NoError(t, cmd.Execute())
-	assert.Contains(t, out.String(), "Required: when checkpoint is set without command")
+	assert.Contains(t, out.String(), "config.compute\n  Compute to serve on")
+	assert.Contains(t, out.String(), "model_units")
 
 	out.Reset()
 	cmd = newServeCommand()
@@ -564,15 +339,14 @@ func TestServeHelpDocumentsAField(t *testing.T) {
 }
 
 func TestEndpointQueryURL(t *testing.T) {
-	task := func(s string) *string { return &s }
 	tests := []struct {
-		task *string
+		task string
 		want string
 	}{
-		{task("llm/v1/chat"), "https://h/serving-endpoints/ep/invocations"},
-		{task(taskAudioTranscriptions), "https://h/serving-endpoints/ep/audio/transcriptions"},
-		{task(taskAudioTranslations), "https://h/serving-endpoints/ep/audio/translations"},
-		{nil, "https://h/serving-endpoints/ep/invocations"},
+		{"llm/v1/chat", "https://h/serving-endpoints/ep/invocations"},
+		{taskAudioTranscriptions, "https://h/serving-endpoints/ep/audio/transcriptions"},
+		{taskAudioTranslations, "https://h/serving-endpoints/ep/audio/translations"},
+		{"", "https://h/serving-endpoints/ep/invocations"},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.want, endpointQueryURL("https://h/", "ep", tt.task))

@@ -146,11 +146,13 @@ func (f *fakeEndpoints) decode(w http.ResponseWriter, r *http.Request, v any) bo
 // observeServing is a served entity with serving compute, as the endpoint reports it.
 func observeServing(e serving.ServedEntityInput) observedEntity {
 	return observedEntity{
-		EntityName:      e.EntityName,
-		EntityVersion:   e.EntityVersion,
-		WorkloadType:    string(e.WorkloadType),
-		WorkloadSize:    e.WorkloadSize,
-		EnvironmentVars: e.EnvironmentVars,
+		EntityName:                e.EntityName,
+		EntityVersion:             e.EntityVersion,
+		WorkloadType:              string(e.WorkloadType),
+		MinProvisionedConcurrency: e.MinProvisionedConcurrency,
+		MaxProvisionedConcurrency: e.MaxProvisionedConcurrency,
+		ScaleToZeroEnabled:        e.ScaleToZeroEnabled,
+		EnvironmentVars:           e.EnvironmentVars,
 	}
 }
 
@@ -179,11 +181,12 @@ func observe(entity servedEntity) observedEntity {
 		}
 	}
 	return observedEntity{
-		EntityName:      entity.EntityName,
-		EntityVersion:   entity.EntityVersion,
-		WorkloadType:    entity.WorkloadType,
-		WorkloadSize:    entity.WorkloadSize,
-		EnvironmentVars: entity.EnvironmentVars,
+		EntityName:                entity.EntityName,
+		EntityVersion:             entity.EntityVersion,
+		WorkloadType:              entity.Serving.WorkloadType,
+		MinProvisionedConcurrency: entity.Serving.MinConcurrency,
+		MaxProvisionedConcurrency: entity.Serving.MaxConcurrency,
+		ScaleToZeroEnabled:        entity.Serving.ScaleToZero,
 	}
 }
 
@@ -193,14 +196,13 @@ func (f *fakeEndpoints) start() *httptest.Server {
 	return srv
 }
 
-// testEntity is a version of the test model on serving compute: a command's GPU_MEDIUM.
+// testEntity is a version of the test model on serving compute: one or two replicas
+// of GPU_MEDIUM.
 func testEntity(version string) servedEntity {
 	return servedEntity{
-		EntityName:      "main.models.qwen",
-		EntityVersion:   version,
-		WorkloadType:    "GPU_MEDIUM",
-		WorkloadSize:    "Small",
-		EnvironmentVars: map[string]string{"HF_TOKEN": "{{secrets/llm/hf_token}}"},
+		EntityName:    "main.models.qwen",
+		EntityVersion: version,
+		Serving:       servingCompute{WorkloadType: "GPU_MEDIUM", MinConcurrency: 4, MaxConcurrency: 8},
 	}
 }
 
@@ -227,17 +229,97 @@ func TestServeOnEndpointCreatesAMissingEndpoint(t *testing.T) {
 	fake := newFakeEndpoints(t, nil)
 	srv := fake.start()
 
-	endpoint, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), nil)
+	ready, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), true, nil)
 	require.NoError(t, err)
+	assert.True(t, ready)
 	assert.Equal(t, []string{"create"}, fake.writes)
-	assert.Equal(t, "3", endpoint.Config.ServedEntities[0].EntityVersion)
+	assert.Equal(t, "3", fake.endpoint.Config.ServedEntities[0].EntityVersion)
+}
+
+func TestServeOnEndpointWithoutWatchReturnsOnceAccepted(t *testing.T) {
+	tests := []struct {
+		name       string
+		existing   *servingEndpoint
+		wantWrites []string
+	}{
+		{"a missing endpoint", nil, []string{"create"}},
+		{"another version", endpointServing(testEntity("2"), readyState), []string{"update"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := newFakeEndpoints(t, tt.existing)
+			srv := fake.start()
+			polls := 0
+			ready, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), false, func(*servingEndpoint) { polls++ })
+			require.NoError(t, err)
+			assert.False(t, ready)
+			assert.Equal(t, tt.wantWrites, fake.writes)
+			assert.Zero(t, polls, "nothing is waited for")
+		})
+	}
+}
+
+func TestServeOnEndpointWithoutWatchDoesntWaitForItsOwnPendingUpdate(t *testing.T) {
+	existing := endpointServing(testEntity("2"), serving.EndpointState{Ready: serving.EndpointStateReadyReady, ConfigUpdate: serving.EndpointStateConfigUpdateInProgress})
+	existing.PendingConfig = &endpointConfig{ServedEntities: []observedEntity{observe(testEntity("3"))}}
+	fake := newFakeEndpoints(t, existing)
+	srv := fake.start()
+
+	ready, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), false, nil)
+	require.NoError(t, err)
+	assert.False(t, ready)
+	assert.Empty(t, fake.writes)
+}
+
+func TestServeOnEndpointWithoutWatchReportsAServedVersion(t *testing.T) {
+	fake := newFakeEndpoints(t, endpointServing(testEntity("3"), readyState))
+	srv := fake.start()
+
+	ready, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), false, nil)
+	require.NoError(t, err)
+	assert.True(t, ready)
+	assert.Empty(t, fake.writes)
+}
+
+func TestServeOnEndpointRefusesAnotherModelBeforeWaitingBehindItsUpdate(t *testing.T) {
+	other := testEntity("5")
+	other.EntityName = "main.models.llama"
+	existing := endpointServing(other, serving.EndpointState{Ready: serving.EndpointStateReadyReady, ConfigUpdate: serving.EndpointStateConfigUpdateInProgress})
+	existing.PendingConfig = &endpointConfig{ServedEntities: []observedEntity{observe(other)}}
+	fake := newFakeEndpoints(t, existing)
+	srv := fake.start()
+
+	polls := 0
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), false, func(*servingEndpoint) { polls++ })
+	assert.ErrorContains(t, err, "endpoint qwen-chat serves version 5 of main.models.llama")
+	assert.Zero(t, polls)
+	assert.Empty(t, fake.writes)
+}
+
+func TestServeOnEndpointUpdatesOnceAnotherUpdateFails(t *testing.T) {
+	existing := endpointServing(testEntity("1"), serving.EndpointState{Ready: serving.EndpointStateReadyReady, ConfigUpdate: serving.EndpointStateConfigUpdateInProgress})
+	existing.PendingConfig = &endpointConfig{ServedEntities: []observedEntity{observe(testEntity("2"))}}
+	fake := newFakeEndpoints(t, existing)
+	srv := fake.start()
+
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), true, func(endpoint *servingEndpoint) {
+		// The other update fails after the first poll, which frees the endpoint.
+		if updating(endpoint) {
+			fake.mu.Lock()
+			defer fake.mu.Unlock()
+			fake.endpoint = endpointServing(testEntity("1"), serving.EndpointState{Ready: serving.EndpointStateReadyReady, ConfigUpdate: serving.EndpointStateConfigUpdateUpdateFailed})
+		}
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"update"}, fake.writes)
+	assert.Equal(t, "3", fake.endpoint.Config.ServedEntities[0].EntityVersion)
 }
 
 func TestServeOnEndpointUpdatesAnotherVersion(t *testing.T) {
 	fake := newFakeEndpoints(t, endpointServing(testEntity("2"), readyState))
 	srv := fake.start()
 
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), nil)
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), true, nil)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"update"}, fake.writes)
 }
@@ -246,9 +328,9 @@ func TestServeOnEndpointUpdatesChangedCompute(t *testing.T) {
 	fake := newFakeEndpoints(t, endpointServing(testEntity("3"), readyState))
 	srv := fake.start()
 	entity := testEntity("3")
-	entity.WorkloadSize = "Medium"
+	entity.Serving.MaxConcurrency = 16
 
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", entity, nil)
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", entity, true, nil)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"update"}, fake.writes)
 }
@@ -260,7 +342,7 @@ func TestServeOnEndpointLeavesAServedVersion(t *testing.T) {
 	entity := testEntity("3")
 	entity.EntityName = "Main.Models.Qwen"
 
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", entity, nil)
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", entity, true, nil)
 	require.NoError(t, err)
 	assert.Empty(t, fake.writes)
 }
@@ -269,10 +351,11 @@ func TestServeOnEndpointCreatesADedicatedEndpoint(t *testing.T) {
 	fake := newFakeEndpoints(t, nil)
 	srv := fake.start()
 
-	endpoint, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testDedicatedEntity("3"), nil)
+	ready, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testDedicatedEntity("3"), true, nil)
 	require.NoError(t, err)
+	assert.True(t, ready)
 	assert.Equal(t, []string{"create dedicated"}, fake.writes)
-	assert.Equal(t, "COMPUTE_PROFILE_LOW_LATENCY", endpoint.Config.ServedEntities[0].ComputeProfile)
+	assert.Equal(t, "COMPUTE_PROFILE_LOW_LATENCY", fake.endpoint.Config.ServedEntities[0].ComputeProfile)
 	require.Len(t, fake.rawWrites, 1)
 	assert.JSONEq(t, `{
 		"name": "qwen-chat",
@@ -307,7 +390,7 @@ func TestServeOnEndpointUpdatesADedicatedEndpointWhenItsCapacityChanges(t *testi
 			fake := newFakeEndpoints(t, endpointServing(testDedicatedEntity("3"), readyState))
 			srv := fake.start()
 
-			_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", tt.entity, nil)
+			_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", tt.entity, true, nil)
 			require.NoError(t, err)
 			assert.Equal(t, []string{"update dedicated"}, fake.writes)
 			require.Len(t, fake.rawWrites, 1)
@@ -320,7 +403,7 @@ func TestServeOnEndpointLeavesADedicatedVersion(t *testing.T) {
 	fake := newFakeEndpoints(t, endpointServing(testDedicatedEntity("3"), readyState))
 	srv := fake.start()
 
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testDedicatedEntity("3"), nil)
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testDedicatedEntity("3"), true, nil)
 	require.NoError(t, err)
 	assert.Empty(t, fake.writes)
 }
@@ -332,50 +415,18 @@ func TestServeOnEndpointRefusesToChangeAnEndpointsKind(t *testing.T) {
 		entity   servedEntity
 		wantErr  string
 	}{
-		{"serving compute to dedicated", testEntity("3"), testDedicatedEntity("3"), "endpoint qwen-chat serves on serving compute, and this file serves on dedicated compute"},
-		{"dedicated to serving compute", testDedicatedEntity("3"), testEntity("3"), "endpoint qwen-chat serves on dedicated compute, and this file serves on serving compute"},
+		{"serving compute to dedicated", testEntity("3"), testDedicatedEntity("3"), "endpoint qwen-chat serves on serving compute, and this version is served on dedicated compute"},
+		{"dedicated to serving compute", testDedicatedEntity("3"), testEntity("3"), "endpoint qwen-chat serves on dedicated compute, and this version is served on serving compute"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fake := newFakeEndpoints(t, endpointServing(tt.existing, readyState))
 			srv := fake.start()
 
-			_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", tt.entity, nil)
+			_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", tt.entity, true, nil)
 			assert.ErrorContains(t, err, tt.wantErr)
 			assert.Empty(t, fake.writes)
 		})
-	}
-}
-
-func TestCheckEndpointRefusesAnEndpointOfTheOtherKind(t *testing.T) {
-	tests := []struct {
-		name      string
-		existing  servedEntity
-		dedicated bool
-		wantErr   string
-	}{
-		{"dedicated file, serving endpoint", testEntity("2"), true, "serves on serving compute, and this file serves on dedicated compute"},
-		{"serving file, dedicated endpoint", testDedicatedEntity("2"), false, "serves on dedicated compute, and this file serves on serving compute"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			srv := newFakeEndpoints(t, endpointServing(tt.existing, readyState)).start()
-			err := checkEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", "main.models.qwen", tt.dedicated)
-			assert.ErrorContains(t, err, tt.wantErr)
-		})
-	}
-}
-
-func TestCheckEndpointAllowsAnEndpointOfTheSameKind(t *testing.T) {
-	for name, tt := range map[string]struct {
-		existing  servedEntity
-		dedicated bool
-	}{
-		"serving":   {testEntity("2"), false},
-		"dedicated": {testDedicatedEntity("2"), true},
-	} {
-		srv := newFakeEndpoints(t, endpointServing(tt.existing, readyState)).start()
-		assert.NoError(t, checkEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", "main.models.qwen", tt.dedicated), name)
 	}
 }
 
@@ -386,7 +437,7 @@ func TestServeOnEndpointWaitsForItsOwnPendingUpdate(t *testing.T) {
 	srv := fake.start()
 
 	polls := 0
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), func(*servingEndpoint) {
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), true, func(*servingEndpoint) {
 		// The pending update finishes after the first poll.
 		polls++
 		fake.mu.Lock()
@@ -404,7 +455,7 @@ func TestServeOnEndpointWaitsForAnotherUpdateBeforeUpdating(t *testing.T) {
 	fake := newFakeEndpoints(t, existing)
 	srv := fake.start()
 
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), func(endpoint *servingEndpoint) {
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), true, func(endpoint *servingEndpoint) {
 		// The other update finishes after the first poll.
 		if updating(endpoint) {
 			fake.mu.Lock()
@@ -435,17 +486,11 @@ func TestServeOnEndpointRefusesToReplaceOtherEntities(t *testing.T) {
 			fake := newFakeEndpoints(t, tt.existing)
 			w := newTestWorkspaceClient(t, fake.start().URL)
 
-			assert.ErrorContains(t, checkEndpoint(withDeadline(t), w, "qwen-chat", "main.models.qwen", false), tt.wantErr)
-			_, err := serveOnEndpoint(withDeadline(t), w, "qwen-chat", testEntity("3"), nil)
+			_, err := serveOnEndpoint(withDeadline(t), w, "qwen-chat", testEntity("3"), true, nil)
 			assert.ErrorContains(t, err, tt.wantErr)
 			assert.Empty(t, fake.writes)
 		})
 	}
-}
-
-func TestCheckEndpointAllowsAMissingEndpoint(t *testing.T) {
-	srv := newFakeEndpoints(t, nil).start()
-	assert.NoError(t, checkEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", "main.models.qwen", false))
 }
 
 func TestServeOnEndpointWaitsThroughTransientFailures(t *testing.T) {
@@ -457,7 +502,7 @@ func TestServeOnEndpointWaitsThroughTransientFailures(t *testing.T) {
 	fake.readyAfterGets = 6
 	srv := fake.start()
 
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), nil)
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), true, nil)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"create"}, fake.writes)
 	assert.Equal(t, 6, fake.gets)
@@ -468,7 +513,7 @@ func TestServeOnEndpointReportsAFailedUpdate(t *testing.T) {
 	fake.finalState = serving.EndpointState{Ready: serving.EndpointStateReadyNotReady, ConfigUpdate: serving.EndpointStateConfigUpdateUpdateFailed}
 	srv := fake.start()
 
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), nil)
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), true, nil)
 	assert.ErrorContains(t, err, "UPDATE_FAILED")
 }
 
@@ -476,7 +521,7 @@ func TestServeOnEndpointReportsAnEndpointThatIsNotReady(t *testing.T) {
 	fake := newFakeEndpoints(t, endpointServing(testEntity("3"), serving.EndpointState{Ready: serving.EndpointStateReadyNotReady, ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating}))
 	srv := fake.start()
 
-	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), nil)
+	_, err := serveOnEndpoint(withDeadline(t), newTestWorkspaceClient(t, srv.URL), "qwen-chat", testEntity("3"), true, nil)
 	assert.ErrorContains(t, err, "endpoint qwen-chat serves version 3 of main.models.qwen but isn't ready")
 }
 
@@ -493,13 +538,32 @@ func TestServesOnly(t *testing.T) {
 	assert.False(t, servesOnly(nil, entity))
 	assert.False(t, servesOnly([]observedEntity{observe(entity), observe(testEntity("2"))}, entity))
 
-	changed := entity
-	changed.EnvironmentVars = map[string]string{"HF_TOKEN": "{{secrets/llm/other}}"}
-	assert.False(t, servesOnly([]observedEntity{observe(entity)}, changed))
+	// air serve sets no environment variables, so an endpoint with any is updated.
+	withVars := observe(entity)
+	withVars.EnvironmentVars = map[string]string{"HF_TOKEN": "{{secrets/llm/hf_token}}"}
+	assert.False(t, servesOnly([]observedEntity{withVars}, entity))
+
+	// Where GPU APIs are off, the endpoint leaves out a CPU entity's workload type.
+	cpu := testEntity("3")
+	cpu.Serving.WorkloadType = "CPU"
+	reported := observe(cpu)
+	reported.WorkloadType = ""
+	assert.True(t, servesOnly([]observedEntity{reported}, cpu))
+	assert.False(t, servesOnly([]observedEntity{reported}, entity), "a missing workload type is CPU, not a GPU")
 
 	scaled := observe(entity)
 	scaled.ScaleToZeroEnabled = true
 	assert.False(t, servesOnly([]observedEntity{scaled}, entity))
+
+	for _, observed := range []func(*observedEntity){
+		func(o *observedEntity) { o.MinProvisionedConcurrency = 8 },
+		func(o *observedEntity) { o.MaxProvisionedConcurrency = 16 },
+		func(o *observedEntity) { o.WorkloadType = "GPU_XLARGE" },
+	} {
+		other := observe(entity)
+		observed(&other)
+		assert.False(t, servesOnly([]observedEntity{other}, entity), "%+v", other)
+	}
 }
 
 func TestServesOnlyDedicated(t *testing.T) {

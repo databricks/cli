@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -30,11 +29,11 @@ const stagingStatusPath = "/api/2.0/serving-endpoints:checkModelDeploymentStagin
 // as it is.
 const finalizeModelPackagePath = "/api/2.0/serving-endpoints:finalizeModelPackage"
 
-// registrationPollInterval is how often air serve checks on a checkpoint's
+// registrationPollInterval is how often air register checks on a checkpoint's
 // weights while they are staged.
 const registrationPollInterval = 15 * time.Second
 
-// ModelDeploymentStagingStatus states air serve acts on.
+// ModelDeploymentStagingStatus states air register acts on.
 const (
 	// stagingStateNotStaged: no staging record exists for the version.
 	stagingStateNotStaged = "NOT_STAGED"
@@ -54,7 +53,6 @@ type registerModelPackageRequest struct {
 	IdempotencyKey      string                  `json:"idempotency_key"`
 	Checkpoint          *modelPackageCheckpoint `json:"checkpoint,omitempty"`
 	DedicatedCheckpoint *dedicatedCheckpoint    `json:"dedicated_checkpoint,omitempty"`
-	ExperimentPath      string                  `json:"experiment_path,omitempty"`
 	RetryFailedStaging  bool                    `json:"retry_failed_staging,omitempty"`
 }
 
@@ -108,7 +106,7 @@ type finalizeModelPackageRequest struct {
 }
 
 // finalizeModelPackageResponse is the FinalizeModelPackageResponse body, the
-// fields air serve reads.
+// fields air register reads.
 type finalizeModelPackageResponse struct {
 	ModelVersion  string              `json:"model_version"`
 	StagingStatus *modelStagingStatus `json:"staging_status,omitempty"`
@@ -154,44 +152,6 @@ type finalizeError struct{ err error }
 func (e *finalizeError) Error() string { return e.err.Error() }
 
 func (e *finalizeError) Unwrap() error { return e.err }
-
-// registrationRequest builds the request that registers cfg's checkpoint under key.
-func (c *serveConfig) registrationRequest(key string) registerModelPackageRequest {
-	req := registerModelPackageRequest{
-		RegisteredModel: c.RegisteredModel,
-		IdempotencyKey:  key,
-	}
-	if c.MLflowExperimentPath != nil {
-		req.ExperimentPath = *c.MLflowExperimentPath
-	}
-	if c.variant() == variantDedicated {
-		req.DedicatedCheckpoint = &dedicatedCheckpoint{VolumePath: *c.Checkpoint}
-		return req
-	}
-	req.Checkpoint = &modelPackageCheckpoint{
-		VolumePath:     *c.Checkpoint,
-		ServingCommand: *c.Command,
-		Task:           *c.Task,
-		Environment:    c.servingEnvironment(),
-	}
-	return req
-}
-
-// servingEnvironment is the environment a command's checkpoint is registered with:
-// its runtime, dependencies and base environment. A command is served on
-// accelerators, so the runtime is the GPU one. The version was validated when the
-// config loaded.
-func (c *serveConfig) servingEnvironment() modelPackageEnvironment {
-	version, ai, _ := c.Environment.runtimeVersion()
-	environment := modelPackageEnvironment{
-		Runtime:      "client." + strconv.Itoa(version) + "-gpu",
-		Dependencies: c.Environment.Dependencies,
-	}
-	if ai {
-		environment.BaseEnvironment = baseEnvironmentDatabricksAI
-	}
-	return environment
-}
 
 // registerAndFinalize registers req's version and makes it ready to serve,
 // calling progress with the registration response and every staging update. The
@@ -253,7 +213,7 @@ var knownStagingStates = []string{stagingStateNotStaged, stagingStateInProgress,
 
 // checkStagingStatus checks that status, from a response about version of model,
 // reports a known state for both the weights and the serving environment, as the
-// server always does. Anything else is a response air serve can't act on, so it
+// server always does. Anything else is a response air register can't act on, so it
 // fails rather than being read as progress until the timeout.
 func checkStagingStatus(status *modelStagingStatus, model, version string) error {
 	var problem string
@@ -271,7 +231,7 @@ func checkStagingStatus(status *modelStagingStatus, model, version string) error
 	default:
 		return nil
 	}
-	return withCode(codeInternalError, true, fmt.Errorf("air serve can't read Model Serving's response about version %s of %s: %s", stripControl(version), model, problem))
+	return withCode(codeInternalError, true, fmt.Errorf("air register can't read Model Serving's response about version %s of %s: %s", stripControl(version), model, problem))
 }
 
 // modelServingPoller sends the requests of a registration that can take many
@@ -306,7 +266,7 @@ func (p modelServingPoller) waitForWeights(ctx context.Context, model string, re
 
 // post sends a request, repeating it after a transient failure the SDK doesn't
 // retry: a wait of many minutes outlasts the SDK's own retries. Every request air
-// serve sends here is safe to repeat: the registration is idempotent per key,
+// register sends here is safe to repeat: the registration is idempotent per key,
 // the status is a read, and finalizing a finalized version returns it.
 func (p modelServingPoller) post(ctx context.Context, path string, body, out any) error {
 	_, err := retry.With(ctx, retry.IsTransientRead, func() (struct{}, error) {

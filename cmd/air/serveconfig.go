@@ -1,351 +1,253 @@
 package aircmd
 
 import (
-	"bytes"
-	"context"
 	"errors"
 	"fmt"
-	"maps"
+	"math"
 	"reflect"
-	"regexp"
 	"slices"
-	"strconv"
 	"strings"
-	"sync"
-	"unicode/utf16"
-
-	"go.yaml.in/yaml/v3"
 )
 
-// This file defines the `air serve` YAML schema and its validation. The fields a
-// file sets select its variant, and each variant reads its own fields. Fields shared
-// with `air run` (environment, env_variables, secrets, idempotency_token) keep their
-// meaning; the server validates what needs the workspace, such as task names,
-// runtimes and dependencies.
-
-// Variants of a deployment, named after what serves the checkpoint.
-const (
-	// variantCommand: a checkpoint served by the command the file sets.
-	variantCommand = "command"
-	// variantDedicated: a checkpoint Databricks serves with dedicated inference.
-	variantDedicated = "dedicated"
-	// variantRegistered: a model version already registered in Unity Catalog, which
-	// air serve serves without registering another.
-	variantRegistered = "registered"
-)
-
-// variantDescriptions and variantReasons say how a file was read, in errors about
-// its fields: "the file is read as <description>, because <reason>".
-var (
-	variantDescriptions = map[string]string{
-		variantCommand:    "a checkpoint served by command",
-		variantDedicated:  "a dedicated checkpoint",
-		variantRegistered: "a registered model",
-	}
-	variantReasons = map[string]string{
-		variantCommand:    "it sets checkpoint and command",
-		variantDedicated:  "it sets checkpoint but not command",
-		variantRegistered: "it sets no checkpoint",
-	}
-)
-
-// Audio tasks: their requests are multipart uploads of a recording, sent to the
-// endpoint's audio route rather than to invocations.
-const (
-	taskAudioTranscriptions = "llm/v1/audio/transcriptions"
-	taskAudioTranslations   = "llm/v1/audio/translations"
-)
+// This file defines the `air serve` YAML schema and its validation. Only the model
+// and the endpoint are required: what compute is used, and its defaults, follow from
+// what the version was registered for, which air serve reads from the version.
 
 // serveCommandPath is the command whose -h documents serveConfig.
 const serveCommandPath = "databricks air serve"
 
-// Serving compute a command or registered model gets when compute is omitted: one
-// A10 for a command, CPU for a registered model.
+// Compute modes, as compute.mode names them.
 const (
-	defaultCommandWorkloadType    = "GPU_MEDIUM"
-	defaultRegisteredWorkloadType = "CPU"
-	defaultWorkloadSize           = "Small"
+	modeLatencySensitive    = "latency_sensitive"
+	modeThroughputOptimized = "throughput_optimized"
 )
 
-// Limits the server enforces on a registration, checked here to fail early.
+// computeModes lists the modes in the order errors name them.
+var computeModes = []string{modeLatencySensitive, modeThroughputOptimized}
+
+// modeProfiles are the dedicated compute profiles the modes select.
+var modeProfiles = map[string]string{
+	modeLatencySensitive:    "COMPUTE_PROFILE_LOW_LATENCY",
+	modeThroughputOptimized: "COMPUTE_PROFILE_THROUGHPUT",
+}
+
+// acceleratorCPU is the accelerator_type of a replica without a GPU, which a command
+// isn't served on: its environment is registered for a GPU.
+const acceleratorCPU = "CPU"
+
+// Compute a version gets when the file leaves it out.
 const (
-	maxServingCommandChars = 32 * 1024
-	maxVolumePathChars     = 1024
-	maxDependencies        = 1000
+	defaultMode = modeLatencySensitive
+	// defaultCommandAccelerator serves a version registered with a command, and CPU
+	// any other version that isn't a dedicated checkpoint.
+	defaultCommandAccelerator = "GPU_1xA10"
+	defaultReplicas           = 1
+	defaultModelUnits         = 600
 )
 
-// registeredModelRe matches <catalog>.<schema>.<model> with the characters the
-// server accepts in each part.
-var registeredModelRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile("^[^\\s./`]+\\.[^\\s./`]+\\.[^\\s./`]+$") })
-
-// serveIdempotencyKeyRe matches the registration keys the server records.
-var serveIdempotencyKeyRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9._-]{1,128}$`) })
-
-// modelVersionRe matches a Unity Catalog model version number.
-var modelVersionRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[1-9][0-9]*$`) })
-
-// endpointNameRe matches a serving endpoint name: letters, digits, '-' and '_'.
-// The name is part of the API's URL paths, so nothing else may reach a request.
-var endpointNameRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_-]+$`) })
-
-// workloadSizes are the concurrency tiers a served entity scales to.
-var workloadSizes = []string{"Small", "Medium", "Large"}
-
-// servingShape is serving compute the server offers: an accelerator type, the number
-// of accelerators, and the workload type that serves them.
+// servingShape is a replica of serving compute the server offers: what it runs on,
+// and the workload type that serves it. fixedScale is set when the endpoint can't
+// scale: production refuses scale to zero and a range of replicas on H100, whose
+// capacity isn't guaranteed on scale-up.
 type servingShape struct {
-	accelerator  gpuType
-	count        int
+	accelerator  string
 	workloadType string
+	fixedScale   bool
 }
 
-// servingShapes lists the serving compute a command or registered model can use, in
-// the order errors name them.
+// servingShapes lists the replicas a version can be served on, in the order errors
+// name them.
 var servingShapes = []servingShape{
-	{gpuType1xA10, 1, "GPU_MEDIUM"},
-	{gpuType1xA10, 4, "MULTIGPU_MEDIUM"},
-	{gpuType1xA10, 8, "GPU_MEDIUM_8"},
-	{gpuType1xH100, 1, "GPU_XLARGE"},
-	{gpuType8xH100, 8, "GPU_XLARGE_8"},
-	{gpuType1xRTX6000, 1, "GPU_LARGE_RTX"},
+	{"GPU_1xA10", "GPU_MEDIUM", false},
+	{"GPU_4xA10", "MULTIGPU_MEDIUM", false},
+	{"GPU_8xA10", "GPU_MEDIUM_8", false},
+	{"GPU_1xH100", "GPU_XLARGE", true},
+	{"GPU_8xH100", "GPU_XLARGE_8", true},
+	{"GPU_1xRTX6000", "GPU_LARGE_RTX", false},
+	{acceleratorCPU, "CPU", false},
 }
 
-// computeProfiles are the dedicated compute profiles, lowercase as the file names
-// them. The API takes each as COMPUTE_PROFILE_ followed by its uppercase form.
-var computeProfiles = []string{"low_latency", "fast", "throughput", "minimal_cost"}
+// concurrencyPerReplica is the provisioned concurrency one replica of each workload
+// type in servingShapes serves. The endpoint takes its scale as concurrency, and the
+// server runs concurrency / concurrencyPerReplica replicas.
+const concurrencyPerReplica = 4
 
-// serveConfig is the `air serve` YAML schema: a model to serve on an endpoint,
-// and the checkpoint to register as a version of it, if any.
+// replicaLimit keeps a replica count's concurrency within the API's 32-bit field. The
+// server's own limit, 512 concurrency unless a workspace's is raised, is lower.
+const replicaLimit = math.MaxInt32 / concurrencyPerReplica
+
+// serveConfig is the `air serve` YAML schema: a version of a Unity Catalog model to
+// serve on an endpoint.
 type serveConfig struct {
-	RegisteredModel string                  `yaml:"registered_model_name" help:"Unity Catalog model, as <catalog>.<schema>.<model>. A checkpoint is registered as a new version of it, creating the model if it doesn't exist. Without a checkpoint, the model must already have a version to serve." required:"yes" group:"Model"`
-	Checkpoint      *string                 `yaml:"checkpoint" help:"Unity Catalog volume directory holding a checkpoint's weights, as /Volumes/<catalog>/<schema>/<volume>/<path>. Model Serving copies it, with its subdirectories, into the version air serve registers. Leave it out to serve a version that is already registered." group:"Model"`
-	Command         *string                 `yaml:"command" help:"Shell command that starts a model server over the checkpoint's weights on port 8080, at most 32,768 characters. It runs from the directory where the checkpoint appears under its own name. Set it to serve the checkpoint with your own server; without it, Databricks serves the checkpoint with dedicated inference." group:"Model"`
-	Task            *string                 `yaml:"task" help:"The task Model Serving routes to the command, such as llm/v1/chat, llm/v1/embeddings or llm/v1/audio/transcriptions." required:"when command is set" group:"Model"`
-	Environment     *serveEnvironmentConfig `yaml:"environment" help:"Serverless environment to serve the command on, and the packages to install. The model uses its Python version." required:"when command is set" group:"Model"`
-	ModelVersion    *string                 `yaml:"model_version" help:"Version of registered_model to serve, e.g. 3. Without it, the newest READY version is served." group:"Model"`
-
-	Endpoint     string              `yaml:"endpoint_name" help:"Serving endpoint to serve the model on. It is created if it doesn't exist. An endpoint that serves one version of registered_model is updated to serve this version instead, with the compute, environment variables and secrets in this file replacing the ones it has; air serve doesn't change an endpoint that serves anything else." required:"yes" group:"Serving"`
-	Compute      *serveComputeConfig `yaml:"compute" help:"Compute to serve on. A command or registered model takes serving compute, and a dedicated checkpoint takes dedicated compute. Without compute, a command is served on one GPU_1xA10 with workload size Small, and a registered model on CPU with workload size Small." required:"when checkpoint is set without command" group:"Serving"`
-	EnvVariables map[string]string   `yaml:"env_variables" help:"Plain environment variables of the served model, as NAME: value. A name here cannot also appear in secrets. A command or registered model only." group:"Serving"`
-	Secrets      map[string]string   `yaml:"secrets" help:"Environment variables of the served model sourced from secrets, as NAME: scope/key. A command or registered model only." group:"Serving"`
-
-	IdempotencyToken     *string `yaml:"idempotency_token" help:"Key of the registration: 1 to 128 letters, digits, '.', '_' or '-'. Running air serve again with the same key and unchanged inputs continues that registration instead of registering another version. Defaults to a new key, which air serve prints. A checkpoint only." group:"Registration"`
-	MLflowExperimentPath *string `yaml:"mlflow_experiment_path" help:"Workspace path of the MLflow experiment that records the registered model (default: /Users/<you>/air-deployments). A checkpoint only." group:"Registration"`
+	UCModel      string  `yaml:"uc_model_name" help:"Unity Catalog model to serve a version of, as <catalog>.<schema>.<model>." required:"yes"`
+	Endpoint     string  `yaml:"endpoint_name" help:"Serving endpoint to serve the version on. It is created if it doesn't exist. An endpoint that serves one version of uc_model_name is updated to serve this version instead, with the compute in this file replacing what it has; air serve doesn't change an endpoint that serves anything else." required:"yes"`
+	ModelVersion *string `yaml:"model_version" help:"Version of uc_model_name to serve (default: its newest READY version)."`
+	// TODO: env_variables, with {{secrets/scope/key}} values for secrets, set on the
+	// served entity.
+	Compute *serveComputeConfig `yaml:"compute" help:"Compute to serve on: replicas in gpu, or model_units for a checkpoint registered without engine, which is served with dedicated inference. Every field defaults from what the version was registered for."`
 }
 
-// serveEnvironmentConfig is the `environment` block of a command.
-type serveEnvironmentConfig struct {
-	Version      *stringOrInt `yaml:"version" required:"yes" help:"Serverless environment to serve on: 6 for the Standard environment or databricks_ai_v6 for the Databricks AI environment, as for air run. The model uses its Python version. Standard includes CUDA but not PyTorch; the Databricks AI environment adds PyTorch, Transformers and vLLM, and needs GPU compute. A command that doesn't install SGLang runs on the Databricks AI environment either way."`
-	Dependencies []string     `yaml:"dependencies" help:"pip requirement lines to install, e.g. einops==0.8.0, at most 1,000."`
-}
-
-// serveComputeConfig is the `compute` block. A command or registered model reads
-// the serving fields, and a dedicated checkpoint the dedicated fields.
+// serveComputeConfig is the `compute` block.
 type serveComputeConfig struct {
-	AcceleratorType *string `yaml:"accelerator_type" help:"Accelerator to serve on, as in air run: GPU_1xA10, GPU_1xH100, GPU_8xH100 or GPU_1xRTX6000. Each takes the num_accelerators listed for it: GPU_1xA10 takes 1, 4 or 8; GPU_1xH100 takes 1; GPU_8xH100 takes 8; GPU_1xRTX6000 takes 1." required:"when compute is set" group:"Serving compute"`
-	NumAccelerators *int    `yaml:"num_accelerators" help:"Number of accelerators, from the pairs listed under accelerator_type." required:"when compute is set" group:"Serving compute"`
-	WorkloadSize    *string `yaml:"workload_size" help:"How far the endpoint scales: Small, Medium or Large." required:"when compute is set" group:"Serving compute"`
-
-	ComputeProfile        *string `yaml:"compute_profile" help:"Dedicated compute profile: low_latency, fast, throughput or minimal_cost, case-insensitive." required:"when checkpoint is set without command" group:"Dedicated compute"`
-	ProvisionedModelUnits *int    `yaml:"provisioned_model_units" help:"Model units to provision, above 0." required:"when checkpoint is set without command" group:"Dedicated compute"`
-	ReservationTerm       *string `yaml:"reservation_term" help:"Commitment term of the provisioned units, such as ONE_MONTH. Not supported yet: dedicated endpoints don't accept a commitment term, so a file that sets it is refused before anything is registered." group:"Dedicated compute"`
+	Mode       *string                `yaml:"mode" help:"For a checkpoint registered without engine, which is served with dedicated inference: latency_sensitive (the default) selects a compute profile tuned for time to first token, and throughput_optimized one tuned for throughput. Case-insensitive. Replicas have no mode yet, so it can't be set with gpu."`
+	GPU        *serveGPUConfig        `yaml:"gpu" help:"Replicas to serve on. Not for a checkpoint registered without engine."`
+	ModelUnits *serveModelUnitsConfig `yaml:"model_units" help:"Dedicated compute for a checkpoint registered without engine."`
 }
 
-// variantField is a field that only some variants use.
-type variantField struct {
-	name  string
-	set   bool
-	users []string
-	// applies says what the field is for, as the error that rejects it names it.
-	applies string
+// serveGPUConfig is the `compute.gpu` block.
+type serveGPUConfig struct {
+	AcceleratorType *string      `yaml:"accelerator_type" help:"What each replica runs on: GPU_1xA10, GPU_4xA10, GPU_8xA10, GPU_1xH100, GPU_8xH100, GPU_1xRTX6000, or CPU for a version not registered with a command (default: GPU_1xA10 for a version registered with a command, CPU for any other)."`
+	MinReplicas     *wholeNumber `yaml:"min_replicas" help:"Fewest replicas the endpoint scales down to: 0 or more (default: 1). With 0, the endpoint scales to zero when it isn't queried. On GPU_1xH100 and GPU_8xH100 it must equal max_replicas: endpoints there don't scale, because H100 capacity isn't guaranteed on scale-up."`
+	MaxReplicas     *wholeNumber `yaml:"max_replicas" help:"Most replicas the endpoint scales up to: at least 1, and at least min_replicas (default: min_replicas, or 1). Model Serving allows 128 unless your workspace's limit was raised."`
 }
 
-// variantFields lists the optional fields with the variants that use them, in the
-// order their errors are reported.
-func (c *serveConfig) variantFields() []variantField {
-	var compute serveComputeConfig
-	if c.Compute != nil {
-		compute = *c.Compute
-	}
-	servingVariants := []string{variantCommand, variantRegistered}
-	registeringVariants := []string{variantCommand, variantDedicated}
-	return []variantField{
-		{"command", c.Command != nil, []string{variantCommand}, "a checkpoint served by command"},
-		{"task", c.Task != nil, []string{variantCommand}, "a checkpoint served by command"},
-		{"environment", c.Environment != nil, []string{variantCommand}, "a checkpoint served by command"},
-		{"model_version", c.ModelVersion != nil, []string{variantRegistered}, "a registered model"},
-		{"env_variables", c.EnvVariables != nil, servingVariants, "a command or registered model"},
-		{"secrets", c.Secrets != nil, servingVariants, "a command or registered model"},
-		{"idempotency_token", c.IdempotencyToken != nil, registeringVariants, "a checkpoint, which air serve registers"},
-		{"mlflow_experiment_path", c.MLflowExperimentPath != nil, registeringVariants, "a checkpoint, which air serve registers"},
-		{"compute.accelerator_type", compute.AcceleratorType != nil, servingVariants, "a command or registered model"},
-		{"compute.num_accelerators", compute.NumAccelerators != nil, servingVariants, "a command or registered model"},
-		{"compute.workload_size", compute.WorkloadSize != nil, servingVariants, "a command or registered model"},
-		{"compute.compute_profile", compute.ComputeProfile != nil, []string{variantDedicated}, "a dedicated checkpoint"},
-		{"compute.provisioned_model_units", compute.ProvisionedModelUnits != nil, []string{variantDedicated}, "a dedicated checkpoint"},
-		{"compute.reservation_term", compute.ReservationTerm != nil, []string{variantDedicated}, "a dedicated checkpoint"},
-	}
+// serveModelUnitsConfig is the `compute.model_units` block.
+type serveModelUnitsConfig struct {
+	MinUnits        *wholeNumber `yaml:"min_units" help:"Model units to provision, above 0 (default: 600). Dedicated endpoints don't scale yet, so min_units and max_units must be equal when both are set."`
+	MaxUnits        *wholeNumber `yaml:"max_units" help:"Model units to scale up to. Dedicated endpoints don't scale yet, so it must equal min_units when both are set."`
+	ReservationTerm *string      `yaml:"reservation_term" help:"Commitment term of the provisioned units, such as ONE_MONTH. Not supported yet: dedicated endpoints don't accept a commitment term, so a file that sets it is refused before anything changes."`
 }
 
-// variant is the deployment the file describes, inferred from the fields it sets: a
-// checkpoint with a command is served by that command, a checkpoint without one is
-// served with dedicated inference, and no checkpoint means a registered version.
-func (c *serveConfig) variant() string {
-	switch {
-	case c.Checkpoint == nil:
-		return variantRegistered
-	case c.Command != nil:
-		return variantCommand
-	default:
-		return variantDedicated
-	}
-}
-
-// readAs says how the file was read and why, for errors about its fields.
-func (c *serveConfig) readAs() string {
-	v := c.variant()
-	return fmt.Sprintf("the file is read as %s, because %s", variantDescriptions[v], variantReasons[v])
-}
-
-// registers reports whether air serve registers a new version from the checkpoint.
-func (c *serveConfig) registers() bool {
-	return c.Checkpoint != nil
-}
-
-// validate runs structural validation over the whole config, returning the
-// first failure. Fields are checked in declaration order to keep errors stable.
+// validate checks the whole config without the version, returning the first
+// failure. Fields are checked in declaration order to keep errors stable.
 func (c *serveConfig) validate() error {
-	if !registeredModelRe().MatchString(c.RegisteredModel) {
-		return fmt.Errorf("registered_model_name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got %q", c.RegisteredModel)
-	}
-	if err := c.validateSource(); err != nil {
+	if err := validateUCModelName(c.UCModel, "uc_model_name"); err != nil {
 		return err
 	}
 	if !endpointNameRe().MatchString(c.Endpoint) {
 		return fmt.Errorf("endpoint_name must be a serving endpoint name of letters, digits, '-' and '_', got %q", c.Endpoint)
 	}
-	if err := c.validateCompute(); err != nil {
-		return err
+	if c.ModelVersion != nil && !modelVersionRe().MatchString(*c.ModelVersion) {
+		return fmt.Errorf("model_version must be a model version number such as 3, got %q", *c.ModelVersion)
 	}
-	if err := validateEnvironmentVariables(c.EnvVariables, c.Secrets); err != nil {
-		return err
-	}
-	if c.IdempotencyToken != nil {
-		if err := validateServeIdempotencyKey(*c.IdempotencyToken, "idempotency_token"); err != nil {
-			return err
-		}
-	}
-	if c.MLflowExperimentPath != nil && !strings.HasPrefix(*c.MLflowExperimentPath, "/") {
-		return fmt.Errorf("mlflow_experiment_path must be an absolute workspace path such as /Users/<you>/air-deployments, got %q", *c.MLflowExperimentPath)
-	}
-	return nil
-}
-
-// validateSource checks that the fields the file sets fit its variant, and that the
-// variant's own fields are valid.
-func (c *serveConfig) validateSource() error {
-	if err := c.checkVariantFields(); err != nil {
-		return err
-	}
-	if c.Checkpoint != nil {
-		if err := validateVolumeDirectory("checkpoint", *c.Checkpoint); err != nil {
-			return err
-		}
-	}
-	switch c.variant() {
-	case variantCommand:
-		return c.validateCommandSource()
-	case variantRegistered:
-		if c.ModelVersion != nil && !modelVersionRe().MatchString(*c.ModelVersion) {
-			return fmt.Errorf("model_version must be a model version number such as 3, got %q", *c.ModelVersion)
-		}
-	}
-	return nil
-}
-
-// checkVariantFields rejects a field the file's variant doesn't use, naming the
-// field, the variant and why the file is read as that variant.
-func (c *serveConfig) checkVariantFields() error {
-	variant := c.variant()
-	for _, f := range c.variantFields() {
-		if f.set && !slices.Contains(f.users, variant) {
-			return fmt.Errorf("%s can't be set: %s, and %s applies only to %s", f.name, c.readAs(), f.name, f.applies)
-		}
-	}
-	return nil
-}
-
-// validateCommandSource checks the fields only a checkpoint served by command has.
-func (c *serveConfig) validateCommandSource() error {
-	if c.Task == nil {
-		return errors.New("task is required for a checkpoint served by command: the task Model Serving routes to the command, such as llm/v1/chat")
-	}
-	if strings.TrimSpace(*c.Task) == "" {
-		return errors.New("task cannot be empty")
-	}
-	if strings.TrimSpace(*c.Command) == "" {
-		return errors.New("command cannot be empty")
-	}
-	if n := serverLength(*c.Command); n > maxServingCommandChars {
-		return fmt.Errorf("command must be at most %d characters, got %d", maxServingCommandChars, n)
-	}
-	if c.Environment == nil {
-		return errors.New("environment is required for a checkpoint served by command: the serverless environment and packages to serve it on")
-	}
-	return c.Environment.validate()
-}
-
-// validateCompute checks the compute the variant reads.
-func (c *serveConfig) validateCompute() error {
-	if c.variant() == variantDedicated {
-		_, err := c.resolveDedicatedCompute()
-		return err
-	}
-	_, _, err := c.resolveServingCompute()
-	return err
-}
-
-// resolveServingCompute returns the workload type and size a command or registered
-// model is served on. Without compute, the defaults apply; with it, all three fields
-// are required and the accelerator and count must be a pair the server offers.
-func (c *serveConfig) resolveServingCompute() (string, string, error) {
 	if c.Compute == nil {
-		if c.variant() == variantRegistered {
-			return defaultRegisteredWorkloadType, defaultWorkloadSize, nil
-		}
-		return defaultCommandWorkloadType, defaultWorkloadSize, nil
+		return nil
 	}
-	compute := c.Compute
-	switch {
-	case compute.AcceleratorType == nil:
-		return "", "", errors.New("compute.accelerator_type is required when compute is set, e.g. GPU_1xA10")
-	case compute.NumAccelerators == nil:
-		return "", "", errors.New("compute.num_accelerators is required when compute is set, e.g. 1")
-	case compute.WorkloadSize == nil:
-		return "", "", errors.New("compute.workload_size is required when compute is set: Small, Medium or Large")
-	}
-	if !slices.Contains(workloadSizes, *compute.WorkloadSize) {
-		return "", "", fmt.Errorf("compute.workload_size must be one of %s, got %q", strings.Join(workloadSizes, ", "), *compute.WorkloadSize)
-	}
-	accelerator, err := parseGPUType(*compute.AcceleratorType)
-	if err != nil {
-		return "", "", fmt.Errorf("compute.accelerator_type: %w; the supported pairs are %s", err, servingPairs())
-	}
-	for _, shape := range servingShapes {
-		if shape.accelerator == accelerator && shape.count == *compute.NumAccelerators {
-			return shape.workloadType, *compute.WorkloadSize, nil
-		}
-	}
-	return "", "", fmt.Errorf("compute.accelerator_type and compute.num_accelerators must be a supported pair, got %s with %d; the supported pairs are %s", *compute.AcceleratorType, *compute.NumAccelerators, servingPairs())
+	return c.Compute.validate()
 }
 
-// servingPairs lists the accelerator and count pairs serving compute supports.
-func servingPairs() string {
-	pairs := make([]string, 0, len(servingShapes))
-	for _, shape := range servingShapes {
-		pairs = append(pairs, fmt.Sprintf("%s x%d", shape.accelerator, shape.count))
+func (c *serveComputeConfig) validate() error {
+	if _, err := c.mode(); err != nil {
+		return err
 	}
-	return strings.Join(pairs, ", ")
+	if c.GPU != nil && c.ModelUnits != nil {
+		return errors.New("compute can set gpu or model_units, not both: model_units is for a checkpoint registered without engine, and gpu for any other version")
+	}
+	if c.GPU != nil && c.Mode != nil {
+		return errors.New("compute.mode can't be set with compute.gpu: it selects the profile of dedicated inference, and replicas have no mode yet")
+	}
+	if c.GPU != nil {
+		if _, err := c.GPU.shape(defaultCommandAccelerator); err != nil {
+			return err
+		}
+	}
+	if c.ModelUnits != nil {
+		_, err := c.ModelUnits.units()
+		return err
+	}
+	return nil
+}
+
+// mode is compute.mode, lowercase, or the default mode when it isn't set.
+func (c *serveComputeConfig) mode() (string, error) {
+	if c == nil || c.Mode == nil {
+		return defaultMode, nil
+	}
+	mode := strings.ToLower(*c.Mode)
+	if !slices.Contains(computeModes, mode) {
+		return "", fmt.Errorf("compute.mode must be one of %s, got %q", strings.Join(computeModes, ", "), *c.Mode)
+	}
+	return mode, nil
+}
+
+// servingCompute is the serving compute of a version: the workload type of each
+// replica, and the provisioned concurrency the endpoint scales between. ScaleToZero
+// is set when the minimum is 0.
+type servingCompute struct {
+	WorkloadType   string
+	MinConcurrency int
+	MaxConcurrency int
+	ScaleToZero    bool
+}
+
+// shape returns the serving compute compute.gpu asks for, with accelerator as the
+// accelerator when it sets none. A nil block takes every default.
+func (g *serveGPUConfig) shape(accelerator string) (servingCompute, error) {
+	var gpu serveGPUConfig
+	if g != nil {
+		gpu = *g
+	}
+	if gpu.AcceleratorType != nil {
+		accelerator = *gpu.AcceleratorType
+	}
+	minReplicas := defaultReplicas
+	if gpu.MinReplicas != nil {
+		minReplicas = int(*gpu.MinReplicas)
+	}
+	// An unset maximum follows the minimum, so min_replicas: 2 alone serves 2.
+	maxReplicas := max(minReplicas, defaultReplicas)
+	if gpu.MaxReplicas != nil {
+		maxReplicas = int(*gpu.MaxReplicas)
+	}
+	i := slices.IndexFunc(servingShapes, func(s servingShape) bool { return s.accelerator == accelerator })
+	if i < 0 {
+		return servingCompute{}, fmt.Errorf("compute.gpu.accelerator_type must be one of %s, got %q", acceleratorNames(), accelerator)
+	}
+	shape := servingShapes[i]
+	switch {
+	case minReplicas < 0:
+		return servingCompute{}, fmt.Errorf("compute.gpu.min_replicas must be 0 or more, got %d", minReplicas)
+	case minReplicas > replicaLimit:
+		return servingCompute{}, fmt.Errorf("compute.gpu.min_replicas must be at most %d, got %d", replicaLimit, minReplicas)
+	case maxReplicas < 1:
+		return servingCompute{}, fmt.Errorf("compute.gpu.max_replicas must be at least 1, got %d", maxReplicas)
+	case maxReplicas > replicaLimit:
+		return servingCompute{}, fmt.Errorf("compute.gpu.max_replicas must be at most %d, got %d", replicaLimit, maxReplicas)
+	case minReplicas > maxReplicas:
+		return servingCompute{}, fmt.Errorf("compute.gpu.min_replicas must be at most max_replicas, got %d and %d", minReplicas, maxReplicas)
+	case shape.fixedScale && minReplicas != maxReplicas:
+		return servingCompute{}, fmt.Errorf("compute.gpu.min_replicas must equal max_replicas on %s, because endpoints there don't scale: H100 capacity isn't guaranteed on scale-up; got %d and %d", shape.accelerator, minReplicas, maxReplicas)
+	}
+	return servingCompute{
+		WorkloadType:   shape.workloadType,
+		MinConcurrency: minReplicas * concurrencyPerReplica,
+		MaxConcurrency: maxReplicas * concurrencyPerReplica,
+		ScaleToZero:    minReplicas == 0,
+	}, nil
+}
+
+// acceleratorNames lists the accelerator types serving compute supports.
+func acceleratorNames() string {
+	names := make([]string, 0, len(servingShapes))
+	for _, shape := range servingShapes {
+		names = append(names, shape.accelerator)
+	}
+	return strings.Join(names, ", ")
+}
+
+// units is the model units compute.model_units asks for. A nil block takes the
+// default. Dedicated endpoints take a single size, so a range is refused.
+func (m *serveModelUnitsConfig) units() (int64, error) {
+	if m == nil {
+		return defaultModelUnits, nil
+	}
+	// TODO: a range and a commitment term, once dedicated endpoints accept them.
+	if m.ReservationTerm != nil {
+		return 0, errors.New("compute.model_units.reservation_term isn't supported yet: dedicated endpoints don't accept a commitment term; leave it out")
+	}
+	units := wholeNumber(defaultModelUnits)
+	switch {
+	case m.MinUnits != nil && m.MaxUnits != nil && *m.MinUnits != *m.MaxUnits:
+		return 0, fmt.Errorf("compute.model_units.min_units must equal max_units, because dedicated endpoints don't scale yet; got %d and %d", *m.MinUnits, *m.MaxUnits)
+	case m.MinUnits != nil:
+		units = *m.MinUnits
+	case m.MaxUnits != nil:
+		units = *m.MaxUnits
+	}
+	if units <= 0 {
+		return 0, fmt.Errorf("compute.model_units must be above 0, got %d", units)
+	}
+	return int64(units), nil
 }
 
 // dedicatedCompute is the dedicated compute a dedicated served entity gets.
@@ -354,116 +256,50 @@ type dedicatedCompute struct {
 	ProvisionedModelUnits int64
 }
 
-// resolveDedicatedCompute returns the dedicated compute of a dedicated checkpoint. The
-// server has no default for it, so compute, its profile and its units are required.
-func (c *serveConfig) resolveDedicatedCompute() (*dedicatedCompute, error) {
-	if c.Compute == nil {
-		return nil, errors.New("compute is required for a dedicated checkpoint: set compute.compute_profile and compute.provisioned_model_units")
+// servedEntity is the entity the endpoint serves for version, which pkg describes:
+// dedicated compute for a dedicated checkpoint, and serving compute for any other
+// version. A compute block of the other kind is refused.
+func (c *serveConfig) servedEntity(version string, pkg versionPackage) (servedEntity, error) {
+	entity := servedEntity{EntityName: c.UCModel, EntityVersion: version}
+	var compute serveComputeConfig
+	if c.Compute != nil {
+		compute = *c.Compute
 	}
-	compute := c.Compute
-	if compute.ComputeProfile == nil {
-		return nil, errors.New("compute.compute_profile is required for a dedicated checkpoint: one of low_latency, fast, throughput or minimal_cost")
+	described := fmt.Sprintf("version %s of %s", version, c.UCModel)
+	if pkg.dedicated {
+		if compute.GPU != nil {
+			return servedEntity{}, fmt.Errorf("compute.gpu can't be set: %s is a checkpoint registered without engine, which is served with dedicated inference; set compute.model_units, or leave compute out", described)
+		}
+		mode, err := compute.mode()
+		if err != nil {
+			return servedEntity{}, err
+		}
+		units, err := compute.ModelUnits.units()
+		if err != nil {
+			return servedEntity{}, err
+		}
+		entity.Dedicated = &dedicatedCompute{ComputeProfile: modeProfiles[mode], ProvisionedModelUnits: units}
+		return entity, nil
 	}
-	profile := strings.ToLower(*compute.ComputeProfile)
-	if !slices.Contains(computeProfiles, profile) {
-		return nil, fmt.Errorf("compute.compute_profile must be one of %s, got %q", strings.Join(computeProfiles, ", "), *compute.ComputeProfile)
+	if compute.ModelUnits != nil {
+		return servedEntity{}, fmt.Errorf("compute.model_units can't be set: it's for a checkpoint registered without engine, and %s isn't one; set compute.gpu, or leave compute out", described)
 	}
-	if compute.ProvisionedModelUnits == nil {
-		return nil, errors.New("compute.provisioned_model_units is required for a dedicated checkpoint: the model units to provision, above 0")
+	if compute.Mode != nil {
+		return servedEntity{}, fmt.Errorf("compute.mode can't be set: %s is served on replicas, which have no mode yet; leave it out", described)
 	}
-	if *compute.ProvisionedModelUnits <= 0 {
-		return nil, fmt.Errorf("compute.provisioned_model_units must be above 0, got %d", *compute.ProvisionedModelUnits)
-	}
-	// The server refuses a commitment term for a dedicated endpoint, which it would
-	// only do after the weights are copied.
-	if compute.ReservationTerm != nil {
-		return nil, errors.New("compute.reservation_term isn't supported yet: dedicated endpoints don't accept a commitment term; leave it out")
-	}
-	return &dedicatedCompute{
-		ComputeProfile:        "COMPUTE_PROFILE_" + strings.ToUpper(profile),
-		ProvisionedModelUnits: int64(*compute.ProvisionedModelUnits),
-	}, nil
-}
-
-// validateVolumeDirectory checks a Unity Catalog volume directory the server
-// copies into the version.
-func validateVolumeDirectory(field, v string) error {
-	if !strings.HasPrefix(v, "/Volumes/") || serverLength(v) > maxVolumePathChars {
-		return fmt.Errorf("%s must be a Unity Catalog volume directory as /Volumes/<catalog>/<schema>/<volume>/<path>, of at most %d characters, got %q", field, maxVolumePathChars, v)
-	}
-	return nil
-}
-
-// validate checks the environment version and dependency lines.
-func (e *serveEnvironmentConfig) validate() error {
-	if e.Version == nil {
-		return errors.New("environment.version is required: the serverless environment to serve the command on, such as 6 or databricks_ai_v6")
-	}
-	if _, _, err := e.runtimeVersion(); err != nil {
-		return err
-	}
-	if len(e.Dependencies) > maxDependencies {
-		return fmt.Errorf("environment.dependencies can list at most %d packages, got %d", maxDependencies, len(e.Dependencies))
-	}
-	for i, dependency := range e.Dependencies {
-		if strings.TrimSpace(dependency) == "" {
-			return fmt.Errorf("environment.dependencies[%d] cannot be empty", i)
+	accelerator := acceleratorCPU
+	if pkg.command {
+		accelerator = defaultCommandAccelerator
+		if compute.GPU != nil && compute.GPU.AcceleratorType != nil && *compute.GPU.AcceleratorType == acceleratorCPU {
+			return servedEntity{}, fmt.Errorf("compute.gpu.accelerator_type can't be CPU: %s is served by its command, whose environment is registered for a GPU", described)
 		}
 	}
-	return nil
-}
-
-// validateServeIdempotencyKey checks a registration key from source (the YAML
-// field or the flag) against the server's rule.
-func validateServeIdempotencyKey(key, source string) error {
-	if !serveIdempotencyKeyRe().MatchString(key) {
-		return fmt.Errorf("%s must be 1 to 128 letters, digits, '.', '_' or '-', got %q", source, key)
-	}
-	return nil
-}
-
-// serverLength is the length of s as the server's limits count it, in UTF-16
-// code units.
-func serverLength(s string) int {
-	n := 0
-	for _, r := range s {
-		n += utf16.RuneLen(r)
-	}
-	return n
-}
-
-// runtimeVersion is environment.version as a version number, and whether it names
-// the Databricks AI environment, as air run reads the same field.
-func (e *serveEnvironmentConfig) runtimeVersion() (int, bool, error) {
-	if e.Version == nil {
-		return 0, false, errors.New("environment.version is required")
-	}
-	normalized, err := validateRuntimeVersion(e.Version.raw, "environment.version")
+	serving, err := compute.GPU.shape(accelerator)
 	if err != nil {
-		return 0, false, err
+		return servedEntity{}, err
 	}
-	ai := strings.HasPrefix(normalized, databricksAIPrefix)
-	major, err := strconv.Atoi(strings.TrimPrefix(normalized, databricksAIPrefix))
-	if err != nil || major < 1 {
-		return 0, false, fmt.Errorf("environment.version must be a serverless environment version such as 6 or databricks_ai_v6, got %q", e.Version.raw)
-	}
-	return major, ai, nil
-}
-
-// servedEnvironmentVars merges env_variables and secrets into the served
-// entity's environment variables, with each secret as {{secrets/scope/key}}.
-func (c *serveConfig) servedEnvironmentVars() map[string]string {
-	if len(c.EnvVariables) == 0 && len(c.Secrets) == 0 {
-		return nil
-	}
-	vars := maps.Clone(c.EnvVariables)
-	if vars == nil {
-		vars = map[string]string{}
-	}
-	for name, ref := range c.Secrets {
-		vars[name] = "{{secrets/" + ref + "}}"
-	}
-	return vars
+	entity.Serving = serving
+	return entity, nil
 }
 
 // serveSchema is the reflection walk over serveConfig, shared by
@@ -471,67 +307,32 @@ func (c *serveConfig) servedEnvironmentVars() map[string]string {
 func serveSchema() configField {
 	return configField{
 		path: configHelpRoot,
-		help: `Deployment YAML schema. For details on a field, pass its path to -h, for example:
+		help: `Serving YAML schema. For details on a field, pass its path to -h, for example:
 
-    databricks air serve -h config.checkpoint
+    databricks air serve -h config.compute
 
-  A checkpoint served by a command of your own:
-    registered_model_name: main.serving.qwen30b_sglang
+  The newest READY version, on the compute it was registered for:
+    uc_model_name: main.serving.qwen30b_sglang
     endpoint_name: qwen3-30b-sglang
-    checkpoint: /Volumes/main/weights/qwen3_30b_a3b
-    command: python -m sglang.launch_server --model-path qwen3_30b_a3b --attention-backend triton --sampling-backend pytorch --host 0.0.0.0 --port 8080
-    task: llm/v1/chat
-    environment:
-      version: 6
-      dependencies: [sglang==0.5.23]
-    compute:
-      accelerator_type: GPU_1xH100
-      num_accelerators: 1
-      workload_size: Small
 
-  A checkpoint served with dedicated inference:
-    registered_model_name: main.serving.gemma4
+  A version on replicas of your choice:
+    uc_model_name: main.serving.qwen30b_sglang
+    endpoint_name: qwen3-30b-sglang
+    model_version: 3
+    compute:
+      gpu:
+        accelerator_type: GPU_1xA10
+        min_replicas: 0
+        max_replicas: 2
+
+  A checkpoint registered without engine, on dedicated inference:
+    uc_model_name: main.serving.gemma4
     endpoint_name: gemma4
-    checkpoint: /Volumes/main/weights/gemma4_e4b
     compute:
-      compute_profile: low_latency
-      provisioned_model_units: 600
-
-  A version already registered in Unity Catalog:
-    registered_model_name: main.ml.churn
-    endpoint_name: churn
-    model_version: 3`,
+      mode: throughput_optimized
+      model_units:
+        min_units: 600
+        max_units: 600`,
 		children: describeStruct(reflect.TypeFor[serveConfig](), configHelpRoot),
 	}
-}
-
-// loadServeConfig reads a deployment YAML, applies --override entries, decodes
-// it with unknown keys rejected and validates it. ctx is used only to log applied
-// overrides.
-func loadServeConfig(ctx context.Context, path string, overrides []string) (*serveConfig, error) {
-	var (
-		document       *yaml.Node
-		validationYAML []byte
-		err            error
-	)
-	if len(overrides) == 0 {
-		document, validationYAML, err = readRunConfigDocument(path)
-	} else {
-		document, validationYAML, err = readConfigWithOverrides(ctx, path, overrides, serveSchema())
-	}
-	if err != nil {
-		return nil, err
-	}
-	if len(document.Content) == 0 {
-		return nil, fmt.Errorf("config %s is empty", path)
-	}
-
-	cfg, err := decodeConfigReader[serveConfig](bytes.NewReader(validationYAML), path)
-	if err != nil {
-		return nil, err
-	}
-	if err := cfg.validate(); err != nil {
-		return nil, err
-	}
-	return cfg, nil
 }

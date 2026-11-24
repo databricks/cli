@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"net/http"
 	"slices"
 	"strings"
@@ -31,46 +30,25 @@ const (
 type servedEntity struct {
 	EntityName    string
 	EntityVersion string
-	// WorkloadType and WorkloadSize are the serving compute.
-	WorkloadType string
-	WorkloadSize string
-	// EnvironmentVars are the served model's environment variables.
-	EnvironmentVars map[string]string
+	// Serving is the serving compute.
+	Serving servingCompute
 	// Dedicated is the dedicated compute, nil for serving compute.
 	Dedicated *dedicatedCompute
 }
 
-// servedEntity is the entity the endpoint serves for version: the version the
-// registration produced, or the one the config names.
-func (c *serveConfig) servedEntity(version string) (servedEntity, error) {
-	entity := servedEntity{EntityName: c.RegisteredModel, EntityVersion: version, EnvironmentVars: c.servedEnvironmentVars()}
-	if c.variant() == variantDedicated {
-		dedicated, err := c.resolveDedicatedCompute()
-		if err != nil {
-			return servedEntity{}, err
-		}
-		entity.Dedicated = dedicated
-		return entity, nil
-	}
-	workloadType, workloadSize, err := c.resolveServingCompute()
-	if err != nil {
-		return servedEntity{}, err
-	}
-	entity.WorkloadType, entity.WorkloadSize = workloadType, workloadSize
-	return entity, nil
-}
-
-// servingInput is the entity as the serving endpoints API takes it. scale_to_zero_enabled
-// is sent even though it's false, since the server's default isn't known to be false.
+// servingInput is the entity as the serving endpoints API takes it: its scale as a
+// range of provisioned concurrency, which the API takes instead of a workload size.
+// scale_to_zero_enabled and a minimum of 0 are sent even though they are zero values,
+// since the server's defaults aren't known to be zero.
 func (e servedEntity) servingInput() serving.ServedEntityInput {
 	return serving.ServedEntityInput{
-		EntityName:         e.EntityName,
-		EntityVersion:      e.EntityVersion,
-		WorkloadType:       serving.ServingModelWorkloadType(e.WorkloadType),
-		WorkloadSize:       e.WorkloadSize,
-		ScaleToZeroEnabled: false,
-		EnvironmentVars:    e.EnvironmentVars,
-		ForceSendFields:    []string{"ScaleToZeroEnabled"},
+		EntityName:                e.EntityName,
+		EntityVersion:             e.EntityVersion,
+		WorkloadType:              serving.ServingModelWorkloadType(e.Serving.WorkloadType),
+		MinProvisionedConcurrency: e.Serving.MinConcurrency,
+		MaxProvisionedConcurrency: e.Serving.MaxConcurrency,
+		ScaleToZeroEnabled:        e.Serving.ScaleToZero,
+		ForceSendFields:           []string{"MinProvisionedConcurrency", "ScaleToZeroEnabled"},
 	}
 }
 
@@ -126,16 +104,17 @@ type endpointConfig struct {
 }
 
 // observedEntity is a served entity as the endpoint reports it: a dedicated one by
-// its units and profile, and any other by its workload.
+// its units and profile, and any other by its workload type and concurrency range.
 type observedEntity struct {
-	EntityName            string            `json:"entity_name"`
-	EntityVersion         string            `json:"entity_version"`
-	WorkloadType          string            `json:"workload_type"`
-	WorkloadSize          string            `json:"workload_size"`
-	ScaleToZeroEnabled    bool              `json:"scale_to_zero_enabled"`
-	EnvironmentVars       map[string]string `json:"environment_vars"`
-	ProvisionedModelUnits int64             `json:"provisioned_model_units"`
-	ComputeProfile        string            `json:"compute_profile"`
+	EntityName                string            `json:"entity_name"`
+	EntityVersion             string            `json:"entity_version"`
+	WorkloadType              string            `json:"workload_type"`
+	MinProvisionedConcurrency int               `json:"min_provisioned_concurrency"`
+	MaxProvisionedConcurrency int               `json:"max_provisioned_concurrency"`
+	ScaleToZeroEnabled        bool              `json:"scale_to_zero_enabled"`
+	EnvironmentVars           map[string]string `json:"environment_vars"`
+	ProvisionedModelUnits     int64             `json:"provisioned_model_units"`
+	ComputeProfile            string            `json:"compute_profile"`
 }
 
 // endpointAPI calls the serving endpoints API for air serve. Endpoints are read as
@@ -204,25 +183,6 @@ func (e *endpointAPI) update(ctx context.Context, name string, entity servedEnti
 	return err
 }
 
-// checkEndpoint fails when the endpoint named name, if it exists, serves
-// something air serve won't replace with a version of model, or is of the other
-// kind than dedicated says. air serve checks it before registering, so a wrong
-// endpoint name fails before any weights are copied.
-func checkEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name, model string, dedicated bool) error {
-	e, err := newEndpointAPI(w)
-	if err != nil {
-		return err
-	}
-	endpoint, err := e.get(ctx, name)
-	if err != nil || endpoint == nil {
-		return err
-	}
-	if err := checkReplaceable(endpoint, model); err != nil {
-		return err
-	}
-	return checkKind(endpoint, dedicated)
-}
-
 // checkKind fails when the endpoint serves on dedicated compute and dedicated is
 // false, or the reverse: the server converts neither kind of endpoint to the other.
 // An endpoint that reports no served entity is taken as either kind.
@@ -239,7 +199,7 @@ func checkKind(endpoint *servingEndpoint, dedicated bool) error {
 	if isDedicated {
 		kind, want = want, kind
 	}
-	return withCode(codeInvalidArgs, false, fmt.Errorf("endpoint %s serves on %s, and this file serves on %s; an endpoint can't change between the two, so set endpoint_name to another name", stripControl(endpoint.Name), kind, want))
+	return withCode(codeInvalidArgs, false, fmt.Errorf("endpoint %s serves on %s, and this version is served on %s; an endpoint can't change between the two, so set endpoint_name to another name", stripControl(endpoint.Name), kind, want))
 }
 
 // checkReplaceable fails unless the endpoint serves at most one entity, a version
@@ -256,55 +216,80 @@ func checkReplaceable(endpoint *servingEndpoint, model string) error {
 	return nil
 }
 
-// serveOnEndpoint makes the endpoint named name serve only entity and waits until
-// it is ready, calling progress on every poll. It creates the endpoint if it
-// doesn't exist. An endpoint that already serves entity isn't updated, and an
-// update to entity that an interrupted air serve started is waited for.
-func serveOnEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name string, entity servedEntity, progress func(*servingEndpoint)) (*servingEndpoint, error) {
+// serveOnEndpoint makes the endpoint named name serve only entity, calling progress
+// on every poll. It creates the endpoint if it doesn't exist. An endpoint that
+// already serves entity isn't updated. With watch, it waits until the endpoint is
+// ready, including for an update to entity that an earlier air serve started;
+// without it, it returns once the endpoint accepts the update. It reports whether
+// the endpoint serves entity and is ready.
+func serveOnEndpoint(ctx context.Context, w *databricks.WorkspaceClient, name string, entity servedEntity, watch bool, progress func(*servingEndpoint)) (bool, error) {
 	e, err := newEndpointAPI(w)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	endpoint, err := e.get(ctx, name)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	if endpoint == nil {
 		if err := e.create(ctx, name, entity); err != nil {
-			return nil, err
+			return false, err
 		}
-		return waitServes(ctx, e, name, entity, progress)
+		return watchServes(ctx, e, name, entity, watch, progress)
+	}
+	if updating(endpoint) && servesOnly(pendingEntities(endpoint), entity) {
+		return watchServes(ctx, e, name, entity, watch, progress)
+	}
+	// The checks read the pending config too, so an endpoint air serve won't change is
+	// refused before waiting behind its update.
+	if err := checkEndpoint(endpoint, entity); err != nil {
+		return false, err
 	}
 	if updating(endpoint) {
-		if servesOnly(pendingEntities(endpoint), entity) {
-			return waitServes(ctx, e, name, entity, progress)
-		}
-		// The endpoint takes no other update until this one finishes.
-		endpoint, err = waitNotUpdating(ctx, e, name, progress)
+		// The endpoint takes no other update until this one finishes, so this waits
+		// even without watch. How that update ends doesn't matter: either way the
+		// endpoint then takes this one.
+		endpoint, err = waitNotUpdating(ctx, e, name, progress, false)
 		if err != nil {
-			return nil, err
+			return false, err
 		}
-	}
-	if err := checkReplaceable(endpoint, entity.EntityName); err != nil {
-		return nil, err
-	}
-	if err := checkKind(endpoint, entity.Dedicated != nil); err != nil {
-		return nil, err
+		if err := checkEndpoint(endpoint, entity); err != nil {
+			return false, err
+		}
 	}
 	if servesOnly(currentEntities(endpoint), entity) {
 		return checkServes(endpoint, entity)
 	}
 	if err := e.update(ctx, name, entity); err != nil {
-		return nil, err
+		return false, err
+	}
+	return watchServes(ctx, e, name, entity, watch, progress)
+}
+
+// checkEndpoint fails when air serve won't make endpoint serve entity: it serves
+// something else, or is of the other kind.
+func checkEndpoint(endpoint *servingEndpoint, entity servedEntity) error {
+	if err := checkReplaceable(endpoint, entity.EntityName); err != nil {
+		return err
+	}
+	return checkKind(endpoint, entity.Dedicated != nil)
+}
+
+// watchServes waits for the endpoint's update to entity to finish when watch is set.
+func watchServes(ctx context.Context, e *endpointAPI, name string, entity servedEntity, watch bool, progress func(*servingEndpoint)) (bool, error) {
+	if !watch {
+		return false, nil
 	}
 	return waitServes(ctx, e, name, entity, progress)
 }
 
 // waitNotUpdating waits until the endpoint has no update in progress, calling
-// progress on every poll. Each poll repeats a transient failure, which ends the SDK's
-// own wait: an endpoint can take many minutes to start. Creates and config updates
-// aren't repeated this way, since a repeat after an applied write would fail.
-func waitNotUpdating(ctx context.Context, e *endpointAPI, name string, progress func(*servingEndpoint)) (*servingEndpoint, error) {
+// progress on every poll. When own is set, the update is air serve's and its failure
+// is an error; another update's failure only frees the endpoint. Each poll repeats a
+// transient failure, which ends the SDK's own wait: an endpoint can take many minutes
+// to start. Creates and config updates aren't repeated this way, since a repeat after
+// an applied write would fail.
+func waitNotUpdating(ctx context.Context, e *endpointAPI, name string, progress func(*servingEndpoint), own bool) (*servingEndpoint, error) {
 	return retries.Poll(ctx, untilDeadline(ctx), func() (*servingEndpoint, *retries.Err) {
 		endpoint, err := e.read(ctx, name)
 		if err != nil {
@@ -321,6 +306,9 @@ func waitNotUpdating(ctx context.Context, e *endpointAPI, name string, progress 
 		case serving.EndpointStateConfigUpdateNotUpdating:
 			return endpoint, nil
 		case serving.EndpointStateConfigUpdateUpdateFailed, serving.EndpointStateConfigUpdateUpdateCanceled:
+			if !own {
+				return endpoint, nil
+			}
 			return nil, retries.Halt(fmt.Errorf("the endpoint's update ended in %s; check its events and logs in the Serving UI", state))
 		default:
 			return nil, retries.Continues(string(state))
@@ -330,10 +318,10 @@ func waitNotUpdating(ctx context.Context, e *endpointAPI, name string, progress 
 
 // waitServes waits until the endpoint's update finishes, then checks that it
 // serves entity.
-func waitServes(ctx context.Context, e *endpointAPI, name string, entity servedEntity, progress func(*servingEndpoint)) (*servingEndpoint, error) {
-	endpoint, err := waitNotUpdating(ctx, e, name, progress)
+func waitServes(ctx context.Context, e *endpointAPI, name string, entity servedEntity, progress func(*servingEndpoint)) (bool, error) {
+	endpoint, err := waitNotUpdating(ctx, e, name, progress, true)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	return checkServes(endpoint, entity)
 }
@@ -343,16 +331,17 @@ func waitServes(ctx context.Context, e *endpointAPI, name string, entity servedE
 // endpoint recovers, so the error isn't marked retryable.
 var errEndpointNotReady = errors.New("endpoint isn't ready")
 
-// checkServes returns endpoint if it serves only entity and is ready to serve.
-func checkServes(endpoint *servingEndpoint, entity servedEntity) (*servingEndpoint, error) {
+// checkServes reports whether endpoint serves only entity and is ready to serve,
+// failing when it doesn't.
+func checkServes(endpoint *servingEndpoint, entity servedEntity) (bool, error) {
 	name := stripControl(endpoint.Name)
 	if !servesOnly(currentEntities(endpoint), entity) {
-		return nil, fmt.Errorf("endpoint %s was changed to serve %s while air serve waited for it", name, describeEntities(currentEntities(endpoint)))
+		return false, fmt.Errorf("endpoint %s was changed to serve %s while air serve waited for it", name, describeEntities(currentEntities(endpoint)))
 	}
 	if endpoint.State == nil || endpoint.State.Ready != serving.EndpointStateReadyReady {
-		return nil, withCode(codeEndpointNotReady, false, fmt.Errorf("%w: endpoint %s serves version %s of %s but isn't ready; check its events and logs in the Serving UI", errEndpointNotReady, name, entity.EntityVersion, entity.EntityName))
+		return false, withCode(codeEndpointNotReady, false, fmt.Errorf("%w: endpoint %s serves version %s of %s but isn't ready; check its events and logs in the Serving UI", errEndpointNotReady, name, entity.EntityVersion, entity.EntityName))
 	}
-	return endpoint, nil
+	return true, nil
 }
 
 func updating(endpoint *servingEndpoint) bool {
@@ -391,8 +380,9 @@ func describeEntities(served []observedEntity) string {
 }
 
 // servesOnly reports whether served is exactly entity. A dedicated entity must match
-// its units and compute profile; any other must match its workload, scale-to-zero
-// setting and environment variables.
+// its units and compute profile; any other must match its workload type, concurrency
+// range and scale-to-zero setting, and have no environment variables, since air serve
+// sets none.
 func servesOnly(served []observedEntity, entity servedEntity) bool {
 	if len(served) != 1 {
 		return false
@@ -406,10 +396,17 @@ func servesOnly(served []observedEntity, entity servedEntity) bool {
 	if entity.Dedicated != nil {
 		return s.ProvisionedModelUnits == entity.Dedicated.ProvisionedModelUnits && s.ComputeProfile == entity.Dedicated.ComputeProfile
 	}
-	return s.WorkloadType == entity.WorkloadType &&
-		s.WorkloadSize == entity.WorkloadSize &&
-		!s.ScaleToZeroEnabled &&
-		maps.Equal(s.EnvironmentVars, entity.EnvironmentVars)
+	// Where GPU APIs are off, the endpoint reports a CPU entity without its workload
+	// type, the API's default.
+	workloadType := s.WorkloadType
+	if workloadType == "" {
+		workloadType = acceleratorCPU
+	}
+	return workloadType == entity.Serving.WorkloadType &&
+		s.MinProvisionedConcurrency == entity.Serving.MinConcurrency &&
+		s.MaxProvisionedConcurrency == entity.Serving.MaxConcurrency &&
+		s.ScaleToZeroEnabled == entity.Serving.ScaleToZero &&
+		len(s.EnvironmentVars) == 0
 }
 
 // untilDeadline is the time left before ctx's deadline, which air serve always

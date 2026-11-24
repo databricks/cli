@@ -47,7 +47,7 @@ active runs with "databricks air list".`,
 	wrapRunErrorWithDebugTip(runCommand)
 	addToGroup(cmd, runGroupID, runCommand)
 	addToGroup(cmd, manageGroupID, newGetCommand(), newListCommand(), newLogsCommand(), newCancelCommand())
-	addToGroup(cmd, packageGroupID, newServeCommand(), newConvertToDabsCommand(), newImagesCommand())
+	addToGroup(cmd, packageGroupID, newRegisterCommand(), newServeCommand(), newConvertToDabsCommand(), newImagesCommand())
 	addToGroup(cmd, capacityGroupID, newPoolsCommand())
 
 	// Subcommands inherit this help func, so the footer is printed only for `air` itself.

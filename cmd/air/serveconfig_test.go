@@ -1,340 +1,150 @@
 package aircmd
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// commandServeConfig is a checkpoint served by a command.
-const commandServeConfig = `registered_model_name: main.models.qwen
-checkpoint: /Volumes/main/models/weights/qwen3_8b
-command: python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080
-task: llm/v1/chat
-environment:
-  version: 6
-  dependencies: [einops==0.8.0]
+// minimalServeConfig serves the newest READY version on the compute it was
+// registered for.
+const minimalServeConfig = `uc_model_name: main.models.qwen
 endpoint_name: qwen-chat
-compute:
-  accelerator_type: GPU_1xA10
-  num_accelerators: 1
-  workload_size: Small
-secrets:
-  HF_TOKEN: llm/hf_token
-env_variables:
-  LOG_LEVEL: info
 `
 
-// dedicatedServeConfig is a checkpoint served with dedicated inference.
-const dedicatedServeConfig = `registered_model_name: main.models.qwen
-checkpoint: /Volumes/main/models/weights/qwen3_8b
-endpoint_name: qwen-chat
+// gpuServeConfig serves version 3 on replicas.
+const gpuServeConfig = minimalServeConfig + `model_version: 3
 compute:
-  compute_profile: low_latency
-  provisioned_model_units: 600
+  gpu:
+    accelerator_type: GPU_1xA10
+    min_replicas: 1
+    max_replicas: 2
 `
 
-// registeredServeConfig serves a version that is already registered.
-const registeredServeConfig = `registered_model_name: main.models.qwen
-model_version: 7
-endpoint_name: qwen-chat
+// dedicatedServeConfig serves a dedicated checkpoint on dedicated compute.
+const dedicatedServeConfig = minimalServeConfig + `compute:
+  mode: throughput_optimized
+  model_units:
+    min_units: 900
+    max_units: 900
 `
+
+// Versions as their MLmodel describes them.
+var (
+	commandPackage   = versionPackage{command: true, task: "llm/v1/chat"}
+	dedicatedPackage = versionPackage{dedicated: true}
+	otherPackage     = versionPackage{}
+)
 
 func loadServeConfigText(t *testing.T, text string, overrides ...string) (*serveConfig, error) {
 	t.Helper()
-	return loadServeConfig(t.Context(), writeConfigFile(t, "serve.yaml", text), overrides)
+	return loadServeConfig(t.Context(), serveOptions{file: writeConfigFile(t, "serve.yaml", text), overrides: overrides})
 }
 
-func TestLoadServeConfigVariantIsInferredFromTheFields(t *testing.T) {
-	for _, tt := range []struct {
-		name    string
-		text    string
-		variant string
+func TestServeConfigDefaultsFollowThePackage(t *testing.T) {
+	cfg, err := loadServeConfigText(t, minimalServeConfig)
+	require.NoError(t, err)
+	tests := []struct {
+		name string
+		pkg  versionPackage
+		want servedEntity
 	}{
-		{"checkpoint and command", commandServeConfig, variantCommand},
-		{"checkpoint without command", dedicatedServeConfig, variantDedicated},
-		{"no checkpoint", registeredServeConfig, variantRegistered},
-	} {
+		{"a command", commandPackage, servedEntity{EntityName: "main.models.qwen", EntityVersion: "3", Serving: servingCompute{WorkloadType: "GPU_MEDIUM", MinConcurrency: 4, MaxConcurrency: 4}}},
+		{"a dedicated checkpoint", dedicatedPackage, servedEntity{EntityName: "main.models.qwen", EntityVersion: "3", Dedicated: &dedicatedCompute{ComputeProfile: "COMPUTE_PROFILE_LOW_LATENCY", ProvisionedModelUnits: 600}}},
+		{"any other version", otherPackage, servedEntity{EntityName: "main.models.qwen", EntityVersion: "3", Serving: servingCompute{WorkloadType: "CPU", MinConcurrency: 4, MaxConcurrency: 4}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			entity, err := cfg.servedEntity("3", tt.pkg)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, entity)
+		})
+	}
+}
+
+func TestServeConfigGPU(t *testing.T) {
+	cfg, err := loadServeConfigText(t, gpuServeConfig)
+	require.NoError(t, err)
+	assert.Equal(t, "3", *cfg.ModelVersion)
+	entity, err := cfg.servedEntity("3", commandPackage)
+	require.NoError(t, err)
+	assert.Equal(t, servingCompute{WorkloadType: "GPU_MEDIUM", MinConcurrency: 4, MaxConcurrency: 8}, entity.Serving)
+	assert.Nil(t, entity.Dedicated)
+}
+
+func TestServeConfigDedicated(t *testing.T) {
+	cfg, err := loadServeConfigText(t, dedicatedServeConfig)
+	require.NoError(t, err)
+	entity, err := cfg.servedEntity("3", dedicatedPackage)
+	require.NoError(t, err)
+	assert.Equal(t, &dedicatedCompute{ComputeProfile: "COMPUTE_PROFILE_THROUGHPUT", ProvisionedModelUnits: 900}, entity.Dedicated)
+}
+
+func TestServeConfigPartialBlocksTakeDefaults(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		pkg  versionPackage
+		want servedEntity
+	}{
+		{"only a mode", minimalServeConfig + "compute: {mode: Throughput_Optimized}\n", dedicatedPackage, servedEntity{Dedicated: &dedicatedCompute{ComputeProfile: "COMPUTE_PROFILE_THROUGHPUT", ProvisionedModelUnits: 600}}},
+		{"only min_units", minimalServeConfig + "compute: {model_units: {min_units: 50}}\n", dedicatedPackage, servedEntity{Dedicated: &dedicatedCompute{ComputeProfile: "COMPUTE_PROFILE_LOW_LATENCY", ProvisionedModelUnits: 50}}},
+		{"only max_units", minimalServeConfig + "compute: {model_units: {max_units: 100}}\n", dedicatedPackage, servedEntity{Dedicated: &dedicatedCompute{ComputeProfile: "COMPUTE_PROFILE_LOW_LATENCY", ProvisionedModelUnits: 100}}},
+		{"only an accelerator", minimalServeConfig + "compute: {gpu: {accelerator_type: GPU_1xH100}}\n", commandPackage, servedEntity{Serving: servingCompute{WorkloadType: "GPU_XLARGE", MinConcurrency: 4, MaxConcurrency: 4}}},
+		{"only min_replicas", minimalServeConfig + "compute: {gpu: {min_replicas: 2}}\n", commandPackage, servedEntity{Serving: servingCompute{WorkloadType: "GPU_MEDIUM", MinConcurrency: 8, MaxConcurrency: 8}}},
+		{"scale to zero", minimalServeConfig + "compute: {gpu: {min_replicas: 0}}\n", otherPackage, servedEntity{Serving: servingCompute{WorkloadType: "CPU", MinConcurrency: 0, MaxConcurrency: 4, ScaleToZero: true}}},
+		{"only max_replicas", minimalServeConfig + "compute: {gpu: {max_replicas: 5}}\n", otherPackage, servedEntity{Serving: servingCompute{WorkloadType: "CPU", MinConcurrency: 4, MaxConcurrency: 20}}},
+	}
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg, err := loadServeConfigText(t, tt.text)
 			require.NoError(t, err)
-			assert.Equal(t, tt.variant, cfg.variant())
-			assert.Equal(t, tt.variant != variantRegistered, cfg.registers())
+			entity, err := cfg.servedEntity("3", tt.pkg)
+			require.NoError(t, err)
+			tt.want.EntityName, tt.want.EntityVersion = "main.models.qwen", "3"
+			assert.Equal(t, tt.want, entity)
 		})
 	}
 }
 
-func TestLoadServeConfigCommand(t *testing.T) {
-	cfg, err := loadServeConfigText(t, commandServeConfig)
-	require.NoError(t, err)
-
-	req := cfg.registrationRequest("key-1")
-	assert.Equal(t, registerModelPackageRequest{
-		RegisteredModel: "main.models.qwen",
-		IdempotencyKey:  "key-1",
-		Checkpoint: &modelPackageCheckpoint{
-			VolumePath:     "/Volumes/main/models/weights/qwen3_8b",
-			ServingCommand: "python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080",
-			Task:           "llm/v1/chat",
-			Environment:    modelPackageEnvironment{Runtime: "client.6-gpu", Dependencies: []string{"einops==0.8.0"}},
-		},
-	}, req)
-
-	entity, err := cfg.servedEntity("3")
-	require.NoError(t, err)
-	assert.Equal(t, servedEntity{
-		EntityName:      "main.models.qwen",
-		EntityVersion:   "3",
-		WorkloadType:    "GPU_MEDIUM",
-		WorkloadSize:    "Small",
-		EnvironmentVars: map[string]string{"LOG_LEVEL": "info", "HF_TOKEN": "{{secrets/llm/hf_token}}"},
-	}, entity)
+func TestServeConfigAcceleratorTable(t *testing.T) {
+	for accelerator, workload := range map[string]string{
+		"GPU_1xA10":     "GPU_MEDIUM",
+		"GPU_4xA10":     "MULTIGPU_MEDIUM",
+		"GPU_8xA10":     "GPU_MEDIUM_8",
+		"GPU_1xH100":    "GPU_XLARGE",
+		"GPU_8xH100":    "GPU_XLARGE_8",
+		"GPU_1xRTX6000": "GPU_LARGE_RTX",
+		"CPU":           "CPU",
+	} {
+		cfg, err := loadServeConfigText(t, minimalServeConfig+"compute: {gpu: {accelerator_type: "+accelerator+"}}\n")
+		require.NoError(t, err, accelerator)
+		entity, err := cfg.servedEntity("3", otherPackage)
+		require.NoError(t, err, accelerator)
+		assert.Equal(t, workload, entity.Serving.WorkloadType, accelerator)
+	}
 }
 
-func TestLoadServeConfigCommandOnDatabricksAI(t *testing.T) {
-	cfg, err := loadServeConfigText(t, strings.Replace(commandServeConfig, "  version: 6\n", "  version: databricks_ai_v6\n", 1))
-	require.NoError(t, err)
-	req := cfg.registrationRequest("key-1")
-	assert.Equal(t, modelPackageEnvironment{Runtime: "client.6-gpu", Dependencies: []string{"einops==0.8.0"}, BaseEnvironment: "databricks-ai"}, req.Checkpoint.Environment)
-}
-
-func TestLoadServeConfigDedicated(t *testing.T) {
-	cfg, err := loadServeConfigText(t, dedicatedServeConfig+"mlflow_experiment_path: /Shared/qwen\n")
-	require.NoError(t, err)
-
-	req := cfg.registrationRequest("key-1")
-	assert.Equal(t, registerModelPackageRequest{
-		RegisteredModel:     "main.models.qwen",
-		IdempotencyKey:      "key-1",
-		DedicatedCheckpoint: &dedicatedCheckpoint{VolumePath: "/Volumes/main/models/weights/qwen3_8b"},
-		ExperimentPath:      "/Shared/qwen",
-	}, req)
-
-	dedicated, err := cfg.resolveDedicatedCompute()
-	require.NoError(t, err)
-	assert.Equal(t, &dedicatedCompute{ComputeProfile: "COMPUTE_PROFILE_LOW_LATENCY", ProvisionedModelUnits: 600}, dedicated)
-}
-
-func TestLoadServeConfigRegisteredDefaultsToCPU(t *testing.T) {
-	cfg, err := loadServeConfigText(t, registeredServeConfig)
-	require.NoError(t, err)
-	assert.False(t, cfg.registers())
-
-	entity, err := cfg.servedEntity("7")
-	require.NoError(t, err)
-	assert.Equal(t, "CPU", entity.WorkloadType)
-	assert.Equal(t, "Small", entity.WorkloadSize)
-	assert.Nil(t, entity.EnvironmentVars)
-}
-
-func TestServeConfigCrossVariantFields(t *testing.T) {
+func TestServeConfigRefusesComputeOfTheOtherKind(t *testing.T) {
 	tests := []struct {
 		name    string
-		config  string
+		text    string
+		pkg     versionPackage
 		wantErr string
 	}{
-		{
-			"task without a checkpoint",
-			registeredServeConfig + "task: llm/v1/chat\n",
-			"task can't be set: the file is read as a registered model, because it sets no checkpoint, and task applies only to a checkpoint served by command",
-		},
-		{
-			"command without a checkpoint",
-			registeredServeConfig + "command: python serve.py\n",
-			"command can't be set: the file is read as a registered model, because it sets no checkpoint, and command applies only to a checkpoint served by command",
-		},
-		{
-			"environment on a dedicated checkpoint",
-			dedicatedServeConfig + "environment: {version: 6}\n",
-			"environment can't be set: the file is read as a dedicated checkpoint, because it sets checkpoint but not command, and environment applies only to a checkpoint served by command",
-		},
-		{
-			"model_version with a checkpoint",
-			commandServeConfig + "model_version: 3\n",
-			"model_version can't be set: the file is read as a checkpoint served by command, because it sets checkpoint and command, and model_version applies only to a registered model",
-		},
-		{
-			"model_version on a dedicated checkpoint",
-			dedicatedServeConfig + "model_version: 3\n",
-			"model_version can't be set: the file is read as a dedicated checkpoint",
-		},
-		{
-			"secrets on a dedicated checkpoint",
-			dedicatedServeConfig + "secrets: {HF_TOKEN: llm/hf_token}\n",
-			"secrets can't be set: the file is read as a dedicated checkpoint, because it sets checkpoint but not command, and secrets applies only to a command or registered model",
-		},
-		{
-			"env_variables on a dedicated checkpoint",
-			dedicatedServeConfig + "env_variables: {LOG_LEVEL: info}\n",
-			"env_variables can't be set: the file is read as a dedicated checkpoint",
-		},
-		{
-			"idempotency_token without a checkpoint",
-			registeredServeConfig + "idempotency_token: key-1\n",
-			"idempotency_token can't be set: the file is read as a registered model, because it sets no checkpoint, and idempotency_token applies only to a checkpoint, which air serve registers",
-		},
-		{
-			"mlflow_experiment_path without a checkpoint",
-			registeredServeConfig + "mlflow_experiment_path: /Shared/qwen\n",
-			"mlflow_experiment_path can't be set: the file is read as a registered model",
-		},
-		{
-			"serving compute on a dedicated checkpoint",
-			strings.Replace(dedicatedServeConfig, "  compute_profile: low_latency\n", "  compute_profile: low_latency\n  accelerator_type: GPU_1xA10\n", 1),
-			"compute.accelerator_type can't be set: the file is read as a dedicated checkpoint, because it sets checkpoint but not command, and compute.accelerator_type applies only to a command or registered model",
-		},
-		{
-			"dedicated compute on a command",
-			strings.Replace(commandServeConfig, "  workload_size: Small\n", "  workload_size: Small\n  compute_profile: low_latency\n", 1),
-			"compute.compute_profile can't be set: the file is read as a checkpoint served by command, because it sets checkpoint and command, and compute.compute_profile applies only to a dedicated checkpoint",
-		},
-		{
-			"reservation term on a command",
-			strings.Replace(commandServeConfig, "  workload_size: Small\n", "  workload_size: Small\n  reservation_term: ONE_MONTH\n", 1),
-			"compute.reservation_term can't be set: the file is read as a checkpoint served by command",
-		},
-		{
-			"dedicated compute on a registered model",
-			registeredServeConfig + "compute: {workload_size: Small, provisioned_model_units: 10}\n",
-			"compute.provisioned_model_units can't be set: the file is read as a registered model",
-		},
+		{"replicas for a dedicated checkpoint", gpuServeConfig, dedicatedPackage, "compute.gpu can't be set: version 3 of main.models.qwen is a checkpoint registered without engine, which is served with dedicated inference; set compute.model_units, or leave compute out"},
+		{"model units for a command", dedicatedServeConfig, commandPackage, "compute.model_units can't be set: it's for a checkpoint registered without engine, and version 3 of main.models.qwen isn't one; set compute.gpu, or leave compute out"},
+		{"model units for another version", dedicatedServeConfig, otherPackage, "compute.model_units can't be set"},
+		{"a mode for a command", minimalServeConfig + "compute: {mode: throughput_optimized}\n", commandPackage, "compute.mode can't be set: version 3 of main.models.qwen is served on replicas, which have no mode yet; leave it out"},
+		{"a mode for another version", minimalServeConfig + "compute: {mode: latency_sensitive}\n", otherPackage, "compute.mode can't be set"},
+		{"CPU for a command", minimalServeConfig + "compute: {gpu: {accelerator_type: CPU}}\n", commandPackage, "compute.gpu.accelerator_type can't be CPU: version 3 of main.models.qwen is served by its command, whose environment is registered for a GPU"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadServeConfigText(t, tt.config)
-			assert.ErrorContains(t, err, tt.wantErr)
-		})
-	}
-}
-
-func TestServeConfigRequiredFieldsPerVariant(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  string
-		wantErr string
-	}{
-		{"command without a task", dropLine("task:")(commandServeConfig), "task is required for a checkpoint served by command"},
-		{"command without an environment", dropBlock("environment:")(commandServeConfig), "environment is required for a checkpoint served by command"},
-		{"dedicated without compute", dropBlock("compute:")(dedicatedServeConfig), "compute is required for a dedicated checkpoint"},
-		{"dedicated without a profile", dropLine("  compute_profile:")(dedicatedServeConfig), "compute.compute_profile is required for a dedicated checkpoint"},
-		{"dedicated without units", dropLine("  provisioned_model_units:")(dedicatedServeConfig), "compute.provisioned_model_units is required for a dedicated checkpoint"},
-		{"command compute without num_accelerators", dropLine("  num_accelerators:")(commandServeConfig), "compute.num_accelerators is required when compute is set"},
-		{"registered compute without accelerator", registeredServeConfig + "compute: {workload_size: Small}\n", "compute.accelerator_type is required when compute is set"},
-		{"no endpoint", dropLine("endpoint_name:")(commandServeConfig), `endpoint_name must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
-		{"no registered model", dropLine("registered_model_name:")(commandServeConfig), `registered_model_name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got ""`},
-		{"registered with a bad version", replaceFirst("model_version: 7", "model_version: v7")(registeredServeConfig), "model_version must be a model version number such as 3"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadServeConfigText(t, tt.config)
-			assert.ErrorContains(t, err, tt.wantErr)
-		})
-	}
-}
-
-// servingCompute is a config's serving compute for one accelerator, count and size.
-func servingCompute(accelerator string, count int, size string) *serveComputeConfig {
-	return &serveComputeConfig{AcceleratorType: &accelerator, NumAccelerators: &count, WorkloadSize: &size}
-}
-
-func TestServeServingComputeTable(t *testing.T) {
-	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
-	for _, tt := range []struct {
-		accelerator string
-		count       int
-		workload    string
-	}{
-		{"GPU_1xA10", 1, "GPU_MEDIUM"},
-		{"GPU_1xA10", 4, "MULTIGPU_MEDIUM"},
-		{"GPU_1xA10", 8, "GPU_MEDIUM_8"},
-		{"GPU_1xH100", 1, "GPU_XLARGE"},
-		{"GPU_8xH100", 8, "GPU_XLARGE_8"},
-		{"GPU_1xRTX6000", 1, "GPU_LARGE_RTX"},
-	} {
-		cfg.Compute = servingCompute(tt.accelerator, tt.count, "Medium")
-		workload, size, err := cfg.resolveServingCompute()
-		require.NoError(t, err, tt.accelerator)
-		assert.Equal(t, tt.workload, workload, "%s x%d", tt.accelerator, tt.count)
-		assert.Equal(t, "Medium", size)
-	}
-}
-
-func TestServeServingComputeRejectsUnsupportedPairs(t *testing.T) {
-	const pairs = "GPU_1xA10 x1, GPU_1xA10 x4, GPU_1xA10 x8, GPU_1xH100 x1, GPU_8xH100 x8, GPU_1xRTX6000 x1"
-	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
-	for _, tt := range []struct {
-		accelerator string
-		count       int
-	}{
-		{"GPU_1xA10", 2},
-		{"GPU_1xH100", 8},
-		{"GPU_8xH100", 1},
-		{"GPU_8xB300", 8},
-		{"GPU_1xRTX6000", 2},
-	} {
-		cfg.Compute = servingCompute(tt.accelerator, tt.count, "Small")
-		_, _, err := cfg.resolveServingCompute()
-		assert.ErrorContains(t, err, "must be a supported pair, got "+tt.accelerator+" with ", tt.accelerator)
-		assert.ErrorContains(t, err, "the supported pairs are "+pairs, tt.accelerator)
-	}
-
-	cfg.Compute = servingCompute("GPU_9xA10", 1, "Small")
-	_, _, err := cfg.resolveServingCompute()
-	assert.ErrorContains(t, err, `compute.accelerator_type: "GPU_9xA10" is not a recognized accelerator type; the supported pairs are `+pairs)
-}
-
-func TestServeServingComputeDefaults(t *testing.T) {
-	command := serveConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve")}
-	workload, size, err := command.resolveServingCompute()
-	require.NoError(t, err)
-	assert.Equal(t, "GPU_MEDIUM", workload)
-	assert.Equal(t, "Small", size)
-
-	registered := serveConfig{}
-	workload, size, err = registered.resolveServingCompute()
-	require.NoError(t, err)
-	assert.Equal(t, "CPU", workload)
-	assert.Equal(t, "Small", size)
-}
-
-func TestServeServingComputeRejectsBadSize(t *testing.T) {
-	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w"), Command: new("serve"), Compute: servingCompute("GPU_1xA10", 1, "Huge")}
-	_, _, err := cfg.resolveServingCompute()
-	assert.ErrorContains(t, err, `compute.workload_size must be one of Small, Medium, Large, got "Huge"`)
-}
-
-func TestServeDedicatedComputeMapping(t *testing.T) {
-	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w")}
-	for profile, want := range map[string]string{
-		"low_latency":  "COMPUTE_PROFILE_LOW_LATENCY",
-		"FAST":         "COMPUTE_PROFILE_FAST",
-		"Throughput":   "COMPUTE_PROFILE_THROUGHPUT",
-		"minimal_cost": "COMPUTE_PROFILE_MINIMAL_COST",
-	} {
-		cfg.Compute = &serveComputeConfig{ComputeProfile: new(profile), ProvisionedModelUnits: new(600)}
-		dedicated, err := cfg.resolveDedicatedCompute()
-		require.NoError(t, err, profile)
-		assert.Equal(t, want, dedicated.ComputeProfile, profile)
-	}
-}
-
-func TestServeDedicatedComputeRejects(t *testing.T) {
-	cfg := serveConfig{Checkpoint: new("/Volumes/a/b/c/w")}
-	for _, tt := range []struct {
-		name    string
-		compute serveComputeConfig
-		wantErr string
-	}{
-		{"unknown profile", serveComputeConfig{ComputeProfile: new("fastest"), ProvisionedModelUnits: new(600)}, `compute.compute_profile must be one of low_latency, fast, throughput, minimal_cost, got "fastest"`},
-		{"zero units", serveComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(0)}, "compute.provisioned_model_units must be above 0, got 0"},
-		{"negative units", serveComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(-1)}, "compute.provisioned_model_units must be above 0, got -1"},
-		{"a reservation term", serveComputeConfig{ComputeProfile: new("fast"), ProvisionedModelUnits: new(600), ReservationTerm: new("ONE_MONTH")}, "compute.reservation_term isn't supported yet"},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg.Compute = &tt.compute
-			_, err := cfg.resolveDedicatedCompute()
+			cfg, err := loadServeConfigText(t, tt.text)
+			require.NoError(t, err)
+			_, err = cfg.servedEntity("3", tt.pkg)
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
@@ -343,177 +153,112 @@ func TestServeDedicatedComputeRejects(t *testing.T) {
 func TestServeConfigValidation(t *testing.T) {
 	tests := []struct {
 		name    string
-		edit    func(string) string
+		text    string
 		wantErr string
 	}{
-		{"bad model name", replaceFirst("main.models.qwen", "qwen"), "registered_model_name must be a Unity Catalog model name"},
-		{"backticked model name", replaceFirst("main.models.qwen", "main.models.`qwen`"), "registered_model_name must be a Unity Catalog model name"},
-		{"command without task", replaceFirst("task: llm/v1/chat\n", ""), "task is required for a checkpoint served by command"},
-		{"empty task", replaceFirst("task: llm/v1/chat", `task: " "`), "task cannot be empty"},
-		{"path outside volumes", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/dbfs/weights"), "checkpoint must be a Unity Catalog volume directory"},
-		{"path too long", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/Volumes/"+strings.Repeat("a", 1100)), "checkpoint must be a Unity Catalog volume directory"},
-		{"path too long in characters", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/Volumes/"+strings.Repeat("é", 1020)), "checkpoint must be a Unity Catalog volume directory"},
-		{"empty command", replaceFirst("command: python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080", `command: " "`), "command cannot be empty"},
-		{"command too long", replaceFirst("command: python", "command: python "+strings.Repeat("x", maxServingCommandChars)), "command must be at most 32768 characters"},
-		{"AI environment before version 5", replaceFirst("  version: 6\n", "  version: databricks_ai_v4\n"), "databricks_ai_v in environment.version requires AI Runtime version 5 or higher"},
-		{"bad environment version", replaceFirst("  version: 6\n", "  version: six\n"), "unsupported client image version"},
-		{"zero environment version", replaceFirst("  version: 6\n", "  version: 0\n"), "environment.version must be a serverless environment version such as 6 or databricks_ai_v6"},
-		{"no environment version", replaceFirst("  version: 6\n", ""), "environment.version is required"},
-		{"empty dependency", replaceFirst("[einops==0.8.0]", `[""]`), "environment.dependencies[0] cannot be empty"},
-		{"no environment", dropBlock("environment:"), "environment is required for a checkpoint served by command"},
-		{"no endpoint", dropLine("endpoint_name:"), `endpoint_name must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
-		{"endpoint with a path", replaceFirst("endpoint_name: qwen-chat", "endpoint_name: x/../../jobs"), "endpoint_name must be a serving endpoint name"},
-		{"no workload size", dropLine("  workload_size:"), "compute.workload_size is required when compute is set"},
-		{"lowercase workload size", replaceFirst("workload_size: Small", "workload_size: medium"), "compute.workload_size must be one of Small, Medium, Large"},
-		{"unsupported accelerator pair", replaceFirst("num_accelerators: 1", "num_accelerators: 2"), "must be a supported pair, got GPU_1xA10 with 2"},
-		{"secret without key", replaceFirst("llm/hf_token", "llm"), "expected format 'scope/key'"},
-		{"env var and secret", replaceFirst("LOG_LEVEL: info", "HF_TOKEN: x"), `"HF_TOKEN" is set in both env_variables and secrets`},
-		{"bad idempotency token", appendText("idempotency_token: a b\n"), "idempotency_token must be 1 to 128 letters"},
-		{"long idempotency token", appendText("idempotency_token: " + strings.Repeat("k", 129) + "\n"), "idempotency_token must be 1 to 128 letters"},
-		{"relative experiment", appendText("mlflow_experiment_path: Users/me/x\n"), "mlflow_experiment_path must be an absolute workspace path"},
+		{"no model name", "endpoint_name: qwen-chat\n", `uc_model_name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got ""`},
+		{"bad model name", "uc_model_name: qwen\nendpoint_name: qwen-chat\n", "uc_model_name must be a Unity Catalog model name"},
+		{"no endpoint", "uc_model_name: main.models.qwen\n", `endpoint_name must be a serving endpoint name of letters, digits, '-' and '_', got ""`},
+		{"endpoint with a path", "uc_model_name: main.models.qwen\nendpoint_name: x/../../jobs\n", "endpoint_name must be a serving endpoint name"},
+		{"a version that isn't a number", minimalServeConfig + "model_version: v3\n", `model_version must be a model version number such as 3, got "v3"`},
+		{"version zero", minimalServeConfig + "model_version: 0\n", "model_version must be a model version number"},
+		{"an unknown mode", minimalServeConfig + "compute: {mode: realtime}\n", `compute.mode must be one of latency_sensitive, throughput_optimized, got "realtime"`},
+		{"both kinds of compute", minimalServeConfig + "compute: {gpu: {min_replicas: 1}, model_units: {min_units: 1}}\n", "compute can set gpu or model_units, not both"},
+		{"a mode with replicas", minimalServeConfig + "compute: {mode: latency_sensitive, gpu: {min_replicas: 1}}\n", "compute.mode can't be set with compute.gpu: it selects the profile of dedicated inference, and replicas have no mode yet"},
+		{"a minimum whose concurrency overflows", minimalServeConfig + "compute: {gpu: {min_replicas: 4611686018427387904}}\n", "compute.gpu.min_replicas must be at most 536870911, got 4611686018427387904"},
+		{"an unknown accelerator", minimalServeConfig + "compute: {gpu: {accelerator_type: GPU_2xA10}}\n", `compute.gpu.accelerator_type must be one of GPU_1xA10, GPU_4xA10, GPU_8xA10, GPU_1xH100, GPU_8xH100, GPU_1xRTX6000, CPU, got "GPU_2xA10"`},
+		{"a lowercase accelerator", minimalServeConfig + "compute: {gpu: {accelerator_type: gpu_1xa10}}\n", "compute.gpu.accelerator_type must be one of"},
+		{"a negative minimum", minimalServeConfig + "compute: {gpu: {min_replicas: -1}}\n", "compute.gpu.min_replicas must be 0 or more, got -1"},
+		{"a zero maximum", minimalServeConfig + "compute: {gpu: {min_replicas: 0, max_replicas: 0}}\n", "compute.gpu.max_replicas must be at least 1, got 0"},
+		{"a minimum above the maximum", minimalServeConfig + "compute: {gpu: {min_replicas: 3, max_replicas: 2}}\n", "compute.gpu.min_replicas must be at most max_replicas, got 3 and 2"},
+		{"a maximum whose concurrency overflows", minimalServeConfig + "compute: {gpu: {max_replicas: 4611686018427387904}}\n", "compute.gpu.max_replicas must be at most 536870911, got 4611686018427387904"},
+		{"a range on an H100", minimalServeConfig + "compute: {gpu: {accelerator_type: GPU_1xH100, min_replicas: 1, max_replicas: 2}}\n", "compute.gpu.min_replicas must equal max_replicas on GPU_1xH100, because endpoints there don't scale: H100 capacity isn't guaranteed on scale-up; got 1 and 2"},
+		{"scale to zero on an H100", minimalServeConfig + "compute: {gpu: {accelerator_type: GPU_8xH100, min_replicas: 0}}\n", "compute.gpu.min_replicas must equal max_replicas on GPU_8xH100"},
+		{"half a replica", minimalServeConfig + "compute: {gpu: {min_replicas: 0.5}}\n", `"0.5" is not a whole number`},
+		{"a unit range", minimalServeConfig + "compute: {model_units: {min_units: 600, max_units: 900}}\n", "compute.model_units.min_units must equal max_units, because dedicated endpoints don't scale yet; got 600 and 900"},
+		{"zero units", minimalServeConfig + "compute: {model_units: {min_units: 0}}\n", "compute.model_units must be above 0, got 0"},
+		{"a reservation term", minimalServeConfig + "compute: {model_units: {reservation_term: ONE_MONTH}}\n", "compute.model_units.reservation_term isn't supported yet"},
+		{"fractional units", minimalServeConfig + "compute: {model_units: {min_units: 600.7}}\n", `"600.7" is not a whole number`},
+		{"a register field", minimalServeConfig + "model_source: /Volumes/a/b/c/w\n", "field model_source not found"},
+		{"environment variables", minimalServeConfig + "env_variables: {LOG_LEVEL: info}\n", "field env_variables not found"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadServeConfigText(t, tt.edit(commandServeConfig))
+			_, err := loadServeConfigText(t, tt.text)
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }
 
-func TestServeConfigDedicatedValidation(t *testing.T) {
+func TestLoadServeConfigFromFlags(t *testing.T) {
+	cfg, err := loadServeConfig(t.Context(), serveOptions{ucModel: "main.models.qwen", endpoint: "qwen-chat", modelVersion: "4"})
+	require.NoError(t, err)
+	assert.Equal(t, "main.models.qwen", cfg.UCModel)
+	assert.Equal(t, "qwen-chat", cfg.Endpoint)
+	assert.Equal(t, "4", *cfg.ModelVersion)
+	assert.Nil(t, cfg.Compute)
+
+	cfg, err = loadServeConfig(t.Context(), serveOptions{file: writeConfigFile(t, "serve.yaml", gpuServeConfig), endpoint: "other", modelVersion: "5", flagsSet: map[string]bool{endpointNameFlag: true, modelVersionFlag: true}})
+	require.NoError(t, err)
+	assert.Equal(t, "other", cfg.Endpoint)
+	assert.Equal(t, "5", *cfg.ModelVersion)
+	assert.NotNil(t, cfg.Compute.GPU)
+}
+
+func TestLoadServeConfigNeedsAFileOrBothFlags(t *testing.T) {
+	for _, opts := range []serveOptions{{}, {ucModel: "a.b.c"}, {endpoint: "ep"}} {
+		_, err := loadServeConfig(t.Context(), opts)
+		assert.ErrorContains(t, err, "set --file, or both --uc-model-name and --endpoint-name")
+	}
+	_, err := loadServeConfig(t.Context(), serveOptions{ucModel: "a.b.c", endpoint: "ep", overrides: []string{"compute.mode=x"}})
+	assert.ErrorContains(t, err, "--override applies to a file")
+}
+
+func TestLoadServeConfigChecksFlagsByName(t *testing.T) {
 	tests := []struct {
 		name    string
-		edit    func(string) string
+		opts    serveOptions
 		wantErr string
 	}{
-		{"bad path", replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/dbfs/weights"), "checkpoint must be a Unity Catalog volume directory"},
-		{"bad endpoint", replaceFirst("endpoint_name: qwen-chat", "endpoint_name: a/b"), "endpoint_name must be a serving endpoint name"},
-		{"bad token", appendText("idempotency_token: a b\n"), "idempotency_token must be 1 to 128 letters"},
-		{"unknown profile", replaceFirst("low_latency", "fastest"), "compute.compute_profile must be one of"},
-		{"zero units", replaceFirst("provisioned_model_units: 600", "provisioned_model_units: 0"), "compute.provisioned_model_units must be above 0"},
+		{"an empty version", serveOptions{ucModel: "a.b.c", endpoint: "ep", flagsSet: map[string]bool{modelVersionFlag: true}}, "--model-version cannot be empty"},
+		{"an empty endpoint over a file", serveOptions{file: "unused.yaml", flagsSet: map[string]bool{endpointNameFlag: true}}, "--endpoint-name cannot be empty"},
+		{"a bad version", serveOptions{ucModel: "a.b.c", endpoint: "ep", modelVersion: "latest"}, `--model-version must be a model version number such as 3, got "latest"`},
+		{"a bad model", serveOptions{ucModel: "qwen", endpoint: "ep"}, `--uc-model-name must be a Unity Catalog model name as <catalog>.<schema>.<model>, got "qwen"`},
+		{"a bad endpoint", serveOptions{ucModel: "a.b.c", endpoint: "a/b"}, `--endpoint-name must be a serving endpoint name of letters, digits, '-' and '_', got "a/b"`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := loadServeConfigText(t, tt.edit(dedicatedServeConfig))
+			_, err := loadServeConfig(t.Context(), tt.opts)
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
-}
-
-func TestServeConfigCountsCharactersNotBytes(t *testing.T) {
-	// 1,000 two-byte characters fit the 1,024-character cap on a volume path.
-	_, err := loadServeConfigText(t, replaceFirst("/Volumes/main/models/weights/qwen3_8b", "/Volumes/"+strings.Repeat("é", 1000))(commandServeConfig))
-	assert.NoError(t, err)
 }
 
 func TestLoadServeConfigOverride(t *testing.T) {
-	cfg, err := loadServeConfigText(t, commandServeConfig, "compute.num_accelerators=4", "environment.version=5")
+	cfg, err := loadServeConfigText(t, gpuServeConfig, "compute.gpu.max_replicas=4")
 	require.NoError(t, err)
-	entity, err := cfg.servedEntity("3")
+	entity, err := cfg.servedEntity("3", commandPackage)
 	require.NoError(t, err)
-	assert.Equal(t, "MULTIGPU_MEDIUM", entity.WorkloadType)
-	assert.Equal(t, "client.5-gpu", cfg.registrationRequest("k").Checkpoint.Environment.Runtime)
-}
+	assert.Equal(t, 16, entity.Serving.MaxConcurrency)
 
-func TestLoadServeConfigOverrideIsValidatedAgainstTheVariant(t *testing.T) {
-	_, err := loadServeConfigText(t, commandServeConfig, "compute.compute_profile=low_latency")
-	assert.ErrorContains(t, err, "compute.compute_profile can't be set: the file is read as a checkpoint served by command")
-}
-
-func TestLoadServeConfigRejectsUnknownOverride(t *testing.T) {
-	_, err := loadServeConfigText(t, commandServeConfig, "compute.workers=2")
+	_, err = loadServeConfigText(t, gpuServeConfig, "compute.workers=2")
 	assert.ErrorContains(t, err, `"workers" is not a known field`)
 }
 
-func TestLoadServeConfigRejectsUnknownField(t *testing.T) {
-	_, err := loadServeConfigText(t, commandServeConfig+"experiment_name: x\n")
-	assert.ErrorContains(t, err, "field experiment_name not found")
-}
-
-func TestLoadServeConfigRejectsOldShape(t *testing.T) {
-	_, err := loadServeConfigText(t, "registered_model: main.models.qwen\nendpoint: qwen-chat\n")
-	assert.ErrorContains(t, err, "field registered_model not found")
-}
-
-func TestLoadServeConfigRejectsEmptyFile(t *testing.T) {
-	_, err := loadServeConfigText(t, "")
-	assert.ErrorContains(t, err, "is empty")
-}
-
 func TestServeSchemaHelp(t *testing.T) {
-	root, err := resolveSchemaField(serveSchema(), "config")
+	field, err := resolveSchemaField(serveSchema(), "compute.gpu.min_replicas")
 	require.NoError(t, err)
-	var out strings.Builder
-	renderConfigField(&out, serveCommandPath, root, nil)
-	help := out.String()
-	assert.Contains(t, help, "    databricks air serve -h config.checkpoint\n")
-	assert.Contains(t, help, "  Model:\n")
-	assert.Contains(t, help, "  Serving:\n")
-	assert.Contains(t, help, "  Registration:\n")
-	assert.Contains(t, help, `For details on a field, run "databricks air serve -h config.<field>".`)
+	assert.Empty(t, field.required)
 
-	field, err := resolveSchemaField(serveSchema(), "compute.compute_profile")
+	field, err = resolveSchemaField(serveSchema(), "endpoint_name")
 	require.NoError(t, err)
-	assert.Equal(t, "when checkpoint is set without command", field.required)
-
-	_, err = resolveSchemaField(serveSchema(), "checkpont")
-	assert.ErrorContains(t, err, `did you mean "checkpoint"?`)
-
-	_, err = resolveSchemaField(serveSchema(), "secrets.HF_TOKEN")
-	assert.ErrorContains(t, err, "holds user-defined keys")
+	assert.Equal(t, "yes", field.required)
 }
 
-// Every field a variant names must be a schema path, so the variant checks can't
-// drift from the YAML.
-func TestServeVariantFieldsAreSchemaPaths(t *testing.T) {
-	var cfg serveConfig
-	for _, f := range cfg.variantFields() {
-		_, err := resolveSchemaField(serveSchema(), f.name)
-		assert.NoError(t, err, f.name)
-	}
-}
-
-func replaceFirst(old, with string) func(string) string {
-	return func(s string) string {
-		if !strings.Contains(s, old) {
-			panic("fixture does not contain " + old)
-		}
-		return strings.Replace(s, old, with, 1)
-	}
-}
-
-func appendText(extra string) func(string) string {
-	return func(s string) string { return s + extra }
-}
-
-// dropLine removes the first line starting with prefix.
-func dropLine(prefix string) func(string) string {
-	return func(s string) string {
-		lines := strings.SplitAfter(s, "\n")
-		for i, line := range lines {
-			if strings.HasPrefix(line, prefix) {
-				return strings.Join(append(lines[:i:i], lines[i+1:]...), "")
-			}
-		}
-		panic("fixture has no line starting with " + prefix)
-	}
-}
-
-// dropBlock removes the top-level key starting with prefix and its indented lines.
-func dropBlock(prefix string) func(string) string {
-	return func(s string) string {
-		var kept []string
-		dropping := false
-		for _, line := range strings.SplitAfter(s, "\n") {
-			switch {
-			case strings.HasPrefix(line, prefix):
-				dropping = true
-			case dropping && strings.HasPrefix(line, "  "):
-			default:
-				dropping = false
-				kept = append(kept, line)
-			}
-		}
-		return strings.Join(kept, "")
+// The examples in the schema help must load, so the help can't drift from the YAML.
+func TestServeSchemaHelpExamplesLoad(t *testing.T) {
+	for _, example := range helpExamples(t, serveSchema(), 3) {
+		_, err := loadServeConfigText(t, example)
+		assert.NoError(t, err, example)
 	}
 }

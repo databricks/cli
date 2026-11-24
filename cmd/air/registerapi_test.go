@@ -150,7 +150,7 @@ const (
 		"staging_status": {"state": "IN_PROGRESS", "model_artifact": {"state": "SUCCEEDED"}, "environment_artifact": {"state": "IN_PROGRESS"}}}`
 )
 
-// fastRetries shortens the pause before air serve repeats a failed request.
+// fastRetries shortens the pause before air register repeats a failed request.
 func fastRetries(ctx context.Context) context.Context {
 	return env.Set(ctx, retry.IntervalMsVariable, "1")
 }
@@ -273,7 +273,7 @@ func TestRegisterAndFinalizeRejectsAMalformedRegistrationStatus(t *testing.T) {
 			fake := newFakeModelServing(t, `{"model_id": "m-1", "registered_model": "main.models.qwen", "model_version": "3", "ready": false, "staging_status": `+tt.status+`}`)
 
 			resp, states, err := registerTestCheckpoint(t, fake, checkpointRequest())
-			assert.ErrorContains(t, err, "air serve can't read Model Serving's response about version 3 of main.models.qwen: ")
+			assert.ErrorContains(t, err, "air register can't read Model Serving's response about version 3 of main.models.qwen: ")
 			assert.ErrorContains(t, err, tt.wantErr)
 			assert.Nil(t, resp)
 			assert.Empty(t, states)
@@ -291,7 +291,7 @@ func TestRegisterAndFinalizeRejectsAMalformedPolledStatus(t *testing.T) {
 
 			resp, states, err := registerTestCheckpoint(t, fake, checkpointRequest())
 			assert.ErrorContains(t, err, tt.wantErr)
-			code, retryable := serveErrorCode(err)
+			code, retryable := modelErrorCode(err)
 			assert.Equal(t, codeInternalError, code)
 			assert.True(t, retryable)
 			// It stops at the malformed status instead of reading it as progress.
@@ -395,7 +395,7 @@ func TestRegisterAndFinalizeStopsWhenCanceled(t *testing.T) {
 }
 
 func TestRegistrationRequestForCommandJSON(t *testing.T) {
-	cfg, err := loadServeConfigText(t, commandServeConfig+"mlflow_experiment_path: /Shared/qwen\n")
+	cfg, err := loadRegisterConfigText(t, commandRegisterConfig)
 	require.NoError(t, err)
 	raw, err := json.Marshal(cfg.registrationRequest("k"))
 	require.NoError(t, err)
@@ -407,13 +407,12 @@ func TestRegistrationRequestForCommandJSON(t *testing.T) {
 			"serving_command": "python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080",
 			"task": "llm/v1/chat",
 			"environment": {"runtime": "client.6-gpu", "dependencies": ["einops==0.8.0"]}
-		},
-		"experiment_path": "/Shared/qwen"
+		}
 	}`, string(raw))
 }
 
 func TestRegistrationRequestForDedicatedJSON(t *testing.T) {
-	cfg, err := loadServeConfigText(t, dedicatedServeConfig)
+	cfg, err := loadRegisterConfigText(t, dedicatedRegisterConfig)
 	require.NoError(t, err)
 	raw, err := json.Marshal(cfg.registrationRequest("k"))
 	require.NoError(t, err)
