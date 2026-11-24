@@ -171,18 +171,19 @@ def get_file_resources(target):
 def get_resources_for_lookup(target):
     """get_resources, falling back to resources.json when no deployment is recorded at all.
 
-    Recording is best effort: when the service rejects the create (e.g. a workspace quota), the
-    deploy still succeeds with resources.json as the authoritative state, and the deploy's warning
-    already fails the test. Without the fallback every later ID lookup returns nothing and the
-    failure cascades into commands run with empty IDs, including cleanups that then leak resources.
-    The note keeps the fallback visible in the test output.
+    Recording is best effort: when the deployment create fails (a quota rejection, a dropped
+    connection), the deploy still succeeds with resources.json as the authoritative state. Without
+    the fallback every later state read comes back empty and the failure cascades into commands
+    run with empty IDs, including cleanups that then leak resources. The note goes to the test log
+    (SuppressLines in bundle/test.toml): the deploy's own warning already decides whether the test
+    fails, so a rejection still fails it and a tolerated dropped connection does not.
     """
     recorded = get_resources(target)
     if recorded or get_deployment_id(target):
         return recorded
     file_resources = get_file_resources(target)
     if file_resources:
-        print("Note: no deployment recorded in deployment history, reading IDs from resources.json", file=sys.stderr)
+        print("Note: no deployment recorded in deployment history, reading resources.json", file=sys.stderr)
     return file_resources
 
 
@@ -190,7 +191,7 @@ def get_recorded_state(target):
     """The recorded resources in the on-disk state file's `state` shape (resources.<key> ->
     {__id__, state, depends_on}), so a recording run prints the same shape as a non-recording one."""
     state = {}
-    for key, value in sorted(get_resources(target).items()):
+    for key, value in sorted(get_resources_for_lookup(target).items()):
         entry = {"__id__": value["id"], "state": value["state"]}
         if value["depends_on"]:
             entry["depends_on"] = value["depends_on"]
@@ -221,6 +222,9 @@ def print_recorded_state(filename, target):
     # Pair DMS resources with the DMS version. The file serial can advance independently.
     last_version_id = get_last_version_id(target)
     serial = int(last_version_id) if last_version_id else 0
+    if not get_deployment_id(target) and data["state"]:
+        # Nothing recorded, so the state above came from the file (get_resources_for_lookup).
+        serial = data.get("serial", 0)
 
     # Recording itself is not what these tests assert, so drop the feature that marks it.
     features = {

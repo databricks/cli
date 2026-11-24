@@ -21,6 +21,10 @@ Env.UV_PYTHON = "3.10"
 # Pinned by bundle/dms/suppress-transport-warnings.
 SuppressLines.warn_dms_transport = '^Warn: (Failed to (record|complete) deployment history|Could not (enable|record|read|delete) deployment history)\b.*(stream error: stream ID \S+; INTERNAL_ERROR; received from peer|unexpected EOF|context deadline exceeded)$'
 
+# Printed by the state helpers when no deployment is recorded and they read resources.json
+# instead (print_state.get_resources_for_lookup). The deploy's warning above already shows why.
+SuppressLines.note_dms_file_fallback = '^Note: no deployment recorded in deployment history, reading resources\.json$'
+
 # The link a recorded deploy prints, dropped so a test asserts the same output whether or
 # not recording is on. The URL itself is covered by workspaceurls.TestDeploymentURL, and
 # the calls behind it by the bundle/dms tests.
