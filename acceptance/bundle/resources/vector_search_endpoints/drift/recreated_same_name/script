@@ -7,6 +7,24 @@ trap cleanup EXIT
 
 endpoint_name="vs-endpoint-${UNIQUE_NAME}"
 
+# On GCP the name of a deleted endpoint stays taken for a while after delete-endpoint returns,
+# so the create fails with "already exists" until the deletion completes. Retry only that error.
+create_endpoint_when_name_is_free() {
+    for _ in $(seq 40); do
+        if $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD 2>create.err; then
+            rm -f create.err
+            return 0
+        fi
+        if ! grep -q "already exists" create.err; then
+            break
+        fi
+        sleep 15
+    done
+    cat create.err >&2
+    rm -f create.err
+    return 1
+}
+
 title "Initial deployment"
 trace $CLI bundle deploy
 
@@ -16,7 +34,7 @@ trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{id, na
 
 title "Delete and recreate remotely with the same name"
 trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
-trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{id, name, endpoint_type}'
+trace create_endpoint_when_name_is_free | jq '{id, name, endpoint_type}'
 
 remote_recreated_endpoint_uuid=$($CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq -r '.id')
 add_repl "$remote_recreated_endpoint_uuid" "REMOTE_RECREATED_ENDPOINT_UUID"

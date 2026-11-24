@@ -18,7 +18,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]
 
->>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD
+>>> create_endpoint_when_name_is_free
 {
   "id": "[REMOTE_RECREATED_ENDPOINT_UUID]",
   "name": "vs-endpoint-[UNIQUE_NAME]",
