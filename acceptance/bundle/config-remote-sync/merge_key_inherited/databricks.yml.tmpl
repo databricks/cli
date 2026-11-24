@@ -22,8 +22,12 @@ targets:
     mode: development
     resources:
       jobs:
+        other_job: &other_job
+          tasks:
+            - task_key: prep
+              max_retries: 3
         my_job:
-          <<: *job_overrides
+          <<: [*job_overrides, *other_job]
 
 resources:
   jobs:

@@ -1,8 +1,9 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
+Created jobs.other_job
 Created pipelines.my_pipeline
 Files: 4 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit fields inherited through YAML merge keys
 
@@ -19,6 +20,8 @@ Resource: resources.jobs.my_job
   tasks[task_key='b_task'].notebook_task.base_parameters['input_file_name']: add
   tasks[task_key='c_task'].depends_on[task_key='a_task']: skip
   tasks[task_key='c_task'].depends_on[task_key='setup']: skip
+  tasks[task_key='prep']: skip
+  tasks[task_key='setup']: remove
   timeout_seconds: skip
 
 Resource: resources.pipelines.my_pipeline
@@ -31,14 +34,14 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -24,5 +24,5 @@
-       jobs:
+@@ -28,5 +28,5 @@
+               max_retries: 3
          my_job:
--          <<: *job_overrides
-+          !!merge <<: *job_overrides
+-          <<: [*job_overrides, *other_job]
++          !!merge <<: [*job_overrides, *other_job]
 
  resources:
-@@ -37,7 +37,10 @@
+@@ -41,7 +41,10 @@
          - job_cluster_key: derived
            new_cluster:
 -            <<: *base_cluster
@@ -50,7 +53,16 @@ Resource: resources.pipelines.my_pipeline
 +              min_workers: 1
        tasks:
          - task_key: prep
-@@ -61,11 +64,13 @@
+@@ -49,8 +52,4 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/prep
+-        - task_key: setup
+-          job_cluster_key: base
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/setup
+         - &base_task
+           task_key: a_task
+@@ -65,11 +64,13 @@
              base_parameters: &base_params
                input_file_name: ${var.input_a}
 -        - <<: *base_task
@@ -91,6 +103,7 @@ Resource: resources.pipelines.my_pipeline
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job
+  delete resources.jobs.other_job
   delete resources.pipelines.my_pipeline
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
@@ -99,4 +112,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted
+Destroy: 3 deleted

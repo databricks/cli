@@ -13,6 +13,7 @@ pipeline_id="$(read_id.py my_pipeline)"
 title "Edit fields inherited through YAML merge keys"
 edit_resource.py jobs $job_id <<EOF2
 r["timeout_seconds"] = 1200
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] not in ("prep", "setup")]
 for task in r["tasks"]:
     if task["task_key"] == "b_task":
         task["min_retry_interval_millis"] = 5000

@@ -310,9 +310,21 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				continue
 			}
 
-			var fieldResult []FieldChange
-			unwritten := false
-			for _, destination := range destinations {
+			// Decided for every destination before any index bookkeeping, so a change
+			// that cannot be written everywhere is skipped as a whole and shifts nothing.
+			addPaths, written := writtenDestinations(docs, blocks, targetName, resolved.leaf, configChange.Operation, destinations)
+			if !written {
+				log.Debugf(ctx, "config-remote-sync: skipping %s: the file does not write it where it is defined", fullPath)
+				configChange.Operation = OperationSkip
+				skipped++
+				if isRename {
+					resourceChanges[rename.addPath].Operation = OperationSkip
+					skipped++
+				}
+				continue
+			}
+
+			for i, destination := range destinations {
 				block := destination.block
 				resolvedPath := destination.path
 				// Each destination gets its own copy: the operation and the value
@@ -329,14 +341,20 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				scope := destination.scopeKey()
 
 				if isRename {
-					// A sequence inherited through a merge key has no element to rewrite here.
-					if written, _ := docs.written(block.file, blocks.candidatePath(*block, resolvedPath.Parent()), ""); !written {
-						unwritten = true
-						break
-					}
-					fieldResult = append(fieldResult, renameKeyChange(blocks, *block, scope, indices,
+					result = append(result, renameKeyChange(blocks, *block, scope, indices,
 						resolvedPath, mergedIndexPath, rename, destChange))
 					continue
+				}
+
+				resolvedPath = indices.place(scope, resolvedPath, destChange.Operation)
+
+				writePath, altWritePath := writeAddress(blocks, block, targetName, resolvedPath)
+				if addPaths[i] != "" {
+					// Written next to the merge key, the key overrides the inherited value
+					// for this mapping only.
+					destChange.Operation = OperationAdd
+					configChange.Operation = OperationAdd
+					writePath, altWritePath = addPaths[i], ""
 				}
 
 				// A change routed to a block has a known destination file even when the leaf
@@ -346,43 +364,6 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				isDefinedInConfig := filePath != ""
 				if block != nil && isDefinedInConfig {
 					filePath = block.file
-				}
-
-				// The merged config can locate a key the file does not write at this path,
-				// e.g. one inherited through a merge key, which the patcher cannot reach.
-				// Checked before the index bookkeeping, so a skipped change shifts nothing.
-				var addPath string
-				_, addressesKey := resolvedPath.StringKey()
-				editsField := isDefinedInConfig && (destChange.Operation == OperationRemove || destChange.Operation == OperationReplace)
-				addsElement := !isDefinedInConfig && destChange.Operation == OperationAdd && !addressesKey && block != nil
-				if editsField || addsElement {
-					checkPath, checkFile := resolvedPath, filePath
-					if !addressesKey {
-						// An element is never inherited on its own, but its sequence can be.
-						checkPath = resolvedPath.Parent()
-					}
-					if addsElement {
-						checkFile = block.file
-					}
-					writePath, altWritePath := writeAddress(blocks, block, targetName, checkPath)
-					key, parentPath := docs.written(checkFile, writePath, altWritePath)
-					if !key && addressesKey && destChange.Operation == OperationReplace && parentPath != "" {
-						destChange.Operation = OperationAdd
-						configChange.Operation = OperationAdd
-						addPath = parentPath
-					} else if !key {
-						unwritten = true
-						break
-					}
-				}
-
-				resolvedPath = indices.place(scope, resolvedPath, destChange.Operation)
-
-				writePath, altWritePath := writeAddress(blocks, block, targetName, resolvedPath)
-				if addPath != "" {
-					// Written next to the merge key, the key overrides the inherited value
-					// for this mapping only.
-					writePath, altWritePath = addPath, ""
 				}
 
 				if !isDefinedInConfig {
@@ -423,7 +404,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					}
 				}
 
-				fieldResult = append(fieldResult, FieldChange{
+				result = append(result, FieldChange{
 					FilePath:     filePath,
 					Change:       destChange,
 					WritePath:    writePath,
@@ -431,22 +412,51 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					originalPath: mergedIndexPath.String(),
 				})
 			}
-			if unwritten {
-				// A removal that reaches only some definitions leaves the value in place.
-				log.Debugf(ctx, "config-remote-sync: skipping %s: the key is not written where it is defined", fullPath)
-				configChange.Operation = OperationSkip
-				skipped++
-				if isRename {
-					resourceChanges[rename.addPath].Operation = OperationSkip
-					skipped++
-				}
-				continue
-			}
-			result = append(result, fieldResult...)
 		}
 	}
 
 	return result, skipped, nil
+}
+
+// writtenDestinations checks each destination against the file it is written to. The
+// merged config can locate a key the file does not write at that path, e.g. one
+// inherited through a merge key ('<<: *anchor'), which the patcher cannot reach. Such a
+// replaced key can still be added next to the merge key: addPaths holds where, per
+// destination. Anything else unwritten makes written false.
+func writtenDestinations(docs sourceDocs, blocks *blockResolver, target string, leaf dyn.Value, operation OperationType, destinations []routeDestination) (addPaths []string, written bool) {
+	addPaths = make([]string, len(destinations))
+	for i, destination := range destinations {
+		block := destination.block
+		file := leaf.Location().File
+		isDefinedInConfig := file != ""
+		path := destination.path
+		_, addressesKey := path.StringKey()
+		switch {
+		case isDefinedInConfig && (operation == OperationRemove || operation == OperationReplace):
+			if block != nil {
+				file = block.file
+			}
+		case !isDefinedInConfig && operation == OperationAdd && !addressesKey && block != nil:
+			// A new element goes into its sequence, which the block has to write.
+			file = block.file
+		default:
+			continue
+		}
+		if !addressesKey {
+			// An element is never inherited on its own, but its sequence can be.
+			path = path.Parent()
+		}
+		writePath, altWritePath := writeAddress(blocks, block, target, path)
+		key, parentPath := docs.written(file, writePath, altWritePath)
+		switch {
+		case key:
+		case addressesKey && operation == OperationReplace && parentPath != "":
+			addPaths[i] = parentPath
+		default:
+			return nil, false
+		}
+	}
+	return addPaths, true
 }
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative
