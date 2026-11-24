@@ -1,1 +1,1 @@
-* Add `databricks bundle auto-deploy` commands, which deploy a bundle target on every push to a Git branch and show its deploy attempts.
+* Add `databricks bundle auto-deploy` commands, which deploy a bundle target on every push to a Git branch and show its deploy attempts. ([#7940](https://github.com/databricks/cli/pull/7940), [#7941](https://github.com/databricks/cli/pull/7941), [#7942](https://github.com/databricks/cli/pull/7942), [#7943](https://github.com/databricks/cli/pull/7943), [#7944](https://github.com/databricks/cli/pull/7944))
