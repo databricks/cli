@@ -893,15 +893,7 @@ func (s *FakeWorkspace) FsDeleteDirectory(dirPath string) Response {
 		}
 	}
 
-	prefix := dirPath + "/"
-	notEmpty := false
-	for filePath := range s.files {
-		notEmpty = notEmpty || strings.HasPrefix(filePath, prefix)
-	}
-	for childPath := range s.directories {
-		notEmpty = notEmpty || strings.HasPrefix(childPath, prefix)
-	}
-	if notEmpty {
+	if s.hasChildren(dirPath) {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]any{

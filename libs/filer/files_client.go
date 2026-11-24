@@ -18,6 +18,7 @@ import (
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
@@ -108,17 +109,28 @@ func (r *readRetrier) IsRetriable(err error) (time.Duration, bool) {
 	return r.cappedRetrier.IsRetriable(err)
 }
 
-// deleteRetrier is a cappedRetrier that records whether it retried. A delete
-// whose earlier attempt was applied but answered with a retriable error (e.g. a
-// 504 from a gateway) gets 404 on the retry; the path is then gone as asked.
+// deleteRetrier is a cappedRetrier that records whether it retried a delete
+// whose attempt may have been applied: a timeout or a bad gateway can come after
+// the backend deleted the path, whereas 429 and 503 mean it did not act. The retry
+// of an applied delete gets 404; the path is then gone as asked.
 type deleteRetrier struct {
-	cappedRetrier
-	retried bool
+	*cappedRetrier
+	retriedAppliedAttempt bool
+}
+
+// statusesAfterPossiblyAppliedRequest are the retried statuses that a proxy or
+// gateway can return after the backend already handled the request.
+var statusesAfterPossiblyAppliedRequest = []int{
+	http.StatusRequestTimeout, // 408
+	http.StatusBadGateway,     // 502
+	http.StatusGatewayTimeout, // 504
 }
 
 func (r *deleteRetrier) IsRetriable(err error) (time.Duration, bool) {
 	delay, ok := r.cappedRetrier.IsRetriable(err)
-	r.retried = r.retried || ok
+	if ok && slices.Contains(statusesAfterPossiblyAppliedRequest, httpStatus(err)) {
+		r.retriedAppliedAttempt = true
+	}
 	return delay, ok
 }
 
@@ -242,8 +254,12 @@ type FilesClient struct {
 	retryBackoff ops.BackoffPolicy
 }
 
-func (w *FilesClient) newRetrier() ops.Retrier {
+func (w *FilesClient) newCappedRetrier() *cappedRetrier {
 	return &cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesRetryStatusCodes})}
+}
+
+func (w *FilesClient) newRetrier() ops.Retrier {
+	return w.newCappedRetrier()
 }
 
 func (w *FilesClient) newReadRetrier() ops.Retrier {
@@ -256,10 +272,10 @@ func (w *FilesClient) retry() call.Option {
 	return call.WithRetrier(w.newRetrier)
 }
 
-// deleteRetry is retry for deletes. The returned retrier tells whether the
-// call was retried.
+// deleteRetry is retry for deletes. The returned retrier tells whether an
+// attempt that may have been applied was retried.
 func (w *FilesClient) deleteRetry() (call.Option, *deleteRetrier) {
-	r := &deleteRetrier{cappedRetrier: cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesRetryStatusCodes})}}
+	r := &deleteRetrier{cappedRetrier: w.newCappedRetrier()}
 	return call.WithRetrier(func() ops.Retrier { return r }), r
 }
 
@@ -586,8 +602,10 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 
 	// This files delete API returns a 404 if the specified path does not exist.
 	if httpStatus(err) == http.StatusNotFound {
-		// After a retry, the 404 means an earlier attempt deleted the file.
-		if retrier.retried {
+		// After retrying a possibly applied attempt, the 404 means that attempt
+		// deleted the file.
+		if retrier.retriedAppliedAttempt {
+			log.Debugf(ctx, "%s not found after a retried delete, treating it as deleted", absPath)
 			return nil
 		}
 		return fileDoesNotExistError{absPath}
@@ -630,8 +648,10 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 	// directory; treat it as a not-found error so recursive delete can consider
 	// its goal satisfied.
 	if httpStatus(err) == http.StatusNotFound {
-		// After a retry, the 404 means an earlier attempt deleted the directory.
-		if retrier.retried {
+		// After retrying a possibly applied attempt, the 404 means that attempt
+		// deleted the directory.
+		if retrier.retriedAppliedAttempt {
+			log.Debugf(ctx, "%s not found after a retried delete, treating it as deleted", absPath)
 			return nil
 		}
 		return noSuchDirectoryError{absPath}
