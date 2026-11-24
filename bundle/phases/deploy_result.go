@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -26,11 +25,19 @@ type deployResult struct {
 	ErrorClass string `json:"error_class,omitempty"`
 }
 
-// WriteDeployResult writes how the deploy ended to the file named by
-// DATABRICKS_AUTO_DEPLOY_RESULT_FILE: {} on success, otherwise the failure's class. The caller runs
-// it on every exit path, so a missing file means the CLI crashed. retErr is the command's error.
-func WriteDeployResult(ctx context.Context, retErr error) {
+// WriteDeployResultOnExit writes how the deploy ended to the file named by
+// DATABRICKS_AUTO_DEPLOY_RESULT_FILE: {} on success, otherwise the failure's class. The caller defers
+// it, so it also runs while a panic unwinds; it reports a panic as SERVICE, because a panic is a CLI
+// bug rather than a problem with the bundle, and then re-panics. A missing file means the deploy
+// never got far enough to write it. retErr points at the command's error.
+func WriteDeployResultOnExit(ctx context.Context, retErr *error) {
 	path, _ := env.AutoDeployResultFile(ctx)
+	if r := recover(); r != nil {
+		if path != "" {
+			writeDeployResult(ctx, path, deployResult{ErrorClass: errorClassService})
+		}
+		panic(r)
+	}
 	if path == "" {
 		return
 	}
@@ -40,10 +47,13 @@ func WriteDeployResult(ctx context.Context, retErr error) {
 	case logdiag.HasError(ctx):
 		// The error deploy telemetry reports; later errors are often its consequences.
 		result.ErrorClass = errorClass(logdiag.GetFirstErrorCause(ctx))
-	case retErr != nil:
-		result.ErrorClass = errorClass(retErr)
+	case *retErr != nil:
+		result.ErrorClass = errorClass(*retErr)
 	}
+	writeDeployResult(ctx, path, result)
+}
 
+func writeDeployResult(ctx context.Context, path string, result deployResult) {
 	data, err := json.Marshal(result)
 	if err == nil {
 		err = os.WriteFile(path, data, 0o644)
@@ -53,18 +63,17 @@ func WriteDeployResult(ctx context.Context, retErr error) {
 	}
 }
 
-// errorClass reports SERVICE when the platform failed: an API error with status 5xx, 429 or 408, or
-// a request that got no response. Anything else is USER, including an error it can't inspect,
-// because the runner shows the customer the message of a USER failure and hides a SERVICE one.
+// errorClass reports SERVICE when the platform answered with a failure: an API error with status
+// 5xx, 429 or 408. Anything else is USER, network errors included, since a wrong host, proxy or
+// certificate causes those too. When in doubt it says USER, because the runner shows the customer
+// the message of a USER failure and hides a SERVICE one.
 func errorClass(err error) string {
-	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
-		code := apiErr.StatusCode
-		if code >= http.StatusInternalServerError || code == http.StatusTooManyRequests || code == http.StatusRequestTimeout {
-			return errorClassService
-		}
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return errorClassUser
 	}
-	if _, ok := errors.AsType[*url.Error](err); ok {
+	code := apiErr.StatusCode
+	if code >= http.StatusInternalServerError || code == http.StatusTooManyRequests || code == http.StatusRequestTimeout {
 		return errorClassService
 	}
 	return errorClassUser
