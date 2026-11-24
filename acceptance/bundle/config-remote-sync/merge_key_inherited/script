@@ -9,6 +9,7 @@ trap cleanup EXIT
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 pipeline_id="$(read_id.py my_pipeline)"
+rename_job_id="$(read_id.py rename_job)"
 
 title "Edit fields inherited through YAML merge keys"
 edit_resource.py jobs $job_id <<EOF2
@@ -26,6 +27,9 @@ for cluster in r["job_clusters"]:
     if cluster["job_cluster_key"] == "derived":
         del cluster["new_cluster"]["num_workers"]
         cluster["new_cluster"]["autoscale"] = {"min_workers": 1, "max_workers": 2}
+EOF2
+edit_resource.py jobs $rename_job_id <<EOF2
+r["tasks"][0]["task_key"] = "main2"
 EOF2
 edit_resource.py pipelines $pipeline_id <<EOF2
 del r["clusters"]

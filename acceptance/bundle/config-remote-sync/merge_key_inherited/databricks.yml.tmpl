@@ -28,9 +28,19 @@ targets:
               max_retries: 3
         my_job:
           <<: [*job_overrides, *other_job]
+        rename_job:
+          tasks:
+            - &renamed_task
+              task_key: main
+              max_retries: 1
 
 resources:
   jobs:
+    rename_job:
+      tasks:
+        - <<: *renamed_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
     my_job:
       job_clusters:
         - job_cluster_key: base

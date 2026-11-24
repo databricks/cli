@@ -1,14 +1,15 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
 Created jobs.other_job
+Created jobs.rename_job
 Created pipelines.my_pipeline
 Files: 4 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit fields inherited through YAML merge keys
 
 === Detect and save changes
-Detected changes in 2 resource(s):
+Detected changes in 3 resource(s):
 
 Resource: resources.jobs.my_job
   job_clusters[job_cluster_key='derived'].new_cluster.autoscale: add
@@ -23,6 +24,10 @@ Resource: resources.jobs.my_job
   tasks[task_key='prep']: skip
   tasks[task_key='setup']: remove
   timeout_seconds: skip
+
+Resource: resources.jobs.rename_job
+  tasks[task_key='main']: skip
+  tasks[task_key='main2']: skip
 
 Resource: resources.pipelines.my_pipeline
   clusters: skip
@@ -39,9 +44,16 @@ Resource: resources.pipelines.my_pipeline
          my_job:
 -          <<: [*job_overrides, *other_job]
 +          !!merge <<: [*job_overrides, *other_job]
-
- resources:
-@@ -41,7 +41,10 @@
+         rename_job:
+           tasks:
+@@ -39,5 +39,5 @@
+     rename_job:
+       tasks:
+-        - <<: *renamed_task
++        - !!merge <<: *renamed_task
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+@@ -51,7 +51,10 @@
          - job_cluster_key: derived
            new_cluster:
 -            <<: *base_cluster
@@ -53,7 +65,7 @@ Resource: resources.pipelines.my_pipeline
 +              min_workers: 1
        tasks:
          - task_key: prep
-@@ -49,8 +52,4 @@
+@@ -59,8 +62,4 @@
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/prep
 -        - task_key: setup
@@ -62,7 +74,7 @@ Resource: resources.pipelines.my_pipeline
 -            notebook_path: /Users/{{workspace_user_name}}/setup
          - &base_task
            task_key: a_task
-@@ -65,11 +64,13 @@
+@@ -75,11 +74,13 @@
              base_parameters: &base_params
                input_file_name: ${var.input_a}
 -        - <<: *base_task
@@ -104,6 +116,7 @@ Resource: resources.pipelines.my_pipeline
 The following resources will be deleted:
   delete resources.jobs.my_job
   delete resources.jobs.other_job
+  delete resources.jobs.rename_job
   delete resources.pipelines.my_pipeline
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
@@ -112,4 +125,4 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted
+Destroy: 4 deleted
