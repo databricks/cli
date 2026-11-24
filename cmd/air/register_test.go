@@ -87,8 +87,8 @@ func TestRegisterCommandJSON(t *testing.T) {
 	bodies := fake.requests()
 	require.Len(t, bodies, 1)
 	assert.Equal(t, "key-1", bodies[0].IdempotencyKey)
-	assert.Equal(t, "/Volumes/main/models/weights/qwen3_8b", bodies[0].Checkpoint.VolumePath)
-	assert.Equal(t, []finalizeModelPackageRequest{{RegisteredModel: "main.models.qwen", ModelVersion: "3"}}, fake.finalizeRequests)
+	assert.Equal(t, "/Volumes/main/models/weights/qwen3_8b", bodies[0].ModelSource)
+	assert.Equal(t, []finalizeModelPackageRequest{{UCModel: "main.models.qwen", ModelVersion: "3"}}, fake.finalizeRequests)
 }
 
 func TestRegisterCommandText(t *testing.T) {
@@ -110,9 +110,9 @@ func TestRegisterDedicatedFromFlags(t *testing.T) {
 		"model-source", "/Volumes/main/models/weights/gemma", "uc-model-name", "main.models.gemma"))
 	bodies := fake.requests()
 	require.Len(t, bodies, 1)
-	assert.Nil(t, bodies[0].Checkpoint)
-	assert.Equal(t, &dedicatedCheckpoint{VolumePath: "/Volumes/main/models/weights/gemma"}, bodies[0].DedicatedCheckpoint)
-	assert.Equal(t, "main.models.gemma", bodies[0].RegisteredModel)
+	assert.Nil(t, bodies[0].Engine)
+	assert.Equal(t, "/Volumes/main/models/weights/gemma", bodies[0].ModelSource)
+	assert.Equal(t, "main.models.gemma", bodies[0].UCModel)
 }
 
 func TestRegisterWarnsWhenTheEnvironmentFailedToStage(t *testing.T) {
@@ -268,7 +268,7 @@ func TestRegisterDryRunNeedsNoWorkspace(t *testing.T) {
 	require.NoError(t, runRegisterCmd(t, flags.OutputText, &buf, "", commandRegisterConfig, "dry-run", "true"))
 	out := buf.String()
 	assert.Contains(t, out, "Dry run: would register a new version of main.models.qwen from /Volumes/main/models/weights/qwen3_8b, served by its command:")
-	assert.Contains(t, out, `"serving_command": "python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080"`)
+	assert.Contains(t, out, `"command": "python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080"`)
 	assert.Contains(t, out, "Dry run: configuration is valid; nothing was changed.")
 
 	buf.Reset()
@@ -278,7 +278,7 @@ func TestRegisterDryRunNeedsNoWorkspace(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, "DRY_RUN_OK", got.Data.Status)
-	assert.Equal(t, &registerPlan{Variant: "dedicated", UCModel: "main.models.qwen", DedicatedCheckpoint: &dedicatedCheckpoint{VolumePath: "/Volumes/main/models/weights/qwen3_8b"}}, got.Data.Plan)
+	assert.Equal(t, &registerPlan{Variant: "dedicated", Request: registerModelPackageRequest{ModelSource: "/Volumes/main/models/weights/qwen3_8b", UCModel: "main.models.qwen"}}, got.Data.Plan)
 }
 
 func TestRegisterFlagValidation(t *testing.T) {

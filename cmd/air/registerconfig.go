@@ -77,15 +77,6 @@ func (c *registerConfig) variant() string {
 	return variantDedicated
 }
 
-// servedTask is the task a command is served for. A dedicated checkpoint is served
-// for chat.
-func (c *registerConfig) servedTask() string {
-	if c.Engine != nil && c.Engine.Task != nil {
-		return *c.Engine.Task
-	}
-	return defaultTask
-}
-
 // validate checks the whole config, returning the first failure. Fields are checked
 // in declaration order to keep errors stable.
 func (c *registerConfig) validate() error {
@@ -181,39 +172,28 @@ func validateRegistrationKey(key string) error {
 	return nil
 }
 
-// registrationRequest builds the request that registers the checkpoint under key.
+// registrationRequest builds the request that registers the checkpoint under key: the
+// file's fields as they are, with the environment version in its canonical form, such
+// as 6 for "06" or databricks_ai_v6 for "Databricks_AI_v6". The version was validated
+// when the config loaded; the server defaults an omitted task to llm/v1/chat.
 func (c *registerConfig) registrationRequest(key string) registerModelPackageRequest {
-	req := registerModelPackageRequest{
-		RegisteredModel: c.UCModel,
-		IdempotencyKey:  key,
-	}
-	if c.variant() == variantDedicated {
-		req.DedicatedCheckpoint = &dedicatedCheckpoint{VolumePath: c.ModelSource}
+	req := registerModelPackageRequest{ModelSource: c.ModelSource, UCModel: c.UCModel, IdempotencyKey: key}
+	if c.Engine == nil {
 		return req
 	}
-	req.Checkpoint = &modelPackageCheckpoint{
-		VolumePath:     c.ModelSource,
-		ServingCommand: *c.Engine.Command,
-		Task:           c.servedTask(),
-		Environment:    c.servingEnvironment(),
+	major, ai, _ := c.Engine.Environment.runtimeVersion()
+	version := strconv.Itoa(major)
+	if ai {
+		version = databricksAIPrefix + version
+	}
+	req.Engine = &modelPackageEngine{
+		Environment: modelPackageEnvironment{Version: version, Dependencies: c.Engine.Environment.Dependencies},
+		Command:     *c.Engine.Command,
+	}
+	if c.Engine.Task != nil {
+		req.Engine.Task = *c.Engine.Task
 	}
 	return req
-}
-
-// servingEnvironment is the environment a command's checkpoint is registered with:
-// its runtime, dependencies and base environment. A command is served on
-// accelerators, so the runtime is the GPU one. The version was validated when the
-// config loaded.
-func (c *registerConfig) servingEnvironment() modelPackageEnvironment {
-	version, ai, _ := c.Engine.Environment.runtimeVersion()
-	environment := modelPackageEnvironment{
-		Runtime:      "client." + strconv.Itoa(version) + "-gpu",
-		Dependencies: c.Engine.Environment.Dependencies,
-	}
-	if ai {
-		environment.BaseEnvironment = baseEnvironmentDatabricksAI
-	}
-	return environment
 }
 
 // registerSchema is the reflection walk over registerConfig, shared by

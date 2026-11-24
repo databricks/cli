@@ -180,10 +180,6 @@ const (
 	taskAudioTranslations   = "llm/v1/audio/translations"
 )
 
-// defaultTask is the task a command is served for when engine.task is omitted, and
-// the task Model Serving serves a dedicated checkpoint for.
-const defaultTask = "llm/v1/chat"
-
 // serverLength is the length of s as the server's limits count it, in UTF-16
 // code units.
 func serverLength(s string) int {

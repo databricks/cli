@@ -35,13 +35,11 @@ type registerResult struct {
 	EnvironmentStagingFailed bool `json:"environment_staging_failed,omitempty"`
 }
 
-// registerPlan is the registration a dry run reports.
+// registerPlan is the registration a dry run reports: what serves the checkpoint,
+// command or dedicated, and the request that would register it, without a key.
 type registerPlan struct {
-	// Variant is what serves the checkpoint: command or dedicated.
-	Variant             string                  `json:"variant"`
-	UCModel             string                  `json:"uc_model_name"`
-	Checkpoint          *modelPackageCheckpoint `json:"checkpoint,omitempty"`
-	DedicatedCheckpoint *dedicatedCheckpoint    `json:"dedicated_checkpoint,omitempty"`
+	Variant string                      `json:"variant"`
+	Request registerModelPackageRequest `json:"request"`
 }
 
 // registerOptions are the `air register` flags.
@@ -237,8 +235,7 @@ func runRegister(cmd *cobra.Command, opts registerOptions, pollInterval time.Dur
 // renderRegisterDryRun reports the registration of a valid config, without
 // changing anything.
 func renderRegisterDryRun(ctx context.Context, cfg *registerConfig, jsonOut bool) error {
-	req := cfg.registrationRequest("")
-	plan := registerPlan{Variant: cfg.variant(), UCModel: cfg.UCModel, Checkpoint: req.Checkpoint, DedicatedCheckpoint: req.DedicatedCheckpoint}
+	plan := registerPlan{Variant: cfg.variant(), Request: cfg.registrationRequest("")}
 	if jsonOut {
 		return renderEnvelope(ctx, registerResult{Status: "DRY_RUN_OK", DryRun: true, Plan: &plan})
 	}

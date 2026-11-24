@@ -45,48 +45,39 @@ const (
 	stagingStateFailed = "FAILED"
 )
 
-// registerModelPackageRequest is the RegisterModelPackageRequest body. It sets
-// exactly one of Checkpoint, a checkpoint served by command, and DedicatedCheckpoint,
-// a checkpoint served with dedicated inference.
+// registerModelPackageRequest is the RegisterModelPackageRequest body: the fields of
+// the registration YAML, with the key and the retry choice. Without Engine, the
+// checkpoint is served with dedicated inference.
 type registerModelPackageRequest struct {
-	RegisteredModel     string                  `json:"registered_model"`
-	IdempotencyKey      string                  `json:"idempotency_key"`
-	Checkpoint          *modelPackageCheckpoint `json:"checkpoint,omitempty"`
-	DedicatedCheckpoint *dedicatedCheckpoint    `json:"dedicated_checkpoint,omitempty"`
-	RetryFailedStaging  bool                    `json:"retry_failed_staging,omitempty"`
+	ModelSource        string              `json:"model_source"`
+	UCModel            string              `json:"uc_model_name"`
+	Engine             *modelPackageEngine `json:"engine,omitempty"`
+	IdempotencyKey     string              `json:"idempotency_key,omitempty"`
+	RetryFailedStaging bool                `json:"retry_failed_staging,omitempty"`
 }
 
-// modelPackageCheckpoint is a checkpoint's weights in a volume and the command that
-// serves them.
-type modelPackageCheckpoint struct {
-	VolumePath     string                  `json:"volume_path"`
-	ServingCommand string                  `json:"serving_command"`
-	Task           string                  `json:"task"`
-	Environment    modelPackageEnvironment `json:"environment"`
+// modelPackageEngine is the command that serves a checkpoint, the task it serves
+// and the environment it runs on.
+type modelPackageEngine struct {
+	Environment modelPackageEnvironment `json:"environment"`
+	Command     string                  `json:"command"`
+	Task        string                  `json:"task,omitempty"`
 }
 
-// dedicatedCheckpoint is a checkpoint's weights in a volume, served with dedicated
-// inference.
-type dedicatedCheckpoint struct {
-	VolumePath string `json:"volume_path"`
-}
-
-// baseEnvironmentDatabricksAI names the Databricks AI environment to the server.
-const baseEnvironmentDatabricksAI = "databricks-ai"
-
+// modelPackageEnvironment is a serverless environment version, such as 6 or
+// databricks_ai_v6, and the packages to install.
 type modelPackageEnvironment struct {
-	Runtime         string   `json:"runtime"`
-	Dependencies    []string `json:"dependencies,omitempty"`
-	BaseEnvironment string   `json:"base_environment,omitempty"`
+	Version      string   `json:"version"`
+	Dependencies []string `json:"dependencies,omitempty"`
 }
 
 // registerModelPackageResponse is the RegisterModelPackageResponse body.
 type registerModelPackageResponse struct {
-	ModelID         string              `json:"model_id"`
-	RegisteredModel string              `json:"registered_model"`
-	ModelVersion    string              `json:"model_version"`
-	Ready           bool                `json:"ready"`
-	StagingStatus   *modelStagingStatus `json:"staging_status,omitempty"`
+	ModelID       string              `json:"model_id"`
+	UCModel       string              `json:"uc_model_name"`
+	ModelVersion  string              `json:"model_version"`
+	Ready         bool                `json:"ready"`
+	StagingStatus *modelStagingStatus `json:"staging_status,omitempty"`
 }
 
 type modelStagingStatus struct {
@@ -101,8 +92,8 @@ type artifactStagingStatus struct {
 
 // finalizeModelPackageRequest is the FinalizeModelPackageRequest body.
 type finalizeModelPackageRequest struct {
-	RegisteredModel string `json:"registered_model"`
-	ModelVersion    string `json:"model_version"`
+	UCModel      string `json:"uc_model_name"`
+	ModelVersion string `json:"model_version"`
 }
 
 // finalizeModelPackageResponse is the FinalizeModelPackageResponse body, the
@@ -174,33 +165,33 @@ func registerAndFinalize(ctx context.Context, w *databricks.WorkspaceClient, req
 		return nil, err
 	}
 	if resp.ModelVersion == "" {
-		return nil, withCode(codeInternalError, true, fmt.Errorf("registering a version of %s returned no version", req.RegisteredModel))
+		return nil, withCode(codeInternalError, true, fmt.Errorf("registering a version of %s returned no version", req.UCModel))
 	}
 	if !modelVersionRe().MatchString(resp.ModelVersion) {
-		return nil, withCode(codeInternalError, true, fmt.Errorf("registering a version of %s returned %q, which isn't a version number", req.RegisteredModel, stripControl(resp.ModelVersion)))
+		return nil, withCode(codeInternalError, true, fmt.Errorf("registering a version of %s returned %q, which isn't a version number", req.UCModel, stripControl(resp.ModelVersion)))
 	}
-	if err := checkStagingStatus(resp.StagingStatus, req.RegisteredModel, resp.ModelVersion); err != nil {
+	if err := checkStagingStatus(resp.StagingStatus, req.UCModel, resp.ModelVersion); err != nil {
 		return nil, err
 	}
 	progress(&resp)
 	if resp.Ready {
 		return &resp, nil
 	}
-	if err := p.waitForWeights(ctx, req.RegisteredModel, &resp, progress); err != nil {
+	if err := p.waitForWeights(ctx, req.UCModel, &resp, progress); err != nil {
 		return &resp, err
 	}
 	if resp.weightsState() == stagingStateFailed {
 		return &resp, errStagingFailed
 	}
 	var finalized finalizeModelPackageResponse
-	finalizeReq := finalizeModelPackageRequest{RegisteredModel: req.RegisteredModel, ModelVersion: resp.ModelVersion}
+	finalizeReq := finalizeModelPackageRequest{UCModel: req.UCModel, ModelVersion: resp.ModelVersion}
 	if err := p.post(ctx, finalizeModelPackagePath, finalizeReq, &finalized); err != nil {
 		return &resp, &finalizeError{err}
 	}
 	if finalized.ModelVersion != resp.ModelVersion {
 		return &resp, &finalizeError{withCode(codeInternalError, true, fmt.Errorf("the server finalized version %q instead", stripControl(finalized.ModelVersion)))}
 	}
-	if err := checkStagingStatus(finalized.StagingStatus, req.RegisteredModel, resp.ModelVersion); err != nil {
+	if err := checkStagingStatus(finalized.StagingStatus, req.UCModel, resp.ModelVersion); err != nil {
 		return &resp, &finalizeError{err}
 	}
 	resp.Ready = true

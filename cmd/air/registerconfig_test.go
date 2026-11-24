@@ -43,40 +43,54 @@ func TestLoadRegisterConfigCommand(t *testing.T) {
 	cfg, err := loadRegisterConfigText(t, commandRegisterConfig)
 	require.NoError(t, err)
 	assert.Equal(t, registerModelPackageRequest{
-		RegisteredModel: "main.models.qwen",
-		IdempotencyKey:  "key-1",
-		Checkpoint: &modelPackageCheckpoint{
-			VolumePath:     "/Volumes/main/models/weights/qwen3_8b",
-			ServingCommand: "python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080",
-			Task:           "llm/v1/chat",
-			Environment:    modelPackageEnvironment{Runtime: "client.6-gpu", Dependencies: []string{"einops==0.8.0"}},
+		ModelSource:    "/Volumes/main/models/weights/qwen3_8b",
+		UCModel:        "main.models.qwen",
+		IdempotencyKey: "key-1",
+		Engine: &modelPackageEngine{
+			Environment: modelPackageEnvironment{Version: "6", Dependencies: []string{"einops==0.8.0"}},
+			Command:     "python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080",
+			Task:        "llm/v1/chat",
 		},
 	}, cfg.registrationRequest("key-1"))
 }
 
 func TestLoadRegisterConfigCommandTask(t *testing.T) {
+	// The server serves llm/v1/chat for an omitted task.
 	cfg, err := loadRegisterConfigText(t, dropLine("  task:")(commandRegisterConfig))
 	require.NoError(t, err)
-	assert.Equal(t, "llm/v1/chat", cfg.registrationRequest("k").Checkpoint.Task)
+	assert.Empty(t, cfg.registrationRequest("k").Engine.Task)
 
 	cfg, err = loadRegisterConfigText(t, replaceFirst("task: llm/v1/chat", "task: llm/v1/audio/transcriptions")(commandRegisterConfig))
 	require.NoError(t, err)
-	assert.Equal(t, "llm/v1/audio/transcriptions", cfg.registrationRequest("k").Checkpoint.Task)
+	assert.Equal(t, "llm/v1/audio/transcriptions", cfg.registrationRequest("k").Engine.Task)
 }
 
 func TestLoadRegisterConfigCommandOnDatabricksAI(t *testing.T) {
-	cfg, err := loadRegisterConfigText(t, replaceFirst("    version: 6\n", "    version: databricks_ai_v6\n")(commandRegisterConfig))
+	cfg, err := loadRegisterConfigText(t, replaceFirst("    version: 6\n", "    version: Databricks_AI_v6\n")(commandRegisterConfig))
 	require.NoError(t, err)
-	assert.Equal(t, modelPackageEnvironment{Runtime: "client.6-gpu", Dependencies: []string{"einops==0.8.0"}, BaseEnvironment: "databricks-ai"}, cfg.registrationRequest("k").Checkpoint.Environment)
+	assert.Equal(t, modelPackageEnvironment{Version: "databricks_ai_v6", Dependencies: []string{"einops==0.8.0"}}, cfg.registrationRequest("k").Engine.Environment)
+}
+
+func TestRegistrationRequestSendsTheCanonicalVersion(t *testing.T) {
+	for given, want := range map[string]string{
+		"6":                 "6",
+		`"06"`:              "6",
+		"databricks_ai_v6":  "databricks_ai_v6",
+		"Databricks_AI_v06": "databricks_ai_v6",
+	} {
+		cfg, err := loadRegisterConfigText(t, replaceFirst("    version: 6\n", "    version: "+given+"\n")(commandRegisterConfig))
+		require.NoError(t, err, given)
+		assert.Equal(t, want, cfg.registrationRequest("k").Engine.Environment.Version, given)
+	}
 }
 
 func TestLoadRegisterConfigDedicated(t *testing.T) {
 	cfg, err := loadRegisterConfigText(t, dedicatedRegisterConfig)
 	require.NoError(t, err)
 	assert.Equal(t, registerModelPackageRequest{
-		RegisteredModel:     "main.models.qwen",
-		IdempotencyKey:      "key-1",
-		DedicatedCheckpoint: &dedicatedCheckpoint{VolumePath: "/Volumes/main/models/weights/qwen3_8b"},
+		ModelSource:    "/Volumes/main/models/weights/qwen3_8b",
+		UCModel:        "main.models.qwen",
+		IdempotencyKey: "key-1",
 	}, cfg.registrationRequest("key-1"))
 }
 
@@ -180,7 +194,7 @@ func TestRegisterConfigCountsCharactersNotBytes(t *testing.T) {
 func TestLoadRegisterConfigOverride(t *testing.T) {
 	cfg, err := loadRegisterConfigText(t, commandRegisterConfig, "engine.environment.version=5")
 	require.NoError(t, err)
-	assert.Equal(t, "client.5-gpu", cfg.registrationRequest("k").Checkpoint.Environment.Runtime)
+	assert.Equal(t, "5", cfg.registrationRequest("k").Engine.Environment.Version)
 
 	_, err = loadRegisterConfigText(t, commandRegisterConfig, "engine.workers=2")
 	assert.ErrorContains(t, err, `"workers" is not a known field`)
