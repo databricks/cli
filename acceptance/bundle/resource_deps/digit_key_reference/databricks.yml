@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    # Permissions are linked to their job through ${resources.jobs.00_clear.id},
+    # so the plan fails when the reference grammar rejects the key.
+    00_clear:
+      name: leading digit
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+    ref:
+      name: "id=${resources.jobs.00_clear.id}"

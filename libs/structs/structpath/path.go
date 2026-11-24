@@ -12,7 +12,7 @@ import (
 // baseVarDef matches a path segment of a ${...} reference. It is the grammar of
 // dynvar.BaseVarDef, which structpath cannot import; TestPureReferenceMatchesDynvar
 // keeps them in agreement.
-const baseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*`
+const baseVarDef = `_*(\p{N}+[-_]+)*\p{N}*\p{L}+([-_]*[\p{L}\p{N}]+)*`
 
 // pureReference matches a string that is a single ${...} reference.
 var pureReference = sync.OnceValue(func() *regexp.Regexp {
