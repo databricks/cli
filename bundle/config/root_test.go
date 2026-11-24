@@ -105,6 +105,105 @@ func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
 
+func TestRootMergeTargetOverridesWithComplexTaskVariable(t *testing.T) {
+	root, diags := LoadFromBytes("databricks.yml", []byte(`
+bundle:
+  name: testing-bundle
+variables:
+  job_tasks:
+    type: complex
+    default:
+      - task_key: Task_One
+        job_cluster_key: Small
+      - task_key: Task_Two
+        job_cluster_key: Small
+resources:
+  jobs:
+    job_one:
+      tasks: ${var.job_tasks}
+    job_two:
+      tasks: ${var.job_tasks}
+targets:
+  dev:
+    resources:
+      jobs:
+        job_one:
+          tasks:
+            - task_key: Task_One
+              job_cluster_key: Medium
+`))
+	require.NoError(t, diags.Error())
+	require.NoError(t, root.MergeTargetOverrides("dev"))
+
+	tasks, err := dyn.Get(root.Value(), "resources.jobs.job_one.tasks")
+	require.NoError(t, err)
+	require.Len(t, tasks.MustSequence(), 1)
+	assert.Equal(t, "Medium", tasks.Index(0).Get("job_cluster_key").MustString())
+
+	defaultTasks, err := dyn.Get(root.Value(), "variables.job_tasks.default")
+	require.NoError(t, err)
+	variableTasks := append([]dyn.Value{}, defaultTasks.MustSequence()...)
+	variableTasks = append(variableTasks, dyn.V(map[string]dyn.Value{"task_key": dyn.V("Task_Three")}))
+	require.NoError(t, root.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.SetByPath(v, dyn.MustPathFromString("variables.job_tasks.value"), dyn.V(variableTasks))
+	}))
+	require.NoError(t, root.MergeDeferredTaskOverrides())
+
+	tasks, err = dyn.Get(root.Value(), "resources.jobs.job_one.tasks")
+	require.NoError(t, err)
+	require.Len(t, tasks.MustSequence(), 4)
+	assert.Equal(t, "Task_One", tasks.Index(0).Get("task_key").MustString())
+	assert.Equal(t, "Task_Two", tasks.Index(1).Get("task_key").MustString())
+	assert.Equal(t, "Task_Three", tasks.Index(2).Get("task_key").MustString())
+	assert.Equal(t, "Medium", tasks.Index(3).Get("job_cluster_key").MustString())
+
+	sharedTasks, err := dyn.Get(root.Value(), "resources.jobs.job_two.tasks")
+	require.NoError(t, err)
+	assert.Equal(t, "${var.job_tasks}", sharedTasks.MustString())
+}
+
+func TestRootMergeTargetOverridesWithTargetComplexTaskVariable(t *testing.T) {
+	root, diags := LoadFromBytes("databricks.yml", []byte(`
+bundle:
+  name: testing-bundle
+variables:
+  job_tasks:
+    type: complex
+    default:
+      - task_key: Task_One
+resources:
+  jobs:
+    job_one:
+      tasks: ${var.job_tasks}
+targets:
+  dev:
+    variables:
+      job_tasks:
+        - task_key: Task_One
+        - task_key: Task_Two
+    resources:
+      jobs:
+        job_one:
+          tasks:
+            - task_key: Task_One
+              job_cluster_key: Medium
+`))
+	require.NoError(t, diags.Error())
+	require.NoError(t, root.MergeTargetOverrides("dev"))
+
+	defaultTasks, err := dyn.Get(root.Value(), "variables.job_tasks.default")
+	require.NoError(t, err)
+	require.NoError(t, root.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.SetByPath(v, dyn.MustPathFromString("variables.job_tasks.value"), defaultTasks)
+	}))
+	require.NoError(t, root.MergeDeferredTaskOverrides())
+
+	tasks, err := dyn.Get(root.Value(), "resources.jobs.job_one.tasks")
+	require.NoError(t, err)
+	require.Len(t, tasks.MustSequence(), 3)
+	assert.Equal(t, "Task_Two", tasks.Index(1).Get("task_key").MustString())
+}
+
 func TestInitializeComplexVariablesViaFlagIsNotAllowed(t *testing.T) {
 	root := &Root{
 		Variables: map[string]*variable.Variable{
