@@ -54,3 +54,8 @@ Error: cannot delete resources.features.okfeat: dependency failed: resources.mat
 
 Error: cannot delete resources.features.failfeat: dependency failed: resources.materialization_sets.set1
 
+
+>>> print_state.py
+json.state.resources.features.failfeat.__id__ = "main.myschema.teardown_fails_[UNIQUE_NAME]";
+json.state.resources.features.okfeat.__id__ = "main.myschema.ok_[UNIQUE_NAME]";
+json.state.resources.materialization_sets.set1.__id__ = "[UUID][0]";
