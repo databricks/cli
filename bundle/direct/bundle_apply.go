@@ -182,7 +182,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// TODO: Note, we only really need remote state if there are remote references.
 		//       The graph includes edges for both local and remote references. The local references are
 		//       already resolved and should not play a role here.
-		needRemoteState := len(g.Adj[resourceKey]) > 0
+		//
+		// A skipped node changes nothing, and planning resolved its dependents' references to it (see
+		// LookupReferencePreDeploy), so only a deployed node's remote state is read for them.
+		needRemoteState := action != deployplan.Skip && len(g.Adj[resourceKey]) > 0
 		if needRemoteState {
 			id := b.StateDB.GetResourceID(d.ResourceKey)
 			if id == "" {
