@@ -362,8 +362,15 @@ func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestina
 // errAmbiguousBlock when applying it would mean guessing a location.
 func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) ([]routeDestination, error) {
 	// Without a resolver, or with no sequence on the path, the resolved path is written
-	// as-is in whichever file the resource was found in.
+	// as-is in whichever file the resource was found in. An edit of a located field still
+	// goes to its winning definition, or a target override that also declares it would
+	// keep the old value.
 	if blocks == nil || len(resolved.steps) == 0 {
+		if blocks != nil && resolved.operation != OperationRemove {
+			if block, ok := blocks.winningBlock(resolved.leaf); ok {
+				return []routeDestination{{block: &block, path: resolved.path}}, nil
+			}
+		}
 		return []routeDestination{{path: resolved.path}}, nil
 	}
 

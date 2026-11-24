@@ -1,0 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev
+job_id="$(read_id.py my_job)"
+
+title "Change the field remotely"
+edit_resource.py jobs $job_id <<PYEDIT
+r["max_concurrent_runs"] = 10
+PYEDIT
+
+title "Sync replaces the target's value"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync -t dev --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
