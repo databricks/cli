@@ -290,6 +290,17 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				continue
 			}
 
+			// A mutator can clear or rebuild a field the file declares (OverrideCompute
+			// drops job_cluster_key), leaving no source location. The pre-resolved config
+			// still has it, so the change replaces it in the block it is declared in.
+			if resolved.leaf.Location().File == "" && configChange.Operation != OperationRemove {
+				if declared, ok := preResolvedValueAt(preResolved, mergedIndexPath.String()); ok {
+					resolved.leaf = declared
+					resolved.operation = OperationReplace
+					configChange.Operation = OperationReplace
+				}
+			}
+
 			destinations, err := routeChange(blocks, resolved, isRename)
 			if err != nil {
 				if !errors.Is(err, errAmbiguousBlock) {

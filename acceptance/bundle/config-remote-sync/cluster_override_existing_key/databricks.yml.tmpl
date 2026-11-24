@@ -4,6 +4,10 @@ bundle:
 # cluster_id makes OverrideCompute clear job_cluster_key, so the merged config
 # has no value for it even though the YAML still declares it.
 
+variables:
+  cluster_key:
+    default: shared
+
 resources:
   jobs:
     my_job:
@@ -19,6 +23,10 @@ resources:
       tasks:
         - task_key: main
           job_cluster_key: shared
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - task_key: by_variable
+          job_cluster_key: ${var.cluster_key}
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/nb
 
