@@ -411,9 +411,10 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 }
 
 // yamlKeyReplaceable reports whether fieldPath ends at a mapping key the YAML writes
-// itself, outside any anchor. An add at a sequence index inserts rather than replaces,
-// and a key inherited through a merge key has no node of its own, so only written keys
-// count. Replacing anchored content could alter aliases or leave dangling references.
+// itself, with no anchor above, on or inside its value. An add at a sequence index
+// inserts rather than replaces, and a key inherited through a merge key has no node of
+// its own, so only written keys count. Replacing anchored content could alter aliases
+// or leave dangling references.
 func yamlKeyReplaceable(content []byte, fieldPath string) bool {
 	pattern, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
@@ -436,7 +437,11 @@ func yamlKeyReplaceable(content []byte, fieldPath string) bool {
 			return false
 		}
 	}
-	return current.Anchor == ""
+	return !hasAnchor(current)
+}
+
+func hasAnchor(node *yaml.Node) bool {
+	return node.Anchor != "" || slices.ContainsFunc(node.Content, hasAnchor)
 }
 
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,

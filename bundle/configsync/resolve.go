@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -299,6 +300,14 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			if blocks != nil && resolved.leaf.Location().File == "" && configChange.Operation != OperationRemove &&
 				!slices.ContainsFunc(resolved.steps, func(s sequenceStep) bool { return s.newElement }) {
 				if declared, ok := preResolvedValueAt(preResolved, mergedIndexPath.String()); ok {
+					// A complex variable (new_cluster: ${var.cluster}) cannot take the remote
+					// map or list without losing its reference, so it is left unapplied too.
+					if ref, isString := declared.AsString(); isString && dynvar.ContainsVariableReference(ref) && isContainer(configChange.Value) {
+						log.Debugf(ctx, "config-remote-sync: skipping %s: the field is a variable reference", fullPath)
+						configChange.Operation = OperationSkip
+						skipped++
+						continue
+					}
 					replaced := resolved
 					replaced.leaf = declared
 					replaced.operation = OperationReplace
@@ -478,4 +487,12 @@ func (c FieldChange) writePaths() []string {
 		return []string{c.WritePath}
 	}
 	return []string{c.WritePath, c.AltWritePath}
+}
+
+func isContainer(value any) bool {
+	switch value.(type) {
+	case map[string]any, []any:
+		return true
+	}
+	return false
 }

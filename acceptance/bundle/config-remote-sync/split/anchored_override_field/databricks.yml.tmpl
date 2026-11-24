@@ -1,0 +1,22 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# max_concurrent_runs is declared in both blocks and the target's value wins, but it
+# is anchored and aliased there, so replacing it would leave the alias dangling.
+
+resources:
+  jobs:
+    my_job:
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    resources:
+      jobs:
+        my_job:
+          max_concurrent_runs: &runs 2
+          timeout_seconds: *runs

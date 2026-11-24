@@ -503,6 +503,7 @@ func TestApplyChangeKeepsAnchoredKey(t *testing.T) {
 		{"anchored null", "parameters:\n  - name: p\n    value: &v\n  - name: q\n    value: *v\n"},
 		{"anchored scalar", "parameters:\n  - name: p\n    value: &v old\n  - name: q\n    value: *v\n"},
 		{"inside an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n"},
+		{"anchor inside the value", "parameters:\n  - name: p\n    value: {k: &v old}\n  - name: q\n    value: *v\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := applyChange(t.Context(), []byte(tc.content), FieldChange{

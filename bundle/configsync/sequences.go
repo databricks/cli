@@ -254,8 +254,12 @@ func (r *blockResolver) replacesKey(change resolvedChange) bool {
 	if err != nil || len(destinations) != 1 || destinations[0].block == nil {
 		return false
 	}
-	block := *destinations[0].block
-	return yamlKeyReplaceable(r.sources[block.file], r.candidatePath(block, destinations[0].path))
+	return r.writesKey(*destinations[0].block, destinations[0].path)
+}
+
+// writesKey reports whether block writes the key at path itself, outside any anchor.
+func (r *blockResolver) writesKey(block sourceBlock, path *structpath.PatternNode) bool {
+	return yamlKeyReplaceable(r.sources[block.file], r.candidatePath(block, path))
 }
 
 // indexWithinBlock returns the position of element inside block, where sequencePath is
@@ -379,11 +383,11 @@ func (r *blockResolver) routeDestinations(change resolvedChange) ([]routeDestina
 func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) ([]routeDestination, error) {
 	// Without a resolver, or with no sequence on the path, the resolved path is written
 	// as-is in whichever file the resource was found in. An edit of a located field still
-	// goes to its winning definition, or a target override that also declares it would
-	// keep the old value.
+	// goes to its winning definition when that writes the key, or a target override that
+	// also declares it would keep the old value.
 	if blocks == nil || len(resolved.steps) == 0 {
 		if blocks != nil && resolved.operation != OperationRemove {
-			if block, ok := blocks.winningBlock(resolved.leaf); ok {
+			if block, ok := blocks.winningBlock(resolved.leaf); ok && blocks.writesKey(block, resolved.path) {
 				return []routeDestination{{block: &block, path: resolved.path}}, nil
 			}
 		}
