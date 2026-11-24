@@ -1019,7 +1019,7 @@ type taggedEmbed struct {
 }
 
 func TestGetSet_TaggedEmbedIsANamedField(t *testing.T) {
-	target := &taggedEmbed{TaggedEmbedLeaf: TaggedEmbedLeaf{Value: "v"}, Own: "o"}
+	target := &taggedEmbed{Value: "v", Own: "o"}
 
 	blob, err := json.Marshal(target)
 	require.NoError(t, err)
@@ -1055,7 +1055,7 @@ type taggedBeatsUntagged struct {
 }
 
 func TestGet_TaggedNameBeatsUntaggedAtTheSameDepth(t *testing.T) {
-	target := &taggedBeatsUntagged{untaggedX: untaggedX{X: "untagged"}, taggedAsX: taggedAsX{Y: "tagged"}}
+	target := &taggedBeatsUntagged{X: "untagged", Y: "tagged"}
 
 	blob, err := json.Marshal(target)
 	require.NoError(t, err)
