@@ -49,6 +49,9 @@ var gateTimeout = time.Second
 // gateOn is autoinstall.GateOn; tests replace it.
 var gateOn = autoinstall.GateOn
 
+// now is time.Now; tests replace it.
+var now = time.Now
+
 // rootInUserHome is autoinstall.RootInUserHome; tests replace it.
 var rootInUserHome = autoinstall.RootInUserHome
 
@@ -150,6 +153,7 @@ func autoInstallInputs(ctx context.Context, skippedCommand bool) autoinstall.Inp
 		CI:             agents.InCI(ctx),
 		// A "no" earlier in this process counts even if storing it failed.
 		EnvOptOut: autoinstall.EnvOptedOut(ctx) || autoinstall.Declined(),
+		Now:       now(),
 	}
 }
 
@@ -212,6 +216,8 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		log.Debugf(ctx, "auto-install: skipped: %v", err)
 		return nil
 	}
+	// Planning before the lock took time; the run is decided from here.
+	in.Now = now()
 	id := in.State.ID
 	if id == "" {
 		// Saved before it decides anything, so this run and one that cannot
@@ -249,7 +255,8 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 			// looks the gate up again. The feature may be off, so nothing is
 			// reported.
 			log.Debugf(ctx, "auto-install: could not resolve the gate, not trying again for this version: %v", err)
-			if err := autoinstall.Record(ctx, version, autoinstall.MaxAttempts, id); err != nil {
+			// No install started, so there is no last attempt.
+			if err := autoinstall.Record(ctx, version, autoinstall.MaxAttempts, id, time.Time{}); err != nil {
 				log.Debugf(ctx, "auto-install: could not save the state: %v", err)
 			}
 			return sig
@@ -261,16 +268,18 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		id:          id,
 		arm:         holdoutArm(in.Bucket),
 		interactive: cmdio.HasTerminal(ctx) && autoInstallAsks(),
+		now:         in.Now,
 	}
 	if !reason.Due() {
-		// Another process settled the version while this one waited.
+		// Another process settled the version or recorded a failed attempt
+		// while this one waited.
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
 		return nil
 	}
 	if reason == autoinstall.ReasonGateOff {
 		// The feature is not launched, so the skip is not reported.
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
-		if err := autoinstall.Record(ctx, version, 0, id); err != nil {
+		if err := autoinstall.Record(ctx, version, 0, id, in.Now); err != nil {
 			log.Debugf(ctx, "auto-install: could not save the state: %v", err)
 		}
 		return nil
@@ -307,7 +316,7 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 	// Count the attempt before making it: an attempt that never finishes (the
 	// process is killed) still counts, and a state that cannot be saved stops
 	// auto-install instead of retrying it on every run.
-	if recErr := autoinstall.Record(ctx, r.version, attempt, r.id); recErr != nil {
+	if recErr := autoinstall.Record(ctx, r.version, attempt, r.id, r.now); recErr != nil {
 		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", recErr)
 		return nil
 	}
@@ -407,7 +416,7 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signa
 		skipUnaskable(ctx, r.id)
 		return false, nil
 	}
-	if err := autoinstall.Record(ctx, r.version, 0, r.id); err != nil {
+	if err := autoinstall.Record(ctx, r.version, 0, r.id, r.now); err != nil {
 		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", err)
 		return false, nil
 	}
@@ -480,12 +489,14 @@ type autoInstallRun struct {
 	id          string
 	arm         protos.AitoolsHoldoutArm
 	interactive bool
+	// now is the time the run was decided at.
+	now time.Time
 }
 
 // settle records the version as done and reports outcome.
 func (r autoInstallRun) settle(ctx context.Context, outcome protos.AitoolsAutoInstallOutcome) {
 	log.Debugf(ctx, "auto-install: %s", strings.ToLower(string(outcome)))
-	if err := autoinstall.Record(ctx, r.version, 0, r.id); err != nil {
+	if err := autoinstall.Record(ctx, r.version, 0, r.id, r.now); err != nil {
 		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
 	}
 	r.report(ctx, outcome, protos.AitoolsErrorCategoryUnspecified)
