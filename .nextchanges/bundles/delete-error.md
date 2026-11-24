@@ -1,1 +1,1 @@
-* Fix `bundle deploy` and `bundle destroy` reporting success and dropping a resource from state when the backend rejects its delete; the resource stayed in the workspace untracked ([#7931](https://github.com/databricks/cli/pull/7931)). ([#7931](https://github.com/databricks/cli/pull/7931))
+* Fix `bundle deploy` and `bundle destroy` reporting success and dropping a resource from state when the backend rejects its delete; the resource stayed in the workspace untracked. ([#7931](https://github.com/databricks/cli/pull/7931))
