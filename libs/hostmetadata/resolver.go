@@ -91,7 +91,7 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		// error is env-dependent (DNS vs TLS vs HTTP) and would make
 		// acceptance goldens brittle, so it stays at Debug.
 		// A host that doesn't answer in time or answers with a transient
-		// status (5xx, 429) is still cached, so the next commands don't wait
+		// status (408, 429, 5xx other than 501) is still cached, so the next commands don't wait
 		// on it again, but such a failure says nothing about the host's config
 		// and the SDK falls back to the user config, so it is logged at Debug
 		// too.
@@ -146,12 +146,12 @@ func isTransientHTTPError(err error) bool {
 	if !ok || herr.Response == nil {
 		return false
 	}
-	switch code := herr.StatusCode; {
-	case code == http.StatusRequestTimeout, code == http.StatusTooManyRequests:
+	switch herr.StatusCode {
+	case http.StatusRequestTimeout, http.StatusTooManyRequests:
 		return true
-	case code == http.StatusNotImplemented:
+	case http.StatusNotImplemented:
 		return false
 	default:
-		return code >= 500
+		return herr.StatusCode >= 500
 	}
 }
