@@ -14,12 +14,10 @@ import (
 	"compress/flate"
 	"encoding/base64"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"reflect"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -682,29 +680,26 @@ func indexSchema(schema []string) map[string]int {
 	return index
 }
 
-// encodedPrefix starts every encoded bitmap: "bm1.<size>.<base64>". The size,
-// repeated outside the compressed payload, lets the logging pipeline's data
-// shape (DATA_SHAPE_DABS_BUNDLE_BITMAP) bound the length of the rest without
-// decompressing it, so the bitmap survives centralization from regulated
-// (FedRAMP) workspaces, where strings without a shape are redacted.
+// encodedPrefix starts every encoded bitmap: "bm1.<base64>". The logging
+// pipeline's data shape (DATA_SHAPE_DABS_BUNDLE_BITMAP) matches the prefix and
+// bounds the length, so the bitmap survives centralization from regulated
+// (FedRAMP) workspaces, where strings without a shape are redacted. The "1" is
+// the format version.
 const encodedPrefix = "bm1."
 
-// MaxSize is the largest bitmap the shape accepts, in bits.
+// MaxSize is the largest bitmap Encode takes, in bits. Its encoding fits in
+// MaxEncodedBodyLen.
 const MaxSize = 32768
 
-// MaxEncodedBodyLen is the longest base64 body the shape accepts after
-// "bm1.<size>.": DEFLATE's worst case for the raw payload plus a margin,
-// base64-encoded. Encode never exceeds it (TestEncodeFitsShape).
-func MaxEncodedBodyLen(size int) int {
-	raw := headerSize + (size+7)/8
-	maxDeflate := raw + 5*((raw+65534)/65535) + 16
-	return 4 * ((maxDeflate + 2) / 3)
-}
+// MaxEncodedBodyLen is the longest base64 body the shape accepts after "bm1.":
+// DEFLATE's worst case for a MaxSize payload plus a margin, base64-encoded.
+// Encode never exceeds it (TestEncodeFitsShape).
+const MaxEncodedBodyLen = 5504
 
 // Encode packs bits into the wire format (magic, size, context, bitmap),
 // compresses it with DEFLATE, base64-encodes the result, and prefixes it with
-// "bm1.<size>.". DEFLATE is used rather than gzip because it has no timestamp,
-// keeping the output deterministic.
+// "bm1.". DEFLATE is used rather than gzip because it has no timestamp, keeping
+// the output deterministic.
 func Encode(bits []bool, context uint16) (string, error) {
 	if len(bits) == 0 || len(bits) > MaxSize {
 		return "", fmt.Errorf("bitmap has %d bits; the encoding takes 1 to %d", len(bits), MaxSize)
@@ -731,24 +726,15 @@ func Encode(bits []bool, context uint16) (string, error) {
 	if err := w.Close(); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s%d.%s", encodedPrefix, len(bits), base64.StdEncoding.EncodeToString(buf.Bytes())), nil
+	return encodedPrefix + base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
 
-// Decode reverses Encode: it checks the "bm1.<size>." prefix, base64-decodes,
-// inflates, validates the header against the prefix, and returns the bits and
-// context.
+// Decode reverses Encode: it checks the "bm1." prefix, base64-decodes,
+// inflates, validates the header, and returns the bits and context.
 func Decode(encoded string) (bits []bool, context uint16, err error) {
-	rest, ok := strings.CutPrefix(encoded, encodedPrefix)
+	body, ok := strings.CutPrefix(encoded, encodedPrefix)
 	if !ok {
 		return nil, 0, fmt.Errorf("missing %q prefix", encodedPrefix)
-	}
-	sizeText, body, ok := strings.Cut(rest, ".")
-	if !ok {
-		return nil, 0, errors.New("missing '.' after the size")
-	}
-	size, err := strconv.Atoi(sizeText)
-	if err != nil || size < 1 || size > MaxSize {
-		return nil, 0, fmt.Errorf("bad size %q", sizeText)
 	}
 	compressed, err := base64.StdEncoding.DecodeString(body)
 	if err != nil {
@@ -766,9 +752,6 @@ func Decode(encoded string) (bits []bool, context uint16, err error) {
 	}
 	n := binary.BigEndian.Uint32(raw[4:])
 	context = binary.BigEndian.Uint16(raw[8:])
-	if uint64(n) != uint64(size) {
-		return nil, 0, fmt.Errorf("prefix says %d bits, payload %d", size, n)
-	}
 	// Compare in uint64 so a corrupt size near 2^32 cannot overflow int on 32-bit platforms.
 	if uint64(len(raw)-headerSize) != (uint64(n)+7)/8 {
 		return nil, 0, fmt.Errorf("payload size mismatch: %d bits, %d bytes", n, len(raw))

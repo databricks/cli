@@ -5,7 +5,7 @@ CLI's), so decoding does not need the CLI. :func:`decode` returns the same lines
 ``databricks bundle bitmap decode`` and :func:`decode_json` the same object as
 ``databricks bundle bitmap decode -o json``.
 
-Wire format (``bundle/bitmap/bitmap.go`` in the CLI): base64 of raw DEFLATE of
+Wire format (``bundle/bitmap/bitmap.go`` in the CLI): ``bm1.`` then base64 of raw DEFLATE of
 magic ``DBTB`` (4 bytes) | size (uint32, big-endian) | context (uint16,
 big-endian) | ceil(size / 8) bitmap bytes, with bit ``i`` (MSB first within each
 byte) standing for schema line ``i``.
@@ -31,9 +31,8 @@ CONTEXT_FULL_BUNDLE = 0
 
 _MAGIC = b"DBTB"
 _HEADER_SIZE = 10
-# Encoded bitmaps read "bm1.<size>.<base64>"; see bundle/bitmap in the CLI.
+# Encoded bitmaps read "bm1.<base64>"; see bundle/bitmap in the CLI.
 _ENCODED_PREFIX = "bm1."
-_MAX_SIZE = 32768
 _TRUE_SUFFIX = "=true"
 _FALSE_SUFFIX = "=false"
 _LIST_SUFFIX = "[*]"
@@ -74,22 +73,16 @@ def decode_bits(encoded: str) -> tuple[list[bool], int]:
     Raises ``ValueError`` (including ``binascii.Error``) or ``zlib.error`` on input
     that is not an encoded bitmap.
     """
-    rest = encoded.strip()
-    if not rest.startswith(_ENCODED_PREFIX):
+    encoded = encoded.strip()
+    if not encoded.startswith(_ENCODED_PREFIX):
         raise ValueError(f"missing {_ENCODED_PREFIX!r} prefix")
-    size_text, dot, body = rest[len(_ENCODED_PREFIX) :].partition(".")
-    if not dot:
-        raise ValueError("missing '.' after the size")
-    if not size_text.isdigit() or not 1 <= int(size_text) <= _MAX_SIZE:
-        raise ValueError(f"bad size {size_text!r}")
+    body = encoded[len(_ENCODED_PREFIX) :]
     raw = zlib.decompress(base64.b64decode(body, validate=True), -15)
     if len(raw) < _HEADER_SIZE:
         raise ValueError(f"payload too short: {len(raw)} bytes")
     if raw[:4] != _MAGIC:
         raise ValueError(f"bad magic {raw[:4]!r}")
     size, context = struct.unpack(">IH", raw[4:_HEADER_SIZE])
-    if size != int(size_text):
-        raise ValueError(f"prefix says {size_text} bits, payload {size}")
     if len(raw) - _HEADER_SIZE != (size + 7) // 8:
         raise ValueError(f"payload size mismatch: {size} bits, {len(raw)} bytes")
     bitmap = raw[_HEADER_SIZE:]

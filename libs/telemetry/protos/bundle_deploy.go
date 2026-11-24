@@ -61,8 +61,8 @@ type BundleDeployEvent struct {
 
 	// The bundle bitmap: one bit per field of the append-only schema in
 	// bundle/bitmap, set for each config field the bundle sets and each boolean
-	// telemetry flag measured, with the values of boolean fields. Base64 of raw
-	// DEFLATE; decode with 'databricks bundle bitmap decode' or the decoder in
+	// telemetry flag measured, with the values of boolean fields. "bm1." then
+	// base64 of raw DEFLATE; decode with 'databricks bundle bitmap decode' or the decoder in
 	// databricks-bundles. Field names, not values: map keys such as resource
 	// names are recorded as "*". Omitted when the configuration did not load.
 	BundleBitmap string `json:"bundle_bitmap,omitempty"`

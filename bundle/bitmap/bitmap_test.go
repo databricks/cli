@@ -450,7 +450,7 @@ func TestEncodeBitOrder(t *testing.T) {
 	encoded, err := Encode([]bool{true, false, false, false, false, false, false, true, true}, ContextFullBundle)
 	require.NoError(t, err)
 
-	body, ok := strings.CutPrefix(encoded, "bm1.9.")
+	body, ok := strings.CutPrefix(encoded, "bm1.")
 	require.True(t, ok, encoded)
 	compressed, err := base64.StdEncoding.DecodeString(body)
 	require.NoError(t, err)
@@ -492,59 +492,39 @@ func TestDecodeErrors(t *testing.T) {
 			err:     `missing "bm1." prefix`,
 		},
 		{
-			name:    "missing dot after the size",
-			encoded: "bm1.1",
-			err:     "missing '.' after the size",
-		},
-		{
-			name:    "size zero",
-			encoded: "bm1.0.AAAA",
-			err:     `bad size "0"`,
-		},
-		{
-			name:    "size over the cap",
-			encoded: "bm1.32769.AAAA",
-			err:     `bad size "32769"`,
-		},
-		{
 			name:    "bad base64",
-			encoded: "bm1.1.not-valid-base64!!!",
+			encoded: "bm1.not-valid-base64!!!",
 			err:     "base64",
 		},
 		{
 			name:    "not deflate",
-			encoded: "bm1.1." + base64.StdEncoding.EncodeToString([]byte{0xff, 0xff}),
+			encoded: "bm1." + base64.StdEncoding.EncodeToString([]byte{0xff, 0xff}),
 			err:     "inflate",
 		},
 		{
 			name:    "short header",
-			encoded: "bm1.1." + deflateBase64(t, []byte("DBTB")),
+			encoded: "bm1." + deflateBase64(t, []byte("DBTB")),
 			err:     "payload too short",
 		},
 		{
 			name:    "bad magic",
-			encoded: "bm1.1." + deflateBase64(t, append(header("XXXX", 1), 0x80)),
+			encoded: "bm1." + deflateBase64(t, append(header("XXXX", 1), 0x80)),
 			err:     "bad magic",
 		},
 		{
-			name:    "prefix and payload disagree",
-			encoded: "bm1.2." + deflateBase64(t, append(header(magic, 1), 0x80)),
-			err:     "prefix says 2 bits, payload 1",
-		},
-		{
 			name:    "missing bitmap bytes",
-			encoded: "bm1.9." + deflateBase64(t, header(magic, 9)),
+			encoded: "bm1." + deflateBase64(t, header(magic, 9)),
 			err:     "payload size mismatch",
 		},
 		{
 			name:    "extra bitmap bytes",
-			encoded: "bm1.1." + deflateBase64(t, append(header(magic, 1), 0x80, 0x00)),
+			encoded: "bm1." + deflateBase64(t, append(header(magic, 1), 0x80, 0x00)),
 			err:     "payload size mismatch",
 		},
 		{
 			name:    "size near 2^32",
-			encoded: "bm1.1." + deflateBase64(t, header(magic, 0xFFFFFFFF)),
-			err:     "prefix says 1 bits, payload 4294967295",
+			encoded: "bm1." + deflateBase64(t, header(magic, 0xFFFFFFFF)),
+			err:     "payload size mismatch",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -852,22 +832,8 @@ func implicitParents(schema []string) []string {
 // compliance/shape: the format the logging pipeline lets out of regulated
 // (FedRAMP) regions. A bitmap that fails it is redacted there.
 func validShape(v string) bool {
-	rest, ok := strings.CutPrefix(v, "bm1.")
-	if !ok {
-		return false
-	}
-	sizeText, body, ok := strings.Cut(rest, ".")
-	if !ok || len(sizeText) < 1 || len(sizeText) > 5 || sizeText[0] == '0' {
-		return false
-	}
-	size := 0
-	for _, c := range sizeText {
-		if c < '0' || c > '9' {
-			return false
-		}
-		size = size*10 + int(c-'0')
-	}
-	if size < 1 || size > MaxSize || len(body) < 4 || len(body)%4 != 0 || len(body) > MaxEncodedBodyLen(size) {
+	body, ok := strings.CutPrefix(v, "bm1.")
+	if !ok || len(body) < 4 || len(body)%4 != 0 || len(body) > MaxEncodedBodyLen {
 		return false
 	}
 	for i, c := range body {
@@ -899,7 +865,7 @@ func TestEncodeFitsShape(t *testing.T) {
 			assert.True(t, validShape(encoded), "size %d density %v: %q fails the shape", size, density, encoded)
 		}
 	}
-	for _, v := range []string{"bm1.orders.2024", "bm1.5311.my_table_name", "BM1.8.AAAA", "bm1.08.AAAA", "bm1.8.AA=A"} {
+	for _, v := range []string{"bm1.orders_2024", "bm1.my.table", "BM1.AAAA", "bm2.AAAA", "bm1.AA=A", "bm1." + strings.Repeat("A", MaxEncodedBodyLen+4)} {
 		assert.False(t, validShape(v), v)
 	}
 }
