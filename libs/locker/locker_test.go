@@ -184,12 +184,14 @@ func TestLockKeepsLockNotReleasedHere(t *testing.T) {
 	assert.Equal(t, other.State.ID, state.ID)
 }
 
-// deleteFailingFiler fails every delete, as when the unlock request times out.
+// deleteFailingFiler fails every delete without applying it, as when the request times out.
 type deleteFailingFiler struct {
 	filer.Filer
+	deletes int
 }
 
 func (f *deleteFailingFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
+	f.deletes++
 	return &url.Error{Op: "Post", URL: "https://example.com/" + path, Err: errors.New("request timed out after 1m30s of inactivity")}
 }
 
@@ -254,4 +256,25 @@ func TestStaleLockRemovalKeepsLockTakenBeforeRetry(t *testing.T) {
 	state, err := second.GetActiveLockState(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, other.State.ID, state.ID)
+}
+
+func TestStaleLockRemovalSendsOneDelete(t *testing.T) {
+	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	released := filepath.Join(t.TempDir(), "released.json")
+
+	first := newTestLocker(t, &deleteFailingFiler{Filer: local})
+	first.ReleasedLocksPath = released
+	require.NoError(t, first.Lock(ctx, false))
+	require.Error(t, first.Unlock(ctx))
+
+	// The delete times out and may land later, so it is not sent again: a second delete could
+	// remove a lock taken after the first one landed. The lock stays and Lock names its holder.
+	f := &deleteFailingFiler{Filer: local}
+	second := newTestLocker(t, retry.Filer(f))
+	second.ReleasedLocksPath = released
+	err = second.Lock(ctx, false)
+	require.ErrorContains(t, err, "deploy lock acquired by tester")
+	assert.Equal(t, 1, f.deletes)
 }

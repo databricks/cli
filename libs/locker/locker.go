@@ -309,19 +309,29 @@ func (locker *Locker) recordReleased(ctx context.Context) {
 // errLockNotStale stops removeStaleLock when the lock no longer carries a released ID.
 var errLockNotStale = errors.New("deploy lock is not stale")
 
+// errStaleLockDeletePending makes removeStaleLock read the lock again after a failed delete.
+var errStaleLockDeletePending = errors.New("stale deploy lock delete may still be applied")
+
+// deletePendingError is a failed delete that may still be applied. It reads as the delete's error
+// and matches errStaleLockDeletePending too.
+type deletePendingError struct{ error }
+
+func (e deletePendingError) Unwrap() []error { return []error{e.error, errStaleLockDeletePending} }
+
 // removeStaleLock deletes the remote lock if it carries an ID from ReleasedLocksPath: a write
 // that timed out in an earlier command was applied after that command released the lock. It
-// reports whether the stale lock is gone. A lock taken between a read and the delete that follows
-// it is lost: one from --force-lock, which already gives up exclusive access, or one from a second
-// CLI process in this checkout that removed the same stale lock first.
+// reports whether the stale lock is gone. A lock taken between the read and the delete that
+// follows it is lost: one from --force-lock, which already gives up exclusive access, or one from
+// a second CLI process in this checkout that removed the same stale lock first.
 func (locker *Locker) removeStaleLock(ctx context.Context) bool {
 	released := locker.readReleased(ctx)
 	if len(released) == 0 {
 		return false
 	}
-	// Neither the retrying filer nor the SDK may repeat the delete blindly. An attempt that failed
-	// may still have deleted the stale lock, and another deployer may have taken the lock since,
-	// so every attempt reads the lock again and deletes it only if it is still stale.
+	// The delete is sent at most once. A delete that failed, for example with a timeout, may
+	// still be applied later; a second delete, or one replayed by the retrying filer or the SDK,
+	// could then remove a lock that another deployer, or this Lock, has taken since. After a
+	// failed delete only reads follow, until the lock is gone or no longer stale.
 	deleteOnce := locker.deleteLockOnce
 	if deleteOnce == nil {
 		deleteFiler := locker.filer
@@ -330,6 +340,7 @@ func (locker *Locker) removeStaleLock(ctx context.Context) bool {
 		}
 		deleteOnce = func(ctx context.Context) error { return deleteFiler.Delete(ctx, LockFileName) }
 	}
+	sentDelete := false
 	_, err := retry.With(ctx, isRetriableStaleLockError, func() (struct{}, error) {
 		activeLockState, err := locker.GetActiveLockState(ctx)
 		if err != nil {
@@ -338,8 +349,16 @@ func (locker *Locker) removeStaleLock(ctx context.Context) bool {
 		if !slices.Contains(released, activeLockState.ID) {
 			return struct{}{}, errLockNotStale
 		}
+		if sentDelete {
+			return struct{}{}, errStaleLockDeletePending
+		}
+		sentDelete = true
 		log.Infof(ctx, "Removing stale deploy lock %s acquired at %v: it was released before", activeLockState.ID, activeLockState.AcquisitionTime)
-		return struct{}{}, deleteOnce(ctx)
+		err = deleteOnce(ctx)
+		if err != nil && isRetriableStaleLockError(ctx, err) {
+			return struct{}{}, deletePendingError{err}
+		}
+		return struct{}{}, err
 	})
 	return err == nil || errors.Is(err, fs.ErrNotExist)
 }
@@ -370,12 +389,12 @@ func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locke
 	return locker, nil
 }
 
-// isRetriableStaleLockError reports whether removeStaleLock should try again. Each attempt reads
-// the lock before deleting it, so a retry is safe after any error that may be transient: the ones
+// isRetriableStaleLockError reports whether removeStaleLock should read the lock again. A retry
+// only reads after the first delete, so it is safe after any error that may be transient: the ones
 // [retry.IsTransient] covers, the ones the SDK would retry itself (deleteLockOnce turns SDK retries
 // off), and transport errors.
 func isRetriableStaleLockError(ctx context.Context, err error) bool {
-	if retry.IsTransient(ctx, err) {
+	if errors.Is(err, errStaleLockDeletePending) || retry.IsTransient(ctx, err) {
 		return true
 	}
 	if _, ok := errors.AsType[*url.Error](err); ok {
