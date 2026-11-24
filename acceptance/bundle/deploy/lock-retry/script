@@ -19,7 +19,7 @@ print_requests.py //api/2.0/workspace-files/import-file | jq -c 'select(.path | 
 
 title "A late lock write lands after the deploy that sent it released the lock: the next deploy replaces that lock, and its delete is not replayed after a 503"
 # The last deploy recorded its locker ID as released. Recreate the lock that its late write would leave.
-jq -c --arg id "$(jq -r '.[-1]' .databricks/bundle/default/released-deploy-locks.json)" '.ID = $id' other.lock > late.lock
+jq -c --arg id "$(jq -r '.released[-1]' .databricks/bundle/default/released-deploy-locks.json)" '.ID = $id' other.lock > late.lock
 MSYS_NO_PATHCONV=1 $CLI workspace import /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default/state/deploy.lock --file late.lock --format AUTO > /dev/null
 rm late.lock
 print_requests.py > /dev/null

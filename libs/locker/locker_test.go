@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"testing"
+	"time"
 	"uuid"
 
 	"github.com/databricks/cli/libs/env"
@@ -277,4 +278,38 @@ func TestStaleLockRemovalSendsOneDelete(t *testing.T) {
 	err = second.Lock(ctx, false)
 	require.ErrorContains(t, err, "deploy lock acquired by tester")
 	assert.Equal(t, 1, f.deletes)
+}
+
+func TestStaleLockRemovalRemembersPendingDelete(t *testing.T) {
+	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	released := filepath.Join(t.TempDir(), "released.json")
+	now := time.Now()
+	timeNow = func() time.Time { return now }
+	t.Cleanup(func() { timeNow = time.Now })
+
+	first := newTestLocker(t, &deleteFailingFiler{Filer: local})
+	first.ReleasedLocksPath = released
+	require.NoError(t, first.Lock(ctx, false))
+	require.Error(t, first.Unlock(ctx))
+
+	// The next command's delete times out and may land later.
+	second := newTestLocker(t, &deleteFailingFiler{Filer: local})
+	second.ReleasedLocksPath = released
+	require.ErrorContains(t, second.Lock(ctx, false), "deploy lock acquired by tester")
+
+	// A later command does not delete the lock again while that delete may still land: it would
+	// remove the lock this command then creates.
+	f := &deleteFailingFiler{Filer: local}
+	third := newTestLocker(t, f)
+	third.ReleasedLocksPath = released
+	require.ErrorContains(t, third.Lock(ctx, false), "deploy lock acquired by tester")
+	assert.Equal(t, 0, f.deletes)
+
+	// Once the window has passed, the stale lock is removed.
+	now = now.Add(pendingDeleteWindow)
+	fourth := newTestLocker(t, local)
+	fourth.ReleasedLocksPath = released
+	require.NoError(t, fourth.Lock(ctx, false))
 }
