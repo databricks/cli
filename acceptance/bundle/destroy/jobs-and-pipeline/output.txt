@@ -85,6 +85,7 @@ Exit code: 1
 .databricks/bundle
 .databricks/bundle/default
 .databricks/bundle/default/deployment.json
+.databricks/bundle/default/released-deploy-locks.json
 
 === Assert bundle deployment path is deleted
 

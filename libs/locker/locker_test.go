@@ -43,7 +43,6 @@ func (f *eofFiler) Write(ctx context.Context, path string, reader io.Reader, mod
 func newTestLocker(t *testing.T, f filer.Filer) *Locker {
 	return &Locker{
 		filer:     f,
-		lockFiler: f,
 		TargetDir: t.TempDir(),
 		State:     &LockState{ID: uuid.New(), User: "tester"},
 	}
@@ -183,4 +182,32 @@ func TestLockKeepsLockNotReleasedHere(t *testing.T) {
 	state, err := second.GetActiveLockState(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, other.State.ID, state.ID)
+}
+
+// deleteFailingFiler fails every delete, as when the unlock request times out.
+type deleteFailingFiler struct {
+	filer.Filer
+}
+
+func (f *deleteFailingFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
+	return &url.Error{Op: "Post", URL: "https://example.com/" + path, Err: errors.New("request timed out after 1m30s of inactivity")}
+}
+
+func TestLockReplacesLockLeftByFailedUnlock(t *testing.T) {
+	ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+	local, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	released := filepath.Join(t.TempDir(), "released.json")
+
+	first := newTestLocker(t, &deleteFailingFiler{Filer: local})
+	first.ReleasedLocksPath = released
+	require.NoError(t, first.Lock(ctx, false))
+	require.Error(t, first.Unlock(ctx))
+
+	second := newTestLocker(t, local)
+	second.ReleasedLocksPath = released
+	require.NoError(t, second.Lock(ctx, false))
+	state, err := second.GetActiveLockState(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, second.State.ID, state.ID)
 }
