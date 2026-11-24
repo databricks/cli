@@ -139,12 +139,16 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.Channel.dbsql_version">
 <span class="sig-name descname"><span class="pre">dbsql_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.Channel.dbsql_version" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Databricks SQL version to pin to. Set it if and only if name is
+CHANNEL_NAME_CUSTOM.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.Channel.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.sql_warehouses.ChannelName" title="databricks.bundles.sql_warehouses._models.channel_name.ChannelName"><span class="pre">ChannelName</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.Channel.name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Channel to follow. CHANNEL_NAME_CURRENT is the default, and CHANNEL_NAME_PREVIEW
+carries the upcoming Databricks SQL release for testing.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.Channel.from_dict">
@@ -259,12 +263,15 @@
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.EndpointTagPair.key">
 <span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.EndpointTagPair.key" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Tag key. Keys must be unique within the warehouse and cannot use the keys that
+Databricks reserves for the tags it sets automatically.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.EndpointTagPair.value">
 <span class="sig-name descname"><span class="pre">value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.EndpointTagPair.value" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Tag value. Keys and values must follow the tagging rules of the cloud provider.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.EndpointTagPair.from_dict">
@@ -296,7 +303,8 @@
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.EndpointTags.custom_tags">
 <span class="sig-name descname"><span class="pre">custom_tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.sql_warehouses.EndpointTagPair" title="databricks.bundles.sql_warehouses._models.endpoint_tag_pair.EndpointTagPair"><span class="pre">EndpointTagPair</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.EndpointTags.custom_tags" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>User-defined tags, applied in addition to the tags Databricks sets automatically.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.EndpointTags.from_dict">
@@ -416,7 +424,7 @@ RUNNING queries) before it is automatically stopped.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SqlWarehouse.channel">
 <span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.sql_warehouses.Channel" title="databricks.bundles.sql_warehouses._models.channel.Channel"><span class="pre">Channel</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SqlWarehouse.channel" title="Link to this definition">¶</a></dt>
-<dd><p>Channel Details</p>
+<dd><p>Channel that determines which Databricks SQL version the warehouse runs.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -442,7 +450,8 @@ max_num_clusters.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SqlWarehouse.creator_name">
 <span class="sig-name descname"><span class="pre">creator_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SqlWarehouse.creator_name" title="Link to this definition">¶</a></dt>
-<dd><p>warehouse creator name</p>
+<dd><p>Name of the user who created the warehouse. Set by the server and ignored in
+requests.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -498,10 +507,10 @@ manager.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SqlWarehouse.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SqlWarehouse.name" title="Link to this definition">¶</a></dt>
-<dd><p>Logical name for the cluster.</p>
+<dd><p>Logical name for the warehouse.</p>
 <p>Supported values:
 - Must be unique within an org.
-- Must be less than 100 characters.</p>
+- Must be 1 to 100 characters.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -513,13 +522,18 @@ manager.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SqlWarehouse.spot_instance_policy">
 <span class="sig-name descname"><span class="pre">spot_instance_policy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.sql_warehouses.SpotInstancePolicy" title="databricks.bundles.sql_warehouses._models.spot_instance_policy.SpotInstancePolicy"><span class="pre">SpotInstancePolicy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SqlWarehouse.spot_instance_policy" title="Link to this definition">¶</a></dt>
-<dd><p>Configurations whether the endpoint should use spot instances.</p>
+<dd><p>Configures whether the warehouse should use spot instances. COST_OPTIMIZED uses
+spot instances where the cloud provider supports them, and RELIABILITY_OPTIMIZED
+uses on-demand instances only.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SqlWarehouse.statement_timeout">
 <span class="sig-name descname"><span class="pre">statement_timeout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SqlWarehouse.statement_timeout" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Warehouse statement timeout in seconds.</p>
+<dd><p>Maximum time in seconds that a statement can run on this warehouse before it is
+cancelled. Set to 0 to remove the warehouse-level timeout. Changing the value of a
+running warehouse restarts it. See
+<a class="reference external" href="https://docs.databricks.com/aws/en/sql/language-manual/parameters/statement_timeout">https://docs.databricks.com/aws/en/sql/language-manual/parameters/statement_timeout</a>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -534,8 +548,9 @@ with this SQL warehouse.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.sql_warehouses.SqlWarehouse.warehouse_type">
 <span class="sig-name descname"><span class="pre">warehouse_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.sql_warehouses.CreateWarehouseRequestWarehouseType" title="databricks.bundles.sql_warehouses._models.create_warehouse_request_warehouse_type.CreateWarehouseRequestWarehouseType"><span class="pre">CreateWarehouseRequestWarehouseType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.sql_warehouses.SqlWarehouse.warehouse_type" title="Link to this definition">¶</a></dt>
-<dd><p>Warehouse type: <cite>PRO</cite> or <cite>CLASSIC</cite>. If you want to use serverless compute,
-you must set to <cite>PRO</cite> and also set the field <cite>enable_serverless_compute</cite> to <cite>true</cite>.</p>
+<dd><p>Warehouse type: <cite>PRO</cite>, <cite>CLASSIC</cite>, or <cite>REALTIME</cite>. For serverless compute,
+use <cite>PRO</cite> or <cite>REALTIME</cite> with <cite>enable_serverless_compute=true</cite>.
+<cite>REALTIME</cite> requires serverless compute and Photon; <cite>enable_photon</cite> defaults to <cite>true</cite>.</p>
 </dd></dl>
 
 <dl class="py method">

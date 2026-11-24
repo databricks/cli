@@ -1160,6 +1160,98 @@ VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the f
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GoogleAdsConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsConfig" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsCustomReportOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GoogleAdsCustomReportOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsCustomReportOptions" title="Link to this definition">¶</a></dt>
+<dd><p>User-defined custom report for the Google Ads connector. Mirrors the
+resource + fields + segments + metrics model that Google Ads GAQL exposes.
+The customer account this report runs against is supplied by the source
+schema (namespace), not by this message. The whole message is gated by
+the parent GoogleAdsOptions.custom_report_options stage; per-field stage
+annotations are intentionally omitted.
+Only supported on table-type objects: a custom report requires a
+destination table, so it cannot be specified at the schema/source level.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsCustomReportOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsCustomReportOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsCustomReportOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsCustomReportOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GoogleAdsOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Google Ads specific options for ingestion (object-level).
+When set, these values override the corresponding fields in GoogleAdsConfig
+(source_configurations).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.GoogleAdsOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.GoogleAdsOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionConfig">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IngestionConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.IngestionConfig" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -1913,6 +2005,9 @@ If not specified, UTC will be used.</p>
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.allow_duplicate_names">
 <span class="sig-name descname"><span class="pre">allow_duplicate_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.allow_duplicate_names" title="Link to this definition">¶</a></dt>
 <dd><p>If false, deployment will fail if name conflicts with that of another pipeline.</p>
+<p>Ignored when <cite>parent_path</cite> is set. A pipeline in a workspace folder must have a name that is
+unique within that folder, and creation fails if the folder already contains an object with the
+same name.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2892,7 +2987,7 @@ endpoint will be used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec.destination_schema">
 <span class="sig-name descname"><span class="pre">destination_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.destination_schema" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.</p>
+<dd><p>[Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails if a table with the same name already exists.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -3415,7 +3510,8 @@ custom report request.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Transformer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Transformer</span></span><a class="headerlink" href="#databricks.bundles.pipelines.Transformer" title="Link to this definition">¶</a></dt>
-<dd><p>Specifies how to transform binary data into structured data.</p>
+<dd><p>One step that transforms a column: either decodes data into structured data (<cite>format</cite>) or
+reshapes an already-decoded column (<cite>operation</cite>).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Transformer.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
