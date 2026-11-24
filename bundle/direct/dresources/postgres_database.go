@@ -156,7 +156,7 @@ func (r *ResourcePostgresDatabase) recoverFailedCreate(ctx context.Context, req 
 			return r.client.Postgres.GetDatabase(ctx, postgres.GetDatabaseRequest{Name: name})
 		},
 		createTime:      func(found *postgres.Database) (time.Time, bool) { return sdkTime(found.CreateTime) },
-		alreadyExists:   isAlreadyExists,
+		alreadyExists:   isPostgresAlreadyExists,
 		createdByCaller: nil,
 		use: func(_ context.Context, found *postgres.Database) (*PostgresDatabaseRemote, error) {
 			return makePostgresDatabaseRemote(found), nil

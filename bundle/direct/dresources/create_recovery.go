@@ -36,7 +36,7 @@ type createRecovery[T, R any] struct {
 	// it to become ready.
 	use func(ctx context.Context, found *T) (R, error)
 	// alreadyExists reports whether a repeated create request failed because the name is taken:
-	// isAlreadyExists, or isPostgresAlreadyExists for the Lakebase resources that need it.
+	// isAlreadyExists, or isPostgresAlreadyExists for the Lakebase resources that answer with a 400.
 	alreadyExists func(err error) bool
 	// createdByCaller, if set, reports whether the found resource was created by the deploying
 	// user. Within the create-time window, it tells our resource apart from one another user
@@ -226,9 +226,9 @@ func createdByCurrentUser(ctx context.Context, client *databricks.WorkspaceClien
 }
 
 // isPostgresAlreadyExists is isAlreadyExists for Lakebase resources. Besides 409 ALREADY_EXISTS,
-// projects answer a create of an existing project with 400 BAD_REQUEST and "A project with this
-// resource name already exists in the workspace." The API has no error code for it, so match the
-// message.
+// projects, databases and roles answer a create of an existing name with 400 BAD_REQUEST, e.g. "A
+// project with this resource name already exists in the workspace." The API has no error code for
+// it, so match the message.
 func isPostgresAlreadyExists(err error) bool {
 	if isAlreadyExists(err) {
 		return true
