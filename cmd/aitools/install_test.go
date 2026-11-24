@@ -523,6 +523,110 @@ func TestInstallSkillsOnlyRecoveryForAgentWithoutManifestReader(t *testing.T) {
 	assert.Equal(t, []string{agents.NameCodex}, (*calls)[0].agents)
 }
 
+// writeAgentCLIPlugin writes the records `codex plugin add` and `copilot plugin
+// install` leave for the databricks plugin, which the CLI's state never sees.
+func writeAgentCLIPlugin(t *testing.T, home, agent string) {
+	t.Helper()
+	switch agent {
+	case agents.NameCodex:
+		require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex", "plugins", "cache", "databricks-agent-skills", "databricks", "0.2.50"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".codex", "config.toml"), []byte("[plugins.\"databricks@databricks-agent-skills\"]\nenabled = true\n"), 0o600))
+	case agents.NameCopilot:
+		cache := filepath.Join(home, ".copilot", "installed-plugins", "databricks-agent-skills", "databricks")
+		require.NoError(t, os.MkdirAll(cache, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(home, ".copilot", "config.json"), []byte(`{"installedPlugins":[{"name":"databricks","marketplace":"databricks-agent-skills","cache_path":"`+filepath.ToSlash(cache)+`"}]}`), 0o600))
+	default:
+		t.Fatalf("no agent CLI plugin records for %s", agent)
+	}
+}
+
+// A plugin installed with the agent's own CLI has no record in the CLI's
+// state, so 'databricks aitools uninstall' cannot remove it: --skills-only
+// names the agent's own command instead.
+func TestInstallSkillsOnlyRecoveryForPluginInstalledWithAgentCLI(t *testing.T) {
+	tests := []struct {
+		agent, binary, display, remove string
+	}{
+		{agent: agents.NameCodex, binary: "codex", display: "Codex CLI", remove: "codex plugin remove databricks@databricks-agent-skills"},
+		{agent: agents.NameCopilot, binary: "copilot", display: "GitHub Copilot", remove: "copilot plugin uninstall databricks@databricks-agent-skills"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.agent, func(t *testing.T) {
+			isolateAgents(t)
+			home := setupTestAgents(t)
+			writeAgentCLIPlugin(t, home, tt.agent)
+			calls := setupInstallMock(t)
+			args := []string{"--skills-only", "--scope", "global", "--agents", tt.agent}
+			const rerun = ", then run: databricks aitools install --scope=global --agents="
+
+			fakeBinsOnPath(t, tt.binary)
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			_, err := runInstall(t, ctx, args...)
+			require.ErrorContains(t, err, tt.display+": already has the databricks plugin")
+			assert.Contains(t, stderr.String(), "  To use skill files instead, remove the plugin first with '"+tt.remove+"' (this CLI did not install it)"+rerun+tt.agent+" --skills-only\n")
+
+			fakeBinsOnPath(t)
+			ctx, stderr = cmdio.NewTestContextWithStderr(t.Context())
+			_, err = runInstall(t, ctx, args...)
+			require.Error(t, err)
+			assert.Contains(t, stderr.String(), "  To use skill files instead, put '"+tt.binary+"' on PATH and remove the plugin with '"+tt.remove+"' first (this CLI did not install it)"+rerun+tt.agent+" --skills-only\n")
+			assert.Empty(t, *calls)
+		})
+	}
+}
+
+// The plugin in Codex's config is the user's own, so it does not cover a
+// project install: --skills-only in the project scope skips Codex for not
+// supporting project-scoped skills, as without the plugin.
+func TestBuildPlanSkillsOnlyProjectScopeIgnoresAgentConfigPlugin(t *testing.T) {
+	isolateAgents(t)
+	home := setupTestAgents(t)
+	writeAgentCLIPlugin(t, home, agents.NameCodex)
+	fakeBinsOnPath(t, "codex")
+	codex := agents.ByName(agents.NameCodex)
+
+	global := planItemFor(t.Context(), codex, installer.ScopeGlobal, true, true)
+	assert.Equal(t, deliverySkip, global.delivery)
+	assert.Equal(t, "remove the plugin first with 'codex plugin remove databricks@databricks-agent-skills' (this CLI did not install it)", global.pluginRemoval)
+
+	project := planItemFor(t.Context(), codex, installer.ScopeProject, true, true)
+	assert.Equal(t, deliverySkip, project.delivery)
+	assert.Equal(t, "does not support project-scoped skills", project.reason)
+	assert.Empty(t, project.pluginRemoval)
+}
+
+// A failed plugin install for an agent that has a plugin installed with its
+// own CLI points the skill files alternative at the agent's own command.
+func TestPluginFailureTextForPluginInstalledWithAgentCLI(t *testing.T) {
+	isolateAgents(t)
+	home := setupTestAgents(t)
+	writeAgentCLIPlugin(t, home, agents.NameCodex)
+	fakeBinsOnPath(t, "codex")
+	codex := agents.ByName(agents.NameCodex)
+	item := agentPlanItem{agent: codex, delivery: deliveryPlugin, scope: agentScopeUser}
+	inv := installInvocation{scope: installer.ScopeGlobal, agents: agents.NameCodex}
+
+	_, recovery := pluginFailureText(t.Context(), inv, item, errors.New("boom"))
+	assert.Equal(t, "Re-run 'databricks aitools install --scope=global --agents=codex --debug' to see details, or install skill files instead: remove the plugin first with 'codex plugin remove databricks@databricks-agent-skills' (this CLI did not install it), then run: databricks aitools install --scope=global --agents=codex --skills-only", recovery)
+}
+
+// A plugin in a recorded marketplace and one installed with the agent's own CLI
+// from another marketplace need both commands.
+func TestPluginRemovalStepForRecordedAndAgentCLIPlugins(t *testing.T) {
+	isolateAgents(t)
+	home := setupTestAgents(t)
+	writeAgentCLIPlugin(t, home, agents.NameCodex)
+	require.NoError(t, installer.RecordPluginInstalls(t.Context(), installer.ScopeGlobal, map[string]installer.PluginRecord{
+		agents.NameCodex: {Marketplace: "other", Plugin: "databricks"},
+	}, "v0.2.6"))
+	codex := agents.ByName(agents.NameCodex)
+
+	fakeBinsOnPath(t, "codex")
+	assert.Equal(t, "remove the plugin first with 'databricks aitools uninstall --scope=global --agents=codex', then 'codex plugin remove databricks@databricks-agent-skills'", pluginRemovalStep(t.Context(), codex, installer.ScopeGlobal))
+	fakeBinsOnPath(t)
+	assert.Equal(t, "put 'codex' on PATH and remove the plugin with 'databricks aitools uninstall --scope=global --agents=codex', then 'codex plugin remove databricks@databricks-agent-skills' first (only 'databricks aitools uninstall --scope=global --agents=codex' clears this CLI's record of it)", pluginRemovalStep(t.Context(), codex, installer.ScopeGlobal))
+}
+
 // A plugin the CLI recorded but that was removed in the agent itself leaves a
 // stale record. A --skills-only run then gives the agent skill files, so it
 // drops the record, as the fallback for an agent whose CLI is missing does;
@@ -2035,7 +2139,8 @@ func TestPluginAlreadyInstalledUsesTheStateWhenTheManifestIsUnreadable(t *testin
 
 // Codex records a plugin installed with its own CLI in config.toml and in its
 // plugin cache, which the CLI's state never sees. Only both records together
-// are an installed plugin. An unreadable config leaves the state to decide.
+// are an installed plugin, and only for a global install. An unreadable config
+// leaves the state to decide.
 func TestPluginAlreadyInstalledReadsCodexConfig(t *testing.T) {
 	home := t.TempDir()
 	isolateAgents(t, "HOME", home, "USERPROFILE", home)
@@ -2048,6 +2153,7 @@ func TestPluginAlreadyInstalledReadsCodexConfig(t *testing.T) {
 	assert.False(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeGlobal), "a table without the cache")
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex", "plugins", "cache", "databricks-agent-skills", "databricks", "0.2.50"), 0o755))
 	assert.True(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeGlobal))
+	assert.False(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeProject), "the user's own plugin does not cover a project install")
 
 	require.NoError(t, os.WriteFile(config, []byte("[plugins\n"), 0o600))
 	assert.False(t, pluginAlreadyInstalled(t.Context(), codex, installer.ScopeGlobal))

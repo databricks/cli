@@ -490,16 +490,40 @@ func skipRecovery(inv installInvocation, it agentPlanItem) string {
 // Code itself, from any marketplace) gets Claude Code's own command, which
 // also needs its CLI on PATH. A managed plugin comes from the organization's
 // managed settings, which neither CLI can change, so an administrator has to
-// remove it. An agent without a manifest reader has the plugin only as far as
-// the record says (see pluginAlreadyInstalled), so the record has to be
-// cleared through 'databricks aitools uninstall'.
+// remove it. An agent without a manifest reader (Codex, Copilot) has each
+// databricks plugin its own config records (see configPluginMarketplaces) and
+// the one the record names (see pluginAlreadyInstalled). A plugin of the
+// config that the record does not cover gets the agent's own command; the
+// record's plugin, or the record alone, has to be removed through 'databricks
+// aitools uninstall', which also clears the record. Both need the agent's CLI
+// on PATH.
 func pluginRemovalStep(ctx context.Context, a *agents.Agent, scope string) string {
 	uninstall := fmt.Sprintf("databricks aitools uninstall --scope=%s --agents=%s", scope, a.Name)
 	if !a.HasPluginManifestReader() {
-		if !a.HasBinary(ctx) {
-			return fmt.Sprintf("put '%s' on PATH and remove the plugin with '%s' first (only that clears this CLI's record of it)", a.Binary, uninstall)
+		rec, recorded := installer.RecordedPlugin(ctx, scope, a.Name)
+		var own []string
+		for _, marketplace := range configPluginMarketplaces(ctx, a, scope) {
+			if recorded && marketplace == rec.Marketplace {
+				continue
+			}
+			own = append(own, installer.PluginUninstallCommand(a, marketplace, ""))
 		}
-		return fmt.Sprintf("remove the plugin first with '%s'", uninstall)
+		if len(own) > 0 && !recorded {
+			commands := strings.Join(own, "', then '")
+			if !a.HasBinary(ctx) {
+				return fmt.Sprintf("put '%s' on PATH and remove the plugin with '%s' first (this CLI did not install it)", a.Binary, commands)
+			}
+			return fmt.Sprintf("remove the plugin first with '%s' (this CLI did not install it)", commands)
+		}
+		commands := strings.Join(append([]string{uninstall}, own...), "', then '")
+		if !a.HasBinary(ctx) {
+			clears := "that"
+			if len(own) > 0 {
+				clears = "'" + uninstall + "'"
+			}
+			return fmt.Sprintf("put '%s' on PATH and remove the plugin with '%s' first (only %s clears this CLI's record of it)", a.Binary, commands, clears)
+		}
+		return fmt.Sprintf("remove the plugin first with '%s'", commands)
 	}
 	installs, err := manifestPluginInstalls(ctx, a, scope)
 	isManaged := func(install agents.PluginInstall) bool { return install.Scope == agents.ClaudeScopeManaged }

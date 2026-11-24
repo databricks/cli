@@ -323,3 +323,84 @@ func TestDatabricksPluginConfiguredHonorsAgentHomes(t *testing.T) {
 		assert.True(t, got, name)
 	}
 }
+
+// Each databricks plugin the config records names its marketplace, and a
+// record that cannot be checked does not hide the others. A NUL byte makes
+// the record's path unreadable on every platform.
+func TestDatabricksPluginConfigMarketplaces(t *testing.T) {
+	tests := []struct {
+		name    string
+		agent   string
+		file    string
+		body    string
+		caches  []string
+		want    []string
+		wantErr bool
+	}{
+		{
+			name:   "codex",
+			agent:  NameCodex,
+			file:   filepath.Join(".codex", "config.toml"),
+			body:   "[plugins.\"databricks@b\"]\n[plugins.\"databricks@a\"]\n[plugins.\"databricks@c\"]\n",
+			caches: []string{filepath.Join(".codex", "plugins", "cache", "a", "databricks", "0.2.50"), filepath.Join(".codex", "plugins", "cache", "b", "databricks", "0.2.50")},
+			want:   []string{"a", "b"},
+		},
+		{
+			name:   "codex unreadable cache first",
+			agent:  NameCodex,
+			file:   filepath.Join(".codex", "config.toml"),
+			body:   "[plugins.\"databricks@a\\u0000\"]\n[plugins.\"databricks@b\"]\n",
+			caches: []string{filepath.Join(".codex", "plugins", "cache", "b", "databricks", "0.2.50")},
+			want:   []string{"b"},
+		},
+		{
+			name:    "codex only an unreadable cache",
+			agent:   NameCodex,
+			file:    filepath.Join(".codex", "config.toml"),
+			body:    "[plugins.\"databricks@a\\u0000\"]\n",
+			wantErr: true,
+		},
+		{
+			name:   "copilot",
+			agent:  NameCopilot,
+			file:   filepath.Join(".copilot", "config.json"),
+			body:   `{"installedPlugins": [{"name": "databricks", "marketplace": "a", "cache_path": "{{home}}/a"}, {"name": "databricks", "marketplace": "b", "cache_path": "{{home}}/b"}]}`,
+			caches: []string{"a", "b"},
+			want:   []string{"a", "b"},
+		},
+		{
+			name:   "copilot unreadable cache first",
+			agent:  NameCopilot,
+			file:   filepath.Join(".copilot", "config.json"),
+			body:   `{"installedPlugins": [{"name": "databricks", "marketplace": "a", "cache_path": "{{home}}/a\u0000"}, {"name": "databricks", "marketplace": "b", "cache_path": "{{home}}/b"}]}`,
+			caches: []string{"b"},
+			want:   []string{"b"},
+		},
+		{
+			name:    "copilot only an unreadable cache",
+			agent:   NameCopilot,
+			file:    filepath.Join(".copilot", "config.json"),
+			body:    `{"installedPlugins": [{"name": "databricks", "marketplace": "a", "cache_path": "{{home}}/a\u0000"}]}`,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			home := t.TempDir()
+			for _, v := range []string{codexHomeEnv, copilotHomeEnv} {
+				t.Setenv(v, "")
+			}
+			ctx := env.WithUserHomeDir(t.Context(), home)
+			path := filepath.Join(home, tt.file)
+			require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+			body := strings.ReplaceAll(tt.body, "{{home}}", filepath.ToSlash(home))
+			require.NoError(t, os.WriteFile(path, []byte(body), 0o600))
+			for _, cache := range tt.caches {
+				require.NoError(t, os.MkdirAll(filepath.Join(home, cache), 0o755))
+			}
+			got, err := ByName(tt.agent).DatabricksPluginConfigMarketplaces(ctx)
+			assert.Equal(t, tt.wantErr, err != nil, "error: %v", err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

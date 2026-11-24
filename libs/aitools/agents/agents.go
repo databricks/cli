@@ -91,10 +91,11 @@ type Agent struct {
 	// their own reader here. found is false when the manifest has no databricks
 	// entry or does not exist; an error means it exists but could not be read.
 	pluginInstalls func(ctx context.Context, a *Agent) (installs []pluginInstall, found bool, err error)
-	// pluginConfigured reads whether the agent's own records show the
-	// databricks plugin as installed (Codex, Copilot), for agents without a
-	// pluginInstalls reader. See DatabricksPluginConfigured.
-	pluginConfigured func(ctx context.Context) (bool, error)
+	// pluginConfigMarketplaces reads the marketplaces the agent's own
+	// records show the databricks plugin as installed from (Codex, Copilot),
+	// for agents without a pluginInstalls reader. See
+	// DatabricksPluginConfigured.
+	pluginConfigMarketplaces func(ctx context.Context) ([]string, error)
 }
 
 // Detected reports whether the agent is installed: its config directory exists,
@@ -320,12 +321,12 @@ var Registry = []*Agent{
 		},
 	},
 	{
-		Name:             NameCodex,
-		DisplayName:      "Codex CLI",
-		ConfigDir:        homeSubdir(".codex"),
-		Binary:           "codex",
-		Plugin:           databricksPlugin(),
-		pluginConfigured: codexPluginConfigured,
+		Name:                     NameCodex,
+		DisplayName:              "Codex CLI",
+		ConfigDir:                homeSubdir(".codex"),
+		Binary:                   "codex",
+		Plugin:                   databricksPlugin(),
+		pluginConfigMarketplaces: codexPluginMarketplaces,
 		MCP: &mcpconfig.Spec{
 			Path:   codexMCPPath,
 			Format: mcpconfig.FormatTOML,
@@ -354,12 +355,12 @@ var Registry = []*Agent{
 		mcpHomeEnvs: []string{"XDG_CONFIG_HOME"},
 	},
 	{
-		Name:             NameCopilot,
-		DisplayName:      "GitHub Copilot",
-		ConfigDir:        homeSubdir(".copilot"),
-		Binary:           "copilot",
-		Plugin:           databricksPlugin(),
-		pluginConfigured: copilotPluginConfigured,
+		Name:                     NameCopilot,
+		DisplayName:              "GitHub Copilot",
+		ConfigDir:                homeSubdir(".copilot"),
+		Binary:                   "copilot",
+		Plugin:                   databricksPlugin(),
+		pluginConfigMarketplaces: copilotPluginMarketplaces,
 		MCP: &mcpconfig.Spec{
 			Path:       copilotMCPPath,
 			Format:     mcpconfig.FormatJSON,

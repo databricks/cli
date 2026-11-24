@@ -168,10 +168,20 @@ enabled = true
 			assert.Empty(t, tools.newAgents())
 
 			forbidSkillsInstall(t)
+			// Raw skills an earlier run gave the agent would show every skill
+			// twice next to the plugin, so they are removed.
+			var cleaned []string
+			origCleanup := cleanupLegacyFn
+			t.Cleanup(func() { cleanupLegacyFn = origCleanup })
+			cleanupLegacyFn = func(_ context.Context, a *agents.Agent, scope string) error {
+				cleaned = append(cleaned, a.Name+" "+scope)
+				return nil
+			}
 			result, err := tools.install(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, protos.AitoolsAutoInstallOutcomeInstalled, result.outcome)
 			assert.Empty(t, result.agents)
+			assert.Equal(t, []string{tools.plan[0].agent.Name + " " + installer.ScopeGlobal}, cleaned)
 		})
 	}
 }
