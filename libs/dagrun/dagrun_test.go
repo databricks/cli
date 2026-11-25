@@ -212,3 +212,34 @@ func runTestCase(t *testing.T, tc testCase, g *Graph, p int) {
 		}
 	}
 }
+
+// Run does not detect a cycle that has an entry point, so these only go through DetectCycle.
+func TestDetectCycleReachedFromAnotherNode(t *testing.T) {
+	tests := []struct {
+		name  string
+		edges []edge
+		cycle string
+	}{
+		{
+			name:  "one-node cycle",
+			edges: []edge{{"A", "B", "${A.id}"}, {"B", "B", "${B.id}"}},
+			cycle: "cycle detected: B refers to itself via ${B.id}",
+		},
+		{
+			name:  "two-node cycle",
+			edges: []edge{{"A", "B", "${A.id}"}, {"B", "C", "${B.id}"}, {"C", "B", "${C.id}"}},
+			cycle: "cycle detected: C refers to B via ${B.id} which refers to C via ${C.id}",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewGraph()
+			for _, e := range tc.edges {
+				g.AddDirectedEdge(e.from, e.to, e.name)
+			}
+			err := g.DetectCycle()
+			require.Error(t, err)
+			require.Equal(t, tc.cycle, err.Error())
+		})
+	}
+}

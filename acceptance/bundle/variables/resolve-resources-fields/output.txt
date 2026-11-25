@@ -1,4 +1,4 @@
-Error: cycle detected: resources.schemas.bar refers to itself via ${resources.apps.baz.id}
+Error: cycle detected: resources.schemas.bar refers to itself via ${resources.schemas.bar.name}
   at resources.schemas.bar
   in databricks.yml:18:7
 

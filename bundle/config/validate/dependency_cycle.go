@@ -4,24 +4,41 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-type dependencyCycle struct{ bundle.RO }
+type dependencyCycle struct {
+	bundle.RO
+	afterBuild bool
+}
 
-// DependencyCycle rejects resources whose references or lifecycle.depends_on form a cycle. The
-// plan rejects them too, but only after deploy has uploaded the bundle files.
+// DependencyCycle rejects resources whose references or lifecycle.depends_on form a cycle, for
+// "bundle validate". The plan rejects them too, but only after deploy has uploaded the files.
 func DependencyCycle() bundle.ReadOnlyMutator {
 	return &dependencyCycle{}
+}
+
+// DependencyCycleAfterBuild is [DependencyCycle] for plan and deploy, run after the build
+// phase and the config fixups the plan sees, so it checks the same config as the plan.
+func DependencyCycleAfterBuild() bundle.ReadOnlyMutator {
+	return &dependencyCycle{afterBuild: true}
 }
 
 func (*dependencyCycle) Name() string {
 	return "validate:dependency_cycle"
 }
 
-func (*dependencyCycle) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *dependencyCycle) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// The python wheel wrapper moves wheel task parameters, and the references in them, out of
+	// the job during the build, so before the build the config can have a cycle the plan does
+	// not see.
+	if !m.afterBuild && b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper) {
+		return nil
+	}
+
 	cycle := direct.DetectDependencyCycle(&b.Config)
 	if cycle == nil {
 		return nil

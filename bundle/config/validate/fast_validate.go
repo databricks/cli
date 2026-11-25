@@ -32,7 +32,6 @@ func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagno
 
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
-		DependencyCycle(),
 	)
 
 	return nil

@@ -153,7 +153,7 @@ func DetectDependencyCycle(configRoot *config.Root) *dagrun.CycleError {
 // makePlan would fail on the node or skip it as empty.
 func configNodeDependsOn(b *DeploymentBundle, configRoot *config.Root, node string) ([]deployplan.DependsOnEntry, bool) {
 	inputConfig, err := configRoot.GetResourceConfig(node)
-	if err != nil {
+	if err != nil || inputConfig == nil {
 		return nil, false
 	}
 	adapter, err := b.getAdapterForKey(node)

@@ -1,0 +1,4 @@
+# The scope's ACL node is added by deploy and plan only (it grants the current user MANAGE), so the
+# cycle through it is not visible to validate; deploy still reports it before uploading files.
+trace $CLI bundle validate
+trace musterr $CLI bundle deploy

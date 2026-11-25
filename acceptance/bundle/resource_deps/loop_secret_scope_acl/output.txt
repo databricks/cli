@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> musterr [CLI] bundle deploy
+Error: cycle detected: resources.secret_scopes.s.permissions refers to resources.secret_scopes.s via ${resources.secret_scopes.s.name} which refers to resources.secret_scopes.s.permissions via depends_on
+  at resources.secret_scopes.s.permissions
+

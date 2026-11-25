@@ -1,0 +1,6 @@
+trace $CLI bundle plan -o json > plan.json
+# A cycle added after the plan was saved: deploy --plan applies the saved plan, as before.
+update_file.py databricks.yml 'name: foo' 'name: ${resources.jobs.foo.id}'
+trace musterr $CLI bundle validate
+trace $CLI bundle deploy --plan plan.json
+rm plan.json
