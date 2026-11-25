@@ -26,3 +26,23 @@ trace VSCODE_AGENT=1 $CLI jobs list
 
 title "Nested agents are not hinted"
 trace CODEX_CI=1 CURSOR_AGENT=1 CODEX_THREAD_ID=thread-3 $CLI jobs list
+
+# The home records raw skills of release 0.2.10 and a Codex plugin of release
+# 0.2.30. DATABRICKS_SKILLS_REF is the release `aitools update` installs.
+# clusters list prints a table, which shows that the update line follows the
+# command output.
+sethome ./stale-home
+
+title "Outdated skills: the update line follows the command output, once per machine for Kiro"
+trace KIRO=1 DATABRICKS_SKILLS_REF=v0.2.47 $CLI clusters list
+trace KIRO=1 DATABRICKS_SKILLS_REF=v0.2.47 $CLI clusters list
+
+title "Codex is checked against its recorded plugin"
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-4 DATABRICKS_SKILLS_REF=v0.2.47 $CLI jobs list
+
+title "Tooling at the release that update installs is not nudged"
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-5 DATABRICKS_SKILLS_REF=v0.2.30 $CLI jobs list
+
+title "The opt-out variable turns the update line off, and claims no throttle window"
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-6 DATABRICKS_SKILLS_REF=v0.2.47 DATABRICKS_CLI_DISABLE_AITOOLS_UPDATE_CMD_HINTS=1 $CLI jobs list
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-6 DATABRICKS_SKILLS_REF=v0.2.47 $CLI jobs list

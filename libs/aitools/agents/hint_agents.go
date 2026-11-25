@@ -21,6 +21,13 @@ var agentSessionEnv = map[string]string{
 // that state and provides it (installer.PluginRecorded for the global scope).
 type PluginRecordedFunc func(ctx context.Context, agentName string) bool
 
+// OutdatedToolingFunc reports whether the Databricks AI tooling that the CLI
+// installed for the named agent is older than the release `databricks aitools
+// update` installs, with both releases for display. The installer package owns
+// the install state and the release lookup and provides it
+// (installer.OutdatedTooling). The lookup can wait on the network.
+type OutdatedToolingFunc func(ctx context.Context, agentName string) (installed, available string, outdated bool)
+
 // agentInstallHint returns the hint for a non-Claude registry agent. The text
 // is hintText plus --agents and --scope. An agent caller never sees install's
 // prompts (promptsSupported), so --agents is what matters: it targets
@@ -33,13 +40,16 @@ type PluginRecordedFunc func(ctx context.Context, agentName string) bool
 // installed outside `databricks aitools install` in a way that leaves no trace
 // there (e.g. from Cursor itself) gets those users hinted; the throttle bounds
 // that to once per session or per TTL.
-func agentInstallHint(a *Agent, pluginRecorded PluginRecordedFunc) *agentHint {
+//
+// The hint also carries outdated, for the update line (see showUpdate).
+func agentInstallHint(a *Agent, pluginRecorded PluginRecordedFunc, outdated OutdatedToolingFunc) *agentHint {
 	return &agentHint{
 		agentName: a.Name,
 		installed: func(ctx context.Context) bool {
 			recorded := func() bool { return pluginRecorded(ctx, a.Name) }
 			return a.DatabricksTooling(ctx, recorded) != ToolingNone
 		},
+		outdated:         outdated,
 		text:             hintText + " --agents " + a.Name + " --scope global",
 		textKind:         protos.AitoolsHintKindAgentInstallText,
 		sessionEnv:       agentSessionEnv[a.Name],

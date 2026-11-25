@@ -1,7 +1,8 @@
 package protos
 
 // AitoolsHintKind mirrors AitoolsHintKind.Type in the databricks_cli lumberjack
-// proto: which recommendation to install Databricks AI tools was shown.
+// proto: which recommendation to install or update Databricks AI tools was
+// shown.
 type AitoolsHintKind string
 
 const (
@@ -22,12 +23,16 @@ const (
 	// AitoolsHintKindAppsInitPrompt is the interactive "install skills now?"
 	// prompt shown by `databricks apps init`.
 	AitoolsHintKindAppsInitPrompt AitoolsHintKind = "APPS_INIT_PROMPT"
+	// AitoolsHintKindUpdateCheckText is the stderr line telling a non-Claude
+	// coding agent that its Databricks AI tools are older than the release
+	// `databricks aitools update` installs, and to run that command.
+	AitoolsHintKindUpdateCheckText AitoolsHintKind = "UPDATE_CHECK_TEXT"
 )
 
-// AitoolsHintEvent is emitted once for each install-hint line the CLI prints
-// for a coding agent (Claude Code's native and text lines are one event each)
-// and for the `apps init` skills tip or install prompt; other messages that
-// mention `databricks aitools install` log nothing. It carries no
+// AitoolsHintEvent is emitted once for each install-hint or update-hint line
+// the CLI prints for a coding agent (Claude Code's native and text lines are
+// one event each) and for the `apps init` skills tip or install prompt; other
+// messages that mention `databricks aitools install` log nothing. It carries no
 // user-authored strings. The command it was shown on is ExecutionContext.Command
 // of the enclosing log entry. The CLI sets no calling-agent field on this
 // event: the calling agent is reported by the User-Agent of the telemetry

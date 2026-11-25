@@ -34,3 +34,32 @@ Databricks skills are not installed. To work with Databricks reliably, first run
 === Nested agents are not hinted
 
 >>> CODEX_CI=1 CURSOR_AGENT=1 CODEX_THREAD_ID=thread-3 [CLI] jobs list
+
+=== Outdated skills: the update line follows the command output, once per machine for Kiro
+
+>>> KIRO=1 DATABRICKS_SKILLS_REF=v0.2.47 [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+Databricks skills are outdated and might contain incorrect guidances (0.2.10 installed, 0.2.47 available). To work with Databricks reliably, run: databricks aitools update
+
+>>> KIRO=1 DATABRICKS_SKILLS_REF=v0.2.47 [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+=== Codex is checked against its recorded plugin
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-4 DATABRICKS_SKILLS_REF=v0.2.47 [CLI] jobs list
+Databricks skills are outdated and might contain incorrect guidances (0.2.30 installed, 0.2.47 available). To work with Databricks reliably, run: databricks aitools update
+
+=== Tooling at the release that update installs is not nudged
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-5 DATABRICKS_SKILLS_REF=v0.2.30 [CLI] jobs list
+
+=== The opt-out variable turns the update line off, and claims no throttle window
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-6 DATABRICKS_SKILLS_REF=v0.2.47 DATABRICKS_CLI_DISABLE_AITOOLS_UPDATE_CMD_HINTS=1 [CLI] jobs list
+
+>>> CODEX_CI=1 CODEX_THREAD_ID=thread-6 DATABRICKS_SKILLS_REF=v0.2.47 [CLI] jobs list
+Databricks skills are outdated and might contain incorrect guidances (0.2.30 installed, 0.2.47 available). To work with Databricks reliably, run: databricks aitools update

@@ -70,13 +70,18 @@ func setupFetchMock(t *testing.T) {
 	}
 }
 
-func stubLatestSkillsReleaseRef(t *testing.T, ref string, err error) {
+// stubLatestSkillsReleaseRef serves ref and err as the latest skills release,
+// and returns the number of lookups made.
+func stubLatestSkillsReleaseRef(t *testing.T, ref string, err error) *int {
 	t.Helper()
 	orig := latestSkillsReleaseRefFn
 	t.Cleanup(func() { latestSkillsReleaseRefFn = orig })
+	lookups := 0
 	latestSkillsReleaseRefFn = func(context.Context) (string, error) {
+		lookups++
 		return ref, err
 	}
+	return &lookups
 }
 
 func testAgent(tmpHome string) *agents.Agent {

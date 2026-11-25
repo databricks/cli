@@ -150,7 +150,7 @@ func (l *logger) forget(sent []protos.FrontendLog) {
 const (
 	defaultUploadTimeout = 3 * time.Second
 
-	// hintOnlyUploadTimeout bounds an upload whose events are all install
+	// hintOnlyUploadTimeout bounds an upload whose events are all aitools
 	// hint events. Most commands that show a hint log nothing else, so
 	// without the hint they would not upload at all; they wait less for it at
 	// exit.
@@ -290,7 +290,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 
 // uploadTimeout returns how long Upload may take: DATABRICKS_CLI_TELEMETRY_TIMEOUT
 // (in seconds) when set, else hintOnlyUploadTimeout when every log is an
-// install hint event, else defaultUploadTimeout.
+// aitools hint event, else defaultUploadTimeout.
 func uploadTimeout(ctx context.Context, logs []protos.FrontendLog) (time.Duration, error) {
 	if v := env.Get(ctx, timeoutEnvVar); v != "" {
 		timeout, err := strconv.ParseFloat(v, 64)
@@ -305,7 +305,7 @@ func uploadTimeout(ctx context.Context, logs []protos.FrontendLog) (time.Duratio
 	return defaultUploadTimeout, nil
 }
 
-// onlyHintEvents reports whether every log is an install hint event.
+// onlyHintEvents reports whether every log is an aitools hint event.
 func onlyHintEvents(logs []protos.FrontendLog) bool {
 	for _, l := range logs {
 		if l.Entry.DatabricksCliLog.AitoolsHintEvent == nil {
