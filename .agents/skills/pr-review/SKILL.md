@@ -176,12 +176,12 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    Docstrings and `--help` text in `acceptance/bin/*.py` count, and so does
    the doc comment of a new test function when the change is test-only;
    otherwise those passes come up empty for exactly the changes where the
-   comment is the point. Notes in acceptance tests count too: `Badness`
-   strings and `#` comments in `test.toml` (`'*.toml'` with
-   `^\+(#|Badness)`) and `#` comments in `script` (`'*/script'` with
-   `^\+#`). Check each against the golden output and the `script` titles,
-   and grep the API or helper names it mentions in the code and the pinned
-   SDK.
+   comment is the point. Notes in acceptance tests count too, indented or
+   not: `Badness` strings and `#` comments in `test.toml` (`'*/test.toml'`
+   with `^\+\s*(#|Badness)`) and `#` comments in `script`,
+   `script.prepare` and `script.cleanup` (`'*/script*'` with `^\+\s*#`).
+   Check each against the golden output and the `script` titles, and grep
+   the API or helper names it mentions in the code and the pinned SDK.
    Each comment above a new top-level declaration goes in the table. It
    should say what is decided, from which input, and where the result comes
    from. Flag comments that are wrong, that blur similar nouns, or that
