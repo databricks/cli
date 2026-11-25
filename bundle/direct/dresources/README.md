@@ -88,6 +88,18 @@ on field behaviour might result in recreate. See dstate/migrate.go on how to han
 
 Declaring a field under `hashed_fields` in `resources.yml` makes the engine persist only a `sha256:<hex>` content hash of it in state (via `CompactState`) rather than the full contents, for large equality-only fields that are never read back from state (e.g. `dashboards.serialized_dashboard`).
 
+## deployment_id_field: pointing back at the deployment
+
+If the resource records the id of the deployment it belongs to (a job's `deployment.deployment_id`), name that string state field as `deployment_id_field`. A first deploy plans before its deployment exists, so the framework fills the id into the planned state once approval creates the deployment.
+
+## etag_field: etag-based drift detection
+
+If drift is detected by comparing the etag the last deploy recorded against the remote one (in `OverrideChangeDesc`), name the top-level etag field as `etag_field`. It must be a string field in both the state and the remote type. The config does not provide the etag, so bind copies it from the remote state, and the exported resource state carries it.
+
+## job_id_field: the job a resource was launched against
+
+If the config gives the id of the job a resource was launched against as a reference resolved only at deploy (a job run's `job_id`), name the top-level integer state field holding it as `job_id_field`. The exported resource state carries it, so read-only commands can use it without resolving the reference.
+
 ## RemapState is a dumb copy; DoRead owns all remapping
 
 `RemapState` converts `RemoteType` to `StateType` only because `StateType` is typically a

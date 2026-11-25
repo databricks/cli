@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"errors"
-	"net/http"
 	"strings"
 	"time"
 
@@ -223,16 +222,4 @@ func createdByCurrentUser(ctx context.Context, client *databricks.WorkspaceClien
 		return false, err
 	}
 	return createdBy == me.UserName, nil
-}
-
-// isPostgresAlreadyExists is isAlreadyExists for Lakebase resources. Besides 409 ALREADY_EXISTS,
-// projects, databases and roles answer a create of an existing name with 400 BAD_REQUEST, e.g. "A
-// project with this resource name already exists in the workspace." The API has no error code for
-// it, so match the message.
-func isPostgresAlreadyExists(err error) bool {
-	if isAlreadyExists(err) {
-		return true
-	}
-	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	return ok && apiErr.StatusCode == http.StatusBadRequest && strings.Contains(apiErr.Message, "already exists")
 }

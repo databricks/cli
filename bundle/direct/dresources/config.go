@@ -116,6 +116,24 @@ type ResourceLifecycleConfig struct {
 	// if this field matches. Requires IDFromState and DoUpdateWithID.
 	InternalIDField string `yaml:"internal_id_field,omitempty"`
 
+	// DeploymentIDField: the state field that records the id of the deployment the resource
+	// belongs to, so the workspace resource points back at its deployment. A first deploy has no
+	// id when it plans, so the framework fills it in once approval creates the deployment (see
+	// StampDeploymentIdForFirstVersion).
+	DeploymentIDField string `yaml:"deployment_id_field,omitempty"`
+
+	// EtagField: the top-level field, in both the state and the remote state, holding the etag
+	// the backend returns, for resources whose drift detection compares the etag in state
+	// against the remote one. The config does not provide it, so bind copies it from the remote
+	// state, and the exported state carries it (resourcestate.ResourceState.ETag).
+	EtagField string `yaml:"etag_field,omitempty"`
+
+	// JobIDField: the top-level state field holding the id of the job the resource was launched
+	// against, when the config gives it as a reference that is resolved only at deploy. The
+	// exported state carries it (resourcestate.ResourceState.JobID), so read-only commands can
+	// use it without resolving the reference.
+	JobIDField string `yaml:"job_id_field,omitempty"`
+
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
@@ -214,6 +232,9 @@ var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
 	InternalIDField:       "",
+	DeploymentIDField:     "",
+	EtagField:             "",
+	JobIDField:            "",
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,

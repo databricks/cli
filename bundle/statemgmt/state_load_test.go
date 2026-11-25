@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -19,6 +20,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStateToBundleEmptyLocalResources(t *testing.T) {
@@ -1480,6 +1482,41 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Secrets["test_secret_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
+}
+
+func TestApplyStateLoadsDeployedState(t *testing.T) {
+	b := &bundle.Bundle{Config: config.Root{
+		Resources: config.Resources{
+			Dashboards: map[string]*resources.Dashboard{
+				"dash": {},
+			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"space": {},
+			},
+			JobRuns: map[string]*resources.JobRun{
+				"run":          {},
+				"run_no_state": {ResolvedJobID: 5},
+			},
+		},
+	}}
+
+	state := ExportedResourcesMap{
+		"resources.dashboards.dash":             {ID: "d1", ETag: "v1"},
+		"resources.dashboards.dash.permissions": {ID: "d1", ETag: "v2"},
+		"resources.dashboards.deleted":          {ID: "d2", ETag: "v3"},
+		"resources.genie_spaces.space":          {ID: "g1", ETag: "v4"},
+		"resources.job_runs.run":                {ID: "r1", JobID: 123},
+		"resources.job_runs.run_no_state":       {ID: "r2"},
+	}
+
+	diags := applyState(t.Context(), b, state, nil)
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "v1", b.Config.Resources.Dashboards["dash"].Etag)
+	assert.Equal(t, "v3", b.Config.Resources.Dashboards["deleted"].Etag)
+	assert.Empty(t, b.Config.Resources.GenieSpaces["space"].Etag)
+	assert.Equal(t, int64(123), b.Config.Resources.JobRuns["run"].ResolvedJobID)
+	assert.Equal(t, int64(5), b.Config.Resources.JobRuns["run_no_state"].ResolvedJobID)
 }
 
 func AssertFullResourceCoverage(t *testing.T, config *config.Root) {

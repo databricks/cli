@@ -1,3 +1,7 @@
+# Drift is detected by comparing the etag the last deploy recorded against the
+# remote one (see OverrideChangeDesc). Covered by bundle/resources/dashboards/detect-change.
+etag_field: etag
+
 ignore_remote_changes:
   # "serialized_dashboard" locally and remotely will have different contents
   # We only need to rely on etag here, and can skip this field for diff computation.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -140,4 +141,9 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 
 func (r *Dashboard) GetName() string {
 	return r.DisplayName
+}
+
+// LoadDeployedState sets the etag the last deploy recorded; the config never provides it.
+func (r *Dashboard) LoadDeployedState(state resourcestate.ResourceState) {
+	r.Etag = state.ETag
 }
