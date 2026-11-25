@@ -133,13 +133,7 @@ func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 	// Keyed sequences merge in the initialize phase, which this reload skips. Without
 	// them the sequences here stay in file order while the change paths address the
 	// merged, key-sorted order, so a lookup would read a different element.
-	bundle.ApplySeqContext(ctx, fresh,
-		resourcemutator.MergeJobClusters(),
-		resourcemutator.MergeJobParameters(),
-		resourcemutator.MergeJobTasks(),
-		resourcemutator.MergePipelineClusters(),
-		resourcemutator.MergeApps(),
-	)
+	bundle.ApplyContext(ctx, fresh, resourcemutator.ApplyStage(resourcemutator.StageAfterTargetMerge))
 	return fresh.Config.Value()
 }
 

@@ -10,6 +10,12 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 )
 
+func init() {
+	// Reads (dynamic): resources.pipelines.*.clusters (reads pipeline clusters to merge)
+	// Updates (dynamic): resources.pipelines.*.clusters (merges pipeline clusters with the same label)
+	registerStageMutator(StageAfterTargetMerge, "pipelines", MergePipelineClusters)
+}
+
 type mergePipelineClusters struct{}
 
 func MergePipelineClusters() bundle.Mutator {

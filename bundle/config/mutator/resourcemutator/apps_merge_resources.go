@@ -9,6 +9,12 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 )
 
+func init() {
+	// Reads (dynamic): resources.apps.*.resources (reads app resources to merge)
+	// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
+	registerStageMutator(StageAfterTargetMerge, "apps", MergeApps)
+}
+
 type mergeApps struct{}
 
 func MergeApps() bundle.Mutator {

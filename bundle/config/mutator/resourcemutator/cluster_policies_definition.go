@@ -13,6 +13,12 @@ import (
 // jsonPolicyFields are the JSON-policy fields normalized from inline YAML to a JSON string.
 var jsonPolicyFields = []string{"definition", "policy_family_definition_overrides"}
 
+func init() {
+	// Reads (dynamic): resources.cluster_policies.*.definition
+	// Updates (dynamic): resources.cluster_policies.*.definition (inline YAML -> JSON string)
+	registerStageMutator(StageAfterUCDependencies, "cluster_policies", ConfigureClusterPolicyDefinition)
+}
+
 type configureClusterPolicyDefinition struct{}
 
 func ConfigureClusterPolicyDefinition() bundle.Mutator {

@@ -9,6 +9,12 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 )
 
+func init() {
+	// Reads (dynamic): resources.jobs.*.tasks (reads job tasks to merge)
+	// Updates (dynamic): resources.jobs.*.tasks (merges job tasks with the same task_key)
+	registerStageMutator(StageAfterTargetMerge, "jobs", MergeJobTasks)
+}
+
 type mergeJobTasks struct{}
 
 func MergeJobTasks() bundle.Mutator {

@@ -241,7 +241,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	_ = os.Remove(tempStatePath)
 	_ = os.Remove(tempStatePath + ".wal")
 
-	// SecretScopeFixups and the direct-engine state builder report failures via
+	// The direct-engine config fixups and state builder report failures via
 	// logdiag. Run them in an isolated + collecting context so their diagnostics
 	// neither affect the deploy's exit code (isolated) nor render as user-facing
 	// `Error:` lines (collected + re-logged as warnings below).
@@ -264,10 +264,9 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	var stateDB dstate.DeploymentState
 	stateDB.OpenWithData(tempStatePath, dstate.NewDatabase(tfState.Lineage, tfState.Serial+1))
 
-	// Apply SecretScopeFixups so the config matches what the direct engine expects.
-	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
-	// the migrated state and config agree on .permissions entries.
-	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups())
+	// Adapt the config to what the direct engine expects, so that the migrated
+	// state and the config agree (for example on default .permissions entries).
+	bundle.ApplyContext(ctx, b, resourcemutator.ApplyStage(resourcemutator.StageBeforeDirectEngine))
 	if logdiag.HasError(ctx) {
 		return tempStatePath, false, nil, errors.New("failed to apply secret scope fixups")
 	}

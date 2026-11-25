@@ -7,6 +7,13 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
+func init() {
+	// Reads (typed): b.Config.Resources.GenieSpaces (checks genie space configurations)
+	// Updates (typed): b.Config.Resources.GenieSpaces[].ParentPath (ensures /Workspace prefix is present)
+	// Ensures genie space parent paths have the required /Workspace prefix
+	registerStageMutator(StageAfterDefaults, "genie_spaces", GenieSpaceFixups)
+}
+
 type genieSpaceFixups struct{}
 
 func GenieSpaceFixups() bundle.Mutator {

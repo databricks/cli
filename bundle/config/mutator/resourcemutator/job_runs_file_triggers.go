@@ -20,6 +20,12 @@ import (
 // Every diagnostic below is reported against an on_file_change entry.
 const fileTriggerPrefix = "lifecycle.triggers.on_file_change: "
 
+func init() {
+	// Fingerprint on_file_change triggers once, after every step that can produce
+	// a watched file: build and the predeploy script.
+	registerStageMutator(StageAfterBuild, "job_runs", ResolveJobRunFileTriggers)
+}
+
 type resolveJobRunFileTriggers struct{}
 
 // ResolveJobRunFileTriggers expands on_file_change globs into trigger state.

@@ -18,6 +18,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+func init() {
+	// Reads (typed): resources.alerts.*.file_path
+	// Updates (typed): resources.alerts.* (loads alert configuration from .dbalert.json file)
+	registerStageMutator(StageAfterUCDependencies, "alerts", LoadDBAlertFiles)
+}
+
 type loadDBAlertFiles struct{}
 
 func LoadDBAlertFiles() bundle.Mutator {

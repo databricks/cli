@@ -10,10 +10,14 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-const (
-	filePathFieldName            = "file_path"
-	serializedDashboardFieldName = "serialized_dashboard"
-)
+const serializedDashboardFieldName = "serialized_dashboard"
+
+func init() {
+	// Reads (dynamic): resources.dashboards.*.file_path
+	// Updates (dynamic): resources.dashboards.*.serialized_dashboard
+	// Drops (dynamic): resources.dashboards.*.file_path
+	registerStageMutator(StageAfterUCDependencies, "dashboards", ConfigureDashboardSerializedDashboard)
+}
 
 type configureDashboardSerializedDashboard struct{}
 

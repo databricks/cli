@@ -9,6 +9,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+func init() {
+	// Default the `source` field on job tasks (GIT for git_source jobs, else
+	// WORKSPACE). Runs after PythonMutator so it sees the final git_source/tasks
+	// and does not expose the injected default to Python code, while remaining
+	// visible in `bundle validate`/`summary`.
+	registerStageMutator(StageAfterPython, "jobs", ApplyDefaultTaskSource)
+}
+
 type applyDefaultTaskSource struct{}
 
 // ApplyDefaultTaskSource sets source: GIT on the tasks of a job that has a

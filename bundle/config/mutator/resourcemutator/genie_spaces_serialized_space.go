@@ -12,6 +12,12 @@ import (
 
 const serializedSpaceFieldName = "serialized_space"
 
+func init() {
+	// Reads (dynamic): resources.genie_spaces.*.file_path
+	// Updates (dynamic): resources.genie_spaces.*.serialized_space
+	registerStageMutator(StageAfterUCDependencies, "genie_spaces", ConfigureGenieSpaceSerializedSpace)
+}
+
 type configureGenieSpaceSerializedSpace struct{}
 
 func ConfigureGenieSpaceSerializedSpace() bundle.Mutator {

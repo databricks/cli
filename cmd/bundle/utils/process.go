@@ -521,7 +521,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// --plan` recomputes fingerprints that the loaded plan then overrides with the
 	// ones it recorded.
 	if !opts.SkipInitialize {
-		bundle.ApplyContext(ctx, b, resourcemutator.ResolveJobRunFileTriggers())
+		bundle.ApplyContext(ctx, b, resourcemutator.ApplyStage(resourcemutator.StageAfterBuild))
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}

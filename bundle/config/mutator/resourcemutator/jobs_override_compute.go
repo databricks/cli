@@ -11,6 +11,17 @@ import (
 	"github.com/databricks/cli/libs/env"
 )
 
+func init() {
+	// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
+	// Reads (env): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
+	// Reads (typed): b.Config.Resources.Jobs.*.Tasks.*.ForEachTask
+	// Updates (typed): b.Config.Bundle.ClusterId (sets from environment if in development mode)
+	// Updates (typed): b.Config.Resources.Jobs.*.Tasks.*.{NewCluster,ExistingClusterId,JobClusterKey,EnvironmentKey} (replaces compute settings with specified cluster ID)
+	// OR corresponding fields on ForEachTask if that is present
+	// Overrides job compute settings with a specified cluster ID for development or testing
+	registerStageMutator(StageBeforePresets, "jobs", OverrideCompute)
+}
+
 type overrideCompute struct{}
 
 func OverrideCompute() bundle.Mutator {

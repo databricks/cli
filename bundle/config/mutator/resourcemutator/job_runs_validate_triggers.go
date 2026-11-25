@@ -9,6 +9,11 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
+func init() {
+	// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
+	registerStageMutator(StageAfterFieldValidation, "job_runs", ValidateJobRunTriggers)
+}
+
 type validateJobRunTriggers struct{}
 
 // ValidateJobRunTriggers rejects invalid lifecycle.triggers on job_runs.

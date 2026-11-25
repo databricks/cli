@@ -11,6 +11,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+func init() {
+	// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
+	// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
+	// Expands glob patterns in pipeline library paths to include all matching files
+	registerStageMutator(StageAfterResourceVariables, "pipelines", ExpandPipelineGlobPaths)
+}
+
 type expandPipelineGlobPaths struct{}
 
 func ExpandPipelineGlobPaths() bundle.Mutator {

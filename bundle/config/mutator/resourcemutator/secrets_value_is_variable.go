@@ -10,6 +10,11 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
+func init() {
+	// Reads (dynamic): resources.secrets.*.value, which must still be an unresolved variable reference.
+	registerStageMutator(StageBeforeVariables, "secrets", ValidateSecretValueIsVariable)
+}
+
 type validateSecretValueIsVariable struct{}
 
 func ValidateSecretValueIsVariable() bundle.Mutator {

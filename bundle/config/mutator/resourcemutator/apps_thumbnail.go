@@ -15,6 +15,12 @@ import (
 // Terraform resource, so all clients accept the same images.
 const maxAppThumbnailBytes = 250_000
 
+func init() {
+	// Reads (dynamic): resources.apps.*.thumbnail_path
+	// Updates (dynamic): resources.apps.*.thumbnail_content
+	registerStageMutator(StageAfterUCDependencies, "apps", ConfigureAppThumbnail)
+}
+
 type configureAppThumbnail struct{}
 
 // ConfigureAppThumbnail reads the image at resources.apps.*.thumbnail_path, checks that it
