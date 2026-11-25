@@ -14,13 +14,13 @@ from databricks.bundles.genie_agents._models.genie_agent_config import (
     GenieAgentConfig,
     GenieAgentConfigParam,
 )
-from databricks.bundles.genie_agents._models.genie_agent_data_sources import (
-    GenieAgentDataSources,
-    GenieAgentDataSourcesParam,
-)
 from databricks.bundles.genie_agents._models.genie_agent_instructions import (
     GenieAgentInstructions,
     GenieAgentInstructionsParam,
+)
+from databricks.bundles.genie_agents._models.genie_agent_resources import (
+    GenieAgentResources,
+    GenieAgentResourcesParam,
 )
 
 if TYPE_CHECKING:
@@ -49,18 +49,18 @@ class GenieAgentDefinition:
     [Private Preview] General settings of the Genie Agent.
     """
 
-    data_sources: VariableOrOptional[GenieAgentDataSources] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The data the Genie Agent can access.
-    """
-
     instructions: VariableOrOptional[GenieAgentInstructions] = None
     """
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Instructions and SQL that guide how the Genie Agent answers questions.
+    """
+
+    resources: VariableOrOptional[GenieAgentResources] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The resources the Genie Agent can use: data, SQL functions, connections, and sub-agents.
     """
 
     @classmethod
@@ -88,18 +88,18 @@ class GenieAgentDefinitionDict(TypedDict, total=False):
     [Private Preview] General settings of the Genie Agent.
     """
 
-    data_sources: VariableOrOptional[GenieAgentDataSourcesParam]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] The data the Genie Agent can access.
-    """
-
     instructions: VariableOrOptional[GenieAgentInstructionsParam]
     """
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Instructions and SQL that guide how the Genie Agent answers questions.
+    """
+
+    resources: VariableOrOptional[GenieAgentResourcesParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] The resources the Genie Agent can use: data, SQL functions, connections, and sub-agents.
     """
 
 

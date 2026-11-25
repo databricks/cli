@@ -18,7 +18,13 @@ def load_resources() -> Resources:
                         }
                     ]
                 },
-                "data_sources": {
+                "instructions": {
+                    "text_instruction": {
+                        "id": "01f0a1b2c3d4e5f60718293a4b5c6d70",
+                        "content": "Report average trip distance.",
+                    },
+                },
+                "resources": {
                     "tables": [{"identifier": "samples.nyctaxi.trips"}],
                 },
             },

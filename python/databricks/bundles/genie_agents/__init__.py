@@ -22,9 +22,6 @@ __all__ = [
     "GenieAgentConfig",
     "GenieAgentConfigDict",
     "GenieAgentConfigParam",
-    "GenieAgentDataSources",
-    "GenieAgentDataSourcesDict",
-    "GenieAgentDataSourcesParam",
     "GenieAgentDefinition",
     "GenieAgentDefinitionDict",
     "GenieAgentDefinitionParam",
@@ -47,6 +44,9 @@ __all__ = [
     "GenieAgentMcpConnectionDict",
     "GenieAgentMcpConnectionParam",
     "GenieAgentParam",
+    "GenieAgentResources",
+    "GenieAgentResourcesDict",
+    "GenieAgentResourcesParam",
     "GenieAgentSampleQuestion",
     "GenieAgentSampleQuestionDict",
     "GenieAgentSampleQuestionParam",
@@ -133,11 +133,6 @@ from databricks.bundles.genie_agents._models.genie_agent_config import (
     GenieAgentConfigDict,
     GenieAgentConfigParam,
 )
-from databricks.bundles.genie_agents._models.genie_agent_data_sources import (
-    GenieAgentDataSources,
-    GenieAgentDataSourcesDict,
-    GenieAgentDataSourcesParam,
-)
 from databricks.bundles.genie_agents._models.genie_agent_definition import (
     GenieAgentDefinition,
     GenieAgentDefinitionDict,
@@ -171,6 +166,11 @@ from databricks.bundles.genie_agents._models.genie_agent_mcp_connection import (
     GenieAgentMcpConnection,
     GenieAgentMcpConnectionDict,
     GenieAgentMcpConnectionParam,
+)
+from databricks.bundles.genie_agents._models.genie_agent_resources import (
+    GenieAgentResources,
+    GenieAgentResourcesDict,
+    GenieAgentResourcesParam,
 )
 from databricks.bundles.genie_agents._models.genie_agent_sample_question import (
     GenieAgentSampleQuestion,

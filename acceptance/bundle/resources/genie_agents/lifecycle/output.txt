@@ -68,7 +68,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
       }
     ]
   },
-  "data_sources": {
+  "resources": {
     "tables": [
       {
         "identifier": "samples.nyctaxi.trips"

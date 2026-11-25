@@ -346,17 +346,20 @@ var testConfig map[string]any = map[string]any{
 		Definition: genieagents.GenieAgentDefinition{
 			Config: &genieagents.GenieAgentConfig{
 				SampleQuestions: []genieagents.GenieAgentSampleQuestion{
-					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7e", Question: "What were total sales?"},
+					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7e", Question: "What was the average trip distance last month?"},
 				},
 			},
-			DataSources: &genieagents.GenieAgentDataSources{
+			Resources: &genieagents.GenieAgentResources{
 				Tables: []genieagents.GenieAgentTable{
-					{Identifier: "main.sales.orders", Description: "Orders table"},
+					{Identifier: "samples.nyctaxi.trips", Description: "NYC taxi trip records"},
+				},
+				SqlFunctions: []genieagents.GenieAgentSqlFunction{
+					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d70", Identifier: "main.default.trip_distance"},
 				},
 			},
 			Instructions: &genieagents.GenieAgentInstructions{
-				TextInstructions: []genieagents.GenieAgentTextInstruction{
-					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7f", Content: "Report revenue as the sum of order_amount."},
+				TextInstruction: &genieagents.GenieAgentTextInstruction{
+					Id: "01f0a1b2c3d4e5f60718293a4b5c6d7f", Content: "Report average trip distance.",
 				},
 			},
 		},

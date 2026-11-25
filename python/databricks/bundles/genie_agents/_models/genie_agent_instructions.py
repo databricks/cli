@@ -14,10 +14,6 @@ from databricks.bundles.genie_agents._models.genie_agent_join_spec import (
     GenieAgentJoinSpec,
     GenieAgentJoinSpecParam,
 )
-from databricks.bundles.genie_agents._models.genie_agent_sql_function import (
-    GenieAgentSqlFunction,
-    GenieAgentSqlFunctionParam,
-)
 from databricks.bundles.genie_agents._models.genie_agent_sql_snippets import (
     GenieAgentSqlSnippets,
     GenieAgentSqlSnippetsParam,
@@ -55,13 +51,6 @@ class GenieAgentInstructions:
     [Private Preview] Predefined joins between tables or metric views.
     """
 
-    sql_functions: VariableOrList[GenieAgentSqlFunction] = field(default_factory=list)
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Unity Catalog SQL functions the generated SQL may call.
-    """
-
     sql_snippets: VariableOrOptional[GenieAgentSqlSnippets] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -69,13 +58,11 @@ class GenieAgentInstructions:
     [Private Preview] Reusable SQL filters, expressions, and measures.
     """
 
-    text_instructions: VariableOrList[GenieAgentTextInstruction] = field(
-        default_factory=list
-    )
+    text_instruction: VariableOrOptional[GenieAgentTextInstruction] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] General text instructions. At most one text instruction is supported.
+    [Private Preview] The general text instruction.
     """
 
     @classmethod
@@ -103,13 +90,6 @@ class GenieAgentInstructionsDict(TypedDict, total=False):
     [Private Preview] Predefined joins between tables or metric views.
     """
 
-    sql_functions: VariableOrList[GenieAgentSqlFunctionParam]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Unity Catalog SQL functions the generated SQL may call.
-    """
-
     sql_snippets: VariableOrOptional[GenieAgentSqlSnippetsParam]
     """
     :meta private: [EXPERIMENTAL]
@@ -117,11 +97,11 @@ class GenieAgentInstructionsDict(TypedDict, total=False):
     [Private Preview] Reusable SQL filters, expressions, and measures.
     """
 
-    text_instructions: VariableOrList[GenieAgentTextInstructionParam]
+    text_instruction: VariableOrOptional[GenieAgentTextInstructionParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] General text instructions. At most one text instruction is supported.
+    [Private Preview] The general text instruction.
     """
 
 

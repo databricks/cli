@@ -10,6 +10,10 @@ from databricks.bundles.genie_agents._models.genie_agent_mcp_connection import (
     GenieAgentMcpConnection,
     GenieAgentMcpConnectionParam,
 )
+from databricks.bundles.genie_agents._models.genie_agent_sql_function import (
+    GenieAgentSqlFunction,
+    GenieAgentSqlFunctionParam,
+)
 from databricks.bundles.genie_agents._models.genie_agent_table import (
     GenieAgentTable,
     GenieAgentTableParam,
@@ -24,11 +28,11 @@ if TYPE_CHECKING:
 
 
 @dataclass(kw_only=True)
-class GenieAgentDataSources:
+class GenieAgentResources:
     """
     :meta private: [EXPERIMENTAL]
 
-    The data a Genie Agent can access.
+    The resources a Genie Agent can use.
     """
 
     mcp_connections: VariableOrList[GenieAgentMcpConnection] = field(
@@ -40,29 +44,36 @@ class GenieAgentDataSources:
     [Private Preview] Unity Catalog MCP connections, sorted by `mcp_connection`.
     """
 
+    sql_functions: VariableOrList[GenieAgentSqlFunction] = field(default_factory=list)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Unity Catalog SQL functions the generated SQL may call, sorted by `id`, then `identifier`.
+    """
+
     tables: VariableOrList[GenieAgentTable] = field(default_factory=list)
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog tables, views, and metric views, in the order they were added.
+    [Private Preview] Unity Catalog tables, views, and metric views, sorted by `identifier`.
     """
 
     volumes: VariableOrList[GenieAgentVolume] = field(default_factory=list)
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog volumes, in the order they were added.
+    [Private Preview] Unity Catalog volumes, sorted by `path`.
     """
 
     @classmethod
-    def from_dict(cls, value: "GenieAgentDataSourcesDict") -> "Self":
+    def from_dict(cls, value: "GenieAgentResourcesDict") -> "Self":
         return _transform(cls, value)
 
-    def as_dict(self) -> "GenieAgentDataSourcesDict":
+    def as_dict(self) -> "GenieAgentResourcesDict":
         return _transform_to_json_value(self)  # type:ignore
 
 
-class GenieAgentDataSourcesDict(TypedDict, total=False):
+class GenieAgentResourcesDict(TypedDict, total=False):
     """"""
 
     mcp_connections: VariableOrList[GenieAgentMcpConnectionParam]
@@ -72,19 +83,26 @@ class GenieAgentDataSourcesDict(TypedDict, total=False):
     [Private Preview] Unity Catalog MCP connections, sorted by `mcp_connection`.
     """
 
+    sql_functions: VariableOrList[GenieAgentSqlFunctionParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Unity Catalog SQL functions the generated SQL may call, sorted by `id`, then `identifier`.
+    """
+
     tables: VariableOrList[GenieAgentTableParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog tables, views, and metric views, in the order they were added.
+    [Private Preview] Unity Catalog tables, views, and metric views, sorted by `identifier`.
     """
 
     volumes: VariableOrList[GenieAgentVolumeParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog volumes, in the order they were added.
+    [Private Preview] Unity Catalog volumes, sorted by `path`.
     """
 
 
-GenieAgentDataSourcesParam = GenieAgentDataSourcesDict | GenieAgentDataSources
+GenieAgentResourcesParam = GenieAgentResourcesDict | GenieAgentResources

@@ -10234,39 +10234,6 @@
                 }
               ]
             },
-            "genieagents.GenieAgentDataSources": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "description": "The data a Genie Agent can access.",
-                  "properties": {
-                    "mcp_connections": {
-                      "description": "[Private Preview] Unity Catalog MCP connections, sorted by `mcp_connection`.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentMcpConnection",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "tables": {
-                      "description": "[Private Preview] Unity Catalog tables, views, and metric views, in the order they were added.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTable",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
-                    "volumes": {
-                      "description": "[Private Preview] Unity Catalog volumes, in the order they were added.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentVolume",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
             "genieagents.GenieAgentDefinition": {
               "oneOf": [
                 {
@@ -10285,15 +10252,15 @@
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
-                    "data_sources": {
-                      "description": "[Private Preview] The data the Genie Agent can access.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentDataSources",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
                     "instructions": {
                       "description": "[Private Preview] Instructions and SQL that guide how the Genie Agent answers questions.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentInstructions",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "resources": {
+                      "description": "[Private Preview] The resources the Genie Agent can use: data, SQL functions, connections, and sub-agents.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentResources",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     }
@@ -10374,21 +10341,15 @@
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
-                    "sql_functions": {
-                      "description": "[Private Preview] Unity Catalog SQL functions the generated SQL may call.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlFunction",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
                     "sql_snippets": {
                       "description": "[Private Preview] Reusable SQL filters, expressions, and measures.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlSnippets",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     },
-                    "text_instructions": {
-                      "description": "[Private Preview] General text instructions. At most one text instruction is supported.",
-                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTextInstruction",
+                    "text_instruction": {
+                      "description": "[Private Preview] The general text instruction.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTextInstruction",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
                     }
@@ -10535,6 +10496,45 @@
                   "required": [
                     "mcp_connection"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "genieagents.GenieAgentResources": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The resources a Genie Agent can use.",
+                  "properties": {
+                    "mcp_connections": {
+                      "description": "[Private Preview] Unity Catalog MCP connections, sorted by `mcp_connection`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentMcpConnection",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "sql_functions": {
+                      "description": "[Private Preview] Unity Catalog SQL functions the generated SQL may call, sorted by `id`, then `identifier`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentSqlFunction",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "tables": {
+                      "description": "[Private Preview] Unity Catalog tables, views, and metric views, sorted by `identifier`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTable",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    },
+                    "volumes": {
+                      "description": "[Private Preview] Unity Catalog volumes, sorted by `path`.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentVolume",
+                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                      "doNotSuggest": true
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -24673,20 +24673,6 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTable"
-                    }
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
-                  }
-                ]
-              },
-              "genieagents.GenieAgentTextInstruction": {
-                "oneOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/genieagents.GenieAgentTextInstruction"
                     }
                   },
                   {

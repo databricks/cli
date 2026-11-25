@@ -12,7 +12,13 @@
         }
       ]
     },
-    "data_sources": {
+    "instructions": {
+      "text_instruction": {
+        "content": "Report average trip distance.",
+        "id": "01f0a1b2c3d4e5f60718293a4b5c6d70"
+      }
+    },
+    "resources": {
       "tables": [
         {
           "description": "One row per taxi trip, with pickup and drop-off times.",
@@ -78,7 +84,13 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
           }
         ]
       },
-      "data_sources": {
+      "instructions": {
+        "text_instruction": {
+          "content": "Report average trip distance.",
+          "id": "01f0a1b2c3d4e5f60718293a4b5c6d70"
+        }
+      },
+      "resources": {
         "tables": [
           {
             "description": "One row per taxi trip, with pickup and drop-off times.",
@@ -116,7 +128,13 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
           }
         ]
       },
-      "data_sources": {
+      "instructions": {
+        "text_instruction": {
+          "content": "Report average trip distance.",
+          "id": "01f0a1b2c3d4e5f60718293a4b5c6d70"
+        }
+      },
+      "resources": {
         "tables": [
           {
             "description": "One row per taxi trip, with pickup and drop-off times.",
@@ -178,7 +196,13 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
           }
         ]
       },
-      "data_sources": {
+      "instructions": {
+        "text_instruction": {
+          "content": "Report average trip distance.",
+          "id": "01f0a1b2c3d4e5f60718293a4b5c6d70"
+        }
+      },
+      "resources": {
         "tables": [
           {
             "description": "One row per taxi trip, with pickup and drop-off times.",
@@ -242,7 +266,13 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
           }
         ]
       },
-      "data_sources": {
+      "instructions": {
+        "text_instruction": {
+          "content": "Report average trip distance.",
+          "id": "01f0a1b2c3d4e5f60718293a4b5c6d70"
+        }
+      },
+      "resources": {
         "tables": [
           {
             "description": "One row per taxi trip, with pickup and drop-off times.",
