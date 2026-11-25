@@ -35,6 +35,10 @@ func (d *DatabaseCatalog) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+func (*DatabaseCatalog) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (d *DatabaseCatalog) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "database_catalog",

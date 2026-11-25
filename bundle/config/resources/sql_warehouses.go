@@ -47,6 +47,10 @@ func (sw *SqlWarehouse) Exists(ctx context.Context, w *databricks.WorkspaceClien
 	return true, nil
 }
 
+func (*SqlWarehouse) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*SqlWarehouse) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "sql_warehouse",

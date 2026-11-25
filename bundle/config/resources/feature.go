@@ -44,6 +44,10 @@ func (f *Feature) Exists(ctx context.Context, w *databricks.WorkspaceClient, ful
 	return true, nil
 }
 
+func (*Feature) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*Feature) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "feature",

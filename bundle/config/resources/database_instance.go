@@ -37,6 +37,10 @@ func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+func (*DatabaseInstance) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "database_instance",

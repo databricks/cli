@@ -48,6 +48,10 @@ func (s *Secret) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
+func (*Secret) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*Secret) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "secret",

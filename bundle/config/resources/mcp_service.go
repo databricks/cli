@@ -80,6 +80,10 @@ func (m *McpService) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 	return true, nil
 }
 
+func (*McpService) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*McpService) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "mcp_service",

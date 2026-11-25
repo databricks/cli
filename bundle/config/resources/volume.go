@@ -51,6 +51,10 @@ func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
+func (*Volume) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*Volume) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "volume",

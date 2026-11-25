@@ -114,6 +114,10 @@ func (r *JobRun) Exists(ctx context.Context, w *databricks.WorkspaceClient, id s
 	return true, nil
 }
 
+func (*JobRun) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (r *JobRun) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "job_run",

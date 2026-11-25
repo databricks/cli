@@ -129,3 +129,16 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 func (r *Dashboard) GetName() string {
 	return r.DisplayName
 }
+
+// Only dashboards with embed_credentials set reject run_as.
+func (*Dashboard) RunAsSupport() RunAsSupport {
+	return RunAsRejected
+}
+
+func (*Dashboard) RunAsRejectedSubject() string {
+	return "dashboards with embed_credentials set to true"
+}
+
+func (r *Dashboard) RejectsRunAs() bool {
+	return r.EmbedCredentials
+}

@@ -63,6 +63,10 @@ func (b *PostgresBranch) Exists(ctx context.Context, w *databricks.WorkspaceClie
 	return true, nil
 }
 
+func (*PostgresBranch) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (b *PostgresBranch) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_branch",

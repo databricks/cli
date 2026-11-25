@@ -43,6 +43,10 @@ func (e *VectorSearchIndex) Exists(ctx context.Context, w *databricks.WorkspaceC
 	return true, nil
 }
 
+func (*VectorSearchIndex) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (e *VectorSearchIndex) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "vector_search_index",

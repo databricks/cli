@@ -52,6 +52,10 @@ func (s *PostgresSyncedTable) Exists(ctx context.Context, w *databricks.Workspac
 	return true, nil
 }
 
+func (*PostgresSyncedTable) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (s *PostgresSyncedTable) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_synced_table",

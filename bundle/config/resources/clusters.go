@@ -50,6 +50,10 @@ func (s *Cluster) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 	return true, nil
 }
 
+func (*Cluster) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*Cluster) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "cluster",

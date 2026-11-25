@@ -62,3 +62,22 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 func (j *Job) GetName() string {
 	return j.Name
 }
+
+func (*Job) RunAsSupport() RunAsSupport {
+	return RunAsApplied
+}
+
+func (j *Job) ApplyRunAs(runAs *jobs.JobRunAs) {
+	if j.RunAs != nil {
+		return
+	}
+	j.RunAs = &jobs.JobRunAs{
+		GroupName:            runAs.GroupName,
+		ServicePrincipalName: runAs.ServicePrincipalName,
+		UserName:             runAs.UserName,
+	}
+}
+
+func (j *Job) ApplyLegacyRunAs(runAs *jobs.JobRunAs, _ string) {
+	j.ApplyRunAs(runAs)
+}
