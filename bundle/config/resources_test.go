@@ -88,7 +88,8 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 
 func TestResourcesAllResources(t *testing.T) {
 	r := Resources{
-		Jobs:      map[string]*resources.Job{"my_job": {}},
+		// A nil entry comes from a null in Python-generated configuration.
+		Jobs:      map[string]*resources.Job{"my_job": {}, "null_job": nil},
 		Snapshots: map[string]*resources.Snapshot{"my_snapshot": {}},
 	}
 
@@ -103,16 +104,22 @@ func TestResourcesAllResources(t *testing.T) {
 		}
 	}
 	assert.Equal(t, map[string]map[string]ConfigResource{
-		"jobs":                         {"my_job": r.Jobs["my_job"]},
+		"jobs":                         {"my_job": r.Jobs["my_job"], "null_job": (*resources.Job)(nil)},
 		"internal_immutable_snapshots": {"my_snapshot": r.Snapshots["my_snapshot"]},
 	}, nonEmpty)
+
+	// The nil entry is kept as a typed nil, which lifecycle.depends_on validation relies on.
+	nullJob, ok := nonEmpty["jobs"]["null_job"]
+	require.True(t, ok)
+	require.IsType(t, (*resources.Job)(nil), nullJob)
+	assert.True(t, reflect.ValueOf(nullJob).IsNil())
 }
 
 func TestSupportedResources(t *testing.T) {
 	actual := SupportedResources()
 	assert.Len(t, actual, len(AllResourceTypes()))
 	for _, rt := range AllResourceTypes() {
-		assert.Equal(t, rt.Zero.ResourceDescription(), actual[rt.Key])
+		assert.Equal(t, rt.Description, actual[rt.Key])
 	}
 }
 

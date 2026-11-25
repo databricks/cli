@@ -26,18 +26,18 @@ Add a field `map[string]*T` to `config.Resources`, with the key under `resources
 
 The canonical order of resource types is the field order of `config.Resources`.
 
-- `config.AllResourceTypes()` returns every resource type in canonical order: its key, its Go type and a zero value as `config.ConfigResource`.
-- `config.ResourceTypesImplementing[I]()` yields the key and zero value of every type whose zero value implements the interface `I`, in canonical order:
+- `config.AllResourceTypes()` returns every resource type in canonical order: its key, its Go type and its `ResourceDescription`. `New()` returns a fresh zero value of the type as `config.ConfigResource`.
+- `config.ResourceTypesImplementing[I]()` yields the key and a fresh zero value of every type whose zero value implements the interface `I`, in canonical order:
 
   ```go
   for key, d := range config.ResourceTypesImplementing[resources.SomeDeclarer]() {
-      // d is the zero value of the type under key, as resources.SomeDeclarer.
+      // d is a zero value of the type under key, as resources.SomeDeclarer.
   }
   ```
 
-- `config.ResourceTypeAs[I](key)` returns the zero value of the type under `key` as `I`, and false if there is no such type or it does not implement `I`.
+- `config.ResourceTypeAs[I](key)` returns a fresh zero value of the type under `key` as `I`, and false if there is no such type or it does not implement `I`.
 
-A declaration must not depend on or modify the receiver's contents: it is called on a zero value that all callers share.
+A declaration must not depend on the receiver's contents: it is called on a zero value.
 
 ## Testing completeness
 
