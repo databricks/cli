@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -50,26 +51,26 @@ func TestPlanToolsRunsNoAgentCLIWhereTimeoutsCannotStopThem(t *testing.T) {
 	autoInstallHome(t)
 
 	setAgentCLIsStoppable(t, true)
-	tools, err := planTools(t.Context(), autoinstall.State{})
+	tools, err := planTools(t.Context(), autoinstall.State{}, "1.30.0")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"Claude Code", "Cursor"}, planAgentNames(tools.plan))
 
 	// The plugin install would run Claude Code's CLI.
 	setAgentCLIsStoppable(t, false)
-	tools, err = planTools(t.Context(), autoinstall.State{})
+	tools, err = planTools(t.Context(), autoinstall.State{}, "1.30.0")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"Cursor"}, planAgentNames(tools.plan))
 	assert.Empty(t, tools.skip)
 
 	// Updating the recorded plugins would run agent CLIs too.
 	saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})
-	tools, err = planTools(t.Context(), autoinstall.State{})
+	tools, err = planTools(t.Context(), autoinstall.State{}, "1.30.0")
 	require.NoError(t, err)
 	assert.Nil(t, tools.existing)
 	assert.Equal(t, protos.AitoolsAutoInstallOutcomeSkippedPlatform, tools.skip)
 
 	setAgentCLIsStoppable(t, true)
-	tools, err = planTools(t.Context(), autoinstall.State{})
+	tools, err = planTools(t.Context(), autoinstall.State{}, "1.30.0")
 	require.NoError(t, err)
 	assert.NotNil(t, tools.existing)
 	assert.Empty(t, tools.skip)
@@ -81,12 +82,12 @@ func TestPlanToolsReportsWhyNothingIsInstalled(t *testing.T) {
 	// Claude Code alone installs through its CLI, which is not run here.
 	require.NoError(t, os.RemoveAll(filepath.Join(home, ".cursor")))
 	setAgentCLIsStoppable(t, false)
-	tools, err := planTools(t.Context(), autoinstall.State{})
+	tools, err := planTools(t.Context(), autoinstall.State{}, "1.30.0")
 	require.NoError(t, err)
 	assert.Equal(t, protos.AitoolsAutoInstallOutcomeSkippedPlatform, tools.skip)
 
 	require.NoError(t, os.RemoveAll(filepath.Join(home, ".claude")))
-	tools, err = planTools(t.Context(), autoinstall.State{})
+	tools, err = planTools(t.Context(), autoinstall.State{}, "1.30.0")
 	require.NoError(t, err)
 	assert.Equal(t, protos.AitoolsAutoInstallOutcomeSkippedNoAgents, tools.skip)
 }
@@ -99,7 +100,7 @@ func TestPlanToolsKeepsSkillsWithoutInstallState(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "databricks-sql"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks-sql", "SKILL.md"), []byte("user edit"), 0o644))
 
-	tools, err := planTools(t.Context(), autoinstall.State{})
+	tools, err := planTools(t.Context(), autoinstall.State{}, "1.30.0")
 	require.NoError(t, err)
 	assert.Equal(t, protos.AitoolsAutoInstallOutcomeKept, tools.skip)
 	assert.Empty(t, tools.plan)
@@ -114,7 +115,7 @@ func TestPlanToolsKeepsSkillsWithoutInstallState(t *testing.T) {
 
 	// Skills that an unfinished install of auto-install left are its own, so
 	// a later run finishes the install.
-	tools, err = planTools(t.Context(), autoinstall.State{Installing: true})
+	tools, err = planTools(t.Context(), autoinstall.State{Installing: true}, "1.30.0")
 	require.NoError(t, err)
 	assert.Empty(t, tools.skip)
 	assert.True(t, tools.fresh())
@@ -160,7 +161,7 @@ enabled = true
 			// the plan is the agent whose CLI is not on PATH.
 			setAgentCLIsStoppable(t, false)
 
-			tools, err := planTools(t.Context(), autoinstall.State{})
+			tools, err := planTools(t.Context(), autoinstall.State{}, "1.30.0")
 			require.NoError(t, err)
 			require.Len(t, tools.plan, 1)
 			assert.Equal(t, deliveryPlugin, tools.plan[0].delivery)
@@ -221,13 +222,113 @@ enabled = true
 			require.NoError(t, os.WriteFile(config, []byte(body), 0o644))
 			setAgentCLIsStoppable(t, false)
 
-			tools, err := planTools(t.Context(), autoinstall.State{})
+			tools, err := planTools(t.Context(), autoinstall.State{}, "1.30.0")
 			require.NoError(t, err)
 			require.Len(t, tools.plan, 1)
 			assert.Equal(t, tt.agent, tools.plan[0].agent.Name)
 			assert.Equal(t, deliverySkills, tools.plan[0].delivery)
 		})
 	}
+}
+
+func TestPlanToolsFinishesAnUnfinishedInstall(t *testing.T) {
+	home := autoInstallHome(t)
+	setAgentCLIsStoppable(t, true)
+	stubPluginAlreadyInstalled(t, false)
+	saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})
+	unfinished := autoinstall.State{LastVersion: "1.30.0", Attempts: 1, Installing: true}
+
+	// Install state that is not an unfinished install's is updated.
+	tools, err := planTools(t.Context(), autoinstall.State{}, "1.30.0")
+	require.NoError(t, err)
+	assert.NotNil(t, tools.existing)
+	assert.Empty(t, tools.plan)
+
+	tools, err = planTools(t.Context(), unfinished, "1.30.0")
+	require.NoError(t, err)
+	assert.Nil(t, tools.existing)
+	assert.True(t, tools.fresh())
+	assert.Equal(t, []string{"Claude Code", "Cursor"}, planAgentNames(tools.plan))
+
+	// A later version updates the install that an earlier one left unfinished.
+	tools, err = planTools(t.Context(), unfinished, "1.31.0")
+	require.NoError(t, err)
+	assert.NotNil(t, tools.existing)
+	assert.Empty(t, tools.plan)
+
+	// Where agent CLIs cannot be stopped, the plugin is not retried.
+	setAgentCLIsStoppable(t, false)
+	tools, err = planTools(t.Context(), unfinished, "1.30.0")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Cursor"}, planAgentNames(tools.plan))
+	setAgentCLIsStoppable(t, true)
+
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".cursor", "skills", "databricks-sql"), 0o755))
+	tools, err = planTools(t.Context(), unfinished, "1.30.0")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Claude Code"}, planAgentNames(tools.plan))
+
+	// Every agent has the tools, so the install is updated.
+	stubPluginAlreadyInstalled(t, true)
+	tools, err = planTools(t.Context(), unfinished, "1.30.0")
+	require.NoError(t, err)
+	assert.NotNil(t, tools.existing)
+	assert.Empty(t, tools.plan)
+}
+
+func TestAgentsWithoutTools(t *testing.T) {
+	claude := &agents.Agent{DisplayName: "Claude Code"}
+	cursor := &agents.Agent{DisplayName: "Cursor"}
+	codex := &agents.Agent{DisplayName: "Codex CLI"}
+	kiro := &agents.Agent{DisplayName: "Kiro"}
+	outcomes := []agentOutcome{
+		// The CLI is missing, so the plugin fails and the skills are installed.
+		{agent: claude, delivery: deliveryPlugin, status: outcomeFailed},
+		{agent: codex, delivery: deliveryPlugin, status: outcomeKept},
+		{agent: claude, delivery: deliverySkills, status: outcomeInstalled},
+		{agent: cursor, delivery: deliverySkills, status: outcomeFailed},
+		{agent: kiro, delivery: deliverySkills, status: outcomeSkipped},
+	}
+	assert.Equal(t, []string{"Cursor"}, agentsWithoutTools(outcomes))
+	assert.Empty(t, agentsWithoutTools(outcomes[:3]))
+
+	// The release has no skill to install, so the fallback is skipped.
+	outcomes = []agentOutcome{
+		{agent: claude, delivery: deliveryPlugin, status: outcomeFailed},
+		{agent: codex, delivery: deliveryPlugin, status: outcomeInstalled},
+		{agent: claude, delivery: deliverySkills, status: outcomeSkipped},
+	}
+	assert.Empty(t, agentsWithoutTools(outcomes))
+}
+
+// An agent whose CLI is missing gets the skills instead of the plugin. When
+// the release has none to install and another agent got the plugin, the
+// attempt succeeds: no later attempt could give that agent anything.
+func TestToolsPlanInstallSucceedsWhenTheFallbackHasNoSkills(t *testing.T) {
+	isolateAgents(t)
+	setupTestAgents(t) // ~/.claude without `claude`: a desktop install
+	fakeBinsOnPath(t, "codex")
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	stubPluginAlreadyInstalled(t, false)
+	stubLegacyCleanup(t)
+	plugins := setupPluginMock(t)
+	origSkills := installSkillsForAgentsFn
+	t.Cleanup(func() { installSkillsForAgentsFn = origSkills })
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return installer.ErrNoSkillsResolved
+	}
+
+	claude := agents.ByName(agents.NameClaudeCode)
+	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex")
+	plan := buildPlan(t.Context(), []*agents.Agent{claude, codex}, installer.ScopeGlobal, false, false)
+	require.True(t, plan[0].cliMissing)
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	result, err := toolsPlan{plan: plan}.install(ctx)
+	require.NoError(t, err)
+	require.Len(t, *plugins, 1)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeInstalled, result.outcome)
+	assert.Equal(t, []string{"Codex CLI"}, result.agents)
 }
 
 func TestChangedAgents(t *testing.T) {

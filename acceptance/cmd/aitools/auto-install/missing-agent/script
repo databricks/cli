@@ -1,0 +1,29 @@
+use_home home
+"$mkdir_bin" -p "${USERPROFILE:-$HOME}/.kiro"
+# A file where Cursor's skills directory belongs, so Cursor cannot get the
+# skills (a portable stand-in for a read-only directory).
+: > "${USERPROFILE:-$HOME}/.cursor/skills"
+gate true
+
+title "an agent that got no skills fails the attempt; the notice names only Kiro"
+trace $CLI jobs list
+trace print_telemetry
+trace auto_install_state
+
+title "the next run retries only Cursor"
+end_retry_wait
+trace $CLI jobs list
+trace print_telemetry
+trace auto_install_state
+
+title "once Cursor's skills directory can be written, a run installs for it and settles the version"
+"$rm_bin" "${USERPROFILE:-$HOME}/.cursor/skills"
+end_retry_wait
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace auto_install_state
+
+title "the version is settled"
+trace $CLI jobs list
+trace print_telemetry

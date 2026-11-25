@@ -1,0 +1,59 @@
+
+=== an agent that got no skills fails the attempt; the notice names only Kiro
+
+>>> [CLI] jobs list
+Installed Databricks AI tools for Kiro. Disable: databricks aitools auto-install disable
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR","KIRO"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CURSOR","error_category":"FILESYSTEM"}],"trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"FAILED","holdout_arm":"TREATMENT","interactive":false,"error_category":"FILESYSTEM"}}
+
+>>> auto_install_state
+{
+  "last_version": "1.30.0",
+  "attempts": 1,
+  "last_attempt": "[TIMESTAMP]",
+  "installing": true,
+  "id": "treatment-machine"
+}
+
+=== the next run retries only Cursor
+
+>>> [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CURSOR","error_category":"FILESYSTEM"}],"trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"FAILED","holdout_arm":"TREATMENT","interactive":false,"error_category":"FILESYSTEM"}}
+
+>>> auto_install_state
+{
+  "last_version": "1.30.0",
+  "attempts": 2,
+  "last_attempt": "[TIMESTAMP]",
+  "installing": true,
+  "id": "treatment-machine"
+}
+
+=== once Cursor's skills directory can be written, a run installs for it and settles the version
+
+>>> [CLI] jobs list
+Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+databricks-test
+
+>>> auto_install_state
+{
+  "last_version": "1.30.0",
+  "id": "treatment-machine"
+}
+
+=== the version is settled
+
+>>> [CLI] jobs list
+
+>>> print_telemetry

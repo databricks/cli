@@ -31,7 +31,7 @@ func AutoInstallsFor(cmd *cobra.Command, agentName string) bool {
 	if in.State.ID != "" && autoinstall.InHoldout(autoinstall.Bucket(in.State.ID)) {
 		return false
 	}
-	tools, err := planTools(quietContext(ctx), in.State)
+	tools, err := planTools(quietContext(ctx), in.State, in.Version)
 	if err != nil || tools.skip != "" {
 		return false
 	}

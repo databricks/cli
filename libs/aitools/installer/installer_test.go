@@ -1794,3 +1794,18 @@ func TestInstallSpecificSkillWithEmptyStateFile(t *testing.T) {
 	})
 	require.NoError(t, err)
 }
+
+func TestHasGlobalSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := t.Context()
+	agent := testAgent(tmp)
+	state := &InstallState{Skills: map[string]string{"databricks-a": "1.0.0", "databricks-b": "1.0.0"}}
+	skillsDir := filepath.Join(tmp, ".test-agent", "skills")
+
+	assert.False(t, HasGlobalSkills(ctx, agent, state))
+	require.NoError(t, os.MkdirAll(filepath.Join(skillsDir, "databricks-a"), 0o755))
+	assert.False(t, HasGlobalSkills(ctx, agent, state), "one skill is missing")
+	require.NoError(t, os.MkdirAll(filepath.Join(skillsDir, "databricks-b"), 0o755))
+	assert.True(t, HasGlobalSkills(ctx, agent, state))
+	assert.False(t, HasGlobalSkills(ctx, agent, &InstallState{}), "no skill is recorded")
+}

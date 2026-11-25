@@ -3,6 +3,7 @@ package autoinstall
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -165,6 +166,27 @@ func TestRecordStoresTheLastFailedAttempt(t *testing.T) {
 	s, err = Load(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, State{LastVersion: "1.30.0", ID: "machine"}, s, "a settled version has no last attempt")
+}
+
+func TestClearInstalling(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+
+	at := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	require.NoError(t, MarkInstalling(ctx))
+	require.NoError(t, Record(ctx, "1.30.0", 1, "machine", at))
+	require.NoError(t, ClearInstalling(ctx))
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: at, ID: "machine"}, s)
+}
+
+func TestClearInstallingWritesNothingWhenUnset(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+
+	require.NoError(t, ClearInstalling(ctx))
+	assert.NoFileExists(t, filepath.Join(home, ".databricks", "aitools", stateFileName))
 }
 
 func TestNextAttempt(t *testing.T) {

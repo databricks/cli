@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -389,6 +390,14 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}, classifyInstallError(topLevelFailure(runErr)), outcomes)
 			}()
 
+			// The global installation this run makes is the user's, so a
+			// later auto-install updates it instead of finishing an unfinished
+			// first install of its own for the agents the user left out.
+			if opts.Scope == installer.ScopeGlobal {
+				if err := autoinstall.ClearInstalling(ctx); err != nil {
+					log.Warnf(ctx, "Could not update the auto-install state: %v", err)
+				}
+			}
 			outcomes, runErr = executePlan(ctx, src, plan, opts, rerun, jsonMode)
 			for _, s := range deliverySteps(outcomes) {
 				funnel.step(ctx, s)

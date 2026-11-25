@@ -344,6 +344,145 @@ func TestAutoInstallPrompt(t *testing.T) {
 	}
 }
 
+// An attempt that leaves an agent without the tools fails even when another
+// agent got them, and later attempts install for that agent only, until it
+// has the tools.
+func TestAutoInstallRetriesAnAgentThatGotNoSkills(t *testing.T) {
+	// A coding agent's call installs without asking.
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".kiro"), 0o755))
+	// A file where Cursor's skills directory belongs, so Cursor cannot get
+	// the skills.
+	cursorSkills := filepath.Join(home, ".cursor", "skills")
+	require.NoError(t, os.WriteFile(cursorSkills, nil, 0o644))
+	run := func(elapsed time.Duration) (string, autoinstall.State, []protos.AitoolsAutoInstallOutcome) {
+		now = func() time.Time { return autoInstallTestNow.Add(elapsed) }
+		var stderr bytes.Buffer
+		ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, &stderr, "", ""))
+		ctx = telemetry.WithNewLogger(ctx)
+		runAutoInstallHook(ctx)
+		var outcomes []protos.AitoolsAutoInstallOutcome
+		for _, e := range telemetry.BufferedEvents(ctx) {
+			if e := e.AitoolsAutoInstallEvent; e != nil {
+				outcomes = append(outcomes, e.Outcome)
+			}
+		}
+		state, err := autoinstall.Load(ctx)
+		require.NoError(t, err)
+		return stderr.String(), state, outcomes
+	}
+
+	stderr, state, outcomes := run(0)
+	assert.Equal(t, "Installed Databricks AI tools for Kiro. Disable: databricks aitools auto-install disable\n", stderr)
+	assert.Equal(t, failedAttempts(1, 0), state)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
+	assert.FileExists(t, filepath.Join(home, ".kiro", "skills", "databricks-test", "SKILL.md"))
+
+	// Kiro has the tools, so only Cursor is tried again.
+	stderr, state, outcomes = run(5 * time.Minute)
+	assert.Empty(t, stderr)
+	assert.Equal(t, failedAttempts(2, 5*time.Minute), state)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
+
+	require.NoError(t, os.Remove(cursorSkills))
+	stderr, state, outcomes = run(15 * time.Minute)
+	assert.Equal(t, "Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable\n", stderr)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
+	assert.FileExists(t, filepath.Join(cursorSkills, "databricks-test", "SKILL.md"))
+
+	// The version is settled.
+	stderr, _, outcomes = run(time.Hour)
+	assert.Empty(t, stderr)
+	assert.Empty(t, outcomes)
+}
+
+// A global install the user runs after an unfinished auto-install makes the
+// installation theirs: later runs update it, and do not install for the
+// agents the user left out.
+func TestAutoInstallUpdatesAfterAManualInstallOfSomeAgents(t *testing.T) {
+	// A coding agent's call installs without asking.
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".kiro"), 0o755))
+	// A file where Cursor's skills directory belongs, so Cursor cannot get
+	// the skills.
+	cursorSkills := filepath.Join(home, ".cursor", "skills")
+	require.NoError(t, os.WriteFile(cursorSkills, nil, 0o644))
+	run := func(elapsed time.Duration) (autoinstall.State, []protos.AitoolsAutoInstallOutcome) {
+		now = func() time.Time { return autoInstallTestNow.Add(elapsed) }
+		ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, io.Discard, "", ""))
+		ctx = telemetry.WithNewLogger(ctx)
+		runAutoInstallHook(ctx)
+		var outcomes []protos.AitoolsAutoInstallOutcome
+		for _, e := range telemetry.BufferedEvents(ctx) {
+			if e := e.AitoolsAutoInstallEvent; e != nil {
+				outcomes = append(outcomes, e.Outcome)
+			}
+		}
+		state, err := autoinstall.Load(ctx)
+		require.NoError(t, err)
+		return state, outcomes
+	}
+
+	state, outcomes := run(0)
+	assert.Equal(t, failedAttempts(1, 0), state)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
+
+	_, err := runInstall(t, cmdio.MockDiscard(t.Context()), "--scope=global", "--agents=kiro")
+	require.NoError(t, err)
+
+	// Cursor could get the skills now, but the user left it out.
+	require.NoError(t, os.Remove(cursorSkills))
+	state, outcomes = run(5 * time.Minute)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeUpToDate}, outcomes)
+	assert.NoDirExists(t, cursorSkills)
+}
+
+// An agent that never gets the tools does not keep a later version from
+// updating the installation: its runs update, and their retries do too.
+func TestAutoInstallUpdatesOnALaterVersionAfterAnUnfinishedInstall(t *testing.T) {
+	// A coding agent's call installs without asking.
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".kiro"), 0o755))
+	// A file where Cursor's skills directory belongs, so Cursor cannot get
+	// the skills.
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".cursor", "skills"), nil, 0o644))
+	run := func(elapsed time.Duration) (autoinstall.State, []protos.AitoolsAutoInstallOutcome) {
+		now = func() time.Time { return autoInstallTestNow.Add(elapsed) }
+		ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, io.Discard, "", ""))
+		ctx = telemetry.WithNewLogger(ctx)
+		runAutoInstallHook(ctx)
+		var outcomes []protos.AitoolsAutoInstallOutcome
+		for _, e := range telemetry.BufferedEvents(ctx) {
+			if e := e.AitoolsAutoInstallEvent; e != nil {
+				outcomes = append(outcomes, e.Outcome)
+			}
+		}
+		state, err := autoinstall.Load(ctx)
+		require.NoError(t, err)
+		return state, outcomes
+	}
+
+	state, outcomes := run(0)
+	assert.Equal(t, failedAttempts(1, 0), state)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
+
+	// The next version updates, which fails while the release is not
+	// reachable. Its retry updates as well.
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
+	t.Setenv("DATABRICKS_SKILLS_REF", "missing-ref")
+	state, outcomes = run(5 * time.Minute)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", Attempts: 1, LastAttempt: autoInstallTestNow.Add(5 * time.Minute), ID: "treatment-machine"}, state)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
+
+	t.Setenv("DATABRICKS_SKILLS_REF", "test-ref")
+	state, outcomes = run(10 * time.Minute)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeUpToDate}, outcomes)
+	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+}
+
 // A run that cannot ask on a machine with no stored ID saves the ID it drew,
 // so that later runs keep the machine's holdout bucket.
 func TestAutoInstallKeepsTheIDWhenItCannotAsk(t *testing.T) {

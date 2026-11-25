@@ -127,6 +127,24 @@ func MarkInstalling(ctx context.Context) error {
 	return updateState(ctx, func(s *State) { s.Installing = true })
 }
 
+// ClearInstalling clears State.Installing before an attempt that updates the
+// existing installation instead of finishing the first install, and before a
+// global `databricks aitools install`, which makes the installation the
+// user's. It writes nothing when the marker is not set.
+func ClearInstalling(ctx context.Context) error {
+	unlock, err := lock(ctx, stateLockFileName, stateLockWait)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	s, err := load(ctx)
+	if err != nil || !s.Installing {
+		return err
+	}
+	s.Installing = false
+	return save(ctx, s)
+}
+
 // SaveID stores id as the machine identifier unless one is stored already,
 // without settling a version, and returns the stored identifier. Runs that
 // draw an ID save it before using it, so concurrent runs agree on the

@@ -56,7 +56,9 @@ type State struct {
 	// Installing is set while auto-install makes a first install, and stays
 	// set when the install did not finish. The skills such an install left
 	// have no install state, like the ones the user put there, so a later run
-	// uses it to finish the install instead of leaving the skills alone.
+	// uses it to finish the install instead of leaving the skills alone. A
+	// global `databricks aitools install` clears it: the installation is then
+	// the user's.
 	Installing bool `json:"installing,omitempty"`
 
 	// ID is a random per-machine identifier, created on the first run that

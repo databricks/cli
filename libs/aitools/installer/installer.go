@@ -688,6 +688,20 @@ func allAgentsHaveSkill(ctx context.Context, skillName string, targetAgents []*a
 	return true
 }
 
+// HasGlobalSkills reports whether the agent's global skills directory has
+// every skill state records. With no skill recorded, it has none.
+func HasGlobalSkills(ctx context.Context, agent *agents.Agent, state *InstallState) bool {
+	if len(state.Skills) == 0 {
+		return false
+	}
+	for name := range state.Skills {
+		if !allAgentsHaveSkill(ctx, name, []*agents.Agent{agent}, ScopeGlobal, "") {
+			return false
+		}
+	}
+	return true
+}
+
 // installParams bundles the parameters for installSkillForAgents to keep the signature manageable.
 type installParams struct {
 	baseDir string
