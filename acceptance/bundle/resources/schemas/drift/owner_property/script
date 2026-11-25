@@ -1,11 +1,16 @@
-envsubst < databricks.yml.tmpl > databricks.yml
+export SCHEMA_NAME="schema_sql_owner_$UNIQUE_NAME"
+SCHEMA="main.$SCHEMA_NAME"
 
-SCHEMA="main.schema_sql_owner_$UNIQUE_NAME"
+envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
 
-    # Consume the destroy's requests so none are left recorded.
+    # The schema is created outside the bundle, so it is left behind when the test fails before
+    # bind. After a successful destroy this returns 404.
+    errcode $CLI schemas delete "$SCHEMA" &> LOG.delete_schema
+
+    # Consume the destroy's and the delete's requests so none are left recorded.
     print_requests.py //unity-catalog/schemas &> LOG.destroy_requests
 }
 trap cleanup EXIT
@@ -23,9 +28,11 @@ if [ -n "$CLOUD_ENV" ]; then
         \"wait_timeout\": \"50s\"
       }" > LOG.create_schema
 else
-    $CLI schemas create --json "{\"name\": \"schema_sql_owner_$UNIQUE_NAME\", \"catalog_name\": \"main\", \"properties\": {\"owner\": \"root\"}}" > LOG.create_schema
+    $CLI schemas create --json "{\"name\": \"$SCHEMA_NAME\", \"catalog_name\": \"main\", \"properties\": {\"owner\": \"root\"}}" > LOG.create_schema
 fi
-trace $CLI schemas get $SCHEMA | jq '{full_name, properties}'
+# UC adds unity.catalog.managed.*.defaults.* properties on some clouds; normalize_uc_payload.py drops
+# them here and in the plans below, so the golden shows only the owner property on every cloud.
+trace $CLI schemas get $SCHEMA | jq '{full_name, properties}' | normalize_uc_payload.py
 
 title "Bind it: the config matches, so there is nothing to confirm"
 trace $CLI bundle deployment bind schema1 $SCHEMA
@@ -34,7 +41,7 @@ title "Plan is a no-op"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "The undeclared owner property is skipped as a backend default"
-trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1 | normalize_uc_payload.py
 
 title "Deploying twice changes nothing"
 trace $CLI bundle deploy
@@ -45,7 +52,7 @@ trace print_requests.py --method PATCH //unity-catalog/schemas
 
 title "A property declared next to it is still planned and sent"
 trace update_file.py databricks.yml "# PROPERTIES" "properties: {team: data}"
-trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1 | normalize_uc_payload.py
 trace $CLI bundle deploy
 trace print_requests.py --method PATCH //unity-catalog/schemas
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
