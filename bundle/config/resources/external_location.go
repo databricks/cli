@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -10,6 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 )
 
 type ExternalLocation struct {
@@ -56,14 +56,10 @@ func (*ExternalLocation) GrantsSupport() GrantsSupport {
 	return GrantsSupport{SecurableType: "external_location"}
 }
 
-func (e *ExternalLocation) InitializeURL(baseURL url.URL) {
+func (*ExternalLocation) WorkspaceURL() (workspaceurls.Pattern, bool) {
 	// External locations don't have a workspace URL
 	// The Url field is for the storage path (s3://...), not a workspace URL
-}
-
-func (e *ExternalLocation) GetURL() (string, bool) {
-	// External locations don't have a workspace URL
-	return "", false
+	return workspaceurls.Pattern{}, false
 }
 
 func (*ExternalLocation) NamePrefixExemptReason() string {

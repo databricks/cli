@@ -55,11 +55,15 @@ func (*Schema) GrantsSupport() GrantsSupport {
 	return GrantsSupport{SecurableType: "schema"}
 }
 
+func (*Schema) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s", DotSeparatedID: true}, true
+}
+
 func (s *Schema) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "schemas", s.ID)
+	s.URL = workspaceURL(s, baseURL, s.ID)
 }
 
 func (s *Schema) GetName() string {

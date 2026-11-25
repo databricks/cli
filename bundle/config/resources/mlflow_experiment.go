@@ -64,11 +64,15 @@ func (*MlflowExperiment) PermissionsSupport() PermissionsSupport {
 	}
 }
 
+func (*MlflowExperiment) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "ml/experiments/%s"}, true
+}
+
 func (s *MlflowExperiment) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "experiments", s.ID)
+	s.URL = workspaceURL(s, baseURL, s.ID)
 }
 
 func (s *MlflowExperiment) GetName() string {

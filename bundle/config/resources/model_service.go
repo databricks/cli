@@ -104,13 +104,17 @@ func (*ModelService) GrantsSupport() GrantsSupport {
 	return GrantsSupport{SecurableType: "model_service"}
 }
 
+func (*ModelService) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/model-services/%s", DotSeparatedID: true}, true
+}
+
 func (m *ModelService) InitializeURL(baseURL url.URL) {
 	if m.ID == "" {
 		return
 	}
-	// The id is the bare {catalog}.{schema}.{model_service}; ResourceURL splits
+	// The id is the bare {catalog}.{schema}.{model_service}; the pattern splits
 	// it into the Catalog Explorer path explore/data/model-services/...
-	m.URL = workspaceurls.ResourceURL(baseURL, "model_services", m.ID)
+	m.URL = workspaceURL(m, baseURL, m.ID)
 }
 
 func (*ModelService) NamePrefixExemptReason() string {

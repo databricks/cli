@@ -56,9 +56,13 @@ func (d *DatabaseCatalog) GetName() string {
 	return d.Name
 }
 
+func (*DatabaseCatalog) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s"}, true
+}
+
 func (d *DatabaseCatalog) InitializeURL(baseURL url.URL) {
 	if d.Name == "" {
 		return
 	}
-	d.URL = workspaceurls.ResourceURL(baseURL, "database_catalogs", d.Name)
+	d.URL = workspaceURL(d, baseURL, d.Name)
 }

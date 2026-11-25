@@ -68,11 +68,15 @@ func (*Volume) GrantsSupport() GrantsSupport {
 	return GrantsSupport{SecurableType: "volume"}
 }
 
+func (*Volume) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/volumes/%s", DotSeparatedID: true}, true
+}
+
 func (v *Volume) InitializeURL(baseURL url.URL) {
 	if v.ID == "" {
 		return
 	}
-	v.URL = workspaceurls.ResourceURL(baseURL, "volumes", v.ID)
+	v.URL = workspaceURL(v, baseURL, v.ID)
 }
 
 func (*Volume) NamePrefixExemptReason() string {

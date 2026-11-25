@@ -2,9 +2,9 @@ package resources
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -84,11 +84,7 @@ func (d *PostgresDatabase) GetName() string {
 	return d.ID
 }
 
-func (d *PostgresDatabase) GetURL() (string, bool) {
+func (*PostgresDatabase) WorkspaceURL() (workspaceurls.Pattern, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return "", false
-}
-
-func (d *PostgresDatabase) InitializeURL(_ url.URL) {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
+	return workspaceurls.Pattern{}, false
 }

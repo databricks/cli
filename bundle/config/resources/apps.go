@@ -116,11 +116,15 @@ func (*App) PermissionsSupport() PermissionsSupport {
 	}
 }
 
+func (*App) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "apps/%s"}, true
+}
+
 func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
-	a.URL = workspaceurls.ResourceURL(baseURL, "apps", a.GetName())
+	a.URL = workspaceURL(a, baseURL, a.GetName())
 }
 
 func (*App) NamePrefixExemptReason() string {

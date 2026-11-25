@@ -60,11 +60,15 @@ func (*InstancePool) PermissionsSupport() PermissionsSupport {
 	}
 }
 
+func (*InstancePool) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "compute/instance-pools/%s"}, true
+}
+
 func (s *InstancePool) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "instance_pools", s.ID)
+	s.URL = workspaceURL(s, baseURL, s.ID)
 }
 
 func (s *InstancePool) GetName() string {

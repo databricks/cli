@@ -2,8 +2,8 @@ package resources
 
 import (
 	"context"
-	"net/url"
 
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -124,11 +124,7 @@ func (s SecretScope) GetName() string {
 	return s.Name
 }
 
-func (s SecretScope) GetURL() (string, bool) {
+func (SecretScope) WorkspaceURL() (workspaceurls.Pattern, bool) {
 	// Secret scopes do not have a URL
-	return "", false
-}
-
-func (s SecretScope) InitializeURL(_ url.URL) {
-	// Secret scopes do not have a URL
+	return workspaceurls.Pattern{}, false
 }

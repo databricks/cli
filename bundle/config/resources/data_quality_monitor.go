@@ -3,10 +3,10 @@ package resources
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -78,10 +78,8 @@ func (*DataQualityMonitor) ResourceDescription() ResourceDescription {
 }
 
 // The object_id is a UUID, which has no Catalog Explorer URL.
-func (m *DataQualityMonitor) InitializeURL(baseURL url.URL) {}
-
-func (m *DataQualityMonitor) GetURL() (string, bool) {
-	return "", false
+func (*DataQualityMonitor) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{}, false
 }
 
 func (m *DataQualityMonitor) GetName() string {

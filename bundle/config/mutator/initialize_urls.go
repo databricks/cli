@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/diag"
 )
@@ -90,7 +91,9 @@ func initializeForWorkspace(b *bundle.Bundle, workspaceID, host string) error {
 
 	for _, group := range b.Config.Resources.AllResources() {
 		for _, r := range group.Resources {
-			r.InitializeURL(*baseURL)
+			if u, ok := r.(resources.URLInitializer); ok {
+				u.InitializeURL(*baseURL)
+			}
 		}
 	}
 

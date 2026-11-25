@@ -67,11 +67,15 @@ func (*Job) PermissionsSupport() PermissionsSupport {
 	}
 }
 
+func (*Job) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "jobs/%s"}, true
+}
+
 func (j *Job) InitializeURL(baseURL url.URL) {
 	if j.ID == "" {
 		return
 	}
-	j.URL = workspaceurls.ResourceURL(baseURL, "jobs", j.ID)
+	j.URL = workspaceURL(j, baseURL, j.ID)
 }
 
 func (j *Job) GetName() string {

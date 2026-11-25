@@ -65,11 +65,15 @@ func (*FeatureSpec) GrantsSupport() GrantsSupport {
 	return GrantsSupport{SecurableType: "function"}
 }
 
+func (*FeatureSpec) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/functions/%s", DotSeparatedID: true}, true
+}
+
 func (f *FeatureSpec) InitializeURL(baseURL url.URL) {
 	if f.ID == "" {
 		return
 	}
-	f.URL = workspaceurls.ResourceURL(baseURL, "feature_specs", f.ID)
+	f.URL = workspaceURL(f, baseURL, f.ID)
 }
 
 func (*FeatureSpec) NamePrefixExemptReason() string {

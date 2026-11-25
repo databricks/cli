@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -88,7 +89,7 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 		}
 
 		// Confirm that the resource has a URL.
-		url, supported := ref.Resource.GetURL()
+		url, supported := config.ResourceURL(ref.Resource)
 		if !supported {
 			return errors.New("this resource type does not have a URL")
 		}

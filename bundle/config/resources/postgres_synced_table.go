@@ -81,6 +81,10 @@ func (s *PostgresSyncedTable) GetName() string {
 	return s.SyncedTableId
 }
 
+func (*PostgresSyncedTable) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s", DotSeparatedID: true}, true
+}
+
 func (s *PostgresSyncedTable) InitializeURL(baseURL url.URL) {
 	// UC explore expects /{catalog}/{schema}/{table}, so bail if the name isn't
 	// a fully resolved three-part identifier; an unresolved ${...} reference
@@ -89,5 +93,5 @@ func (s *PostgresSyncedTable) InitializeURL(baseURL url.URL) {
 	if strings.Count(name, ".") != 2 {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "postgres_synced_tables", name)
+	s.URL = workspaceURL(s, baseURL, name)
 }

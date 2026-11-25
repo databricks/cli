@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/browser"
@@ -24,6 +25,7 @@ var openWorkspaceURL = browser.Open
 
 func newWorkspaceOpenCommand() *cobra.Command {
 	var printURL bool
+	patterns := config.WorkspaceURLPatterns()
 
 	cmd := &cobra.Command{
 		Use:   "open [flags] RESOURCE_TYPE ID_OR_PATH",
@@ -40,7 +42,7 @@ Examples:
   databricks experimental open notebooks /Users/user@example.com/my-notebook
   databricks experimental open clusters 0123-456789-abcdef
   databricks experimental open registered_models catalog.schema.my_model
-  databricks experimental open jobs 123456789 --url`, strings.Join(workspaceurls.ResourceTypes(), ", ")),
+  databricks experimental open jobs 123456789 --url`, strings.Join(workspaceurls.ResourceTypes(patterns), ", ")),
 		Args:    cobra.ExactArgs(2),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,7 +57,7 @@ Examples:
 				log.Warnf(ctx, "Could not determine workspace ID: %v", err)
 			}
 
-			resourceURL, err := workspaceurls.BuildResourceURL(w.Config.Host, resourceType, id, workspaceID)
+			resourceURL, err := workspaceurls.BuildResourceURL(patterns, w.Config.Host, resourceType, id, workspaceID)
 			if err != nil {
 				return err
 			}
@@ -73,7 +75,7 @@ Examples:
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			if len(args) == 0 {
-				return workspaceurls.ResourceTypes(), cobra.ShellCompDirectiveNoFileComp
+				return workspaceurls.ResourceTypes(patterns), cobra.ShellCompDirectiveNoFileComp
 			}
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		},

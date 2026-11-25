@@ -2,11 +2,11 @@ package resources
 
 import (
 	"context"
-	"net/url"
 	"path"
 	"strings"
 
 	"github.com/databricks/cli/libs/snapshot"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -110,16 +110,12 @@ func (s *Snapshot) GetName() string {
 	return s.RelativePath()
 }
 
-func (s *Snapshot) GetURL() (string, bool) {
+func (*Snapshot) WorkspaceURL() (workspaceurls.Pattern, bool) {
 	// A snapshot is a workspace folder owned by the project's service principal, so
 	// a browser URL is constructible from its path. We don't surface one yet:
 	// workspaceurls has no folder-path helper, and the path is only known during
 	// deploy (its content hash is derived from the zip staged by the deploy pipeline).
-	return "", false
-}
-
-func (s *Snapshot) InitializeURL(_ url.URL) {
-	// See GetURL: no browser URL is surfaced for the snapshot folder yet.
+	return workspaceurls.Pattern{}, false
 }
 
 func (s *Snapshot) GetLifecycle() LifecycleConfig {

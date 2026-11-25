@@ -110,12 +110,16 @@ func (*GenieSpace) PermissionsSupport() PermissionsSupport {
 	}
 }
 
+func (*GenieSpace) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "genie/rooms/%s"}, true
+}
+
 func (r *GenieSpace) InitializeURL(baseURL url.URL) {
 	if r.ID == "" {
 		return
 	}
 
-	r.URL = workspaceurls.ResourceURL(baseURL, "genie_spaces", r.ID)
+	r.URL = workspaceURL(r, baseURL, r.ID)
 }
 
 func (r *GenieSpace) GetName() string {

@@ -65,11 +65,15 @@ func (*Alert) PermissionsSupport() PermissionsSupport {
 	}
 }
 
+func (*Alert) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "sql/alerts-v2/%s"}, true
+}
+
 func (a *Alert) InitializeURL(baseURL url.URL) {
 	if a.ID == "" {
 		return
 	}
-	a.URL = workspaceurls.ResourceURL(baseURL, "alerts", a.ID)
+	a.URL = workspaceURL(a, baseURL, a.ID)
 }
 
 func (a *Alert) GetName() string {

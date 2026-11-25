@@ -55,11 +55,15 @@ func (*QualityMonitor) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*QualityMonitor) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s", DotSeparatedID: true}, true
+}
+
 func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 	if s.TableName == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "quality_monitors", s.TableName)
+	s.URL = workspaceURL(s, baseURL, s.TableName)
 }
 
 func (s *QualityMonitor) GetName() string {
