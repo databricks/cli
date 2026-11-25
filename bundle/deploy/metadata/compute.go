@@ -2,19 +2,23 @@ package metadata
 
 import (
 	"context"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/snapshot"
 )
+
+// computeFunc fills the part of b.Metadata that describes the resources of one type.
+// state is the deployment state after the deploy.
+type computeFunc func(ctx context.Context, b *bundle.Bundle, state resourcestate.ExportedResourcesMap) diag.Diagnostics
+
+// resourceMetadata holds the computeFunc of every resource type that the deployment
+// metadata describes. They run in the canonical order of their types (the field order of
+// [config.Resources]), and the first error stops the computation.
+var resourceMetadata = config.NewResourceTypeRegistry[computeFunc]("deployment metadata")
 
 type compute struct {
 	state resourcestate.ExportedResourcesMap
@@ -49,83 +53,13 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	b.Metadata.Config.Bundle.Target = b.Config.Bundle.Target
 	b.Metadata.Config.Bundle.Mode = string(b.Config.Bundle.Mode)
 
-	// Set job config paths in metadata
-	jobsMetadata := make(map[string]*metadata.Resource)
-	for name, job := range b.Config.Resources.Jobs {
-		// Compute config file path the job is defined in, relative to the bundle
-		// root
-		l := b.Config.GetLocation("resources.jobs." + name)
-		if l.File == "" {
-			// Skip resources that exist only in the deployment state: statemgmt.Load,
-			// which runs before this mutator, injects them into the config without a
-			// file location.
-			continue
-		}
-
-		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
-		if err != nil {
-			log.Warnf(ctx, "failed to compute relative path for job %q: %s", name, err)
-			relativePath = ""
-		}
-
-		// Metadata for the job
-		jobsMetadata[name] = &metadata.Resource{
-			ID:           job.ID,
-			RelativePath: filepath.ToSlash(relativePath),
+	var diags diag.Diagnostics
+	for _, computeResources := range resourceMetadata.All() {
+		diags = diags.Extend(computeResources(ctx, b, m.state))
+		if diags.HasError() {
+			return diags
 		}
 	}
-	b.Metadata.Config.Resources.Jobs = jobsMetadata
-
-	// Set pipeline config paths in metadata
-	pipelinesMetadata := make(map[string]*metadata.Resource)
-	for name, pipeline := range b.Config.Resources.Pipelines {
-		// Compute config file path the pipeline is defined in, relative to the bundle
-		// root
-		l := b.Config.GetLocation("resources.pipelines." + name)
-		if l.File == "" {
-			// Skip resources that exist only in the deployment state: statemgmt.Load,
-			// which runs before this mutator, injects them into the config without a
-			// file location.
-			continue
-		}
-
-		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
-		if err != nil {
-			return diag.Errorf("failed to compute relative path for pipeline %s: %v", name, err)
-		}
-		// Metadata for the pipeline
-		pipelinesMetadata[name] = &metadata.Resource{
-			ID:           pipeline.ID,
-			RelativePath: filepath.ToSlash(relativePath),
-		}
-	}
-	b.Metadata.Config.Resources.Pipelines = pipelinesMetadata
-
-	// Set dashboard config and file paths in metadata
-	dashboardsMetadata := make(map[string]*metadata.DashboardResource)
-	for name, dashboard := range b.Config.Resources.Dashboards {
-		// Compute config file path the dashboard is defined in, relative to the bundle
-		// root
-		l := b.Config.GetLocation("resources.dashboards." + name)
-		if l.File == "" {
-			// Skip resources that exist only in the deployment state: statemgmt.Load,
-			// which runs before this mutator, injects them into the config without a
-			// file location.
-			continue
-		}
-
-		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
-		if err != nil {
-			return diag.Errorf("failed to compute relative path for dashboard %s: %v", name, err)
-		}
-		// Metadata for the dashboard
-		dashboardsMetadata[name] = &metadata.DashboardResource{
-			ID:           dashboard.ID,
-			RelativePath: filepath.ToSlash(relativePath),
-			FilePath:     dashboard.FilePath,
-		}
-	}
-	b.Metadata.Config.Resources.Dashboards = dashboardsMetadata
 
 	// Set file upload destination of the bundle in metadata
 	b.Metadata.Config.Workspace.FilePath = b.RemoteFilePath()
@@ -134,21 +68,10 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		b.Metadata.Config.Presets.SourceLinkedDeployment = true
 	}
 
-	// For immutable-folder deployments the content lives in a snapshot rather than a regular
-	// workspace directory. Record its path so downstream services (e.g. the jobs UI) can locate it.
-	// Take the path from the state rather than the config: "bundle deploy --select" can leave the
-	// snapshot out, and then the config points at a snapshot that was never uploaded. The
-	// snapshot's ID is its relative path.
-	if snap, ok := b.Config.Resources.Snapshots[resources.SnapshotResourceKey]; ok {
-		if deployed, ok := m.state[resources.SnapshotKey]; ok {
-			b.Metadata.Config.Workspace.SnapshotContentPath = path.Join(snap.RemoteRoot, deployed.ID, snapshot.ContentSubdir)
-		}
-	}
-
 	// Set the git folder path for deployments from the workspace
 	if b.WorktreeRoot != nil && strings.HasPrefix(b.WorktreeRoot.Native(), "/Workspace/") {
 		b.Metadata.Extra.GitFolderPath = b.WorktreeRoot.Native()
 	}
 
-	return nil
+	return diags
 }
