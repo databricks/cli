@@ -355,23 +355,8 @@ func TestAutoInstallUpdatesAfterAManualInstallOfSomeAgents(t *testing.T) {
 	// the skills.
 	cursorSkills := filepath.Join(home, ".cursor", "skills")
 	require.NoError(t, os.WriteFile(cursorSkills, nil, 0o644))
-	run := func(elapsed time.Duration) (autoinstall.State, []protos.AitoolsAutoInstallOutcome) {
-		now = func() time.Time { return autoInstallTestNow.Add(elapsed) }
-		ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, io.Discard, "", ""))
-		ctx = telemetry.WithNewLogger(ctx)
-		runAutoInstallHook(ctx)
-		var outcomes []protos.AitoolsAutoInstallOutcome
-		for _, e := range telemetry.BufferedEvents(ctx) {
-			if e := e.AitoolsAutoInstallEvent; e != nil {
-				outcomes = append(outcomes, e.Outcome)
-			}
-		}
-		state, err := autoinstall.Load(ctx)
-		require.NoError(t, err)
-		return state, outcomes
-	}
 
-	state, outcomes := run(0)
+	outcomes, state := runAutoInstallAt(t, 0)
 	assert.Equal(t, failedAttempts(1, 0), state)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
 
@@ -380,7 +365,7 @@ func TestAutoInstallUpdatesAfterAManualInstallOfSomeAgents(t *testing.T) {
 
 	// Cursor could get the skills now, but the user left it out.
 	require.NoError(t, os.Remove(cursorSkills))
-	state, outcomes = run(5 * time.Minute)
+	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
 	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeUpToDate}, outcomes)
 	assert.NoDirExists(t, cursorSkills)
@@ -397,23 +382,8 @@ func TestAutoInstallFinishesAfterAFailedManualInstall(t *testing.T) {
 	// the skills.
 	cursorSkills := filepath.Join(home, ".cursor", "skills")
 	require.NoError(t, os.WriteFile(cursorSkills, nil, 0o644))
-	run := func(elapsed time.Duration) (autoinstall.State, []protos.AitoolsAutoInstallOutcome) {
-		now = func() time.Time { return autoInstallTestNow.Add(elapsed) }
-		ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, io.Discard, "", ""))
-		ctx = telemetry.WithNewLogger(ctx)
-		runAutoInstallHook(ctx)
-		var outcomes []protos.AitoolsAutoInstallOutcome
-		for _, e := range telemetry.BufferedEvents(ctx) {
-			if e := e.AitoolsAutoInstallEvent; e != nil {
-				outcomes = append(outcomes, e.Outcome)
-			}
-		}
-		state, err := autoinstall.Load(ctx)
-		require.NoError(t, err)
-		return state, outcomes
-	}
 
-	state, outcomes := run(0)
+	outcomes, state := runAutoInstallAt(t, 0)
 	assert.Equal(t, failedAttempts(1, 0), state)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
 
@@ -427,7 +397,7 @@ func TestAutoInstallFinishesAfterAFailedManualInstall(t *testing.T) {
 	assert.Equal(t, failedAttempts(1, 0), state)
 
 	require.NoError(t, os.Remove(cursorSkills))
-	state, outcomes = run(5 * time.Minute)
+	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
 	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
 	assert.FileExists(t, filepath.Join(cursorSkills, "databricks-test", "SKILL.md"))
@@ -442,23 +412,8 @@ func TestAutoInstallUpdatesOnALaterVersionAfterAnUnfinishedInstall(t *testing.T)
 	// A file where Cursor's skills directory belongs, so Cursor cannot get
 	// the skills.
 	require.NoError(t, os.WriteFile(filepath.Join(home, ".cursor", "skills"), nil, 0o644))
-	run := func(elapsed time.Duration) (autoinstall.State, []protos.AitoolsAutoInstallOutcome) {
-		now = func() time.Time { return autoInstallTestNow.Add(elapsed) }
-		ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), io.Discard, io.Discard, "", ""))
-		ctx = telemetry.WithNewLogger(ctx)
-		runAutoInstallHook(ctx)
-		var outcomes []protos.AitoolsAutoInstallOutcome
-		for _, e := range telemetry.BufferedEvents(ctx) {
-			if e := e.AitoolsAutoInstallEvent; e != nil {
-				outcomes = append(outcomes, e.Outcome)
-			}
-		}
-		state, err := autoinstall.Load(ctx)
-		require.NoError(t, err)
-		return state, outcomes
-	}
 
-	state, outcomes := run(0)
+	outcomes, state := runAutoInstallAt(t, 0)
 	assert.Equal(t, failedAttempts(1, 0), state)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
 
@@ -466,12 +421,12 @@ func TestAutoInstallUpdatesOnALaterVersionAfterAnUnfinishedInstall(t *testing.T)
 	// reachable. Its retry updates as well.
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
 	t.Setenv("DATABRICKS_SKILLS_REF", "missing-ref")
-	state, outcomes = run(5 * time.Minute)
+	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
 	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", Attempts: 1, LastAttempt: autoInstallTestNow.Add(5 * time.Minute), ID: "treatment-machine"}, state)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
 
 	t.Setenv("DATABRICKS_SKILLS_REF", "test-ref")
-	state, outcomes = run(10 * time.Minute)
+	outcomes, state = runAutoInstallAt(t, 10*time.Minute)
 	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeUpToDate}, outcomes)
 	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))

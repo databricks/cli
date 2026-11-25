@@ -57,8 +57,8 @@ type State struct {
 	// set when the install did not finish. The skills such an install left
 	// have no install state, like the ones the user put there, so a later run
 	// uses it to finish the install instead of leaving the skills alone. A
-	// global `databricks aitools install` clears it: the installation is then
-	// the user's.
+	// global `databricks aitools install` that sets an agent up, or an update
+	// on a later version, clears it.
 	Installing bool `json:"installing,omitempty"`
 
 	// ID is a random per-machine identifier, created on the first run that

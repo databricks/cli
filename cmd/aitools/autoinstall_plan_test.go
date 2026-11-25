@@ -248,6 +248,7 @@ func TestPlanToolsFinishesAnUnfinishedInstall(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, tools.existing)
 	assert.True(t, tools.fresh())
+	assert.True(t, tools.finishing)
 	assert.Equal(t, []string{"Claude Code", "Cursor"}, planAgentNames(tools.plan))
 
 	// A later version updates the install that an earlier one left unfinished.
@@ -274,6 +275,15 @@ func TestPlanToolsFinishesAnUnfinishedInstall(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, tools.existing)
 	assert.Empty(t, tools.plan)
+
+	// Claude Code got the skills while its CLI was missing, so it has the
+	// tools without the plugin.
+	stubPluginAlreadyInstalled(t, false)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude", "skills", "databricks-sql"), 0o755))
+	tools, err = planTools(t.Context(), unfinished, "1.30.0")
+	require.NoError(t, err)
+	assert.NotNil(t, tools.existing)
+	assert.Empty(t, tools.plan)
 }
 
 func TestAgentsWithoutTools(t *testing.T) {
@@ -283,13 +293,17 @@ func TestAgentsWithoutTools(t *testing.T) {
 	kiro := &agents.Agent{DisplayName: "Kiro"}
 	outcomes := []agentOutcome{
 		// The CLI is missing, so the plugin fails and the skills are installed.
-		{agent: claude, delivery: deliveryPlugin, status: outcomeFailed},
+		{agent: claude, delivery: deliveryPlugin, status: outcomeFailed, errorCategory: protos.AitoolsErrorCategoryCLINotOnPath},
 		{agent: codex, delivery: deliveryPlugin, status: outcomeKept},
 		{agent: claude, delivery: deliverySkills, status: outcomeInstalled},
-		{agent: cursor, delivery: deliverySkills, status: outcomeFailed},
+		{agent: cursor, delivery: deliverySkills, status: outcomeFailed, errorCategory: protos.AitoolsErrorCategoryPermissionDenied},
 		{agent: kiro, delivery: deliverySkills, status: outcomeSkipped},
 	}
-	assert.Equal(t, []string{"Cursor"}, agentsWithoutTools(outcomes))
+	missing := agentsWithoutTools(outcomes)
+	assert.Equal(t, []agentOutcome{outcomes[3]}, missing)
+	// The category is the agent's without the tools, not the fallback
+	// agent's failed plugin install.
+	assert.Equal(t, protos.AitoolsErrorCategoryPermissionDenied, firstFailureCategory(missing))
 	assert.Empty(t, agentsWithoutTools(outcomes[:3]))
 
 	// The release has no skill to install, so the fallback is skipped.
@@ -329,6 +343,34 @@ func TestToolsPlanInstallSucceedsWhenTheFallbackHasNoSkills(t *testing.T) {
 	require.Len(t, *plugins, 1)
 	assert.Equal(t, protos.AitoolsAutoInstallOutcomeInstalled, result.outcome)
 	assert.Equal(t, []string{"Codex CLI"}, result.agents)
+}
+
+// The rest of an unfinished install has nothing to give a skills agent when
+// the release has no skill to install, so the attempt settles instead of
+// failing on every retry. A first install still fails.
+func TestToolsPlanInstallSettlesAnUnfinishedInstallWithNoSkills(t *testing.T) {
+	isolateAgents(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+	stubLegacyCleanup(t)
+	origSkills := installSkillsForAgentsFn
+	t.Cleanup(func() { installSkillsForAgentsFn = origSkills })
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return installer.ErrNoSkillsResolved
+	}
+
+	cursor := agents.ByName(agents.NameCursor)
+	plan := buildPlan(t.Context(), []*agents.Agent{cursor}, installer.ScopeGlobal, false, false)
+	require.Len(t, plan, 1)
+	require.Equal(t, deliverySkills, plan[0].delivery)
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	result, err := toolsPlan{plan: plan, finishing: true}.install(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeUpToDate, result.outcome)
+	assert.Empty(t, result.agents)
+
+	_, err = toolsPlan{plan: plan}.install(ctx)
+	assert.ErrorIs(t, err, installer.ErrNoSkillsResolved)
 }
 
 func TestChangedAgents(t *testing.T) {

@@ -398,7 +398,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			// unfinished.
 			if opts.Scope == installer.ScopeGlobal && anyInstalled(outcomes) {
 				if err := autoinstall.ClearInstalling(ctx); err != nil {
-					log.Warnf(ctx, "Could not update the auto-install state: %v", err)
+					log.Debugf(ctx, "Could not update the auto-install state: %v", err)
 				}
 			}
 			for _, s := range deliverySteps(outcomes) {

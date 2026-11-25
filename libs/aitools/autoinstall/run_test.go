@@ -181,12 +181,33 @@ func TestClearInstalling(t *testing.T) {
 	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: at, ID: "machine"}, s)
 }
 
+func TestStartAttemptOfAnUpdateClearsInstalling(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	at := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	require.NoError(t, MarkInstalling(ctx))
+	started, err := StartAttempt(ctx, "1.30.0", 1, "machine", at, false)
+	require.NoError(t, err)
+	assert.True(t, started)
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.True(t, s.Installing, "a first install keeps the marker")
+
+	started, err = StartAttempt(ctx, "1.30.0", 2, "machine", at, true)
+	require.NoError(t, err)
+	assert.True(t, started)
+	s, err = Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 2, LastAttempt: at, ID: "machine"}, s)
+}
+
 func TestClearInstallingWritesNothingWhenUnset(t *testing.T) {
 	home := t.TempDir()
 	ctx := env.WithUserHomeDir(t.Context(), home)
 
 	require.NoError(t, ClearInstalling(ctx))
 	assert.NoFileExists(t, filepath.Join(home, ".databricks", "aitools", stateFileName))
+	assert.NoFileExists(t, filepath.Join(home, ".databricks", "aitools", stateLockFileName), "no state, no lock")
 }
 
 func TestNextAttempt(t *testing.T) {
@@ -240,7 +261,7 @@ func TestStartAttemptStopsAtAnOptOut(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 	at := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
 
-	started, err := StartAttempt(ctx, "1.30.0", 1, "machine", at)
+	started, err := StartAttempt(ctx, "1.30.0", 1, "machine", at, false)
 	require.NoError(t, err)
 	assert.True(t, started)
 	s, err := Load(ctx)
@@ -248,7 +269,7 @@ func TestStartAttemptStopsAtAnOptOut(t *testing.T) {
 	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: at, ID: "machine"}, s)
 
 	require.NoError(t, SetOptedOut(ctx, true))
-	started, err = StartAttempt(ctx, "1.30.0", 2, "machine", at)
+	started, err = StartAttempt(ctx, "1.30.0", 2, "machine", at, false)
 	require.NoError(t, err)
 	assert.False(t, started)
 	s, err = Load(ctx)

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -95,13 +96,19 @@ func Record(ctx context.Context, version string, attempts int, id string, now ti
 // StartAttempt records attempt as Record does, unless the state is opted out
 // by then, and reports whether it did. A run counts the attempt right before
 // it installs, so an opt-out stored after the run read the state (during the
-// gate lookup or the install prompt, say) still stops it.
-func StartAttempt(ctx context.Context, version string, attempt int, id string, now time.Time) (started bool, err error) {
+// gate lookup or the install prompt, say) still stops it. update clears
+// State.Installing in the same write: the attempt updates the existing
+// installation instead of finishing the first install, so the retries of this
+// version update too.
+func StartAttempt(ctx context.Context, version string, attempt int, id string, now time.Time, update bool) (started bool, err error) {
 	err = updateState(ctx, func(s *State) {
 		if s.OptedOut {
 			return
 		}
 		record(s, version, attempt, id, now)
+		if update {
+			s.Installing = false
+		}
 		started = true
 	})
 	return started, err
@@ -127,11 +134,17 @@ func MarkInstalling(ctx context.Context) error {
 	return updateState(ctx, func(s *State) { s.Installing = true })
 }
 
-// ClearInstalling clears State.Installing before an attempt that updates the
-// existing installation instead of finishing the first install, and after a
-// global `databricks aitools install` that sets an agent up, which makes the
-// installation the user's. It writes nothing when the marker is not set.
+// ClearInstalling clears State.Installing after a global `databricks aitools
+// install` that sets an agent up, which makes the installation the user's. It writes nothing when the marker is not set, and
+// without a state file it takes no lock either.
 func ClearInstalling(ctx context.Context) error {
+	path, err := statePath(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
 	unlock, err := lock(ctx, stateLockFileName, stateLockWait)
 	if err != nil {
 		return err

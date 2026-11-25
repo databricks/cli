@@ -316,8 +316,9 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 	}
 	// Count the attempt before making it: an attempt that never finishes (the
 	// process is killed) still counts, and a state that cannot be saved stops
-	// auto-install instead of retrying it on every run.
-	started, recErr := autoinstall.StartAttempt(ctx, r.version, attempt, r.id, r.now)
+	// auto-install instead of retrying it on every run. An update replaces an
+	// unfinished install, so the same write clears its marker.
+	started, recErr := autoinstall.StartAttempt(ctx, r.version, attempt, r.id, r.now, err == nil && tools.existing != nil)
 	if recErr != nil {
 		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", recErr)
 		return nil
@@ -327,15 +328,10 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		r.settle(ctx, protos.AitoolsAutoInstallOutcomeSkippedOptOut)
 		return nil
 	}
-	switch {
-	case err == nil && tools.fresh():
+	if err == nil && tools.fresh() {
 		// Skills an unfinished install leaves have no install state; the
 		// marker tells a later run that they are its own.
 		err = autoinstall.MarkInstalling(ctx)
-	case err == nil && tools.existing != nil && prior.Installing:
-		// The update replaces the unfinished install, so the retries of this
-		// version update too.
-		err = autoinstall.ClearInstalling(ctx)
 	}
 	var result installResult
 	if err == nil {
@@ -556,6 +552,8 @@ type toolsPlan struct {
 	globalDir string
 	existing  *installer.InstallState
 	plan      []agentPlanItem
+	// finishing is set when plan is the rest of an unfinished first install.
+	finishing bool
 	// skip, when set, is the outcome of a plan that changes nothing, and
 	// skipWhy says why.
 	skip    protos.AitoolsAutoInstallOutcome
@@ -575,8 +573,12 @@ func (t toolsPlan) fresh() bool {
 // modified at their version, and does not migrate skills to plugins.
 // An unfinished first install of auto-install is finished instead, for the
 // agents it left without the tools, by the runs for the version that started
-// it. Planning reads only local state; prior is the auto-install state and
-// version the CLI version the run is for.
+// it. Finishing it installs each skill such an agent is missing again, which
+// rewrites its shared copy: an edit the user made to that copy since the
+// first attempt is lost. Only the retries of that version do this, while the
+// skills are still auto-install's own, so this is kept over comparing each
+// copy's checksums to link it instead. Planning reads only local state;
+// prior is the auto-install state and version the CLI version the run is for.
 func planTools(ctx context.Context, prior autoinstall.State, version string) (toolsPlan, error) {
 	globalDir, err := installer.GlobalSkillsDir(ctx)
 	if err != nil {
@@ -595,7 +597,7 @@ func planTools(ctx context.Context, prior autoinstall.State, version string) (to
 		// the tools must not keep the others from their update.
 		if prior.Installing && prior.LastVersion == version {
 			if plan := unfinishedInstallPlan(ctx, existing); len(plan) > 0 {
-				return toolsPlan{globalDir: globalDir, plan: plan}, nil
+				return toolsPlan{globalDir: globalDir, plan: plan, finishing: true}, nil
 			}
 		}
 		// The update runs agent CLIs to update the recorded plugins.
@@ -633,9 +635,10 @@ func withoutAgentCLIs(plan []agentPlanItem) []agentPlanItem {
 
 // unfinishedInstallPlan plans the rest of an unfinished first install: the
 // first install's plan, without the agents that have the tools existing
-// records. That is a plugin agent with the plugin, or a skills agent with
-// every recorded skill in its skills directory. An agent that keeps the plugin
-// it has, or that the plan skips, has nothing to get.
+// records. That is an agent with every recorded skill in its skills directory,
+// or a plugin agent with the plugin. A plugin agent with the skills got them
+// while its CLI was missing, and keeps them. An agent that keeps the plugin it
+// has, or that the plan skips, has nothing to get.
 func unfinishedInstallPlan(ctx context.Context, existing *installer.InstallState) []agentPlanItem {
 	plan := buildPlan(ctx, agents.DetectInstalled(ctx), installer.ScopeGlobal, false, false)
 	if !agentCLIsStoppable {
@@ -646,7 +649,7 @@ func unfinishedInstallPlan(ctx context.Context, existing *installer.InstallState
 		case deliverySkills:
 			return installer.HasGlobalSkills(ctx, it.agent, existing)
 		case deliveryPlugin:
-			return it.cliMissing || pluginAlreadyInstalledFn(ctx, it.agent, installer.ScopeGlobal)
+			return it.cliMissing || installer.HasGlobalSkills(ctx, it.agent, existing) || pluginAlreadyInstalledFn(ctx, it.agent, installer.ScopeGlobal)
 		case deliverySkip:
 		}
 		return true
@@ -688,14 +691,27 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 	outcomes, err := executePlan(ctx, &installer.GitHubManifestSource{}, t.plan, opts, installInvocation{scope: installer.ScopeGlobal}, true)
 	topErr := topLevelFailure(err)
 	logInstallEvent(ctx, t.plan, installOpts{Scope: opts.Scope, Trigger: protos.AitoolsInstallTriggerAutoFirstRun}, classifyInstallError(topErr), outcomes)
+	if t.finishing && errors.Is(topErr, installer.ErrNoSkillsResolved) {
+		// The install state records no skill, so the skills agents stay in
+		// the plan of every retry, and the release has none to give them.
+		// Nothing is left to do, so the version settles.
+		log.Debugf(ctx, "auto-install: nothing left to install: %v", err)
+		return installResult{outcome: protos.AitoolsAutoInstallOutcomeUpToDate}, nil
+	}
 	switch missing := agentsWithoutTools(outcomes); {
 	case err != nil && topErr == nil:
 		// Reported per agent: take the category from the outcomes, as install does.
 		err = withCategory(err, firstFailureCategory(outcomes))
 	case err == nil && len(missing) > 0:
 		// The install succeeds when another agent got the tools, but the
-		// attempt fails, so that a later one installs for these agents.
-		err = withCategory(fmt.Errorf("no tools were installed for %s", strings.Join(missing, ", ")), firstFailureCategory(outcomes))
+		// attempt fails, so that a later one installs for these agents. The
+		// category is theirs: an agent whose CLI is missing fails its plugin
+		// install but got the skills.
+		missingNames := make([]string, len(missing))
+		for i, o := range missing {
+			missingNames[i] = o.agent.DisplayName
+		}
+		err = withCategory(fmt.Errorf("no tools were installed for %s", strings.Join(missingNames, ", ")), firstFailureCategory(missing))
 	}
 	var names []string
 	for _, o := range outcomes {
@@ -706,25 +722,26 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 	return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names}, err
 }
 
-// agentsWithoutTools names the agents whose install failed and that were not
-// set up otherwise: an agent whose CLI is missing fails its plugin install but
-// gets the skills instead, or is skipped with them when the release has no
-// skill to install. A skipped agent has nothing a later attempt could give it.
-func agentsWithoutTools(outcomes []agentOutcome) []string {
+// agentsWithoutTools returns the failed outcomes of the agents that were not
+// set up otherwise, one per agent: an agent whose CLI is missing fails its
+// plugin install but gets the skills instead, or is skipped with them when the
+// release has no skill to install. A skipped agent has nothing a later attempt
+// could give it.
+func agentsWithoutTools(outcomes []agentOutcome) []agentOutcome {
 	done := map[*agents.Agent]bool{}
 	for _, o := range outcomes {
 		if o.status == outcomeInstalled || o.status == outcomeKept || o.status == outcomeSkipped {
 			done[o.agent] = true
 		}
 	}
-	var names []string
+	var missing []agentOutcome
 	for _, o := range outcomes {
 		if o.status == outcomeFailed && !done[o.agent] {
 			done[o.agent] = true
-			names = append(names, o.agent.DisplayName)
+			missing = append(missing, o)
 		}
 	}
-	return names
+	return missing
 }
 
 // updateTools runs the update command's body for the global scope. Its funnel
