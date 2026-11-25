@@ -181,6 +181,10 @@ Example usage:
 
 				return nil
 			},
+			EmptyStateFunc: func(ctx context.Context, b *bundle.Bundle) error {
+				_, err := resources.Lookup(b, key, run.IsRunnable)
+				return err
+			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				ref, err := resources.Lookup(b, key, run.IsRunnable)
 				if err != nil {

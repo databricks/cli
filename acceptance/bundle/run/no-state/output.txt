@@ -1,2 +1,8 @@
+
+=== Key not defined in config
+Error: resource with key "foo" not found
+
+
+=== Key defined but never deployed
 Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
 

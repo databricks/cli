@@ -1,1 +1,5 @@
+title "Key not defined in config"
 musterr $CLI bundle run foo
+
+title "Key defined but never deployed"
+musterr $CLI bundle run bar

@@ -1,2 +1,7 @@
 bundle:
   name: test-bundle
+
+resources:
+  jobs:
+    bar:
+      name: bar

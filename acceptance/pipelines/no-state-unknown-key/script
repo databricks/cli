@@ -1,0 +1,9 @@
+# The bundle is never deployed: an undefined key is reported as such,
+# a defined key gets the deploy hint.
+for cmd in run stop dry-run test; do
+  title "pipelines $cmd with an undefined key"
+  trace musterr $CLI pipelines $cmd foo
+
+  title "pipelines $cmd with a defined key"
+  trace musterr $CLI pipelines $cmd my_pipeline
+done
