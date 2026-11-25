@@ -10,10 +10,11 @@ type Action struct {
 	ResourceKey string
 	ActionType  ActionType
 	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
-	// resource no longer exists remotely.
+	// resource no longer exists remotely (confirmed by a read, or an empty-ID state entry).
 	Gone bool
-	// StateOnly mirrors PlanEntry.StateOnly: the delete step has no backend effect
-	// because the resource implements no DoDelete, including during a recreate.
+	// StateOnly mirrors PlanEntry.StateOnly: applying the action only changes the state
+	// (a delete of a resource without DoDelete, or a re-key), or it is a recreate whose
+	// delete step has no backend effect.
 	StateOnly bool
 	// Attempted and Applied mirror the same PlanEntry fields: Attempted means Apply
 	// reached this resource, Applied means its operation completed (including unbinding).
@@ -27,13 +28,11 @@ func (a Action) String() string {
 	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), a.ResourceKey)
 }
 
-// IsStateOnlyDelete reports whether applying this delete only drops the state entry
-// without any backend call: the resource is already gone remotely (Gone) or has no
-// delete operation (StateOnly). Such deletes are omitted from human output, excluded
-// from the resource counts, and need no destructive-action approval. See the same
-// method on PlanEntry.
-func (a Action) IsStateOnlyDelete() bool {
-	return a.ActionType == Delete && (a.Gone || a.StateOnly)
+// IsStateOnly reports whether applying this action makes no backend call and only changes the
+// state (see PlanEntry.IsStateOnly). Such actions are omitted from human output and need no
+// approval.
+func (a Action) IsStateOnly() bool {
+	return a.ActionType != Recreate && (a.Gone || a.StateOnly)
 }
 
 func (a Action) IsChildResource() bool {

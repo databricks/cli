@@ -3,6 +3,7 @@
 package enable_notebook_table_clipboard
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,20 +18,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "enable-notebook-table-clipboard",
-		Short: `*Public Preview* Controls whether users can copy tabular data to the clipboard via the UI.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "enable-notebook-table-clipboard",
+	Short: `*Public Preview* Controls whether users can copy tabular data to the clipboard via the UI.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Controls whether users can copy tabular data to the clipboard via the UI. By
-  default, this setting is enabled.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  default, this setting is enabled.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetEnableNotebookTableClipboard())
@@ -40,8 +45,6 @@ Controls whether users can copy tabular data to the clipboard via the UI. By
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-enable-notebook-table-clipboard command

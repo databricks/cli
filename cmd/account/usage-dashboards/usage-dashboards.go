@@ -3,6 +3,8 @@
 package usage_dashboards
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -15,20 +17,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "usage-dashboards",
-		Short: `These APIs manage usage dashboards for this account.`,
-		Long: `These APIs manage usage dashboards for this account. Usage dashboards enable
-  you to gain insights into your usage with pre-built dashboards: visualize
-  breakdowns, analyze tag attributions, and identify cost drivers.`,
-		GroupID: "billing",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "usage-dashboards",
+	Short:   `These APIs manage usage dashboards for this account.`,
+	GroupID: "billing",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs manage usage dashboards for this account. Usage dashboards enable
+  you to gain insights into your usage with pre-built dashboards: visualize
+  breakdowns, analyze tag attributions, and identify cost drivers.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -38,8 +44,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -60,15 +64,18 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&createReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`)
-	cmd.Flags().Var(&createReq.MajorVersion, "major-version", `The major version of the usage dashboard template to use. Supported values: [USAGE_DASHBOARD_MAJOR_VERSION_1, USAGE_DASHBOARD_MAJOR_VERSION_2]`)
-	cmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)
+	cmd.Flags().Var(&createReq.MajorVersion, "major-version", `The major version of the usage dashboard template to import. Supported values: [USAGE_DASHBOARD_MAJOR_VERSION_1, USAGE_DASHBOARD_MAJOR_VERSION_2]`)
+	cmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The ID of the workspace to import the usage dashboard into.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create new usage dashboard.`
 	cmd.Long = `Create new usage dashboard.
 
-  Create a usage dashboard specified by workspaceId, accountId, and dashboard
-  type.`
+  Imports a pre-built usage dashboard of the given type into a workspace. Each
+  call imports a new dashboard, even if the caller already created one of the
+  same type in that workspace. The caller must be an account admin and a user of
+  the target workspace. See
+  https://docs.databricks.com/admin/account-settings/usage.html.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -132,13 +139,15 @@ func newGet() *cobra.Command {
 	var getReq billing.GetBillingUsageDashboardRequest
 
 	cmd.Flags().Var(&getReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`)
-	cmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)
+	cmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `The ID of the workspace that contains the usage dashboard.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get usage dashboard.`
 	cmd.Long = `Get usage dashboard.
 
-  Get a usage dashboard specified by workspaceId, accountId, and dashboard type.`
+  Gets the most recent usage dashboard of the given type that the caller
+  created. The response is empty if no such dashboard exists, if it has been
+  deleted, or if the caller can no longer access its workspace.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

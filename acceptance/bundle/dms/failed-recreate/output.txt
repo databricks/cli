@@ -48,7 +48,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "error_message": "",
     "resource_id": "main.dms_failed_recreate_schema_[UNIQUE_NAME]",
     "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_recreate_schema_[UNIQUE_NAME]\"}}",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_recreate_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][0]\"}}",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -66,7 +66,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][1]",
   "serial": 1,
   "features": {
     "deployment_history_shadow": {}
@@ -93,7 +93,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
- "lineage": "[UUID]",
+ "lineage": "[UUID][1]",
  "serial": 1,
  "features": {
   "deployment_history_shadow": {}
@@ -104,7 +104,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
    "state": {
     "catalog_name": "main",
     "comment": "v1",
-    "name": "dms_failed_recreate_schema_[UNIQUE_NAME]"
+    "name": "dms_failed_recreate_schema_[UNIQUE_NAME]",
+    "schema_id": "[UUID][0]"
    }
   }
  }
@@ -131,7 +132,7 @@ API message: Fault injected by test.
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 1 deleted, 0 unchanged, 1 failed
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --dms --fold-pending //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
@@ -157,20 +158,7 @@ Resources: 0 created, 0 changed, 1 deleted, 0 unchanged, 1 failed
     "update_mask": "state,error_message,status"
   },
   "body": {
-    "error_message": "",
-    "sequence_id": 0,
-    "status": "OPERATION_STATUS_PENDING"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,status"
-  },
-  "body": {
     "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
-    "sequence_id": 1,
     "status": "OPERATION_STATUS_FAILED"
   }
 }
@@ -193,7 +181,7 @@ Resources: 0 created, 0 changed, 1 deleted, 0 unchanged, 1 failed
 {
  "state_version": 3,
  "cli_version": "[CLI_VERSION]",
- "lineage": "[UUID]",
+ "lineage": "[UUID][1]",
  "serial": 2,
  "features": {
   "deployment_history_shadow": {}

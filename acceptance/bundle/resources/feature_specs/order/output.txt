@@ -28,7 +28,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 The following resources will be deleted:
   delete resources.feature_specs.spec1
 
-This action will result in the deletion of the following feature specs.
+This action will result in the deletion of the following FeatureSpecs.
 Feature Serving endpoints and training code that use them can no longer load them:
   delete resources.feature_specs.spec1
 

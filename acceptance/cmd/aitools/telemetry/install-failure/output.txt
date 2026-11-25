@@ -1,0 +1,86 @@
+
+=== a skill missing from the manifest fails after the plan is confirmed
+
+>>> [CLI] aitools install --skills-only --scope=global --agents=cursor --skills=nonexistent
+Installing Databricks skills for Cursor...
+Using skills version test-ref
+Fetching skills manifest...
+Error: skill "nonexistent" not found
+Run 'databricks aitools list' to see the available skills
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"FAILURE","error_category":"SKILL_NOT_FOUND","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CURSOR"],"scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"SKILL_NOT_FOUND"}}
+
+=== a manifest the server does not have is MANIFEST_NOT_FOUND
+
+>>> DATABRICKS_SKILLS_REF=missing-ref [CLI] aitools install --skills-only --scope=global --agents=cursor
+Installing Databricks skills for Cursor...
+Using skills version missing-ref
+Fetching skills manifest...
+Error: skills manifest at databricks-agent-skills@missing-ref: not found
+No skills release exists at the version DATABRICKS_SKILLS_REF names. Unset it, or set it to a release tag from https://github.com/databricks/databricks-agent-skills/releases, then re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"FAILURE","error_category":"MANIFEST_NOT_FOUND","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CURSOR"],"scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"MANIFEST_NOT_FOUND"}}
+
+=== any other HTTP error status from the manifest fetch is SKILLS_FETCH_FAILED
+
+>>> DATABRICKS_SKILLS_REF=broken-ref [CLI] aitools install --skills-only --scope=global --agents=cursor
+Installing Databricks skills for Cursor...
+Using skills version broken-ref
+Fetching skills manifest...
+Error: failed to fetch manifest: HTTP 500
+[DATABRICKS_HOST] returned HTTP 500, a server-side error. Wait a few minutes and re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"FAILURE","error_category":"SKILLS_FETCH_FAILED","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CURSOR"],"scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"SKILLS_FETCH_FAILED"}}
+
+=== a named agent skipped for the scope takes its category from the agent's outcome
+
+>>> [CLI] aitools install --skills-only --scope=project --agents=cursor
+Skipped Cursor: does not support project-scoped skills
+  To set up Cursor in the global scope, run: databricks aitools install --scope=global --agents=cursor --skills-only
+Error: Cursor: does not support project-scoped skills
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"PROJECT"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"PROJECT"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"PROJECT"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"FAILURE","error_category":"UNSUPPORTED_SCOPE","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CURSOR"],"scope":"PROJECT"}}
+{"command":"aitools_install","exit_code":1,"aitools_install_event":{"agents":["CURSOR"],"scope":"PROJECT","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CURSOR","error_category":"UNSUPPORTED_SCOPE"}]}}
+
+=== a detected agent skipped for the scope prints its recovery step and exits 1 with nothing installed
+
+>>> [CLI] aitools install --skills-only --scope=project
+Skipped Cursor: does not support project-scoped skills
+  To set up Cursor in the global scope, run: databricks aitools install --scope=global --agents=cursor --skills-only
+Error: nothing was installed; follow the steps above
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"PROJECT"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"PROJECT"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"PROJECT"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"FAILURE","error_category":"UNSUPPORTED_SCOPE","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CURSOR"],"scope":"PROJECT"}}
+{"command":"aitools_install","exit_code":1,"aitools_install_event":{"agents":["CURSOR"],"scope":"PROJECT","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CURSOR","error_category":"UNSUPPORTED_SCOPE"}]}}

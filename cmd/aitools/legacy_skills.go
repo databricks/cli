@@ -39,11 +39,16 @@ func newLegacySkillsInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:        "install [skill-name]",
 		Short:      "Install Databricks skills for detected coding agents",
-		Deprecated: `use "databricks aitools install --skills <name>" instead.`,
+		Deprecated: `use "databricks aitools install --skills-only --skills <name>" instead.`,
 		Args:       cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			installCmd := NewInstallCmd()
+			// Its --skills-only is not the user's choice, so it is not recorded.
+			installCmd := newInstallCmd(false)
 			installCmd.SetContext(cmd.Context())
+			// Root prints the returned error; the detached command must not print
+			// it, or its usage, a second time.
+			installCmd.SilenceErrors = true
+			installCmd.SilenceUsage = true
 
 			// This legacy alias predates the plugin-first default, so it stays on
 			// raw skill files to preserve its behavior.
@@ -55,7 +60,11 @@ func newLegacySkillsInstallCmd() *cobra.Command {
 				delegateArgs = append(delegateArgs, "--experimental")
 			}
 			installCmd.SetArgs(delegateArgs)
-			return installCmd.Execute()
+			err := installCmd.Execute()
+			// Root uploads telemetry from this command's context, so carry over
+			// the auth config the install resolved on its own context.
+			cmd.SetContext(installCmd.Context())
+			return err
 		},
 	}
 

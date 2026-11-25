@@ -38,7 +38,7 @@ func toJsonDirEntry(f fs.DirEntry, baseDir string, isAbsolute bool) (*jsonDirEnt
 	}, nil
 }
 
-func newLsCommand() *cobra.Command {
+func newLsCommand(filerForPath PathResolver) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "ls DIR_PATH",
 		Short:   "Lists files.",
@@ -91,6 +91,7 @@ func newLsCommand() *cobra.Command {
 	}
 
 	v := newValidArgs()
+	v.filerForPathFunc = filerForPath
 	v.onlyDirs = true
 	cmd.ValidArgsFunction = v.Validate
 

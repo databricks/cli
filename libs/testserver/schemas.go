@@ -34,6 +34,16 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	// Strip trailing slash to mimic UC API normalization behavior (see volumes.go).
 	schema.StorageRoot = strings.TrimRight(schema.StorageRoot, "/")
 	schema.FullName = schema.CatalogName + "." + schema.Name
+
+	if _, exists := s.Schemas[schema.FullName]; exists {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "SCHEMA_ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Schema '%s' already exists", schema.Name),
+			},
+		}
+	}
 	schema.ForceSendFields = []string{"BrowseOnly"}
 	schema.CatalogType = "MANAGED_CATALOG"
 	schema.CreatedAt = nowMilli()
@@ -125,7 +135,7 @@ func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchema
 		delete(s.Volumes, key)
 		volume.SchemaName = newSchemaName
 		volume.FullName = catalogName + "." + newSchemaName + "." + volume.Name
-		s.Volumes[volume.FullName] = volume
+		s.Volumes[volumeKey(volume.FullName)] = volume
 	}
 	for key, model := range s.RegisteredModels {
 		if model.CatalogName != catalogName || model.SchemaName != oldSchemaName {

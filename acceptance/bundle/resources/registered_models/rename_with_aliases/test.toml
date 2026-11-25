@@ -1,0 +1,9 @@
+# Local only: aliases need registered model versions, which the test registers through the fake
+# server rather than with MLflow.
+RecordRequests = true
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

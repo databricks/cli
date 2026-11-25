@@ -17,7 +17,7 @@ title "Deploy enables the Data API"
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 print_postgres_requests deploy
-trace $CLI postgres get-data-api "${data_api_name}" | data_api_fields
+trace retry $CLI postgres get-data-api "${data_api_name}" | data_api_fields
 trace $CLI bundle summary
 
 title "Plan after deploy shows no changes"
@@ -30,4 +30,4 @@ rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy --auto-approve
 print_postgres_requests remove
 trace musterr $CLI postgres get-data-api "${data_api_name}"
-trace $CLI postgres get-database "${database_name}" | jq '{name}'
+trace retry $CLI postgres get-database "${database_name}" | jq '{name}'

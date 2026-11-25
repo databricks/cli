@@ -8,9 +8,11 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/stretchr/testify/assert"
@@ -53,6 +55,53 @@ func TestCredentialChainOrder(t *testing.T) {
 	if !slices.Equal(names, want) {
 		t.Errorf("credential chain order: want %v, got %v", want, names)
 	}
+}
+
+func TestCredentialChainWithoutRefresh(t *testing.T) {
+	chain := credentialChainWithoutRefresh()
+	require.Len(t, chain, len(credentialChain))
+	for i, s := range chain {
+		if s.Name() != "databricks-cli" {
+			assert.Equal(t, credentialChain[i], s)
+			continue
+		}
+		assert.Equal(t, CLICredentials{noRefresh: true}, s)
+	}
+}
+
+func TestCLICredentialsConfigure_NoRefresh(t *testing.T) {
+	hermeticAuthStorage(t)
+
+	var receivedOpts []u2m.PersistentAuthOption
+	c := CLICredentials{
+		noRefresh: true,
+		persistentAuthFn: func(_ context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+			receivedOpts = opts
+			return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+				return &oauth2.Token{AccessToken: "tok"}, nil
+			}), nil
+		},
+	}
+
+	cfg := &config.Config{Host: "https://workspace.test"}
+	_, err := c.Configure(t.Context(), cfg)
+	require.NoError(t, err)
+
+	// The options Configure passes must make an expired cached token fail
+	// rather than refresh. The extra store holds that token; a refresh
+	// attempt would fail with a different error.
+	arg, err := authArgumentsFromConfig(cfg).ToOAuthArgument()
+	require.NoError(t, err)
+	store := storage.NewMemoryStore()
+	require.NoError(t, store.Put(arg.GetCacheKey(), storage.Entry{Token: &oauth2.Token{
+		AccessToken:  "expired",
+		RefreshToken: "refresh",
+		Expiry:       time.Now().Add(-time.Minute),
+	}}))
+	pa, err := u2m.NewPersistentAuth(t.Context(), append(receivedOpts, u2m.WithTokenStore(store))...)
+	require.NoError(t, err)
+	_, err = pa.Token()
+	assert.ErrorIs(t, err, u2m.ErrRefreshDisabled)
 }
 
 func TestCLICredentialsName(t *testing.T) {
@@ -350,4 +399,66 @@ func TestCLICredentialsConfigure_HonorsConfigFileSecureMode(t *testing.T) {
 
 	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
 	require.NoError(t, err)
+}
+
+// writeAuthStorageConfigFile writes a .databrickscfg with the given
+// auth_storage under [__settings__] and returns its path.
+func writeAuthStorageConfigFile(t *testing.T, mode string) string {
+	t.Helper()
+	configPath := filepath.Join(t.TempDir(), "databrickscfg")
+	body := "[__settings__]\nauth_storage = " + mode + "\n"
+	require.NoError(t, os.WriteFile(configPath, []byte(body), 0o600))
+	return configPath
+}
+
+// TestCLICredentialsConfigure_StorageModeFollowsConfigFile covers a config
+// whose ConfigFile differs from DATABRICKS_CONFIG_FILE. The storage mode must
+// come from the file the profile was loaded from, not from the environment.
+// "bogus" is an unknown mode, so reading that file fails Configure.
+func TestCLICredentialsConfigure_StorageModeFollowsConfigFile(t *testing.T) {
+	tests := []struct {
+		name        string
+		envMode     string // auth_storage in the file DATABRICKS_CONFIG_FILE names
+		configMode  string // auth_storage in the file cfg.ConfigFile names
+		wantErrText string
+	}{
+		{
+			name:       "config file mode is used when env names an invalid file",
+			envMode:    "bogus",
+			configMode: "plaintext",
+		},
+		{
+			name:        "env file mode is not used when config names an invalid file",
+			envMode:     "plaintext",
+			configMode:  "bogus",
+			wantErrText: "auth_storage",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hermeticAuthStorage(t)
+			t.Setenv("DATABRICKS_CONFIG_FILE", writeAuthStorageConfigFile(t, tt.envMode))
+			configPath := writeAuthStorageConfigFile(t, tt.configMode)
+			ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+
+			c := CLICredentials{
+				persistentAuthFn: func(_ context.Context, _ ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+					return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+						return &oauth2.Token{AccessToken: "tok"}, nil
+					}), nil
+				},
+			}
+
+			_, err := c.Configure(ctx, &config.Config{
+				Host:       "https://workspace.test",
+				ConfigFile: configPath,
+			})
+			if tt.wantErrText == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tt.wantErrText)
+		})
+	}
 }

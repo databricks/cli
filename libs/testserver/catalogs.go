@@ -153,7 +153,7 @@ func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName strin
 		delete(s.Volumes, key)
 		volume.CatalogName = newCatalogName
 		volume.FullName = newCatalogName + "." + volume.SchemaName + "." + volume.Name
-		s.Volumes[volume.FullName] = volume
+		s.Volumes[volumeKey(volume.FullName)] = volume
 	}
 	for key, model := range s.RegisteredModels {
 		if model.CatalogName != oldCatalogName {

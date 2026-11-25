@@ -1,0 +1,21 @@
+use_home home
+# Claude Code's config dir exists but its CLI is not on PATH (a desktop or IDE
+# install), so it gets skill files, as `aitools install` gives it.
+"$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
+gate true
+
+title "first run of a new version: installs for the detected agents, one stderr line"
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace auto_install_state
+
+title "second run of the same version: nothing"
+trace $CLI jobs list
+trace print_telemetry
+
+title "uninstall turns it off: the next version installs nothing"
+trace $CLI aitools uninstall
+trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 $CLI jobs list
+trace print_telemetry
+trace cursor_skills

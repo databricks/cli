@@ -1,0 +1,35 @@
+
+=== get (json): the run's TIMEDOUT state and message, not its task's SUCCESS
+
+>>> [CLI] air get 123 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "task_key": "train",
+    "status": "TIMEDOUT",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 3500,
+    "attempt_number": 0,
+    "experiment_name": "my-exp",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": null,
+    "mlflow_experiment_id": null,
+    "mlflow_run_id": null,
+    "termination_reason": "Task train timed out after 3600 seconds",
+    "est_remaining_seconds": null,
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": null,
+    "base_environment": null,
+    "max_retries": {
+      "limit": 0,
+      "source": "reported"
+    },
+    "mlflow_run_name": null,
+    "sweep": null
+  }
+}

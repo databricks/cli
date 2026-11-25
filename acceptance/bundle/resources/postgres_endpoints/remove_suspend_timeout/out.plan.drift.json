@@ -3,7 +3,8 @@
   "changes": {
     "suspend_timeout_duration": {
       "action": "update",
-      "old": "300s"
+      "old": "300s",
+      "remote": "300s"
     }
   }
 }

@@ -4,11 +4,17 @@ if [ -n "$CLOUD_ENV" ]; then
     # Unique group so parallel cloud runs don't collide; must exist for the PUT to
     # reach the owner check rather than failing on an unknown principal.
     export BUNDLE_VAR_grantee_group="dabs-5682-$UNIQUE_NAME"
-    $CLI groups create --display-name "$BUNDLE_VAR_grantee_group" &> /dev/null || true
+    # No stderr redirect: a failed create breaks the deploy anyway, and its error belongs in the diff.
+    # A LOG.* file here would also be uploaded by the deploy and change the "Files:" count.
+    grantee_group_id=$($CLI groups create --display-name "$BUNDLE_VAR_grantee_group" -o json | jq -r '.id // empty')
 fi
 
 cleanup() {
     uv run $UV_ARGS -q $CLI bundle destroy --auto-approve &> LOG.destroy
+    # Otherwise the group stays until the nightly workspace sweep.
+    if [ -n "${grantee_group_id:-}" ]; then
+        errcode $CLI groups delete "$grantee_group_id" &> LOG.group-delete
+    fi
     rm -fr .databricks __pycache__
 }
 trap cleanup EXIT

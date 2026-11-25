@@ -79,7 +79,7 @@ class ClusterSpec:
     """
     Automatically terminates the cluster after it is inactive for this time in minutes. If not set,
     this cluster will not be automatically terminated. If specified, the threshold must be between
-    10 and 10000 minutes.
+    10 and 43200 minutes (30 days).
     Users can also set this value to 0 to explicitly disable automatic termination.
     """
 
@@ -127,8 +127,9 @@ class ClusterSpec:
     from a cluster.
     
     * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
-    * `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+    * `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
     * `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
+    * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
     
     The following modes are legacy aliases for the above modes:
     
@@ -141,7 +142,7 @@ class ClusterSpec:
     * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
     * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
     * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
-    * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+    * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn't have UC or passthrough enabled.
     """
 
     dependency_mode: VariableOrOptional[DependencyMode] = None
@@ -153,7 +154,8 @@ class ClusterSpec:
 
     docker_image: VariableOrOptional[DockerImage] = None
     """
-    Custom docker image BYOC
+    Custom Docker image for the cluster's nodes, used with
+    [Databricks Container Services](https://docs.databricks.com/compute/custom-containers.html).
     """
 
     driver_instance_pool_id: VariableOrOptional[str] = None
@@ -218,8 +220,8 @@ class ClusterSpec:
     Depending on `kind`, different validations and default values will be applied.
     
     Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
-    * [is_single_node](/api/workspace/clusters/create#is_single_node)
-    * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
+    * [is_single_node](https://docs.databricks.com/api/workspace/clusters/create#is_single_node)
+    * [use_ml_runtime](https://docs.databricks.com/api/workspace/clusters/create#use_ml_runtime)
     
     By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
     """
@@ -325,7 +327,8 @@ class ClusterSpec:
 
     workload_type: VariableOrOptional[WorkloadType] = None
     """
-    Cluster Attributes showing for clusters workload types.
+    Types of workloads that can use the cluster, such as notebooks or jobs.
+    If omitted, the cluster can be used for both notebooks and jobs.
     """
 
     @classmethod
@@ -354,7 +357,7 @@ class ClusterSpecDict(TypedDict, total=False):
     """
     Automatically terminates the cluster after it is inactive for this time in minutes. If not set,
     this cluster will not be automatically terminated. If specified, the threshold must be between
-    10 and 10000 minutes.
+    10 and 43200 minutes (30 days).
     Users can also set this value to 0 to explicitly disable automatic termination.
     """
 
@@ -402,8 +405,9 @@ class ClusterSpecDict(TypedDict, total=False):
     from a cluster.
     
     * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
-    * `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+    * `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
     * `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
+    * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
     
     The following modes are legacy aliases for the above modes:
     
@@ -416,7 +420,7 @@ class ClusterSpecDict(TypedDict, total=False):
     * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
     * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
     * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
-    * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+    * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn't have UC or passthrough enabled.
     """
 
     dependency_mode: VariableOrOptional[DependencyModeParam]
@@ -428,7 +432,8 @@ class ClusterSpecDict(TypedDict, total=False):
 
     docker_image: VariableOrOptional[DockerImageParam]
     """
-    Custom docker image BYOC
+    Custom Docker image for the cluster's nodes, used with
+    [Databricks Container Services](https://docs.databricks.com/compute/custom-containers.html).
     """
 
     driver_instance_pool_id: VariableOrOptional[str]
@@ -493,8 +498,8 @@ class ClusterSpecDict(TypedDict, total=False):
     Depending on `kind`, different validations and default values will be applied.
     
     Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
-    * [is_single_node](/api/workspace/clusters/create#is_single_node)
-    * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
+    * [is_single_node](https://docs.databricks.com/api/workspace/clusters/create#is_single_node)
+    * [use_ml_runtime](https://docs.databricks.com/api/workspace/clusters/create#use_ml_runtime)
     
     By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
     """
@@ -600,7 +605,8 @@ class ClusterSpecDict(TypedDict, total=False):
 
     workload_type: VariableOrOptional[WorkloadTypeParam]
     """
-    Cluster Attributes showing for clusters workload types.
+    Types of workloads that can use the cluster, such as notebooks or jobs.
+    If omitted, the cluster can be used for both notebooks and jobs.
     """
 
 

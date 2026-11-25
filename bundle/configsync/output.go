@@ -38,14 +38,16 @@ const (
 	SkipReasonClusterPolicyNotFound         = "cluster_policy_not_found"
 	SkipReasonClusterPolicyPermissionDenied = "cluster_policy_permission_denied"
 	SkipReasonClusterPolicyReadFailed       = "cluster_policy_read_failed"
+	SkipReasonPermissionsPermissionDenied   = "permissions_permission_denied"
+	SkipReasonPermissionsReadFailed         = "permissions_read_failed"
 )
 
 // SkippedChange identifies a resource left unchanged because its remote changes
-// could not be classified safely.
+// could not be classified safely, or whose remote permissions could not be read.
 type SkippedChange struct {
 	ResourceKey string `json:"resourceKey"`
 	Reason      string `json:"reason"`
-	PolicyID    string `json:"policyId"`
+	PolicyID    string `json:"policyId,omitempty"`
 	Error       string `json:"error,omitempty"`
 }
 
@@ -55,6 +57,10 @@ func (s SkippedChange) describe() string {
 		return fmt.Sprintf("Left %s unchanged: cluster policy %s was not found.", s.ResourceKey, s.PolicyID)
 	case SkipReasonClusterPolicyPermissionDenied:
 		return fmt.Sprintf("Left %s unchanged: no permission to read cluster policy %s.", s.ResourceKey, s.PolicyID)
+	case SkipReasonPermissionsPermissionDenied:
+		return fmt.Sprintf("Left the permissions of %s unchanged: no permission to read them.", s.ResourceKey)
+	case SkipReasonPermissionsReadFailed:
+		return fmt.Sprintf("Left the permissions of %s unchanged: they could not be read: %s", s.ResourceKey, s.Error)
 	default:
 		return fmt.Sprintf("Left %s unchanged: cluster policy %s could not be read: %s", s.ResourceKey, s.PolicyID, s.Error)
 	}
@@ -85,7 +91,9 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 		if stats.ErrorCategory == "" {
 			stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
 		}
-		stats.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
+		if stats.ErrorMessage == "" {
+			stats.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
+		}
 		// A selector that matched nothing: nothing to sync, not a failure.
 		if errors.Is(err, ErrNoMatchingSelector) {
 			status = StatusSkipped

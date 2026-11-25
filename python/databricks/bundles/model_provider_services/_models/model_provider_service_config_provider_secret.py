@@ -26,9 +26,10 @@ class ModelProviderServiceConfigProviderSecret:
 
     plaintext: VariableOrOptional[str] = None
     """
-    Inline plaintext credential. INPUT_ONLY: the value never round-trips on
-    reads. Get and List responses omit `plaintext`; the enclosing secret
-    object remains present to indicate that a secret is configured.
+    Inline plaintext credential. The value is write-only and never
+    round-trips on reads. Get and List responses omit `plaintext`; the
+    enclosing secret object remains present to indicate that a secret is
+    configured.
     """
 
     secret_reference: VariableOrOptional[ModelProviderServiceConfigSecretReference] = (
@@ -56,9 +57,10 @@ class ModelProviderServiceConfigProviderSecretDict(TypedDict, total=False):
 
     plaintext: VariableOrOptional[str]
     """
-    Inline plaintext credential. INPUT_ONLY: the value never round-trips on
-    reads. Get and List responses omit `plaintext`; the enclosing secret
-    object remains present to indicate that a secret is configured.
+    Inline plaintext credential. The value is write-only and never
+    round-trips on reads. Get and List responses omit `plaintext`; the
+    enclosing secret object remains present to indicate that a secret is
+    configured.
     """
 
     secret_reference: VariableOrOptional[ModelProviderServiceConfigSecretReferenceParam]

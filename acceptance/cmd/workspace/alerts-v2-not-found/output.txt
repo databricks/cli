@@ -1,0 +1,55 @@
+
+=== trashed alert is still readable
+
+>>> [CLI] alerts-v2 trash-alert [ALERT_ID]
+
+>>> [CLI] alerts-v2 get-alert [ALERT_ID]
+{
+  "lifecycle_state": "DELETED"
+}
+
+>>> [CLI] alerts-v2 trash-alert [ALERT_ID]
+Error: Alert [ALERT_ID] is already trashed
+
+Exit code: 1
+
+>>> [CLI] alerts-v2 update-alert [ALERT_ID] display_name --json {"display_name": "x"}
+Error: Cannot move node 'myalert.dbalert.json' (ID: [ALERT_ID]) because it is in trash folder
+
+Exit code: 1
+
+=== purged alert is gone
+
+>>> [CLI] alerts-v2 trash-alert [ALERT_ID] --purge
+
+>>> [CLI] alerts-v2 get-alert [ALERT_ID]
+Error: Tree node with id [ALERT_ID] does not exist
+
+Exit code: 1
+
+>>> [CLI] alerts-v2 trash-alert [ALERT_ID]
+Error: Tree node with id [ALERT_ID] does not exist
+
+Exit code: 1
+
+>>> [CLI] alerts-v2 update-alert [ALERT_ID] display_name --json {"display_name": "x"}
+Error: Tree node with id [ALERT_ID] does not exist
+
+Exit code: 1
+
+=== unknown alert
+
+>>> [CLI] alerts-v2 get-alert [UUID]
+Error: Alert with id [UUID] not found or has no folder node internal name
+
+Exit code: 1
+
+>>> [CLI] alerts-v2 trash-alert [UUID]
+Error: Alert with id [UUID] not found
+
+Exit code: 1
+
+>>> [CLI] alerts-v2 update-alert [UUID] display_name --json {"display_name": "x"}
+Error: Alert with id [UUID] not found or has no folder node internal name
+
+Exit code: 1

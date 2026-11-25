@@ -15,7 +15,8 @@
       "delivery": "skip",
       "status": "skipped",
       "error_category": "UNSUPPORTED_SCOPE",
-      "message": "does not support project-scoped skills"
+      "message": "does not support project-scoped skills",
+      "recovery": "To set up Cursor in the global scope, run: databricks aitools install --scope=global --agents=cursor --skills-only --output json"
     }
   ]
 }

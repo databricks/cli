@@ -66,14 +66,62 @@ func TestHasChange(t *testing.T) {
 	}
 }
 
+func TestHasOnlySingleReason(t *testing.T) {
+	parentRenamed := &deployplan.ChangeDesc{Action: deployplan.UpdateWithID, Reason: deployplan.ReasonParentRenamed}
+	tests := []struct {
+		name    string
+		changes deployplan.Changes
+		want    bool
+	}{
+		{
+			name:    "parent renamed",
+			changes: deployplan.Changes{"schema_name": parentRenamed},
+			want:    true,
+		},
+		{
+			name: "skip change is ignored",
+			changes: deployplan.Changes{
+				"schema_name":      parentRenamed,
+				"storage_location": {Action: deployplan.Skip, Reason: "immutable_backend_value"},
+			},
+			want: true,
+		},
+		{
+			name: "own field also changes",
+			changes: deployplan.Changes{
+				"schema_name": parentRenamed,
+				"comment":     {Action: deployplan.Update},
+			},
+			want: false,
+		},
+		{
+			name:    "own rename",
+			changes: deployplan.Changes{"name": {Action: deployplan.UpdateWithID, Reason: "id_changes"}},
+			want:    false,
+		},
+		{
+			name: "only skipped changes",
+			changes: deployplan.Changes{
+				"name": {Action: deployplan.Skip, Reason: deployplan.ReasonRemoteAlreadySet},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.changes.HasOnlySingleReason(deployplan.ReasonParentRenamed))
+		})
+	}
+}
+
 func TestCountActionsRecreateWithoutDelete(t *testing.T) {
 	entry := &deployplan.PlanEntry{Action: deployplan.Recreate, StateOnly: true}
 	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.job_runs.a": entry}}
 	assert.Equal(t, deployplan.ActionCounts{Create: 1}, plan.CountActions())
 	// A recreate still creates a resource, so it must remain visible in plan output
 	// and approval prompts even though its delete step only cleans up state.
-	assert.False(t, entry.IsStateOnlyDelete())
-	assert.False(t, plan.GetActions()[0].IsStateOnlyDelete())
+	assert.False(t, entry.IsStateOnly())
+	assert.False(t, plan.GetActions()[0].IsStateOnly())
 }
 
 func TestCountApplied(t *testing.T) {
@@ -101,6 +149,11 @@ func TestCountApplied(t *testing.T) {
 			name:  "update applied counts as changed",
 			entry: deployplan.PlanEntry{Action: deployplan.Update, Attempted: true, Applied: true},
 			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Change: 1}},
+		},
+		{
+			name:  "re-key applied is unchanged",
+			entry: deployplan.PlanEntry{Action: deployplan.UpdateWithID, StateOnly: true, Attempted: true, Applied: true},
+			want:  deployplan.AppliedCounts{ActionCounts: deployplan.ActionCounts{Unchanged: 1}},
 		},
 		{
 			name:  "delete applied",

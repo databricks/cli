@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -18,6 +19,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -96,7 +99,7 @@ Examples:
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				detected, err := configsync.ExtractChanges(ctx, b, plan)
+				detected, permissionsSkipped, err := configsync.ExtractChanges(ctx, b, plan)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
@@ -114,6 +117,10 @@ Examples:
 					// changes are restricted to the selected resources.
 					selected, err := configsync.ResolveResourceSelectors(ctx, &deployBundle.StateDB, selectIDs)
 					if err != nil {
+						// Reported as skipped in JSON output, so it must not count as a load failure.
+						if errors.Is(err, configsync.ErrNoMatchingSelector) {
+							stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryNoMatchingSelector
+						}
 						return err
 					}
 					// A selected resource planned as a delete was renamed or removed in the
@@ -129,6 +136,9 @@ Examples:
 						return fmt.Errorf("deployed resources missing from the bundle configuration (renamed or removed since the last deploy): %s", strings.Join(missing, ", "))
 					}
 					detected = configsync.FilterChanges(detected, selected)
+					permissionsSkipped = slices.DeleteFunc(permissionsSkipped, func(skip configsync.SkippedChange) bool {
+						return !slices.Contains(selected, skip.ResourceKey)
+					})
 				}
 
 				detected, policySkipped, err := configsync.FilterClusterPolicyValues(ctx, b, plan, detected)
@@ -170,12 +180,19 @@ Examples:
 
 				files = applied
 				changes = detected
-				skippedChanges = policySkipped
+				skippedChanges = append(policySkipped, permissionsSkipped...)
 				return nil
 			},
 		})
 		if b != nil {
 			stats.InGitRepo = b.InGitRepo
+		}
+		target := cmp.Or(cmd.Flag("target").Value.String(), cmd.Flag("environment").Value.String())
+		cmd.SetContext(configsync.WithProfileAuth(cmd.Context(), b, cmd.Flag("profile").Value.String(), target))
+
+		// The diagnostics are already on stderr; record the first one instead of the sentinel.
+		if errors.Is(err, root.ErrAlreadyPrinted) {
+			stats.ErrorMessage = telemetry.ScrubErrorMessage(logdiag.GetFirstErrorSummary(cmd.Context()))
 		}
 
 		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, skippedChanges, err)

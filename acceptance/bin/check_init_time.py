@@ -3,9 +3,11 @@
 Report each Go package's init() clock time (GODEBUG=inittrace=1) on stderr and, on Linux,
 fail if the total init time exceeds --max-ms.
 
-The total is judged by its minimum over several runs, since load from parallel tests
-inflates individual runs but slow inits are slow on every run. While the total is over the
-threshold, more runs are added (up to --max-runs) to ride out bursts of load.
+The total is the sum of each package's minimum over several runs, since load from parallel
+tests inflates individual runs but slow inits are slow on every run. Taking the minimum per
+package rather than of the per-run totals matters on CI: every run has some package hit by
+noise, so the minimum total stays well above the sum of the minimums. While the total is over
+the threshold, more runs are added (up to --max-runs) to ride out bursts of load.
 """
 
 import argparse
@@ -28,6 +30,10 @@ def measure(command):
     return clocks
 
 
+def min_clocks(runs):
+    return {pkg: min(r[pkg] for r in runs) for pkg in runs[0]}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs", type=int, default=5)
@@ -37,11 +43,11 @@ def main():
     args = parser.parse_args()
 
     runs = [measure(args.command) for _ in range(args.runs)]
-    while len(runs) < args.max_runs and min(sum(r.values()) for r in runs) > args.max_ms:
+    while len(runs) < args.max_runs and sum(min_clocks(runs).values()) > args.max_ms:
         runs.append(measure(args.command))
 
-    total = min(sum(r.values()) for r in runs)
-    clocks = {pkg: min(r[pkg] for r in runs) for pkg in runs[0]}
+    clocks = min_clocks(runs)
+    total = sum(clocks.values())
     print(f"Minimum init() clock time in ms over {len(runs)} runs:", file=sys.stderr)
     print(f"{total:5.2f} total", file=sys.stderr)
     for pkg, ms in sorted(clocks.items(), key=lambda kv: (-kv[1], kv[0])):

@@ -1,0 +1,14 @@
+# Cloud environments without a sandbox skip these tests. Locally, the harness sets
+# TEST_SANDBOX_ID to the testserver's default sandbox.
+if [ -z "${TEST_SANDBOX_ID:-}" ]; then
+  echo "SKIP_TEST TEST_SANDBOX_ID is not set"
+  exit 0
+fi
+
+# Each test works in its own directory under /tmp and removes it on exit.
+SANDBOX_ROOT="$TEST_SANDBOX_ID:/tmp/sandbox-fs-$UNIQUE_NAME"
+sandbox_fs_cleanup() {
+  $CLI sandbox fs rm -r "$SANDBOX_ROOT" 2>/dev/null || true
+}
+trap sandbox_fs_cleanup EXIT
+$CLI sandbox fs mkdir "$SANDBOX_ROOT"

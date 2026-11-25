@@ -3,6 +3,7 @@
 package libraries
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "libraries",
-		Short: `The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.`,
-		Long: `The Libraries API allows you to install and uninstall libraries and get the
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "libraries",
+	Short:   `The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Libraries API allows you to install and uninstall libraries and get the
   status of libraries on a cluster.
 
   To make third-party or custom code available to notebooks and jobs running on
@@ -37,14 +43,13 @@ func New() *cobra.Command {
 
   When you uninstall a library from a cluster, the library is removed only when
   you restart the cluster. Until you restart the cluster, the status of the
-  uninstalled library appears as Uninstall pending restart.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  uninstalled library appears as Uninstall pending restart.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAllClusterStatuses())
@@ -56,8 +61,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start all-cluster-statuses command
@@ -84,8 +87,11 @@ func newAllClusterStatuses() *cobra.Command {
 	cmd.Short = `Get all statuses.`
 	cmd.Long = `Get all statuses.
 
-  Get the status of all libraries on all clusters. A status is returned for all
-  libraries installed on this cluster via the API or the libraries UI.`
+  Get the status of all libraries on all clusters in the workspace. A status is
+  returned for all libraries installed on each cluster via the API or the
+  libraries UI. If the workspace has more library statuses than the response
+  limit allows, the request fails; call the per-cluster status method for each
+  cluster instead.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -150,7 +156,7 @@ func newClusterStatus() *cobra.Command {
   of returned libraries is as follows: 1. Libraries set to be installed on this
   cluster, in the order that the libraries were added to the cluster, are
   returned first. 2. Libraries that were previously requested to be installed on
-  this cluster or, but are now marked for removal, in no particular order, are
+  this cluster but are now marked for removal, in no particular order, are
   returned last.
 
   Arguments:

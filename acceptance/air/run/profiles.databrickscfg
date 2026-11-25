@@ -1,0 +1,3 @@
+[other]
+host = https://other.test
+token = other-token

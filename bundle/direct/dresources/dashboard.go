@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -258,13 +259,17 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 		return "", nil, err
 	}
 
-	createResp, err := r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-		Dashboard:      dashboard,
-		DatasetCatalog: config.DatasetCatalog,
-		DatasetSchema:  config.DatasetSchema,
+	create := func(ctx context.Context) (*dashboards.Dashboard, error) {
+		return r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
+			Dashboard:      dashboard,
+			DatasetCatalog: config.DatasetCatalog,
+			DatasetSchema:  config.DatasetSchema,
 
-		ForceSendFields: nil,
-	})
+			ForceSendFields: nil,
+		})
+	}
+	start := time.Now()
+	createResp, err := create(ctx)
 
 	// The API returns 404 if the parent directory doesn't exist.
 	// If the parent directory doesn't exist, create it and try again.
@@ -273,13 +278,10 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}
-		createResp, err = r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-			Dashboard:      dashboard,
-			DatasetCatalog: config.DatasetCatalog,
-			DatasetSchema:  config.DatasetSchema,
-
-			ForceSendFields: nil,
-		})
+		createResp, err = create(ctx)
+	}
+	if err != nil && config.ParentPath != "" {
+		createResp, err = r.recoverFailedCreate(ctx, config, start, create, err)
 	}
 	if err != nil {
 		return "", nil, err
@@ -307,6 +309,36 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 	}
 
 	return createResp.DashboardId, responseToState(createResp, publishResp, dashboard.SerializedDashboard, config.Published), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate. A dashboard is
+// stored as the workspace file <parent_path>/<display_name>.lvdash.json, so the API rejects a
+// second dashboard with the same display name in the same folder, and the file names the
+// dashboard to look up.
+func (r *ResourceDashboard) recoverFailedCreate(ctx context.Context, config *DashboardState, start time.Time, create func(context.Context) (*dashboards.Dashboard, error), createErr error) (*dashboards.Dashboard, error) {
+	filePath := path.Join(ensureWorkspacePrefix(config.ParentPath), config.DisplayName+".lvdash.json")
+	return recoverCreate(ctx, createRecovery[dashboards.Dashboard, *dashboards.Dashboard]{
+		name:  "dashboard " + filePath,
+		start: start,
+		get: func(ctx context.Context) (*dashboards.Dashboard, error) {
+			info, err := r.client.Workspace.GetStatusByPath(ctx, filePath)
+			if err != nil {
+				return nil, err
+			}
+			if info.ObjectType != workspace.ObjectTypeDashboard || info.ResourceId == "" {
+				return nil, fmt.Errorf("%s is a %s, not a dashboard", filePath, info.ObjectType)
+			}
+			return r.client.Lakeview.Get(ctx, dashboards.GetDashboardRequest{DashboardId: info.ResourceId})
+		},
+		createTime: func(found *dashboards.Dashboard) (time.Time, bool) {
+			created, err := time.Parse(time.RFC3339, found.CreateTime)
+			return created, err == nil
+		},
+		alreadyExists:   isAlreadyExists,
+		createdByCaller: nil,
+		use:             useFound[dashboards.Dashboard],
+		create:          repeatCreate(create),
+	}, createErr)
 }
 
 func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {

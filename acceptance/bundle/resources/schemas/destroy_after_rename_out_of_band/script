@@ -1,0 +1,30 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_SCHEMA="main.test-schema-${UNIQUE_NAME}"
+NEW_SCHEMA="main.test-schema-renamed-${UNIQUE_NAME}"
+
+cleanup() {
+    # Whatever destroy left behind.
+    errcode $CLI schemas delete "$NEW_SCHEMA" --force > LOG.cleanup 2>&1
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with a volume in it"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI schemas get "$OLD_SCHEMA" | jq -r .schema_id)" SCHEMA_ID
+
+title "Rename the schema out of band, and the config to match"
+trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name, schema_id}'
+print_requests.py //unity-catalog &> LOG.rename_requests
+trace update_file.py databricks.yml test-schema- test-schema-renamed-
+
+title "Destroy"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+
+title "The renamed schema is still there"
+trace $CLI schemas get "$NEW_SCHEMA" | jq '{full_name, schema_id}'

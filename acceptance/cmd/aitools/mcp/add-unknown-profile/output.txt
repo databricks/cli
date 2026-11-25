@@ -1,0 +1,11 @@
+
+=== A profile that does not exist is refused before any request, and the error lists the profiles that exist
+
+>>> [CLI] aitools mcp add --profile logfod --names system.ai.genie_one_mcp --agents claude-code
+Error: MCP server system.ai.genie_one_mcp needs Databricks profile "logfod", which does not exist in [TEST_TMP_DIR]/.databrickscfg. Set it up with: databricks auth login --profile logfod
+Existing profiles: logfood, dogfood
+
+=== Nothing was written
+
+>>> ls -A home
+.claude

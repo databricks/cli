@@ -1,0 +1,3 @@
+# Python packages for the scripts in tools/ that are not stdlib-only. Pinned here,
+# not inline in workflows or the Taskfile, so Dependabot tracks them.
+packaging==25.0

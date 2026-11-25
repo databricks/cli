@@ -1,0 +1,61 @@
+
+=== Env var adds the skills to the user agent on a workspace GET
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Env var adds the skills on databricks api
+
+>>> [CLI] api get /api/2.1/clusters/list
+
+>>> print_requests.py --get //clusters/list
+
+=== Env var adds the skills from bundle commands
+
+>>> [CLI] bundle validate
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Invalid entries are dropped and the rest is normalized
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== No skills when unset
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== No skills when telemetry is disabled
+
+>>> [CLI] current-user me
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Hidden flag adds the skills, so commands still start with databricks
+
+>>> [CLI] current-user me --skills-invoked databricks-core,databricks-jobs
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Flag wins over env var
+
+>>> [CLI] current-user me --skills-invoked from-flag
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== No skills from the flag when telemetry is disabled
+
+>>> [CLI] current-user me --skills-invoked databricks-core
+
+>>> print_requests.py --get //scim/v2/Me
+
+=== Flag is hidden from help and completion
+
+>>> [CLI] current-user me --help
+
+>>> [CLI] __complete current-user me --sk
+Completion ended with directive: ShellCompDirectiveNoFileComp
