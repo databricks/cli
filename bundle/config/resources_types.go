@@ -1,11 +1,13 @@
 package config
 
 import (
+	"fmt"
 	"iter"
 	"reflect"
 	"slices"
 	"sync"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
@@ -13,9 +15,9 @@ import (
 // group (for example "jobs" or "pipelines") to the Go type that represents a single
 // resource instance inside that group (for example `resources.Job`).
 var ResourcesTypes = sync.OnceValue(func() map[string]reflect.Type {
-	res := make(map[string]reflect.Type, len(AllResourceTypes()))
+	res := make(map[string]reflect.Type, len(allResourceTypes()))
 
-	for _, rt := range AllResourceTypes() {
+	for _, rt := range allResourceTypes() {
 		res[rt.Key] = rt.Type
 
 		// Automatically detect and add permissions field types
@@ -45,42 +47,64 @@ type ResourceType struct {
 	// Type is the Go type of a single resource, for example `resources.Job`.
 	Type reflect.Type
 
-	// Zero is a pointer to a zero value of Type. It is shared by all callers:
-	// use it to ask the type what it declares, never to hold or modify state.
-	Zero ConfigResource
+	// Description is the type's [resources.ResourceDescription].
+	Description resources.ResourceDescription
 
 	// fieldIndex is the index of the corresponding field in [Resources].
 	fieldIndex int
 }
 
+// New returns a pointer to a fresh zero value of Type.
+func (rt ResourceType) New() ConfigResource {
+	return reflect.New(rt.Type).Interface().(ConfigResource)
+}
+
 // AllResourceTypes returns every resource type in the field order of [Resources],
-// which is the canonical order of resource types. The returned slice is shared
-// and must not be modified.
-var AllResourceTypes = sync.OnceValue(func() []ResourceType {
-	rt := reflect.TypeFor[Resources]()
+// which is the canonical order of resource types. It returns a new slice on every
+// call, so the caller may modify it.
+func AllResourceTypes() []ResourceType {
+	return slices.Clone(allResourceTypes())
+}
+
+// allResourceTypes is the cached list behind [AllResourceTypes], for callers in
+// this package that only read it.
+var allResourceTypes = sync.OnceValue(func() []ResourceType {
+	return resourceTypesOf(reflect.TypeFor[Resources]())
+})
+
+// resourceTypesOf builds the list of resource types from the fields of rt, which
+// is [Resources] outside of tests. It panics with the name of the first field
+// that does not have the expected shape.
+func resourceTypesOf(rt reflect.Type) []ResourceType {
+	configResource := reflect.TypeFor[ConfigResource]()
 	res := make([]ResourceType, 0, rt.NumField())
 	for i := range rt.NumField() {
 		field := rt.Field(i)
-		// Every field is a map[string]*T where *T implements ConfigResource;
-		// TestResourcesFieldsAreConfigResourceMaps asserts this.
-		elemType := field.Type.Elem().Elem()
+		typ := field.Type
+		if typ.Kind() != reflect.Map || typ.Key().Kind() != reflect.String {
+			panic(fmt.Sprintf("Resources.%s must be a map with string keys, got %s", field.Name, typ))
+		}
+		if typ.Elem().Kind() != reflect.Pointer || !typ.Elem().Implements(configResource) {
+			panic(fmt.Sprintf("Resources.%s must map to a pointer type that implements ConfigResource, got %s", field.Name, typ.Elem()))
+		}
+		elemType := typ.Elem().Elem()
 		res = append(res, ResourceType{
-			Key:        structtag.JSONTag(field.Tag.Get("json")).Name(),
-			Type:       elemType,
-			Zero:       reflect.New(elemType).Interface().(ConfigResource),
-			fieldIndex: i,
+			Key:         structtag.JSONTag(field.Tag.Get("json")).Name(),
+			Type:        elemType,
+			Description: reflect.New(elemType).Interface().(ConfigResource).ResourceDescription(),
+			fieldIndex:  i,
 		})
 	}
 	return res
-})
+}
 
-// ResourceTypesImplementing yields, in canonical order, the key and zero value
-// of every resource type whose zero value implements I. I is typically an
+// ResourceTypesImplementing yields, in canonical order, the key and a fresh zero
+// value of every resource type whose zero value implements I. I is typically an
 // optional interface through which a type declares a fact about itself.
 func ResourceTypesImplementing[I any]() iter.Seq2[string, I] {
 	return func(yield func(string, I) bool) {
-		for _, rt := range AllResourceTypes() {
-			v, ok := rt.Zero.(I)
+		for _, rt := range allResourceTypes() {
+			v, ok := rt.New().(I)
 			if ok && !yield(rt.Key, v) {
 				return
 			}
@@ -88,16 +112,16 @@ func ResourceTypesImplementing[I any]() iter.Seq2[string, I] {
 	}
 }
 
-// ResourceTypeAs returns the zero value of the resource type with the given key as I.
+// ResourceTypeAs returns a fresh zero value of the resource type with the given key as I.
 // It returns false if key is not a resource type or if the type does not implement I.
 func ResourceTypeAs[I any](key string) (I, bool) {
-	types := AllResourceTypes()
+	types := allResourceTypes()
 	i := slices.IndexFunc(types, func(rt ResourceType) bool { return rt.Key == key })
 	if i < 0 {
 		var zero I
 		return zero, false
 	}
-	v, ok := types[i].Zero.(I)
+	v, ok := types[i].New().(I)
 	return v, ok
 }
 
@@ -118,8 +142,8 @@ func AssertResourceTypesImplement[I any](t interface {
 			t.Errorf("%q is listed as not implementing %s but is not a resource type", key, name)
 		}
 	}
-	for _, rt := range AllResourceTypes() {
-		_, implements := rt.Zero.(I)
+	for _, rt := range allResourceTypes() {
+		_, implements := rt.New().(I)
 		listed := slices.Contains(except, rt.Key)
 		if !implements && !listed {
 			t.Errorf("resource type %q (%s) does not implement %s", rt.Key, rt.Type, name)
