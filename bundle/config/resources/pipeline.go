@@ -43,6 +43,30 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	return true, nil
 }
 
+// Destroy messages for pipelines, picked per pipeline from the cascade_on_destroy value in
+// the deployment state.
+const (
+	PipelineDestroyWithCascadeMessage = `This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:`
+
+	PipelineDestroyNoCascadeMessage = `This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines.
+The Streaming Tables (STs) and Materialized Views (MVs) managed by them are retained, as 'cascade_on_destroy' is set to false:`
+)
+
+func (*Pipeline) Approval() Approval {
+	return Approval{
+		Order: 20,
+		Deploy: `
+This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:`,
+		// Destroy reads cascade_on_destroy from the state rather than the configuration,
+		// because the state holds the value that the delete uses.
+		DestroyFromState: true,
+	}
+}
+
 func (p *Pipeline) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "pipeline",

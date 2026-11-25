@@ -88,6 +88,10 @@ func (m *ModelProviderService) Exists(ctx context.Context, w *databricks.Workspa
 	return true, nil
 }
 
+func (*ModelProviderService) Approval() Approval {
+	return Approval{}
+}
+
 func (*ModelProviderService) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model_provider_service",

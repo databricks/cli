@@ -40,6 +40,10 @@ func (s *RegisteredModel) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+func (*RegisteredModel) Approval() Approval {
+	return Approval{}
+}
+
 func (*RegisteredModel) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "registered_model",

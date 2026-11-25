@@ -114,6 +114,10 @@ func (r *JobRun) Exists(ctx context.Context, w *databricks.WorkspaceClient, id s
 	return true, nil
 }
 
+func (*JobRun) Approval() Approval {
+	return Approval{}
+}
+
 func (r *JobRun) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "job_run",

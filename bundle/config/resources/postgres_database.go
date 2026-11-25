@@ -61,6 +61,17 @@ func (d *PostgresDatabase) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+func (*PostgresDatabase) Approval() Approval {
+	return Approval{
+		Order: 90,
+		Deploy: `
+This action will result in the deletion or recreation of the following Lakebase databases.
+All data stored in them will be permanently lost:`,
+		Destroy: `This action will result in the deletion of the following Lakebase databases.
+All data stored in them will be permanently lost:`,
+	}
+}
+
 func (d *PostgresDatabase) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_database",

@@ -38,59 +38,6 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-var destroyApprovalGroups = []approvalGroup{
-	{group: "schemas", message: deleteSchemaMessage},
-	// Pipelines are handled separately in approvalForDestroy so the message reflects each
-	// pipeline's cascade_on_destroy setting; see logPipelineDeleteApproval.
-	{group: "volumes", message: deleteVolumeMessage},
-	{group: "database_instances", message: deleteDatabaseInstanceMessage},
-	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
-	{group: "postgres_projects", message: deletePostgresProjectMessage},
-	{group: "postgres_branches", message: deletePostgresBranchMessage},
-	{group: "postgres_databases", message: deletePostgresDatabaseMessage},
-	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
-	{group: "genie_spaces", message: deleteGenieSpaceMessage},
-	{group: "features", message: deleteFeatureMessage},
-	{group: "feature_specs", message: deleteFeatureSpecMessage},
-}
-
-// logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
-// a note that datasets will be deleted as well.
-func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, quiet bool) error {
-	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
-
-	var cascading, retaining []deployplan.Action
-	for _, a := range pipelineDeletes {
-		cascade, err := pipelineDeletionCascades(b, a)
-		if err != nil {
-			return err
-		}
-		if cascade {
-			cascading = append(cascading, a)
-		} else {
-			retaining = append(retaining, a)
-		}
-	}
-
-	for _, grp := range []struct {
-		message string
-		actions []deployplan.Action
-	}{
-		{deletePipelineWithCascadeMessage, cascading},
-		{deletePipelineNoCascadeMessage, retaining},
-	} {
-		if len(grp.actions) == 0 || quiet {
-			continue
-		}
-		cmdio.LogString(ctx, grp.message)
-		for _, a := range grp.actions {
-			cmdio.Log(ctx, a)
-		}
-		cmdio.LogString(ctx, "")
-	}
-	return nil
-}
-
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	deleteActions := plan.GetActions()
 
@@ -108,8 +55,8 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	// With --auto-approve there is no prompt, so this listing is informational and -qq
 	// suppresses it. Without --auto-approve we are about to ask for consent and the user
 	// must see what they are consenting to, so it prints at any -q level. The approval
-	// helpers below still run either way: they also validate (e.g. pipeline cascade
-	// lookups can fail), so skipping them would skip that.
+	// helpers below still run either way: they also validate (e.g. reading the
+	// deployment state can fail), so skipping them would skip that.
 	quiet := b.AutoApprove && b.Quiet >= bundle.QuietAll
 
 	if len(deleteActions) > 0 && !quiet {
@@ -124,10 +71,10 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	if !quiet {
-		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
+		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups(), true, deployplan.Delete)
 	}
-	// Called even when quiet: the cascade lookup can fail, and that error must surface.
-	if err := logPipelineDeleteApproval(ctx, b, deleteActions, quiet); err != nil {
+	// Called even when quiet: reading the deployment state can fail, and that error must surface.
+	if err := logDestroyApprovalsFromState(ctx, b, deleteActions, quiet); err != nil {
 		return false, err
 	}
 

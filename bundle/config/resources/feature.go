@@ -44,6 +44,20 @@ func (f *Feature) Exists(ctx context.Context, w *databricks.WorkspaceClient, ful
 	return true, nil
 }
 
+func (*Feature) Approval() Approval {
+	return Approval{
+		Order: 130,
+		Deploy: `
+This action will result in the deletion or recreation of the following Feature Views.
+A Feature View that has materialized features in a materialization set cannot be deleted or
+recreated. Remove its materialized features from the set in a separate deploy first, then delete
+or recreate the Feature View. Deleting or recreating a Feature View that a FeatureSpec serves is
+not blocked, and leaves the FeatureSpec stale:`,
+		Destroy: `This action will result in the deletion of the following Feature Views.
+Deleting a Feature View that a FeatureSpec serves is not blocked, and leaves the FeatureSpec stale:`,
+	}
+}
+
 func (*Feature) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "feature",

@@ -38,6 +38,16 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
+func (*Schema) Approval() Approval {
+	return Approval{
+		Order: 10,
+		Deploy: `
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:`,
+		DeploySkipChildren: true,
+		Destroy:            `This action will result in the deletion of the following UC schemas. Any underlying data may be lost:`,
+	}
+}
+
 func (*Schema) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "schema",
