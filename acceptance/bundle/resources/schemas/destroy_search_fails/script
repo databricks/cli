@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_SCHEMA="main.test-schema-${UNIQUE_NAME}"
+NEW_SCHEMA="main.test-schema-renamed-${UNIQUE_NAME}"
+
+title "Deploy a schema with a volume in it, and rename the schema out of band"
+trace $CLI bundle deploy
+trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name}'
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "The search for the renamed schema fails, so destroy fails without deleting anything or dropping the state"
+trace musterr $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
+trace $CLI schemas get "$NEW_SCHEMA" | jq '{full_name}'

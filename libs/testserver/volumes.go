@@ -122,7 +122,8 @@ func (s *FakeWorkspace) VolumesList(req Request) Response {
 	defer s.LockUnlock()()
 
 	catalogName := req.URL.Query().Get("catalog_name")
-	schemaName := req.URL.Query().Get("schema_name")
+	// Stored lowercased, see VolumesCreate.
+	schemaName := strings.ToLower(req.URL.Query().Get("schema_name"))
 	if _, ok := s.Schemas[catalogName+"."+schemaName]; !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,

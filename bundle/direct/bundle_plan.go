@@ -249,6 +249,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			if err != nil {
 				if apierr.IsMissing(err) {
 					missing = true
+					remoteState = nil
 				} else {
 					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 					// This is not an error during deletion, so don't return false here
@@ -260,39 +261,24 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				entry.Gone = true
 			}
 
-			var savedState any
-			if adapter.HasInternalID() && (missing || (err == nil && !entry.Gone)) {
-				dbentry, _ := b.StateDB.GetResourceEntry(resourceKey)
-				savedState, err = parseState(adapter.StateType(), dbentry.State)
-				if err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
-					return false
+			if adapter.HasInternalID() && !entry.Gone {
+				var readErr error
+				if !missing {
+					readErr = err
 				}
-			}
-
-			if !missing && !entry.Gone && savedState != nil {
-				other, err := isOtherResource(adapter, savedState, remoteState)
+				entry.ID, remoteState, err = b.findDeleteTarget(ctx, resourceKey, adapter, id, remoteState, readErr)
 				if err != nil {
 					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 					return false
 				}
-				// Never delete what someone else created under the name ours had.
-				missing = other
+				// After a failed read (a permission error), the delete goes to the recorded ID, as before.
+				missing = remoteState == nil && readErr == nil
 			}
-
 			if missing {
-				remoteState = nil
-				if savedState != nil {
-					entry.ID, remoteState, err = findByInternalID(ctx, adapter, savedState)
-					if err != nil {
-						logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-						return false
-					}
-				}
-				// Not found anywhere: the resource is already deleted remotely. Keep the Delete
-				// entry so that applying it removes the stale state entry, but mark it Gone so
+				// The resource is already deleted remotely. Keep the Delete entry so
+				// that applying it removes the stale state entry, but mark it Gone so
 				// apply skips the delete call and prompts don't list it as a deletion.
-				entry.Gone = remoteState == nil
+				entry.Gone = true
 			}
 
 			entry.RemoteState = remoteState
@@ -384,12 +370,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 		// Someone else's resource under the name ours had is not ours: plan as if ours were not
 		// there, so the plan neither updates nor later deletes it.
-		other, err := isOtherResource(adapter, savedState, remoteState)
+		otherID, err := otherInternalID(adapter, savedState, remoteState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
-		if other {
+		if otherID != "" {
+			warnOtherResource(ctx, adapter, dbentry.ID, savedState, otherID)
 			remoteState = nil
 		}
 		if remoteState == nil {
@@ -988,40 +975,97 @@ func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.S
 		log.Warnf(ctx, "looking for a moved resource at id=%q: %s", id, err)
 		return "", nil, nil
 	}
-	found, err := adapter.RemapState(remote)
-	if err != nil {
-		return "", nil, err
-	}
-	foundInternalID, err := adapter.InternalID(found)
-	if err != nil || foundInternalID != savedInternalID {
+	if ok, err := hasInternalIDOf(adapter, remote, savedInternalID); err != nil || !ok {
 		return "", nil, err
 	}
 	return id, remote, nil
 }
 
-// isOtherResource reports whether remote, read at the recorded ID, is another object than the one
-// savedState records: both have an internal ID and they differ. The resource was renamed away and
-// another one created under its old name.
-func isOtherResource(adapter *dresources.Adapter, savedState, remote any) (bool, error) {
-	if !adapter.HasInternalID() || remote == nil {
-		return false, nil
-	}
-	saved, err := adapter.InternalID(savedState)
-	if err != nil || saved == "" {
-		return false, err
-	}
+// hasInternalIDOf reports whether remote has the internal ID internalID: it is the resource the
+// state records, wherever it is now.
+func hasInternalIDOf(adapter *dresources.Adapter, remote any, internalID string) (bool, error) {
 	remapped, err := adapter.RemapState(remote)
 	if err != nil {
 		return false, err
 	}
 	found, err := adapter.InternalID(remapped)
-	return found != "" && found != saved, err
+	return found == internalID, err
+}
+
+// otherInternalID returns the internal ID of remote, read at the recorded ID, if it is another
+// object than the one savedState records: ours was renamed away and another one created under its
+// old name. It is "" when the resource is ours, or when either side has no internal ID to compare.
+func otherInternalID(adapter *dresources.Adapter, savedState, remote any) (string, error) {
+	if !adapter.HasInternalID() || remote == nil {
+		return "", nil
+	}
+	saved, err := adapter.InternalID(savedState)
+	if err != nil || saved == "" {
+		return "", err
+	}
+	remapped, err := adapter.RemapState(remote)
+	if err != nil {
+		return "", err
+	}
+	found, err := adapter.InternalID(remapped)
+	if err != nil || found == saved {
+		return "", err
+	}
+	return found, nil
+}
+
+// warnOtherResource tells the user that what is at the recorded ID is not the bundle's and is left
+// alone. A resource deleted and created again out of band looks the same, hence the way to take it over.
+func warnOtherResource(ctx context.Context, adapter *dresources.Adapter, id string, savedState any, otherID string) {
+	saved, _ := adapter.InternalID(savedState)
+	log.Warnf(ctx, "id=%q holds another object: its %s is %q, not %q as recorded, so it is not treated as this bundle's. To manage it with this bundle, run 'bundle deployment unbind' and 'bundle deployment bind'.",
+		id, adapter.ResourceConfig().InternalIDField, otherID, saved)
+}
+
+// findDeleteTarget returns where to delete a resource with an internal ID, given what a read at its
+// recorded ID returned: there if it is ours, else where findByInternalID finds it. An empty ID means
+// the recorded one; a nil remote means it is nowhere. Someone else's resource under the name ours had
+// is never the target, and neither is a resource whose identity could not be checked: a read that
+// failed for any other reason than a missing resource or a permission error fails the plan.
+func (b *DeploymentBundle) findDeleteTarget(ctx context.Context, resourceKey string, adapter *dresources.Adapter, id string, remote any, readErr error) (string, any, error) {
+	dbentry, _ := b.StateDB.GetResourceEntry(resourceKey)
+	if len(dbentry.State) == 0 {
+		// Only the ID is recorded: there is no internal ID to check.
+		return "", remote, nil
+	}
+	savedState, err := parseState(adapter.StateType(), dbentry.State)
+	if err != nil {
+		return "", nil, fmt.Errorf("interpreting state: %w", err)
+	}
+	if saved, err := adapter.InternalID(savedState); err != nil || saved == "" {
+		return "", remote, err
+	}
+	if readErr != nil {
+		if errors.Is(readErr, apierr.ErrPermissionDenied) {
+			// Deleted as before: a resource the user cannot read is left to the delete call.
+			return "", nil, nil
+		}
+		return "", nil, fmt.Errorf("cannot check that id=%q is still this bundle's: %w", id, readErr)
+	}
+	otherID, err := otherInternalID(adapter, savedState, remote)
+	if err != nil {
+		return "", nil, err
+	}
+	if remote != nil && otherID == "" {
+		return "", remote, nil
+	}
+	if otherID != "" {
+		warnOtherResource(ctx, adapter, id, savedState, otherID)
+	}
+	return findByInternalID(ctx, adapter, savedState)
 }
 
 // findByInternalID looks for a resource to be deleted that is not at its recorded ID: renamed out of
-// band. Destroy has no config to give its new name, as findMoved uses, so the resource searches for
-// it (DoFindByInternalID). As in findMoved, what is found is taken only if its internal ID matches.
-// A failed search finds nothing: the delete then only drops the state entry, as it did before.
+// band. A plan without config (destroy), or without this resource in it, has no new name to look at,
+// as findMoved does, so the resource searches for it (DoFindByInternalID). As in findMoved, what is
+// found is taken only if its internal ID matches. A search the user has no permission for finds
+// nothing, and the delete only drops the state entry, as it did before; any other failure fails the
+// plan, so the state keeps the record of the resource and the command can be run again.
 func findByInternalID(ctx context.Context, adapter *dresources.Adapter, savedState any) (string, any, error) {
 	if !adapter.HasFindByInternalID() {
 		return "", nil, nil
@@ -1033,33 +1077,32 @@ func findByInternalID(ctx context.Context, adapter *dresources.Adapter, savedSta
 	id, err := retry.With(ctx, retry.IsTransientRead, func() (string, error) {
 		return adapter.DoFindByInternalID(ctx, savedState)
 	})
-	if err != nil {
-		if !apierr.IsMissing(err) {
-			log.Warnf(ctx, "looking for a renamed resource by its internal id %q: %s", savedInternalID, err)
-		}
-		return "", nil, nil
-	}
-	if id == "" {
-		return "", nil, nil
+	if err != nil || id == "" {
+		return "", nil, ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("looking for a renamed resource by its internal id %q", savedInternalID))
 	}
 	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return adapter.DoRead(ctx, id)
 	})
 	if err != nil {
-		if !apierr.IsMissing(err) {
-			log.Warnf(ctx, "reading a renamed resource at id=%q: %s", id, err)
-		}
-		return "", nil, nil
+		return "", nil, ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("reading a renamed resource at id=%q", id))
 	}
-	found, err := adapter.RemapState(remote)
-	if err != nil {
-		return "", nil, err
-	}
-	foundInternalID, err := adapter.InternalID(found)
-	if err != nil || foundInternalID != savedInternalID {
+	if ok, err := hasInternalIDOf(adapter, remote, savedInternalID); err != nil || !ok {
 		return "", nil, err
 	}
 	return id, remote, nil
+}
+
+// ignoreMissingOrForbidden returns err unless it is nil, a missing resource or a permission error
+// (logged as a warning).
+func ignoreMissingOrForbidden(ctx context.Context, err error, what string) error {
+	if err == nil || apierr.IsMissing(err) {
+		return nil
+	}
+	if errors.Is(err, apierr.ErrPermissionDenied) {
+		log.Warnf(ctx, "%s: %s", what, err)
+		return nil
+	}
+	return fmt.Errorf("%s: %w", what, err)
 }
 
 // missingInternalID reports whether savedState lacks the internal ID that remote, the remote state

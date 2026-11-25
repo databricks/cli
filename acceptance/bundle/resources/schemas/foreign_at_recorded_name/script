@@ -31,6 +31,10 @@ print_requests.py //unity-catalog &> LOG.oob_requests
 title "The other schema has another schema_id, so the plan does not take it for the bundle's: it plans a create"
 plan
 
+title "Deploy leaves the other schema alone: the create fails on its name"
+trace musterr $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.failed_deploy_requests
+
 title "Destroy finds the bundle's schema by its schema_id and deletes it, not the other one"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog

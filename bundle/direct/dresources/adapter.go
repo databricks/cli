@@ -128,8 +128,9 @@ type IResource interface {
 
 	// [Optional] DoFindByInternalID returns the ID of the resource whose internal ID (see
 	// internal_id_field) is the one in state, or "" if none is found. It looks where the resource
-	// can be without its name: destroy has no config to give the new name of a resource renamed
-	// out of band. The engine reads what it returns and checks the internal ID again.
+	// can be without its name: a resource to be deleted (by destroy, or removed from config) has
+	// no config to give its new name after a rename out of band. The engine reads what it returns
+	// and checks the internal ID again.
 	// Example: func (r *ResourceSchema) DoFindByInternalID(ctx context.Context, state *SchemaState) (string, error)
 	DoFindByInternalID(ctx context.Context, state any) (string, error)
 }

@@ -125,13 +125,14 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 
 type PlanEntry struct {
 	// ID is set when the resource is at another ID than the one in state: a rename moved it there
-	// (see findMoved), or a parent renamed in this plan moves it before it is recreated (see
-	// addParentMoves). Applying the entry addresses the resource at ID.
+	// (see findMoved, and findByInternalID for a Delete), or a parent renamed in this plan moves it
+	// before it is recreated (see addParentMoves). Applying the entry addresses the resource at ID.
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
 	// Gone is set on Delete entries when the resource no longer exists remotely: planning
-	// confirmed it with a read, or the state entry has an empty ID (left by a recreate in
+	// confirmed it with a read (for a resource with an internal ID: found neither at its ID, where
+	// another object may be, nor by its internal ID), or the state entry has an empty ID (left by a recreate in
 	// an older CLI whose create step failed after the delete). Applying such an entry only
 	// removes it from the state, without calling the delete API, and approval prompts do
 	// not list it as a deletion.

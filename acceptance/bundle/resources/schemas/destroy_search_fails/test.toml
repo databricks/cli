@@ -1,0 +1,12 @@
+# Local only: the failure of the search for the renamed schema is injected.
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]
+
+[[Server]]
+Pattern = "GET /api/2.1/unity-catalog/schemas"
+Response.StatusCode = 500
+Response.Body = '{"error_code": "INTERNAL_ERROR", "message": "injected"}'
