@@ -1,3 +1,3 @@
 [[Exclude]]
 When = ["CONFIG_Cloud=true"]
-Reason = "External volumes reference external locations; excluded from cloud for the same reason"
+Reason = "External volumes reference external locations, which require storage credentials with environment-specific cloud IAM setup, so this config only runs locally against the mock server."

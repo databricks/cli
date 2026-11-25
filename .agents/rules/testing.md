@@ -30,7 +30,7 @@ Tests live in `acceptance/`, one directory per test, with sources (`script`, `te
 
 **RULE: All `EnvMatrix` variants must produce identical output files**, unless the test sets `EnvVaryOutput`. Do not run `-update` while variants diverge: the last variant overwrites the others. Instead, `-update` a single variant you consider correct and debug why the other differs. `EnvMatrix.<VAR> = []` removes an inherited matrix variable (e.g. `EnvMatrix.DMS = []` opts a bundle test out of the DMS run).
 
-**RULE: In `test.toml`, write map-valued settings (`Env`, `EnvMatrix`, `EnvMatrixExclude`, `EnvRepl`, `GOOS`, `CloudEnvs`) in dotted form at the top, never under a table header.** Under `[EnvMatrix]`, every following key — including a top-level one like `Ignore` after a blank line — belongs to that table. `[[Repls]]` and `[[Server]]` keep the header form; put dotted keys above the first such header.
+**RULE: In `test.toml`, write map-valued settings (`Env`, `EnvMatrix`, `EnvMatrixFiles`, `EnvMatrixExclude`, `EnvRepl`, `GOOS`, `CloudEnvs`) in dotted form at the top, never under a table header.** Under `[EnvMatrix]`, every following key — including a top-level one like `Ignore` after a blank line — belongs to that table. `[[Repls]]` and `[[Server]]` keep the header form; put dotted keys above the first such header.
 
 ```toml
 EnvMatrix.READPLAN = ["", "1"]
