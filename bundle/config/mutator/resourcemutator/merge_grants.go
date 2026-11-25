@@ -2,22 +2,23 @@ package resourcemutator
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 )
 
-// Resource types that support grants.
-var grantResourceTypes = []string{
-	"catalogs",
-	"schemas",
-	"external_locations",
-	"secrets",
-	"volumes",
-	"registered_models",
-	"vector_search_indexes",
+// mergeGrantsSkippedTypes have grants but MergeGrants has never merged them. Merging them
+// changes how their grants are deployed, so it needs its own change with a changelog entry.
+var mergeGrantsSkippedTypes = []string{
+	"feature_specs",
+	"mcp_services",
+	"model_provider_services",
+	"model_services",
 }
 
 type mergeGrants struct{}
@@ -38,7 +39,10 @@ func (m *mergeGrants) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			return v, nil
 		}
 
-		for _, resourceType := range grantResourceTypes {
+		for resourceType := range config.ResourceTypesImplementing[resources.GrantsDeclarer]() {
+			if slices.Contains(mergeGrantsSkippedTypes, resourceType) {
+				continue
+			}
 			var mapErr error
 			v, mapErr = dyn.Map(v, "resources."+resourceType, dyn.Foreach(func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
 				// Merge grant entries by principal. This concatenates privileges

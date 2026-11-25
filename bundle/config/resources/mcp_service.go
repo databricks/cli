@@ -89,6 +89,10 @@ func (*McpService) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*McpService) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "mcp_service"}
+}
+
 func (m *McpService) InitializeURL(baseURL url.URL) {
 	if m.ID == "" {
 		return

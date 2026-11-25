@@ -47,6 +47,10 @@ func (*Schema) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Schema) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "schema"}
+}
+
 func (s *Schema) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
