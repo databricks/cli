@@ -9,6 +9,8 @@ To proceed, use --auto-approve after reviewing the plan above.
 
 Exit code: 1
 
+>>> assert_not_exists.py .databricks/bundle/default/resources.json .databricks/bundle/default/resources.json.wal
+
 === Deploy bundle:
 
 >>> [CLI] bundle deploy --force-lock
