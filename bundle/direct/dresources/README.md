@@ -3,7 +3,7 @@
 ## Core constraints
 
  - See adapter.go on what methods are needed and what constraints are present.
- - Register the implementation from an `init()` in its own file: `registerAdapter("<resource_type>", (*ResourceX)(nil))`. The permissions and grants of a type get their adapters from what the type declares in `bundle/config/resources`; a type whose permissions do not use the permissions API registers its own (see secret_scope_acls.go). `TestEveryResourceTypeHasAdapter` names every resource type without an adapter.
+ - Register the implementation from an `init()` in its own file: `registerAdapter("<resource_type>", (*ResourceX)(nil))`. The permissions and grants of a type get their adapters from what the type declares in `bundle/config/resources`; a type whose permissions do not use the permissions API registers its own (see secret_scopes_acls.go). `TestEveryResourceTypeHasAdapter` names every resource type without an adapter.
  - Return SDK errors directly, no need to wrap them. Things like current operation, resource key, id are already added by the caller and will be part of the error message.
  - Although the arguments to resource methods like DoCreate are pointers, they are never nil, so nil checks are not needed. The passed id argument is never empty string.
  - When returning id from DoCreate() and from DoUpdateWithID() there is no need to check that returned id is non-empty, this will be done by the framework and converted to error.
@@ -145,7 +145,7 @@ Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` se
 
  - Make sure to implement CRUD for testserver in libs/testserver
  - Test first with go test ./bundle/direct/dresources
-   - Register the test fixture of the type, and of its permissions and grants, from an `init()` in the type's test file (`job_test.go` for `job.go`): `registerTestConfig`, `registerTestDeps` when other resources must exist first, or `registerWithoutTestFixture` with the reason. Known gaps between the input, state and remote types go there too (`registerKnownMissingInStateType`, `registerKnownMissingInRemoteType`). `TestEveryAdapterHasTestFixture` names every type that registers none.
+   - Register the test fixture of the type, and of its permissions and grants, from an `init()` in the type's test file (`jobs_test.go` for `jobs.go`): `registerTestConfig`, `registerTestDeps` when other resources must exist first, or `registerWithoutTestFixture` with the reason. Known gaps between the input, state and remote types go there too (`registerKnownMissingInStateType`, `registerKnownMissingInRemoteType`). `TestEveryAdapterHasTestFixture` names every type that registers none.
  - Implement acceptance tests in acceptance/bundle/resources/<resource>/<subtest>
    - See acceptance/bundle/resources/volumes
    - Prefer smaller tests for each operation.
