@@ -1,0 +1,1 @@
+* `databricks aitools uninstall` now removes the skill directories it copied into a single agent's skills directory when they are unmodified; before, it reported them as uninstalled but left them in place. ([#7936](https://github.com/databricks/cli/pull/7936))

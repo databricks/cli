@@ -81,7 +81,7 @@ func TestUninstallRemovesSymlinks(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that agent skill directories are cleaned up.
-	// These agents are in agents.Registry so removeSymlinksFromAgents finds them.
+	// These agents are in agents.Registry so removeSkillEntriesFromAgents finds them.
 	for _, agentDir := range []string{".claude", ".cursor"} {
 		sqlLink := filepath.Join(tmp, agentDir, "skills", "databricks-sql")
 		_, err := os.Lstat(sqlLink)
@@ -626,7 +626,9 @@ func TestUninstallCountsRemovedSkills(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Full uninstall whose canonical dir removal fails: nothing counts as
-	// changed and the failure is reported.
+	// changed and the failure is reported. Claude Code's copy is removed first
+	// so that the canonical dir is the only thing left to remove.
+	require.NoError(t, os.RemoveAll(claudeLink))
 	removeAllFn = func(string) error { return fs.ErrPermission }
 	result, err = UninstallSkillsWithResult(ctx, UninstallOptions{})
 	require.NoError(t, err)
@@ -710,6 +712,92 @@ func installSQLSkillForAgent(t *testing.T, ctx context.Context, agentName string
 	t.Helper()
 	src := &mockManifestSource{manifest: testManifest()}
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agents.ByName(agentName)}, InstallOptions{SpecificSkills: []string{"databricks-sql"}}))
+}
+
+// installCopiedSQLSkill installs the databricks-sql test skill globally for
+// Cursor only. With a single agent the skill is copied into the agent's skills
+// dir rather than symlinked. It returns the global skills dir and the copy.
+func installCopiedSQLSkill(t *testing.T) (globalDir, copyDir string) {
+	t.Helper()
+	tmp := setupTestHome(t)
+	clearAgentDirOverrides(t)
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
+
+	installSQLSkillForAgent(t, cmdio.MockDiscard(t.Context()), agents.NameCursor)
+
+	copyDir = filepath.Join(tmp, ".cursor", "skills", "databricks-sql")
+	fi, err := os.Lstat(copyDir)
+	require.NoError(t, err)
+	require.True(t, fi.IsDir(), "expected a copied skill dir")
+	require.Zero(t, fi.Mode()&os.ModeSymlink, "expected a copy, not a symlink")
+	return filepath.Join(tmp, ".databricks", "aitools", "skills"), copyDir
+}
+
+func TestUninstallRemovesCopiedSkill(t *testing.T) {
+	globalDir, copyDir := installCopiedSQLSkill(t)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	result, err := UninstallSkillsWithResult(ctx, UninstallOptions{})
+	require.NoError(t, err)
+
+	_, err = os.Lstat(copyDir)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	_, err = os.Lstat(filepath.Join(globalDir, "databricks-sql"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Nil(t, state)
+	assert.Equal(t, 1, result.SkillsChanged)
+	assert.Empty(t, result.SkillFailures)
+	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
+}
+
+func TestUninstallSelectiveRemovesCopiedSkill(t *testing.T) {
+	_, copyDir := installCopiedSQLSkill(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	result, err := UninstallSkillsWithResult(ctx, UninstallOptions{Skills: []string{"databricks-sql"}})
+	require.NoError(t, err)
+
+	_, err = os.Lstat(copyDir)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.Equal(t, 1, result.SkillsChanged)
+	assert.Empty(t, result.SkillFailures)
+}
+
+// A copy that no longer matches the recorded checksums holds user content, so
+// uninstall keeps it while still removing the canonical dir and state record.
+func TestUninstallKeepsModifiedCopiedSkill(t *testing.T) {
+	tests := []struct {
+		name   string
+		file   string
+		modify string
+	}{
+		{name: "modified file", file: "SKILL.md", modify: "my edits"},
+		{name: "extra file", file: "notes.md", modify: "my notes"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			globalDir, copyDir := installCopiedSQLSkill(t)
+			userFile := filepath.Join(copyDir, tc.file)
+			require.NoError(t, os.WriteFile(userFile, []byte(tc.modify), 0o644))
+
+			ctx := cmdio.MockDiscard(t.Context())
+			_, err := UninstallSkillsWithResult(ctx, UninstallOptions{})
+			require.NoError(t, err)
+
+			got, err := os.ReadFile(userFile)
+			require.NoError(t, err)
+			assert.Equal(t, tc.modify, string(got))
+			_, err = os.Lstat(filepath.Join(globalDir, "databricks-sql"))
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+			state, err := LoadState(globalDir)
+			require.NoError(t, err)
+			assert.Nil(t, state)
+		})
+	}
 }
 
 // Telemetry reports the first skill failure's category, so the failures must
