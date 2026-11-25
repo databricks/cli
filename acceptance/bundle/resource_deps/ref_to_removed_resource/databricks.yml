@@ -14,3 +14,5 @@ resources:
     baz:
       name: job baz
       description: runs ${resources.jobs.bar.name}
+    keep:
+      name: job keep

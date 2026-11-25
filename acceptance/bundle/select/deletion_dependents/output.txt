@@ -10,16 +10,12 @@ Files: 4 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan --select jobs.producer
-Error: cannot plan resources.jobs.consumer: ${resources.jobs.producer.id} refers to resources.jobs.producer, which was removed from the bundle configuration and is planned for deletion; remove the reference or add the resource back
-
-Error: planning failed
+Error: cannot delete jobs.producer: jobs.consumer still references it; remove the reference or also remove jobs.consumer from the config
 
 
 >>> [CLI] bundle deploy --select jobs.producer
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-deldep-[UNIQUE_NAME]/default/files...
-Error: cannot plan resources.jobs.consumer: ${resources.jobs.producer.id} refers to resources.jobs.producer, which was removed from the bundle configuration and is planned for deletion; remove the reference or add the resource back
-
-Error: planning failed
+Error: cannot delete jobs.producer: jobs.consumer still references it; remove the reference or also remove jobs.consumer from the config
 
 Files: 1 uploaded, 0 deleted
 

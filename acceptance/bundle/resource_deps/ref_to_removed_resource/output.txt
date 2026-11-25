@@ -26,15 +26,14 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created jobs.bar
 Created jobs.baz
 Created jobs.foo
+Created jobs.keep
 Files: 1 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 === Remove bar while foo and baz still reference it
 
 >>> musterr [CLI] bundle plan
 Error: cannot plan resources.jobs.baz: ${resources.jobs.bar.name} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference or add the resource back
-
-Error: cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference or add the resource back
 
 Error: planning failed
 
@@ -42,8 +41,6 @@ Error: planning failed
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot plan resources.jobs.baz: ${resources.jobs.bar.name} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference or add the resource back
-
-Error: cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference or add the resource back
 
 Error: planning failed
 
@@ -65,19 +62,33 @@ Error: planning failed
 
 Files: 1 uploaded, 0 deleted
 
+>>> musterr [CLI] bundle deploy --select jobs.foo
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference or add the resource back
+
+Error: planning failed
+
+Files: 0 uploaded, 0 deleted
+
+=== Selecting an unrelated resource still works
+
+>>> [CLI] bundle plan --select jobs.keep
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged, 3 not selected
+
 === Nothing was deleted or updated
 
 >>> print_requests.py --nostamp //jobs
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.bar
   delete resources.jobs.baz
   delete resources.jobs.foo
+  delete resources.jobs.keep
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 3 deleted
+Destroy: 4 deleted
