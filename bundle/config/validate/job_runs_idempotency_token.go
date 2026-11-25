@@ -6,9 +6,15 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
+
+func init() {
+	// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
+	stages.Register(stages.StageAfterFieldValidation, "job_runs", ValidateJobRunIdempotencyToken)
+}
 
 func ValidateJobRunIdempotencyToken() bundle.ReadOnlyMutator {
 	return &validateJobRunIdempotencyToken{}

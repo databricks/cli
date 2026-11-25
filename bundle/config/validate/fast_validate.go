@@ -2,8 +2,10 @@ package validate
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -25,14 +27,28 @@ func (f *fastValidate) Name() string {
 }
 
 func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagnostics {
-	bundle.ApplyParallel(ctx, rb,
+	bundle.ApplyParallel(ctx, rb, append(
 		// Fast mutators with only in-memory checks
-		JobClusterKeyDefined(),
-		JobTaskClusterSpec(),
+		readOnlyStageMutators(stages.StageFastValidation),
 
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
-	)
+	)...)
 
 	return nil
+}
+
+// readOnlyStageMutators returns the mutators registered for stage, for a caller that
+// runs them in parallel. It panics on a mutator that is not read-only, because running
+// it in parallel would race on the bundle.
+func readOnlyStageMutators(stage stages.Stage) []bundle.ReadOnlyMutator {
+	var mutators []bundle.ReadOnlyMutator
+	for _, m := range stages.Mutators(stage) {
+		readOnly, ok := m.(bundle.ReadOnlyMutator)
+		if !ok {
+			panic(fmt.Sprintf("mutator %q registered for stage %q must be read-only, because the stage runs in parallel", m.Name(), stage))
+		}
+		mutators = append(mutators, readOnly)
+	}
+	return mutators
 }

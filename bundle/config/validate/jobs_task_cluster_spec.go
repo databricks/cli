@@ -6,11 +6,16 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
+
+func init() {
+	stages.Register(stages.StageFastValidation, "jobs", JobTaskClusterSpec)
+}
 
 // JobTaskClusterSpec validates that job tasks have cluster spec defined
 // if task requires a cluster

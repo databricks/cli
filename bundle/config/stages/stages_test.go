@@ -5,6 +5,7 @@ import (
 
 	_ "github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/config/stages"
+	_ "github.com/databricks/cli/bundle/config/validate"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,6 +17,7 @@ import (
 //     (one call registers both, in this order).
 //   - The StageAfterTargetMerge mutators only merge keyed sequences, because code that
 //     loads a configuration without the initialize phase runs that stage on its own.
+//   - The StageFastValidation mutators run in parallel, so they are read-only.
 func TestStageMutatorOrder(t *testing.T) {
 	expected := map[stages.Stage][]string{
 		stages.StageBeforeVariables: {
@@ -51,17 +53,26 @@ func TestStageMutatorOrder(t *testing.T) {
 		},
 		stages.StageAfterPython: {
 			"ApplyDefaultTaskSource",
+			"validate:pipeline_development_deprecated",
 			"InitializeVolumePaths",
 			"ResolveVariableReferences(resources)",
 		},
 		stages.StageAfterFieldValidation: {
 			"ValidateJobRunTriggers",
+			"validate:job_run_idempotency_token",
+			"validate:validate_dashboard_etags",
+			"validate:validate_genie_space_etags",
+			"validate:postgres_data_api_settings",
 		},
 		stages.StageBeforePlan: {
 			"SecretScopeFixups",
 		},
 		stages.StageAfterBuild: {
 			"ResolveJobRunFileTriggers",
+		},
+		stages.StageFastValidation: {
+			"validate:job_cluster_key_defined",
+			"validate:job_task_cluster_spec",
 		},
 	}
 

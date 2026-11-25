@@ -61,6 +61,12 @@ const (
 	// script would run, also for commands that run neither of them. Mutators here see the
 	// files those steps produce.
 	StageAfterBuild Stage = "after_build"
+
+	// StageFastValidation runs after the initialize phase, when a command validates the
+	// configuration before it builds or deploys it. Package validate runs this stage in
+	// parallel, so mutators here must be read-only. Only package validate registers here,
+	// so that every caller of the stage links its mutators.
+	StageFastValidation Stage = "fast_validation"
 )
 
 type registration struct {
@@ -79,8 +85,15 @@ var registrations []registration
 // name of the first mutator of each call, so that the order depends neither on file
 // names nor on the order in which Go runs init functions. Mutators that must run in a
 // given order are therefore registered in one call.
-func Register(stage Stage, resourceKey string, newMutators ...func() bundle.Mutator) {
-	registrations = append(registrations, registration{stage: stage, resourceKey: resourceKey, newMutators: newMutators})
+//
+// M lets a call pass constructors of a narrower mutator type, such as
+// [bundle.ReadOnlyMutator], as they are.
+func Register[M bundle.Mutator](stage Stage, resourceKey string, newMutators ...func() M) {
+	var fns []func() bundle.Mutator
+	for _, newMutator := range newMutators {
+		fns = append(fns, func() bundle.Mutator { return newMutator() })
+	}
+	registrations = append(registrations, registration{stage: stage, resourceKey: resourceKey, newMutators: fns})
 }
 
 var mutatorsByStage = sync.OnceValue(func() map[Stage][]func() bundle.Mutator {
