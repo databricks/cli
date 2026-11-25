@@ -269,7 +269,7 @@ func (req logRequest) resolveRunStatus(ctx context.Context, w *databricks.Worksp
 func (req logRequest) projectRunStatus(run *jobs.Run) logRunStatus {
 	status := projectRunStatus(run)
 	if req.useAirTaskStatus {
-		status.displayStatus = displayRunStatus(defaultTaskRun(run))
+		status.displayStatus = displayAirRunStatus(run)
 	}
 	return status
 }

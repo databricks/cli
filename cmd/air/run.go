@@ -357,7 +357,7 @@ databricks-ai-runtime skill:
 		// the Bricklens path, so the terminal status must come from the run's
 		// actual state — correct whether Bricklens or the MLflow fallback served
 		// the logs.
-		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL)
+		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, req), dashboardURL)
 		return err
 	}
 
@@ -485,8 +485,8 @@ func printLogsDivider(ctx context.Context, out io.Writer) {
 // watchTerminalStatus resolves a watched run's final display state for the
 // closing --watch envelope. The run is terminal once streaming returns; if the
 // status can't be re-fetched, "UNKNOWN" is reported rather than guessing.
-func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, runID int64) string {
-	status, err := (logRequest{runID: runID, useAirTaskStatus: true}).resolveRunStatus(ctx, w)
+func watchTerminalStatus(ctx context.Context, w *databricks.WorkspaceClient, req logRequest) string {
+	status, err := req.resolveRunStatus(ctx, w)
 	if err != nil {
 		return "UNKNOWN"
 	}

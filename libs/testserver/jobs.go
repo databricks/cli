@@ -652,20 +652,27 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 	// The default run name for one-time runs is "Untitled" (Jobs API behavior).
 	runName := cmp.Or(request.RunName, "Untitled")
 
-	// Report each task as RUNNING in both the V1 (state) and V2 (status) shapes.
-	// The generic `jobs submit` waiter polls the V1 run-level state, which
-	// JobsGetRun drives to TERMINATED on the next poll, while `ssh connect`'s
-	// waitForJobToStart polls the V2 per-task status.
+	// AIR tasks start queued so acceptance tests observe their startup boundary.
+	// Other tasks start running because `ssh connect` polls the V2 task status.
 	var tasks []jobs.RunTask
 	for _, t := range request.Tasks {
+		lifeCycleState := jobs.RunLifeCycleStateRunning
+		statusState := jobs.RunLifecycleStateV2StateRunning
+		if t.AiRuntimeTask != nil || (t.GenAiComputeTask != nil && t.GenAiComputeTask.TrainingScriptPath != "") {
+			lifeCycleState = jobs.RunLifeCycleStateQueued
+			statusState = jobs.RunLifecycleStateV2StateQueued
+		}
 		tasks = append(tasks, jobs.RunTask{
-			RunId:   nextID(),
-			TaskKey: t.TaskKey,
+			RunId:            nextID(),
+			TaskKey:          t.TaskKey,
+			AiRuntimeTask:    t.AiRuntimeTask,
+			GenAiComputeTask: t.GenAiComputeTask,
+			MaxRetries:       t.MaxRetries,
 			State: &jobs.RunState{
-				LifeCycleState: jobs.RunLifeCycleStateRunning,
+				LifeCycleState: lifeCycleState,
 			},
 			Status: &jobs.RunStatus{
-				State: jobs.RunLifecycleStateV2StateRunning,
+				State: statusState,
 			},
 		})
 	}
@@ -1041,10 +1048,13 @@ func sparkVersionToPython(task jobs.Task) string {
 // tasks are TERMINATED (status.state is TERMINATED with RUN_EXECUTION_ERROR).
 func terminateRun(run *jobs.Run) {
 	for i := range run.Tasks {
-		// Tasks that were never executed (jobs/runs/submit) are still running.
+		// Submitted tasks are advanced without executing their remote workload.
 		if run.Tasks[i].State.LifeCycleState != jobs.RunLifeCycleStateTerminated {
-			run.Tasks[i].State.LifeCycleState = jobs.RunLifeCycleStateTerminated
-			run.Tasks[i].State.ResultState = jobs.RunResultStateSuccess
+			run.Tasks[i].State = &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateTerminated,
+				ResultState:    jobs.RunResultStateSuccess,
+			}
+			run.Tasks[i].Status = &jobs.RunStatus{State: jobs.RunLifecycleStateV2StateTerminated}
 		}
 	}
 
@@ -1079,17 +1089,24 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	// Simulate cloud behavior: first poll returns RUNNING, next the terminal state.
+	// Simulate cloud behavior: AIR tasks are queued, then running, then terminal.
+	// Other submitted tasks keep the existing running-to-terminal sequence.
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
-		// Transition stored state to TERMINATED for the next poll.
-		terminateRun(&run)
-		s.JobRuns[runIdInt] = run
-
-		// Return RUNNING for this poll (before the transition).
 		runResp := run
-		runResp.State = &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateRunning,
+		runResp.Tasks = slices.Clone(run.Tasks)
+		advancedAIRTask := false
+		for i := range run.Tasks {
+			if run.Tasks[i].State.LifeCycleState != jobs.RunLifeCycleStateQueued {
+				continue
+			}
+			run.Tasks[i].State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}
+			run.Tasks[i].Status = &jobs.RunStatus{State: jobs.RunLifecycleStateV2StateRunning}
+			advancedAIRTask = true
 		}
+		if !advancedAIRTask {
+			terminateRun(&run)
+		}
+		s.JobRuns[runIdInt] = run
 		return Response{Body: runResp}
 	}
 

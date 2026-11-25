@@ -89,6 +89,29 @@ func TestJobsSubmit_RunReachesTerminalStateOnPoll(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, second.State.ResultState)
 }
 
+func TestJobsSubmit_AIRTaskTransitionsFromQueuedToRunning(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	submitResponse := submitRun(t, workspace, jobs.SubmitRun{
+		Tasks: []jobs.SubmitTask{{TaskKey: "train", AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "exp"}}},
+	})
+
+	queued := getRun(t, workspace, submitResponse.RunId)
+	require.Len(t, queued.Tasks, 1)
+	assert.Equal(t, jobs.RunLifeCycleStateRunning, queued.State.LifeCycleState)
+	assert.Equal(t, jobs.RunLifeCycleStateQueued, queued.Tasks[0].State.LifeCycleState)
+	assert.Equal(t, "exp", queued.Tasks[0].AiRuntimeTask.Experiment)
+
+	running := getRun(t, workspace, submitResponse.RunId)
+	assert.Equal(t, jobs.RunLifeCycleStateRunning, running.State.LifeCycleState)
+	assert.Equal(t, jobs.RunLifeCycleStateRunning, running.Tasks[0].State.LifeCycleState)
+
+	terminated := getRun(t, workspace, submitResponse.RunId)
+	assert.Equal(t, jobs.RunLifeCycleStateTerminated, terminated.State.LifeCycleState)
+	assert.Equal(t, jobs.RunResultStateSuccess, terminated.State.ResultState)
+	assert.Equal(t, jobs.RunLifeCycleStateTerminated, terminated.Tasks[0].State.LifeCycleState)
+}
+
 func createJob(t *testing.T, workspace *FakeWorkspace, tasks ...jobs.Task) int64 {
 	t.Helper()
 	body, err := json.Marshal(jobs.CreateJob{Name: "my-job", Tasks: tasks})

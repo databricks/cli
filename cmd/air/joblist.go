@@ -34,6 +34,57 @@ func isAirTask(t *jobs.RunTask) bool {
 	return ai != nil || (genAI != nil && genAI.TrainingScriptPath != "")
 }
 
+// isKnownNonAirTask reports whether the response identifies a task type that
+// cannot run an AIR workload. A task with no specification may be an AIR task
+// whose metadata has not propagated yet.
+func isKnownNonAirTask(t *jobs.RunTask) bool {
+	if t.ForEachTask != nil {
+		return isKnownNonAirTaskDefinition(&t.ForEachTask.Task)
+	}
+	return t.AiFunctionTask != nil ||
+		t.AlertTask != nil ||
+		t.CleanRoomsNotebookTask != nil ||
+		t.ConditionTask != nil ||
+		t.DashboardTask != nil ||
+		t.DbtCloudTask != nil ||
+		t.DbtPlatformTask != nil ||
+		t.DbtTask != nil ||
+		t.NotebookTask != nil ||
+		t.PipelineTask != nil ||
+		t.PowerBiTask != nil ||
+		t.PythonOperatorTask != nil ||
+		t.PythonWheelTask != nil ||
+		t.RunJobTask != nil ||
+		t.SparkJarTask != nil ||
+		t.SparkPythonTask != nil ||
+		t.SparkSubmitTask != nil ||
+		t.SqlTask != nil
+}
+
+func isKnownNonAirTaskDefinition(t *jobs.Task) bool {
+	if t.ForEachTask != nil {
+		return isKnownNonAirTaskDefinition(&t.ForEachTask.Task)
+	}
+	return t.AiFunctionTask != nil ||
+		t.AlertTask != nil ||
+		t.CleanRoomsNotebookTask != nil ||
+		t.ConditionTask != nil ||
+		t.DashboardTask != nil ||
+		t.DbtCloudTask != nil ||
+		t.DbtPlatformTask != nil ||
+		t.DbtTask != nil ||
+		t.NotebookTask != nil ||
+		t.PipelineTask != nil ||
+		t.PowerBiTask != nil ||
+		t.PythonOperatorTask != nil ||
+		t.PythonWheelTask != nil ||
+		t.RunJobTask != nil ||
+		t.SparkJarTask != nil ||
+		t.SparkPythonTask != nil ||
+		t.SparkSubmitTask != nil ||
+		t.SqlTask != nil
+}
+
 // airTaskKeys returns the task keys of the run's AI runtime tasks in task
 // order, each once: a retried task appears in r.Tasks once per attempt. It is
 // the one scan for AI runtime tasks; everything after it reads a run narrowed
@@ -104,7 +155,7 @@ func defaultTaskRun(r *jobs.Run) *jobs.Run {
 // state.
 // A task waiting to start (pending, queued or waiting to retry, but not blocked
 // on an upstream task) reports PENDING, as a single-task run whose task waits
-// does (see runWaitingForCompute).
+// does (see runAppearsPending).
 func taskState(r *jobs.Run, latest *jobs.RunTask) *jobs.RunState {
 	s := latest.State
 	if s == nil {
@@ -140,6 +191,21 @@ func leadTask(r *jobs.Run) *jobs.RunTask {
 		return nil
 	}
 	return &r.Tasks[0]
+}
+
+// latestTaskAttempt returns the most recent attempt of the run's lead task.
+func latestTaskAttempt(r *jobs.Run) *jobs.RunTask {
+	lead := leadTask(r)
+	if lead == nil {
+		return nil
+	}
+	latest := lead
+	for i := 1; i < len(r.Tasks); i++ {
+		if r.Tasks[i].TaskKey == lead.TaskKey {
+			latest = &r.Tasks[i]
+		}
+	}
+	return latest
 }
 
 // firstTask returns the run's lead task (see leadTask), unwrapping a foreach
