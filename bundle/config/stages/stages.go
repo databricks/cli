@@ -2,19 +2,18 @@ package stages
 
 import (
 	"cmp"
-	"context"
 	"fmt"
 	"slices"
 	"sync"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/diag"
 )
 
 // Stage is a point in the bundle pipeline at which mutators that each handle a single
-// resource type run. The pipeline applies a stage with [ApplyStage] between its generic
-// steps; a mutator registers itself for a stage from the file of the type it handles.
+// resource type run. The pipeline applies a stage with resourcemutator.ApplyStage between
+// its generic steps; a mutator registers itself for a stage from the file of the type it
+// handles.
 type Stage string
 
 const (
@@ -141,25 +140,13 @@ func groupByStage(registrations []registration, resourceKeys []string) map[Stage
 	return byStage
 }
 
-type applyStage struct {
-	stage Stage
-}
-
-// ApplyStage returns a mutator that applies the mutators registered for stage in sequence.
-// Like [bundle.ApplySeqContext], it stops at the first error.
-func ApplyStage(stage Stage) bundle.Mutator {
-	return &applyStage{stage: stage}
-}
-
-func (m *applyStage) Name() string {
-	return fmt.Sprintf("ApplyStage(%s)", m.stage)
-}
-
-func (m *applyStage) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+// Mutators returns new instances of the mutators registered for stage, in the order that
+// [Register] documents. It returns only what is registered in the running binary, so a
+// caller must link the packages that register for stage.
+func Mutators(stage Stage) []bundle.Mutator {
 	var mutators []bundle.Mutator
-	for _, newMutator := range mutatorsByStage()[m.stage] {
+	for _, newMutator := range mutatorsByStage()[stage] {
 		mutators = append(mutators, newMutator())
 	}
-	bundle.ApplySeqContext(ctx, b, mutators...)
-	return nil
+	return mutators
 }

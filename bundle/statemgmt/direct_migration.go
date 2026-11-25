@@ -13,10 +13,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
-
-	// Registers the mutators of the stage this file applies; without it, the stage is
-	// empty in binaries that do not otherwise link the package, such as unit tests.
-	_ "github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -270,7 +267,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 
 	// Adapt the config to what the direct engine expects, so that the migrated
 	// state and the config agree (for example on default .permissions entries).
-	bundle.ApplyContext(ctx, b, stages.ApplyStage(stages.StageBeforePlan))
+	bundle.ApplyContext(ctx, b, resourcemutator.ApplyStage(stages.StageBeforePlan))
 	if logdiag.HasError(ctx) {
 		return tempStatePath, false, nil, errors.New("failed to apply secret scope fixups")
 	}

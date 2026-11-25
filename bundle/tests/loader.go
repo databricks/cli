@@ -46,7 +46,7 @@ func loadTargetWithDiags(t *testing.T, path, env string) (*bundle.Bundle, diag.D
 		mutator.RewriteSyncPaths(),
 		mutator.SyncDefaultPath(),
 		mutator.SyncInferRoot(),
-		stages.ApplyStage(stages.StageAfterTargetMerge),
+		resourcemutator.ApplyStage(stages.StageAfterTargetMerge),
 		resourcemutator.ModelServingEndpointFixups(),
 	))
 	return b, diags

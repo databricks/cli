@@ -38,7 +38,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
-		stages.ApplyStage(stages.StageBeforeVariables),
+		resourcemutator.ApplyStage(stages.StageBeforeVariables),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -169,7 +169,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		// Resource changes that must see the resources Python code defined and must not be
 		// visible to Python code.
-		stages.ApplyStage(stages.StageAfterPython),
+		resourcemutator.ApplyStage(stages.StageAfterPython),
 
 		// Drop empty-string values on omitempty resource fields so they are not
 		// force-sent to the backend. Runs after variable resolution (a variable may
@@ -207,7 +207,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
 		validate.PostgresDataApiSettings(),
 
-		stages.ApplyStage(stages.StageAfterFieldValidation),
+		resourcemutator.ApplyStage(stages.StageAfterFieldValidation),
 
 		// Reads (dynamic): resources.*.*.lifecycle.depends_on
 		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.

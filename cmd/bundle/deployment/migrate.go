@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -141,7 +142,7 @@ New bundles use the direct engine automatically, no migration is needed.`)
 
 		// Adapt the config to what the direct engine expects, so that the migrated
 		// state and the config agree (for example on default .permissions entries).
-		bundle.ApplyContext(ctx, b, stages.ApplyStage(stages.StageBeforePlan))
+		bundle.ApplyContext(ctx, b, resourcemutator.ApplyStage(stages.StageBeforePlan))
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
