@@ -169,6 +169,59 @@ func TestResolveSelectors_IgnoresInternalTypes(t *testing.T) {
 	assert.NotContains(t, err.Error(), "internal_immutable_snapshots")
 }
 
+// "type.*" resolves to every top-level resource of that type, sorted. Duplicate keys
+// collapse and grants/permissions sub-nodes are not listed (FilterToSelected adds them).
+func TestResolveSelectors_TypeWildcard(t *testing.T) {
+	keys := []string{
+		"resources.jobs.b",
+		"resources.jobs.a",
+		"resources.jobs.a",
+		"resources.jobs.a.permissions",
+		"resources.pipelines.p",
+	}
+	resolved, err := deployplan.ResolveSelectors(slices.Values(keys), []string{"jobs.*"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"resources.jobs.a", "resources.jobs.b"}, resolved)
+
+	// Type and name selectors mix; selector order is preserved.
+	resolved, err = deployplan.ResolveSelectors(slices.Values(keys), []string{"pipelines.*", "a"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"resources.pipelines.p", "resources.jobs.a"}, resolved)
+}
+
+// A type wildcard that matches nothing is an error, whether the type has no resources,
+// is misspelled or is internal. A "*" anywhere else is not a pattern: the selector is
+// looked up literally.
+func TestResolveSelectors_TypeWildcardNoMatch(t *testing.T) {
+	keys := []string{
+		"resources.jobs.foo",
+		"resources.jobs.foo.permissions",
+		"resources.internal_immutable_snapshots.s",
+	}
+	for _, s := range []string{"pipelines.*", "job.*", "internal_immutable_snapshots.*", "jobs.foo.*"} {
+		_, err := deployplan.ResolveSelectors(slices.Values(keys), []string{s})
+		assert.EqualError(t, err, "no resources match "+s)
+	}
+	for _, s := range []string{"jobs.*.permissions", "jobs.f*", "*.foo", "*"} {
+		_, err := deployplan.ResolveSelectors(slices.Values(keys), []string{s})
+		assert.EqualError(t, err, "no such resource: "+s)
+	}
+}
+
+// Config rejects a resource keyed "*", but state deployed before that check can still
+// hold one. "jobs.*" selects every job, that one included; it alone is selected by its
+// unqualified name.
+func TestResolveSelectors_TypeWildcardIncludesStarKey(t *testing.T) {
+	keys := []string{"resources.jobs.*", "resources.jobs.foo"}
+	resolved, err := deployplan.ResolveSelectors(slices.Values(keys), []string{"jobs.*"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"resources.jobs.*", "resources.jobs.foo"}, resolved)
+
+	resolved, err = deployplan.ResolveSelectors(slices.Values(keys), []string{"*"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"resources.jobs.*"}, resolved)
+}
+
 // Multiple live dependents of the same deleted resource are all reported in one error.
 func TestFilterToSelected_DeletionErrorsOnMultipleLiveDependents(t *testing.T) {
 	p := deployplan.NewPlanDirect()

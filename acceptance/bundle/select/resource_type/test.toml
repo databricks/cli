@@ -1,0 +1,3 @@
+# Local-only, like grants_permissions: the schema needs a UC metastore.
+# databricks.yml is generated at runtime from the committed templates.
+Ignore = [".databricks", ".gitignore", "databricks.yml"]

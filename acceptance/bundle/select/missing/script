@@ -6,3 +6,7 @@ musterr trace $CLI bundle plan --select no_such_resource
 
 # Qualified name whose resource does not exist.
 musterr trace $CLI bundle plan --select jobs.no_such_job
+
+# Type selector whose type has no resources, and one whose type does not exist.
+musterr trace $CLI bundle plan --select 'pipelines.*'
+musterr trace $CLI bundle plan --select 'job.*'

@@ -43,7 +43,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	cmd.Flags().CountVarP(&quiet, "quiet", "q", "Reduce output: -q prints only the summary, -qq prints only warnings and errors.")
 	cmd.Flags().StringVar(&readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning.")
-	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
+	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job') or all resources of a type (e.g. 'jobs.*'). Can be repeated or comma-separated.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
 

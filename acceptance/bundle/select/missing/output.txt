@@ -6,3 +6,11 @@ Error: no such resource: no_such_resource
 >>> [CLI] bundle plan --select jobs.no_such_job
 Error: no such resource: jobs.no_such_job
 
+
+>>> [CLI] bundle plan --select pipelines.*
+Error: no resources match pipelines.*
+
+
+>>> [CLI] bundle plan --select job.*
+Error: no resources match job.*
+

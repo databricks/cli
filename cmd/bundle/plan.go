@@ -36,7 +36,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
-	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Plan only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
+	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Plan only the specified resource (e.g. 'my_job' or 'jobs.my_job') or all resources of a type (e.g. 'jobs.*'). Can be repeated or comma-separated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		opts := utils.ProcessOptions{
