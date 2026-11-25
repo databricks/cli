@@ -291,6 +291,40 @@ func recordLifecycleStarted(b *bundle.Bundle) {
 	}
 }
 
+// recordResourceIDs fills the field of event that each resource type declares for its
+// IDs, with the IDs of up to ResourceIdLimit of its resources.
+func recordResourceIDs(r *config.Resources, event *protos.BundleDeployEvent) {
+	for _, group := range r.AllResources() {
+		d, ok := config.ResourceTypeAs[resources.DeployTelemetryIDs](group.Description.PluralName)
+		if !ok {
+			continue
+		}
+
+		var ids []string
+		for _, res := range group.Resources {
+			if len(ids) >= ResourceIdLimit {
+				break
+			}
+
+			// Do not include missing IDs in telemetry. We can still detect them
+			// by comparing against the resource count.
+			if isNilResource(res) {
+				continue
+			}
+			id := res.(resources.DeployTelemetryIDs).GetID()
+			if id == "" {
+				continue
+			}
+			ids = append(ids, id)
+		}
+
+		// sort the IDs to make the record generated deterministic
+		// this is important for testing purposes
+		slices.Sort(ids)
+		*d.DeployTelemetryIDsField(event) = ids
+	}
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
@@ -311,66 +345,6 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	if err != nil {
 		log.Debugf(ctx, "failed to count resources: %s", err)
 	}
-
-	var jobsIds []string
-	for _, job := range b.Config.Resources.Jobs {
-		if len(jobsIds) >= ResourceIdLimit {
-			break
-		}
-
-		// Do not include missing IDs in telemetry. We can still detect them
-		// by comparing against the resource count.
-		if job == nil || job.ID == "" {
-			continue
-		}
-		jobsIds = append(jobsIds, job.ID)
-	}
-	var pipelineIds []string
-	for _, pipeline := range b.Config.Resources.Pipelines {
-		if len(pipelineIds) >= ResourceIdLimit {
-			break
-		}
-
-		// Do not include missing IDs in telemetry. We can still detect them
-		// by comparing against the resource count.
-		if pipeline == nil || pipeline.ID == "" {
-			continue
-		}
-		pipelineIds = append(pipelineIds, pipeline.ID)
-	}
-	var clusterIds []string
-	for _, cluster := range b.Config.Resources.Clusters {
-		if len(clusterIds) >= ResourceIdLimit {
-			break
-		}
-
-		// Do not include missing IDs in telemetry. We can still detect them
-		// by comparing against the resource count.
-		if cluster == nil || cluster.ID == "" {
-			continue
-		}
-		clusterIds = append(clusterIds, cluster.ID)
-	}
-	var dashboardIds []string
-	for _, dashboard := range b.Config.Resources.Dashboards {
-		if len(dashboardIds) >= ResourceIdLimit {
-			break
-		}
-
-		// Do not include missing IDs in telemetry. We can still detect them
-		// by comparing against the resource count.
-		if dashboard == nil || dashboard.ID == "" {
-			continue
-		}
-		dashboardIds = append(dashboardIds, dashboard.ID)
-	}
-
-	// sort the IDs to make the record generated deterministic
-	// this is important for testing purposes
-	slices.Sort(jobsIds)
-	slices.Sort(pipelineIds)
-	slices.Sort(clusterIds)
-	slices.Sort(dashboardIds)
 
 	recordLifecycleStarted(b)
 
@@ -460,54 +434,52 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		}
 	}
 
-	telemetry.Log(ctx, protos.DatabricksCliLog{
-		BundleDeployEvent: &protos.BundleDeployEvent{
-			BundleUuid:   bundleUuid,
-			DeploymentId: b.Metrics.DeploymentId.String(),
-			ErrorMessage: errMsg,
+	event := &protos.BundleDeployEvent{
+		BundleUuid:   bundleUuid,
+		DeploymentId: b.Metrics.DeploymentId.String(),
+		ErrorMessage: errMsg,
 
-			ResourceCount:                     resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
-			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
-			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
-			ResourceModelCount:                int64(len(b.Config.Resources.Models)),
-			ResourceExperimentCount:           int64(len(b.Config.Resources.Experiments)),
-			ResourceModelServingEndpointCount: int64(len(b.Config.Resources.ModelServingEndpoints)),
-			ResourceRegisteredModelCount:      int64(len(b.Config.Resources.RegisteredModels)),
-			ResourceQualityMonitorCount:       int64(len(b.Config.Resources.QualityMonitors)),
-			ResourceSchemaCount:               int64(len(b.Config.Resources.Schemas)),
-			ResourceVolumeCount:               int64(len(b.Config.Resources.Volumes)),
-			ResourceClusterCount:              int64(len(b.Config.Resources.Clusters)),
-			ResourceDashboardCount:            int64(len(b.Config.Resources.Dashboards)),
-			ResourceAppCount:                  int64(len(b.Config.Resources.Apps)),
+		ResourceCount:                     resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
+		ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
+		ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
+		ResourceModelCount:                int64(len(b.Config.Resources.Models)),
+		ResourceExperimentCount:           int64(len(b.Config.Resources.Experiments)),
+		ResourceModelServingEndpointCount: int64(len(b.Config.Resources.ModelServingEndpoints)),
+		ResourceRegisteredModelCount:      int64(len(b.Config.Resources.RegisteredModels)),
+		ResourceQualityMonitorCount:       int64(len(b.Config.Resources.QualityMonitors)),
+		ResourceSchemaCount:               int64(len(b.Config.Resources.Schemas)),
+		ResourceVolumeCount:               int64(len(b.Config.Resources.Volumes)),
+		ResourceClusterCount:              int64(len(b.Config.Resources.Clusters)),
+		ResourceDashboardCount:            int64(len(b.Config.Resources.Dashboards)),
+		ResourceAppCount:                  int64(len(b.Config.Resources.Apps)),
 
-			ResourceJobIDs:       jobsIds,
-			ResourcePipelineIDs:  pipelineIds,
-			ResourceClusterIDs:   clusterIds,
-			ResourceDashboardIDs: dashboardIds,
+		ResourcesMetadata: collectResourcesMetadata(ctx, b),
+		DeploymentHistory: deploymentHistory,
 
-			ResourcesMetadata: collectResourcesMetadata(ctx, b),
-			DeploymentHistory: deploymentHistory,
+		Pydabs: pydabsSection,
 
-			Pydabs: pydabsSection,
+		Git:                 bundleGitInfo(b),
+		FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
+		InGitRepo:           b.InGitRepo,
 
-			Git:                 bundleGitInfo(b),
-			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
-			InGitRepo:           b.InGitRepo,
-
-			Experimental: &protos.BundleDeployExperimental{
-				BundleMode:                   mode,
-				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
-				UploadFileCount:              int64(len(b.Files)),
-				UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
-				TargetCount:                  b.Metrics.TargetCount,
-				WorkspaceArtifactPathType:    artifactPathType,
-				BoolValues:                   b.Metrics.BoolValues,
-				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
-				VariableCount:                int64(variableCount),
-				ComplexVariableCount:         complexVariableCount,
-				LookupVariableCount:          lookupVariableCount,
-				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
-			},
+		Experimental: &protos.BundleDeployExperimental{
+			BundleMode:                   mode,
+			ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
+			UploadFileCount:              int64(len(b.Files)),
+			UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
+			TargetCount:                  b.Metrics.TargetCount,
+			WorkspaceArtifactPathType:    artifactPathType,
+			BoolValues:                   b.Metrics.BoolValues,
+			LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
+			VariableCount:                int64(variableCount),
+			ComplexVariableCount:         complexVariableCount,
+			LookupVariableCount:          lookupVariableCount,
+			BundleMutatorExecutionTimeMs: getExecutionTimes(b),
 		},
+	}
+	recordResourceIDs(&b.Config.Resources, event)
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		BundleDeployEvent: event,
 	})
 }

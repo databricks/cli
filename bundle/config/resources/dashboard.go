@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -130,4 +131,12 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 
 func (r *Dashboard) GetName() string {
 	return r.DisplayName
+}
+
+func (r *Dashboard) GetID() string {
+	return r.ID
+}
+
+func (*Dashboard) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
+	return &event.ResourceDashboardIDs
 }

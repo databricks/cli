@@ -1,6 +1,10 @@
 package phases
 
 import (
+	"reflect"
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -203,6 +207,60 @@ func TestRecordLifecycleStarted(t *testing.T) {
 		{Key: "cluster_lifecycle_started", Value: true},
 		{Key: "sql_warehouse_lifecycle_started", Value: false},
 	}, b.Metrics.BoolValues)
+}
+
+// Every IDs field of the deploy event is filled by exactly one resource type.
+func TestDeployTelemetryIDsFieldsAreDeclaredOnce(t *testing.T) {
+	var event protos.BundleDeployEvent
+	declaredBy := map[*[]string][]string{}
+	for key, d := range config.ResourceTypesImplementing[resources.DeployTelemetryIDs]() {
+		field := d.DeployTelemetryIDsField(&event)
+		declaredBy[field] = append(declaredBy[field], key)
+	}
+
+	v := reflect.ValueOf(&event).Elem()
+	for i := range v.NumField() {
+		name := v.Type().Field(i).Name
+		if !strings.HasPrefix(name, "Resource") || !strings.HasSuffix(name, "IDs") {
+			continue
+		}
+		field := v.Field(i).Addr().Interface().(*[]string)
+		assert.Len(t, declaredBy[field], 1, "field %s is declared by %v", name, declaredBy[field])
+		delete(declaredBy, field)
+	}
+	assert.Empty(t, declaredBy, "declared fields that are not IDs fields of the deploy event")
+}
+
+func TestRecordResourceIDs(t *testing.T) {
+	r := &config.Resources{
+		Jobs: map[string]*resources.Job{
+			"b":          {ID: "2"},
+			"a":          {ID: "1"},
+			"nil":        nil,
+			"undeployed": {},
+		},
+		Dashboards: map[string]*resources.Dashboard{"d": {ID: "dash"}},
+		Schemas:    map[string]*resources.Schema{"s": {ID: "main.s"}},
+	}
+
+	var event protos.BundleDeployEvent
+	recordResourceIDs(r, &event)
+	assert.Equal(t, []string{"1", "2"}, event.ResourceJobIDs)
+	assert.Equal(t, []string{"dash"}, event.ResourceDashboardIDs)
+	assert.Nil(t, event.ResourcePipelineIDs)
+	assert.Nil(t, event.ResourceClusterIDs)
+}
+
+func TestRecordResourceIDsLimit(t *testing.T) {
+	jobs := map[string]*resources.Job{}
+	for i := range ResourceIdLimit + 1 {
+		jobs[strconv.Itoa(i)] = &resources.Job{ID: strconv.Itoa(i)}
+	}
+
+	var event protos.BundleDeployEvent
+	recordResourceIDs(&config.Resources{Jobs: jobs}, &event)
+	assert.Len(t, event.ResourceJobIDs, ResourceIdLimit)
+	assert.True(t, slices.IsSorted(event.ResourceJobIDs))
 }
 
 func TestPydabsMetrics(t *testing.T) {
