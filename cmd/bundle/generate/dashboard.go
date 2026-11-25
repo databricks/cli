@@ -420,6 +420,10 @@ func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete s
 	return slices.Collect(maps.Keys(resources.Completions(b, filterDashboards))), cobra.ShellCompDirectiveNoFileComp
 }
 
+func init() {
+	registerGenerator("dashboards", NewGenerateDashboardCommand)
+}
+
 func NewGenerateDashboardCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dashboard",

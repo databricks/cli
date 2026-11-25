@@ -23,6 +23,10 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+func init() {
+	registerGenerator("alerts", NewGenerateAlertCommand)
+}
+
 func NewGenerateAlertCommand() *cobra.Command {
 	var alertID string
 	var configDir string

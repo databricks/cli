@@ -363,6 +363,10 @@ func genieSpaceResourceCompletion(cmd *cobra.Command, args []string, toComplete 
 	return slices.Collect(maps.Keys(resources.Completions(b, filterGenieSpaces))), cobra.ShellCompDirectiveNoFileComp
 }
 
+func init() {
+	registerGenerator("genie_spaces", NewGenerateGenieSpaceCommand)
+}
+
 func NewGenerateGenieSpaceCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "genie-space",

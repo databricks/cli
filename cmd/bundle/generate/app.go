@@ -16,6 +16,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	registerGenerator("apps", NewGenerateAppCommand)
+}
+
 func NewGenerateAppCommand() *cobra.Command {
 	var configDir string
 	var sourceDir string
