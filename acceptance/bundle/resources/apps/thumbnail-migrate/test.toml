@@ -1,0 +1,5 @@
+# Seeds a terraform state from a fixture, as acceptance/bundle/invariant/migrate does; local-only.
+Cloud = false
+RecordRequests = true
+EnvMatrix.DMS = [""]
+Ignore = [".databricks", "databricks.yml"]
