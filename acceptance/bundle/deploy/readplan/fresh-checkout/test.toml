@@ -1,0 +1,3 @@
+Badness = "bundle deploy --plan skips the deployment state pull, so applying a saved plan without a local .databricks cache (e.g. a separate CI job) does not delete files removed from the bundle, drops them from the remote deployment.json so later deploys never delete them, and restarts seq at 1. Expected: the same file cleanup and seq increment as a plain bundle deploy."
+
+Ignore = ["tmp.plan.json"]

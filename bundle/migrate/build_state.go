@@ -318,6 +318,14 @@ func referencesUndeployed(refTemplate string, tfIDs map[string]string) bool {
 	return false
 }
 
+// idFieldTerraformNames names the terraform attribute of an id field whose direct-state name is
+// not its terraform attribute name (a secret scope's state "scope" is "name" in config and in
+// terraform). LookupTFField takes config names, so without an entry the lookup fails and
+// reconcileIDFields skips the field, recording an undeployed rename as already applied.
+var idFieldTerraformNames = map[string]map[string]string{
+	"secret_scopes": {"scope": "name"},
+}
+
 // reconcileIDFields aligns each id-composing field (provided_id_fields, updatable_id_fields)
 // in the migrated state with the deployed terraform state. The state is otherwise seeded from
 // config; for id fields, recording the current config would snapshot a pending change as
@@ -352,7 +360,14 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 			if err != nil {
 				continue
 			}
-			deployedVal, err := LookupTFField(tfAttrs, group, name, path)
+			tfPath := path
+			fieldName := rule.Field.String()
+			tfName, renamed := idFieldTerraformNames[group][fieldName]
+			if renamed {
+				tfPath = structpath.NewStringKey(nil, tfName)
+				fieldName = tfName
+			}
+			deployedVal, err := LookupTFField(tfAttrs, group, name, tfPath)
 			if err != nil {
 				continue
 			}
@@ -362,6 +377,14 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 			deployedStr, ok2 := deployedVal.(string)
 			if !ok1 || !ok2 {
 				return fmt.Errorf("id field %q: expected string values, got config %T and deployed %T", rule.Field.String(), configVal, deployedVal)
+			}
+
+			// References are extracted by state field name, so one in a renamed field (a secret
+			// scope's name) is never resolved: it stays a literal template here, and the plan
+			// compares that same literal, so there is no config value to reconcile. Other fields
+			// had their references resolved above, and a resolved value may contain "${".
+			if renamed && dynvar.ContainsVariableReference(configStr) {
+				continue
 			}
 
 			// UC identifier names are case-insensitive and UC strips trailing slashes from
@@ -375,7 +398,7 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 			// migrated state matches the last-applied config, and warn so the recreate/rename in
 			// the plan that follows the migration is not a surprise.
 			log.Warnf(ctx, "%s%s.%s: %s differs between config (%q) and terraform state (%q); this resource will be %s.",
-				warnPrefix, group, name, rule.Field.String(), configStr, deployedStr, kind.action)
+				warnPrefix, group, name, fieldName, configStr, deployedStr, kind.action)
 			if err := structaccess.Set(stateValue, path, deployedVal); err != nil {
 				return fmt.Errorf("setting id field %q: %w", rule.Field.String(), err)
 			}
