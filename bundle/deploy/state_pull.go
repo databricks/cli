@@ -133,9 +133,10 @@ func withoutInternalFiles(ctx context.Context, b *bundle.Bundle, fl Filelist) (F
 	if err != nil {
 		return nil, err
 	}
-	rel, err := filepath.Rel(b.SyncRootPath, internalDir)
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		// Outside the sync root, so the file sync never touches it.
+	rel, relErr := filepath.Rel(b.SyncRootPath, internalDir)
+	insideSyncRoot := relErr == nil && filepath.IsLocal(rel)
+	if !insideSyncRoot {
+		// The file sync never touches it.
 		return fl, nil
 	}
 	prefix := filepath.ToSlash(rel) + "/"
