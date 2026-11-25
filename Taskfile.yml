@@ -1154,12 +1154,14 @@ tasks:
       - bundle/direct/tools/generate_resources.py
       - .codegen/cli.json
       - bundle/direct/dresources/apitypes.generated.yml
-      - bundle/direct/dresources/apitypes.yml
+      # The api_type of each hand-written config.
+      - bundle/direct/dresources/configs/*.yml
+      - exclude: bundle/direct/dresources/configs/*.generated.yml
       - acceptance/bundle/refschema/output/*.txt
     generates:
       - bundle/direct/dresources/configs/*.generated.yml
     cmds:
-      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/output bundle/direct/dresources/configs"
+      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml acceptance/bundle/refschema/output bundle/direct/dresources/configs"
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 

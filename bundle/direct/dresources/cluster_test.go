@@ -1,14 +1,37 @@
 package dresources
 
 import (
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerWithoutTestFixture("clusters", "the test server creates a cluster from an empty spec")
+
+	registerTestDeps("clusters.permissions", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/clusters/cluster-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	})
+
+	registerKnownMissingInStateType("clusters",
+		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
+	)
+
+	registerCreateRecoveryOptOut("clusters", "the backend assigns the cluster id, names are not unique, and the create request takes no idempotency token")
+}
 
 func TestClusterOverrideChangeDescLibraries(t *testing.T) {
 	jobLib := []compute.Library{{Whl: "/Workspace/job.whl"}}

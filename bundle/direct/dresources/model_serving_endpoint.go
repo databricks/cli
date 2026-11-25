@@ -22,6 +22,10 @@ var (
 	pathTelemetryConfig    = structpath.MustParsePath("telemetry_config")
 )
 
+func init() {
+	registerAdapter("model_serving_endpoints", (*ResourceModelServingEndpoint)(nil))
+}
+
 type ResourceModelServingEndpoint struct {
 	client *databricks.WorkspaceClient
 }

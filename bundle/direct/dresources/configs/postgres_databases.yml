@@ -1,3 +1,5 @@
+api_type: postgres.DatabaseDatabaseSpec
+
 provided_id_fields:
   # parent and database_id are immutable (part of hierarchical name, not in API spec)
   - field: parent

@@ -12,6 +12,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
+func init() {
+	registerAdapter("postgres_roles", (*ResourcePostgresRole)(nil))
+}
+
 type ResourcePostgresRole struct {
 	client *databricks.WorkspaceClient
 }

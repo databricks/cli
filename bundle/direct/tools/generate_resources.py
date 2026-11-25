@@ -20,13 +20,19 @@ from pathlib import Path
 import yaml
 
 
-def parse_apitypes(generated_path, override_path):
-    """Parse apitypes.generated.yml and override with apitypes.yml."""
+def parse_apitypes(generated_path, configs_dir):
+    """Parse apitypes.generated.yml and override it with the api_type of each <resource_type>.yml."""
     result = yaml.safe_load(generated_path.read_text()) or {}
 
-    # Override with non-generated apitypes.yml (null values remove entries)
-    override_data = yaml.safe_load(override_path.read_text()) or {}
-    for resource, type_name in override_data.items():
+    # A null api_type removes the entry.
+    for path in sorted(configs_dir.glob("*.yml")):
+        if path.name.endswith(GENERATED_SUFFIX):
+            continue
+        config = yaml.safe_load(path.read_text()) or {}
+        if "api_type" not in config:
+            continue
+        resource = path.name.removesuffix(".yml")
+        type_name = config["api_type"]
         if type_name:
             result[resource] = type_name
         else:
@@ -214,12 +220,13 @@ def main():
     parser = argparse.ArgumentParser(description="Generate resources YAML from the cli.json schema block")
     parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
-    parser.add_argument("apitypes_override", type=Path, help="Path to apitypes.yml override file")
     parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
-    parser.add_argument("outdir", type=Path, help="Directory to write <resource_type>.generated.yml files to")
+    parser.add_argument(
+        "outdir", type=Path, help="Directory to read api_type from and write <resource_type>.generated.yml to"
+    )
     args = parser.parse_args()
 
-    resource_types = parse_apitypes(args.apitypes, args.apitypes_override)
+    resource_types = parse_apitypes(args.apitypes, args.outdir)
     state_fields, array_element_types = parse_out_fields(args.out_fields)
     schemas = json.loads(args.apischema.read_text())["schemas"]
 

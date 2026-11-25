@@ -21,6 +21,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+func init() {
+	registerAdapter("dashboards", (*ResourceDashboard)(nil))
+}
+
 // Terraform implementation reference: https://github.com/databricks/terraform-provider-databricks/blob/main/dashboards/resource_dashboard.go
 type ResourceDashboard struct {
 	client *databricks.WorkspaceClient

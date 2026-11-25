@@ -22,6 +22,10 @@ import (
 // (parent + model_provider_service_id) from the server-derived resource name.
 const modelProviderServiceNamePrefix = "model-provider-services/"
 
+func init() {
+	registerAdapter("model_provider_services", (*ResourceModelProviderService)(nil))
+}
+
 type ResourceModelProviderService struct {
 	client *databricks.WorkspaceClient
 }

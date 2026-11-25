@@ -47,6 +47,10 @@ func (r SqlWarehouseRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(r)
 }
 
+func init() {
+	registerAdapter("sql_warehouses", (*ResourceSqlWarehouse)(nil))
+}
+
 type ResourceSqlWarehouse struct {
 	client *databricks.WorkspaceClient
 }

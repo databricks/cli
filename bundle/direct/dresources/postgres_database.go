@@ -38,6 +38,10 @@ func (s PostgresDatabaseRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("postgres_databases", (*ResourcePostgresDatabase)(nil))
+}
+
 type ResourcePostgresDatabase struct {
 	client *databricks.WorkspaceClient
 }

@@ -10,6 +10,10 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
+func init() {
+	registerAdapter("internal_immutable_snapshots", (*ResourceSnapshot)(nil))
+}
+
 type ResourceSnapshot struct {
 	uploader *snapshot.SnapshotClient
 }

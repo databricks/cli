@@ -103,6 +103,12 @@ type RemoteAdditionRule struct {
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.
 type ResourceLifecycleConfig struct {
+	// APIType: the SDK type ("jobs.JobSettings") whose OpenAPI field behaviors become the
+	// type's <resource_type>.generated.yml, replacing the type that apitypes.generated.yml
+	// guesses. Null means no generated rules. Only bundle/direct/tools/generate_resources.py
+	// reads it; the engine reads the generated rules.
+	APIType string `yaml:"api_type,omitempty"`
+
 	// IgnoreRemoteChanges: field patterns where remote changes are ignored (output-only, policy-set).
 	IgnoreRemoteChanges []FieldRule `yaml:"ignore_remote_changes,omitempty"`
 
@@ -211,6 +217,7 @@ const (
 )
 
 var empty = ResourceLifecycleConfig{
+	APIType:               "",
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
 	InternalIDField:       "",
@@ -253,7 +260,7 @@ var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
 			panic(fmt.Errorf("%s: %w", name, err))
 		}
 
-		_, isResourceType := SupportedResources[resourceType]
+		_, isResourceType := supportedResources()[resourceType]
 		for _, rt := range configResourceTypes(resourceType) {
 			// A resource type's own file replaces the shared one, whichever is read first.
 			if _, ok := dst.Resources[rt]; ok && !isResourceType {
@@ -269,11 +276,11 @@ var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
 // configResourceTypes returns the resource types a config file named name applies to: the
 // resource type itself, or for a sub-resource name like "grants" every "<parent>.grants".
 func configResourceTypes(name string) []string {
-	if _, ok := SupportedResources[name]; ok {
+	if _, ok := supportedResources()[name]; ok {
 		return []string{name}
 	}
 	var result []string
-	for resourceType := range SupportedResources {
+	for resourceType := range supportedResources() {
 		if strings.HasSuffix(resourceType, "."+name) {
 			result = append(result, resourceType)
 		}

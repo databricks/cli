@@ -26,6 +26,10 @@ func (s QualityMonitorState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("quality_monitors", (*ResourceQualityMonitor)(nil))
+}
+
 type ResourceQualityMonitor struct {
 	client *databricks.WorkspaceClient
 }

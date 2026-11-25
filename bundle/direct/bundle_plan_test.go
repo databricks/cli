@@ -843,7 +843,7 @@ func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
 // config-remote-sync excludes it (it captures remote_addition but filters known defaults).
 // Reordering the two classifiers reintroduces #6631.
 func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
-	adapter, err := dresources.NewAdapter(dresources.SupportedResources["clusters"], "clusters", nil)
+	adapter, err := dresources.NewAdapter(dresources.SupportedResources()["clusters"], "clusters", nil)
 	require.NoError(t, err)
 
 	newState := &dresources.ClusterState{PolicyId: "p1"}

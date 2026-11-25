@@ -1,4 +1,4 @@
-# Generated, do not edit. Override via apitypes.yml
+# Generated, do not edit. Override via api_type in configs/<resource_type>.yml
 
 alerts: sql.AlertV2
 

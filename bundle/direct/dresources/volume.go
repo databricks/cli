@@ -31,6 +31,10 @@ func (s VolumeState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("volumes", (*ResourceVolume)(nil))
+}
+
 type ResourceVolume struct {
 	client *databricks.WorkspaceClient
 }

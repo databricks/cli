@@ -1,3 +1,9 @@
+# No generated rules for postgres_data_apis. The API marks spec INPUT_ONLY, which
+# would generate ignore_remote_changes for every spec field, but DoRead fills
+# the spec from status, which echoes the configuration in effect. The field
+# rules are hand-written in this file instead.
+api_type: null
+
 provided_id_fields:
   # parent composes the Data API's hierarchical name ("{parent}/data-api");
   # changing it targets a different database's Data API, so it recreates

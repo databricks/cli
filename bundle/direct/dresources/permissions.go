@@ -13,6 +13,24 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+func init() {
+	registerDerivedAdapters(permissionsAdapters)
+}
+
+// permissionsAdapters yields this adapter for the permissions of every resource type
+// that declares a permissions API object type. A type whose permissions use another
+// API registers its own adapter.
+func permissionsAdapters(yield func(string, any) bool) {
+	for key, d := range config.ResourceTypesImplementing[resources.PermissionsDeclarer]() {
+		if d.PermissionsSupport().RequestObjectType == "" {
+			continue
+		}
+		if !yield(key+".permissions", (*ResourcePermissions)(nil)) {
+			return
+		}
+	}
+}
+
 type ResourcePermissions struct {
 	client *databricks.WorkspaceClient
 

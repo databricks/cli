@@ -15,58 +15,12 @@ import (
 // knownMissingInRemoteType lists fields that exist in StateType but not in RemoteType.
 // These are known issues that should be fixed. If a field listed here is found in RemoteType,
 // the test fails to ensure the entry is removed from this map.
-var knownMissingInRemoteType = map[string][]string{
-	"apps": {
-		// The Apps API can't return the thumbnail image, only its thumbnail_url.
-		"thumbnail",
-	},
-	"external_locations": {
-		"skip_validation",
-	},
-	"model_serving_endpoints": {
-		"rate_limits",
-	},
-	"pipelines": {
-		// Note that this is a deliberate omission: cascade_on_destroy is a client-side-only field.
-		// It has no remote counterpart, so it is never expected in RemoteType.
-		"cascade_on_destroy",
-	},
-	"quality_monitors": {
-		"skip_builtin_dashboard",
-		"warehouse_id",
-	},
-	"secret_scopes": {
-		"initial_manage_principal",
-	},
-	"postgres_branches": {
-		"replace_existing",
-		"purge_on_delete",
-	},
-	"postgres_databases": {
-		"replace_existing",
-	},
-	"postgres_endpoints": {
-		"replace_existing",
-	},
-	"postgres_roles": {
-		"replace_existing",
-	},
-	"postgres_projects": {
-		"purge_on_delete",
-	},
-	"vector_search_endpoints": {
-		"usage_policy_id",
-	},
-	"internal_immutable_snapshots": {
-		"bundle_id",
-		"acl",
-		"can_manage",
-		"zip_path",
-	},
-	"job_runs": {
-		// Local-only trigger fingerprints under lifecycle.
-		"lifecycle",
-	},
+var knownMissingInRemoteType = map[string][]string{}
+
+// registerKnownMissingInRemoteType registers the fields of resourceType that are in StateType
+// but not in RemoteType. Call it from the init() of the type's test file.
+func registerKnownMissingInRemoteType(resourceType string, fields ...string) {
+	registerOnce(knownMissingInRemoteType, "knownMissingInRemoteType", resourceType, fields)
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.
@@ -80,46 +34,12 @@ var commonMissingInStateType = []string{
 // knownMissingInStateType lists resource-specific fields that exist in InputType but not in StateType.
 // Fields in commonMissingInStateType are automatically included for all types.
 // Note: Fields with bundle:"internal" or bundle:"readonly" tags are automatically skipped.
-var knownMissingInStateType = map[string][]string{
-	"alerts": {
-		"file_path",
-	},
-	"apps": {
-		"lifecycle.prevent_destroy",
-		"lifecycle.depends_on",
-		// The image read from thumbnail_path is kept in state as thumbnail.
-		"thumbnail_path",
-	},
-	"clusters": {
-		"lifecycle.prevent_destroy",
-		"lifecycle.depends_on",
-	},
-	"sql_warehouses": {
-		"lifecycle.prevent_destroy",
-		"lifecycle.depends_on",
-	},
-	"job_runs": {
-		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
-		"lifecycle.prevent_destroy",
-		"lifecycle.depends_on",
-		"lifecycle.triggers",
-	},
-	"dashboards": {
-		"file_path",
-	},
-	"genie_spaces": {
-		"file_path",
-	},
-	"secret_scopes": {
-		"backend_type",
-		"keyvault_metadata",
-		"name",
-	},
-	"internal_immutable_snapshots": {
-		// RemoteRoot is only the input used to compose FullPath; the state persists
-		// the composed FullPath (and RelativePath), so it isn't kept in state.
-		"remote_root",
-	},
+var knownMissingInStateType = map[string][]string{}
+
+// registerKnownMissingInStateType registers the fields of resourceType that are in InputType
+// but not in StateType. Call it from the init() of the type's test file.
+func registerKnownMissingInStateType(resourceType string, fields ...string) {
+	registerOnce(knownMissingInStateType, "knownMissingInStateType", resourceType, fields)
 }
 
 // TestInputSubset validates that all fields in InputType exist in StateType.
@@ -129,7 +49,7 @@ var knownMissingInStateType = map[string][]string{
 //
 // We also resolve pre-deploy references against state, not input.
 func TestInputSubset(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
@@ -163,7 +83,7 @@ func TestInputSubset(t *testing.T) {
 			// Check that resource-specific known missing fields are actually missing
 			for _, f := range knownMissingInStateType[resourceType] {
 				if !slices.Contains(missingFields, f) {
-					t.Errorf("field %q is listed in knownMissingInStateType but exists in StateType; remove it from the list", f)
+					t.Errorf("field %q is registered with registerKnownMissingInStateType but exists in StateType; remove it from that call in the type's test file", f)
 				}
 			}
 
@@ -193,7 +113,7 @@ func TestInputSubset(t *testing.T) {
 // to resolve remote references, which may have more fields than state by design. It's useful
 // for debugging to see those values in the detailed plan.
 func TestRemoteSuperset(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
@@ -220,7 +140,7 @@ func TestRemoteSuperset(t *testing.T) {
 			// Check that known missing fields are actually missing
 			for _, f := range known {
 				if !slices.Contains(missingFields, f) {
-					t.Errorf("field %q is listed in knownMissingInRemoteType but exists in RemoteType; remove it from the list", f)
+					t.Errorf("field %q is registered with registerKnownMissingInRemoteType but exists in RemoteType; remove it from that call in the type's test file", f)
 				}
 			}
 

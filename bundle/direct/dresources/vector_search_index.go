@@ -66,6 +66,10 @@ func (s VectorSearchIndexRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("vector_search_indexes", (*ResourceVectorSearchIndex)(nil))
+}
+
 type ResourceVectorSearchIndex struct {
 	client *databricks.WorkspaceClient
 }

@@ -9,6 +9,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+func init() {
+	registerAdapter("cluster_policies", (*ResourceClusterPolicy)(nil))
+}
+
 type ResourceClusterPolicy struct {
 	client *databricks.WorkspaceClient
 }

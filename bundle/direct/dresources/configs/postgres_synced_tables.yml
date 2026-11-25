@@ -1,3 +1,5 @@
+api_type: postgres.SyncedTableSyncedTableSpec
+
 # The Postgres API has no UpdateSyncedTable endpoint, so every settable
 # field is recreate-only on the intent side (local YAML edit -> delete +
 # create). The complementary ignore_remote_changes block for this resource

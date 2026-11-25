@@ -1,3 +1,5 @@
+api_type: catalog.ModelProviderService
+
 provided_id_fields:
   # parent + model_provider_service_id compose the server-derived resource
   # name (model-provider-services/{catalog}.{schema}.{model_provider_service}),

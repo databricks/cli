@@ -1,3 +1,5 @@
+api_type: catalog.ModelService
+
 provided_id_fields:
   # parent + model_service_id compose the server-derived resource name
   # (model-services/{catalog}.{schema}.{model_service}), which is the ID the

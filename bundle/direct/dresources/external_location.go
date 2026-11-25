@@ -11,6 +11,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerAdapter("external_locations", (*ResourceExternalLocation)(nil))
+}
+
 type ResourceExternalLocation struct {
 	client *databricks.WorkspaceClient
 }

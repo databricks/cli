@@ -1,10 +1,12 @@
 package dresources
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
@@ -14,6 +16,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestConfig("schemas", &resources.Schema{
+		CatalogName: "main",
+		Name:        "myschema",
+		Comment:     "Test schema",
+	})
+
+	registerTestDeps("schemas.grants", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "schema",
+			FullName:      "main.myschema",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	})
+}
 
 func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 	_, client := setupTestServerClient(t)

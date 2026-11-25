@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
@@ -13,6 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestConfig("postgres_catalogs", &resources.PostgresCatalog{
+		CatalogId: "test_catalog",
+	})
+}
 
 // createTestPostgresCatalog runs DoCreate against a server whose create request fails with 500
 // while a catalog created at created exists.

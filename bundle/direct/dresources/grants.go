@@ -20,6 +20,19 @@ type GrantsState struct {
 	EmbeddedSlice []catalog.PrivilegeAssignment `json:"__embed__,omitempty"`
 }
 
+func init() {
+	registerDerivedAdapters(grantsAdapters)
+}
+
+// grantsAdapters yields this adapter for the grants of every resource type that declares grants.
+func grantsAdapters(yield func(string, any) bool) {
+	for key := range config.ResourceTypesImplementing[resources.GrantsDeclarer]() {
+		if !yield(key+".grants", (*ResourceGrants)(nil)) {
+			return
+		}
+	}
+}
+
 type ResourceGrants struct {
 	client *databricks.WorkspaceClient
 

@@ -64,6 +64,10 @@ func (s PipelineRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("pipelines", (*ResourcePipeline)(nil))
+}
+
 type ResourcePipeline struct {
 	client *databricks.WorkspaceClient
 }

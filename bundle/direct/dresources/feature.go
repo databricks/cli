@@ -11,6 +11,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerAdapter("features", (*ResourceFeature)(nil))
+}
+
 // https://docs.databricks.com/api/workspace/featureengineering
 // Terraform: https://github.com/databricks/terraform-provider-databricks/blob/main/internal/providers/pluginfw/products/featureengineering/
 type ResourceFeature struct {

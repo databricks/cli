@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
 )
 
+func init() {
+	registerAdapter("data_quality_monitors", (*ResourceDataQualityMonitor)(nil))
+}
+
 // Data quality monitor.
 // API: https://docs.databricks.com/api/workspace/dataquality
 // Terraform: databricks_data_quality_monitor

@@ -65,7 +65,7 @@ def get_schema_fields(schemas):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate apitypes.yml from the cli.json schema block")
+    parser = argparse.ArgumentParser(description="Generate apitypes.generated.yml from the cli.json schema block")
     parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
     parser.add_argument("out_fields", type=Path, help="Path to the refschema output directory")
     args = parser.parse_args()
@@ -119,7 +119,7 @@ def main():
             print(f"         # in_resource_only: {sorted(missing)}", file=sys.stderr)
             print(f"         # in_schema_only: {sorted(extra)}", file=sys.stderr)
 
-    print("# Generated, do not edit. Override via apitypes.yml")
+    print("# Generated, do not edit. Override via api_type in configs/<resource_type>.yml")
     for resource in sorted(top_matches):
         print()
         print(f"{resource}: {top_matches[resource]}")
