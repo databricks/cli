@@ -11,6 +11,12 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
+func init() {
+	registerPreDeployCheck("dashboards", func(isPlan bool) bundle.Mutator {
+		return CheckDashboardsModifiedRemotely(isPlan)
+	})
+}
+
 type dashboardState struct {
 	Name string
 	ID   string
