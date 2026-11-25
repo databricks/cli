@@ -1,12 +1,13 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 )
 
 type jobRewritePattern struct {
 	pattern     dyn.Pattern
-	mode        TranslateMode
+	mode        resources.TranslateMode
 	skipRewrite func(string) bool
 }
 
@@ -18,32 +19,32 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
 			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
-			TranslateModeNotebook,
+			resources.TranslateModeNotebook,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
-			TranslateModeFile,
+			resources.TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
-			TranslateModeDirectory,
+			resources.TranslateModeDirectory,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
-			TranslateModeFile,
+			resources.TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("alert_task"), dyn.Key("workspace_path")),
-			TranslateModeFile,
+			resources.TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
-			TranslateModeFile,
+			resources.TranslateModeFile,
 			noSkipRewrite,
 		},
 		{
@@ -51,7 +52,7 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 			// reads it as a workspace file, so translate the local path to its
 			// remote (or immutable-snapshot) location like any other file.
 			base.Append(dyn.Key("ai_runtime_task"), dyn.Key("deployments"), dyn.AnyIndex(), dyn.Key("command_path")),
-			TranslateModeFile,
+			resources.TranslateModeFile,
 			noSkipRewrite,
 		},
 	}
@@ -82,7 +83,7 @@ func jobRewritePatterns() []jobRewritePattern {
 				dyn.Key("files"),
 				dyn.AnyIndex(),
 			),
-			TranslateModeFile,
+			resources.TranslateModeFile,
 			noSkipRewrite,
 		},
 		// Environment-level pattern for all jobs.
@@ -96,7 +97,7 @@ func jobRewritePatterns() []jobRewritePattern {
 				dyn.Key("spec"),
 				dyn.Key("project_environment"),
 			),
-			TranslateModeFile,
+			resources.TranslateModeFile,
 			noSkipRewrite,
 		},
 	)

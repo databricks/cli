@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/config/resources"
 
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -12,7 +13,7 @@ func (t *translateContext) applyDashboardTranslations(ctx context.Context, v dyn
 	// Convert the `file_path` field to a local absolute path.
 	// We load the file at this path and use its contents for the dashboard contents.
 
-	return paths.VisitDashboardPaths(v, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
+	return paths.VisitDashboardPaths(v, func(p dyn.Path, mode resources.TranslateMode, v dyn.Value) (dyn.Value, error) {
 		opts := translateOptions{
 			Mode: mode,
 		}

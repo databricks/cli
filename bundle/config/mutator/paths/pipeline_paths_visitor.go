@@ -1,13 +1,14 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
 )
 
 type pipelineRewritePattern struct {
 	pattern dyn.Pattern
-	mode    TranslateMode
+	mode    resources.TranslateMode
 
 	// If function defined in skipRewrite returns true, we skip rewriting the path.
 	// For example, for environment dependencies, we skip rewriting if the path is not a local library.
@@ -26,27 +27,27 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 	allPatterns := []pipelineRewritePattern{
 		{
 			pattern:     base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("notebook"), dyn.Key("path")),
-			mode:        TranslateModeNotebook,
+			mode:        resources.TranslateModeNotebook,
 			skipRewrite: noSkipRewrite,
 		},
 		{
 			pattern:     base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("file"), dyn.Key("path")),
-			mode:        TranslateModeFile,
+			mode:        resources.TranslateModeFile,
 			skipRewrite: noSkipRewrite,
 		},
 		{
 			pattern:     base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
-			mode:        TranslateModeGlob,
+			mode:        resources.TranslateModeGlob,
 			skipRewrite: noSkipRewrite,
 		},
 		{
 			pattern:     base.Append(dyn.Key("root_path")),
-			mode:        TranslateModeDirectory,
+			mode:        resources.TranslateModeDirectory,
 			skipRewrite: noSkipRewrite,
 		},
 		{
 			pattern:     base.Append(dyn.Key("testing"), dyn.Key("sources"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
-			mode:        TranslateModeGlob,
+			mode:        resources.TranslateModeGlob,
 			skipRewrite: noSkipRewrite,
 		},
 	}
@@ -65,14 +66,14 @@ func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
 	for _, pattern := range dependencies {
 		patterns = append(patterns, pipelineRewritePattern{
 			pattern:     pattern,
-			mode:        TranslateModeLocalRelativeWithPrefix,
+			mode:        resources.TranslateModeLocalRelativeWithPrefix,
 			skipRewrite: func(s string) bool { return !libraries.IsLibraryLocal(s) },
 		})
 	}
 	for _, pattern := range dependencies {
 		patterns = append(patterns, pipelineRewritePattern{
 			pattern: pattern,
-			mode:    TranslateModeEnvironmentPipFlag,
+			mode:    resources.TranslateModeEnvironmentPipFlag,
 			skipRewrite: func(s string) bool {
 				_, _, ok := libraries.IsLocalPathInPipFlag(s)
 				return !ok

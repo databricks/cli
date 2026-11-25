@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/config/resources"
 
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -24,7 +25,7 @@ func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideS
 			}
 		}
 
-		return visitor(v, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
+		return visitor(v, func(p dyn.Path, mode resources.TranslateMode, v dyn.Value) (dyn.Value, error) {
 			key := p[2].Key()
 
 			// Skip path translation if the job is using git source.

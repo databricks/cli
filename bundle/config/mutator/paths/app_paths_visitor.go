@@ -1,6 +1,7 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -13,7 +14,7 @@ func VisitAppPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
 	)
 
 	value, err := dyn.MapByPattern(value, sourceCodePattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-		return fn(path, TranslateModeDirectory, value)
+		return fn(path, resources.TranslateModeDirectory, value)
 	})
 	if err != nil {
 		return dyn.InvalidValue, err
@@ -27,6 +28,6 @@ func VisitAppPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
 	)
 
 	return dyn.MapByPattern(value, thumbnailPattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-		return fn(path, TranslateModeLocalRelative, value)
+		return fn(path, resources.TranslateModeLocalRelative, value)
 	})
 }

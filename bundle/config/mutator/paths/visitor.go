@@ -1,10 +1,11 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type VisitFunc func(path dyn.Path, mode TranslateMode, value dyn.Value) (dyn.Value, error)
+type VisitFunc func(path dyn.Path, mode resources.TranslateMode, value dyn.Value) (dyn.Value, error)
 
 // VisitPaths visits all paths in bundle configuration
 func VisitPaths(root dyn.Value, fn VisitFunc) (dyn.Value, error) {

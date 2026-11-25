@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -44,7 +45,7 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 	gitSourcePaths := collectGitSourcePaths(b)
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return paths.VisitPaths(v, func(path dyn.Path, kind paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
+		return paths.VisitPaths(v, func(path dyn.Path, kind resources.TranslateMode, v dyn.Value) (dyn.Value, error) {
 			if slices.ContainsFunc(gitSourcePaths, path.HasPrefix) {
 				return v, nil
 			}

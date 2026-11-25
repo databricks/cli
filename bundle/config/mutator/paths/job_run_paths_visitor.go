@@ -1,6 +1,7 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -19,6 +20,6 @@ func VisitJobRunPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
 	)
 
 	return dyn.MapByPattern(value, pattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-		return fn(path, TranslateModeLocalRelative, value)
+		return fn(path, resources.TranslateModeLocalRelative, value)
 	})
 }

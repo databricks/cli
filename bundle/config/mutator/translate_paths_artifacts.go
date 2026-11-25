@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/config/resources"
 
 	"github.com/databricks/cli/libs/dyn"
 )
 
 func (t *translateContext) applyArtifactTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
-	return paths.VisitArtifactPaths(v, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
+	return paths.VisitArtifactPaths(v, func(p dyn.Path, mode resources.TranslateMode, v dyn.Value) (dyn.Value, error) {
 		opts := translateOptions{
 			Mode: mode,
 

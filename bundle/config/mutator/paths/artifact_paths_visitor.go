@@ -1,12 +1,13 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 )
 
 type artifactRewritePattern struct {
 	pattern dyn.Pattern
-	mode    TranslateMode
+	mode    resources.TranslateMode
 }
 
 func artifactRewritePatterns() []artifactRewritePattern {
@@ -20,7 +21,7 @@ func artifactRewritePatterns() []artifactRewritePattern {
 	return []artifactRewritePattern{
 		{
 			pattern: base.Append(dyn.Key("path")),
-			mode:    TranslateModeLocalAbsoluteDirectory,
+			mode:    resources.TranslateModeLocalAbsoluteDirectory,
 		},
 	}
 }

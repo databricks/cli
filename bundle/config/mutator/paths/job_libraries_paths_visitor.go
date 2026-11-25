@@ -1,6 +1,7 @@
 package paths
 
 import (
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -9,12 +10,12 @@ func jobTaskLibrariesRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
-			TranslateModeLocalRelative,
+			resources.TranslateModeLocalRelative,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
-			TranslateModeLocalRelative,
+			resources.TranslateModeLocalRelative,
 			noSkipRewrite,
 		},
 	}
@@ -43,7 +44,7 @@ func jobLibrariesRewritePatterns() []jobRewritePattern {
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
-			TranslateModeLocalRelativeWithPrefix,
+			resources.TranslateModeLocalRelativeWithPrefix,
 			func(s string) bool {
 				return !libraries.IsLibraryLocal(s)
 			},
@@ -62,7 +63,7 @@ func jobLibrariesRewritePatterns() []jobRewritePattern {
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
-			TranslateModeEnvironmentPipFlag,
+			resources.TranslateModeEnvironmentPipFlag,
 			func(s string) bool {
 				_, _, ok := libraries.IsLocalPathInPipFlag(s)
 				return !ok

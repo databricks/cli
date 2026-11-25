@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 
 	"github.com/databricks/cli/bundle"
@@ -23,7 +24,7 @@ import (
 // translateOptions control path translation behavior.
 type translateOptions struct {
 	// Mode specifies how the path should be translated.
-	Mode paths.TranslateMode
+	Mode resources.TranslateMode
 
 	// AllowPathOutsideSyncRoot can be set for paths that are not tied to the sync root path.
 	// This is the case for artifact paths, for example.
@@ -51,7 +52,7 @@ func (err ErrIsNotNotebook) Error() string {
 // cross-mode cache collisions (e.g. artifact vs. workspace path translations).
 type seenKey struct {
 	path string
-	mode paths.TranslateMode
+	mode resources.TranslateMode
 }
 
 type translatePaths struct{}
@@ -160,7 +161,7 @@ func (t *translateContext) rewritePath(
 	// The path after -e or --editable can also be a project folder, with optional extras such as ./project[test].
 	// The result is not cached: the cache key has no flag, so a later "-r ./project" would get the
 	// "-e" result instead of its error.
-	if opts.Mode == paths.TranslateModeEnvironmentPipFlag && (flag == "-e" || flag == "--editable") {
+	if opts.Mode == resources.TranslateModeEnvironmentPipFlag && (flag == "-e" || flag == "--editable") {
 		if interp, ok := t.translateEditableFolder(flag, localRelPath); ok {
 			return interp, nil
 		}
@@ -169,21 +170,21 @@ func (t *translateContext) rewritePath(
 	// Convert local path into workspace path via specified function.
 	var interp string
 	switch opts.Mode {
-	case paths.TranslateModeNotebook:
+	case resources.TranslateModeNotebook:
 		interp, err = t.translateNotebookPath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeFile:
+	case resources.TranslateModeFile:
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeDirectory:
+	case resources.TranslateModeDirectory:
 		interp, err = t.translateDirectoryPath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeGlob:
+	case resources.TranslateModeGlob:
 		interp, err = t.translateGlobPath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeLocalAbsoluteDirectory:
+	case resources.TranslateModeLocalAbsoluteDirectory:
 		interp, err = t.translateLocalAbsoluteDirectoryPath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeLocalRelative:
+	case resources.TranslateModeLocalRelative:
 		interp, err = t.translateLocalRelativePath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeLocalRelativeWithPrefix:
+	case resources.TranslateModeLocalRelativeWithPrefix:
 		interp, err = t.translateLocalRelativeWithPrefixPath(ctx, input, localPath, localRelPath)
-	case paths.TranslateModeEnvironmentPipFlag:
+	case resources.TranslateModeEnvironmentPipFlag:
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 		// Add the flag prefix to the path to indicate it's a local file used in pip flags for environment dependencies.
 		interp = flag + " " + interp

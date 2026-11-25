@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
+	"github.com/databricks/cli/bundle/config/resources"
 
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -12,7 +13,7 @@ func (t *translateContext) applyAppsTranslations(ctx context.Context, v dyn.Valu
 	// Convert the `source_code_path` field to a remote absolute path.
 	// We use this path for app deployment to point to the source code.
 
-	return paths.VisitAppPaths(v, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
+	return paths.VisitAppPaths(v, func(p dyn.Path, mode resources.TranslateMode, v dyn.Value) (dyn.Value, error) {
 		opts := translateOptions{
 			Mode: mode,
 		}
