@@ -1,0 +1,37 @@
+bundle:
+  name: "run_as"
+
+run_as:
+  service_principal_name: "my_service_principal"
+
+# Declared in the reverse of the order in which the errors are reported.
+resources:
+  apps:
+    my_app:
+      name: "my-app"
+      source_code_path: .
+
+  dashboards:
+    embedded:
+      display_name: "Dashboard with embed"
+      embed_credentials: true
+      warehouse_id: "1234567890"
+
+    not_embedded:
+      display_name: "Dashboard without embed"
+      warehouse_id: "1234567890"
+
+  data_quality_monitors:
+    my_data_quality_monitor:
+      object_type: schema
+      object_id: "1234"
+
+  quality_monitors:
+    my_quality_monitor:
+      table_name: "main.test.dev"
+      assets_dir: "/Shared/monitoring"
+      output_schema_name: "main.dev"
+
+  model_serving_endpoints:
+    my_endpoint:
+      name: "skynet"

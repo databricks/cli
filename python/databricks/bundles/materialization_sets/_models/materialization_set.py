@@ -11,10 +11,6 @@ from databricks.bundles.materialization_sets._models.lifecycle import (
     Lifecycle,
     LifecycleParam,
 )
-from databricks.bundles.materialization_sets._models.materialization_notifications import (
-    MaterializationNotifications,
-    MaterializationNotificationsParam,
-)
 from databricks.bundles.materialization_sets._models.materialized_feature import (
     MaterializedFeature,
     MaterializedFeatureParam,
@@ -53,15 +49,6 @@ class MaterializationSet(Resource):
     in its update mask deletes omitted materialized features.
     """
 
-    notifications: VariableOrOptional[MaterializationNotifications] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are
-    applied to every job and pipeline that materializes a feature in this set. Features which are
-    materialized in the same pipeline will share the same notification.
-    """
-
     @classmethod
     def from_dict(cls, value: "MaterializationSetDict") -> "Self":
         return _transform(cls, value)
@@ -92,15 +79,6 @@ class MaterializationSetDict(TypedDict, total=False):
     [Private Preview] The materialized features in this set. Order is not significant.
     An `UpdateMaterializationSet` request with `materialized_features` or `*`
     in its update mask deletes omitted materialized features.
-    """
-
-    notifications: VariableOrOptional[MaterializationNotificationsParam]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Private Preview] Notification configuration around the materialization job or pipeline lifecycle. They are
-    applied to every job and pipeline that materializes a feature in this set. Features which are
-    materialized in the same pipeline will share the same notification.
     """
 
 

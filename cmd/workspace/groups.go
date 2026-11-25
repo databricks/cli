@@ -132,5 +132,9 @@ func Groups() []cobra.Group {
 			ID:    "domains",
 			Title: "Domains",
 		},
+		{
+			ID:    "migration",
+			Title: "Migration",
+		},
 	}
 }
