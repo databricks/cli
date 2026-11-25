@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_SCHEMA="main.test-schema-${UNIQUE_NAME}"
+NEW_SCHEMA="main.test-schema-renamed-${UNIQUE_NAME}"
+
+cleanup() {
+    errcode $CLI schemas delete "$NEW_SCHEMA" --force > LOG.cleanup 2>&1
+    errcode $CLI schemas delete "$OLD_SCHEMA" --force >> LOG.cleanup 2>&1
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with a volume in it that must not be destroyed"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "Rename the schema out of band. UC moves the volume with it"
+trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name}'
+print_requests.py //unity-catalog &> LOG.rename_requests
+
+title "Destroy finds the volume in the renamed schema, so prevent_destroy still stops it"
+trace musterr $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+trace $CLI volumes read "$NEW_SCHEMA.myvolume" | jq '{full_name}'

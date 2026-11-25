@@ -18,7 +18,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === The other volume has another volume_id, so the plan does not take it for the bundle's: it plans a create
 
 >>> [CLI] bundle plan
-Warn: planning resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so it is not treated as this bundle's. To manage it with this bundle, run 'bundle deployment unbind' and 'bundle deployment bind'.
+Warn: planning resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so this bundle leaves it alone. If it is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and 'bundle deployment bind' to manage it again.
 create volumes.volume1
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
@@ -26,7 +26,6 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 === Destroy finds the bundle's volume by its volume_id and deletes it, not the other one
 
 >>> [CLI] bundle destroy --auto-approve
-Warn: planning resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so it is not treated as this bundle's. To manage it with this bundle, run 'bundle deployment unbind' and 'bundle deployment bind'.
 The following resources will be deleted:
   delete resources.volumes.volume1
 

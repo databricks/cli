@@ -376,7 +376,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 		if otherID != "" {
-			warnOtherResource(ctx, adapter, dbentry.ID, savedState, otherID)
 			remoteState = nil
 		}
 		if remoteState == nil {
@@ -385,6 +384,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
+		}
+		if otherID != "" && remoteState == nil {
+			warnOtherResource(ctx, adapter, dbentry.ID, savedState, otherID)
 		}
 
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
@@ -479,6 +481,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	}
 
 	if err := b.addParentMoves(plan); err != nil {
+		return nil, err
+	}
+
+	if err := b.findInMovedParents(ctx, plan); err != nil {
 		return nil, err
 	}
 
@@ -900,6 +906,128 @@ func isParentIDField(adapter *dresources.Adapter, path *structpath.PathNode) boo
 	return ok
 }
 
+// findInMovedParents handles a Delete of a resource with an internal ID that was not found (Gone)
+// while its parent, as recorded in its state's depends_on, is deleted at another ID: renamed out of
+// band and found there by its internal ID (see findByInternalID). The rename moved the resource with
+// the parent, so it is looked for under the parent's new name and, if found there with its internal
+// ID, deleted as itself before the parent. Otherwise it would go with the parent's delete unlisted,
+// past its own lifecycle.prevent_destroy.
+func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployplan.Plan) error {
+	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
+		entry := plan.Plan[resourceKey]
+		if entry.Action != deployplan.Delete || !entry.Gone {
+			continue
+		}
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return err
+		}
+		dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
+		if !adapter.HasInternalID() || !ok || len(dbentry.State) == 0 {
+			continue
+		}
+		state, err := parseState(adapter.StateType(), dbentry.State)
+		if err != nil {
+			return fmt.Errorf("%s: interpreting state: %w", resourceKey, err)
+		}
+		savedInternalID, err := adapter.InternalID(state)
+		if err != nil || savedInternalID == "" {
+			continue
+		}
+
+		moved := false
+		for _, dep := range dbentry.DependsOn {
+			changed, err := b.followMovedParent(plan, adapter, state, dep)
+			if err != nil {
+				return fmt.Errorf("%s: %w", resourceKey, err)
+			}
+			moved = moved || changed
+		}
+		if !moved {
+			continue
+		}
+
+		id, err := adapter.IDFromState(state)
+		if err != nil {
+			return fmt.Errorf("%s: %w", resourceKey, err)
+		}
+		remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
+			return adapter.DoRead(ctx, id)
+		})
+		if err != nil {
+			if err := ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("%s: reading at id=%q under its renamed parent", resourceKey, id)); err != nil {
+				return err
+			}
+			continue
+		}
+		if ok, err := hasInternalIDOf(adapter, remote, savedInternalID); err != nil || !ok {
+			if err != nil {
+				return fmt.Errorf("%s: %w", resourceKey, err)
+			}
+			continue
+		}
+		entry.ID = id
+		entry.RemoteState = remote
+		entry.Gone = false
+	}
+	return nil
+}
+
+// followMovedParent sets in state, the saved state of a resource, the new values of its parent ID
+// fields if dep is a parent deleted at another ID than its own recorded one. It reports whether it
+// changed anything.
+func (b *DeploymentBundle) followMovedParent(plan *deployplan.Plan, adapter *dresources.Adapter, state any, dep deployplan.DependsOnEntry) (bool, error) {
+	parent := plan.Plan[dep.Node]
+	if parent == nil || parent.Action != deployplan.Delete || parent.ID == "" || parent.RemoteState == nil {
+		return false, nil
+	}
+	targetKey, targetField, ok, err := pureRefTarget(dep.Label)
+	if err != nil || !ok || targetKey != dep.Node {
+		return false, err
+	}
+	parentAdapter, err := b.getAdapterForKey(dep.Node)
+	if err != nil {
+		return false, err
+	}
+	parentEntry, ok := b.StateDB.GetResourceEntry(dep.Node)
+	if !ok || len(parentEntry.State) == 0 {
+		return false, nil
+	}
+	parentSaved, err := parseState(parentAdapter.StateType(), parentEntry.State)
+	if err != nil {
+		return false, fmt.Errorf("%s: interpreting state: %w", dep.Node, err)
+	}
+	parentRemote, err := parentAdapter.RemapState(parent.RemoteState)
+	if err != nil {
+		return false, err
+	}
+	oldValue, err := structaccess.Get(parentSaved, targetField)
+	if err != nil {
+		return false, nil
+	}
+	newValue, err := structaccess.Get(parentRemote, targetField)
+	if err != nil || structdiff.IsEqual(oldValue, newValue) {
+		return false, nil
+	}
+
+	changed := false
+	for _, rule := range adapter.ResourceConfig().ParentIDFields {
+		path, err := structpath.ParsePath(rule.Field.String())
+		if err != nil {
+			return false, err
+		}
+		value, err := structaccess.Get(state, path)
+		if err != nil || !structdiff.IsEqual(value, oldValue) {
+			continue
+		}
+		if err := structaccess.Set(state, path, newValue); err != nil {
+			return false, fmt.Errorf("setting %s: %w", path, err)
+		}
+		changed = true
+	}
+	return changed, nil
+}
+
 // recordRefTypes records, for each pure-reference field of resourceKey, the type of the resource it
 // references, before resolveReferences drops the references (see addParentMoves).
 func (b *DeploymentBundle) recordRefTypes(resourceKey string) error {
@@ -1015,10 +1143,11 @@ func otherInternalID(adapter *dresources.Adapter, savedState, remote any) (strin
 }
 
 // warnOtherResource tells the user that what is at the recorded ID is not the bundle's and is left
-// alone. A resource deleted and created again out of band looks the same, hence the way to take it over.
+// alone, when the bundle's own is not found elsewhere either. A resource deleted and created again
+// out of band looks the same, hence the way to take it over.
 func warnOtherResource(ctx context.Context, adapter *dresources.Adapter, id string, savedState any, otherID string) {
 	saved, _ := adapter.InternalID(savedState)
-	log.Warnf(ctx, "id=%q holds another object: its %s is %q, not %q as recorded, so it is not treated as this bundle's. To manage it with this bundle, run 'bundle deployment unbind' and 'bundle deployment bind'.",
+	log.Warnf(ctx, "id=%q holds another object: its %s is %q, not %q as recorded, so this bundle leaves it alone. If it is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and 'bundle deployment bind' to manage it again.",
 		id, adapter.ResourceConfig().InternalIDField, otherID, saved)
 }
 
@@ -1054,10 +1183,11 @@ func (b *DeploymentBundle) findDeleteTarget(ctx context.Context, resourceKey str
 	if remote != nil && otherID == "" {
 		return "", remote, nil
 	}
-	if otherID != "" {
+	movedID, moved, err := findByInternalID(ctx, adapter, savedState)
+	if err == nil && moved == nil && otherID != "" {
 		warnOtherResource(ctx, adapter, id, savedState, otherID)
 	}
-	return findByInternalID(ctx, adapter, savedState)
+	return movedID, moved, err
 }
 
 // findByInternalID looks for a resource to be deleted that is not at its recorded ID: renamed out of
