@@ -49,6 +49,10 @@ func (*Catalog) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Catalog) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "catalog"}
+}
+
 func (c *Catalog) InitializeURL(baseURL url.URL) {
 	if c.ID == "" {
 		return

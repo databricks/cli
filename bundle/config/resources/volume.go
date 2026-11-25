@@ -60,6 +60,10 @@ func (*Volume) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Volume) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "volume"}
+}
+
 func (v *Volume) InitializeURL(baseURL url.URL) {
 	if v.ID == "" {
 		return

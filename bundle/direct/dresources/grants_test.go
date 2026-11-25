@@ -1,12 +1,46 @@
 package dresources
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Configure resolves the parent type at init, so an unregistered parent fails before planning.
+func TestGrantsConfigureUnsupportedParent(t *testing.T) {
+	for _, parent := range []string{"unregistered", "jobs"} {
+		_, err := NewAdapter(SupportedResources["schemas.grants"], parent+".grants", nil)
+		assert.ErrorContains(t, err, "unsupported grants resource type: "+parent)
+	}
+}
+
+// The adapters are listed by hand, so check them against what the resource types declare.
+func TestGrantsAdaptersMatchDeclarations(t *testing.T) {
+	declared := map[string]bool{}
+	for key, d := range config.ResourceTypesImplementing[resources.GrantsDeclarer]() {
+		resourceType := key + ".grants"
+		declared[resourceType] = true
+		adapter, ok := SupportedResources[resourceType]
+		if !assert.True(t, ok, "%s has no adapter", resourceType) {
+			continue
+		}
+		assert.IsType(t, (*ResourceGrants)(nil), adapter, resourceType)
+
+		r := (*ResourceGrants)(nil).New(nil)
+		require.NoError(t, r.Configure(resourceType))
+		assert.Equal(t, d.GrantsSupport().SecurableType, r.securableType, resourceType)
+	}
+	for resourceType := range SupportedResources {
+		if strings.HasSuffix(resourceType, ".grants") {
+			assert.True(t, declared[resourceType], "%s has an adapter but its parent does not declare grants", resourceType)
+		}
+	}
+}
 
 func TestBuildGrantChanges(t *testing.T) {
 	tests := []struct {

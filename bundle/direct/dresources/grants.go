@@ -7,24 +7,12 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
-
-var grantResourceToSecurableType = map[string]string{
-	"catalogs":                "catalog",
-	"schemas":                 "schema",
-	"external_locations":      "external_location",
-	"volumes":                 "volume",
-	"registered_models":       "function",
-	"feature_specs":           "function",
-	"secrets":                 "secret",
-	"vector_search_indexes":   "table",
-	"model_services":          "model_service",
-	"mcp_services":            "mcp_service",
-	"model_provider_services": "model_provider_service",
-}
 
 type GrantsState struct {
 	SecurableType string                        `json:"securable_type"`
@@ -49,11 +37,12 @@ func (r *ResourceGrants) Configure(resourceType string) error {
 		return fmt.Errorf("internal error: resource type %q does not end with .grants", resourceType)
 	}
 
-	r.securableType, ok = grantResourceToSecurableType[parentType]
+	d, ok := config.ResourceTypeAs[resources.GrantsDeclarer](parentType)
 	if !ok {
 		return fmt.Errorf("unsupported grants resource type: %s", parentType)
 	}
 
+	r.securableType = d.GrantsSupport().SecurableType
 	return nil
 }
 

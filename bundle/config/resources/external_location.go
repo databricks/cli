@@ -48,6 +48,10 @@ func (*ExternalLocation) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*ExternalLocation) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "external_location"}
+}
+
 func (e *ExternalLocation) InitializeURL(baseURL url.URL) {
 	// External locations don't have a workspace URL
 	// The Url field is for the storage path (s3://...), not a workspace URL

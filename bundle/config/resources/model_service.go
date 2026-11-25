@@ -96,6 +96,10 @@ func (*ModelService) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*ModelService) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "model_service"}
+}
+
 func (m *ModelService) InitializeURL(baseURL url.URL) {
 	if m.ID == "" {
 		return
