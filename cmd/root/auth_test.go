@@ -235,7 +235,7 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 
 // TestWorkspaceClientOrPromptTipsDefaultProfileAfterPick checks that picking
 // a profile interactively tells the user how to make it the default. Without
-// that, every command shows the picker again (CNXT-2467).
+// that, every command shows the picker again.
 func TestWorkspaceClientOrPromptTipsDefaultProfileAfterPick(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
@@ -249,6 +249,7 @@ host = https://workspace-1112.test
 token = foobar
 `), 0o600))
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
 	t.Setenv("PATH", "")
 
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)

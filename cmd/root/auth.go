@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -348,13 +350,14 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		return w, err
 	}
 
+	// A default profile only takes effect when nothing else selected a profile
+	// or host (--profile, DATABRICKS_CONFIG_PROFILE, DATABRICKS_HOST, bundle).
+	defaultProfileApplies := cfg.Profile == "" && cfg.Host == ""
+
 	// Try picking a profile dynamically if the current configuration is not valid.
 	profile, prompted, err := askForWorkspaceProfile(ctx)
 	if err != nil {
 		return nil, err
-	}
-	if prompted {
-		logDefaultProfileTip(ctx, profile)
 	}
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
@@ -362,6 +365,9 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
+	}
+	if err == nil && prompted && defaultProfileApplies {
+		logDefaultProfileTip(ctx, profile)
 	}
 	return w, err
 }
@@ -451,9 +457,13 @@ func ResolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 // logDefaultProfileTip tells the user how to stop being asked for a profile.
 // Nothing persists the picked profile, so without a default profile every
 // command shows the picker again, which users read as being asked to log in
-// again (CNXT-2467).
+// again.
 func logDefaultProfileTip(ctx context.Context, profileName string) {
-	cmdio.LogString(ctx, fmt.Sprintf("Tip: run \"databricks auth switch --profile %s\" to use this profile by default and skip this prompt, or pass --profile %s.", profileName, profileName))
+	name := profileName
+	if strings.ContainsAny(name, " \t'\"") {
+		name = strconv.Quote(name)
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Tip: run \"databricks auth switch --profile %s\" to use this profile by default and skip this prompt, or pass --profile %s.", name, name))
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
