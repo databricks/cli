@@ -1,2 +1,2 @@
-Badness = "Unicode job names resolve in resources references"
+Badness = "The test is titled 'Unicode job names resolve in resources references' but records nothing that shows the resolution: RecordRequests = false, and bundle summary prints 'Name: ${resources.jobs.变量.id}' because it never resolves resource references (ASCII keys too, see synced_database_tables/basic). It should record the jobs/create request for foo to show the resolved id."
 RecordRequests = false

@@ -317,8 +317,14 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 	// Count the attempt before making it: an attempt that never finishes (the
 	// process is killed) still counts, and a state that cannot be saved stops
 	// auto-install instead of retrying it on every run.
-	if recErr := autoinstall.Record(ctx, r.version, attempt, r.id, r.now); recErr != nil {
+	started, recErr := autoinstall.StartAttempt(ctx, r.version, attempt, r.id, r.now)
+	if recErr != nil {
 		log.Debugf(ctx, "auto-install: skipped: could not save the state: %v", recErr)
+		return nil
+	}
+	if !started {
+		// The user opted out after this run read the state.
+		r.settle(ctx, protos.AitoolsAutoInstallOutcomeSkippedOptOut)
 		return nil
 	}
 	if err == nil && tools.fresh() {

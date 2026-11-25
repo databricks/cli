@@ -174,10 +174,8 @@ By default this installs the databricks plugin through each agent's own CLI
 (Claude Code, Codex, GitHub Copilot). Agents without a headless plugin install
 (` + strings.Join(agents.SkillsOnlyNames(), ", ") + `) get raw skill files, and so does a
 detected plugin agent whose CLI is not on PATH (for example a desktop or IDE
-install) and is not named with --agents, unless it already has the plugin. For
-Claude Code that is read from its own plugin list; for Codex and GitHub Copilot
-only a plugin installed by 'databricks aitools' is known, so one installed
-another way shows every skill twice next to the skill files. A named agent
+install) and is not named with --agents, unless it already has the plugin,
+which is read from the agent's own plugin list or config. A named agent
 whose CLI is not on PATH fails; add --skills-only to give it skill files.
 
 Escape hatches:
@@ -745,7 +743,9 @@ func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly,
 // manifest, the manifest decides, as in agents.DatabricksTooling: a plugin
 // removed with the agent's own CLI leaves the CLI's record behind. Otherwise,
 // or when the manifest exists but cannot be read, the CLI's install state for
-// the scope does.
+// the scope does, together with the plugin the agent's own config records for
+// the scope (see configPluginMarketplaces), which covers one installed without
+// the CLI.
 func pluginAlreadyInstalled(ctx context.Context, a *agents.Agent, scope string) bool {
 	if a.HasPluginManifestReader() {
 		active, err := manifestPluginActive(ctx, a, scope)
@@ -754,7 +754,37 @@ func pluginAlreadyInstalled(ctx context.Context, a *agents.Agent, scope string) 
 		}
 		log.Debugf(ctx, "Could not read the plugin manifest of %s, using the install state: %v", a.DisplayName, err)
 	}
-	return installer.PluginRecorded(ctx, scope, a.Name)
+	return len(configPluginMarketplaces(ctx, a, scope)) > 0 || installer.PluginRecorded(ctx, scope, a.Name)
+}
+
+// configPluginMarketplaces returns the marketplaces of the databricks plugins
+// the agent's own config records (Codex, Copilot; see
+// agents.Agent.DatabricksPluginConfigured) that serve this install scope. Those
+// agents install plugins for the user only, so their plugin serves a global
+// install. A project install is shared through the repository, which a
+// personal plugin does not cover, as in manifestPluginActive. An unreadable
+// config has none.
+func configPluginMarketplaces(ctx context.Context, a *agents.Agent, scope string) []string {
+	if scope != installer.ScopeGlobal {
+		return nil
+	}
+	marketplaces, err := a.DatabricksPluginConfigMarketplaces(ctx)
+	if err != nil {
+		log.Debugf(ctx, "Could not read the plugin config of %s: %v", a.DisplayName, err)
+	}
+	return marketplaces
+}
+
+// agentRecordsPlugin reports whether the agent's own records show a databricks
+// plugin that serves this install scope: its plugin manifest (see
+// manifestPluginActive) or, for Codex and Copilot, its config (see
+// configPluginMarketplaces). Unlike pluginAlreadyInstalled, the CLI's install
+// state does not count, as it outlives a removal with the agent's own CLI.
+func agentRecordsPlugin(ctx context.Context, a *agents.Agent, scope string) bool {
+	if active, err := manifestPluginActive(ctx, a, scope); err == nil && active {
+		return true
+	}
+	return len(configPluginMarketplaces(ctx, a, scope)) > 0
 }
 
 // manifestPluginActive reports whether the agent's own plugin manifest has a
@@ -984,11 +1014,10 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		// twice next to the plugin, so remove them as a plugin install does.
 		// This runs before the skills batch: a newer release there replaces the
 		// recorded checksums, and older copies would then look user-modified
-		// and stay. Only the agent's own manifest is proof enough: for Codex and
-		// Copilot the CLI's record is the only evidence, and it outlives a
-		// removal with the agent's own CLI, so removing the skills then would
-		// leave the agent with neither.
-		if active, err := manifestPluginActive(ctx, it.agent, opts.Scope); err == nil && active {
+		// and stay. Only the agent's own records are proof enough: the CLI's
+		// record outlives a removal with the agent's own CLI, so removing the
+		// skills then would leave the agent with neither.
+		if agentRecordsPlugin(ctx, it.agent, opts.Scope) {
 			if err := cleanupLegacyFn(ctx, it.agent, opts.Scope); err != nil {
 				log.Debugf(ctx, "Legacy skill cleanup for %s failed: %v", it.agent.DisplayName, err)
 			}
