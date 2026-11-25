@@ -50,6 +50,10 @@ func (d *DatabaseInstance) GetName() string {
 	return d.Name
 }
 
+func (*DatabaseInstance) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "compute/database-instances/%s"}, true
+}
+
 func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {
 	if d.ModifiedStatus == ModifiedStatusCreated {
 		return
@@ -57,5 +61,5 @@ func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {
 	if d.Name == "" {
 		return
 	}
-	d.URL = workspaceurls.ResourceURL(baseURL, "database_instances", d.Name)
+	d.URL = workspaceURL(d, baseURL, d.Name)
 }

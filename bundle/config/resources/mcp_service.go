@@ -89,13 +89,17 @@ func (*McpService) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*McpService) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/mcp-services/%s", DotSeparatedID: true}, true
+}
+
 func (m *McpService) InitializeURL(baseURL url.URL) {
 	if m.ID == "" {
 		return
 	}
-	// The id is the bare {catalog}.{schema}.{mcp_service}; ResourceURL splits it
+	// The id is the bare {catalog}.{schema}.{mcp_service}; the pattern splits it
 	// into the Catalog Explorer path explore/data/mcp-services/...
-	m.URL = workspaceurls.ResourceURL(baseURL, "mcp_services", m.ID)
+	m.URL = workspaceURL(m, baseURL, m.ID)
 }
 
 func (m *McpService) GetName() string {

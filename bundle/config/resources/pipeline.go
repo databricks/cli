@@ -52,11 +52,15 @@ func (p *Pipeline) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Pipeline) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "pipelines/%s"}, true
+}
+
 func (p *Pipeline) InitializeURL(baseURL url.URL) {
 	if p.ID == "" {
 		return
 	}
-	p.URL = workspaceurls.ResourceURL(baseURL, "pipelines", p.ID)
+	p.URL = workspaceURL(p, baseURL, p.ID)
 }
 
 func (p *Pipeline) GetName() string {

@@ -54,11 +54,15 @@ func (*ClusterPolicy) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*ClusterPolicy) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "compute/policies/%s"}, true
+}
+
 func (s *ClusterPolicy) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "cluster_policies", s.ID)
+	s.URL = workspaceURL(s, baseURL, s.ID)
 }
 
 func (s *ClusterPolicy) GetName() string {

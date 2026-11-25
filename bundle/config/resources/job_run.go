@@ -137,6 +137,12 @@ func (r *JobRun) GetName() string {
 	return ""
 }
 
+// WorkspaceURL declares that a run has a page, with no pattern: the page is
+// addressed by two IDs (job and run), so InitializeURL builds the URL itself.
+func (*JobRun) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{}, true
+}
+
 // InitializeURL sets the run's workspace URL. The job id comes from RunNow.JobId
 // when resolved (deploy) or ResolvedJobID from state (read-only commands); if
 // either id is missing we skip rather than emit a broken jobs/0 URL.

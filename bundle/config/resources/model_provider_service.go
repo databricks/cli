@@ -97,13 +97,17 @@ func (*ModelProviderService) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*ModelProviderService) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/model-provider-services/%s", DotSeparatedID: true}, true
+}
+
 func (m *ModelProviderService) InitializeURL(baseURL url.URL) {
 	if m.ID == "" {
 		return
 	}
-	// The id is the bare {catalog}.{schema}.{model_provider_service}; ResourceURL
+	// The id is the bare {catalog}.{schema}.{model_provider_service}; the pattern
 	// splits it into the Catalog Explorer path explore/data/model-provider-services/...
-	m.URL = workspaceurls.ResourceURL(baseURL, "model_provider_services", m.ID)
+	m.URL = workspaceURL(m, baseURL, m.ID)
 }
 
 func (m *ModelProviderService) GetName() string {

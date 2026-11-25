@@ -49,11 +49,15 @@ func (*Catalog) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Catalog) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s", DotSeparatedID: true}, true
+}
+
 func (c *Catalog) InitializeURL(baseURL url.URL) {
 	if c.ID == "" {
 		return
 	}
-	c.URL = workspaceurls.ResourceURL(baseURL, "catalogs", c.ID)
+	c.URL = workspaceURL(c, baseURL, c.ID)
 }
 
 func (c *Catalog) GetName() string {

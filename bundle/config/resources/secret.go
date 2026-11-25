@@ -57,11 +57,15 @@ func (*Secret) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Secret) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s", DotSeparatedID: true}, true
+}
+
 func (s *Secret) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "secrets", s.ID)
+	s.URL = workspaceURL(s, baseURL, s.ID)
 }
 
 func (s *Secret) GetName() string {

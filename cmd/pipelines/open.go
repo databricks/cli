@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 
 	"github.com/databricks/cli/bundle/resources"
 
@@ -72,7 +73,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		}
 
 		// Confirm that the resource has a URL.
-		url, supported := ref.Resource.GetURL()
+		url, supported := config.ResourceURL(ref.Resource)
 		if !supported {
 			return errors.New("this resource type does not have a URL")
 		}

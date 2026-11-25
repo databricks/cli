@@ -53,11 +53,15 @@ func (*Feature) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Feature) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/features/%s", DotSeparatedID: true}, true
+}
+
 func (f *Feature) InitializeURL(baseURL url.URL) {
 	if f.ID == "" {
 		return
 	}
-	f.URL = workspaceurls.ResourceURL(baseURL, "features", f.ID)
+	f.URL = workspaceURL(f, baseURL, f.ID)
 }
 
 // GetName returns the fully qualified name. Callers read it off the config, which only ever carries

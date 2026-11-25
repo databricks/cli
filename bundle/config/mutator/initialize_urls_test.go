@@ -126,7 +126,7 @@ func TestInitializeURLs(t *testing.T) {
 
 	for _, group := range b.Config.Resources.AllResources() {
 		for key, r := range group.Resources {
-			url, _ := r.GetURL()
+			url, _ := config.ResourceURL(r)
 			require.Equal(t, expectedURLs[key], url, "Unexpected URL for "+key)
 		}
 	}

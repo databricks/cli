@@ -50,11 +50,15 @@ func (s *ModelServingEndpoint) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*ModelServingEndpoint) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "ml/endpoints/%s"}, true
+}
+
 func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "model_serving_endpoints", s.ID)
+	s.URL = workspaceURL(s, baseURL, s.ID)
 }
 
 func (s *ModelServingEndpoint) GetName() string {

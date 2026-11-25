@@ -48,9 +48,13 @@ func (s *SyncedDatabaseTable) GetName() string {
 	return s.Name
 }
 
+func (*SyncedDatabaseTable) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s"}, true
+}
+
 func (s *SyncedDatabaseTable) InitializeURL(baseURL url.URL) {
 	if s.Name == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "synced_database_tables", s.Name)
+	s.URL = workspaceURL(s, baseURL, s.Name)
 }
