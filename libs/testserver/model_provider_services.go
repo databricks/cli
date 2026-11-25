@@ -11,6 +11,45 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("model_provider_services", addModelProviderServicesRoutes)
+	registerStore("model_provider_services", newModelProviderServicesStore)
+}
+
+type modelProviderServicesStore struct {
+	ModelProviderServices map[string]catalog.ModelProviderService
+}
+
+func newModelProviderServicesStore(*FakeWorkspace) *modelProviderServicesStore {
+	return &modelProviderServicesStore{
+		ModelProviderServices: map[string]catalog.ModelProviderService{},
+	}
+}
+
+func (s *FakeWorkspace) modelProviderServices() *modelProviderServicesStore {
+	return stateOf[modelProviderServicesStore](s)
+}
+
+func addModelProviderServicesRoutes(server *Server) {
+	// Model Provider Services (AI Gateway):
+
+	server.Handle("POST", "/api/2.1/unity-catalog/model-provider-services", func(req Request) any {
+		return req.Workspace.ModelProviderServicesCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/model-provider-services/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.modelProviderServices().ModelProviderServices, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/model-provider-services/{name}", func(req Request) any {
+		return req.Workspace.ModelProviderServicesUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/model-provider-services/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.modelProviderServices().ModelProviderServices, req.Vars["name"])
+	})
+}
+
 // ModelProviderServicesCreate fakes POST
 // /api/2.1/unity-catalog/model-provider-services. See ModelServicesCreate for
 // the shape: the ModelProviderService body is sent directly, parent and
@@ -30,7 +69,7 @@ func (s *FakeWorkspace) ModelProviderServicesCreate(req Request) Response {
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("model_provider_service_id")
 
-	if _, exists := s.ModelProviderServices[key]; exists {
+	if _, exists := s.modelProviderServices().ModelProviderServices[key]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body: map[string]string{
@@ -47,7 +86,7 @@ func (s *FakeWorkspace) ModelProviderServicesCreate(req Request) Response {
 	ms.MetastoreId = nextUUID()
 	ms.CreateTime = sdktime.New(time.Unix(0, nowNano()).UTC())
 
-	s.ModelProviderServices[key] = ms
+	s.modelProviderServices().ModelProviderServices[key] = ms
 	return Response{
 		Body: ms,
 	}
@@ -56,7 +95,7 @@ func (s *FakeWorkspace) ModelProviderServicesCreate(req Request) Response {
 func (s *FakeWorkspace) ModelProviderServicesUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.ModelProviderServices[name]
+	existing, ok := s.modelProviderServices().ModelProviderServices[name]
 	if !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -76,7 +115,7 @@ func (s *FakeWorkspace) ModelProviderServicesUpdate(req Request, name string) Re
 	existing.Config = incoming.Config
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.ModelProviderServices[name] = existing
+	s.modelProviderServices().ModelProviderServices[name] = existing
 	return Response{
 		Body: existing,
 	}

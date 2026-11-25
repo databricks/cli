@@ -19,6 +19,56 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+func init() {
+	registerRoutes("ssh", addSshRoutes)
+	registerStore("ssh", newSshTunnelStore)
+}
+
+type sshTunnelStore struct {
+	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
+	// serves, generated on first use. See sshTunnelHostKey.
+	sshTunnelHostKeyPEM []byte
+	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
+	// to the tunnel's secret scope so a client can pin it.
+	sshTunnelHostPublicKey []byte
+}
+
+func newSshTunnelStore(*FakeWorkspace) *sshTunnelStore {
+	return &sshTunnelStore{}
+}
+
+func (s *FakeWorkspace) sshTunnel() *sshTunnelStore {
+	return stateOf[sshTunnelStore](s)
+}
+
+func addSshRoutes(server *Server) {
+	// SSH tunnel server behind the driver proxy: /metadata returns the remote login
+	// user, /logs is a best-effort error tail, /ssh hijacks the connection for a
+	// websocket (so it's raw, not a JSON response).
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/metadata", func(req Request) any {
+		defer req.Workspace.LockUnlock()()
+		if req.Vars["cluster_id"] == sshTunnelClusterID && req.Workspace.portForwardingToServerlessDisabled() {
+			return Response{StatusCode: 403, Body: sshTunnelFeatureDisabledBody}
+		}
+		return Response{Body: sshTunnelRemoteUser()}
+	})
+
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
+		return Response{Body: ""}
+	})
+
+	// /capabilities reports which optional parts of the tunnel protocol the server speaks.
+	// This fake drives sshd directly over the websocket rather than running the CLI's own
+	// proxy server, so it has none of the session bookkeeping a resume needs and says so.
+	// The resume protocol itself is covered by the proxy package's tests, which run the
+	// real server implementation.
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/capabilities", func(req Request) any {
+		return Response{Body: map[string]bool{"resume": false}}
+	})
+
+	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
+}
+
 // sshTunnelRemoteUser is the login user /metadata reports. It must be the OS user
 // the local sshd runs as, so `ssh -l <user>` matches; the real server reports the same.
 func sshTunnelRemoteUser() string {
@@ -60,7 +110,7 @@ func findSSHD() string {
 // Scans all scopes since the scope name embeds the session and current user.
 func (s *FakeWorkspace) sshClientAuthorizedKey() []byte {
 	defer s.LockUnlock()()
-	for _, scope := range s.Secrets {
+	for _, scope := range s.secrets().Secrets {
 		if v, ok := scope[sshClientPublicKeySecretKey]; ok {
 			return []byte(v)
 		}
@@ -80,8 +130,8 @@ func (s *FakeWorkspace) sshTunnelHostKey() ([]byte, error) {
 // ensureSSHTunnelHostKey generates the workspace's tunnel host key if it has none.
 // Callers must hold the workspace lock.
 func (s *FakeWorkspace) ensureSSHTunnelHostKey() ([]byte, error) {
-	if s.sshTunnelHostKeyPEM != nil {
-		return s.sshTunnelHostKeyPEM, nil
+	if s.sshTunnel().sshTunnelHostKeyPEM != nil {
+		return s.sshTunnel().sshTunnelHostKeyPEM, nil
 	}
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -95,9 +145,9 @@ func (s *FakeWorkspace) ensureSSHTunnelHostKey() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.sshTunnelHostKeyPEM = pem.EncodeToMemory(block)
-	s.sshTunnelHostPublicKey = ssh.MarshalAuthorizedKey(sshPub)
-	return s.sshTunnelHostKeyPEM, nil
+	s.sshTunnel().sshTunnelHostKeyPEM = pem.EncodeToMemory(block)
+	s.sshTunnel().sshTunnelHostPublicKey = ssh.MarshalAuthorizedKey(sshPub)
+	return s.sshTunnel().sshTunnelHostKeyPEM, nil
 }
 
 // sshTunnelHandler stands in for a cluster's tunnel server: it upgrades /ssh to a

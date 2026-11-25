@@ -8,10 +8,67 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+func init() {
+	registerRoutes("pipelines", addPipelinesRoutes)
+	registerStore("pipelines", newPipelinesStore)
+}
+
+type pipelinesStore struct {
+	Pipelines       map[string]pipelines.GetPipelineResponse
+	PipelineUpdates map[string]pipelines.UpdateInfo
+}
+
+func newPipelinesStore(*FakeWorkspace) *pipelinesStore {
+	return &pipelinesStore{
+		Pipelines:       map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates: map[string]pipelines.UpdateInfo{},
+	}
+}
+
+func (s *FakeWorkspace) pipelines() *pipelinesStore {
+	return stateOf[pipelinesStore](s)
+}
+
+func addPipelinesRoutes(server *Server) {
+	// Pipelines:
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {
+		return req.Workspace.PipelineGet(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines", func(req Request) any {
+		return req.Workspace.PipelineCreate(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {
+		return req.Workspace.PipelineUpdate(req, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.pipelines().Pipelines, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/updates", func(req Request) any {
+		return req.Workspace.PipelineStartUpdate(req, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req Request) any {
+		return req.Workspace.PipelineEvents(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/updates/{update_id}", func(req Request) any {
+		return req.Workspace.PipelineGetUpdate(req.Vars["pipeline_id"], req.Vars["update_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/stop", func(req Request) any {
+		return req.Workspace.PipelineStop(req.Vars["pipeline_id"])
+	})
+}
+
 func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
 	defer s.LockUnlock()()
 
-	value, ok := s.Pipelines[pipelineId]
+	value, ok := s.pipelines().Pipelines[pipelineId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -79,7 +136,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
 
 	setSpecDefaults(&spec, pipelineId)
-	s.Pipelines[pipelineId] = r
+	s.pipelines().Pipelines[pipelineId] = r
 
 	return Response{
 		Body: pipelines.CreatePipelineResponse{
@@ -121,7 +178,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
-	item, exists := s.Pipelines[pipelineId]
+	item, exists := s.pipelines().Pipelines[pipelineId]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -149,7 +206,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		item.RunAs = edit.RunAs
 	}
 	setSpecDefaults(&spec, pipelineId)
-	s.Pipelines[pipelineId] = item
+	s.pipelines().Pipelines[pipelineId] = item
 
 	return Response{}
 }
@@ -157,7 +214,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Response {
 	defer s.LockUnlock()()
 
-	_, exists := s.Pipelines[pipelineId]
+	_, exists := s.pipelines().Pipelines[pipelineId]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -175,7 +232,7 @@ func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Resp
 
 	updateId := nextUUID()
 	// GetUpdate echoes selectors; the execution engine resolves paths to tables.
-	s.PipelineUpdates[updateId] = pipelines.UpdateInfo{
+	s.pipelines().PipelineUpdates[updateId] = pipelines.UpdateInfo{
 		UpdateId:                   updateId,
 		State:                      pipelines.UpdateInfoStateCompleted,
 		FullRefresh:                start.FullRefresh,
@@ -195,7 +252,7 @@ func (s *FakeWorkspace) PipelineStartUpdate(req Request, pipelineId string) Resp
 func (s *FakeWorkspace) PipelineEvents(pipelineId string) Response {
 	defer s.LockUnlock()()
 
-	_, exists := s.Pipelines[pipelineId]
+	_, exists := s.pipelines().Pipelines[pipelineId]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -213,7 +270,7 @@ func (s *FakeWorkspace) PipelineEvents(pipelineId string) Response {
 func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response {
 	defer s.LockUnlock()()
 
-	_, exists := s.Pipelines[pipelineId]
+	_, exists := s.pipelines().Pipelines[pipelineId]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -222,7 +279,7 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 	}
 
 	// Check if the update exists
-	update, updateExists := s.PipelineUpdates[updateId]
+	update, updateExists := s.pipelines().PipelineUpdates[updateId]
 	if !updateExists {
 		return Response{
 			StatusCode: 404,
@@ -240,7 +297,7 @@ func (s *FakeWorkspace) PipelineGetUpdate(pipelineId, updateId string) Response 
 func (s *FakeWorkspace) PipelineStop(pipelineId string) Response {
 	defer s.LockUnlock()()
 
-	_, exists := s.Pipelines[pipelineId]
+	_, exists := s.pipelines().Pipelines[pipelineId]
 	if !exists {
 		return Response{
 			StatusCode: 404,

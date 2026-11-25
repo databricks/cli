@@ -8,6 +8,45 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
 )
 
+func init() {
+	registerRoutes("data_quality_monitors", addDataQualityMonitorsRoutes)
+	registerStore("data_quality_monitors", newDataQualityMonitorsStore)
+}
+
+type dataQualityMonitorsStore struct {
+	DataQualityMonitors map[string]dataquality.Monitor
+}
+
+func newDataQualityMonitorsStore(*FakeWorkspace) *dataQualityMonitorsStore {
+	return &dataQualityMonitorsStore{
+		DataQualityMonitors: map[string]dataquality.Monitor{},
+	}
+}
+
+func (s *FakeWorkspace) dataQualityMonitors() *dataQualityMonitorsStore {
+	return stateOf[dataQualityMonitorsStore](s)
+}
+
+func addDataQualityMonitorsRoutes(server *Server) {
+	// Data Quality Monitors:
+
+	server.Handle("POST", "/api/data-quality/v1/monitors", func(req Request) any {
+		return req.Workspace.DataQualityMonitorCreate(req)
+	})
+
+	server.Handle("GET", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.dataQualityMonitors().DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
+	})
+
+	server.Handle("PATCH", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.DataQualityMonitorUpdate(req, req.Vars["object_type"], req.Vars["object_id"])
+	})
+
+	server.Handle("DELETE", "/api/data-quality/v1/monitors/{object_type}/{object_id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.dataQualityMonitors().DataQualityMonitors, dataQualityMonitorKey(req.Vars["object_type"], req.Vars["object_id"]))
+	})
+}
+
 func dataQualityMonitorKey(objectType, objectID string) string {
 	return objectType + "/" + objectID
 }
@@ -25,7 +64,7 @@ func (s *FakeWorkspace) DataQualityMonitorCreate(req Request) Response {
 	}
 
 	key := dataQualityMonitorKey(monitor.ObjectType, monitor.ObjectId)
-	if _, ok := s.DataQualityMonitors[key]; ok {
+	if _, ok := s.dataQualityMonitors().DataQualityMonitors[key]; ok {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": "Monitor already exists for " + key},
@@ -33,7 +72,7 @@ func (s *FakeWorkspace) DataQualityMonitorCreate(req Request) Response {
 	}
 
 	setDataProfilingOutputs(monitor.DataProfilingConfig, 1)
-	s.DataQualityMonitors[key] = monitor
+	s.dataQualityMonitors().DataQualityMonitors[key] = monitor
 	return Response{Body: monitor}
 }
 
@@ -43,7 +82,7 @@ func (s *FakeWorkspace) DataQualityMonitorUpdate(req Request, objectType, object
 	defer s.LockUnlock()()
 
 	key := dataQualityMonitorKey(objectType, objectID)
-	existing, ok := s.DataQualityMonitors[key]
+	existing, ok := s.dataQualityMonitors().DataQualityMonitors[key]
 	if !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -67,7 +106,7 @@ func (s *FakeWorkspace) DataQualityMonitorUpdate(req Request, objectType, object
 	existing.DataProfilingConfig = incoming.DataProfilingConfig
 	setDataProfilingOutputs(existing.DataProfilingConfig, version)
 
-	s.DataQualityMonitors[key] = existing
+	s.dataQualityMonitors().DataQualityMonitors[key] = existing
 	return Response{Body: existing}
 }
 

@@ -13,6 +13,51 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("alerts", addAlertsRoutes)
+	registerStore("alerts", newAlertsStore)
+}
+
+type alertsStore struct {
+	Alerts         map[string]sql.AlertV2
+	PurgedAlertIDs map[string]bool
+}
+
+func newAlertsStore(*FakeWorkspace) *alertsStore {
+	return &alertsStore{
+		Alerts:         map[string]sql.AlertV2{},
+		PurgedAlertIDs: map[string]bool{},
+	}
+}
+
+func (s *FakeWorkspace) alerts() *alertsStore {
+	return stateOf[alertsStore](s)
+}
+
+func addAlertsRoutes(server *Server) {
+	// Alerts v2:
+	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
+		return req.Workspace.AlertsGet(req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.alerts().Alerts, "alerts")
+	})
+
+	server.Handle("POST", "/api/2.0/alerts", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/alerts/{id}", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req Request) any {
+		purge := req.URL.Query().Get("purge") == "true"
+		return req.Workspace.AlertsDelete(req.Vars["id"], purge)
+	})
+}
+
 // alertFile mirrors the schema of a .dbalert.json file. It is the inverse of
 // bundle/config/mutator/load_dbalert_files.go: API-only fields (display_name,
 // warehouse_id) are dropped and the joined query_text/custom_description are
@@ -155,7 +200,7 @@ func (s *FakeWorkspace) writeAlertFile(alert sql.AlertV2) error {
 // existed gets a per-method message.
 func (s *FakeWorkspace) alertNotFound(alertId, unknownMessage string) Response {
 	message := unknownMessage
-	if s.PurgedAlertIDs[alertId] {
+	if s.alerts().PurgedAlertIDs[alertId] {
 		message = fmt.Sprintf("Tree node with id %s does not exist", alertId)
 	}
 	return Response{
@@ -171,7 +216,7 @@ func (s *FakeWorkspace) AlertsGet(alertId string) Response {
 	defer s.LockUnlock()()
 
 	// A trashed (not purged) alert is still readable, with lifecycle_state DELETED.
-	alert, ok := s.Alerts[alertId]
+	alert, ok := s.alerts().Alerts[alertId]
 	if !ok {
 		return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found or has no folder node internal name", alertId))
 	}
@@ -194,7 +239,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 	defer s.LockUnlock()()
 
 	if alertId != "" {
-		existing, ok := s.Alerts[alertId]
+		existing, ok := s.alerts().Alerts[alertId]
 		if !ok {
 			return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found or has no folder node internal name", alertId))
 		}
@@ -213,7 +258,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 
 	alert.Id = alertId
 	alert.LifecycleState = sql.AlertLifecycleStateActive
-	s.Alerts[alertId] = alert
+	s.alerts().Alerts[alertId] = alert
 
 	if err := s.writeAlertFile(alert); err != nil {
 		return Response{
@@ -231,7 +276,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {
 	defer s.LockUnlock()()
 
-	alert, ok := s.Alerts[alertId]
+	alert, ok := s.alerts().Alerts[alertId]
 	if !ok {
 		return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found", alertId))
 	}
@@ -248,11 +293,11 @@ func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {
 	delete(s.files, alertFilePath(alert))
 
 	if purge {
-		delete(s.Alerts, alertId)
-		s.PurgedAlertIDs[alertId] = true
+		delete(s.alerts().Alerts, alertId)
+		s.alerts().PurgedAlertIDs[alertId] = true
 	} else {
 		alert.LifecycleState = sql.AlertLifecycleStateDeleted
-		s.Alerts[alertId] = alert
+		s.alerts().Alerts[alertId] = alert
 	}
 
 	return Response{

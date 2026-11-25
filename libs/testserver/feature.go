@@ -11,6 +11,42 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerRoutes("feature", addFeatureRoutes)
+	registerStore("feature", newFeaturesStore)
+}
+
+type featuresStore struct {
+	Features map[string]ml.Feature
+}
+
+func newFeaturesStore(*FakeWorkspace) *featuresStore {
+	return &featuresStore{
+		Features: map[string]ml.Feature{},
+	}
+}
+
+func (s *FakeWorkspace) features() *featuresStore {
+	return stateOf[featuresStore](s)
+}
+
+func addFeatureRoutes(server *Server) {
+	// Feature Engineering features:
+	server.Handle("POST", "/api/2.0/feature-engineering/features", func(req Request) any {
+		return req.Workspace.FeaturesCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		// Features are stored lowercased, and the cloud GET matches the name case-insensitively.
+		return MapGet(req.Workspace, req.Workspace.features().Features, strings.ToLower(req.Vars["full_name"]))
+	})
+	server.Handle("PATCH", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		return req.Workspace.FeaturesUpdate(req, req.Vars["full_name"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.features().Features, req.Vars["full_name"])
+	})
+}
+
 // FeaturesCreate fakes POST /api/2.0/feature-engineering/features. The Feature body is sent
 // directly and the map is keyed by full_name, which is also the resource id. catalog_name,
 // schema_name and name are derived here because the backend derives them from full_name.
@@ -35,7 +71,7 @@ func (s *FakeWorkspace) FeaturesCreate(req Request) Response {
 			Body:       fmt.Sprintf("full_name must be a three-part name, got %q", feature.FullName),
 		}
 	}
-	if _, exists := s.Features[feature.FullName]; exists {
+	if _, exists := s.features().Features[feature.FullName]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body: map[string]string{
@@ -48,7 +84,7 @@ func (s *FakeWorkspace) FeaturesCreate(req Request) Response {
 	feature.CreatedBy = s.CurrentUser().UserName
 	feature.CreatedAt = sdktime.New(time.Unix(0, nowNano()).UTC())
 
-	s.Features[feature.FullName] = feature
+	s.features().Features[feature.FullName] = feature
 	return Response{
 		Body: feature,
 	}
@@ -59,7 +95,7 @@ func (s *FakeWorkspace) FeaturesCreate(req Request) Response {
 func (s *FakeWorkspace) FeaturesUpdate(req Request, fullName string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.Features[fullName]
+	existing, ok := s.features().Features[fullName]
 	if !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -77,7 +113,7 @@ func (s *FakeWorkspace) FeaturesUpdate(req Request, fullName string) Response {
 
 	existing.Description = incoming.Description
 
-	s.Features[fullName] = existing
+	s.features().Features[fullName] = existing
 	return Response{
 		Body: existing,
 	}

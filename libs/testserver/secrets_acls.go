@@ -7,13 +7,51 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("secrets_acls", addSecretsAclsRoutes)
+	registerStore("secrets_acls", newSecretsAclsStore)
+}
+
+type secretsAclsStore struct {
+	Acls map[string][]workspace.AclItem
+}
+
+func newSecretsAclsStore(*FakeWorkspace) *secretsAclsStore {
+	return &secretsAclsStore{
+		Acls: map[string][]workspace.AclItem{},
+	}
+}
+
+func (s *FakeWorkspace) secretsAcls() *secretsAclsStore {
+	return stateOf[secretsAclsStore](s)
+}
+
+func addSecretsAclsRoutes(server *Server) {
+	// Secrets ACLs:
+	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
+		return req.Workspace.SecretsAclsGet(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/acls/list", func(req Request) any {
+		return req.Workspace.SecretsListAcls(req)
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req Request) any {
+		return req.Workspace.SecretsAclsPut(req)
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
+		return req.Workspace.SecretsAclsDelete(req)
+	})
+}
+
 func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
 	defer s.LockUnlock()()
 
 	scope := req.URL.Query().Get("scope")
 	principal := req.URL.Query().Get("principal")
 
-	for _, acl := range s.Acls[scope] {
+	for _, acl := range s.secretsAcls().Acls[scope] {
 		if acl.Principal == principal {
 			return Response{Body: acl}
 		}
@@ -33,10 +71,10 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	}
 
 	// If the ACL already exists, update it in place
-	scopeAcls := s.Acls[request.Scope]
+	scopeAcls := s.secretsAcls().Acls[request.Scope]
 	for i, acl := range scopeAcls {
 		if acl.Principal == request.Principal {
-			s.Acls[request.Scope][i] = workspace.AclItem{
+			s.secretsAcls().Acls[request.Scope][i] = workspace.AclItem{
 				Principal:  request.Principal,
 				Permission: request.Permission,
 			}
@@ -45,7 +83,7 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 	}
 
 	// Otherwise, add a new ACL
-	s.Acls[request.Scope] = append(s.Acls[request.Scope], workspace.AclItem{
+	s.secretsAcls().Acls[request.Scope] = append(s.secretsAcls().Acls[request.Scope], workspace.AclItem{
 		Principal:  request.Principal,
 		Permission: request.Permission,
 	})
@@ -63,10 +101,10 @@ func (s *FakeWorkspace) SecretsAclsDelete(req Request) Response {
 		}
 	}
 
-	scopeAcls := s.Acls[request.Scope]
+	scopeAcls := s.secretsAcls().Acls[request.Scope]
 	for i, acl := range scopeAcls {
 		if acl.Principal == request.Principal {
-			s.Acls[request.Scope] = append(scopeAcls[:i], scopeAcls[i+1:]...)
+			s.secretsAcls().Acls[request.Scope] = append(scopeAcls[:i], scopeAcls[i+1:]...)
 			return Response{}
 		}
 	}

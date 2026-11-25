@@ -8,6 +8,45 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("external_locations", addExternalLocationsRoutes)
+	registerStore("external_locations", newExternalLocationsStore)
+}
+
+type externalLocationsStore struct {
+	ExternalLocations map[string]catalog.ExternalLocationInfo
+}
+
+func newExternalLocationsStore(*FakeWorkspace) *externalLocationsStore {
+	return &externalLocationsStore{
+		ExternalLocations: map[string]catalog.ExternalLocationInfo{},
+	}
+}
+
+func (s *FakeWorkspace) externalLocations() *externalLocationsStore {
+	return stateOf[externalLocationsStore](s)
+}
+
+func addExternalLocationsRoutes(server *Server) {
+	// External Locations:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.externalLocations().ExternalLocations, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/external-locations", func(req Request) any {
+		return req.Workspace.ExternalLocationsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
+		return req.Workspace.ExternalLocationsUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.externalLocations().ExternalLocations, req.Vars["name"])
+	})
+}
+
 func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -44,7 +83,7 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 	}
 	locationInfo.UpdatedAt = locationInfo.CreatedAt
 
-	s.ExternalLocations[createRequest.Name] = locationInfo
+	s.externalLocations().ExternalLocations[createRequest.Name] = locationInfo
 	return Response{
 		Body: locationInfo,
 	}
@@ -53,7 +92,7 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.ExternalLocations[name]
+	existing, ok := s.externalLocations().ExternalLocations[name]
 	if !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -86,14 +125,14 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 		existing.Name = updateRequest.NewName
 
 		// Delete the old entry and create with new name
-		delete(s.ExternalLocations, name)
+		delete(s.externalLocations().ExternalLocations, name)
 		name = updateRequest.NewName
 	}
 
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.ExternalLocations[name] = existing
+	s.externalLocations().ExternalLocations[name] = existing
 	return Response{
 		Body: existing,
 	}

@@ -14,6 +14,62 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("dashboards", addDashboardsRoutes)
+	registerStore("dashboards", newDashboardsStore)
+}
+
+type dashboardsStore struct {
+	Dashboards          *EventualMap[string, *fakeDashboard]
+	PublishedDashboards map[string]dashboards.PublishedDashboard
+}
+
+func newDashboardsStore(w *FakeWorkspace) *dashboardsStore {
+	return &dashboardsStore{
+		Dashboards:          NewEventualMap[string, *fakeDashboard](w.eventualConsistency),
+		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
+	}
+}
+
+func (s *FakeWorkspace) dashboards() *dashboardsStore {
+	return stateOf[dashboardsStore](s)
+}
+
+func addDashboardsRoutes(server *Server) {
+	// Dashboards:
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
+		return req.Workspace.DashboardGet(req)
+	})
+	server.Handle("POST", "/api/2.0/lakeview/dashboards", func(req Request) any {
+		return req.Workspace.DashboardCreate(req)
+	})
+	server.Handle("POST", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return req.Workspace.DashboardPublish(req)
+	})
+	server.Handle("PATCH", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
+		return req.Workspace.DashboardUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
+		// Calling DELETE on a dashboard does not delete the record immediately. Instead, the dashboard
+		// is marked as trashed and moved to the trash.
+		return req.Workspace.DashboardTrash(req)
+	})
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return req.Workspace.DashboardGetPublished(req)
+	})
+	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return req.Workspace.DashboardUnpublish(req)
+	})
+}
+
+type fakeDashboard struct {
+	dashboards.Dashboard
+
+	// Input value of the serialized dashboard provided. This is used
+	// to detect if the etag needs to be updated.
+	InputSerializedDashboard string `json:"-"`
+}
+
 // Generate 32 character hex string for dashboard ID
 func generateDashboardId() (string, error) {
 	randomBytes := make([]byte, 16)
@@ -87,7 +143,7 @@ func (s *FakeWorkspace) DashboardGet(req Request) Response {
 	dashboardId := req.Vars["dashboard_id"]
 	// Read applies eventual consistency: the first GET after a create returns nil
 	// (404) to simulate propagation delay. Updates are immediately visible.
-	ptr, ok := s.Dashboards.Read(dashboardId)
+	ptr, ok := s.dashboards().Dashboards.Read(dashboardId)
 	if !ok || ptr == nil {
 		return Response{StatusCode: 404}
 	}
@@ -170,7 +226,7 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 
 	// Write so that, when eventual consistency is enabled, the first GET after this
 	// create returns 404.
-	s.Dashboards.Write(dashboard.DashboardId, &fakeDashboard{
+	s.dashboards().Dashboards.Write(dashboard.DashboardId, &fakeDashboard{
 		Dashboard:                dashboard,
 		InputSerializedDashboard: inputSerializedDashboard,
 	})
@@ -201,7 +257,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	}
 
 	dashboardId := req.Vars["dashboard_id"]
-	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
+	dashboard, ok := s.dashboards().Dashboards.ReadStrong(dashboardId)
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -246,7 +302,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 	// Write stages a stale value: like a real backend, the first read after an update
 	// returns the pre-update value. Tests that read right after an update wait for the
 	// new value with a content-aware retry (retry --until / --until-not).
-	s.Dashboards.Write(dashboardId, &updated)
+	s.dashboards().Dashboards.Write(dashboardId, &updated)
 
 	return Response{
 		Body: updated,
@@ -264,7 +320,7 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 	}
 
 	dashboardId := req.Vars["dashboard_id"]
-	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
+	dashboard, ok := s.dashboards().Dashboards.ReadStrong(dashboardId)
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -286,7 +342,7 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 		publishedDashboard.EmbedCredentials = publishReq.EmbedCredentials
 	}
 
-	s.PublishedDashboards[dashboardId] = publishedDashboard
+	s.dashboards().PublishedDashboards[dashboardId] = publishedDashboard
 
 	return Response{
 		Body: dashboards.PublishedDashboard{
@@ -303,7 +359,7 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	defer s.LockUnlock()()
 
 	dashboardId := req.Vars["dashboard_id"]
-	dashboard, ok := s.Dashboards.ReadStrong(dashboardId)
+	dashboard, ok := s.dashboards().Dashboards.ReadStrong(dashboardId)
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -312,7 +368,7 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 
 	// The dashboard is marked as trashed and moved to the trash, which frees its path.
 	s.moveDashboardFile(dashboard.Path, "", dashboardId)
-	s.Dashboards.Put(dashboardId, &fakeDashboard{
+	s.dashboards().Dashboards.Put(dashboardId, &fakeDashboard{
 		Etag:           dashboard.Etag,
 		DashboardId:    dashboardId,
 		LifecycleState: dashboards.LifecycleStateTrashed,
@@ -320,7 +376,7 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 	})
 
 	// The published dashboard is deleted.
-	delete(s.PublishedDashboards, dashboardId)
+	delete(s.dashboards().PublishedDashboards, dashboardId)
 
 	return Response{
 		Body: *dashboard,
@@ -331,14 +387,14 @@ func (s *FakeWorkspace) DashboardUnpublish(req Request) Response {
 	defer s.LockUnlock()()
 
 	dashboardId := req.Vars["dashboard_id"]
-	if _, ok := s.Dashboards.ReadStrong(dashboardId); !ok {
+	if _, ok := s.dashboards().Dashboards.ReadStrong(dashboardId); !ok {
 		return Response{
 			StatusCode: 404,
 		}
 	}
 
 	// Delete the published dashboard entry.
-	delete(s.PublishedDashboards, dashboardId)
+	delete(s.dashboards().PublishedDashboards, dashboardId)
 
 	return Response{
 		Body: "",
@@ -349,7 +405,7 @@ func (s *FakeWorkspace) DashboardGetPublished(req Request) Response {
 	defer s.LockUnlock()()
 
 	dashboardId := req.Vars["dashboard_id"]
-	publishedDashboard, ok := s.PublishedDashboards[dashboardId]
+	publishedDashboard, ok := s.dashboards().PublishedDashboards[dashboardId]
 	if !ok {
 		return Response{
 			StatusCode: 404,

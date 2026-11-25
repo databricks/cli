@@ -19,7 +19,7 @@ func TestCatalogsCreate_RejectsEmptyName(t *testing.T) {
 
 	// A stored-but-unreadable catalog under the empty key is the original bug. Asserted
 	// before the require below so it is still reported when the rejection is missing.
-	assert.Empty(t, workspace.Catalogs)
+	assert.Empty(t, workspace.catalogs().Catalogs)
 
 	body, ok := response.Body.(map[string]string)
 	require.True(t, ok)
@@ -35,7 +35,7 @@ func TestCatalogsCreate_AllowsNonEmptyName(t *testing.T) {
 	require.Equal(t, 0, response.StatusCode)
 
 	// Read back through the same helper the GET route uses: a mis-keyed store must fail here.
-	getResponse := MapGet(workspace, workspace.Catalogs, "my_catalog")
+	getResponse := MapGet(workspace, workspace.catalogs().Catalogs, "my_catalog")
 	require.Equal(t, 0, getResponse.StatusCode)
 
 	body, ok := getResponse.Body.(catalog.CatalogInfo)

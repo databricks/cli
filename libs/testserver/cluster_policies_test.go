@@ -19,9 +19,11 @@ const testPolicyDefinition = `{
 }`
 
 func policyWorkspace() *FakeWorkspace {
-	return &FakeWorkspace{ClusterPolicies: map[string]compute.Policy{
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	workspace.clusterPolicies().ClusterPolicies = map[string]compute.Policy{
 		"p1": {PolicyId: "p1", Definition: testPolicyDefinition},
-	}}
+	}
+	return workspace
 }
 
 func TestApplyClusterPolicy(t *testing.T) {

@@ -10,6 +10,43 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("uc_secrets", addUcSecretsRoutes)
+	registerStore("uc_secrets", newUcSecretsStore)
+}
+
+type ucSecretsStore struct {
+	// UCSecrets is created by the first create request.
+	UCSecrets map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
+}
+
+func newUcSecretsStore(*FakeWorkspace) *ucSecretsStore {
+	return &ucSecretsStore{}
+}
+
+func (s *FakeWorkspace) ucSecrets() *ucSecretsStore {
+	return stateOf[ucSecretsStore](s)
+}
+
+func addUcSecretsRoutes(server *Server) {
+	// Unity Catalog Secrets:
+	server.Handle("POST", "/api/2.1/unity-catalog/secrets", func(req Request) any {
+		return req.Workspace.SecretsUcCreateSecret(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcGetSecret(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcUpdateSecret(req)
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcDeleteSecret(req)
+	})
+}
+
 // SecretsUcCreateSecret handles POST /api/2.1/unity-catalog/secrets
 func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 	defer s.LockUnlock()()
@@ -23,8 +60,8 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		}
 	}
 
-	if s.UCSecrets == nil {
-		s.UCSecrets = make(map[string]catalog.Secret)
+	if s.ucSecrets().UCSecrets == nil {
+		s.ucSecrets().UCSecrets = make(map[string]catalog.Secret)
 	}
 
 	fullName := fmt.Sprintf("%s.%s.%s",
@@ -33,7 +70,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		inputSecret.Name)
 
 	// UC answers 409 ALREADY_EXISTS (verified on AWS, Azure and GCP).
-	if _, exists := s.UCSecrets[fullName]; exists {
+	if _, exists := s.ucSecrets().UCSecrets[fullName]; exists {
 		return Response{
 			StatusCode: 409,
 			Body: map[string]any{
@@ -67,7 +104,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		secret.EffectiveOwner = s.CurrentUser().UserName
 	}
 
-	s.UCSecrets[fullName] = secret
+	s.ucSecrets().UCSecrets[fullName] = secret
 
 	return Response{
 		Body: secret,
@@ -88,7 +125,7 @@ func (s *FakeWorkspace) SecretsUcGetSecret(req Request) Response {
 		}
 	}
 
-	secret, exists := s.UCSecrets[fullName]
+	secret, exists := s.ucSecrets().UCSecrets[fullName]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -137,7 +174,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 	// under update_mask=*) clears the value instead of being treated as "not provided".
 	fields, _ := parseUpdateFields(req.Body)
 
-	secret, exists := s.UCSecrets[fullName]
+	secret, exists := s.ucSecrets().UCSecrets[fullName]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -169,7 +206,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 	secret.UpdateTime = sdktime.New(time.Now())
 	secret.UpdatedBy = s.CurrentUser().UserName
 
-	s.UCSecrets[fullName] = secret
+	s.ucSecrets().UCSecrets[fullName] = secret
 
 	return Response{
 		Body: secret,
@@ -190,7 +227,7 @@ func (s *FakeWorkspace) SecretsUcDeleteSecret(req Request) Response {
 		}
 	}
 
-	if _, exists := s.UCSecrets[fullName]; !exists {
+	if _, exists := s.ucSecrets().UCSecrets[fullName]; !exists {
 		return Response{
 			StatusCode: 404,
 			Body: map[string]any{
@@ -200,7 +237,7 @@ func (s *FakeWorkspace) SecretsUcDeleteSecret(req Request) Response {
 		}
 	}
 
-	delete(s.UCSecrets, fullName)
+	delete(s.ucSecrets().UCSecrets, fullName)
 
 	return Response{}
 }

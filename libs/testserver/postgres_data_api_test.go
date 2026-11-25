@@ -48,14 +48,14 @@ func TestPostgresDataApiCreateGetUpdateDelete(t *testing.T) {
 	require.NotNil(t, dataApi.Status)
 	assert.Equal(t, []string{"public"}, dataApi.Status.DbSchemas)
 	assert.Equal(t, 100, dataApi.Status.DbMaxRows)
-	host := workspace.PostgresEndpoints[testDataApiBranch+"/endpoints/primary"].Status.Hosts.Host
+	host := workspace.postgres().PostgresEndpoints[testDataApiBranch+"/endpoints/primary"].Status.Hosts.Host
 	assert.Equal(t, "https://"+host+"/api/2.0/workspace/900800700600/rest/app_db", dataApi.Status.Url)
 
 	// The "spec" mask keeps the current value of a field the request omits, so
 	// db_max_rows stays.
 	resp = updateDataApi(workspace, "spec", `{"spec": {"db_schemas": ["api"]}}`)
 	require.Equal(t, 0, resp.StatusCode)
-	dataApi = workspace.PostgresDataApis[testDataApiName]
+	dataApi = workspace.postgres().PostgresDataApis[testDataApiName]
 	assert.Equal(t, []string{"api"}, dataApi.Status.DbSchemas)
 	assert.Equal(t, 100, dataApi.Status.DbMaxRows)
 
@@ -69,7 +69,7 @@ func TestPostgresDataApiStatusReportsDefaults(t *testing.T) {
 	workspace := dataApiWorkspace(t)
 	require.Equal(t, 0, workspace.PostgresDataApiCreate(Request{Body: []byte(`{"spec": {"db_max_rows": 10}}`)}, testDataApiDatabase).StatusCode)
 
-	status := workspace.PostgresDataApis[testDataApiName].Status
+	status := workspace.postgres().PostgresDataApis[testDataApiName].Status
 	assert.Equal(t, &postgres.DataApiDataApiStatus{
 		AvailableSchemas:         []string{"public"},
 		DbAggregatesEnabled:      true,
@@ -88,12 +88,12 @@ func TestPostgresDataApiUpdateBools(t *testing.T) {
 	// An omitted bool keeps its value; an explicit false is applied and then
 	// reported, unlike a false that was never set.
 	require.Equal(t, 0, updateDataApi(workspace, "spec", `{"spec": {"db_schemas": ["public"]}}`).StatusCode)
-	status := workspace.PostgresDataApis[testDataApiName].Status
+	status := workspace.postgres().PostgresDataApis[testDataApiName].Status
 	assert.True(t, status.DbAggregatesEnabled)
 	assert.Empty(t, status.ForceSendFields)
 
 	require.Equal(t, 0, updateDataApi(workspace, "spec", `{"spec": {"db_aggregates_enabled": false, "server_timing_enabled": false}}`).StatusCode)
-	status = workspace.PostgresDataApis[testDataApiName].Status
+	status = workspace.postgres().PostgresDataApis[testDataApiName].Status
 	assert.False(t, status.DbAggregatesEnabled)
 	assert.ElementsMatch(t, []string{"DbAggregatesEnabled", "ServerTimingEnabled"}, status.ForceSendFields)
 }
@@ -115,7 +115,7 @@ func TestPostgresDataApiCreateErrors(t *testing.T) {
 
 func TestPostgresDataApiRequiresReadWriteEndpoint(t *testing.T) {
 	workspace := dataApiWorkspace(t)
-	delete(workspace.PostgresEndpoints, testDataApiBranch+"/endpoints/primary")
+	delete(workspace.postgres().PostgresEndpoints, testDataApiBranch+"/endpoints/primary")
 
 	resp := workspace.PostgresDataApiCreate(Request{Body: []byte(`{"spec": {"db_schemas": ["public"]}}`)}, testDataApiDatabase)
 	assert.Equal(t, 400, resp.StatusCode)
@@ -135,6 +135,6 @@ func TestPostgresDataApiGoneWithDatabase(t *testing.T) {
 	require.Equal(t, 0, workspace.PostgresDataApiCreate(Request{Body: []byte(`{"spec": {"db_schemas": ["public"]}}`)}, testDataApiDatabase).StatusCode)
 
 	require.Equal(t, 0, workspace.PostgresDatabaseDelete(testDataApiDatabase).StatusCode)
-	assert.NotContains(t, workspace.PostgresDataApis, testDataApiName)
+	assert.NotContains(t, workspace.postgres().PostgresDataApis, testDataApiName)
 	assert.Equal(t, 404, workspace.PostgresDataApiGet(testDataApiName).StatusCode)
 }

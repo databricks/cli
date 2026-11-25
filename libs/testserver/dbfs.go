@@ -12,6 +12,48 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/files"
 )
 
+func init() {
+	registerRoutes("dbfs", addDbfsRoutes)
+	registerStore("dbfs", newDbfsStore)
+}
+
+type dbfsStore struct {
+	// dbfs is the DBFS namespace, created on first use (see dbfsState).
+	dbfs *fakeDbfs
+}
+
+func newDbfsStore(*FakeWorkspace) *dbfsStore {
+	return &dbfsStore{}
+}
+
+func addDbfsRoutes(server *Server) {
+	// DBFS (dbfs:/ paths):
+	server.Handle("GET", "/api/2.0/dbfs/get-status", func(req Request) any {
+		return req.Workspace.DbfsGetStatus(req)
+	})
+	server.Handle("GET", "/api/2.0/dbfs/list", func(req Request) any {
+		return req.Workspace.DbfsList(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/mkdirs", func(req Request) any {
+		return req.Workspace.DbfsMkdirs(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/create", func(req Request) any {
+		return req.Workspace.DbfsCreate(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/add-block", func(req Request) any {
+		return req.Workspace.DbfsAddBlock(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/close", func(req Request) any {
+		return req.Workspace.DbfsClose(req)
+	})
+	server.Handle("GET", "/api/2.0/dbfs/read", func(req Request) any {
+		return req.Workspace.DbfsRead(req)
+	})
+	server.Handle("POST", "/api/2.0/dbfs/delete", func(req Request) any {
+		return req.Workspace.DbfsDelete(req)
+	})
+}
+
 // fakeDbfs is the DBFS namespace (dbfs:/...), separate from workspace files: a path written
 // through the DBFS API is not visible through the workspace or Files APIs, as on a real workspace.
 type fakeDbfs struct {
@@ -40,14 +82,15 @@ type dbfsHandle struct {
 }
 
 func (s *FakeWorkspace) dbfsState() *fakeDbfs {
-	if s.dbfs == nil {
-		s.dbfs = &fakeDbfs{
+	store := stateOf[dbfsStore](s)
+	if store.dbfs == nil {
+		store.dbfs = &fakeDbfs{
 			files:   map[string]dbfsFile{},
 			dirs:    map[string]int64{"/": nowMilli()},
 			handles: map[int64]*dbfsHandle{},
 		}
 	}
-	return s.dbfs
+	return store.dbfs
 }
 
 func dbfsError(statusCode int, errorCode, message string) Response {

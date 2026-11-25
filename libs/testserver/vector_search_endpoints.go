@@ -8,6 +8,53 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
+func init() {
+	registerRoutes("vector_search_endpoints", addVectorSearchEndpointsRoutes)
+	registerStore("vector_search_endpoints", newVectorSearchEndpointsStore)
+}
+
+type vectorSearchEndpointsStore struct {
+	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
+}
+
+func newVectorSearchEndpointsStore(*FakeWorkspace) *vectorSearchEndpointsStore {
+	return &vectorSearchEndpointsStore{
+		VectorSearchEndpoints: map[string]vectorsearch.EndpointInfo{},
+	}
+}
+
+func (s *FakeWorkspace) vectorSearchEndpoints() *vectorSearchEndpointsStore {
+	return stateOf[vectorSearchEndpointsStore](s)
+}
+
+func addVectorSearchEndpointsRoutes(server *Server) {
+	// Vector Search Endpoints:
+
+	server.Handle("POST", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.vectorSearchEndpoints().VectorSearchEndpoints, "endpoints")
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.vectorSearchEndpoints().VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointUpdate(req, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.vectorSearchEndpoints().VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}/budget-policy", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointUpdateBudgetPolicy(req, req.Vars["endpoint_name"])
+	})
+}
+
 func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -19,7 +66,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.VectorSearchEndpoints[createReq.Name]; exists {
+	if _, exists := s.vectorSearchEndpoints().VectorSearchEndpoints[createReq.Name]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body:       map[string]string{"error_code": "ALREADY_EXISTS", "message": fmt.Sprintf("AI Search endpoint %s already exists. Please try again with a different endpoint name.", createReq.Name)},
@@ -44,7 +91,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	}
 	endpoint.LastUpdatedTimestamp = endpoint.CreationTimestamp
 
-	s.VectorSearchEndpoints[createReq.Name] = endpoint
+	s.vectorSearchEndpoints().VectorSearchEndpoints[createReq.Name] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -62,7 +109,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdateBudgetPolicy(req Request, endp
 		}
 	}
 
-	endpoint, exists := s.VectorSearchEndpoints[endpointName]
+	endpoint, exists := s.vectorSearchEndpoints().VectorSearchEndpoints[endpointName]
 	if !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -75,7 +122,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdateBudgetPolicy(req Request, endp
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
-	s.VectorSearchEndpoints[endpointName] = endpoint
+	s.vectorSearchEndpoints().VectorSearchEndpoints[endpointName] = endpoint
 
 	return Response{
 		Body: vectorsearch.PatchEndpointBudgetPolicyResponse{
@@ -95,7 +142,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 		}
 	}
 
-	endpoint, exists := s.VectorSearchEndpoints[endpointName]
+	endpoint, exists := s.vectorSearchEndpoints().VectorSearchEndpoints[endpointName]
 	if !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -110,7 +157,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
-	s.VectorSearchEndpoints[endpointName] = endpoint
+	s.vectorSearchEndpoints().VectorSearchEndpoints[endpointName] = endpoint
 
 	return Response{
 		Body: endpoint,

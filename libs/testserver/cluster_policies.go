@@ -13,6 +13,43 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+func init() {
+	registerRoutes("cluster_policies", addClusterPoliciesRoutes)
+	registerStore("cluster_policies", newClusterPoliciesStore)
+}
+
+type clusterPoliciesStore struct {
+	ClusterPolicies map[string]compute.Policy
+}
+
+func newClusterPoliciesStore(*FakeWorkspace) *clusterPoliciesStore {
+	return &clusterPoliciesStore{
+		ClusterPolicies: map[string]compute.Policy{
+			// Seeded so the stateful list keeps backing the variable-lookup tests
+			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
+			"5678": {PolicyId: "5678", Name: "wrong-cluster-policy"},
+			"9876": {PolicyId: "9876", Name: "some-test-cluster-policy"},
+		},
+	}
+}
+
+func (s *FakeWorkspace) clusterPolicies() *clusterPoliciesStore {
+	return stateOf[clusterPoliciesStore](s)
+}
+
+func addClusterPoliciesRoutes(server *Server) {
+	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req Request) any {
+		return req.Workspace.ClusterPoliciesList(req)
+	})
+
+	server.Handle("POST", "/api/2.0/policies/clusters/create", func(req Request) any { return req.Workspace.ClusterPoliciesCreate(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/edit", func(req Request) any { return req.Workspace.ClusterPoliciesEdit(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/delete", func(req Request) any { return req.Workspace.ClusterPoliciesDelete(req) })
+	server.Handle("GET", "/api/2.0/policies/clusters/get", func(req Request) any {
+		return req.Workspace.ClusterPoliciesGet(req, req.URL.Query().Get("policy_id"))
+	})
+}
+
 // policyFamilyDefinition mimics the real backend: a policy created from a policy
 // family has its definition computed from the family and returned on read, even
 // though the config never sets definition. One fixed key is enough to reproduce a
@@ -49,7 +86,7 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 
 	id := nextUUID()
 	policy.PolicyId = id
-	s.ClusterPolicies[id] = policy
+	s.clusterPolicies().ClusterPolicies[id] = policy
 
 	// The backend grants the creator CAN_USE on a new policy.
 	creatorName := userForToken(req.Token).UserName
@@ -63,7 +100,7 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 		creator.UserName = creatorName
 	}
 	objectID := "/cluster-policies/" + id
-	s.Permissions[objectID] = iam.ObjectPermissions{
+	s.permissions().Permissions[objectID] = iam.ObjectPermissions{
 		ObjectId:          objectID,
 		ObjectType:        "cluster-policy",
 		AccessControlList: []iam.AccessControlResponse{creator},
@@ -75,15 +112,15 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 func (s *FakeWorkspace) ClusterPoliciesList(req Request) any {
 	defer s.LockUnlock()()
 
-	ids := make([]string, 0, len(s.ClusterPolicies))
-	for id := range s.ClusterPolicies {
+	ids := make([]string, 0, len(s.clusterPolicies().ClusterPolicies))
+	for id := range s.clusterPolicies().ClusterPolicies {
 		ids = append(ids, id)
 	}
 	slices.Sort(ids)
 
 	policies := make([]compute.Policy, 0, len(ids))
 	for _, id := range ids {
-		policies = append(policies, s.ClusterPolicies[id])
+		policies = append(policies, s.clusterPolicies().ClusterPolicies[id])
 	}
 
 	return Response{Body: compute.ListPoliciesResponse{Policies: policies}}
@@ -92,7 +129,7 @@ func (s *FakeWorkspace) ClusterPoliciesList(req Request) any {
 func (s *FakeWorkspace) ClusterPoliciesGet(req Request, policyId string) any {
 	defer s.LockUnlock()()
 
-	policy, ok := s.ClusterPolicies[policyId]
+	policy, ok := s.clusterPolicies().ClusterPolicies[policyId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -108,7 +145,7 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 
 	defer s.LockUnlock()()
 
-	policy, ok := s.ClusterPolicies[request.PolicyId]
+	policy, ok := s.clusterPolicies().ClusterPolicies[request.PolicyId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -125,7 +162,7 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 	if policy.Definition == "" && policy.PolicyFamilyId != "" {
 		policy.Definition = policyFamilyDefinition(policy.PolicyFamilyId)
 	}
-	s.ClusterPolicies[request.PolicyId] = policy
+	s.clusterPolicies().ClusterPolicies[request.PolicyId] = policy
 
 	return Response{}
 }
@@ -138,11 +175,11 @@ func (s *FakeWorkspace) ClusterPoliciesDelete(req Request) any {
 
 	defer s.LockUnlock()()
 
-	if _, ok := s.ClusterPolicies[request.PolicyId]; !ok {
+	if _, ok := s.clusterPolicies().ClusterPolicies[request.PolicyId]; !ok {
 		return Response{StatusCode: 404}
 	}
 
-	delete(s.ClusterPolicies, request.PolicyId)
+	delete(s.clusterPolicies().ClusterPolicies, request.PolicyId)
 
 	return Response{}
 }
@@ -159,7 +196,7 @@ func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefau
 	if policyID == "" {
 		return ""
 	}
-	policy, ok := s.ClusterPolicies[policyID]
+	policy, ok := s.clusterPolicies().ClusterPolicies[policyID]
 	if !ok {
 		return ""
 	}

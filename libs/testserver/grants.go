@@ -10,6 +10,37 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("grants", addGrantsRoutes)
+	registerStore("grants", newGrantsStore)
+}
+
+type grantsStore struct {
+	Grants map[string][]catalog.PrivilegeAssignment
+}
+
+func newGrantsStore(*FakeWorkspace) *grantsStore {
+	return &grantsStore{
+		Grants: map[string][]catalog.PrivilegeAssignment{},
+	}
+}
+
+func (s *FakeWorkspace) grants() *grantsStore {
+	return stateOf[grantsStore](s)
+}
+
+func addGrantsRoutes(server *Server) {
+	// Grants:
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsUpdate(req, req.Vars["securable_type"], req.Vars["full_name"])
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsGet(req, req.Vars["securable_type"], req.Vars["full_name"])
+	})
+}
+
 // notImpliedByAllPrivileges are the privileges UC does not include in
 // ALL_PRIVILEGES, so granting or revoking ALL_PRIVILEGES never affects them.
 var notImpliedByAllPrivileges = map[catalog.Privilege]bool{
@@ -40,7 +71,7 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	principalPrivs := make(map[string]map[catalog.Privilege]bool)
 
 	// Load current grants
-	for _, assignment := range s.Grants[key] {
+	for _, assignment := range s.grants().Grants[key] {
 		if principalPrivs[assignment.Principal] == nil {
 			principalPrivs[assignment.Principal] = make(map[catalog.Privilege]bool)
 		}
@@ -126,14 +157,14 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 		})
 	}
 
-	s.Grants[key] = assignments
+	s.grants().Grants[key] = assignments
 
 	if securableType == "schema" {
-		schema, ok := s.Schemas[fullName]
+		schema, ok := s.schemas().Schemas[fullName]
 		if ok {
 			schema.UpdatedAt = nowMilli()
 			schema.UpdatedBy = s.CurrentUser().UserName
-			s.Schemas[fullName] = schema
+			s.schemas().Schemas[fullName] = schema
 		}
 	}
 
@@ -144,7 +175,7 @@ func (s *FakeWorkspace) GrantsGet(_ Request, securableType, fullName string) Res
 	defer s.LockUnlock()()
 
 	key := grantsKey(securableType, fullName)
-	assignments := s.Grants[key]
+	assignments := s.grants().Grants[key]
 
 	return Response{Body: catalog.GetPermissionsResponse{PrivilegeAssignments: assignments}}
 }

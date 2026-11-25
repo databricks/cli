@@ -7,6 +7,45 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
+func init() {
+	registerRoutes("synced_database_tables", addSyncedDatabaseTablesRoutes)
+	registerStore("synced_database_tables", newSyncedDatabaseTablesStore)
+}
+
+type syncedDatabaseTablesStore struct {
+	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
+}
+
+func newSyncedDatabaseTablesStore(*FakeWorkspace) *syncedDatabaseTablesStore {
+	return &syncedDatabaseTablesStore{
+		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
+	}
+}
+
+func (s *FakeWorkspace) syncedDatabaseTables() *syncedDatabaseTablesStore {
+	return stateOf[syncedDatabaseTablesStore](s)
+}
+
+func addSyncedDatabaseTablesRoutes(server *Server) {
+	// Synced Database Tables:
+
+	server.Handle("POST", "/api/2.0/database/synced_tables", func(req Request) any {
+		return req.Workspace.SyncedDatabaseTableCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return req.Workspace.SyncedDatabaseTableUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("GET", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.syncedDatabaseTables().SyncedDatabaseTables, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.syncedDatabaseTables().SyncedDatabaseTables, req.Vars["name"])
+	})
+}
+
 func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -22,7 +61,7 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 	// check that the database instance exists if specified:
 	if syncedDatabaseTable.DatabaseInstanceName != "" {
 		found := false
-		for _, instance := range s.DatabaseInstances {
+		for _, instance := range s.databaseInstances().DatabaseInstances {
 			if instance.Name == syncedDatabaseTable.DatabaseInstanceName {
 				found = true
 				break
@@ -36,7 +75,7 @@ func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 		}
 	}
 
-	s.SyncedDatabaseTables[syncedDatabaseTable.Name] = syncedDatabaseTable
+	s.syncedDatabaseTables().SyncedDatabaseTables[syncedDatabaseTable.Name] = syncedDatabaseTable
 
 	return Response{
 		Body: syncedDatabaseTable,

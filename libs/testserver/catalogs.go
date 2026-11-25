@@ -9,6 +9,45 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("catalogs", addCatalogsRoutes)
+	registerStore("catalogs", newCatalogsStore)
+}
+
+type catalogsStore struct {
+	Catalogs map[string]catalog.CatalogInfo
+}
+
+func newCatalogsStore(*FakeWorkspace) *catalogsStore {
+	return &catalogsStore{
+		Catalogs: map[string]catalog.CatalogInfo{},
+	}
+}
+
+func (s *FakeWorkspace) catalogs() *catalogsStore {
+	return stateOf[catalogsStore](s)
+}
+
+func addCatalogsRoutes(server *Server) {
+	// Catalogs:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.catalogs().Catalogs, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/catalogs", func(req Request) any {
+		return req.Workspace.CatalogsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return req.Workspace.CatalogsUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return req.Workspace.CatalogsDelete(req, req.Vars["name"])
+	})
+}
+
 // catalogNameManagedDefaults scopes the managed-property injection to the
 // backend-default drift test, keeping unrelated tests free of it. Mirrors
 // schemaNameManagedDefaults.
@@ -37,7 +76,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.Catalogs[createRequest.Name]; exists {
+	if _, exists := s.catalogs().Catalogs[createRequest.Name]; exists {
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -85,7 +124,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
-	s.Catalogs[createRequest.Name] = catalogInfo
+	s.catalogs().Catalogs[createRequest.Name] = catalogInfo
 	return Response{
 		Body: catalogInfo,
 	}
@@ -94,7 +133,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.Catalogs[name]
+	existing, ok := s.catalogs().Catalogs[name]
 	if !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -121,7 +160,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		existing.FullName = updateRequest.NewName
 
 		// Delete the old entry and create with new name
-		delete(s.Catalogs, name)
+		delete(s.catalogs().Catalogs, name)
 		s.moveCatalogChildren(name, updateRequest.NewName)
 		name = updateRequest.NewName
 	}
@@ -129,7 +168,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.Catalogs[name] = existing
+	s.catalogs().Catalogs[name] = existing
 	return Response{
 		Body: existing,
 	}
@@ -137,39 +176,39 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 
 // moveCatalogChildren mirrors UC, where the schemas, volumes, registered models and secrets of a renamed catalog move with it.
 func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName string) {
-	for key, schema := range s.Schemas {
+	for key, schema := range s.schemas().Schemas {
 		if schema.CatalogName != oldCatalogName {
 			continue
 		}
-		delete(s.Schemas, key)
+		delete(s.schemas().Schemas, key)
 		schema.CatalogName = newCatalogName
 		schema.FullName = newCatalogName + "." + schema.Name
-		s.Schemas[schema.FullName] = schema
+		s.schemas().Schemas[schema.FullName] = schema
 	}
-	for key, volume := range s.Volumes {
+	for key, volume := range s.volumes().Volumes {
 		if volume.CatalogName != oldCatalogName {
 			continue
 		}
-		delete(s.Volumes, key)
+		delete(s.volumes().Volumes, key)
 		volume.CatalogName = newCatalogName
 		volume.FullName = newCatalogName + "." + volume.SchemaName + "." + volume.Name
-		s.Volumes[volumeKey(volume.FullName)] = volume
+		s.volumes().Volumes[volumeKey(volume.FullName)] = volume
 	}
-	for key, model := range s.RegisteredModels {
+	for key, model := range s.registeredModels().RegisteredModels {
 		if model.CatalogName != oldCatalogName {
 			continue
 		}
 		model.CatalogName = newCatalogName
 		s.moveRegisteredModel(key, model)
 	}
-	for key, secret := range s.UCSecrets {
+	for key, secret := range s.ucSecrets().UCSecrets {
 		if secret.CatalogName != oldCatalogName {
 			continue
 		}
-		delete(s.UCSecrets, key)
+		delete(s.ucSecrets().UCSecrets, key)
 		secret.CatalogName = newCatalogName
 		secret.FullName = newCatalogName + "." + secret.SchemaName + "." + secret.Name
-		s.UCSecrets[secret.FullName] = secret
+		s.ucSecrets().UCSecrets[secret.FullName] = secret
 	}
 }
 
@@ -177,30 +216,30 @@ func (s *FakeWorkspace) moveCatalogChildren(oldCatalogName, newCatalogName strin
 func (s *FakeWorkspace) CatalogsDelete(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	if _, ok := s.Catalogs[name]; !ok {
+	if _, ok := s.catalogs().Catalogs[name]; !ok {
 		return Response{StatusCode: http.StatusNotFound}
 	}
-	delete(s.Catalogs, name)
+	delete(s.catalogs().Catalogs, name)
 	if req.URL.Query().Get("force") == "true" {
-		for key, schema := range s.Schemas {
+		for key, schema := range s.schemas().Schemas {
 			if schema.CatalogName == name {
-				delete(s.Schemas, key)
+				delete(s.schemas().Schemas, key)
 			}
 		}
-		for key, volume := range s.Volumes {
+		for key, volume := range s.volumes().Volumes {
 			if volume.CatalogName == name {
-				delete(s.Volumes, key)
+				delete(s.volumes().Volumes, key)
 			}
 		}
-		for key, model := range s.RegisteredModels {
+		for key, model := range s.registeredModels().RegisteredModels {
 			if model.CatalogName == name {
-				delete(s.RegisteredModels, key)
-				delete(s.RegisteredModelVersions, key)
+				delete(s.registeredModels().RegisteredModels, key)
+				delete(s.registeredModels().RegisteredModelVersions, key)
 			}
 		}
-		for key, secret := range s.UCSecrets {
+		for key, secret := range s.ucSecrets().UCSecrets {
 			if secret.CatalogName == name {
-				delete(s.UCSecrets, key)
+				delete(s.ucSecrets().UCSecrets, key)
 			}
 		}
 	}

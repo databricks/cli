@@ -10,6 +10,52 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerRoutes("experiments", addExperimentsRoutes)
+	registerStore("experiments", newExperimentsStore)
+}
+
+type experimentsStore struct {
+	Experiments map[string]ml.GetExperimentResponse
+}
+
+func newExperimentsStore(*FakeWorkspace) *experimentsStore {
+	return &experimentsStore{
+		Experiments: map[string]ml.GetExperimentResponse{},
+	}
+}
+
+func (s *FakeWorkspace) experiments() *experimentsStore {
+	return stateOf[experimentsStore](s)
+}
+
+func addExperimentsRoutes(server *Server) {
+	// MLflow Experiments:
+	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
+		experimentId := req.URL.Query().Get("experiment_id")
+		if experimentId == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": "experiment_id is required"},
+			}
+		}
+
+		return MapGet(req.Workspace, req.Workspace.experiments().Experiments, experimentId)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/create", func(req Request) any {
+		return req.Workspace.ExperimentCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/update", func(req Request) any {
+		return req.Workspace.ExperimentUpdate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
+		return req.Workspace.ExperimentDelete(req)
+	})
+}
+
 func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -75,7 +121,7 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		TraceLocation: experiment.TraceLocation,
 	}
 
-	s.Experiments[experimentId] = ml.GetExperimentResponse{
+	s.experiments().Experiments[experimentId] = ml.GetExperimentResponse{
 		Experiment: &exp,
 	}
 
@@ -97,7 +143,7 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 		}
 	}
 
-	experiment, exists := s.Experiments[updateReq.ExperimentId]
+	experiment, exists := s.experiments().Experiments[updateReq.ExperimentId]
 	if !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -118,7 +164,7 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 		}
 	}
 
-	s.Experiments[updateReq.ExperimentId] = experiment
+	s.experiments().Experiments[updateReq.ExperimentId] = experiment
 
 	return Response{}
 }
@@ -132,5 +178,5 @@ func (s *FakeWorkspace) ExperimentDelete(req Request) Response {
 		}
 	}
 
-	return MapDelete(s, s.Experiments, deleteReq.ExperimentId)
+	return MapDelete(s, s.experiments().Experiments, deleteReq.ExperimentId)
 }

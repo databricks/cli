@@ -10,6 +10,44 @@ import (
 	"sync"
 )
 
+func init() {
+	registerRoutes("fake_oidc", addFakeOidcRoutes)
+}
+
+func addFakeOidcRoutes(server *Server) {
+	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ Request) any {
+		return server.fakeOidc.OidcEndpoints()
+	})
+
+	server.Handle("GET", "/oidc/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
+	})
+
+	server.Handle("POST", "/oidc/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/.well-known/oauth-authorization-server", func(req Request) any {
+		return server.fakeOidc.AccountOidcEndpoints(req.Vars["account_id"])
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+}
+
 const (
 	deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
 

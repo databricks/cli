@@ -14,6 +14,315 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
+func init() {
+	registerRoutes("postgres", addPostgresRoutes)
+	registerStore("postgres", newPostgresStore)
+}
+
+type postgresStore struct {
+	PostgresProjects          map[string]postgres.Project
+	PostgresBranches          map[string]postgres.Branch
+	PostgresCatalogs          map[string]postgres.Catalog
+	PostgresDatabases         map[string]postgres.Database
+	PostgresEndpoints         map[string]postgres.Endpoint
+	PostgresRoles             map[string]postgres.Role
+	PostgresSyncedTables      map[string]postgres.SyncedTable
+	PostgresSnapshotSchedules map[string]postgres.SnapshotSchedule
+	PostgresDataApis          map[string]postgres.DataApi
+	PostgresOperations        map[string]postgres.Operation
+
+	// Branches and endpoints that the server provisioned implicitly together
+	// with their parent (e.g. the production branch on a new project, or the
+	// primary endpoint on a new branch). The real backend rejects independent
+	// deletion of these — they go away only when the parent is deleted.
+	postgresImplicitBranches  map[string]bool
+	postgresImplicitEndpoints map[string]bool
+}
+
+func newPostgresStore(*FakeWorkspace) *postgresStore {
+	return &postgresStore{
+		PostgresProjects:          map[string]postgres.Project{},
+		PostgresBranches:          map[string]postgres.Branch{},
+		PostgresCatalogs:          map[string]postgres.Catalog{},
+		PostgresDatabases:         map[string]postgres.Database{},
+		PostgresEndpoints:         map[string]postgres.Endpoint{},
+		PostgresRoles:             map[string]postgres.Role{},
+		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
+		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
+		PostgresDataApis:          map[string]postgres.DataApi{},
+		PostgresOperations:        map[string]postgres.Operation{},
+		postgresImplicitBranches:  map[string]bool{},
+		postgresImplicitEndpoints: map[string]bool{},
+	}
+}
+
+func (s *FakeWorkspace) postgres() *postgresStore {
+	return stateOf[postgresStore](s)
+}
+
+func addPostgresRoutes(server *Server) {
+	// Postgres Operations:
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	// Postgres Projects:
+	server.Handle("POST", "/api/2.0/postgres/projects", func(req Request) any {
+		projectID := req.URL.Query().Get("project_id")
+		return req.Workspace.PostgresProjectCreate(req, projectID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects", func(req Request) any {
+		return req.Workspace.PostgresProjectList()
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectDelete(name)
+	})
+
+	// Postgres Branches:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"]
+		branchID := req.URL.Query().Get("branch_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresBranchCreate(req, parent, branchID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresBranchList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchDelete(name)
+	})
+
+	// Postgres Snapshot Schedules (a per-branch singleton; no create/delete):
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule"
+		return req.Workspace.PostgresSnapshotScheduleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule"
+		return req.Workspace.PostgresSnapshotScheduleUpdate(req, name)
+	})
+
+	// Postgres Endpoints:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		endpointID := req.URL.Query().Get("endpoint_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresEndpointCreate(req, parent, endpointID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresEndpointList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointDelete(name)
+	})
+
+	// Postgres Catalogs:
+	server.Handle("POST", "/api/2.0/postgres/catalogs", func(req Request) any {
+		catalogID := req.URL.Query().Get("catalog_id")
+		return req.Workspace.PostgresCatalogCreate(req, catalogID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/catalogs/{id}", func(req Request) any {
+		return req.Workspace.PostgresCatalogGet("catalogs/" + req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/catalogs/{id}", func(req Request) any {
+		return req.Workspace.PostgresCatalogDelete("catalogs/" + req.Vars["id"])
+	})
+
+	// Operations for catalogs are nested under the resource. Matches the real
+	// API and what the SDK polls based on the operation.Name we return.
+	server.Handle("GET", "/api/2.0/postgres/catalogs/{id}/operations/{operation_id}", func(req Request) any {
+		name := "catalogs/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	// Postgres Databases:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		databaseID := req.URL.Query().Get("database_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresDatabaseCreate(req, parent, databaseID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresDatabaseList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseDelete(name)
+	})
+
+	// Postgres Data API (a per-database singleton):
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDataApiCreate(req, parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiDelete(name)
+	})
+
+	// Postgres Roles:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		roleID := req.URL.Query().Get("role_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresRoleList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleDelete(name)
+	})
+
+	// Postgres Synced Tables:
+	server.Handle("POST", "/api/2.0/postgres/synced_tables", func(req Request) any {
+		syncedTableID := req.URL.Query().Get("synced_table_id")
+		return req.Workspace.PostgresSyncedTableCreate(req, syncedTableID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}", func(req Request) any {
+		return req.Workspace.PostgresSyncedTableGet("synced_tables/" + req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/synced_tables/{id}", func(req Request) any {
+		return req.Workspace.PostgresSyncedTableDelete("synced_tables/" + req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}/operations/{operation_id}", func(req Request) any {
+		name := "synced_tables/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
+	})
+
+	// Catch-all handler for invalid postgres resource names.
+	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.
+	server.Handle("GET", "/api/2.0/postgres/{name}", func(req Request) any {
+		return Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"error_code": "NOT_FOUND",
+				"message":    "resource not found",
+			},
+		}
+	})
+}
+
 func nowTime() *sdktime.Time {
 	return sdktime.New(time.Now().UTC())
 }
@@ -103,7 +412,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 	name := "projects/" + projectID
 
 	// Check for duplicate
-	if _, exists := s.PostgresProjects[name]; exists {
+	if _, exists := s.postgres().PostgresProjects[name]; exists {
 		return postgresErrorResponse(400, "BAD_REQUEST", "A project with this resource name already exists in the workspace.")
 	}
 
@@ -155,7 +464,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 		project.Spec = echoedSpec[postgres.ProjectSpec](nil, req.Body, "", projectOneofGroups, projectInputOnlySpecFields...)
 	}
 
-	s.PostgresProjects[name] = project
+	s.postgres().PostgresProjects[name] = project
 
 	// Create a default branch for the project
 	s.createDefaultBranchLocked(name)
@@ -169,7 +478,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 func (s *FakeWorkspace) PostgresProjectGet(name string) Response {
 	defer s.LockUnlock()()
 
-	project, exists := s.PostgresProjects[name]
+	project, exists := s.postgres().PostgresProjects[name]
 	if !exists {
 		return postgresNotFoundResponse("project")
 	}
@@ -183,8 +492,8 @@ func (s *FakeWorkspace) PostgresProjectGet(name string) Response {
 func (s *FakeWorkspace) PostgresProjectList() Response {
 	defer s.LockUnlock()()
 
-	projects := make([]postgres.Project, 0, len(s.PostgresProjects))
-	for _, p := range s.PostgresProjects {
+	projects := make([]postgres.Project, 0, len(s.postgres().PostgresProjects))
+	for _, p := range s.postgres().PostgresProjects {
 		projects = append(projects, p)
 	}
 
@@ -203,7 +512,7 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 
 	defer s.LockUnlock()()
 
-	project, exists := s.PostgresProjects[name]
+	project, exists := s.postgres().PostgresProjects[name]
 	if !exists {
 		return postgresNotFoundResponse("project")
 	}
@@ -250,7 +559,7 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 
 	project.Spec = echoedSpec(project.Spec, req.Body, req.URL.Query().Get("update_mask"), projectOneofGroups, projectInputOnlySpecFields...)
 	project.UpdateTime = nowTime()
-	s.PostgresProjects[name] = project
+	s.postgres().PostgresProjects[name] = project
 
 	// Whole-spec mask + a body that omits default_endpoint_settings keeps the stored
 	// settings. Until 2026-11-02 the real API returned 500 here when they were non-default.
@@ -266,27 +575,27 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresProjects[name]; !exists {
+	if _, exists := s.postgres().PostgresProjects[name]; !exists {
 		return postgresNotFoundResponse("project")
 	}
 
 	// Deleting a project cascade-deletes all its branches and endpoints.
 	branchPrefix := name + "/branches/"
-	for brName := range s.PostgresBranches {
+	for brName := range s.postgres().PostgresBranches {
 		if strings.HasPrefix(brName, branchPrefix) {
-			delete(s.PostgresBranches, brName)
-			delete(s.postgresImplicitBranches, brName)
+			delete(s.postgres().PostgresBranches, brName)
+			delete(s.postgres().postgresImplicitBranches, brName)
 			endpointPrefix := brName + "/endpoints/"
-			for epName := range s.PostgresEndpoints {
+			for epName := range s.postgres().PostgresEndpoints {
 				if strings.HasPrefix(epName, endpointPrefix) {
-					delete(s.PostgresEndpoints, epName)
-					delete(s.postgresImplicitEndpoints, epName)
+					delete(s.postgres().PostgresEndpoints, epName)
+					delete(s.postgres().postgresImplicitEndpoints, epName)
 				}
 			}
 		}
 	}
 
-	delete(s.PostgresProjects, name)
+	delete(s.postgres().PostgresProjects, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -307,7 +616,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	}
 
 	// Check if parent project exists
-	if _, exists := s.PostgresProjects[parent]; !exists {
+	if _, exists := s.postgres().PostgresProjects[parent]; !exists {
 		return postgresNotFoundResponse("project")
 	}
 
@@ -323,7 +632,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 
 	name := fmt.Sprintf("%s/branches/%s", parent, branchID)
 
-	existing, exists := s.PostgresBranches[name]
+	existing, exists := s.postgres().PostgresBranches[name]
 	if exists && !replaceExisting {
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "branch with such id already exists")
 	}
@@ -356,7 +665,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 
 		// Set source branch info if a default branch exists.
 		prefix := parent + "/branches/"
-		for brName, br := range s.PostgresBranches {
+		for brName, br := range s.postgres().PostgresBranches {
 			if strings.HasPrefix(brName, prefix) && br.Status != nil && br.Status.Default {
 				branch.Status.SourceBranch = br.Name
 				branch.Status.SourceBranchLsn = "0/0"
@@ -374,7 +683,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 
 	branch.Spec = echoedSpec[postgres.BranchSpec](nil, req.Body, "", branchOneofGroups, branchInputOnlySpecFields...)
 
-	s.PostgresBranches[name] = branch
+	s.postgres().PostgresBranches[name] = branch
 
 	// Each branch implicitly provisions a primary read-write endpoint. Only create
 	// it on first branch creation; on replace_existing the primary already exists.
@@ -395,12 +704,12 @@ func (s *FakeWorkspace) PostgresBranchGet(name string) Response {
 	parts := strings.Split(name, "/branches/")
 	if len(parts) == 2 {
 		projectName := parts[0]
-		if _, exists := s.PostgresProjects[projectName]; !exists {
+		if _, exists := s.postgres().PostgresProjects[projectName]; !exists {
 			return postgresNotFoundResponse("project")
 		}
 	}
 
-	branch, exists := s.PostgresBranches[name]
+	branch, exists := s.postgres().PostgresBranches[name]
 	if !exists {
 		return postgresNotFoundResponse("branch")
 	}
@@ -415,13 +724,13 @@ func (s *FakeWorkspace) PostgresBranchList(parent string) Response {
 	defer s.LockUnlock()()
 
 	// Check if parent project exists
-	if _, exists := s.PostgresProjects[parent]; !exists {
+	if _, exists := s.postgres().PostgresProjects[parent]; !exists {
 		return postgresNotFoundResponse("project")
 	}
 
 	var branches []postgres.Branch
 	prefix := parent + "/branches/"
-	for name, b := range s.PostgresBranches {
+	for name, b := range s.postgres().PostgresBranches {
 		if strings.HasPrefix(name, prefix) {
 			branches = append(branches, b)
 		}
@@ -442,7 +751,7 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 
 	defer s.LockUnlock()()
 
-	branch, exists := s.PostgresBranches[name]
+	branch, exists := s.postgres().PostgresBranches[name]
 	if !exists {
 		return postgresNotFoundResponse("branch")
 	}
@@ -470,7 +779,7 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 
 	branch.Spec = echoedSpec(branch.Spec, req.Body, req.URL.Query().Get("update_mask"), branchOneofGroups, branchInputOnlySpecFields...)
 	branch.UpdateTime = nowTime()
-	s.PostgresBranches[name] = branch
+	s.postgres().PostgresBranches[name] = branch
 
 	return Response{
 		Body: s.createOperationLocked(branch.Name, branch),
@@ -484,7 +793,7 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	branch, exists := s.PostgresBranches[name]
+	branch, exists := s.postgres().PostgresBranches[name]
 	if !exists {
 		return postgresNotFoundResponse("branch")
 	}
@@ -497,22 +806,22 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 	// cannot be deleted independently; they are removed when the project is
 	// deleted. Matches the real backend's error payload including the
 	// declarative_context=MANAGED_BY_PARENT marker.
-	if s.postgresImplicitBranches[name] {
+	if s.postgres().postgresImplicitBranches[name] {
 		return postgresManagedByParentErrorResponse(fmt.Sprintf("Cannot delete root branch '%s'. Root branches cannot be deleted independently.", name))
 	}
 
 	// Deleting a branch cascade-deletes its endpoints (including the implicit
 	// primary).
 	endpointPrefix := name + "/endpoints/"
-	for epName := range s.PostgresEndpoints {
+	for epName := range s.postgres().PostgresEndpoints {
 		if strings.HasPrefix(epName, endpointPrefix) {
-			delete(s.PostgresEndpoints, epName)
-			delete(s.postgresImplicitEndpoints, epName)
+			delete(s.postgres().PostgresEndpoints, epName)
+			delete(s.postgres().postgresImplicitEndpoints, epName)
 		}
 	}
 
-	delete(s.PostgresBranches, name)
-	delete(s.postgresImplicitBranches, name)
+	delete(s.postgres().PostgresBranches, name)
+	delete(s.postgres().postgresImplicitBranches, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -528,11 +837,11 @@ func (s *FakeWorkspace) PostgresSnapshotScheduleGet(name string) Response {
 	defer s.LockUnlock()()
 
 	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
-	if _, exists := s.PostgresBranches[branchName]; !exists {
+	if _, exists := s.postgres().PostgresBranches[branchName]; !exists {
 		return postgresNotFoundResponse("branch")
 	}
 
-	schedule, exists := s.PostgresSnapshotSchedules[name]
+	schedule, exists := s.postgres().PostgresSnapshotSchedules[name]
 	if !exists {
 		schedule = postgres.SnapshotSchedule{Name: name}
 	}
@@ -553,7 +862,7 @@ func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string)
 	defer s.LockUnlock()()
 
 	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
-	branch, exists := s.PostgresBranches[branchName]
+	branch, exists := s.postgres().PostgresBranches[branchName]
 	if !exists {
 		return postgresNotFoundResponse("branch")
 	}
@@ -578,7 +887,7 @@ func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string)
 		Name:     name,
 		Schedule: updateSchedule.Schedule,
 	}
-	s.PostgresSnapshotSchedules[name] = schedule
+	s.postgres().PostgresSnapshotSchedules[name] = schedule
 
 	return Response{
 		Body: s.createOperationLocked(name, schedule),
@@ -600,7 +909,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 	}
 
 	// Check if parent branch exists
-	branch, exists := s.PostgresBranches[parent]
+	branch, exists := s.postgres().PostgresBranches[parent]
 	if !exists {
 		return postgresNotFoundResponse("branch")
 	}
@@ -617,7 +926,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 
 	name := fmt.Sprintf("%s/endpoints/%s", parent, endpointID)
 
-	existing, exists := s.PostgresEndpoints[name]
+	existing, exists := s.postgres().PostgresEndpoints[name]
 	if exists && !replaceExisting {
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "endpoint with such id already exists")
 	}
@@ -640,7 +949,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 
 		// Inherit suspend timeout default from the project.
 		var defaultSuspendTimeout *duration.Duration
-		if project, ok := s.PostgresProjects[branch.Parent]; ok {
+		if project, ok := s.postgres().PostgresProjects[branch.Parent]; ok {
 			if project.Status != nil && project.Status.DefaultEndpointSettings != nil {
 				defaultSuspendTimeout = project.Status.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
@@ -680,7 +989,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 
 	endpoint.Spec = echoedSpec[postgres.EndpointSpec](nil, req.Body, "", endpointOneofGroups)
 
-	s.PostgresEndpoints[name] = endpoint
+	s.postgres().PostgresEndpoints[name] = endpoint
 
 	return Response{
 		Body: s.createOperationLocked(endpoint.Name, endpoint),
@@ -696,20 +1005,20 @@ func (s *FakeWorkspace) PostgresEndpointGet(name string) Response {
 	parts := strings.Split(name, "/branches/")
 	if len(parts) == 2 {
 		projectName := parts[0]
-		if _, exists := s.PostgresProjects[projectName]; !exists {
+		if _, exists := s.postgres().PostgresProjects[projectName]; !exists {
 			return postgresNotFoundResponse("project")
 		}
 		// Check if branch exists
 		branchParts := strings.Split(parts[1], "/endpoints/")
 		if len(branchParts) == 2 {
 			branchName := projectName + "/branches/" + branchParts[0]
-			if _, exists := s.PostgresBranches[branchName]; !exists {
+			if _, exists := s.postgres().PostgresBranches[branchName]; !exists {
 				return postgresNotFoundResponse("branch")
 			}
 		}
 	}
 
-	endpoint, exists := s.PostgresEndpoints[name]
+	endpoint, exists := s.postgres().PostgresEndpoints[name]
 	if !exists {
 		return postgresNotFoundResponse("endpoint")
 	}
@@ -724,13 +1033,13 @@ func (s *FakeWorkspace) PostgresEndpointList(parent string) Response {
 	defer s.LockUnlock()()
 
 	// Check if parent branch exists
-	if _, exists := s.PostgresBranches[parent]; !exists {
+	if _, exists := s.postgres().PostgresBranches[parent]; !exists {
 		return postgresNotFoundResponse("branch")
 	}
 
 	var endpoints []postgres.Endpoint
 	prefix := parent + "/endpoints/"
-	for name, e := range s.PostgresEndpoints {
+	for name, e := range s.postgres().PostgresEndpoints {
 		if strings.HasPrefix(name, prefix) {
 			endpoints = append(endpoints, e)
 		}
@@ -1028,7 +1337,7 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 
 	defer s.LockUnlock()()
 
-	endpoint, exists := s.PostgresEndpoints[name]
+	endpoint, exists := s.postgres().PostgresEndpoints[name]
 	if !exists {
 		return postgresNotFoundResponse("endpoint")
 	}
@@ -1062,7 +1371,7 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 
 	endpoint.Spec = echoedSpec(endpoint.Spec, req.Body, req.URL.Query().Get("update_mask"), endpointOneofGroups)
 	endpoint.UpdateTime = nowTime()
-	s.PostgresEndpoints[name] = endpoint
+	s.postgres().PostgresEndpoints[name] = endpoint
 
 	return Response{
 		Body: s.createOperationLocked(endpoint.Name, endpoint),
@@ -1073,7 +1382,7 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresEndpoints[name]; !exists {
+	if _, exists := s.postgres().PostgresEndpoints[name]; !exists {
 		return postgresNotFoundResponse("endpoint")
 	}
 
@@ -1081,12 +1390,12 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 	// endpoint on every branch) cannot be deleted independently; they are
 	// removed when the parent branch is deleted. Matches the real backend's
 	// error payload including the declarative_context=MANAGED_BY_PARENT marker.
-	if s.postgresImplicitEndpoints[name] {
+	if s.postgres().postgresImplicitEndpoints[name] {
 		return postgresManagedByParentErrorResponse(fmt.Sprintf("Cannot delete read-write endpoint '%s'. Read-write endpoints cannot be deleted.", name))
 	}
 
-	delete(s.PostgresEndpoints, name)
-	delete(s.postgresImplicitEndpoints, name)
+	delete(s.postgres().PostgresEndpoints, name)
+	delete(s.postgres().postgresImplicitEndpoints, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -1106,7 +1415,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	}
 
 	// Check if parent branch exists
-	if _, exists := s.PostgresBranches[parent]; !exists {
+	if _, exists := s.postgres().PostgresBranches[parent]; !exists {
 		return postgresNotFoundResponse("branch")
 	}
 
@@ -1129,7 +1438,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 
 	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
 
-	existing, exists := s.PostgresDatabases[name]
+	existing, exists := s.postgres().PostgresDatabases[name]
 	if exists && !replaceExisting {
 		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
 		// create, the same as postgres_roles. Match it so the conflict a bundle hits
@@ -1148,7 +1457,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 		existing.UpdateTime = now
 		existing.Status = status
 		existing.Spec = echoedSpec[postgres.DatabaseDatabaseSpec](nil, req.Body, "", nil)
-		s.PostgresDatabases[name] = existing
+		s.postgres().PostgresDatabases[name] = existing
 
 		return Response{
 			Body: s.createOperationLocked(existing.Name, existing),
@@ -1170,7 +1479,7 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	database.Status = status
 	database.Spec = echoedSpec[postgres.DatabaseDatabaseSpec](nil, req.Body, "", nil)
 
-	s.PostgresDatabases[name] = database
+	s.postgres().PostgresDatabases[name] = database
 
 	return Response{
 		Body: s.createOperationLocked(database.Name, database),
@@ -1186,19 +1495,19 @@ func (s *FakeWorkspace) PostgresDatabaseGet(name string) Response {
 	parts := strings.Split(name, "/branches/")
 	if len(parts) == 2 {
 		projectName := parts[0]
-		if _, exists := s.PostgresProjects[projectName]; !exists {
+		if _, exists := s.postgres().PostgresProjects[projectName]; !exists {
 			return postgresNotFoundResponse("project")
 		}
 		branchParts := strings.Split(parts[1], "/databases/")
 		if len(branchParts) == 2 {
 			branchName := projectName + "/branches/" + branchParts[0]
-			if _, exists := s.PostgresBranches[branchName]; !exists {
+			if _, exists := s.postgres().PostgresBranches[branchName]; !exists {
 				return postgresNotFoundResponse("branch")
 			}
 		}
 	}
 
-	database, exists := s.PostgresDatabases[name]
+	database, exists := s.postgres().PostgresDatabases[name]
 	if !exists {
 		return postgresNotFoundResponse("database")
 	}
@@ -1212,13 +1521,13 @@ func (s *FakeWorkspace) PostgresDatabaseGet(name string) Response {
 func (s *FakeWorkspace) PostgresDatabaseList(parent string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresBranches[parent]; !exists {
+	if _, exists := s.postgres().PostgresBranches[parent]; !exists {
 		return postgresNotFoundResponse("branch")
 	}
 
 	var databases []postgres.Database
 	prefix := parent + "/databases/"
-	for name, d := range s.PostgresDatabases {
+	for name, d := range s.postgres().PostgresDatabases {
 		if strings.HasPrefix(name, prefix) {
 			databases = append(databases, d)
 		}
@@ -1235,7 +1544,7 @@ func (s *FakeWorkspace) PostgresDatabaseList(parent string) Response {
 func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	database, exists := s.PostgresDatabases[name]
+	database, exists := s.postgres().PostgresDatabases[name]
 	if !exists {
 		return postgresNotFoundResponse("database")
 	}
@@ -1266,7 +1575,7 @@ func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Respons
 
 	database.Spec = echoedSpec(database.Spec, req.Body, req.URL.Query().Get("update_mask"), nil)
 	database.UpdateTime = nowTime()
-	s.PostgresDatabases[name] = database
+	s.postgres().PostgresDatabases[name] = database
 
 	return Response{
 		Body: s.createOperationLocked(database.Name, database),
@@ -1312,13 +1621,13 @@ func applyDatabaseSpecMask(existing, desired *postgres.DatabaseDatabaseStatus, p
 func (s *FakeWorkspace) PostgresDatabaseDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresDatabases[name]; !exists {
+	if _, exists := s.postgres().PostgresDatabases[name]; !exists {
 		return postgresNotFoundResponse("database")
 	}
 
-	delete(s.PostgresDatabases, name)
+	delete(s.postgres().PostgresDatabases, name)
 	// The Data API is a sub-resource of the database and goes away with it.
-	delete(s.PostgresDataApis, name+dataApiSuffix)
+	delete(s.postgres().PostgresDataApis, name+dataApiSuffix)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -1349,7 +1658,7 @@ func dataApiNotEnabledResponse() Response {
 // must hold lock).
 func (s *FakeWorkspace) readWriteEndpointLocked(branchName string) (postgres.Endpoint, bool) {
 	prefix := branchName + "/endpoints/"
-	for name, endpoint := range s.PostgresEndpoints {
+	for name, endpoint := range s.postgres().PostgresEndpoints {
 		if strings.HasPrefix(name, prefix) && endpoint.Status != nil && endpoint.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
 			return endpoint, true
 		}
@@ -1365,7 +1674,7 @@ func (s *FakeWorkspace) readWriteEndpointLocked(branchName string) (postgres.End
 func (s *FakeWorkspace) withDataApiURLLocked(dataApi postgres.DataApi) postgres.DataApi {
 	branchName, _, _ := strings.Cut(dataApi.Parent, "/databases/")
 	endpoint, _ := s.readWriteEndpointLocked(branchName)
-	database := s.PostgresDatabases[dataApi.Parent]
+	database := s.postgres().PostgresDatabases[dataApi.Parent]
 
 	status := *dataApi.Status
 	status.Url = fmt.Sprintf("https://%s/api/2.0/workspace/%d/rest/%s", endpoint.Status.Hosts.Host, TestWorkspaceID, database.Status.PostgresDatabase)
@@ -1382,15 +1691,15 @@ func (s *FakeWorkspace) dataApiPreconditionLocked(databaseName string) *Response
 	// check the ancestors first, as PostgresDatabaseGet does.
 	branchName, _, _ := strings.Cut(databaseName, "/databases/")
 	projectName, _, _ := strings.Cut(branchName, "/branches/")
-	if _, exists := s.PostgresProjects[projectName]; !exists {
+	if _, exists := s.postgres().PostgresProjects[projectName]; !exists {
 		resp := postgresNotFoundResponse("project")
 		return &resp
 	}
-	if _, exists := s.PostgresBranches[branchName]; !exists {
+	if _, exists := s.postgres().PostgresBranches[branchName]; !exists {
 		resp := postgresNotFoundResponse("branch")
 		return &resp
 	}
-	if _, exists := s.PostgresDatabases[databaseName]; !exists {
+	if _, exists := s.postgres().PostgresDatabases[databaseName]; !exists {
 		resp := postgresNotFoundResponse("database")
 		return &resp
 	}
@@ -1474,7 +1783,7 @@ func (s *FakeWorkspace) PostgresDataApiCreate(req Request, parent string) Respon
 	}
 
 	name := parent + dataApiSuffix
-	if _, exists := s.PostgresDataApis[name]; exists {
+	if _, exists := s.postgres().PostgresDataApis[name]; exists {
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "Data API is already enabled for this database")
 	}
 
@@ -1503,7 +1812,7 @@ func (s *FakeWorkspace) PostgresDataApiCreate(req Request, parent string) Respon
 	// spec is INPUT_ONLY: GET only returns status.
 	dataApi.Spec = nil
 
-	s.PostgresDataApis[name] = dataApi
+	s.postgres().PostgresDataApis[name] = dataApi
 
 	return Response{
 		Body: s.createOperationLocked(name, s.withDataApiURLLocked(dataApi)),
@@ -1518,7 +1827,7 @@ func (s *FakeWorkspace) PostgresDataApiGet(name string) Response {
 		return *errResp
 	}
 
-	dataApi, exists := s.PostgresDataApis[name]
+	dataApi, exists := s.postgres().PostgresDataApis[name]
 	if !exists {
 		return dataApiNotEnabledResponse()
 	}
@@ -1540,7 +1849,7 @@ func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response
 		return *errResp
 	}
 
-	dataApi, exists := s.PostgresDataApis[name]
+	dataApi, exists := s.postgres().PostgresDataApis[name]
 	if !exists {
 		return dataApiNotEnabledResponse()
 	}
@@ -1558,7 +1867,7 @@ func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response
 	// The "spec" mask keeps the current value of a field the request omits.
 	dataApi.Status = applyDataApiSpec(dataApi.Status, updateDataApi.Spec)
 	dataApi.UpdateTime = nowTime()
-	s.PostgresDataApis[name] = dataApi
+	s.postgres().PostgresDataApis[name] = dataApi
 
 	return Response{
 		Body: s.createOperationLocked(name, s.withDataApiURLLocked(dataApi)),
@@ -1570,11 +1879,11 @@ func (s *FakeWorkspace) PostgresDataApiUpdate(req Request, name string) Response
 func (s *FakeWorkspace) PostgresDataApiDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresDataApis[name]; !exists {
+	if _, exists := s.postgres().PostgresDataApis[name]; !exists {
 		return dataApiNotEnabledResponse()
 	}
 
-	delete(s.PostgresDataApis, name)
+	delete(s.postgres().PostgresDataApis, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -1603,7 +1912,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 
 	name := "catalogs/" + catalogID
 
-	if _, exists := s.PostgresCatalogs[name]; exists {
+	if _, exists := s.postgres().PostgresCatalogs[name]; exists {
 		return postgresErrorResponse(400, "CATALOG_ALREADY_EXISTS", fmt.Sprintf("Catalog '%s' already exists", catalogID))
 	}
 
@@ -1630,7 +1939,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 	// acceptance test output stable between local and cloud.
 	catalog.Spec = nil
 
-	s.PostgresCatalogs[name] = catalog
+	s.postgres().PostgresCatalogs[name] = catalog
 
 	return Response{Body: s.createOperationLocked(name, catalog)}
 }
@@ -1639,7 +1948,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 func (s *FakeWorkspace) PostgresCatalogGet(name string) Response {
 	defer s.LockUnlock()()
 
-	catalog, exists := s.PostgresCatalogs[name]
+	catalog, exists := s.postgres().PostgresCatalogs[name]
 	if !exists {
 		return postgresNotFoundResponse("catalog")
 	}
@@ -1650,10 +1959,10 @@ func (s *FakeWorkspace) PostgresCatalogGet(name string) Response {
 func (s *FakeWorkspace) PostgresCatalogDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresCatalogs[name]; !exists {
+	if _, exists := s.postgres().PostgresCatalogs[name]; !exists {
 		return postgresNotFoundResponse("catalog")
 	}
-	delete(s.PostgresCatalogs, name)
+	delete(s.postgres().PostgresCatalogs, name)
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
 
@@ -1710,7 +2019,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 	defer s.LockUnlock()()
 
 	// Check if parent branch exists
-	if _, exists := s.PostgresBranches[parent]; !exists {
+	if _, exists := s.postgres().PostgresBranches[parent]; !exists {
 		return postgresNotFoundResponse("branch")
 	}
 
@@ -1736,7 +2045,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 
 	name := fmt.Sprintf("%s/roles/%s", parent, roleID)
 
-	existing, exists := s.PostgresRoles[name]
+	existing, exists := s.postgres().PostgresRoles[name]
 	if exists && !replaceExisting {
 		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
 		// role, with this message (verified on dogfood 2026-06-10). Match it so the
@@ -1751,7 +2060,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 		existing.Status = roleStatusFromSpec(role.Spec)
 		existing.Status.RoleId = roleID
 		existing.Spec = echoedSpec[postgres.RoleRoleSpec](nil, req.Body, "", nil, roleInputOnlySpecFields...)
-		s.PostgresRoles[name] = existing
+		s.postgres().PostgresRoles[name] = existing
 
 		return Response{
 			Body: s.createOperationLocked(existing.Name, existing),
@@ -1768,7 +2077,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string, r
 	role.Status.RoleId = roleID
 	role.Spec = echoedSpec[postgres.RoleRoleSpec](nil, req.Body, "", nil, roleInputOnlySpecFields...)
 
-	s.PostgresRoles[name] = role
+	s.postgres().PostgresRoles[name] = role
 
 	return Response{
 		Body: s.createOperationLocked(role.Name, role),
@@ -1784,19 +2093,19 @@ func (s *FakeWorkspace) PostgresRoleGet(name string) Response {
 	parts := strings.Split(name, "/branches/")
 	if len(parts) == 2 {
 		projectName := parts[0]
-		if _, exists := s.PostgresProjects[projectName]; !exists {
+		if _, exists := s.postgres().PostgresProjects[projectName]; !exists {
 			return postgresNotFoundResponse("project")
 		}
 		branchParts := strings.Split(parts[1], "/roles/")
 		if len(branchParts) == 2 {
 			branchName := projectName + "/branches/" + branchParts[0]
-			if _, exists := s.PostgresBranches[branchName]; !exists {
+			if _, exists := s.postgres().PostgresBranches[branchName]; !exists {
 				return postgresNotFoundResponse("branch")
 			}
 		}
 	}
 
-	role, exists := s.PostgresRoles[name]
+	role, exists := s.postgres().PostgresRoles[name]
 	if !exists {
 		return postgresNotFoundResponse("role")
 	}
@@ -1810,13 +2119,13 @@ func (s *FakeWorkspace) PostgresRoleGet(name string) Response {
 func (s *FakeWorkspace) PostgresRoleList(parent string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresBranches[parent]; !exists {
+	if _, exists := s.postgres().PostgresBranches[parent]; !exists {
 		return postgresNotFoundResponse("branch")
 	}
 
 	var roles []postgres.Role
 	prefix := parent + "/roles/"
-	for name, r := range s.PostgresRoles {
+	for name, r := range s.postgres().PostgresRoles {
 		if strings.HasPrefix(name, prefix) {
 			roles = append(roles, r)
 		}
@@ -1836,7 +2145,7 @@ func (s *FakeWorkspace) PostgresRoleList(parent string) Response {
 func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	role, exists := s.PostgresRoles[name]
+	role, exists := s.postgres().PostgresRoles[name]
 	if !exists {
 		return postgresNotFoundResponse("role")
 	}
@@ -1867,7 +2176,7 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 
 	role.Spec = echoedSpec(role.Spec, req.Body, req.URL.Query().Get("update_mask"), nil, roleInputOnlySpecFields...)
 	role.UpdateTime = nowTime()
-	s.PostgresRoles[name] = role
+	s.postgres().PostgresRoles[name] = role
 
 	return Response{
 		Body: s.createOperationLocked(role.Name, role),
@@ -1914,11 +2223,11 @@ func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []strin
 func (s *FakeWorkspace) PostgresRoleDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresRoles[name]; !exists {
+	if _, exists := s.postgres().PostgresRoles[name]; !exists {
 		return postgresNotFoundResponse("role")
 	}
 
-	delete(s.PostgresRoles, name)
+	delete(s.postgres().PostgresRoles, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -1929,7 +2238,7 @@ func (s *FakeWorkspace) PostgresRoleDelete(name string) Response {
 func (s *FakeWorkspace) PostgresOperationGet(name string) Response {
 	defer s.LockUnlock()()
 
-	operation, exists := s.PostgresOperations[name]
+	operation, exists := s.postgres().PostgresOperations[name]
 	if !exists {
 		return postgresNotFoundResponse("operation")
 	}
@@ -1980,7 +2289,7 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 		op.Response = []byte(`{"@type":"type.googleapis.com/google.protobuf.Empty"}`)
 	}
 
-	s.PostgresOperations[operationName] = op
+	s.postgres().PostgresOperations[operationName] = op
 	return op
 }
 
@@ -2004,7 +2313,7 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 
 	name := "synced_tables/" + syncedTableID
 
-	if _, exists := s.PostgresSyncedTables[name]; exists {
+	if _, exists := s.postgres().PostgresSyncedTables[name]; exists {
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "synced table with such id already exists")
 	}
 	table.Name = name
@@ -2018,7 +2327,7 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 		UnityCatalogProvisioningState: postgres.ProvisioningInfoStateActive,
 	}
 
-	s.PostgresSyncedTables[name] = table
+	s.postgres().PostgresSyncedTables[name] = table
 
 	return Response{Body: s.createOperationLocked(name, table)}
 }
@@ -2027,7 +2336,7 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 	defer s.LockUnlock()()
 
-	table, exists := s.PostgresSyncedTables[name]
+	table, exists := s.postgres().PostgresSyncedTables[name]
 	if !exists {
 		return postgresNotFoundResponse("synced table")
 	}
@@ -2043,13 +2352,13 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	table, exists := s.PostgresSyncedTables[name]
+	table, exists := s.postgres().PostgresSyncedTables[name]
 	if !exists {
 		return postgresNotFoundResponse("synced table")
 	}
 
 	if !s.eventualConsistency {
-		delete(s.PostgresSyncedTables, name)
+		delete(s.postgres().PostgresSyncedTables, name)
 		return Response{Body: s.createOperationLocked(name, nil)}
 	}
 
@@ -2058,7 +2367,7 @@ func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	}
 	table.Status.DetailedState = postgres.SyncedTableStateSyncedTableOffline
 	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfoStateDeleting
-	s.PostgresSyncedTables[name] = table
+	s.postgres().PostgresSyncedTables[name] = table
 
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
@@ -2088,8 +2397,8 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 		},
 	}
 
-	s.PostgresBranches[branchName] = defaultBranch
-	s.postgresImplicitBranches[branchName] = true
+	s.postgres().PostgresBranches[branchName] = defaultBranch
+	s.postgres().postgresImplicitBranches[branchName] = true
 
 	// Each branch implicitly provisions a primary read-write endpoint.
 	s.createDefaultEndpointLocked(branchName)
@@ -2108,7 +2417,7 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 		suspendTimeout *duration.Duration
 		projectName    = strings.Split(branchName, "/branches/")[0]
 	)
-	if project, ok := s.PostgresProjects[projectName]; ok {
+	if project, ok := s.postgres().PostgresProjects[projectName]; ok {
 		if project.Status != nil && project.Status.DefaultEndpointSettings != nil {
 			minCu = project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu
 			maxCu = project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu
@@ -2119,7 +2428,7 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 	endpointUID := "ep-" + nextUUID()[:20]
 	host := endpointUID + ".database.us-east-1.cloud.databricks.com"
 
-	s.PostgresEndpoints[endpointName] = postgres.Endpoint{
+	s.postgres().PostgresEndpoints[endpointName] = postgres.Endpoint{
 		Name:       endpointName,
 		EndpointId: "primary",
 		Parent:     branchName,
@@ -2146,5 +2455,5 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 			ForceSendFields: []string{"Disabled"},
 		},
 	}
-	s.postgresImplicitEndpoints[endpointName] = true
+	s.postgres().postgresImplicitEndpoints[endpointName] = true
 }

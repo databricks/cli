@@ -9,6 +9,40 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("secrets", addSecretsRoutes)
+	registerStore("secrets", newSecretsStore)
+}
+
+type secretsStore struct {
+	Secrets map[string]map[string]string // scope -> key -> value
+}
+
+func newSecretsStore(*FakeWorkspace) *secretsStore {
+	return &secretsStore{
+		Secrets: map[string]map[string]string{},
+	}
+}
+
+func (s *FakeWorkspace) secrets() *secretsStore {
+	return stateOf[secretsStore](s)
+}
+
+func addSecretsRoutes(server *Server) {
+	// Secrets:
+	server.Handle("POST", "/api/2.0/secrets/put", func(req Request) any {
+		return req.Workspace.SecretsPut(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/get", func(req Request) any {
+		return req.Workspace.SecretsGet(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/list", func(req Request) any {
+		return req.Workspace.SecretsList(req)
+	})
+}
+
 func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -21,18 +55,18 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	}
 
 	// Check if scope exists
-	if _, exists := s.SecretScopes[request.Scope]; !exists {
+	if _, exists := s.secretScopes().SecretScopes[request.Scope]; !exists {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", request.Scope)},
 		}
 	}
 
-	if s.Secrets == nil {
-		s.Secrets = make(map[string]map[string]string)
+	if s.secrets().Secrets == nil {
+		s.secrets().Secrets = make(map[string]map[string]string)
 	}
-	if s.Secrets[request.Scope] == nil {
-		s.Secrets[request.Scope] = make(map[string]string)
+	if s.secrets().Secrets[request.Scope] == nil {
+		s.secrets().Secrets[request.Scope] = make(map[string]string)
 	}
 
 	// Exactly one of string_value / bytes_value is set. bytes_value arrives
@@ -49,7 +83,7 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 		}
 		value = string(decoded)
 	}
-	s.Secrets[request.Scope][request.Key] = value
+	s.secrets().Secrets[request.Scope][request.Key] = value
 
 	return Response{}
 }
@@ -61,15 +95,15 @@ func (s *FakeWorkspace) SecretsList(req Request) Response {
 
 	scope := req.URL.Query().Get("scope")
 
-	if _, exists := s.SecretScopes[scope]; !exists {
+	if _, exists := s.secretScopes().SecretScopes[scope]; !exists {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Scope %s does not exist", scope)},
 		}
 	}
 
-	keys := make([]string, 0, len(s.Secrets[scope]))
-	for key := range s.Secrets[scope] {
+	keys := make([]string, 0, len(s.secrets().Secrets[scope]))
+	for key := range s.secrets().Secrets[scope] {
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)
@@ -93,7 +127,7 @@ func (s *FakeWorkspace) SecretsGet(req Request) Response {
 	key := req.URL.Query().Get("key")
 
 	// Check if scope exists
-	if _, exists := s.SecretScopes[scope]; !exists {
+	if _, exists := s.secretScopes().SecretScopes[scope]; !exists {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", scope)},
@@ -101,14 +135,14 @@ func (s *FakeWorkspace) SecretsGet(req Request) Response {
 	}
 
 	// Check if secret exists
-	if s.Secrets == nil || s.Secrets[scope] == nil {
+	if s.secrets().Secrets == nil || s.secrets().Secrets[scope] == nil {
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("Secret %s/%s not found", scope, key)},
 		}
 	}
 
-	secretValue, exists := s.Secrets[scope][key]
+	secretValue, exists := s.secrets().Secrets[scope][key]
 	if !exists {
 		return Response{
 			StatusCode: 404,

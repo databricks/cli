@@ -24,7 +24,7 @@ func TestRegisteredModelsCreate_RejectsExistingModel(t *testing.T) {
 	}, response.Body)
 
 	// The existing model is kept as it was.
-	assert.Equal(t, "first", workspace.RegisteredModels["main.default.mymodel"].Comment)
+	assert.Equal(t, "first", workspace.registeredModels().RegisteredModels["main.default.mymodel"].Comment)
 }
 
 func TestRegisteredModelsUpdate_RejectsRenameOntoExistingModel(t *testing.T) {
@@ -42,8 +42,8 @@ func TestRegisteredModelsUpdate_RejectsRenameOntoExistingModel(t *testing.T) {
 	}, response.Body)
 
 	// Both models are kept as they were.
-	assert.Contains(t, workspace.RegisteredModels, "main.default.model_a")
-	assert.Contains(t, workspace.RegisteredModels, "main.default.model_b")
+	assert.Contains(t, workspace.registeredModels().RegisteredModels, "main.default.model_a")
+	assert.Contains(t, workspace.registeredModels().RegisteredModels, "main.default.model_b")
 }
 
 func TestRegisteredModels_NamesAreCaseInsensitive(t *testing.T) {

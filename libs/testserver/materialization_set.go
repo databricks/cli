@@ -10,6 +10,47 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerRoutes("materialization_set", addMaterializationSetRoutes)
+	registerStore("materialization_set", newMaterializationSetsStore)
+}
+
+type materializationSetsStore struct {
+	MaterializationSets map[string]ml.MaterializationSet
+	// Operations belongs to MaterializationSets: the operations its handlers return, keyed by name.
+	Operations map[string]ml.Operation
+}
+
+func newMaterializationSetsStore(*FakeWorkspace) *materializationSetsStore {
+	return &materializationSetsStore{
+		MaterializationSets: map[string]ml.MaterializationSet{},
+		Operations:          map[string]ml.Operation{},
+	}
+}
+
+func (s *FakeWorkspace) materializationSets() *materializationSetsStore {
+	return stateOf[materializationSetsStore](s)
+}
+
+func addMaterializationSetRoutes(server *Server) {
+	// Feature Engineering materialization sets:
+	server.Handle("POST", "/api/2.0/feature-engineering/materialization-sets", func(req Request) any {
+		return req.Workspace.MaterializationSetsCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.OperationsGet(req.Vars["operation_id"])
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.materializationSets().MaterializationSets, req.Vars["materialization_set_id"])
+	})
+	server.Handle("PATCH", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return req.Workspace.MaterializationSetsUpdate(req, req.Vars["materialization_set_id"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return req.Workspace.MaterializationSetsDelete(req.Vars["materialization_set_id"])
+	})
+}
+
 // This fake mirrors UpdateMaterializationSet closely enough that one set of acceptance goldens
 // serves both the local run and a run against a real workspace. Where it rejects, it returns the
 // backend's own message text, so a golden recorded locally is a claim about the real API that the
@@ -219,7 +260,7 @@ const sawtoothMaterializedFeatureCount = 3
 // feature is not treated as sawtooth: the real create resolves the feature first and fails on a
 // missing one, which is a separate rejection this fake does not model.
 func (s *FakeWorkspace) isSawtoothFeature(featureName string) bool {
-	feature, stored := s.Features[featureName]
+	feature, stored := s.features().Features[featureName]
 	if !stored {
 		return false
 	}
@@ -236,7 +277,7 @@ func (s *FakeWorkspace) validateBatchAndStreamingFeaturesNotMixed(
 ) *materializationSetRefusal {
 	var batchFeatureNames, streamingFeatureNames []string
 	for _, featureName := range materializationSetFeatureNames(members) {
-		feature, stored := s.Features[featureName]
+		feature, stored := s.features().Features[featureName]
 		if !stored {
 			continue
 		}
@@ -372,7 +413,7 @@ func (s *FakeWorkspace) MaterializationSetsCreate(req Request) Response {
 		set.MaterializedFeatures[i] = populateMaterializationSetMember(member, set.MaterializationSetId)
 	}
 
-	s.MaterializationSets[set.MaterializationSetId] = set
+	s.materializationSets().MaterializationSets[set.MaterializationSetId] = set
 
 	return s.materializationSetOperationResponse(set.MaterializationSetId, set.MaterializedFeatures, set)
 }
@@ -405,7 +446,7 @@ func (s *FakeWorkspace) materializationSetOperationResponse(
 		Metadata: metadata,
 		Response: response,
 	}
-	s.Operations[operation.Name] = operation
+	s.materializationSets().Operations[operation.Name] = operation
 	return Response{Body: operation}
 }
 
@@ -497,7 +538,7 @@ func (s *FakeWorkspace) materializationSetFailedOperationResponse(
 			Message:   message,
 		},
 	}
-	s.Operations[operation.Name] = operation
+	s.materializationSets().Operations[operation.Name] = operation
 	return Response{Body: operation}
 }
 
@@ -534,7 +575,7 @@ func materializationSetNotFound(setID string) Response {
 func (s *FakeWorkspace) MaterializationSetsDelete(setID string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.MaterializationSets[setID]
+	existing, ok := s.materializationSets().MaterializationSets[setID]
 	if !ok {
 		return materializationSetNotFound(setID)
 	}
@@ -558,7 +599,7 @@ func (s *FakeWorkspace) MaterializationSetsDelete(setID string) Response {
 			})
 	}
 
-	delete(s.MaterializationSets, setID)
+	delete(s.materializationSets().MaterializationSets, setID)
 
 	return s.materializationSetOperationResponse(setID, existing.MaterializedFeatures, struct{}{})
 }
@@ -567,7 +608,7 @@ func (s *FakeWorkspace) MaterializationSetsDelete(setID string) Response {
 func (s *FakeWorkspace) OperationsGet(operationID string) Response {
 	defer s.LockUnlock()()
 
-	operation, ok := s.Operations["operations/"+operationID]
+	operation, ok := s.materializationSets().Operations["operations/"+operationID]
 	if !ok {
 		// Unlike every other message here, this wording is not taken from the service. No case
 		// reaches this branch, so nothing pins it either way.
@@ -649,7 +690,7 @@ func materializationSetDeletionTargets(members []ml.MaterializedFeature) [][]ml.
 func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.MaterializationSets[setID]
+	existing, ok := s.materializationSets().MaterializationSets[setID]
 	if !ok {
 		return materializationSetNotFound(setID)
 	}
@@ -756,7 +797,7 @@ func (s *FakeWorkspace) MaterializationSetsUpdate(req Request, setID string) Res
 	}
 
 	existing.MaterializedFeatures = matched
-	s.MaterializationSets[setID] = existing
+	s.materializationSets().MaterializationSets[setID] = existing
 
 	return s.materializationSetOperationResponse(setID, existing.MaterializedFeatures, existing)
 }
