@@ -10,3 +10,6 @@ resources:
       grants:
         - principal: deco-test-user@databricks.com
           privileges: ["APPLY_TAG"]
+        # The same principal again: its privileges are merged into the entry above.
+        - principal: deco-test-user@databricks.com
+          privileges: ["EXECUTE"]

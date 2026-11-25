@@ -18,11 +18,15 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     {
       "principal": "deco-test-user@databricks.com",
       "privileges": [
-        "APPLY_TAG"
+        "APPLY_TAG",
+        "EXECUTE"
       ]
     }
   ]
 }
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

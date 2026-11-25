@@ -5,8 +5,11 @@ trace print_requests.py --get //permissions
 trace $CLI bundle deploy
 trace print_requests.py //permissions > out.deploy1.requests.json
 
-# Assert the end result: the grant is applied on the model service securable.
+# Assert the end result: the grants of both entries are applied on the model service securable.
 trace $CLI grants get model_service main.myschema.myservice | jq --sort-keys
+
+# The merged grants match the remote, so there is no drift.
+trace $CLI bundle plan
 
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //permissions > out.destroy.requests.json
