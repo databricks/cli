@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -16,20 +17,6 @@ const (
 	isOwner   = "IS_OWNER"
 	canManage = "CAN_MANAGE"
 )
-
-// Which resources support IS_OWNER permission.
-var hasIsOwner = map[string]bool{
-	"jobs":           true,
-	"pipelines":      true,
-	"sql_warehouses": true,
-}
-
-var ignoredResources = map[string]bool{
-	"secret_scopes": true,
-	// Cluster policies only support CAN_USE; injecting the current user as
-	// CAN_MANAGE/IS_OWNER would be rejected by the permissions API.
-	"cluster_policies": true,
-}
 
 // When processing permissions, we need to implement these constraints:
 // 1. There should be no more than one IS_OWNER settings for a given resource.
@@ -61,7 +48,7 @@ func processPermissions(currentUser string) dyn.MapFunc {
 		}
 
 		resourceType := p[1].Key()
-		if ignoredResources[resourceType] {
+		if permissionsSupport(resourceType).SkipFixup {
 			return v, nil
 		}
 
@@ -72,6 +59,16 @@ func processPermissions(currentUser string) dyn.MapFunc {
 
 		return useMaximumLevel(v, resourceType)
 	}
+}
+
+// permissionsSupport returns what the resource type under key declares about its
+// permissions, or the zero value if the type has no permissions.
+func permissionsSupport(key string) resources.PermissionsSupport {
+	d, ok := config.ResourceTypeAs[resources.PermissionsDeclarer](key)
+	if !ok {
+		return resources.PermissionsSupport{}
+	}
+	return d.PermissionsSupport()
 }
 
 func readUser(v dyn.Value) string {
@@ -102,7 +99,7 @@ func readPrincipal(v dyn.Value) string {
 func ensureCurrentUserMgmtPermissions(permissions dyn.Value, currentUser, resourceType string) (dyn.Value, error) {
 	currentUserHasIsOwner := false
 	currentUserIndCanManage := -1
-	canAddIsOwner := hasIsOwner[resourceType]
+	canAddIsOwner := permissionsSupport(resourceType).HasIsOwner
 
 	permissionArray, ok := permissions.AsSequence()
 	if !ok {

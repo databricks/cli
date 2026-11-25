@@ -118,6 +118,18 @@ func (*Dashboard) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Dashboard) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+		},
+		RequestObjectType:  "dashboards",
+		ResponseObjectType: "dashboard",
+		ObjectIDField:      "id",
+	}
+}
+
 func (r *Dashboard) InitializeURL(baseURL url.URL) {
 	if r.ID == "" {
 		return

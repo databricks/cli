@@ -56,6 +56,20 @@ func (*SqlWarehouse) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*SqlWarehouse) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_VIEW",
+			CanRun:    "CAN_MONITOR",
+		},
+		RequestObjectType:  "sql/warehouses",
+		ResponseObjectType: "warehouses",
+		ObjectIDField:      "id",
+		HasIsOwner:         true,
+	}
+}
+
 func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 	if sw.ID == "" {
 		return

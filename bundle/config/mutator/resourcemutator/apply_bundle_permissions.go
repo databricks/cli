@@ -16,84 +16,28 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
-var (
-	allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
-	// Map of allowed permission levels to the corresponding permission level of specific resources
-	levelsMap = map[string](map[string]string){
-		"jobs": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_MANAGE_RUN",
-		},
-		"pipelines": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_RUN",
-		},
-		"experiments": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"models": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"model_serving_endpoints": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_QUERY",
-		},
-		"dashboards": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"genie_spaces": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"apps": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"secret_scopes": {
-			permissions.CAN_MANAGE: "MANAGE",
-			permissions.CAN_VIEW:   "READ",
-		},
-		"alerts": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-			permissions.CAN_RUN:    "CAN_RUN",
-		},
-		"sql_warehouses": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_MONITOR",
-		},
-		"database_instances": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"postgres_projects": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"clusters": {
-			// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
-			permissions.CAN_RUN:    "CAN_RESTART",
-		},
-		"vector_search_endpoints": {
-			// https://docs.databricks.com/aws/en/security/auth/access-control/#vector-search-endpoint-acls
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"instance_pools": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
-		},
+var allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
+
+// bundleLevels returns the levels the bundle-level permissions map to for the resource
+// type key, or false if the type accepts no bundle-level permissions.
+func bundleLevels(key string) (resources.BundlePermissionLevels, bool) {
+	levels := permissionsSupport(key).BundleLevels
+	return levels, levels != resources.BundlePermissionLevels{}
+}
+
+// resourceLevel returns the level of a resource type that the bundle-level permission
+// level maps to, or an empty string if it does not apply to the type.
+func resourceLevel(levels resources.BundlePermissionLevels, bundleLevel string) string {
+	switch bundleLevel {
+	case permissions.CAN_MANAGE:
+		return levels.CanManage
+	case permissions.CAN_VIEW:
+		return levels.CanView
+	case permissions.CAN_RUN:
+		return levels.CanRun
 	}
-)
+	return ""
+}
 
 type bundlePermissions struct{}
 
@@ -108,8 +52,7 @@ func (m *bundlePermissions) Apply(_ context.Context, b *bundle.Bundle) diag.Diag
 	}
 
 	for _, group := range b.Config.Resources.AllResources() {
-		key := group.Description.PluralName
-		lm, ok := levelsMap[key]
+		levels, ok := bundleLevels(group.Description.PluralName)
 		if !ok {
 			continue
 		}
@@ -120,7 +63,7 @@ func (m *bundlePermissions) Apply(_ context.Context, b *bundle.Bundle) diag.Diag
 			permissions = append(permissions, convertPermissions(
 				b.Config.Permissions,
 				permissions,
-				lm,
+				levels,
 			)...)
 			writePermissions(field, permissions)
 		}
@@ -181,14 +124,14 @@ func (m *bundlePermissions) Name() string {
 func convertPermissions(
 	bundlePermissions []resources.Permission,
 	resourcePermissions []resources.Permission,
-	lm map[string]string,
+	levels resources.BundlePermissionLevels,
 ) []resources.Permission {
 	var permissions []resources.Permission
 	for _, p := range bundlePermissions {
-		level, ok := lm[string(p.Level)]
-		// If there is no bundle permission level defined in the map, it means
+		level := resourceLevel(levels, string(p.Level))
+		// If there is no bundle permission level defined for the resource, it means
 		// it's not applicable for the resource, therefore skipping
-		if !ok {
+		if level == "" {
 			continue
 		}
 
