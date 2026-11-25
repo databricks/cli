@@ -13,6 +13,27 @@ import (
 
 func init() {
 	registerRoutes("vector_search_indexes", addVectorSearchIndexesRoutes)
+	registerStore("vector_search_indexes", newVectorSearchIndexesStore)
+}
+
+type vectorSearchIndexesStore struct {
+	VectorSearchIndexes map[string]fakeVectorSearchIndex
+
+	// VectorSearchIndexesPendingDeletion counts how many further CREATEs an
+	// already-deleted index name must reject with "pending deletion". See
+	// VectorSearchIndexDelete.
+	VectorSearchIndexesPendingDeletion map[string]int
+}
+
+func newVectorSearchIndexesStore(*FakeWorkspace) *vectorSearchIndexesStore {
+	return &vectorSearchIndexesStore{
+		VectorSearchIndexes:                map[string]fakeVectorSearchIndex{},
+		VectorSearchIndexesPendingDeletion: map[string]int{},
+	}
+}
+
+func (s *FakeWorkspace) vectorSearchIndexes() *vectorSearchIndexesStore {
+	return stateOf[vectorSearchIndexesStore](s)
 }
 
 func addVectorSearchIndexesRoutes(server *Server) {
@@ -23,11 +44,11 @@ func addVectorSearchIndexesRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/vector-search/indexes", func(req Request) any {
-		return MapList(req.Workspace, req.Workspace.VectorSearchIndexes, "vector_indexes")
+		return MapList(req.Workspace, req.Workspace.vectorSearchIndexes().VectorSearchIndexes, "vector_indexes")
 	})
 
 	server.Handle("GET", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+		return MapGet(req.Workspace, req.Workspace.vectorSearchIndexes().VectorSearchIndexes, req.Vars["index_name"])
 	})
 
 	server.Handle("DELETE", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
@@ -79,14 +100,14 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
-	if _, exists := s.VectorSearchIndexes[createReq.Name]; exists {
+	if _, exists := s.vectorSearchIndexes().VectorSearchIndexes[createReq.Name]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", createReq.Name)},
 		}
 	}
-	if s.VectorSearchIndexesPendingDeletion[createReq.Name] > 0 {
-		s.VectorSearchIndexesPendingDeletion[createReq.Name]--
+	if s.vectorSearchIndexes().VectorSearchIndexesPendingDeletion[createReq.Name] > 0 {
+		s.vectorSearchIndexes().VectorSearchIndexesPendingDeletion[createReq.Name]--
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -95,7 +116,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 			},
 		}
 	}
-	endpoint, exists := s.VectorSearchEndpoints[createReq.EndpointName]
+	endpoint, exists := s.vectorSearchEndpoints().VectorSearchEndpoints[createReq.EndpointName]
 	if !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -135,7 +156,7 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		EndpointUuid: endpoint.Id,
 	}
 
-	s.VectorSearchIndexes[createReq.Name] = index
+	s.vectorSearchIndexes().VectorSearchIndexes[createReq.Name] = index
 
 	return Response{
 		Body: index,
@@ -150,12 +171,12 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 func (s *FakeWorkspace) VectorSearchIndexDelete(indexName string) Response {
 	defer s.LockUnlock()()
 
-	if _, ok := s.VectorSearchIndexes[indexName]; !ok {
+	if _, ok := s.vectorSearchIndexes().VectorSearchIndexes[indexName]; !ok {
 		return Response{StatusCode: http.StatusNotFound}
 	}
-	delete(s.VectorSearchIndexes, indexName)
+	delete(s.vectorSearchIndexes().VectorSearchIndexes, indexName)
 	if strings.Contains(indexName, indexNamePendingDeletion) {
-		s.VectorSearchIndexesPendingDeletion[indexName] = 1
+		s.vectorSearchIndexes().VectorSearchIndexesPendingDeletion[indexName] = 1
 	}
 	return Response{}
 }

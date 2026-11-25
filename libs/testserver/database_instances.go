@@ -11,6 +11,21 @@ import (
 
 func init() {
 	registerRoutes("database_instances", addDatabaseInstancesRoutes)
+	registerStore("database_instances", newDatabaseInstancesStore)
+}
+
+type databaseInstancesStore struct {
+	DatabaseInstances map[string]database.DatabaseInstance
+}
+
+func newDatabaseInstancesStore(*FakeWorkspace) *databaseInstancesStore {
+	return &databaseInstancesStore{
+		DatabaseInstances: map[string]database.DatabaseInstance{},
+	}
+}
+
+func (s *FakeWorkspace) databaseInstances() *databaseInstancesStore {
+	return stateOf[databaseInstancesStore](s)
 }
 
 func addDatabaseInstancesRoutes(server *Server) {
@@ -21,11 +36,11 @@ func addDatabaseInstancesRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/database/instances/", func(req Request) any {
-		return MapList(req.Workspace, req.Workspace.DatabaseInstances, "database_instances")
+		return MapList(req.Workspace, req.Workspace.databaseInstances().DatabaseInstances, "database_instances")
 	})
 
 	server.Handle("GET", "/api/2.0/database/instances/{name}", func(req Request) any {
-		return DatabaseInstanceMapGet(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+		return DatabaseInstanceMapGet(req.Workspace, req.Workspace.databaseInstances().DatabaseInstances, req.Vars["name"])
 	})
 
 	server.Handle("PATCH", "/api/2.0/database/instances/{name}", func(req Request) any {
@@ -70,7 +85,7 @@ func (s *FakeWorkspace) DatabaseInstanceCreate(req Request) Response {
 
 	databaseInstance.ForceSendFields = slices.Clone(ForceSendFields)
 
-	s.DatabaseInstances[databaseInstance.Name] = databaseInstance
+	s.databaseInstances().DatabaseInstances[databaseInstance.Name] = databaseInstance
 
 	return Response{
 		Body: databaseInstance,
@@ -110,7 +125,7 @@ func (s *FakeWorkspace) DatabaseInstanceUpdate(req Request, name string) Respons
 	}
 
 	// Check if the instance exists
-	existing, ok := s.DatabaseInstances[name]
+	existing, ok := s.databaseInstances().DatabaseInstances[name]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -140,7 +155,7 @@ func (s *FakeWorkspace) DatabaseInstanceUpdate(req Request, name string) Respons
 	updated.ForceSendFields = slices.Clone(ForceSendFields)
 
 	// Update the stored instance
-	s.DatabaseInstances[name] = updated
+	s.databaseInstances().DatabaseInstances[name] = updated
 
 	return Response{
 		Body: updated,
@@ -157,5 +172,5 @@ func DatabaseInstanceMapDelete(req Request) Response {
 		}
 	}
 
-	return MapDelete(req.Workspace, req.Workspace.DatabaseInstances, req.Vars["name"])
+	return MapDelete(req.Workspace, req.Workspace.databaseInstances().DatabaseInstances, req.Vars["name"])
 }

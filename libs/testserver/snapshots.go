@@ -21,6 +21,23 @@ const SnapshotRootUUID = "3f9d2c1b-7a6e-4b5d-8c4f-0e1a2b3c4d5e"
 
 func init() {
 	registerRoutes("snapshots", addSnapshotsRoutes)
+	registerStore("snapshots", newSnapshotsStore)
+}
+
+type snapshotsStore struct {
+	// snapshots records immutable-snapshot content paths. Breaking the glass on a
+	// recorded path flips it dirty for good, as in the real API.
+	snapshots map[string]*snapshotRecord
+}
+
+func newSnapshotsStore(*FakeWorkspace) *snapshotsStore {
+	return &snapshotsStore{
+		snapshots: make(map[string]*snapshotRecord),
+	}
+}
+
+func (s *FakeWorkspace) snapshots() *snapshotsStore {
+	return stateOf[snapshotsStore](s)
 }
 
 func addSnapshotsRoutes(server *Server) {
@@ -132,6 +149,58 @@ func addSnapshotsRoutes(server *Server) {
 		}
 		return snapshotStatus(request.SnapshotContentPath, true)
 	})
+}
+
+// snapshotRecord holds the create-request fields and the out-of-band modification flag for one
+// immutable snapshot. Its JSON tags match what the accept test's info endpoint returns so the
+// test script can call the endpoint and assert the fields with jq.
+type snapshotRecord struct {
+	Dirty     bool             `json:"dirty"`
+	RelPath   string           `json:"relative_path"`
+	ACL       []map[string]any `json:"access_control_list"`
+	CanManage []map[string]any `json:"can_manage_principals"`
+}
+
+// RecordSnapshot stores a create-request record for the snapshot at contentPath.
+func (s *FakeWorkspace) RecordSnapshot(contentPath, relPath string, acl, canManage []map[string]any) {
+	defer s.LockUnlock()()
+	s.snapshots().snapshots[contentPath] = &snapshotRecord{
+		Dirty:     false,
+		RelPath:   relPath,
+		ACL:       acl,
+		CanManage: canManage,
+	}
+}
+
+// SnapshotDirty reports whether the immutable snapshot at contentPath was modified out of band,
+// and whether a snapshot is recorded there at all.
+func (s *FakeWorkspace) SnapshotDirty(contentPath string) (dirty, ok bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots().snapshots[contentPath]
+	if !ok {
+		return false, false
+	}
+	return rec.Dirty, true
+}
+
+// SnapshotInfo returns the stored create-request record for the snapshot at contentPath.
+// ok is false when no snapshot is recorded there.
+func (s *FakeWorkspace) SnapshotInfo(contentPath string) (*snapshotRecord, bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots().snapshots[contentPath]
+	return rec, ok
+}
+
+// BreakGlassSnapshot marks the snapshot at contentPath dirty. The real API flips the flag when
+// the glass is broken, not when a file changes: until then the content is read-only to callers.
+// ok is false when no snapshot is recorded there.
+func (s *FakeWorkspace) BreakGlassSnapshot(contentPath string) (ok bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots().snapshots[contentPath]
+	if ok {
+		rec.Dirty = true
+	}
+	return ok
 }
 
 // snapshotStatus is the body the snapshot inspect and break glass APIs answer with.

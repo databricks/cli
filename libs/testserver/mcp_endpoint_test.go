@@ -110,7 +110,7 @@ func TestMcpEndpointPassesThroughOnceCredentialExists(t *testing.T) {
 	assert.Nil(t, reply["error"])
 	assert.NotNil(t, reply["result"])
 
-	workspace.McpUserCredentials = map[string]catalog.McpServiceUserMappedCredential{}
+	workspace.mcpServices().McpUserCredentials = map[string]catalog.McpServiceUserMappedCredential{}
 	assert.EqualValues(t, -32006, mcpEndpointTestCall(t, workspace, name, list)["error"].(map[string]any)["code"])
 }
 

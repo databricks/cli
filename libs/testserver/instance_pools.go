@@ -7,8 +7,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+const TestDefaultInstancePoolId = "0123-456789-pool0"
+
 func init() {
 	registerRoutes("instance_pools", addInstancePoolsRoutes)
+	registerStore("instance_pools", newInstancePoolsStore)
+}
+
+type instancePoolsStore struct {
+	InstancePools map[string]compute.GetInstancePool
+}
+
+func newInstancePoolsStore(*FakeWorkspace) *instancePoolsStore {
+	return &instancePoolsStore{
+		InstancePools: map[string]compute.GetInstancePool{},
+	}
+}
+
+func (s *FakeWorkspace) instancePools() *instancePoolsStore {
+	return stateOf[instancePoolsStore](s)
 }
 
 func addInstancePoolsRoutes(server *Server) {
@@ -46,7 +63,7 @@ func (s *FakeWorkspace) InstancePoolsCreate(req Request) any {
 
 	id := nextUUID()
 	pool.InstancePoolId = id
-	s.InstancePools[id] = pool
+	s.instancePools().InstancePools[id] = pool
 
 	return Response{Body: compute.CreateInstancePoolResponse{InstancePoolId: id}}
 }
@@ -54,7 +71,7 @@ func (s *FakeWorkspace) InstancePoolsCreate(req Request) any {
 func (s *FakeWorkspace) InstancePoolsGet(req Request, instancePoolId string) any {
 	defer s.LockUnlock()()
 
-	pool, ok := s.InstancePools[instancePoolId]
+	pool, ok := s.instancePools().InstancePools[instancePoolId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -70,7 +87,7 @@ func (s *FakeWorkspace) InstancePoolsEdit(req Request) any {
 
 	defer s.LockUnlock()()
 
-	pool, ok := s.InstancePools[request.InstancePoolId]
+	pool, ok := s.instancePools().InstancePools[request.InstancePoolId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -85,7 +102,7 @@ func (s *FakeWorkspace) InstancePoolsEdit(req Request) any {
 	pool.CustomTags = request.CustomTags
 	pool.RemoteDiskThroughput = request.RemoteDiskThroughput
 	pool.TotalInitialRemoteDiskSize = request.TotalInitialRemoteDiskSize
-	s.InstancePools[request.InstancePoolId] = pool
+	s.instancePools().InstancePools[request.InstancePoolId] = pool
 
 	return Response{}
 }
@@ -98,11 +115,11 @@ func (s *FakeWorkspace) InstancePoolsDelete(req Request) any {
 
 	defer s.LockUnlock()()
 
-	if _, ok := s.InstancePools[request.InstancePoolId]; !ok {
+	if _, ok := s.instancePools().InstancePools[request.InstancePoolId]; !ok {
 		return Response{StatusCode: 404}
 	}
 
-	delete(s.InstancePools, request.InstancePoolId)
+	delete(s.instancePools().InstancePools, request.InstancePoolId)
 
 	return Response{}
 }

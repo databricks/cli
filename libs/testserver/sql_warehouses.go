@@ -8,15 +8,38 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+const TestDefaultWarehouseId = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+
 func init() {
 	registerRoutes("sql_warehouses", addSqlWarehousesRoutes)
+	registerStore("sql_warehouses", newSqlWarehousesStore)
+}
+
+type sqlWarehousesStore struct {
+	SqlWarehouses map[string]sql.GetWarehouseResponse
+}
+
+func newSqlWarehousesStore(*FakeWorkspace) *sqlWarehousesStore {
+	return &sqlWarehousesStore{
+		SqlWarehouses: map[string]sql.GetWarehouseResponse{
+			TestDefaultWarehouseId: {
+				Id:    TestDefaultWarehouseId,
+				Name:  "DEFAULT Test SQL Warehouse",
+				State: sql.StateRunning,
+			},
+		},
+	}
+}
+
+func (s *FakeWorkspace) sqlWarehouses() *sqlWarehousesStore {
+	return stateOf[sqlWarehousesStore](s)
 }
 
 func addSqlWarehousesRoutes(server *Server) {
 	// SQL Warehouses:
 
 	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
+		return MapGet(req.Workspace, req.Workspace.sqlWarehouses().SqlWarehouses, req.Vars["warehouse_id"])
 	})
 
 	server.Handle("GET", "/api/2.0/sql/warehouses", func(req Request) any {
@@ -40,7 +63,7 @@ func addSqlWarehousesRoutes(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
+		return MapDelete(req.Workspace, req.Workspace.sqlWarehouses().SqlWarehouses, req.Vars["warehouse_id"])
 	})
 
 	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req Request) any {
@@ -76,7 +99,7 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	defer s.LockUnlock()()
 
 	if warehouseId != "" {
-		_, ok := s.SqlWarehouses[warehouseId]
+		_, ok := s.sqlWarehouses().SqlWarehouses[warehouseId]
 		if !ok {
 			return Response{
 				StatusCode: 404,
@@ -91,7 +114,7 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	}
 	warehouse.State = sql.StateRunning
 	sqlWarehouseFixUps(&warehouse, s.CurrentUser().UserName)
-	s.SqlWarehouses[warehouseId] = warehouse
+	s.sqlWarehouses().SqlWarehouses[warehouseId] = warehouse
 
 	return Response{
 		StatusCode: 200,
@@ -102,13 +125,13 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 func (s *FakeWorkspace) SqlWarehousesStart(req Request, warehouseId string) Response {
 	defer s.LockUnlock()()
 
-	warehouse, ok := s.SqlWarehouses[warehouseId]
+	warehouse, ok := s.sqlWarehouses().SqlWarehouses[warehouseId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
 	warehouse.State = sql.StateRunning
-	s.SqlWarehouses[warehouseId] = warehouse
+	s.sqlWarehouses().SqlWarehouses[warehouseId] = warehouse
 
 	return Response{}
 }
@@ -116,20 +139,20 @@ func (s *FakeWorkspace) SqlWarehousesStart(req Request, warehouseId string) Resp
 func (s *FakeWorkspace) SqlWarehousesStop(req Request, warehouseId string) Response {
 	defer s.LockUnlock()()
 
-	warehouse, ok := s.SqlWarehouses[warehouseId]
+	warehouse, ok := s.sqlWarehouses().SqlWarehouses[warehouseId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
 	warehouse.State = sql.StateStopped
-	s.SqlWarehouses[warehouseId] = warehouse
+	s.sqlWarehouses().SqlWarehouses[warehouseId] = warehouse
 
 	return Response{}
 }
 
 func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
 	var warehouses []sql.EndpointInfo
-	for _, warehouse := range s.SqlWarehouses {
+	for _, warehouse := range s.sqlWarehouses().SqlWarehouses {
 		warehouses = append(warehouses, sql.EndpointInfo{
 			Id:   warehouse.Id,
 			Name: warehouse.Name,
@@ -145,7 +168,7 @@ func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
 
 func (s *FakeWorkspace) SqlDataSourcesList(req Request) Response {
 	var dataSources []sql.DataSource
-	for key, warehouse := range s.SqlWarehouses {
+	for key, warehouse := range s.sqlWarehouses().SqlWarehouses {
 		dataSources = append(dataSources, sql.DataSource{
 			Id:          key,
 			Name:        "test_data_source",

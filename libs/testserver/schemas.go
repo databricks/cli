@@ -11,13 +11,28 @@ import (
 
 func init() {
 	registerRoutes("schemas", addSchemasRoutes)
+	registerStore("schemas", newSchemasStore)
+}
+
+type schemasStore struct {
+	Schemas map[string]catalog.SchemaInfo
+}
+
+func newSchemasStore(*FakeWorkspace) *schemasStore {
+	return &schemasStore{
+		Schemas: map[string]catalog.SchemaInfo{},
+	}
+}
+
+func (s *FakeWorkspace) schemas() *schemasStore {
+	return stateOf[schemasStore](s)
 }
 
 func addSchemasRoutes(server *Server) {
 	// Schemas:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
-		return MapGetUC(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"], "Schema")
+		return MapGetUC(req.Workspace, req.Workspace.schemas().Schemas, req.Vars["full_name"], "Schema")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/schemas", func(req Request) any {
@@ -59,7 +74,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.StorageRoot = strings.TrimRight(schema.StorageRoot, "/")
 	schema.FullName = schema.CatalogName + "." + schema.Name
 
-	if _, exists := s.Schemas[schema.FullName]; exists {
+	if _, exists := s.schemas().Schemas[schema.FullName]; exists {
 		return Response{
 			StatusCode: http.StatusBadRequest,
 			Body: map[string]string{
@@ -98,7 +113,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 			"unity.catalog.managed.delta.defaults.delta.feature.catalogManaged":              "supported",
 		}
 	}
-	s.Schemas[schema.FullName] = schema
+	s.schemas().Schemas[schema.FullName] = schema
 
 	return Response{
 		Body: schema,
@@ -108,7 +123,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.Schemas[name]
+	existing, ok := s.schemas().Schemas[name]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -132,7 +147,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	applyUpdatedFields(&existing, schemaUpdate, fields)
 
 	if schemaUpdate.NewName != "" {
-		delete(s.Schemas, name)
+		delete(s.schemas().Schemas, name)
 		oldName := existing.Name
 		// UC normalizes schema names to lowercase.
 		existing.Name = strings.ToLower(schemaUpdate.NewName)
@@ -143,7 +158,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.Schemas[existing.FullName] = existing
+	s.schemas().Schemas[existing.FullName] = existing
 
 	return Response{
 		Body: existing,
@@ -152,30 +167,30 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 
 // moveSchemaChildren mirrors UC, where the volumes, registered models and secrets of a renamed schema move with it.
 func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchemaName string) {
-	for key, volume := range s.Volumes {
+	for key, volume := range s.volumes().Volumes {
 		if volume.CatalogName != catalogName || volume.SchemaName != oldSchemaName {
 			continue
 		}
-		delete(s.Volumes, key)
+		delete(s.volumes().Volumes, key)
 		volume.SchemaName = newSchemaName
 		volume.FullName = catalogName + "." + newSchemaName + "." + volume.Name
-		s.Volumes[volumeKey(volume.FullName)] = volume
+		s.volumes().Volumes[volumeKey(volume.FullName)] = volume
 	}
-	for key, model := range s.RegisteredModels {
+	for key, model := range s.registeredModels().RegisteredModels {
 		if model.CatalogName != catalogName || model.SchemaName != oldSchemaName {
 			continue
 		}
 		model.SchemaName = newSchemaName
 		s.moveRegisteredModel(key, model)
 	}
-	for key, secret := range s.UCSecrets {
+	for key, secret := range s.ucSecrets().UCSecrets {
 		if secret.CatalogName != catalogName || secret.SchemaName != oldSchemaName {
 			continue
 		}
-		delete(s.UCSecrets, key)
+		delete(s.ucSecrets().UCSecrets, key)
 		secret.SchemaName = newSchemaName
 		secret.FullName = catalogName + "." + newSchemaName + "." + secret.Name
-		s.UCSecrets[secret.FullName] = secret
+		s.ucSecrets().UCSecrets[secret.FullName] = secret
 	}
 }
 
@@ -183,26 +198,26 @@ func (s *FakeWorkspace) moveSchemaChildren(catalogName, oldSchemaName, newSchema
 func (s *FakeWorkspace) SchemasDelete(req Request, fullName string) Response {
 	defer s.LockUnlock()()
 
-	schema, ok := s.Schemas[fullName]
+	schema, ok := s.schemas().Schemas[fullName]
 	if !ok {
 		return Response{StatusCode: http.StatusNotFound}
 	}
-	delete(s.Schemas, fullName)
+	delete(s.schemas().Schemas, fullName)
 	if req.URL.Query().Get("force") == "true" {
-		for key, volume := range s.Volumes {
+		for key, volume := range s.volumes().Volumes {
 			if volume.CatalogName == schema.CatalogName && volume.SchemaName == schema.Name {
-				delete(s.Volumes, key)
+				delete(s.volumes().Volumes, key)
 			}
 		}
-		for key, model := range s.RegisteredModels {
+		for key, model := range s.registeredModels().RegisteredModels {
 			if model.CatalogName == schema.CatalogName && model.SchemaName == schema.Name {
-				delete(s.RegisteredModels, key)
-				delete(s.RegisteredModelVersions, key)
+				delete(s.registeredModels().RegisteredModels, key)
+				delete(s.registeredModels().RegisteredModelVersions, key)
 			}
 		}
-		for key, secret := range s.UCSecrets {
+		for key, secret := range s.ucSecrets().UCSecrets {
 			if secret.CatalogName == schema.CatalogName && secret.SchemaName == schema.Name {
-				delete(s.UCSecrets, key)
+				delete(s.ucSecrets().UCSecrets, key)
 			}
 		}
 	}

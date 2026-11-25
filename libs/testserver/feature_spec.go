@@ -11,6 +11,21 @@ import (
 
 func init() {
 	registerRoutes("feature_spec", addFeatureSpecRoutes)
+	registerStore("feature_spec", newFeatureSpecsStore)
+}
+
+type featureSpecsStore struct {
+	FeatureSpecs map[string]ml.FeatureSpec
+}
+
+func newFeatureSpecsStore(*FakeWorkspace) *featureSpecsStore {
+	return &featureSpecsStore{
+		FeatureSpecs: map[string]ml.FeatureSpec{},
+	}
+}
+
+func (s *FakeWorkspace) featureSpecs() *featureSpecsStore {
+	return stateOf[featureSpecsStore](s)
 }
 
 func addFeatureSpecRoutes(server *Server) {
@@ -19,7 +34,7 @@ func addFeatureSpecRoutes(server *Server) {
 		return req.Workspace.FeatureSpecsCreate(req)
 	})
 	server.Handle("GET", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.FeatureSpecs, req.Vars["name"])
+		return MapGet(req.Workspace, req.Workspace.featureSpecs().FeatureSpecs, req.Vars["name"])
 	})
 	server.Handle("DELETE", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
 		return req.Workspace.FeatureSpecsDelete(req.Vars["name"])
@@ -43,14 +58,14 @@ func (s *FakeWorkspace) FeatureSpecsCreate(req Request) Response {
 	// UC normalizes feature spec names to lowercase.
 	featureSpec.Name = strings.ToLower(featureSpec.Name)
 
-	if _, exists := s.FeatureSpecs[featureSpec.Name]; exists {
+	if _, exists := s.featureSpecs().FeatureSpecs[featureSpec.Name]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Function '%s' already exists", featureSpec.Name)},
 		}
 	}
 
-	s.FeatureSpecs[featureSpec.Name] = featureSpec
+	s.featureSpecs().FeatureSpecs[featureSpec.Name] = featureSpec
 	return Response{
 		Body: featureSpec,
 	}
@@ -62,13 +77,13 @@ func (s *FakeWorkspace) FeatureSpecsCreate(req Request) Response {
 func (s *FakeWorkspace) FeatureSpecsDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, ok := s.FeatureSpecs[name]; !ok {
+	if _, ok := s.featureSpecs().FeatureSpecs[name]; !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
 			Body:       map[string]string{"error_code": "RESOURCE_DOES_NOT_EXIST", "message": fmt.Sprintf("Function '%s' does not exist.", name)},
 		}
 	}
-	delete(s.FeatureSpecs, name)
-	delete(s.Grants, grantsKey("function", name))
+	delete(s.featureSpecs().FeatureSpecs, name)
+	delete(s.grants().Grants, grantsKey("function", name))
 	return Response{Body: map[string]any{}}
 }

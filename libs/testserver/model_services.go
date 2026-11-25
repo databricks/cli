@@ -13,6 +13,21 @@ import (
 
 func init() {
 	registerRoutes("model_services", addModelServicesRoutes)
+	registerStore("model_services", newModelServicesStore)
+}
+
+type modelServicesStore struct {
+	ModelServices map[string]catalog.ModelService
+}
+
+func newModelServicesStore(*FakeWorkspace) *modelServicesStore {
+	return &modelServicesStore{
+		ModelServices: map[string]catalog.ModelService{},
+	}
+}
+
+func (s *FakeWorkspace) modelServices() *modelServicesStore {
+	return stateOf[modelServicesStore](s)
 }
 
 func addModelServicesRoutes(server *Server) {
@@ -23,7 +38,7 @@ func addModelServicesRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/model-services/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.ModelServices, req.Vars["name"])
+		return MapGet(req.Workspace, req.Workspace.modelServices().ModelServices, req.Vars["name"])
 	})
 
 	server.Handle("PATCH", "/api/2.1/unity-catalog/model-services/{name}", func(req Request) any {
@@ -31,7 +46,7 @@ func addModelServicesRoutes(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/model-services/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.ModelServices, req.Vars["name"])
+		return MapDelete(req.Workspace, req.Workspace.modelServices().ModelServices, req.Vars["name"])
 	})
 }
 
@@ -59,7 +74,7 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("model_service_id")
 
-	if _, exists := s.ModelServices[key]; exists {
+	if _, exists := s.modelServices().ModelServices[key]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body: map[string]string{
@@ -76,7 +91,7 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 	ms.MetastoreId = nextUUID()
 	ms.CreateTime = sdktime.New(time.Unix(0, nowNano()).UTC())
 
-	s.ModelServices[key] = ms
+	s.modelServices().ModelServices[key] = ms
 	return Response{
 		Body: ms,
 	}
@@ -85,7 +100,7 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.ModelServices[name]
+	existing, ok := s.modelServices().ModelServices[name]
 	if !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -107,7 +122,7 @@ func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 	existing.Config = incoming.Config
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.ModelServices[name] = existing
+	s.modelServices().ModelServices[name] = existing
 	return Response{
 		Body: existing,
 	}

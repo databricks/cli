@@ -9,8 +9,48 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+const TestDefaultClusterId = "0123-456789-cluster0"
+
 func init() {
 	registerRoutes("clusters", addClustersRoutes)
+	registerStore("clusters", newClustersStore)
+}
+
+type clustersStore struct {
+	Clusters map[string]compute.ClusterDetails
+
+	// clusterVenvs caches Python venvs per existing cluster ID,
+	// matching cloud behavior where libraries are cached on running clusters.
+	clusterVenvs map[string]*clusterEnv
+}
+
+func newClustersStore(*FakeWorkspace) *clustersStore {
+	return &clustersStore{
+		Clusters: map[string]compute.ClusterDetails{
+			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
+			// requires (ValidateClusterAccess rejects anything else), matching the cloud
+			// TEST_DEFAULT_CLUSTER_ID this stands in for.
+			TestDefaultClusterId: {
+				ClusterId:        TestDefaultClusterId,
+				ClusterName:      "DEFAULT Test Cluster",
+				State:            compute.StateRunning,
+				DataSecurityMode: compute.DataSecurityModeSingleUser,
+				SingleUserName:   TestUser.UserName,
+			},
+		},
+		clusterVenvs: map[string]*clusterEnv{},
+	}
+}
+
+func (s *FakeWorkspace) clusters() *clustersStore {
+	return stateOf[clustersStore](s)
+}
+
+// cleanup removes all cached cluster venvs.
+func (c *clustersStore) cleanup() {
+	for _, env := range c.clusterVenvs {
+		os.RemoveAll(env.dir)
+	}
 }
 
 func addClustersRoutes(server *Server) {
@@ -60,6 +100,13 @@ func addClustersRoutes(server *Server) {
 	})
 }
 
+// clusterEnv represents a cached Python venv for an existing cluster.
+type clusterEnv struct {
+	dir           string          // base temp directory containing the venv
+	venvDir       string          // path to .venv inside dir
+	installedLibs map[string]bool // workspace paths of already-installed wheels
+}
+
 func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	var request compute.ClusterDetails
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -101,7 +148,7 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	// Snapshot it from the raw body so re-reads match cloud.
 	request.Spec = specSnapshot(req.Body)
 
-	s.Clusters[clusterId] = request
+	s.clusters().Clusters[clusterId] = request
 
 	return Response{
 		Body: compute.ClusterDetails{
@@ -137,7 +184,7 @@ func (s *FakeWorkspace) ClustersResize(req Request) any {
 	}
 
 	defer s.LockUnlock()()
-	cluster, ok := s.Clusters[request.ClusterId]
+	cluster, ok := s.clusters().Clusters[request.ClusterId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -152,7 +199,7 @@ func (s *FakeWorkspace) ClustersResize(req Request) any {
 
 	cluster.NumWorkers = request.NumWorkers
 	cluster.Autoscale = request.Autoscale
-	s.Clusters[request.ClusterId] = cluster
+	s.clusters().Clusters[request.ClusterId] = cluster
 
 	return Response{}
 }
@@ -167,7 +214,7 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	}
 
 	defer s.LockUnlock()()
-	existing, ok := s.Clusters[request.ClusterId]
+	existing, ok := s.clusters().Clusters[request.ClusterId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -189,13 +236,13 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	clusterFixUps(&request)
 	// Refresh the .spec snapshot from the new settings, matching cloud behavior on edit.
 	request.Spec = specSnapshot(req.Body)
-	s.Clusters[request.ClusterId] = request
+	s.clusters().Clusters[request.ClusterId] = request
 
 	// Clear venv cache when cluster is edited to match cloud behavior where
 	// cluster edits trigger restarts that clear library caches.
-	if env, ok := s.clusterVenvs[request.ClusterId]; ok {
+	if env, ok := s.clusters().clusterVenvs[request.ClusterId]; ok {
 		os.RemoveAll(env.dir)
-		delete(s.clusterVenvs, request.ClusterId)
+		delete(s.clusters().clusterVenvs, request.ClusterId)
 	}
 
 	return Response{}
@@ -257,7 +304,7 @@ func applySingleNodeDefaults(cluster *compute.ClusterDetails) {
 func (s *FakeWorkspace) ClustersGet(req Request, clusterId string) any {
 	defer s.LockUnlock()()
 
-	cluster, ok := s.Clusters[clusterId]
+	cluster, ok := s.clusters().Clusters[clusterId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -266,7 +313,7 @@ func (s *FakeWorkspace) ClustersGet(req Request, clusterId string) any {
 	// resolves without hanging. Real clusters move through these states asynchronously.
 	if cluster.State == compute.StatePending {
 		cluster.State = compute.StateRunning
-		s.Clusters[clusterId] = cluster
+		s.clusters().Clusters[clusterId] = cluster
 	}
 
 	return Response{
@@ -285,13 +332,13 @@ func (s *FakeWorkspace) ClustersDelete(req Request) any {
 	}
 	defer s.LockUnlock()()
 
-	cluster, ok := s.Clusters[request.ClusterId]
+	cluster, ok := s.clusters().Clusters[request.ClusterId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
 	cluster.State = compute.StateTerminated
-	s.Clusters[request.ClusterId] = cluster
+	s.clusters().Clusters[request.ClusterId] = cluster
 
 	return Response{}
 }
@@ -306,13 +353,13 @@ func (s *FakeWorkspace) ClustersStart(req Request) any {
 	}
 	defer s.LockUnlock()()
 
-	cluster, ok := s.Clusters[request.ClusterId]
+	cluster, ok := s.clusters().Clusters[request.ClusterId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
 	cluster.State = compute.StateRunning
-	s.Clusters[request.ClusterId] = cluster
+	s.clusters().Clusters[request.ClusterId] = cluster
 
 	return Response{}
 }
@@ -327,6 +374,6 @@ func (s *FakeWorkspace) ClustersPermanentDelete(req Request) any {
 	}
 
 	defer s.LockUnlock()()
-	delete(s.Clusters, request.ClusterId)
+	delete(s.clusters().Clusters, request.ClusterId)
 	return Response{}
 }

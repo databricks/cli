@@ -16,6 +16,16 @@ import (
 
 func init() {
 	registerRoutes("sandbox_files", addSandboxFilesRoutes)
+	registerStore("sandbox_files", newSandboxFilesStore)
+}
+
+type sandboxFilesStore struct {
+	// sandboxFiles holds the filesystem of each sandbox, created on first use (see sandboxFs).
+	sandboxFiles map[string]*fakeSandboxFs
+}
+
+func newSandboxFilesStore(*FakeWorkspace) *sandboxFilesStore {
+	return &sandboxFilesStore{}
 }
 
 func addSandboxFilesRoutes(server *Server) {
@@ -82,17 +92,18 @@ type sandboxFsEntry struct {
 // sandboxFs returns the filesystem of sandboxID, creating it on first use. The fake doesn't
 // model sandbox lifecycle, so every sandbox ID exists; a real server returns 404 for unknown IDs.
 func (s *FakeWorkspace) sandboxFs(sandboxID string) *fakeSandboxFs {
-	if s.sandboxFiles == nil {
-		s.sandboxFiles = map[string]*fakeSandboxFs{}
+	store := stateOf[sandboxFilesStore](s)
+	if store.sandboxFiles == nil {
+		store.sandboxFiles = map[string]*fakeSandboxFs{}
 	}
-	sfs, ok := s.sandboxFiles[sandboxID]
+	sfs, ok := store.sandboxFiles[sandboxID]
 	if !ok {
 		now := time.Now()
 		sfs = &fakeSandboxFs{entries: map[string]*sandboxFsEntry{
 			"/":    {isDir: true, mode: 0o755, permissions: "drwxr-xr-x", owner: "root", modTime: now},
 			"/tmp": {isDir: true, mode: 0o1777, permissions: "drwxrwxrwt", owner: "root", modTime: now},
 		}}
-		s.sandboxFiles[sandboxID] = sfs
+		store.sandboxFiles[sandboxID] = sfs
 	}
 	return sfs
 }

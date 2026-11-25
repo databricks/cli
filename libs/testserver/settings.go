@@ -9,6 +9,22 @@ import (
 
 func init() {
 	registerRoutes("settings", addSettingsRoutes)
+	registerStore("settings", newSettingsStore)
+}
+
+type settingsStore struct {
+	// WorkspaceSettings holds settings written through the settings v2 public API, keyed by name.
+	WorkspaceSettings map[string]settingsv2.Setting
+}
+
+func newSettingsStore(*FakeWorkspace) *settingsStore {
+	return &settingsStore{
+		WorkspaceSettings: map[string]settingsv2.Setting{},
+	}
+}
+
+func (s *FakeWorkspace) settings() *settingsStore {
+	return stateOf[settingsStore](s)
 }
 
 func addSettingsRoutes(server *Server) {
@@ -29,7 +45,7 @@ func (s *FakeWorkspace) WorkspaceSettingGet(req Request) Response {
 	defer s.LockUnlock()()
 
 	name := req.Vars["name"]
-	if setting, ok := s.WorkspaceSettings[name]; ok {
+	if setting, ok := s.settings().WorkspaceSettings[name]; ok {
 		return Response{Body: setting}
 	}
 	// The setting's own default is true: port forwarding stays on until an administrator turns it off.
@@ -69,13 +85,13 @@ func (s *FakeWorkspace) WorkspaceSettingPatch(req Request) Response {
 	setting.Name = req.Vars["name"]
 	// Account-level values are not modelled, so the workspace value is the effective one.
 	setting.EffectiveBooleanVal = setting.BooleanVal
-	s.WorkspaceSettings[setting.Name] = setting
+	s.settings().WorkspaceSettings[setting.Name] = setting
 	return Response{Body: setting}
 }
 
 // portForwardingToServerlessDisabled reports whether port_fwd_serverless_enabled was set to false.
 // Callers must hold the workspace lock.
 func (s *FakeWorkspace) portForwardingToServerlessDisabled() bool {
-	setting, ok := s.WorkspaceSettings[portFwdServerlessSetting]
+	setting, ok := s.settings().WorkspaceSettings[portFwdServerlessSetting]
 	return ok && setting.EffectiveBooleanVal != nil && !setting.EffectiveBooleanVal.Value
 }

@@ -14,6 +14,21 @@ import (
 
 func init() {
 	registerRoutes("apps", addAppsRoutes)
+	registerStore("apps", newAppsStore)
+}
+
+type appsStore struct {
+	Apps map[string]apps.App
+}
+
+func newAppsStore(*FakeWorkspace) *appsStore {
+	return &appsStore{
+		Apps: map[string]apps.App{},
+	}
+}
+
+func (s *FakeWorkspace) apps() *appsStore {
+	return stateOf[appsStore](s)
 }
 
 func addAppsRoutes(server *Server) {
@@ -139,7 +154,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 
 	defer s.LockUnlock()()
 
-	existing, ok := s.Apps[name]
+	existing, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -179,7 +194,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 		}
 	}
 	setUcSecurableKinds(&existing)
-	s.Apps[name] = existing
+	s.apps().Apps[name] = existing
 
 	return Response{
 		Body: apps.AppUpdate{
@@ -193,7 +208,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 	defer s.LockUnlock()()
 
-	_, ok := s.Apps[name]
+	_, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -210,7 +225,7 @@ func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	app, ok := s.Apps[name]
+	app, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -236,7 +251,7 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 	app.ActiveDeployment = &deployment
 	app.DefaultSourceCodePath = deployment.SourceCodePath
 	app.DefaultGitSource = deployment.GitSource
-	s.Apps[name] = app
+	s.apps().Apps[name] = app
 
 	return Response{Body: deployment}
 }
@@ -244,7 +259,7 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) Response {
 	defer s.LockUnlock()()
 
-	app, ok := s.Apps[name]
+	app, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -259,7 +274,7 @@ func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) 
 func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 	defer s.LockUnlock()()
 
-	app, ok := s.Apps[name]
+	app, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -283,7 +298,7 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 		State:   "RUNNING",
 		Message: appStatusRunningMessage,
 	}
-	s.Apps[name] = app
+	s.apps().Apps[name] = app
 
 	return Response{Body: maskInputOnly(app)}
 }
@@ -291,7 +306,7 @@ func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
 func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 	defer s.LockUnlock()()
 
-	app, ok := s.Apps[name]
+	app, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -309,7 +324,7 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 	// so the deploy-only fields read back empty. Match that so drift tests are realistic.
 	app.ActiveDeployment = nil
 	app.PendingDeployment = nil
-	s.Apps[name] = app
+	s.apps().Apps[name] = app
 
 	return Response{Body: maskInputOnly(app)}
 }
@@ -318,12 +333,12 @@ func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
 func (s *FakeWorkspace) AppsUpdateThumbnail(name string) Response {
 	defer s.LockUnlock()()
 
-	app, ok := s.Apps[name]
+	app, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 	app.ThumbnailUrl = "/ajax-api/2.0/thumbnails/raw/apps/" + app.Id + "/SMALL_DEFAULT.png"
-	s.Apps[name] = app
+	s.apps().Apps[name] = app
 
 	return Response{Body: apps.AppThumbnail{}}
 }
@@ -332,12 +347,12 @@ func (s *FakeWorkspace) AppsUpdateThumbnail(name string) Response {
 func (s *FakeWorkspace) AppsDeleteThumbnail(name string) Response {
 	defer s.LockUnlock()()
 
-	app, ok := s.Apps[name]
+	app, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 	app.ThumbnailUrl = ""
-	s.Apps[name] = app
+	s.apps().Apps[name] = app
 
 	return Response{}
 }
@@ -347,7 +362,7 @@ func (s *FakeWorkspace) AppsDeleteThumbnail(name string) Response {
 func (s *FakeWorkspace) AppsGet(name string) Response {
 	defer s.LockUnlock()()
 
-	app, ok := s.Apps[name]
+	app, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -364,7 +379,7 @@ func (s *FakeWorkspace) AppsGet(name string) Response {
 func (s *FakeWorkspace) AppsDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	app, ok := s.Apps[name]
+	app, ok := s.apps().Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -389,7 +404,7 @@ func (s *FakeWorkspace) AppsDelete(name string) Response {
 		State:   "UNAVAILABLE",
 		Message: appStatusUnavailableMessage,
 	}
-	s.Apps[name] = app
+	s.apps().Apps[name] = app
 
 	return Response{}
 }
@@ -407,7 +422,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	defer s.LockUnlock()()
 
 	if name != "" {
-		_, ok := s.Apps[name]
+		_, ok := s.apps().Apps[name]
 		if !ok {
 			return Response{
 				StatusCode: 404,
@@ -422,7 +437,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 			}
 		}
 		// Check if app already exists on create
-		if _, exists := s.Apps[name]; exists {
+		if _, exists := s.apps().Apps[name]; exists {
 			return Response{
 				StatusCode: 409,
 				Body: map[string]string{
@@ -479,7 +494,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"
-	app.Id = strconv.Itoa(len(s.Apps) + 1000)
+	app.Id = strconv.Itoa(len(s.apps().Apps) + 1000)
 
 	if app.ComputeSize == "" {
 		app.ComputeSize = "MEDIUM"
@@ -514,7 +529,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 	setUcSecurableKinds(&app)
 
-	s.Apps[name] = app
+	s.apps().Apps[name] = app
 	return Response{
 		Body: maskInputOnly(app),
 	}

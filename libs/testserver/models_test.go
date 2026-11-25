@@ -18,7 +18,7 @@ func TestModelRegistryCreateModel_RejectsEmptyName(t *testing.T) {
 
 	// A stored-but-unreadable model is the original bug. Asserted before the
 	// require below so it is still reported when the rejection is missing.
-	assert.Empty(t, workspace.ModelRegistryModels)
+	assert.Empty(t, workspace.models().ModelRegistryModels)
 
 	body, ok := response.Body.(map[string]string)
 	require.True(t, ok)

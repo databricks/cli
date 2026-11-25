@@ -10,6 +10,23 @@ import (
 
 func init() {
 	registerRoutes("models", addModelsRoutes)
+	registerStore("models", newModelsStore)
+}
+
+type modelsStore struct {
+	ModelRegistryModels   map[string]ml.Model
+	ModelRegistryModelIDs map[string]string // model name -> numeric ID
+}
+
+func newModelsStore(*FakeWorkspace) *modelsStore {
+	return &modelsStore{
+		ModelRegistryModels:   map[string]ml.Model{},
+		ModelRegistryModelIDs: map[string]string{},
+	}
+}
+
+func (s *FakeWorkspace) models() *modelsStore {
+	return stateOf[modelsStore](s)
 }
 
 func addModelsRoutes(server *Server) {
@@ -27,7 +44,7 @@ func addModelsRoutes(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
+		return MapDelete(req.Workspace, req.Workspace.models().ModelRegistryModels, req.URL.Query().Get("name"))
 	})
 }
 
@@ -62,8 +79,8 @@ func (s *FakeWorkspace) ModelRegistryCreateModel(req Request) any {
 		Tags:        request.Tags,
 	}
 
-	s.ModelRegistryModels[request.Name] = model
-	s.ModelRegistryModelIDs[request.Name] = modelId
+	s.models().ModelRegistryModels[request.Name] = model
+	s.models().ModelRegistryModelIDs[request.Name] = modelId
 
 	return Response{
 		Body: ml.CreateModelResponse{
@@ -83,7 +100,7 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 		}
 	}
 
-	existingModel, ok := s.ModelRegistryModels[request.Name]
+	existingModel, ok := s.models().ModelRegistryModels[request.Name]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -93,7 +110,7 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 
 	// Update the model
 	existingModel.Description = request.Description
-	s.ModelRegistryModels[request.Name] = existingModel
+	s.models().ModelRegistryModels[request.Name] = existingModel
 
 	return Response{
 		Body: ml.UpdateModelResponse{
@@ -107,7 +124,7 @@ func (s *FakeWorkspace) ModelRegistryGetModel(req Request) any {
 
 	name := req.URL.Query().Get("name")
 
-	model, ok := s.ModelRegistryModels[name]
+	model, ok := s.models().ModelRegistryModels[name]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -118,7 +135,7 @@ func (s *FakeWorkspace) ModelRegistryGetModel(req Request) any {
 	return Response{
 		Body: ml.GetModelResponse{
 			RegisteredModelDatabricks: &ml.ModelDatabricks{
-				Id:              s.ModelRegistryModelIDs[name],
+				Id:              s.models().ModelRegistryModelIDs[name],
 				Name:            model.Name,
 				Description:     model.Description,
 				Tags:            model.Tags,

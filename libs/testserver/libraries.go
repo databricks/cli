@@ -11,6 +11,21 @@ import (
 
 func init() {
 	registerRoutes("libraries", addLibrariesRoutes)
+	registerStore("libraries", newLibrariesStore)
+}
+
+type librariesStore struct {
+	ClusterLibraries map[string][]compute.Library // cluster id -> installed libraries
+}
+
+func newLibrariesStore(*FakeWorkspace) *librariesStore {
+	return &librariesStore{
+		ClusterLibraries: map[string][]compute.Library{},
+	}
+}
+
+func (s *FakeWorkspace) libraries() *librariesStore {
+	return stateOf[librariesStore](s)
 }
 
 func addLibrariesRoutes(server *Server) {
@@ -36,18 +51,18 @@ func (s *FakeWorkspace) LibrariesInstall(req Request) any {
 
 	defer s.LockUnlock()()
 
-	if _, ok := s.Clusters[request.ClusterId]; !ok {
+	if _, ok := s.clusters().Clusters[request.ClusterId]; !ok {
 		return Response{StatusCode: http.StatusNotFound}
 	}
 
 	// Install is additive and idempotent: installing an already-present library is a no-op.
-	installed := s.ClusterLibraries[request.ClusterId]
+	installed := s.libraries().ClusterLibraries[request.ClusterId]
 	for _, lib := range request.Libraries {
 		if !containsLibrary(installed, lib) {
 			installed = append(installed, lib)
 		}
 	}
-	s.ClusterLibraries[request.ClusterId] = installed
+	s.libraries().ClusterLibraries[request.ClusterId] = installed
 
 	return Response{}
 }
@@ -60,14 +75,14 @@ func (s *FakeWorkspace) LibrariesUninstall(req Request) any {
 
 	defer s.LockUnlock()()
 
-	installed := s.ClusterLibraries[request.ClusterId]
+	installed := s.libraries().ClusterLibraries[request.ClusterId]
 	remaining := make([]compute.Library, 0, len(installed))
 	for _, lib := range installed {
 		if !containsLibrary(request.Libraries, lib) {
 			remaining = append(remaining, lib)
 		}
 	}
-	s.ClusterLibraries[request.ClusterId] = remaining
+	s.libraries().ClusterLibraries[request.ClusterId] = remaining
 
 	return Response{}
 }
@@ -75,11 +90,11 @@ func (s *FakeWorkspace) LibrariesUninstall(req Request) any {
 func (s *FakeWorkspace) LibrariesClusterStatus(req Request, clusterId string) any {
 	defer s.LockUnlock()()
 
-	if _, ok := s.Clusters[clusterId]; !ok {
+	if _, ok := s.clusters().Clusters[clusterId]; !ok {
 		return Response{StatusCode: http.StatusNotFound}
 	}
 
-	installed := s.ClusterLibraries[clusterId]
+	installed := s.libraries().ClusterLibraries[clusterId]
 	statuses := make([]compute.LibraryFullStatus, 0, len(installed))
 	for i := range installed {
 		statuses = append(statuses, compute.LibraryFullStatus{

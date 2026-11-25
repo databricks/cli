@@ -14,6 +14,16 @@ import (
 
 func init() {
 	registerRoutes("dbfs", addDbfsRoutes)
+	registerStore("dbfs", newDbfsStore)
+}
+
+type dbfsStore struct {
+	// dbfs is the DBFS namespace, created on first use (see dbfsState).
+	dbfs *fakeDbfs
+}
+
+func newDbfsStore(*FakeWorkspace) *dbfsStore {
+	return &dbfsStore{}
 }
 
 func addDbfsRoutes(server *Server) {
@@ -72,14 +82,15 @@ type dbfsHandle struct {
 }
 
 func (s *FakeWorkspace) dbfsState() *fakeDbfs {
-	if s.dbfs == nil {
-		s.dbfs = &fakeDbfs{
+	store := stateOf[dbfsStore](s)
+	if store.dbfs == nil {
+		store.dbfs = &fakeDbfs{
 			files:   map[string]dbfsFile{},
 			dirs:    map[string]int64{"/": nowMilli()},
 			handles: map[int64]*dbfsHandle{},
 		}
 	}
-	return s.dbfs
+	return store.dbfs
 }
 
 func dbfsError(statusCode int, errorCode, message string) Response {

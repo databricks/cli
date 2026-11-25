@@ -12,13 +12,28 @@ import (
 
 func init() {
 	registerRoutes("volumes", addVolumesRoutes)
+	registerStore("volumes", newVolumesStore)
+}
+
+type volumesStore struct {
+	Volumes map[string]catalog.VolumeInfo
+}
+
+func newVolumesStore(*FakeWorkspace) *volumesStore {
+	return &volumesStore{
+		Volumes: map[string]catalog.VolumeInfo{},
+	}
+}
+
+func (s *FakeWorkspace) volumes() *volumesStore {
+	return stateOf[volumesStore](s)
 }
 
 func addVolumesRoutes(server *Server) {
 	// Volumes: looked up case-insensitively, see volumeKey.
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapGetUC(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]), "Volume")
+		return MapGetUC(req.Workspace, req.Workspace.volumes().Volumes, volumeKey(req.Vars["full_name"]), "Volume")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req Request) any {
@@ -30,7 +45,7 @@ func addVolumesRoutes(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]))
+		return MapDelete(req.Workspace, req.Workspace.volumes().Volumes, volumeKey(req.Vars["full_name"]))
 	})
 }
 
@@ -75,7 +90,7 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	s.Volumes[volumeKey(volume.FullName)] = volume
+	s.volumes().Volumes[volumeKey(volume.FullName)] = volume
 
 	// Register the volume path as a directory so that fs cp works without
 	// requiring an explicit mkdir.
@@ -99,7 +114,7 @@ func volumeKey(fullName string) string {
 func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.Volumes[fullname]
+	existing, ok := s.volumes().Volumes[fullname]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -123,7 +138,7 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 	applyUpdatedFields(&existing, request, fields)
 
 	if request.NewName != "" {
-		delete(s.Volumes, fullname)
+		delete(s.volumes().Volumes, fullname)
 		// UC lowercases the new name, as on create.
 		existing.Name = strings.ToLower(request.NewName)
 		existing.FullName = existing.CatalogName + "." + existing.SchemaName + "." + existing.Name
@@ -132,7 +147,7 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.Volumes[volumeKey(existing.FullName)] = existing
+	s.volumes().Volumes[volumeKey(existing.FullName)] = existing
 	return Response{
 		Body: existing,
 	}
