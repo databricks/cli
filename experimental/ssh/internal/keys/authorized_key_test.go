@@ -80,7 +80,7 @@ func TestCanonicalAuthorizedKey(t *testing.T) {
 		{name: "second line with options", raw: rsaLine + "\n" + `command="true" ` + ed25519Line, want: errMultipleAuthorizedKeyLines},
 		// ParseAuthorizedKey alone would skip the comment and return the key after it.
 		{name: "comment line before the key", raw: "# a comment\n" + rsaLine, want: errMultipleAuthorizedKeyLines},
-		// ParseAuthorizedKey alone would cut the line at '\r' and ignore what follows.
+		// A '\r' counts as a line break too, so the secret is exactly one line.
 		{name: "carriage return inside", raw: rsaLine + "\r" + `command="true" ` + ed25519Line, want: errMultipleAuthorizedKeyLines},
 		// The certificate's force-command lives in the key blob, not in the options field.
 		{name: "user certificate", raw: certLine + "\n", want: errAuthorizedKeyCertificate},

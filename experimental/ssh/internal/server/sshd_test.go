@@ -161,29 +161,13 @@ func TestPrepareSSHDConfigRejectsUnexpectedKeyFormat(t *testing.T) {
 	require.NoError(t, err)
 	sshKey, err := ssh.NewPublicKey(public)
 	require.NoError(t, err)
-	plain := string(ssh.MarshalAuthorizedKey(sshKey))
 
-	tests := []struct {
-		name   string
-		secret string
-		reason string
-	}{
-		{name: "command option", secret: `command="echo marker" ` + plain, reason: "it sets authorized_keys options"},
-		{name: "environment", secret: `environment="FOO=marker" ` + plain, reason: "it sets authorized_keys options"},
-		{name: "port forwarding", secret: `permitopen="marker.test:22",no-pty ` + plain, reason: "it sets authorized_keys options"},
-		{name: "second key line", secret: plain + `command="echo marker" ` + plain, reason: "it has more than one line"},
-		{name: "not a key", secret: "marker", reason: "it is not a valid SSH public key"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sshDir, err := prepareSSHDConfigWithClientKey(t, tt.secret)
-			require.ErrorContains(t, err, `the client public key in secret "client-public-key" of secret scope "tester@databricks.test-session-ssh-tunnel-keys" is not in the expected format because `+tt.reason)
-			assert.ErrorContains(t, err, "databricks secrets delete-scope tester@databricks.test-session-ssh-tunnel-keys")
-			// The secret's contents are not echoed in the error.
-			assert.NotContains(t, err.Error(), "marker")
-			// The key is validated before anything is written, so no authorized_keys (or sshd
-			// config) is left on disk.
-			assert.NoDirExists(t, sshDir)
-		})
-	}
+	// TestCanonicalAuthorizedKey covers each rejection reason; this checks the wiring.
+	sshDir, err := prepareSSHDConfigWithClientKey(t, `command="echo marker" `+string(ssh.MarshalAuthorizedKey(sshKey)))
+	require.ErrorContains(t, err, `secret "client-public-key" of secret scope "tester@databricks.test-session-ssh-tunnel-keys" is not in the expected format because it sets authorized_keys options`)
+	// The secret's contents are not echoed in the error.
+	assert.NotContains(t, err.Error(), "marker")
+	// The key is validated before anything is written, so no authorized_keys (or sshd config)
+	// is left on disk.
+	assert.NoDirExists(t, sshDir)
 }
