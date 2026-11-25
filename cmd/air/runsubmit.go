@@ -354,6 +354,16 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
+	// Start the experiment directory read now so it overlaps Me. If the directory is
+	// missing, ensureExperimentDirectory creates it later, once validation and staging
+	// have succeeded. Every return cancels the read.
+	experimentDir := ""
+	if cfg.MLflowExperimentDirectory != nil {
+		experimentDir = *cfg.MLflowExperimentDirectory
+	}
+	readCtx, cancelExperimentDirRead := context.WithCancel(ctx)
+	defer cancelExperimentDirRead()
+	experimentDirRead := startExperimentDirectoryRead(readCtx, w, experimentDir)
 	// Without a snapshot, a relaunch with identical files can reuse the launch dir
 	// an earlier launch from this machine uploaded. A first launch of any content
 	// takes the unchanged path below, with no extra server call.
@@ -502,11 +512,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
-	experimentDir := ""
-	if cfg.MLflowExperimentDirectory != nil {
-		experimentDir = *cfg.MLflowExperimentDirectory
-	}
-	if err := ensureExperimentDirectory(ctx, w, experimentDir); err != nil {
+	if err := ensureExperimentDirectory(ctx, w, experimentDir, <-experimentDirRead); err != nil {
 		return 0, "", err
 	}
 

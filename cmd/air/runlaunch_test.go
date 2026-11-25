@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
@@ -115,26 +116,92 @@ databricks_internal_user_workspace_dir = /Workspace/second
 	})
 }
 
+// checkExperimentDirectory reads dir and creates it if missing, the way
+// submitWorkload does across its two steps.
+func checkExperimentDirectory(t *testing.T, w *databricks.WorkspaceClient, dir string) error {
+	t.Helper()
+	return ensureExperimentDirectory(t.Context(), w, dir, awaitExperimentDirRead(t, startExperimentDirectoryRead(t.Context(), w, dir)))
+}
+
+// awaitExperimentDirRead waits for the background read, or fails the test after a
+// few seconds so a regression fails instead of hanging.
+func awaitExperimentDirRead(t *testing.T, read <-chan experimentDirStatus) experimentDirStatus {
+	t.Helper()
+	select {
+	case status := <-read:
+		return status
+	case <-time.After(5 * time.Second):
+		t.Fatal("experiment directory read did not finish")
+		return experimentDirStatus{}
+	}
+}
+
 func TestEnsureExperimentDirectory(t *testing.T) {
 	ctx := t.Context()
 	w := newFakeWorkspaceClient(t)
 
 	// Empty means default (always exists) — no API call, no error.
-	require.NoError(t, ensureExperimentDirectory(ctx, w, ""))
+	require.NoError(t, checkExperimentDirectory(t, w, ""))
 
 	// A missing path is created.
-	require.NoError(t, ensureExperimentDirectory(ctx, w, "/Workspace/Users/me/exp"))
+	require.NoError(t, checkExperimentDirectory(t, w, "/Workspace/Users/me/exp"))
 
 	// An existing directory is accepted as-is.
 	require.NoError(t, w.Workspace.MkdirsByPath(ctx, "/Workspace/Users/me/existing"))
-	require.NoError(t, ensureExperimentDirectory(ctx, w, "/Workspace/Users/me/existing"))
+	require.NoError(t, checkExperimentDirectory(t, w, "/Workspace/Users/me/existing"))
 
 	// A path that exists but is a file is rejected.
 	fc, err := filer.NewWorkspaceFilesClient(w, "/Workspace/Users/me")
 	require.NoError(t, err)
 	require.NoError(t, fc.Write(ctx, "afile", strings.NewReader("x")))
-	err = ensureExperimentDirectory(ctx, w, "/Workspace/Users/me/afile")
+	err = checkExperimentDirectory(t, w, "/Workspace/Users/me/afile")
 	require.ErrorContains(t, err, "is not a directory")
+}
+
+// experimentDirServer answers get-status 404 for a missing directory, 500 for any
+// path in failPaths, and counts mkdirs calls.
+func experimentDirServer(t *testing.T, failPaths map[string]bool, mkdirs *int) *databricks.WorkspaceClient {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.0/workspace/mkdirs":
+			*mkdirs++
+			_, _ = w.Write([]byte(`{}`))
+		case "/api/2.0/workspace/get-status":
+			if failPaths[r.URL.Query().Get("path")] {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error_code":"INTERNAL_ERROR","message":"boom"}`))
+				return
+			}
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"not found"}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return newTestWorkspaceClient(t, srv.URL)
+}
+
+func TestExperimentDirectoryReadCreatesNothing(t *testing.T) {
+	const dir = "/Workspace/Users/me/exp"
+	var mkdirs int
+	w := experimentDirServer(t, nil, &mkdirs)
+
+	// The read may run before Me; only ensureExperimentDirectory writes.
+	status := awaitExperimentDirRead(t, startExperimentDirectoryRead(t.Context(), w, dir))
+	assert.Equal(t, 0, mkdirs, "the finished read wrote nothing")
+	require.NoError(t, ensureExperimentDirectory(t.Context(), w, dir, status))
+	assert.Equal(t, 1, mkdirs, "the missing directory is created after the read")
+}
+
+func TestExperimentDirectoryReadErrorSurfaces(t *testing.T) {
+	const dir = "/Workspace/Users/me/exp"
+	var mkdirs int
+	w := experimentDirServer(t, map[string]bool{dir: true}, &mkdirs)
+	err := checkExperimentDirectory(t, w, dir)
+	require.ErrorContains(t, err, "failed to check experiment_directory")
+	assert.Equal(t, 0, mkdirs, "a failed read creates nothing")
 }
 
 // launchFilesServer answers get-status with the size of each path in files and

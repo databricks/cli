@@ -25,11 +25,16 @@ type relaunchServer struct {
 	userName string
 	meStatus int
 	// awaitSpeculation makes Me wait until the speculative probe and validation
-	// have arrived, so the test sees them before Me, not by scheduling luck.
-	awaitSpeculation bool
-	events           []string
-	validateBodies   []string
-	submitPaths      []string
+	// have arrived, and awaitExperimentDirRead until the experiment directory
+	// read has, so the test sees them before Me, not by scheduling luck.
+	awaitSpeculation       bool
+	awaitExperimentDirRead bool
+	// experimentDir, when set, is recorded as "expdir read" and "expdir mkdirs"
+	// instead of "probe" and "mkdirs".
+	experimentDir  string
+	events         []string
+	validateBodies []string
+	submitPaths    []string
 }
 
 func (s *relaunchServer) record(event string) {
@@ -65,17 +70,29 @@ func (s *relaunchServer) hasEvent(event string) bool {
 	return slices.Contains(s.events, event)
 }
 
-// awaitBeforeMe blocks until the speculative probe and validation have arrived,
-// or gives up after a few seconds so a regression fails instead of hanging.
+// isExperimentDir reports whether p is the experiment directory under test.
+func (s *relaunchServer) isExperimentDir(p string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.experimentDir != "" && p == s.experimentDir
+}
+
+// awaitBeforeMe blocks until the requests the test expects before Me have
+// arrived, or gives up after a few seconds so a regression fails instead of
+// hanging.
 func (s *relaunchServer) awaitBeforeMe() {
 	s.mu.Lock()
-	wait := s.awaitSpeculation
-	s.mu.Unlock()
-	if !wait {
-		return
+	var want []string
+	if s.awaitSpeculation {
+		want = append(want, "probe", "validate")
 	}
+	if s.awaitExperimentDirRead {
+		want = append(want, "expdir read")
+	}
+	s.mu.Unlock()
+	missing := func(event string) bool { return !s.hasEvent(event) }
 	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) && (!s.hasEvent("probe") || !s.hasEvent("validate")) {
+	for time.Now().Before(deadline) && slices.ContainsFunc(want, missing) {
 		time.Sleep(time.Millisecond)
 	}
 }
@@ -98,13 +115,22 @@ func newRelaunchClient(t *testing.T) (*databricks.WorkspaceClient, *relaunchServ
 		return iam.User{UserName: s.userName}
 	})
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
-		s.record("probe")
-		return req.Workspace.WorkspaceGetStatus(req.URL.Query().Get("path"), false)
+		p := req.URL.Query().Get("path")
+		if s.isExperimentDir(p) {
+			s.record("expdir read")
+		} else {
+			s.record("probe")
+		}
+		return req.Workspace.WorkspaceGetStatus(p, false)
 	})
 	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req testserver.Request) any {
-		s.record("mkdirs")
 		var request workspace.Mkdirs
 		require.NoError(t, json.Unmarshal(req.Body, &request))
+		if s.isExperimentDir(request.Path) {
+			s.record("expdir mkdirs")
+		} else {
+			s.record("mkdirs")
+		}
 		req.Workspace.WorkspaceMkdirs(request)
 		return struct{}{}
 	})
@@ -138,7 +164,12 @@ func newRelaunchClient(t *testing.T) (*databricks.WorkspaceClient, *relaunchServ
 
 func submitMinimal(t *testing.T, w *databricks.WorkspaceClient, key string) error {
 	t.Helper()
-	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	return submitConfig(t, w, minimalConfig, key)
+}
+
+func submitConfig(t *testing.T, w *databricks.WorkspaceClient, content, key string) error {
+	t.Helper()
+	cfgPath := writeConfigFile(t, "run.yaml", content)
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, key, false)
@@ -244,4 +275,48 @@ func TestRelaunchMeFailureWritesNothing(t *testing.T) {
 	for _, event := range events {
 		assert.False(t, strings.HasPrefix(event, "import"), "wrote after failed Me: %s", event)
 	}
+}
+
+const testExperimentDir = "/Workspace/Users/a@example.com/exp"
+
+// newExperimentDirClient serves a launch whose config sets a missing
+// mlflow_experiment_directory, with Me held until the directory read arrives.
+func newExperimentDirClient(t *testing.T) (*databricks.WorkspaceClient, *relaunchServer) {
+	t.Helper()
+	w, s := newRelaunchClient(t)
+	s.mu.Lock()
+	s.experimentDir = testExperimentDir
+	s.awaitExperimentDirRead = true
+	s.mu.Unlock()
+	return w, s
+}
+
+const experimentDirConfig = minimalConfig + "mlflow_experiment_directory: " + testExperimentDir + "\n"
+
+// The experiment directory is read before Me returns, and created only after Me
+// and before the submit.
+func TestExperimentDirReadBeforeMe(t *testing.T) {
+	w, s := newExperimentDirClient(t)
+	require.NoError(t, submitConfig(t, w, experimentDirConfig, "idem-1"))
+	events := s.take()
+
+	me := slices.Index(events, "me")
+	require.GreaterOrEqual(t, me, 0, events)
+	assert.Contains(t, events[:me], "expdir read")
+	mkdirs := slices.Index(events, "expdir mkdirs")
+	assert.Greater(t, mkdirs, me, events)
+	assert.Greater(t, slices.Index(events, "submit"), mkdirs, events)
+}
+
+// A failing Me stops the launch before the experiment directory is created.
+func TestExperimentDirMeFailureCreatesNothing(t *testing.T) {
+	w, s := newExperimentDirClient(t)
+	s.setMeStatus(403)
+	err := submitConfig(t, w, experimentDirConfig, "idem-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to resolve current user")
+	events := s.take()
+	assert.Contains(t, events, "expdir read")
+	assert.NotContains(t, events, "expdir mkdirs")
+	assert.NotContains(t, events, "submit")
 }

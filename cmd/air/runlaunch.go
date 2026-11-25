@@ -190,24 +190,45 @@ func (s *launchSpeculation) abort() {
 	_ = s.group.Wait()
 }
 
-// ensureExperimentDirectory creates experimentDir if it is missing, matching the
-// CLI's convention for its other artifact directories. Without this, a missing
-// parent surfaces only as a server-side INTERNAL_ERROR after the run is wasted.
-// An empty dir means the default (/Users/<user>/...), which always exists.
-func ensureExperimentDirectory(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string) error {
+// experimentDirStatus is the get-status result for the experiment directory.
+type experimentDirStatus struct {
+	info *workspace.ObjectInfo
+	err  error
+}
+
+// startExperimentDirectoryRead reads experimentDir in the background. The channel
+// receives exactly one value and is buffered, so the read never blocks on a caller
+// that returned early. An empty dir means the default (/Users/<user>/...), which
+// always exists, so nothing is read.
+func startExperimentDirectoryRead(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string) <-chan experimentDirStatus {
+	status := make(chan experimentDirStatus, 1)
+	if experimentDir == "" {
+		status <- experimentDirStatus{}
+		return status
+	}
+	go func() {
+		info, err := w.Workspace.GetStatusByPath(ctx, experimentDir)
+		status <- experimentDirStatus{info, err}
+	}()
+	return status
+}
+
+// ensureExperimentDirectory creates experimentDir if the read found it missing,
+// matching the CLI's convention for its other artifact directories. Without this, a
+// missing parent surfaces only as a server-side INTERNAL_ERROR after the run is
+// wasted.
+func ensureExperimentDirectory(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string, status experimentDirStatus) error {
 	if experimentDir == "" {
 		return nil
 	}
-
-	info, err := w.Workspace.GetStatusByPath(ctx, experimentDir)
-	if errors.Is(err, apierr.ErrNotFound) {
+	if errors.Is(status.err, apierr.ErrNotFound) {
 		return w.Workspace.MkdirsByPath(ctx, experimentDir)
 	}
-	if err != nil {
-		return fmt.Errorf("failed to check experiment_directory %q: %w", experimentDir, err)
+	if status.err != nil {
+		return fmt.Errorf("failed to check experiment_directory %q: %w", experimentDir, status.err)
 	}
-	if info.ObjectType != workspace.ObjectTypeDirectory {
-		return fmt.Errorf("experiment_directory %q is not a directory (object_type=%s)", experimentDir, info.ObjectType)
+	if status.info.ObjectType != workspace.ObjectTypeDirectory {
+		return fmt.Errorf("experiment_directory %q is not a directory (object_type=%s)", experimentDir, status.info.ObjectType)
 	}
 	return nil
 }
