@@ -1,0 +1,70 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "catalogs": {
+    "my_catalog": {
+      "name": "mycatalog"
+    }
+  },
+  "genie_agents": {
+    "my_agent": {
+      "definition": {
+        "instructions": {
+          "join_specs": [
+            {
+              "id": "01f0a1b2c3d4e5f60718293a4b5c6d71",
+              "left": {
+                "alias": "a",
+                "identifier": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.table1"
+              },
+              "right": {
+                "alias": "b",
+                "identifier": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.table2"
+              },
+              "sql": "a.id = b.id"
+            }
+          ]
+        },
+        "resources": {
+          "sql_functions": [
+            {
+              "id": "01f0a1b2c3d4e5f60718293a4b5c6d70",
+              "identifier": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.myfunction"
+            }
+          ],
+          "tables": [
+            {
+              "identifier": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.table1"
+            },
+            {
+              "identifier": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.table2"
+            }
+          ],
+          "volumes": [
+            {
+              "path": "/Volumes/${resources.catalogs.my_catalog.name}/${resources.schemas.my_schema.name}/${resources.volumes.my_volume.name}/subdir"
+            }
+          ]
+        }
+      },
+      "display_name": "[dev [USERNAME]] my-agent",
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/resources",
+      "warehouse_id": "test-warehouse-id"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "dev_[USERNAME]_myschema"
+    }
+  },
+  "volumes": {
+    "my_volume": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "myvolume",
+      "schema_name": "${resources.schemas.my_schema.name}",
+      "volume_path": "/Volumes/mycatalog/dev_[USERNAME]_myschema/myvolume",
+      "volume_type": "MANAGED"
+    }
+  }
+}

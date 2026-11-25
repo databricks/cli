@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/genieagents"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -357,6 +358,7 @@ func TestCaptureUCDependenciesNilResources(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
+				GenieAgents:           map[string]*resources.GenieAgent{"nil": nil, "empty": {}},
 				Schemas:               map[string]*resources.Schema{"nil": nil, "empty": {}},
 				Catalogs:              map[string]*resources.Catalog{"nil": nil, "empty": {}},
 				Volumes:               map[string]*resources.Volume{"nil": nil, "empty": {}},
@@ -455,6 +457,100 @@ func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 			d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 			require.Nil(t, d)
 			assert.Equal(t, tc.expected, b.Config.Resources.VectorSearchIndexes["idx"].Name)
+		})
+	}
+}
+
+func TestCaptureUCDependenciesGenieAgents(t *testing.T) {
+	b := bundleWithSchemas()
+	b.Config.Resources.Catalogs = bundleWithCatalogs().Config.Resources.Catalogs
+	b.Config.Resources.Volumes = map[string]*resources.Volume{
+		"my_volume": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+			CatalogName: "catalog1", SchemaName: "foobar", Name: "myvolume",
+		}},
+	}
+	cases := []struct{ input, want string }{
+		{"catalog1.foobar.table1", "${resources.catalogs.dev_catalog.name}.${resources.schemas.schema1.name}.table1"},
+		{"catalog1.barfoo.table2", "${resources.catalogs.dev_catalog.name}.${resources.schemas.schema3.name}.table2"},
+		{"catalog1.other.table3", "${resources.catalogs.dev_catalog.name}.other.table3"},
+		{"other.foobar.table4", "other.foobar.table4"},
+		{"catalog1.foobar", "catalog1.foobar"},
+		{"catalog1.foobar.table.extra", "catalog1.foobar.table.extra"},
+		{"${resources.catalogs.dev_catalog.name}.foobar.table5", "${resources.catalogs.dev_catalog.name}.foobar.table5"},
+		{"", ""},
+	}
+	agent := &resources.GenieAgent{Definition: genieagents.GenieAgentDefinition{
+		Resources: &genieagents.GenieAgentResources{
+			Volumes: []genieagents.GenieAgentVolume{
+				{Path: "/Volumes/catalog1/foobar/myvolume/subdir//file/"},
+				{Path: "/Volumes/catalog1/barfoo/unbundled"},
+			},
+			McpConnections: []genieagents.GenieAgentMcpConnection{{McpConnection: "catalog1.foobar.connection"}},
+		},
+		Instructions: &genieagents.GenieAgentInstructions{},
+	}}
+	for _, tc := range cases {
+		agent.Definition.Resources.Tables = append(agent.Definition.Resources.Tables, genieagents.GenieAgentTable{Identifier: tc.input})
+		agent.Definition.Resources.SqlFunctions = append(agent.Definition.Resources.SqlFunctions, genieagents.GenieAgentSqlFunction{Identifier: tc.input})
+		agent.Definition.Instructions.JoinSpecs = append(agent.Definition.Instructions.JoinSpecs, genieagents.GenieAgentJoinSpec{
+			Left:  genieagents.GenieAgentJoinSource{Identifier: tc.input},
+			Right: genieagents.GenieAgentJoinSource{Identifier: tc.input},
+			Sql:   "catalog1.foobar.table1.id = catalog1.foobar.table2.id",
+		})
+	}
+	b.Config.Resources.GenieAgents = map[string]*resources.GenieAgent{
+		"agent":             agent,
+		"resources_only":    {Definition: genieagents.GenieAgentDefinition{Resources: &genieagents.GenieAgentResources{}}},
+		"instructions_only": {Definition: genieagents.GenieAgentDefinition{Instructions: &genieagents.GenieAgentInstructions{}}},
+	}
+	require.Empty(t, bundle.Apply(t.Context(), b, CaptureUCDependencies()))
+	agent = b.Config.Resources.GenieAgents["agent"]
+	for i, tc := range cases {
+		assert.Equal(t, tc.want, agent.Definition.Resources.Tables[i].Identifier)
+		assert.Equal(t, tc.want, agent.Definition.Resources.SqlFunctions[i].Identifier)
+		assert.Equal(t, tc.want, agent.Definition.Instructions.JoinSpecs[i].Left.Identifier)
+		assert.Equal(t, tc.want, agent.Definition.Instructions.JoinSpecs[i].Right.Identifier)
+		assert.Equal(t, "catalog1.foobar.table1.id = catalog1.foobar.table2.id", agent.Definition.Instructions.JoinSpecs[i].Sql)
+	}
+	assert.Equal(t, "catalog1.foobar.connection", agent.Definition.Resources.McpConnections[0].McpConnection)
+	assert.Equal(t, "/Volumes/${resources.catalogs.dev_catalog.name}/${resources.schemas.schema1.name}/${resources.volumes.my_volume.name}/subdir//file/", agent.Definition.Resources.Volumes[0].Path)
+	assert.Equal(t, "/Volumes/${resources.catalogs.dev_catalog.name}/${resources.schemas.schema3.name}/unbundled", agent.Definition.Resources.Volumes[1].Path)
+	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Volumes["my_volume"].SchemaName)
+}
+
+func TestResolveVolumePath(t *testing.T) {
+	b := bundleWithSchemas()
+	b.Config.Resources.Catalogs = bundleWithCatalogs().Config.Resources.Catalogs
+	b.Config.Resources.Volumes = map[string]*resources.Volume{
+		"volume":        {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{CatalogName: "catalog1", SchemaName: "foobar", Name: "vol"}},
+		"other_schema":  {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{CatalogName: "catalog1", SchemaName: "other", Name: "vol"}},
+		"other_catalog": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{CatalogName: "other", SchemaName: "foobar", Name: "vol"}},
+		"nil":           nil,
+	}
+	for _, tc := range []struct{ input, want string }{
+		{"/Volumes/catalog1/foobar/vol", "/Volumes/${resources.catalogs.dev_catalog.name}/${resources.schemas.schema1.name}/${resources.volumes.volume.name}"},
+		{"/Volumes/catalog1/foobar/vol/", "/Volumes/${resources.catalogs.dev_catalog.name}/${resources.schemas.schema1.name}/${resources.volumes.volume.name}/"},
+		{"/Volumes/catalog1/foobar/vol/a//b/", "/Volumes/${resources.catalogs.dev_catalog.name}/${resources.schemas.schema1.name}/${resources.volumes.volume.name}/a//b/"},
+		{"/Volumes/catalog1/other/vol", "/Volumes/${resources.catalogs.dev_catalog.name}/other/${resources.volumes.other_schema.name}"},
+		{"/Volumes/other/foobar/vol", "/Volumes/other/foobar/${resources.volumes.other_catalog.name}"},
+		{"/Volumes/catalog1/foobar/unbundled", "/Volumes/${resources.catalogs.dev_catalog.name}/${resources.schemas.schema1.name}/unbundled"},
+		{"/Volumes/missing/foobar/vol", "/Volumes/missing/foobar/vol"},
+		{"/Volumes/catalog1/missing/unbundled", "/Volumes/${resources.catalogs.dev_catalog.name}/missing/unbundled"},
+		{"/Volumes/${resources.catalogs.dev_catalog.name}/foobar/vol", "/Volumes/${resources.catalogs.dev_catalog.name}/foobar/vol"},
+		{"/Volumes/catalog1/${resources.schemas.schema1.name}/vol", "/Volumes/catalog1/${resources.schemas.schema1.name}/vol"},
+		{"/Volumes/catalog1/foobar/vol/${var.subpath}", "/Volumes/catalog1/foobar/vol/${var.subpath}"},
+		{"/Volumes/catalog1/foobar/vol/${unfinished", "/Volumes/catalog1/foobar/vol/${unfinished"},
+		{"/volumes/catalog1/foobar/vol", "/volumes/catalog1/foobar/vol"},
+		{"Volumes/catalog1/foobar/vol", "Volumes/catalog1/foobar/vol"},
+		{"/Volumes/catalog1/foobar", "/Volumes/catalog1/foobar"},
+		{"/Volumes//foobar/vol", "/Volumes//foobar/vol"},
+		{"/Volumes/catalog1//vol", "/Volumes/catalog1//vol"},
+		{"/Volumes/catalog1/foobar/", "/Volumes/catalog1/foobar/"},
+		{"/Volumes/", "/Volumes/"},
+		{"", ""},
+	} {
+		t.Run(tc.input, func(t *testing.T) {
+			assert.Equal(t, tc.want, resolveVolumePath(b, tc.input))
 		})
 	}
 }
