@@ -133,7 +133,9 @@ type TestConfig struct {
 	//
 	// A matching file can have a sidecar named "<file>-exclude.toml" that excludes its value
 	// from some tests, so that the exclusions of a value live next to it. See
-	// MatrixFileExclusion for its format.
+	// matrixFileExclusion for its format. Loading fails on a sidecar that the glob matches as a
+	// value (the glob is too broad) and on a sidecar whose file the glob does not match (it is
+	// misnamed or left behind), so that no exclusion is silently dropped.
 	EnvMatrixFiles map[string]string
 
 	// Environment variables matrix exclusion list.
@@ -199,12 +201,12 @@ const MatrixFileExcludeSuffix = "-exclude.toml"
 //	When = ["CONFIG_Cloud=true"]
 //	Reason = "Needs a storage credential that cloud test environments do not have."
 type matrixFileSidecar struct {
-	Exclude []MatrixFileExclusion
+	Exclude []matrixFileExclusion
 }
 
-// MatrixFileExclusion excludes the value of one file matched by EnvMatrixFiles from some
+// matrixFileExclusion excludes the value of one file matched by EnvMatrixFiles from some
 // variants. It becomes an EnvMatrixExclude rule for each test it applies to.
-type MatrixFileExclusion struct {
+type matrixFileExclusion struct {
 	// Test dirs that skip the value, relative to the directory of the test.toml that sets
 	// EnvMatrixFiles. Empty means every test that inherits that test.toml.
 	Tests []string
@@ -256,7 +258,9 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	}
 
 	result := DoLoadConfig(t, configs[0])
-	expandEnvMatrixFiles(t, &result, configs[0], dir)
+	if err := expandEnvMatrixFiles(&result, configs[0], dir); err != nil {
+		t.Fatal(err)
+	}
 	leafConfigPath := filepath.Join(dir, ConfigFilename)
 	leafConfig := TestConfig{}
 	hasLeafConfig := configs[0] == leafConfigPath
@@ -266,7 +270,9 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 
 	for _, cfgName := range configs[1:] {
 		cfg := DoLoadConfig(t, cfgName)
-		expandEnvMatrixFiles(t, &cfg, cfgName, dir)
+		if err := expandEnvMatrixFiles(&cfg, cfgName, dir); err != nil {
+			t.Fatal(err)
+		}
 		if cfgName == leafConfigPath {
 			leafConfig = cfg
 			hasLeafConfig = true
@@ -340,14 +346,16 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 // expandEnvMatrixFiles fills EnvMatrix from EnvMatrixFiles of the config loaded from path, and
 // adds to EnvMatrixExclude the sidecar exclusions that apply to testDir. It runs per config
 // file, before configs are merged, because globs and Tests are relative to that file.
-func expandEnvMatrixFiles(t *testing.T, config *TestConfig, path, testDir string) {
+func expandEnvMatrixFiles(config *TestConfig, path, testDir string) error {
 	if len(config.EnvMatrixFiles) == 0 {
-		return
+		return nil
 	}
 
 	baseDir := filepath.Dir(path)
 	relTestDir, err := filepath.Rel(baseDir, testDir)
-	require.NoError(t, err)
+	if err != nil {
+		return err
+	}
 	relTestDir = filepath.ToSlash(relTestDir)
 
 	if config.EnvMatrix == nil {
@@ -360,26 +368,50 @@ func expandEnvMatrixFiles(t *testing.T, config *TestConfig, path, testDir string
 	for _, key := range slices.Sorted(maps.Keys(config.EnvMatrixFiles)) {
 		pattern := config.EnvMatrixFiles[key]
 		if _, ok := config.EnvMatrix[key]; ok {
-			t.Fatalf("%s: %s is set in both EnvMatrix and EnvMatrixFiles", path, key)
+			return fmt.Errorf("%s: %s is set in both EnvMatrix and EnvMatrixFiles", path, key)
 		}
 
-		matches, err := filepath.Glob(filepath.Join(baseDir, filepath.FromSlash(pattern)))
-		require.NoError(t, err, "%s: invalid EnvMatrixFiles.%s = %q", path, key, pattern)
+		fullPattern := filepath.Join(baseDir, filepath.FromSlash(pattern))
+		matches, err := filepath.Glob(fullPattern)
+		if err != nil {
+			return fmt.Errorf("%s: invalid EnvMatrixFiles.%s = %q: %w", path, key, pattern, err)
+		}
 		if len(matches) == 0 {
-			t.Fatalf("%s: EnvMatrixFiles.%s = %q matches no files", path, key, pattern)
+			return fmt.Errorf("%s: EnvMatrixFiles.%s = %q matches no files", path, key, pattern)
 		}
-		slices.Sort(matches)
 
-		values := make([]string, 0, len(matches))
+		// Values are sorted by name rather than by path, because the path separator differs
+		// between operating systems and would change the order when a glob spans directories.
+		matchByValue := map[string]string{}
 		for _, match := range matches {
-			value := filepath.Base(match)
-			if slices.Contains(values, value) {
-				t.Fatalf("%s: EnvMatrixFiles.%s = %q matches several files named %q", path, key, pattern, value)
+			if strings.HasSuffix(match, MatrixFileExcludeSuffix) {
+				return fmt.Errorf("%s: EnvMatrixFiles.%s = %q matches sidecar %s; narrow the glob so that it matches only values", path, key, pattern, filepath.ToSlash(match))
 			}
-			values = append(values, value)
+			value := filepath.Base(match)
+			if _, ok := matchByValue[value]; ok {
+				return fmt.Errorf("%s: EnvMatrixFiles.%s = %q matches several files named %q", path, key, pattern, value)
+			}
+			matchByValue[value] = match
+		}
 
-			sidecarPath := match + MatrixFileExcludeSuffix
-			for i, exclusion := range loadMatrixFileSidecar(t, sidecarPath, baseDir) {
+		sidecars, err := filepath.Glob(fullPattern + MatrixFileExcludeSuffix)
+		if err != nil {
+			return fmt.Errorf("%s: invalid EnvMatrixFiles.%s = %q: %w", path, key, pattern, err)
+		}
+		for _, sidecar := range sidecars {
+			if !slices.Contains(matches, strings.TrimSuffix(sidecar, MatrixFileExcludeSuffix)) {
+				return fmt.Errorf("%s: sidecar %s has no matching file for EnvMatrixFiles.%s = %q; rename or delete it", path, filepath.ToSlash(sidecar), key, pattern)
+			}
+		}
+
+		values := slices.Sorted(maps.Keys(matchByValue))
+		for _, value := range values {
+			sidecarPath := matchByValue[value] + MatrixFileExcludeSuffix
+			exclusions, err := loadMatrixFileSidecar(sidecarPath, baseDir)
+			if err != nil {
+				return err
+			}
+			for i, exclusion := range exclusions {
 				if len(exclusion.Tests) > 0 && !slices.Contains(exclusion.Tests, relTestDir) {
 					continue
 				}
@@ -389,45 +421,50 @@ func expandEnvMatrixFiles(t *testing.T, config *TestConfig, path, testDir string
 		}
 		config.EnvMatrix[key] = values
 	}
+	return nil
 }
 
 // loadMatrixFileSidecar returns the exclusions in the sidecar at path, or none if there is no
 // sidecar. Test dirs in Tests are checked against baseDir, so that a typo does not silently
 // leave a value enabled.
-func loadMatrixFileSidecar(t *testing.T, path, baseDir string) []MatrixFileExclusion {
+func loadMatrixFileSidecar(path, baseDir string) ([]matrixFileExclusion, error) {
 	contents, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil
+		return nil, nil
 	}
-	require.NoError(t, err, "Failed to read %s", path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", path, err)
+	}
 
 	var sidecar matrixFileSidecar
 	meta, err := toml.Decode(string(contents), &sidecar)
-	require.NoError(t, err, "Failed to parse %s", path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", path, err)
+	}
 	if undecoded := meta.Undecoded(); len(undecoded) > 0 {
-		t.Fatalf("Undecoded keys in %s: %v", path, undecoded)
+		return nil, fmt.Errorf("undecoded keys in %s: %v", path, undecoded)
 	}
 	if len(sidecar.Exclude) == 0 {
-		t.Fatalf("%s has no [[Exclude]] entries (delete it instead of leaving it empty)", path)
+		return nil, fmt.Errorf("%s has no [[Exclude]] entries (delete it instead of leaving it empty)", path)
 	}
 
 	for i, exclusion := range sidecar.Exclude {
 		if strings.TrimSpace(exclusion.Reason) == "" {
-			t.Fatalf("%s: Exclude[%d] has no Reason", path, i)
+			return nil, fmt.Errorf("%s: Exclude[%d] has no Reason", path, i)
 		}
 		for _, test := range exclusion.Tests {
 			info, err := os.Stat(filepath.Join(baseDir, filepath.FromSlash(test)))
 			if err != nil || !info.IsDir() {
-				t.Fatalf("%s: Exclude[%d] names test %q, which is not a directory in %s", path, i, test, baseDir)
+				return nil, fmt.Errorf("%s: Exclude[%d] names test %q, which is not a directory in %s", path, i, test, baseDir)
 			}
 		}
 		for _, condition := range exclusion.When {
 			if !strings.Contains(condition, "=") {
-				t.Fatalf("%s: Exclude[%d] has condition %q, expected KEY=value", path, i, condition)
+				return nil, fmt.Errorf("%s: Exclude[%d] has condition %q, expected KEY=value", path, i, condition)
 			}
 		}
 	}
-	return sidecar.Exclude
+	return sidecar.Exclude, nil
 }
 
 // restoreNonInheritable resets fields tagged with `inherit:"false"` to their leaf config values.
