@@ -43,7 +43,7 @@ class SourceConfig:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Beta]
     """
 
     @classmethod
@@ -73,7 +73,7 @@ class SourceConfigDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Beta]
     """
 
 

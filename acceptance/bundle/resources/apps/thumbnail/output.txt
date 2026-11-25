@@ -1,0 +1,84 @@
+
+=== Deploy with a thumbnail: the image is uploaded after the app is created
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.mykey
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests
+
+>>> [CLI] apps get myappname
+"/ajax-api/2.0/thumbnails/raw/apps/1000/SMALL_DEFAULT.png"
+
+=== State keeps only a hash of the image
+
+>>> jq .state["resources.apps.mykey"].state.thumbnail .databricks/bundle/default/resources.json
+"sha256:[HASH]"
+
+=== Redeploy with an unchanged image: no thumbnail request
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests
+
+=== New content at the same path: only the thumbnail is uploaded
+
+>>> [CLI] bundle plan
+update apps.mykey
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated apps.mykey
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests
+
+=== Deploy from a saved plan: the plan carries the image, not its hash
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated apps.mykey
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //apps ^//api/2.0/bundle
+iVBORw0KGgoA
+
+=== Remove thumbnail_path: the thumbnail is deleted
+
+>>> [CLI] bundle plan
+update apps.mykey
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated apps.mykey
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests
+
+>>> [CLI] apps get myappname
+null
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.mykey
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+>>> print_requests

@@ -52,6 +52,8 @@ func runAutoInstallSignalHelperProcess() {
 }
 
 func runAutoInstallSignalHelper(step string) os.Signal {
+	// The helper is a new process: it has the real clock, not the test's.
+	now = func() time.Time { return autoInstallTestNow }
 	if step == "lookup" {
 		// Only the signal ends the lookup.
 		gateTimeout = time.Hour

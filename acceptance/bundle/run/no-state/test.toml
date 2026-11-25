@@ -1,1 +1,1 @@
-Badness = "This complains about deployment state, but more important issue is that here is no bundle config at all, it should complain about that."
+Badness = "bundle run foo on a never-deployed bundle that defines no resource foo fails with 'resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?'. The empty-state check runs before the key is resolved, so an undefined key gets deploy advice; it should report that no resource with key foo is defined."

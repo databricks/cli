@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/shellquote"
@@ -428,46 +429,138 @@ func skillsOnlyCommand(inv installInvocation, it agentPlanItem) string {
 }
 
 // pluginFailureText returns the one-line reason and the recovery step for a
-// plugin agent that could not be set up.
+// plugin agent that could not be set up. The skill files alternative starts
+// with removing the plugin when the agent already has one, since --skills-only
+// skips such an agent.
 func pluginFailureText(ctx context.Context, inv installInvocation, it agentPlanItem, err error) (reason, recovery string) {
 	a := it.agent
+	skillFiles := skillsOnlyCommand(inv, it)
+	if pluginAlreadyInstalledFn(ctx, a, inv.scope) {
+		skillFiles = pluginRemovalStep(ctx, a, inv.scope) + ", then run: " + skillFiles
+	}
 	blocked, ok := errors.AsType[*installer.BlockedError](err)
 	if !ok {
-		return err.Error(), "Re-run " + agentRerun(inv, it, debugFlag) + " to see details, or install skill files instead: " + skillsOnlyCommand(inv, it)
+		return err.Error(), "Re-run " + agentRerun(inv, it, debugFlag) + " to see details, or install skill files instead: " + skillFiles
 	}
 	switch {
 	case blocked.TimedOut:
 		return fmt.Sprintf("'%s plugin' %s", a.Binary, blocked.Detail),
-			"Re-run " + agentRerun(inv, it) + " (an agent CLI's first start can be slow), or install skill files instead: " + skillsOnlyCommand(inv, it)
+			"Re-run " + agentRerun(inv, it) + " (an agent CLI's first start can be slow), or install skill files instead: " + skillFiles
 	case blocked.Reason == installer.ReasonCLINotOnPath:
 		if a.HasBinary(ctx) {
 			// The CLI is on PATH but has no working plugin command, e.g. a
 			// version from before plugins.
 			return fmt.Sprintf("'%s plugin' is not available (%s)", a.Binary, blocked.Detail),
-				fmt.Sprintf("Update the %s CLI to a version with the '%s plugin' command, then re-run %s. Or install skill files instead: %s", a.DisplayName, a.Binary, agentRerun(inv, it), skillsOnlyCommand(inv, it))
+				fmt.Sprintf("Update the %s CLI to a version with the '%s plugin' command, then re-run %s. Or install skill files instead: %s", a.DisplayName, a.Binary, agentRerun(inv, it), skillFiles)
 		}
 		return cliMissingReason(it),
-			fmt.Sprintf("Install or update the %s CLI so '%s' is on PATH, then re-run %s. Or install skill files instead: %s", a.DisplayName, a.Binary, agentRerun(inv, it), skillsOnlyCommand(inv, it))
+			fmt.Sprintf("Install or update the %s CLI so '%s' is on PATH, then re-run %s. Or install skill files instead: %s", a.DisplayName, a.Binary, agentRerun(inv, it), skillFiles)
 	case blocked.Reason == installer.ReasonShimExitedWithError:
 		// Detail carries the captured stderr and the commands that show the
 		// exit code; a plain re-run of the help may print only the help.
 		return fmt.Sprintf("'%s plugin --help' %s", a.Binary, blocked.Detail),
-			fmt.Sprintf("Once it exits with 0, re-run %s. Or install skill files instead: %s", agentRerun(inv, it), skillsOnlyCommand(inv, it))
+			fmt.Sprintf("Once it exits with 0, re-run %s. Or install skill files instead: %s", agentRerun(inv, it), skillFiles)
 	case blocked.Reason == installer.ReasonInstallFailed:
 		manual := installer.ManualPluginInstallCommands(a, it.scope)
 		return fmt.Sprintf("'%s plugin' failed: %s", a.Binary, blocked.Detail),
-			"Run '" + strings.Join(manual, "', then '") + "' to see the full error. Once they succeed, re-run " + agentRerun(inv, it) + " so the CLI records the plugin. Or install skill files instead: " + skillsOnlyCommand(inv, it)
+			"Run '" + strings.Join(manual, "', then '") + "' to see the full error. Once they succeed, re-run " + agentRerun(inv, it) + " so the CLI records the plugin. Or install skill files instead: " + skillFiles
 	default:
-		return err.Error(), "Install skill files instead: " + skillsOnlyCommand(inv, it)
+		return err.Error(), "Install skill files instead: " + skillFiles
 	}
 }
 
-// skipRecovery returns the recovery step for an agent the plan skipped. Every
-// skip is an agent without support for the project scope, so the step is the
-// command that sets up just this agent in the global scope.
+// skipRecovery returns the recovery step for an agent the plan skipped. An
+// agent skipped under --skills-only because it has the plugin gets the steps
+// that replace the plugin with skill files. Every other skip is an agent
+// without support for the project scope, so the step is the command that sets
+// up just this agent in the global scope.
 func skipRecovery(inv installInvocation, it agentPlanItem) string {
+	if it.pluginRemoval != "" {
+		return "To use skill files instead, " + it.pluginRemoval + ", then run: " + skillsOnlyCommand(inv, it)
+	}
 	inv.scope = installer.ScopeGlobal
 	return "To set up " + it.agent.DisplayName + " in the global scope, run: " + installCommand(inv, it)
+}
+
+// pluginRemovalStep is how the user removes the databricks plugin an agent
+// already has. 'databricks aitools uninstall' removes only a plugin recorded in
+// the CLI's install state, runs the agent's CLI to do it, and clears the
+// record. For Claude Code the CLI reads Claude Code's own manifest, so each
+// databricks plugin there that the record does not cover (one added in Claude
+// Code itself, from any marketplace) gets Claude Code's own command, which
+// also needs its CLI on PATH. A managed plugin comes from the organization's
+// managed settings, which neither CLI can change, so an administrator has to
+// remove it. An agent without a manifest reader (Codex, Copilot) has each
+// databricks plugin its own config records (see configPluginMarketplaces) and
+// the one the record names (see pluginAlreadyInstalled). A plugin of the
+// config that the record does not cover gets the agent's own command; the
+// record's plugin, or the record alone, has to be removed through 'databricks
+// aitools uninstall', which also clears the record. Both need the agent's CLI
+// on PATH.
+func pluginRemovalStep(ctx context.Context, a *agents.Agent, scope string) string {
+	uninstall := fmt.Sprintf("databricks aitools uninstall --scope=%s --agents=%s", scope, a.Name)
+	if !a.HasPluginManifestReader() {
+		rec, recorded := installer.RecordedPlugin(ctx, scope, a.Name)
+		var own []string
+		for _, marketplace := range configPluginMarketplaces(ctx, a, scope) {
+			if recorded && marketplace == rec.Marketplace {
+				continue
+			}
+			own = append(own, installer.PluginUninstallCommand(a, marketplace, ""))
+		}
+		if len(own) > 0 && !recorded {
+			commands := strings.Join(own, "', then '")
+			if !a.HasBinary(ctx) {
+				return fmt.Sprintf("put '%s' on PATH and remove the plugin with '%s' first (this CLI did not install it)", a.Binary, commands)
+			}
+			return fmt.Sprintf("remove the plugin first with '%s' (this CLI did not install it)", commands)
+		}
+		commands := strings.Join(append([]string{uninstall}, own...), "', then '")
+		if !a.HasBinary(ctx) {
+			clears := "that"
+			if len(own) > 0 {
+				clears = "'" + uninstall + "'"
+			}
+			return fmt.Sprintf("put '%s' on PATH and remove the plugin with '%s' first (only %s clears this CLI's record of it)", a.Binary, commands, clears)
+		}
+		return fmt.Sprintf("remove the plugin first with '%s'", commands)
+	}
+	installs, err := manifestPluginInstalls(ctx, a, scope)
+	isManaged := func(install agents.PluginInstall) bool { return install.Scope == agents.ClaudeScopeManaged }
+	managed := slices.ContainsFunc(installs, isManaged)
+	installs = slices.DeleteFunc(installs, isManaged)
+	var step string
+	switch {
+	case managed && len(installs) == 0:
+		return fmt.Sprintf("ask an administrator to remove the databricks plugin first (your organization manages it for %s, so you cannot remove it)", a.DisplayName)
+	case !a.HasBinary(ctx):
+		step = fmt.Sprintf("remove the databricks plugin in %s first ('%s' is not on PATH, so this CLI cannot remove it)", a.DisplayName, a.Binary)
+	case err != nil:
+		// The skip came from the CLI's record (see pluginAlreadyInstalled).
+		return fmt.Sprintf("remove the plugin first with '%s'", uninstall)
+	default:
+		rec, recorded := installer.RecordedPlugin(ctx, scope, a.Name)
+		var steps []string
+		usesUninstall := false
+		for _, install := range installs {
+			if recorded && install.Marketplace == rec.Marketplace && install.Scope == rec.Scope {
+				if !usesUninstall {
+					steps = append(steps, uninstall)
+					usesUninstall = true
+				}
+				continue
+			}
+			steps = append(steps, installer.PluginUninstallCommand(a, install.Marketplace, install.Scope))
+		}
+		step = "remove the plugin first with '" + strings.Join(steps, "', then '") + "'"
+		if !usesUninstall {
+			step += " (this CLI did not install it)"
+		}
+	}
+	if managed {
+		step += ", and ask an administrator to remove the one your organization manages"
+	}
+	return step
 }
 
 // cliMissingReason is why an agent whose CLI is not on PATH does not get the

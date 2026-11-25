@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -512,4 +513,50 @@ func TestFilesAPIErrorText(t *testing.T) {
 
 	nonStandard := apierr.FromHTTPError(520, nil, []byte("<html>oops</html>"))
 	assert.EqualError(t, describeFilesError(nonStandard, "read", "/p"), "read /p: Files API returned HTTP 520")
+}
+
+// failThenNotFound answers the first request with status and every later one
+// with 404, as when a delete is retried after its first attempt was or was not
+// applied.
+func failThenNotFound(status int) testserver.HandlerFunc {
+	calls := 0
+	return func(testserver.Request) any {
+		calls++
+		if calls == 1 {
+			return testserver.Response{StatusCode: status, Body: map[string]string{"error_code": "INJECTED", "message": "injected"}}
+		}
+		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]string{"error_code": "NOT_FOUND", "message": "not found"}}
+	}
+}
+
+func TestFilesClientDeleteNotFoundAfterRetry(t *testing.T) {
+	for _, tc := range []struct {
+		status  int
+		deleted bool
+	}{
+		// The first attempt may have been applied, so the 404 means it deleted the path.
+		{http.StatusGatewayTimeout, true},
+		{http.StatusBadGateway, true},
+		{http.StatusServiceUnavailable, true},
+		{http.StatusRequestTimeout, true},
+		// A throttled attempt was not applied, so the 404 means the path is missing.
+		{http.StatusTooManyRequests, false},
+	} {
+		t.Run(strconv.Itoa(tc.status), func(t *testing.T) {
+			server := testserver.New(t)
+			server.Handle("DELETE", "/api/2.0/fs/files/{path...}", failThenNotFound(tc.status))
+			server.Handle("DELETE", "/api/2.0/fs/directories/{path...}", failThenNotFound(tc.status))
+			f := newFilesClientWithFastRetries(t, server)
+
+			fileErr := f.deleteFile(t.Context(), "file")
+			dirErr := f.deleteDirectory(t.Context(), "dir")
+			if tc.deleted {
+				assert.NoError(t, fileErr)
+				assert.NoError(t, dirErr)
+			} else {
+				assert.ErrorIs(t, fileErr, fs.ErrNotExist)
+				assert.ErrorIs(t, dirErr, fs.ErrNotExist)
+			}
+		})
+	}
 }

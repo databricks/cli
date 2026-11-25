@@ -1,14 +1,18 @@
 package aitools
 
 import (
+	"context"
+	"errors"
 	"maps"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -116,6 +120,116 @@ func TestPlanToolsKeepsSkillsWithoutInstallState(t *testing.T) {
 	assert.True(t, tools.fresh())
 }
 
+func TestPlanToolsKeepsPluginInstalledWithAgentCLI(t *testing.T) {
+	// The records Codex CLI 0.171.0 and Copilot CLI 1.0.x write for
+	// `codex plugin add` and `copilot plugin install`. Each records the
+	// plugin both in its config and in its plugin cache. {{home}} stands for
+	// the home directory.
+	tests := []struct {
+		name  string
+		file  string
+		body  string
+		cache string
+	}{
+		{
+			name: "codex",
+			file: filepath.Join(".codex", "config.toml"),
+			body: `[plugins."databricks@databricks-agent-skills"]
+enabled = true
+`,
+			cache: filepath.Join(".codex", "plugins", "cache", "databricks-agent-skills", "databricks", "0.2.50"),
+		},
+		{
+			name: "copilot",
+			file: filepath.Join(".copilot", "config.json"),
+			body: `// This file is managed automatically.
+{"installedPlugins": [{"name": "databricks", "marketplace": "databricks-agent-skills", "version": "0.2.50", "cache_path": "{{home}}/.copilot/installed-plugins/databricks-agent-skills/databricks"}]}
+`,
+			cache: filepath.Join(".copilot", "installed-plugins", "databricks-agent-skills", "databricks"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			home := autoInstallHome(t)
+			require.NoError(t, os.RemoveAll(filepath.Join(home, ".cursor")))
+			require.NoError(t, os.MkdirAll(filepath.Join(home, filepath.Dir(tt.file)), 0o755))
+			body := strings.ReplaceAll(tt.body, "{{home}}", filepath.ToSlash(home))
+			require.NoError(t, os.WriteFile(filepath.Join(home, tt.file), []byte(body), 0o644))
+			require.NoError(t, os.MkdirAll(filepath.Join(home, tt.cache), 0o755))
+			// Claude Code installs through its CLI, which is not run here, so
+			// the plan is the agent whose CLI is not on PATH.
+			setAgentCLIsStoppable(t, false)
+
+			tools, err := planTools(t.Context(), autoinstall.State{})
+			require.NoError(t, err)
+			require.Len(t, tools.plan, 1)
+			assert.Equal(t, deliveryPlugin, tools.plan[0].delivery)
+			assert.True(t, tools.plan[0].cliMissing)
+			assert.Empty(t, tools.newAgents())
+
+			forbidSkillsInstall(t)
+			// Raw skills an earlier run gave the agent would show every skill
+			// twice next to the plugin, so they are removed.
+			var cleaned []string
+			origCleanup := cleanupLegacyFn
+			t.Cleanup(func() { cleanupLegacyFn = origCleanup })
+			cleanupLegacyFn = func(_ context.Context, a *agents.Agent, scope string) error {
+				cleaned = append(cleaned, a.Name+" "+scope)
+				return nil
+			}
+			result, err := tools.install(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, protos.AitoolsAutoInstallOutcomeInstalled, result.outcome)
+			assert.Empty(t, result.agents)
+			assert.Equal(t, []string{tools.plan[0].agent.Name + " " + installer.ScopeGlobal}, cleaned)
+		})
+	}
+}
+
+// A plugin record that outlived the agent's plugin cache is not an installed
+// plugin: the agent loads none, so it gets raw skills. Codex keeps a
+// [plugins."databricks@..."] table, Copilot an installedPlugins entry whose
+// cache_path is gone (github/copilot-cli#4039).
+func TestPlanToolsGivesSkillsForPluginRecordWithoutCache(t *testing.T) {
+	tests := []struct {
+		agent string
+		file  string
+		body  string
+	}{
+		{
+			agent: agents.NameCodex,
+			file:  filepath.Join(".codex", "config.toml"),
+			body: `[plugins."databricks@databricks-agent-skills"]
+enabled = true
+`,
+		},
+		{
+			agent: agents.NameCopilot,
+			file:  filepath.Join(".copilot", "config.json"),
+			body: `// This file is managed automatically.
+{"installedPlugins": [{"name": "databricks", "marketplace": "databricks-agent-skills", "version": "0.2.50", "cache_path": "{{home}}/.copilot/installed-plugins/databricks-agent-skills/databricks"}]}
+`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.agent, func(t *testing.T) {
+			home := autoInstallHome(t)
+			require.NoError(t, os.RemoveAll(filepath.Join(home, ".cursor")))
+			config := filepath.Join(home, tt.file)
+			require.NoError(t, os.MkdirAll(filepath.Dir(config), 0o755))
+			body := strings.ReplaceAll(tt.body, "{{home}}", filepath.ToSlash(home))
+			require.NoError(t, os.WriteFile(config, []byte(body), 0o644))
+			setAgentCLIsStoppable(t, false)
+
+			tools, err := planTools(t.Context(), autoinstall.State{})
+			require.NoError(t, err)
+			require.Len(t, tools.plan, 1)
+			assert.Equal(t, tt.agent, tools.plan[0].agent.Name)
+			assert.Equal(t, deliverySkills, tools.plan[0].delivery)
+		})
+	}
+}
+
 func TestChangedAgents(t *testing.T) {
 	autoInstallHome(t)
 	dir := saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})
@@ -160,4 +274,47 @@ func TestSkipsAutoInstall(t *testing.T) {
 	for _, cmd := range []*cobra.Command{jobsList, authDescribe} {
 		assert.False(t, skipsAutoInstall(cmd), cmd.CommandPath())
 	}
+}
+
+// The update runs the plugin updates before it refuses the raw skills, so a
+// refusal still reports the plugins it updated.
+func TestUpdateToolsReportsPluginsUpdatedBeforeARefusal(t *testing.T) {
+	autoInstallHome(t)
+	noTelemetryAuth(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.3.0")
+	resetUpdatePluginSeams(t)
+	dir := saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})
+	before, err := installer.LoadState(dir)
+	require.NoError(t, err)
+
+	origUpdateSkills := updateSkillsFn
+	t.Cleanup(func() { updateSkillsFn = origUpdateSkills })
+	updateSkillsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.UpdateOptions) (*installer.UpdateResult, error) {
+		return nil, &installer.RefusedError{Err: errors.New("keeping the installed skills")}
+	}
+	pluginUpdated := false
+	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) {
+		if !pluginUpdated {
+			return nil, nil
+		}
+		state, err := installer.LoadState(dir)
+		require.NoError(t, err)
+		rec := state.Plugins[agents.NameClaudeCode]
+		rec.Version = "0.3.0"
+		state.Plugins[agents.NameClaudeCode] = rec
+		require.NoError(t, installer.SaveState(dir, state))
+		return []installer.PluginUpdate{{Agent: "Claude Code", Version: "0.3.0"}}, nil
+	}
+	ctx := cmdio.MockDiscard(t.Context())
+
+	// Nothing changed: the refusal is returned, which auto-install reports
+	// as kept.
+	_, err = updateTools(ctx, dir, before)
+	assert.ErrorAs(t, err, new(*installer.RefusedError))
+
+	pluginUpdated = true
+	result, err := updateTools(ctx, dir, before)
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeInstalled, result.outcome)
+	assert.Equal(t, []string{"Claude Code"}, result.agents)
 }

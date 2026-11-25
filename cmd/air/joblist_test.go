@@ -340,7 +340,7 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 			want: "RUNNING",
 		},
 		{
-			name:     "a pending task in a running run is waiting for compute",
+			name:     "a pending task in a running run appears pending",
 			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 			tasks: []jobs.RunTask{
 				finished(notebookTask("prep", 11), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
@@ -350,7 +350,7 @@ func TestTaskRunReportsTheTasksOwnState(t *testing.T) {
 			want: "PENDING",
 		},
 		{
-			name:     "a queued task in a running run is waiting for compute",
+			name:     "a queued task in a running run appears pending",
 			runState: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 			tasks: []jobs.RunTask{
 				finished(notebookTask("prep", 11), jobs.RunLifeCycleStateTerminated, jobs.RunResultStateSuccess),
@@ -459,14 +459,14 @@ func TestRunLevelWaitingStatesAreReportedAsSuch(t *testing.T) {
 	} {
 		t.Run(string(life), func(t *testing.T) {
 			run := &jobs.Run{RunId: 1, State: &jobs.RunState{LifeCycleState: life}, Tasks: []jobs.RunTask{aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1)}}
-			assert.False(t, runWaitingForCompute(run))
+			assert.False(t, runAppearsPending(run))
 			assert.Equal(t, string(life), displayRunStatus(run))
 			assert.Equal(t, string(life), detailedDisplayRunStatus(run, ""))
 		})
 	}
 
 	pending := &jobs.Run{RunId: 1, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}}
-	assert.Equal(t, waitingForComputeStatus, detailedDisplayRunStatus(pending, ""))
+	assert.Equal(t, waitingForWorkloadStatus, detailedDisplayRunStatus(pending, ""))
 
 	// The notebook-first DAB shape: train waits on prep, not on compute.
 	blocked := &jobs.Run{
@@ -488,5 +488,5 @@ func TestRunLevelWaitingStatesAreReportedAsSuch(t *testing.T) {
 			finished(aiRuntimeTask("train", 12, "e", "GPU_1xA10", 1), jobs.RunLifeCycleStateQueued, ""),
 		},
 	}
-	assert.Equal(t, waitingForComputeStatus, detailedDisplayRunStatus(taskRun(queued, "train"), ""))
+	assert.Equal(t, waitingForWorkloadStatus, detailedDisplayRunStatus(taskRun(queued, "train"), ""))
 }

@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class GoogleAdsCustomReportOptions:
     """
-    :meta private: [EXPERIMENTAL]
-
     User-defined custom report for the Google Ads connector. Mirrors the
     resource + fields + segments + metrics model that Google Ads GAQL exposes.
     The customer account this report runs against is supplied by the source
@@ -30,7 +28,7 @@ class GoogleAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Required) Google Ads resource to query (e.g. "ad_group_ad",
+    [Beta] (Required) Google Ads resource to query (e.g. "ad_group_ad",
     "keyword_view", "search_term_view"). Must be a resource that has
     metrics. Values are validated against Google Ads' field-service
     catalog at pipeline plan time.
@@ -40,7 +38,7 @@ class GoogleAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Metric fields to select (e.g. "metrics.clicks",
+    [Beta] (Optional) Metric fields to select (e.g. "metrics.clicks",
     "metrics.cost_micros"). Multiple values are joined into the GAQL
     SELECT clause.
     """
@@ -49,7 +47,7 @@ class GoogleAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Resource fields to select, in fully-qualified GAQL form
+    [Beta] (Optional) Resource fields to select, in fully-qualified GAQL form
     (e.g. "ad_group_ad.ad.id", "ad_group_ad.status"). Multiple values are
     joined into the GAQL SELECT clause.
     """
@@ -58,7 +56,7 @@ class GoogleAdsCustomReportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Segment fields to select (e.g. "segments.date",
+    [Beta] (Optional) Segment fields to select (e.g. "segments.date",
     "segments.device"). Must include at least one of segments.date,
     segments.week, or segments.month — that segment is used as the
     incremental cursor for the table.
@@ -79,7 +77,7 @@ class GoogleAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Required) Google Ads resource to query (e.g. "ad_group_ad",
+    [Beta] (Required) Google Ads resource to query (e.g. "ad_group_ad",
     "keyword_view", "search_term_view"). Must be a resource that has
     metrics. Values are validated against Google Ads' field-service
     catalog at pipeline plan time.
@@ -89,7 +87,7 @@ class GoogleAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Metric fields to select (e.g. "metrics.clicks",
+    [Beta] (Optional) Metric fields to select (e.g. "metrics.clicks",
     "metrics.cost_micros"). Multiple values are joined into the GAQL
     SELECT clause.
     """
@@ -98,7 +96,7 @@ class GoogleAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Resource fields to select, in fully-qualified GAQL form
+    [Beta] (Optional) Resource fields to select, in fully-qualified GAQL form
     (e.g. "ad_group_ad.ad.id", "ad_group_ad.status"). Multiple values are
     joined into the GAQL SELECT clause.
     """
@@ -107,7 +105,7 @@ class GoogleAdsCustomReportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Segment fields to select (e.g. "segments.date",
+    [Beta] (Optional) Segment fields to select (e.g. "segments.date",
     "segments.device"). Must include at least one of segments.date,
     segments.week, or segments.month — that segment is used as the
     incremental cursor for the table.

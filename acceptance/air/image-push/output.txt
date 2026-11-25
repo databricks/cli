@@ -8,10 +8,13 @@ Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.local
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image nvidia/cuda:13.4.1
+Source image nvidia/cuda:13.4.1 is 7.1 GB uncompressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 Docker push progress
 Pushed image.
+Compressed image size: 3.1 GB (layers: 2).
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 === inferred region and workspace ID requests
@@ -31,9 +34,10 @@ Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.
 
 === docker commands
 image ls --quiet nvidia/cuda:13.4.1
-image inspect --format {{.Os}}/{{.Architecture}} nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} nvidia/cuda:13.4.1
 tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 
 === missing image is pulled for AIR; destination defaults to source
 
@@ -45,10 +49,13 @@ Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Pulling source image example/image:v1 for linux/amd64
 Docker pull progress
+Source image example/image:v1 is 7.1 GB uncompressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
+Compressed image size: 3.1 GB (layers: 2).
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 === forced pull and JSON output
@@ -61,10 +68,13 @@ Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Pulling source image example/image:v1 for linux/amd64
 Docker pull progress
+Source image example/image:v1 is 7.1 GB uncompressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
+Compressed image size: 3.1 GB (layers: 2).
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 
 >>> jq -e {v, data} [TEST_TMP_DIR]/home/result.json
 {
@@ -74,6 +84,45 @@ Pushed image.
     "registry_image": "[WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1"
   }
 }
+
+=== image with WORKDIR warns but is pushed
+
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Source image example/image:v1 is 7.1 GB uncompressed.
+Warning: source image example/image:v1 sets WORKDIR /app. Use absolute paths in your command and scripts. See how AI Runtime command paths work:
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command
+  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Compressed image size: 3.1 GB (layers: 2).
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
+
+=== image with WORKDIR / does not warn
+
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Source image example/image:v1 is 7.1 GB uncompressed.
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Compressed image size: 3.1 GB (layers: 2).
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 === daemon failure must not pull
 
@@ -98,6 +147,24 @@ Using local source image example/image:v1
 Docker inspect failed
 Error: inspect source image example/image:v1: exit status 1
 
+=== unreadable image sizes warn but the image is pushed
+
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Warning: could not read the uncompressed size of source image example/image:v1 (got "").
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Warning: could not read the compressed size of [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1: no such manifest: [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
+
 === incompatible local image must not be pushed
 
 >>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
@@ -120,6 +187,22 @@ Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-da
 Pulling source image example/image:v1 for linux/amd64
 Docker pull progress
 Error: source image example/image:v1 has platform "linux/arm64"; AIR requires linux/amd64: use --pull to fetch a compatible image, or rebuild the source for linux/amd64
+
+=== rejected push still links the registry limits
+
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Source image example/image:v1 is 7.1 GB uncompressed.
+Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+denied: image exceeds the registry size limit
+If the registry rejected the image for its size, see the Databricks Artifact Registry image limits: https://docs.databricks.com/aws/en/artifact-registry/#limitations
+Error: push image [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1: exit status 1
 
 === pull failure must not be pushed
 
@@ -193,25 +276,47 @@ Error: invalid image repository name: catalog.schema.artifact must be 255 charac
 
 === all docker commands
 image ls --quiet nvidia/cuda:13.4.1
-image inspect --format {{.Os}}/{{.Architecture}} nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} nvidia/cuda:13.4.1
 tag nvidia/cuda:13.4.1 [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 push [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
 image ls --quiet example/image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 image ls --quiet example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 image ls --quiet example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+manifest inspect --verbose [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
 pull --platform linux/amd64 example/image:v1
-image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}} example/image:v1
+tag example/image:v1 [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
+push [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 pull --platform linux/amd64 example/image:v1
 
 === in a Claude Code session the auth docker configure child adds no install hint
@@ -225,10 +330,13 @@ Configured Docker credential helper for [WORKSPACE_ID].container.us-west-2.local
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 Using local source image example/image:v1
+Source image example/image:v1 is 7.1 GB uncompressed.
 Tagging image as [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Pushing image to [WORKSPACE_ID].container.us-west-2.localhost/main.training.image:v1
 Docker push progress
 Pushed image.
+Compressed image size: 3.1 GB (layers: 2).
+For Databricks Artifact Registry image limits, see https://docs.databricks.com/aws/en/artifact-registry/#limitations
 Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
 
 >>> musterr databricks air images push -p pat-test -s example/image:v1 --catalog main --schema training

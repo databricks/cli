@@ -1,0 +1,35 @@
+# Local-only: the test server kills the CLI mid-deploy (kill_after.py), which a real workspace cannot.
+Cloud = false
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]
+
+# KillCaller needs the CLI's pid. A kill leaves no state in DMS to recover from, so DMS is not run.
+Env.DATABRICKS_CLI_TEST_PID = "1"
+EnvMatrix.DMS = [""]
+
+# Normalize how a killed process shows up on each OS, as in bundle/deploy/wal.
+[[Repls]]
+Old = 'script: line \d+:\s+\d+ Killed(: 9)?\s+"\$@"'
+New = '[PROCESS_KILLED]'
+
+[[Repls]]
+Old = '(\n>>> errcode [^\n]+\n)\nExit code:'
+New = "${1}[PROCESS_KILLED]\n\nExit code:"
+
+[[Repls]]
+Old = 'Exit code: 137'
+New = 'Exit code: [KILLED]'
+
+[[Repls]]
+Old = '(\[PROCESS_KILLED\]\n\nExit code: )1'
+New = '${1}[KILLED]'
+
+# On Windows a killed CLI leaves no bash "Killed" line. The kill lands right after the
+# "Uploading bundle files" line, so it is followed directly by "Exit code: 1".
+[[Repls]]
+Old = '(Uploading bundle files to [^\n]+)\n\nExit code: 1'
+New = "${1}\n[PROCESS_KILLED]\n\nExit code: [KILLED]"

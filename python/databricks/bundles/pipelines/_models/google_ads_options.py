@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class GoogleAdsOptions:
     """
-    :meta private: [EXPERIMENTAL]
-
     Google Ads specific options for ingestion (object-level).
     When set, these values override the corresponding fields in GoogleAdsConfig
     (source_configurations).
@@ -29,7 +27,7 @@ class GoogleAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
+    [Beta] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
     """
@@ -38,7 +36,7 @@ class GoogleAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    [Beta] (Optional) Custom report definition. When set, the table is treated as a
     user-defined Google Ads custom report: the connector synthesizes a GAQL
     query from the resource, fields, segments, and metrics specified here.
     When unset, the table must match one of the connector's prebuilt sources.
@@ -48,7 +46,7 @@ class GoogleAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.
+    [Beta] (Optional) Number of days to look back for report tables to capture late-arriving data.
     If not specified, defaults to 30 days.
     """
 
@@ -56,7 +54,7 @@ class GoogleAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    [Beta] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 2 years of historical data.
     """
@@ -76,7 +74,7 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
+    [Beta] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
     """
@@ -85,7 +83,7 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    [Beta] (Optional) Custom report definition. When set, the table is treated as a
     user-defined Google Ads custom report: the connector synthesizes a GAQL
     query from the resource, fields, segments, and metrics specified here.
     When unset, the table must match one of the connector's prebuilt sources.
@@ -95,7 +93,7 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.
+    [Beta] (Optional) Number of days to look back for report tables to capture late-arriving data.
     If not specified, defaults to 30 days.
     """
 
@@ -103,7 +101,7 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    [Beta] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 2 years of historical data.
     """

@@ -29,6 +29,8 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/shellquote"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
@@ -195,13 +197,14 @@ func NewMcpServeCmd() *cobra.Command {
 	cmd.Flags().StringVar(&f.service, strings.TrimPrefix(mcpconfig.ServiceFlag, "--"), "",
 		"Full name of the MCP service, for example system.ai.github")
 	cmd.Flags().StringVar(&f.agent, strings.TrimPrefix(mcpconfig.AgentFlag, "--"), "",
-		"Registry name of the calling agent, used only for the User-Agent")
+		"Registry name of the calling agent, for the User-Agent and telemetry")
 	return cmd
 }
 
 // runMcpServe runs the binding checks, then bridges stdio to the service until stdin closes or a
 // signal arrives.
 func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
+	start := time.Now()
 	if cmd.Flag("output").Changed {
 		return errors.New("--output does not apply to serve: its stdout carries the MCP protocol")
 	}
@@ -220,11 +223,14 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if err != nil {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
+	agent := proxyAgentType(f.agent)
+	var authorization string
 	cfg, entry, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
-		Profile: profileName,
-		Service: f.service,
-		State:   state,
-		Stderr:  cmd.ErrOrStderr(),
+		Profile:              profileName,
+		Service:              f.service,
+		State:                state,
+		Stderr:               cmd.ErrOrStderr(),
+		CaptureAuthorization: func(header string) { authorization = header },
 	})
 	if err != nil {
 		return serveBindFailure(cmd, profileName, err)
@@ -236,11 +242,12 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	defer stop()
 	// The bridge and the sign-in client share the guard, so a refresh failure in either one stops the proxy.
 	// Each token fetch re-checks the binding first; see rebindingAuthenticate.
-	authenticate := rebindingAuthenticate(bindingCheck(cmd.Context(), state, entry, f.service, profileName, cfg), cfg.Authenticate)
+	check := bindingCheck(cmd.Context(), state, entry, f.service, profileName, cfg)
+	authenticate := rebindingAuthenticate(check, cfg.Authenticate)
 	refresh := &refreshGuard{authenticate: authenticate, profile: profileName, pinnedFile: pinnedFile, cancel: stop}
 
 	// The sign-in client is built only when serveChallenge reads the service or signs in. A server whose record says it
-	// needs no sign-in makes no call at start.
+	// needs no sign-in skips the startup service lookup.
 	var w *databricks.WorkspaceClient
 	if entry == nil || entry.SignInRequired {
 		w, err = guardedClient(cfg, refresh)
@@ -248,7 +255,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 			return serveFailure(cmd, err, 1)
 		}
 	}
-	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile}, cmd.ErrOrStderr())
+	challenge, err := serveChallenge(ctx, serveTarget{w: w, entry: entry, profile: profileName, service: f.service, pinnedFile: pinnedFile, agent: agent}, cmd.ErrOrStderr())
 	if err != nil {
 		// A rejected token stops serve by cancelling ctx, so the refresh failure is checked before the signal, and its
 		// message is the one that names the login.
@@ -262,8 +269,19 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		// serveChallenge fails only on an auth failure (see lookupAtStart), which exits serveBindStatus.
 		return serveFailure(cmd, err, serveBindStatus)
 	}
+	// Only a serving start is logged, and it is uploaded now rather than at exit: the exit upload cannot refresh an expired
+	// token, so a session idle past the token's life would lose its start. The upload authenticates with the profile as it
+	// was bound here, with a config of its own that never refreshes a token, since the session's config refreshes its token.
+	if logMcpEvent(ctx, proxyStartedEvent(agent, f.service)) {
+		setUploadConfig(ctx, profileName, cfg.ConfigFile, cfg, authorization)
+		uploadAtStart(ctx, cmd, start)
+		if ctx.Err() != nil {
+			telemetry.SkipUpload(ctx)
+			return nil
+		}
+	}
 
-	return serveProxy(ctx, cmd, refresh, proxy.Options{
+	err = serveProxy(ctx, cmd, refresh, proxy.Options{
 		In:       cmd.InOrStdin(),
 		Out:      cmd.OutOrStdout(),
 		Err:      cmd.ErrOrStderr(),
@@ -278,6 +296,29 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 		},
 		Challenge: challenge,
 	})
+	if !telemetry.Disabled(ctx) && len(telemetry.BufferedEvents(ctx)) > 0 {
+		dropUploadIfRebound(cmd.Context(), check, profileName)
+	}
+	return err
+}
+
+// dropUploadIfRebound drops exit telemetry if the profile no longer matches
+// the workspace that serve bound. It uses the same check as each token fetch.
+func dropUploadIfRebound(ctx context.Context, check func() error, profileName string) {
+	if err := checkBindingWithRetry(check); err != nil {
+		log.Debugf(ctx, "telemetry: profile %s no longer matches the binding serve started with; not uploading telemetry", profileName)
+		telemetry.SkipUpload(ctx)
+	}
+}
+
+// uploadAtStart uploads the events logged so far, which at serve's start is its PROXY_STARTED. The upload waits for the
+// service, bounded by its timeout, so the proxy starts after it. A failed upload keeps its events for the exit upload.
+// The run is still going, so its exit code is 0.
+func uploadAtStart(ctx context.Context, cmd *cobra.Command, start time.Time) {
+	err := telemetry.Upload(ctx, root.TelemetryExecutionContext(cmd, start, 0))
+	if err != nil {
+		log.Debugf(ctx, "telemetry: upload at start failed: %s", err)
+	}
 }
 
 // bindingCheck returns the check that runs before each token is fetched. With an install record, entry, it checks the
@@ -354,8 +395,8 @@ func (g guardCredentials) Configure(context.Context, *config.Config) (credential
 	return credentials.CredentialsProviderFn(g.refresh.authenticateCall), nil
 }
 
-// serveTarget is the server that a serve session bridges: its service, the bound profile, the install record, and the
-// config file it is pinned to. w is the profile's client, which must be guardedClient's.
+// serveTarget is the server that a serve session bridges: its service, the bound profile, the install record, the config
+// file it is pinned to, and the agent that started it. w is the profile's client, which must be guardedClient's.
 type serveTarget struct {
 	// w is nil when entry says the service needs no sign-in. serveChallenge returns before it would use it then.
 	w          *databricks.WorkspaceClient
@@ -363,6 +404,7 @@ type serveTarget struct {
 	profile    string
 	service    string
 	pinnedFile string
+	agent      protos.AitoolsAgentType
 }
 
 // serveChallenge returns the sign-in handling of a service that needs provider sign-in, or nil for
@@ -405,6 +447,7 @@ func serveChallenge(ctx context.Context, t serveTarget, errOut io.Writer) (*prox
 		LogoutCommand: mcpLogoutHint(t.service, t.profile, t.pinnedFile),
 		PinnedFile:    t.pinnedFile,
 		SignIn:        serveSignIn(t),
+		Recorder:      mcpProxyTelemetry{agent: t.agent, service: t.service},
 	}, nil
 }
 
