@@ -192,8 +192,11 @@ on code the change adds or modifies, not on pre-existing issues next to it.
    a quirk, check that the other callers of the same API agree with it.
    When a comment or `Badness` note says something is disabled until a bug
    is fixed ("Re-enable once", "known issue, see #N"), check that the bug
-   still exists: `git log -S` a phrase from the note to find a fix, and
-   run the disabled steps in a scratch copy.
+   still exists. `git log -S` a phrase from the note finds the commit that
+   added it, but not a fix that left the note in place, so search
+   `<that commit>..origin/main` for one: `git log -S` the API or helper
+   the note names and `--grep` its `#N`. Then run the disabled steps in a
+   scratch copy.
    Table: `line | what the comment claims | what the code does | precise
    enough?`
 9. **Tests.** Review test code as carefully as the code under test.
