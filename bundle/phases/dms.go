@@ -266,8 +266,9 @@ func logDeploymentVersion(ctx context.Context, b *bundle.Bundle) {
 	cmdio.LogString(ctx, "Current Deployment Version: "+workspaceurls.DeploymentURL(*baseURL, deploymentID, version))
 }
 
-// bundleMetadata describes the bundle and workspace without deployed file metadata.
-func bundleMetadata(b *bundle.Bundle) dms.Metadata {
+// deploymentMetadataForBind describes the bundle and workspace without deployed file metadata.
+// Bind uses it only to create a deployment: updating an existing one with it would clear file_path.
+func deploymentMetadataForBind(b *bundle.Bundle) dms.Metadata {
 	p := dms.Metadata{
 		DisplayName: b.Config.Bundle.Name,
 		TargetName:  b.Config.Bundle.Target,
@@ -288,7 +289,7 @@ func bundleMetadata(b *bundle.Bundle) dms.Metadata {
 // deploymentMetadata describes the bundle this deploy came from and where it
 // landed, mirroring what bundle/deploy/metadata computes for the metadata file.
 func deploymentMetadata(b *bundle.Bundle) (dms.Metadata, error) {
-	p := bundleMetadata(b)
+	p := deploymentMetadataForBind(b)
 	ws := p.Workspace
 	ws.FilePath = b.Config.Workspace.FilePath
 	// With an immutable folder, file_path is a reference to the snapshot, which only
