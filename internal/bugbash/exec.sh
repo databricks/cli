@@ -76,28 +76,33 @@ if [ -z "$last_successful_run_id" ]; then
   exit 1
 fi
 
-# Create a temporary directory to download and extract the artifact.
-dir=$(mktemp -d)
+# Download the release archives into ./bugbash relative to where the script is
+# run. This is a stable location (not a temp dir) so `databricks ssh connect` can
+# point its --releases-dir at the downloaded CLI archives. Use an absolute path
+# so the reference stays valid if the user cd's elsewhere in the bugbash shell.
+releases_dir="$PWD/bugbash"
+rm -rf "$releases_dir"
+mkdir -p "$releases_dir"
 
 # Download the artifact.
 echo "Downloading the snapshot build..."
-gh run --repo databricks/cli download "$last_successful_run_id" --name cli --dir "$dir/.download"
+gh run --repo databricks/cli download "$last_successful_run_id" --name cli --dir "$releases_dir"
 
-# Extract the archive for this platform.
+# Extract the archive for this platform into a temporary directory.
 archive=$(cli_snapshot_archive)
-if [ ! -f "$dir/.download/$archive" ]; then
+if [ ! -f "$releases_dir/$archive" ]; then
     echo "Archive not found: $archive"
     echo "Available archives:"
-    ls "$dir/.download/"
+    ls "$releases_dir/"
     exit 1
 fi
 
-mkdir -p "$dir/.bin"
-tar -xzf "$dir/.download/$archive" -C "$dir/.bin"
+bin_dir=$(mktemp -d)
+tar -xzf "$releases_dir/$archive" -C "$bin_dir"
 
 # Make CLI available on $PATH.
-chmod +x "$dir/.bin/databricks"
-export PATH="$dir/.bin:$PATH"
+chmod +x "$bin_dir/databricks"
+export PATH="$bin_dir:$PATH"
 
 # Set the prompt to indicate the bugbash environment and exec.
 export PS1="(bugbash $BRANCH) \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
@@ -123,6 +128,13 @@ echo "To load completions in your current shell session:"
 echo ""
 echo "  source /opt/homebrew/etc/profile.d/bash_completion.sh"
 echo "  source <(databricks completion bash)"
+echo ""
+echo "=================================================================="
+echo ""
+echo "To test 'databricks ssh connect', point --releases-dir at the downloaded"
+echo "archives:"
+echo ""
+echo "  databricks ssh connect ... --releases-dir $releases_dir"
 echo ""
 echo "=================================================================="
 echo ""
