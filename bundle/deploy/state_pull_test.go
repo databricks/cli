@@ -44,7 +44,7 @@ type statePullOpts struct {
 }
 
 func testStatePull(t *testing.T, opts statePullOpts) {
-	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{filerFactory: func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
@@ -249,7 +249,7 @@ func TestStatePullSnapshotExists(t *testing.T) {
 }
 
 func TestStatePullNoState(t *testing.T) {
-	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{filerFactory: func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		f.EXPECT().Read(mock.Anything, DeploymentStateFileName).Return(nil, os.ErrNotExist)
@@ -422,7 +422,7 @@ func TestStatePullAndNotebookIsRemovedLocally(t *testing.T) {
 }
 
 func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
-	s := &statePull{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePull{filerFactory: func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{

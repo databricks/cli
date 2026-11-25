@@ -83,10 +83,10 @@ type ProcessOptions struct {
 	Deploy          bool
 
 	// Path to pre-computed plan JSON file (direct engine only).
-	// When set, skips Build and PreDeployChecks phases, and loads the plan from
-	// the file instead of calculating it. Artifact uploads are handled directly
-	// inside Deploy by reading the remote paths from the plan's new_state and
-	// finding the matching local files.
+	// When set, skips Build and PreDeployChecks phases (except the deployment state
+	// pull), and loads the plan from the file instead of calculating it. Artifact
+	// uploads are handled directly inside Deploy by reading the remote paths from
+	// the plan's new_state and finding the matching local files.
 	ReadPlanPath string
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
@@ -266,8 +266,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 	}
 
-	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks; a plain
-	// deploy builds and runs the predeploy checks. These only flip opts (no state access),
+	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks (it still
+	// pulls the deployment state, see below); a plain deploy builds and runs the
+	// predeploy checks. These only flip opts (no state access),
 	// so they run before phases.Build; the plan file itself is loaded during state
 	// resolution after the build, once the engine is known and the state is open.
 	if opts.ReadPlanPath != "" {
@@ -507,7 +508,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// A saved plan is often applied from a fresh checkout (a separate CI job). The
 		// deployment state's file list is what lets the file sync delete files removed
 		// from the bundle, and its seq must keep increasing, so pull it here as well.
-		bundle.ApplyContext(ctx, b, deploy.StatePull())
+		bundle.ApplyContext(ctx, b, deploy.StatePullForSavedPlan())
 
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted

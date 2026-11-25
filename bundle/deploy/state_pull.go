@@ -8,6 +8,8 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -20,6 +22,10 @@ import (
 
 type statePull struct {
 	filerFactory FilerFactory
+
+	// keepInternalFiles leaves files under the bundle's internal directory out of
+	// the restored snapshot, so the file sync does not delete their remote copies.
+	keepInternalFiles bool
 }
 
 func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -76,8 +82,16 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
+	fileList := state.Files
+	if s.keepInternalFiles {
+		fileList, err = withoutInternalFiles(ctx, b, fileList)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	log.Infof(ctx, "Creating new snapshot")
-	snapshot, err := sync.NewSnapshot(state.Files.toSlice(b.SyncRoot), opts)
+	snapshot, err := sync.NewSnapshot(fileList.toSlice(b.SyncRoot), opts)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -113,7 +127,38 @@ func (s *statePull) Name() string {
 	return "deploy:state-pull"
 }
 
+// withoutInternalFiles drops the entries under the bundle's internal directory.
+func withoutInternalFiles(ctx context.Context, b *bundle.Bundle, fl Filelist) (Filelist, error) {
+	internalDir, err := b.InternalDir(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rel, err := filepath.Rel(b.SyncRootPath, internalDir)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		// Outside the sync root, so the file sync never touches it.
+		return fl, nil
+	}
+	prefix := filepath.ToSlash(rel) + "/"
+
+	var out Filelist
+	for _, f := range fl {
+		if strings.HasPrefix(filepath.ToSlash(f.LocalPath), prefix) {
+			continue
+		}
+		out = append(out, f)
+	}
+	return out, nil
+}
+
 // StatePull returns a mutator that pulls the deployment state from the Databricks workspace
 func StatePull() bundle.Mutator {
-	return &statePull{StateFiler}
+	return &statePull{filerFactory: StateFiler}
+}
+
+// StatePullForSavedPlan is StatePull for applying a saved plan. Applying a plan skips
+// the build, which is what generates the files in the bundle's internal directory
+// (such as python_wheel_wrapper notebooks), while the plan's resources still refer to
+// them; their remote copies must survive the file sync.
+func StatePullForSavedPlan() bundle.Mutator {
+	return &statePull{filerFactory: StateFiler, keepInternalFiles: true}
 }
