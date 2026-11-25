@@ -1,0 +1,8 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+$fields:
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

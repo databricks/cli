@@ -18,6 +18,18 @@ type tgRoot struct {
 	Hidden string              `json:"hidden,omitempty" bundle:"internal"`
 }
 
+// tgSplitRoot mirrors the config root's "resources" field, which the
+// annotations directory slices into one file per resource type.
+type tgSplitRoot struct {
+	Resources tgResources `json:"resources"`
+	Other     string      `json:"other,omitempty"`
+}
+
+type tgResources struct {
+	Jobs      map[string]tgItem `json:"jobs,omitempty"`
+	Pipelines []tgItem          `json:"pipelines,omitempty"`
+}
+
 type tgNested struct {
 	Description string    `json:"description,omitempty"`
 	Fields      string    `json:"fields,omitempty"`

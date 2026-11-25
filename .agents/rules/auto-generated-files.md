@@ -14,6 +14,7 @@ globs:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/configs/*.generated.yml"
+  - "bundle/internal/schema/annotations/*.generated.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "python/databricks/bundles/version.py"
@@ -33,6 +34,7 @@ paths:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/configs/*.generated.yml"
+  - "bundle/internal/schema/annotations/*.generated.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "python/databricks/bundles/version.py"
@@ -50,7 +52,7 @@ Files matching this rule's globs are generated; they usually say so in a header 
 - `./task generate-cligen` — `cmd/account/**`, `cmd/workspace/**` and `.gitattributes` from the checked-in `.codegen/cli.json`.
 - `./task generate-clijson` — refreshes `.codegen/cli.json` and `internal/genkit/tagging.py` from the OpenAPI spec (requires the universe repo).
 - `./task generate-direct` — direct engine generated YAML.
-- `./task generate-schema` — `bundle/schema/jsonschema.json`; also rewrites `bundle/internal/schema/annotations.yml` in place (upstream docs come from `.codegen/cli.json`).
+- `./task generate-schema` — `bundle/schema/jsonschema.json` (upstream docs come from `.codegen/cli.json`). It also rewrites `bundle/internal/schema/annotations/`, which holds one file per resource type (`<key>.yml`) plus `root.yml` for the top-level keys. The hand-written `<key>.yml` (docs for fields only the CLI defines) and `<key>.overrides.yml` (entries for fields `cli.json` already defines) are normalized in place, entries are routed between them by whether the field exists upstream, and entries for fields that no longer exist are dropped. `<key>.generated.yml` is fully generated and lists the fields with no documentation anywhere as `PLACEHOLDER` entries; to document one, add the entry to the matching hand-written file and regenerate. See `bundle/internal/schema/annotations/README.md`.
 - `./task generate-validation` — `bundle/internal/validation/generated/`.
 - `./task pydabs-codegen` — Python bundle models.
 - Mocks: see `internal/mocks/README.md`.

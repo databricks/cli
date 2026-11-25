@@ -1,0 +1,13 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
+$fields:
+  "catalog_id":
+    "description": |-
+      The ID of the catalog in Unity Catalog; becomes the full resource name. For example, `my_catalog` becomes `catalogs/my_catalog`.
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

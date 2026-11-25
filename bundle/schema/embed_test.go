@@ -68,8 +68,9 @@ func TestJsonSchema(t *testing.T) {
 
 // JSON Schema requires enum values to be unique; strict validators (e.g. OPA)
 // reject the whole schema otherwise. Duplicates slip in when an enum is
-// hand-authored in annotations.yml for a field cli.json also defines, since the
-// annotation merge concatenates the two sequences. Guard the whole schema.
+// hand-authored in bundle/internal/schema/annotations/ for a field cli.json
+// also defines, since the annotation merge concatenates the two sequences.
+// Guard the whole schema.
 func TestJsonSchemaEnumsAreUnique(t *testing.T) {
 	var s any
 	err := json.Unmarshal(schema.Bytes, &s)

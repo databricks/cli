@@ -1,0 +1,28 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+$fields:
+  "grants":
+    "description": |-
+      The Unity Catalog privileges to grant to principals on this securable.
+    "markdown_description": |-
+      A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+      See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
+    "markdown_examples": |-
+      ```yaml
+      grants:
+        - principal: account users
+          privileges:
+            - SELECT
+        - principal: data-engineers
+          privileges:
+            - ALL_PRIVILEGES
+      ```
+  "isolation_mode":
+    "description": |-
+      Whether the catalog is accessible from all workspaces (`OPEN`) or only from the workspaces it is bound to (`ISOLATED`). Workspace bindings are not managed by the bundle. When omitted, the catalog keeps its current isolation mode.
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

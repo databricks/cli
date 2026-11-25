@@ -1,0 +1,19 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The Postgres endpoint definitions for the bundle, where each key is the name of the endpoint. Each entry defines a compute endpoint that serves queries for a Lakebase Autoscaling branch.
+$fields:
+  "endpoint_id":
+    "description": |-
+      The ID to use for the endpoint; becomes the final component of the endpoint's resource name. Must be 1-63 characters long, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens. For example, `primary` becomes `projects/my-app/branches/development/endpoints/primary`.
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+  "parent":
+    "description": |-
+      The branch containing this endpoint (API resource hierarchy). Format: projects/{project_id}/branches/{branch_id}
+  "replace_existing":
+    "description": |-
+      When true, take over an existing endpoint with the same ID instead of failing with an ALREADY_EXISTS error. Use it to bring an endpoint that already exists on the branch (for example, the primary read-write endpoint created with the branch) under bundle management. Only takes effect when the endpoint is created.
