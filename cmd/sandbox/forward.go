@@ -185,6 +185,9 @@ func newForwardTransport(cfg *config.Config) (http.RoundTripper, error) {
 	// workspace would pick it and every request would fail with EOF.
 	transport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
 	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: clientCfg.InsecureSkipVerify}
+	// Every request goes to the one workspace host. Go's default of 2 idle
+	// connections per host would redial all but two after each parallel burst.
+	transport.MaxIdleConnsPerHost = transport.MaxIdleConns
 	return transport, nil
 }
 

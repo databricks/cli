@@ -345,6 +345,7 @@ type holdBurst struct {
 
 // Once one request has warmed the pool, HTTP/2 sends the rest over that same
 // TCP connection, which caps parallel downloads at one connection's throughput.
+// A second burst checks that the first burst's connections stay idle for reuse.
 func TestForwardUsesSeparateUpstreamConnections(t *testing.T) {
 	const parallel = 4
 	var conns atomic.Int32
@@ -404,7 +405,11 @@ func TestForwardUsesSeparateUpstreamConnections(t *testing.T) {
 	}
 
 	runBurst()
-	assert.GreaterOrEqual(t, conns.Load(), int32(parallel), "concurrent forwarded requests shared one upstream connection")
+	opened := conns.Load()
+	assert.GreaterOrEqual(t, opened, int32(parallel), "concurrent forwarded requests shared one upstream connection")
+
+	runBurst()
+	assert.Equal(t, opened, conns.Load(), "a second burst redialed connections the first left idle")
 }
 
 func TestForwardHandlerRelaysUpgradeOverTLS(t *testing.T) {
