@@ -11,7 +11,7 @@ import (
 	googleschema "github.com/google/jsonschema-go/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // isSchemaNode returns true if the object is a JSON Schema definition rather

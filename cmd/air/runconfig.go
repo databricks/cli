@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // This file ports the run YAML schema and its structural validation from the

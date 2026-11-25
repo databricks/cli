@@ -17,7 +17,7 @@ var moduleToGitHub = map[string]string{
 	"google.golang.org/grpc":     "grpc/grpc-go",
 	"google.golang.org/protobuf": "protocolbuffers/protobuf-go",
 	"gopkg.in/ini.v1":            "go-ini/ini",
-	"go.yaml.in/yaml/v3":         "yaml/go-yaml",
+	"go.yaml.in/yaml/v4":         "yaml/go-yaml",
 	"dario.cat/mergo":            "darccio/mergo",
 }
 

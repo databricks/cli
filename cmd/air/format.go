@@ -12,9 +12,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/yamlutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/muesli/termenv"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // na is the placeholder shown for an empty text-table cell, matching the Python CLI.
@@ -53,19 +54,16 @@ func reformatYAMLForDisplay(content []byte) string {
 	forceLiteralBlockStrings(&node)
 
 	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(&node); err != nil {
+	if err := yamlutil.Encode(&buf, &node); err != nil {
 		return string(content)
 	}
-	enc.Close()
 	return buf.String()
 }
 
 // forceLiteralBlockStrings walks a YAML node tree and marks every multi-line
 // string scalar for `|` block-literal rendering. The encoder automatically
 // falls back to a quoted style when a value can't be represented as a block
-// literal (e.g. lines with trailing whitespace), so no explicit guard is needed.
+// literal (e.g. control characters), so no explicit guard is needed.
 func forceLiteralBlockStrings(node *yaml.Node) {
 	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" && strings.Contains(node.Value, "\n") {
 		node.Style = yaml.LiteralStyle

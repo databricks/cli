@@ -15,9 +15,10 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/yamlutil"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // ApplyChangesToYAML generates YAML files for the given field changes.
@@ -370,12 +371,10 @@ func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, er
 // encodeYAML uses the same indentation as the YAML patcher.
 func encodeYAML(doc *yaml.Node) ([]byte, error) {
 	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(doc); err != nil {
+	if err := yamlutil.Encode(&buf, doc); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), enc.Close()
+	return buf.Bytes(), nil
 }
 
 // yamlChild returns the child and its mapping key so callers can preserve comments.

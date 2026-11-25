@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // LocationError is an error with a YAML source location that can be displayed
@@ -26,7 +26,7 @@ type loader struct {
 	path string
 
 	// Aliases currently being expanded. A self-referential anchor (e.g.
-	// "a: &x {b: *x}") makes the yaml.v3 node graph cyclic; without this
+	// "a: &x {b: *x}") makes the yaml node graph cyclic; without this
 	// bookkeeping, expansion would recurse until stack overflow.
 	activeAliases map[*yaml.Node]bool
 }
