@@ -110,6 +110,12 @@ var serverSideDefaults = map[string]any{
 	// published is an internal state field (not part of the user config): DoRead
 	// derives it from the publish lifecycle, so it must never be synced into config.
 	"resources.dashboards.*.published": alwaysSkip,
+
+	// App fields
+	// source_code_digest is an internal state field (not part of the user config): it is
+	// computed from the local source files and has no remote value, so a local source
+	// change would otherwise be reported as a field to remove from the config.
+	"resources.apps.*.source_code_digest": alwaysSkip,
 }
 
 // shouldSkipField checks if a field should be skipped in change detection.

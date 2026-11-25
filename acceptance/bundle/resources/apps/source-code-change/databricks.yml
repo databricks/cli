@@ -1,0 +1,17 @@
+bundle:
+  name: source-code-change
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      source_code_path: ./app
+      config:
+        command:
+          - python
+          - app.py
+        env:
+          - name: GREETING
+            value: hello
+      lifecycle:
+        started: true

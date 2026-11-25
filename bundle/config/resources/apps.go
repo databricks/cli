@@ -63,6 +63,10 @@ type App struct {
 	// ThumbnailContent is the base64-encoded image read from ThumbnailPath (see ConfigureAppThumbnail).
 	ThumbnailContent string `json:"thumbnail_content,omitempty" bundle:"internal"`
 
+	// SourceCodeDigest is the content digest of the files file sync uploads to SourceCodePath,
+	// set for apps with lifecycle.started: true (see ResolveAppSourceCodeDigests).
+	SourceCodeDigest string `json:"source_code_digest,omitempty" bundle:"internal"`
+
 	Permissions []AppPermission `json:"permissions,omitempty"`
 }
 

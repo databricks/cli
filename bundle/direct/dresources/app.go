@@ -24,13 +24,18 @@ import (
 )
 
 // AppState is the state type for App resources. source_code_path and git_source come from
-// apps.App; config, lifecycle and thumbnail are DABs-only additions persisted in state.
+// apps.App; config, lifecycle, thumbnail and source_code_digest are DABs-only additions
+// persisted in state.
 // thumbnail is the base64-encoded image; state keeps only its hash (hashed_fields in apps.yml).
+// source_code_digest is the digest of the local files behind source_code_path as of the last
+// app deployment the bundle made, set while lifecycle.started is true. A change to it is what
+// plans an update, and with it a new app deployment, when only the source files changed.
 type AppState struct {
 	apps.App
-	Config    *resources.AppConfig `json:"config,omitempty"`
-	Lifecycle *StateLifecycle      `json:"lifecycle,omitempty"`
-	Thumbnail string               `json:"thumbnail,omitempty"`
+	Config           *resources.AppConfig `json:"config,omitempty"`
+	Lifecycle        *StateLifecycle      `json:"lifecycle,omitempty"`
+	Thumbnail        string               `json:"thumbnail,omitempty"`
+	SourceCodeDigest string               `json:"source_code_digest,omitempty"`
 }
 
 // AppRemote extends apps.App with the same DABs-only fields as AppState so they
@@ -69,10 +74,11 @@ func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
 
 func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 	s := &AppState{
-		App:       input.App,
-		Config:    input.Config,
-		Lifecycle: nil,
-		Thumbnail: input.ThumbnailContent,
+		App:              input.App,
+		Config:           input.Config,
+		Lifecycle:        nil,
+		Thumbnail:        input.ThumbnailContent,
+		SourceCodeDigest: input.SourceCodeDigest,
 	}
 	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
 		s.Lifecycle = &StateLifecycle{Started: input.Lifecycle.Started}
@@ -86,10 +92,11 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 // Started is derived from compute status so the planner can detect start/stop changes.
 func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 	return &AppState{
-		App:       remote.App,
-		Config:    remote.Config,
-		Lifecycle: remote.Lifecycle,
-		Thumbnail: "",
+		App:              remote.App,
+		Config:           remote.Config,
+		Lifecycle:        remote.Lifecycle,
+		Thumbnail:        "",
+		SourceCodeDigest: "",
 	}
 }
 
@@ -342,8 +349,10 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 // hasAppChanges reports whether the plan entry contains any Update changes to fields that
 // belong to the App Update API. source_code_path and config (command/env) are deploy-only
 // on update and applied via manageLifecycle; lifecycle drives compute start/stop.
+// source_code_digest is not an API field: its change only asks manageLifecycle for a new
+// deployment of the changed source files.
 func hasAppChanges(entry *PlanEntry) bool {
-	return entry.Changes.HasChangeExcept("source_code_path", "config", "lifecycle", "lifecycle.started", "thumbnail")
+	return entry.Changes.HasChangeExcept("source_code_path", "config", "lifecycle", "lifecycle.started", "thumbnail", "source_code_digest")
 }
 
 // OverrideChangeDesc skips drift on config (command/env) while the app has no active

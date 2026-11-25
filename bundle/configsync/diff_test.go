@@ -103,6 +103,18 @@ func TestShouldSkipFieldDashboardEtag(t *testing.T) {
 	assert.True(t, shouldSkipField(path, "some-etag", true))
 }
 
+func TestConvertPlanChangeSkipsAppSourceCodeDigest(t *testing.T) {
+	// The digest has no remote value, so a local source change (an update with a nil
+	// remote) must not be reported as a field to remove from the config.
+	change, err := convertPlanChange("resources.apps.my_app", "source_code_digest", &deployplan.ChangeDesc{
+		Action: deployplan.Update,
+		Old:    "sha256:old",
+		New:    "sha256:new",
+	}, "", "")
+	require.NoError(t, err)
+	assert.Nil(t, change)
+}
+
 func TestStripNamePrefix(t *testing.T) {
 	tests := []struct {
 		name   string

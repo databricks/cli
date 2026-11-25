@@ -1,0 +1,46 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+print_app_requests() {
+    print_requests.py //apps '^//api/2.0/bundle'
+}
+
+title "Deploy: the app is created and its source is deployed"
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "State records the digest of the source files"
+trace print_state.py | jq '.state["resources.apps.myapp"].state.source_code_digest'
+
+title "Nothing changed: no new app deployment"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "Only a source file changed: the app is planned as changed"
+trace update_file.py app/app.py "version one" "version two"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | plan_filter.py resources.apps.myapp | jq '.changes | with_entries(select(.value.action != "skip"))'
+
+title "Deploy creates a new app deployment and sends no app update"
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "Nothing changed since: no new app deployment"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "A changed file outside source_code_path: no new app deployment"
+trace update_file.py other/notes.txt "one" "two"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "Fresh checkout as in CI (no local state, no sync snapshot): every file is uploaded again, still no new app deployment"
+rm -rf .databricks
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_app_requests

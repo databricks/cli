@@ -1,0 +1,10 @@
+bundle:
+  name: source-code-change-old-state
+
+resources:
+  apps:
+    myapp:
+      name: myapp
+      source_code_path: .
+      lifecycle:
+        started: true

@@ -1,0 +1,28 @@
+STATE=.databricks/bundle/default/resources.json
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# The source is the bundle root, as in the app templates, so this also checks that the
+# files the CLI keeps under .databricks are not part of the digest.
+title "Deploy a started app"
+trace $CLI bundle deploy
+trace print_requests.py //apps
+
+title "Drop source_code_digest from the state, as a CLI from before it was recorded wrote it"
+jq 'del(.state["resources.apps.myapp"].state.source_code_digest)' "$STATE" > tmp.json
+mv tmp.json "$STATE"
+
+title "Whether the deployed source is current is unknown, so the app is deployed once and the digest recorded"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | plan_filter.py resources.apps.myapp | jq '.changes.source_code_digest'
+trace $CLI bundle deploy
+trace print_requests.py //apps
+trace jq '.state["resources.apps.myapp"].state.source_code_digest' "$STATE"
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //apps
