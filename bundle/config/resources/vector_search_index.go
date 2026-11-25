@@ -73,3 +73,7 @@ func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
 func (e *VectorSearchIndex) GetName() string {
 	return e.Name
 }
+
+func (e *VectorSearchIndex) UCNames() []UCName {
+	return []UCName{ucThreePartName(&e.Name)}
+}

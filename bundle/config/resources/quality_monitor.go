@@ -65,3 +65,7 @@ func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 func (s *QualityMonitor) GetName() string {
 	return s.TableName
 }
+
+func (s *QualityMonitor) UCNames() []UCName {
+	return []UCName{ucSchemaFullName(&s.OutputSchemaName)}
+}

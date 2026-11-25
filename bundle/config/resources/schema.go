@@ -73,3 +73,11 @@ func (s *Schema) UnmarshalJSON(b []byte) error {
 func (s Schema) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
+
+func (s *Schema) UCSchemaName() (string, string) {
+	return s.CatalogName, s.Name
+}
+
+func (s *Schema) UCNames() []UCName {
+	return []UCName{ucCatalogAndSchemas(&s.CatalogName)}
+}

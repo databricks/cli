@@ -117,3 +117,7 @@ func (m *ModelProviderService) InitializeURL(baseURL url.URL) {
 func (m *ModelProviderService) GetName() string {
 	return m.ModelProviderServiceId
 }
+
+func (m *ModelProviderService) UCNames() []UCName {
+	return []UCName{ucSchemaParent(&m.Parent)}
+}

@@ -70,3 +70,7 @@ func (f *Feature) InitializeURL(baseURL url.URL) {
 func (f *Feature) GetName() string {
 	return f.FullName
 }
+
+func (f *Feature) UCNames() []UCName {
+	return []UCName{ucThreePartName(&f.FullName)}
+}

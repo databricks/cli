@@ -114,3 +114,9 @@ func (p *Pipeline) ApplyLegacyRunAs(runAs *jobs.JobRunAs, currentUser string) {
 		UserName:             runAs.UserName,
 	})
 }
+
+func (p *Pipeline) UCNames() []UCName {
+	// "schema" and "target" have the same semantics in the SDP API but are mutually
+	// exclusive i.e. only one can be set at a time.
+	return []UCName{ucCatalogAndSchemas(&p.Catalog, &p.Schema, &p.Target)}
+}

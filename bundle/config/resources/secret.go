@@ -78,3 +78,7 @@ func (s *Secret) GetName() string {
 	}
 	return fmt.Sprintf("%s.%s.%s", s.CatalogName, s.SchemaName, s.Name)
 }
+
+func (s *Secret) UCNames() []UCName {
+	return []UCName{ucCatalogAndSchemas(&s.CatalogName, &s.SchemaName)}
+}
