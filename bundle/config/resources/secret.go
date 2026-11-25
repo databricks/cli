@@ -52,6 +52,10 @@ func (*Secret) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*Secret) Approval() Approval {
+	return Approval{}
+}
+
 func (*Secret) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "secret",

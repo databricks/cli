@@ -2,7 +2,6 @@ package phases
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -26,27 +24,6 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool) {
 		mutator.ValidateGitDetails(),
 		statemgmt.CheckRunningResource(),
 	)
-}
-
-// pipelineDeletionCascades reports whether deleting the pipeline referenced by a delete action
-// also deletes its datasets (MVs, STs, Views). This is the server default (cascade) unless
-// cascade_on_destroy is explicitly set to false.
-//
-// The value is read from the persisted state.
-func pipelineDeletionCascades(b *bundle.Bundle, action deployplan.Action) (bool, error) {
-	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(action.ResourceKey)
-	if !ok || len(entry.State) == 0 {
-		return true, nil
-	}
-
-	var state dresources.PipelineState
-	if err := json.Unmarshal(entry.State, &state); err != nil {
-		return false, fmt.Errorf("parsing persisted state for %s: %w", action.ResourceKey, err)
-	}
-	if state.CascadeOnDestroy == nil {
-		return true, nil
-	}
-	return *state.CascadeOnDestroy, nil
 }
 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.

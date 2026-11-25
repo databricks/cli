@@ -62,6 +62,10 @@ func (*PostgresSnapshotSchedule) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*PostgresSnapshotSchedule) Approval() Approval {
+	return Approval{}
+}
+
 func (b *PostgresSnapshotSchedule) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_snapshot_schedule",

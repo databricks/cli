@@ -111,6 +111,17 @@ func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 	return true, nil
 }
 
+func (*Dashboard) Approval() Approval {
+	return Approval{
+		Order: 40,
+		Deploy: `
+This action will result in the deletion or recreation of the following dashboards.
+This will result in changed IDs and permanent URLs of the dashboards that will be recreated:`,
+		// No destroy message: the deploy message warns that a recreated dashboard gets a new
+		// ID and URL, and destroy recreates nothing.
+	}
+}
+
 func (*Dashboard) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "dashboard",

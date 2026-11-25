@@ -120,6 +120,10 @@ func (*JobRun) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*JobRun) Approval() Approval {
+	return Approval{}
+}
+
 func (r *JobRun) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "job_run",

@@ -93,6 +93,10 @@ func (SecretScope) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*SecretScope) Approval() Approval {
+	return Approval{}
+}
+
 func (s SecretScope) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "secret_scope",

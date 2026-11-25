@@ -59,6 +59,10 @@ func (*PostgresDataApi) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*PostgresDataApi) Approval() Approval {
+	return Approval{}
+}
+
 func (d *PostgresDataApi) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_data_api",

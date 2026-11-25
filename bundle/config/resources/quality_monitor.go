@@ -46,6 +46,10 @@ func (*QualityMonitor) RunAsSupport() RunAsSupport {
 	return RunAsRejected
 }
 
+func (*QualityMonitor) Approval() Approval {
+	return Approval{}
+}
+
 func (*QualityMonitor) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "quality_monitor",

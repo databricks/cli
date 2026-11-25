@@ -55,6 +55,21 @@ func (*Volume) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*Volume) Approval() Approval {
+	return Approval{
+		Order: 30,
+		Deploy: `
+This action will result in the deletion or recreation of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:`,
+		Destroy: `This action will result in the deletion of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:`,
+	}
+}
+
 func (*Volume) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "volume",

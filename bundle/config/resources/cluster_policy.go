@@ -49,6 +49,10 @@ func (*ClusterPolicy) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*ClusterPolicy) Approval() Approval {
+	return Approval{}
+}
+
 func (*ClusterPolicy) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "cluster_policy",

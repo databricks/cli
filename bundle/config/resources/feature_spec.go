@@ -52,6 +52,18 @@ func (*FeatureSpec) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*FeatureSpec) Approval() Approval {
+	return Approval{
+		Order: 140,
+		Deploy: `
+This action will result in the deletion or recreation of the following FeatureSpecs.
+Feature Serving endpoints and training code that use a deleted FeatureSpec can no longer
+load it, and a recreated one loses the grants the bundle does not declare:`,
+		Destroy: `This action will result in the deletion of the following FeatureSpecs.
+Feature Serving endpoints and training code that use them can no longer load them:`,
+	}
+}
+
 func (*FeatureSpec) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "feature_spec",

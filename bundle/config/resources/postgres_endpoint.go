@@ -61,6 +61,10 @@ func (*PostgresEndpoint) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*PostgresEndpoint) Approval() Approval {
+	return Approval{}
+}
+
 func (e *PostgresEndpoint) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_endpoint",

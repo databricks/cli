@@ -43,6 +43,10 @@ func (*ExternalLocation) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*ExternalLocation) Approval() Approval {
+	return Approval{}
+}
+
 func (*ExternalLocation) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "external_location",

@@ -44,6 +44,10 @@ func (*Catalog) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*Catalog) Approval() Approval {
+	return Approval{}
+}
+
 func (*Catalog) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "catalog",

@@ -54,6 +54,10 @@ func (*PostgresCatalog) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*PostgresCatalog) Approval() Approval {
+	return Approval{}
+}
+
 func (c *PostgresCatalog) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_catalog",

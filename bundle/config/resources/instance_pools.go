@@ -39,6 +39,10 @@ func (*InstancePool) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*InstancePool) Approval() Approval {
+	return Approval{}
+}
+
 func (*InstancePool) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "instance_pool",

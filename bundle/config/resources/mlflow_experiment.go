@@ -43,6 +43,10 @@ func (*MlflowExperiment) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*MlflowExperiment) Approval() Approval {
+	return Approval{}
+}
+
 func (s *MlflowExperiment) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "experiment",

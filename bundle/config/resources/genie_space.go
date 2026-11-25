@@ -90,6 +90,17 @@ func (*GenieSpace) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*GenieSpace) Approval() Approval {
+	return Approval{
+		Order: 110,
+		Deploy: `
+This action will result in the deletion or recreation of the following Genie spaces.
+The conversation history attached to a deleted space is permanently lost:`,
+		Destroy: `This action will result in the deletion of the following Genie spaces.
+The conversation history attached to them is permanently lost:`,
+	}
+}
+
 func (*GenieSpace) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "genie_space",

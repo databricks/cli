@@ -67,6 +67,17 @@ func (*PostgresBranch) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*PostgresBranch) Approval() Approval {
+	return Approval{
+		Order: 80,
+		Deploy: `
+This action will result in the deletion or recreation of the following Lakebase branches.
+All data stored in them will be permanently lost:`,
+		Destroy: `This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:`,
+	}
+}
+
 func (b *PostgresBranch) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_branch",

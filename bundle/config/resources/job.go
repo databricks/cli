@@ -45,6 +45,10 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 	return true, nil
 }
 
+func (*Job) Approval() Approval {
+	return Approval{}
+}
+
 func (j *Job) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "job",

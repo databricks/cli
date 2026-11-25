@@ -44,6 +44,10 @@ func (*RegisteredModel) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*RegisteredModel) Approval() Approval {
+	return Approval{}
+}
+
 func (*RegisteredModel) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "registered_model",

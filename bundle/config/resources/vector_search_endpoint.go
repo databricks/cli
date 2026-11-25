@@ -44,6 +44,10 @@ func (*VectorSearchEndpoint) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*VectorSearchEndpoint) Approval() Approval {
+	return Approval{}
+}
+
 func (e *VectorSearchEndpoint) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "vector_search_endpoint",

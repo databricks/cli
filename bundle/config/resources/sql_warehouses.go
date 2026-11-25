@@ -51,6 +51,10 @@ func (*SqlWarehouse) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*SqlWarehouse) Approval() Approval {
+	return Approval{}
+}
+
 func (*SqlWarehouse) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "sql_warehouse",

@@ -68,6 +68,10 @@ func (*DataQualityMonitor) RunAsSupport() RunAsSupport {
 	return RunAsRejected
 }
 
+func (*DataQualityMonitor) Approval() Approval {
+	return Approval{}
+}
+
 func (*DataQualityMonitor) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "data_quality_monitor",

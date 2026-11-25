@@ -96,6 +96,10 @@ func (*App) RunAsSupport() RunAsSupport {
 	return RunAsRejected
 }
 
+func (*App) Approval() Approval {
+	return Approval{}
+}
+
 func (*App) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "app",

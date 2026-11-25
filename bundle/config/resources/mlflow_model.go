@@ -43,6 +43,10 @@ func (*MlflowModel) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*MlflowModel) Approval() Approval {
+	return Approval{}
+}
+
 func (s *MlflowModel) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model",

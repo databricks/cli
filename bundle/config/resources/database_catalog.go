@@ -39,6 +39,10 @@ func (*DatabaseCatalog) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*DatabaseCatalog) Approval() Approval {
+	return Approval{}
+}
+
 func (d *DatabaseCatalog) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "database_catalog",

@@ -41,6 +41,17 @@ func (*DatabaseInstance) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*DatabaseInstance) Approval() Approval {
+	return Approval{
+		Order: 50,
+		Deploy: `
+This action will result in the deletion or recreation of the following Lakebase database instances.
+All data stored in them will be permanently lost:`,
+		Destroy: `This action will result in the deletion of the following Lakebase database instances.
+All data stored in them will be permanently lost:`,
+	}
+}
+
 func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "database_instance",

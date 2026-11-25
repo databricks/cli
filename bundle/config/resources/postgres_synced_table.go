@@ -56,6 +56,10 @@ func (*PostgresSyncedTable) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*PostgresSyncedTable) Approval() Approval {
+	return Approval{}
+}
+
 func (s *PostgresSyncedTable) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_synced_table",

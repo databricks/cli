@@ -93,6 +93,10 @@ func (*Snapshot) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*Snapshot) Approval() Approval {
+	return Approval{}
+}
+
 func (s *Snapshot) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "internal_immutable_snapshot",

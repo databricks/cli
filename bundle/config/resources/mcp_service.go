@@ -84,6 +84,10 @@ func (*McpService) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*McpService) Approval() Approval {
+	return Approval{}
+}
+
 func (*McpService) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "mcp_service",

@@ -92,6 +92,10 @@ func (*ModelProviderService) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*ModelProviderService) Approval() Approval {
+	return Approval{}
+}
+
 func (*ModelProviderService) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model_provider_service",

@@ -66,6 +66,10 @@ func (*PostgresRole) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*PostgresRole) Approval() Approval {
+	return Approval{}
+}
+
 func (r *PostgresRole) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_role",

@@ -45,6 +45,10 @@ func (*ModelServingEndpoint) RunAsSupport() RunAsSupport {
 	return RunAsRejected
 }
 
+func (*ModelServingEndpoint) Approval() Approval {
+	return Approval{}
+}
+
 func (s *ModelServingEndpoint) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model_serving_endpoint",

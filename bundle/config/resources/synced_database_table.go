@@ -39,6 +39,17 @@ func (*SyncedDatabaseTable) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*SyncedDatabaseTable) Approval() Approval {
+	return Approval{
+		Order: 60,
+		Deploy: `
+This action will result in the deletion or recreation of the following synced database tables.
+The synced data in the destination database will be lost (the source table is preserved):`,
+		Destroy: `This action will result in the deletion of the following synced database tables.
+The synced data in the destination database will be lost (the source table is preserved):`,
+	}
+}
+
 func (s *SyncedDatabaseTable) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "synced_database_table",

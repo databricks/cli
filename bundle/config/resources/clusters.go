@@ -54,6 +54,10 @@ func (*Cluster) RunAsSupport() RunAsSupport {
 	return RunAsNotApplicable
 }
 
+func (*Cluster) Approval() Approval {
+	return Approval{}
+}
+
 func (*Cluster) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "cluster",
