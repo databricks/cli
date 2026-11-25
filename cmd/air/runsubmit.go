@@ -354,6 +354,16 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
+	// Only a generated token speculates: a cancelled speculative run may hold its
+	// token, so a fallthrough gets a new one, and a caller's key is never replaced.
+	generatedToken := idempotencyKey == "" && (cfg.IdempotencyToken == nil || *cfg.IdempotencyToken == "")
+	if override == "" && generatedToken {
+		runID, runURL, handled, err := speculativeSubmit(ctx, w, cfg, items, token, showProgress)
+		if handled {
+			return runID, runURL, err
+		}
+		token = uuid.New().String()
+	}
 	// Start the experiment directory read now so it overlaps Me. If the directory is
 	// missing, ensureExperimentDirectory creates it later, once validation and staging
 	// have succeeded. Every return cancels the read.
@@ -390,7 +400,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	base := override
 	if override == "" {
 		var email string
-		if email, err = currentUserEmail(ctx, w); err != nil {
+		if email, err = cachedCurrentUserEmail(ctx, w); err != nil {
 			return 0, "", err
 		}
 		base = "/Workspace/Users/" + email
@@ -501,10 +511,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// (caller-fixable) message before submission. Validation guarantees name and
 	// id are mutually exclusive: a literal id is used as-is, a name is resolved
 	// against the workspace.
-	usagePolicyID := ""
-	if cfg.UsagePolicyID != nil {
-		usagePolicyID = strings.TrimSpace(*cfg.UsagePolicyID)
-	}
+	usagePolicyID := usagePolicyIDLiteral(cfg)
 	if cfg.UsagePolicyName != nil {
 		usagePolicyID, err = resolveUsagePolicyIDByName(ctx, w, *cfg.UsagePolicyName)
 		if err != nil {
@@ -520,14 +527,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
-	poolID := ""
-	if selectedPoolID := cfg.Compute.AcceleratorPoolID; selectedPoolID != nil {
-		poolID = *selectedPoolID
-	}
-	priorityClass := ""
-	if cfg.Compute.PriorityClass != nil {
-		priorityClass = *cfg.Compute.PriorityClass
-	}
+	poolID, priorityClass := computePoolFields(cfg)
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
 	// Permissions are granted by the caller, after the submit result is shown, so
 	// the best-effort grant never delays the success line.

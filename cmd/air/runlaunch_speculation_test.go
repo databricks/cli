@@ -2,12 +2,15 @@ package aircmd
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -35,6 +38,12 @@ type relaunchServer struct {
 	events         []string
 	validateBodies []string
 	submitPaths    []string
+	tokens         []string
+	cancelledRuns  []int64
+	// validateFailure, when set, makes ValidateConfig report one field error.
+	validateFailure string
+	// failImport makes every workspace upload fail.
+	failImport bool
 }
 
 func (s *relaunchServer) record(event string) {
@@ -56,6 +65,18 @@ func (s *relaunchServer) setUser(name string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.userName = name
+}
+
+func (s *relaunchServer) setValidateFailure(message string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.validateFailure = message
+}
+
+func (s *relaunchServer) setFailImport(fail bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.failImport = fail
 }
 
 func (s *relaunchServer) setMeStatus(status int) {
@@ -136,13 +157,23 @@ func newRelaunchClient(t *testing.T) (*databricks.WorkspaceClient, *relaunchServ
 	})
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
 		s.record("import " + req.Vars["path"])
+		s.mu.Lock()
+		fail := s.failImport
+		s.mu.Unlock()
+		if fail {
+			return testserver.Response{StatusCode: 500, Body: `{"error_code":"INTERNAL_ERROR","message":"upload failed"}`}
+		}
 		return req.Workspace.WorkspaceFilesImportFile(req.Vars["path"], req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
 	server.Handle("POST", validateConfigPath, func(req testserver.Request) any {
 		s.record("validate")
 		s.mu.Lock()
 		s.validateBodies = append(s.validateBodies, string(req.Body))
+		failure := s.validateFailure
 		s.mu.Unlock()
+		if failure != "" {
+			return validateConfigResponse{Errors: []configFieldError{{Path: "command", Message: failure, Code: "INVALID_PARAMETER_VALUE"}}}
+		}
 		return validateConfigResponse{}
 	})
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
@@ -151,8 +182,18 @@ func newRelaunchClient(t *testing.T) (*databricks.WorkspaceClient, *relaunchServ
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		s.mu.Lock()
 		s.submitPaths = append(s.submitPaths, got.Tasks[0].AiRuntimeTask.Deployments[0].CommandPath)
+		s.tokens = append(s.tokens, got.IdempotencyToken)
 		s.mu.Unlock()
 		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req testserver.Request) any {
+		s.record("cancel")
+		var got jobs.CancelRun
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		s.mu.Lock()
+		s.cancelledRuns = append(s.cancelledRuns, got.RunId)
+		s.mu.Unlock()
+		return struct{}{}
 	})
 	testserver.AddDefaultHandlers(server)
 
@@ -160,6 +201,20 @@ func newRelaunchClient(t *testing.T) (*databricks.WorkspaceClient, *relaunchServ
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "1"})
 	require.NoError(t, err)
 	return w, s
+}
+
+// expireUserNameCache drops the cached user names, as if their window had passed,
+// so the next launch calls Me. The fake workspace keeps state per token, so a second
+// credential would not see the staged files.
+func expireUserNameCache(t *testing.T) {
+	t.Helper()
+	base, err := cache.BaseDir(t.Context())
+	require.NoError(t, err)
+	dirs, err := filepath.Glob(filepath.Join(base, "*", userNameCacheComponent))
+	require.NoError(t, err)
+	for _, dir := range dirs {
+		require.NoError(t, os.RemoveAll(dir))
+	}
 }
 
 func submitMinimal(t *testing.T, w *databricks.WorkspaceClient, key string) error {
@@ -186,6 +241,7 @@ func TestRelaunchSpeculatesBeforeMe(t *testing.T) {
 	s.mu.Lock()
 	s.awaitSpeculation = true
 	s.mu.Unlock()
+	expireUserNameCache(t)
 	require.NoError(t, submitMinimal(t, w, "idem-2"))
 	events := s.take()
 
@@ -216,6 +272,7 @@ func TestRelaunchMismatchedUserDiscardsSpeculation(t *testing.T) {
 	s.mu.Lock()
 	s.awaitSpeculation = true
 	s.mu.Unlock()
+	expireUserNameCache(t)
 	require.NoError(t, submitMinimal(t, w, "idem-2"))
 	events := s.take()
 
@@ -266,6 +323,7 @@ func TestRelaunchMeFailureWritesNothing(t *testing.T) {
 	s.mu.Lock()
 	s.awaitSpeculation = true
 	s.mu.Unlock()
+	expireUserNameCache(t)
 	err := submitMinimal(t, w, "idem-2")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to resolve current user")
