@@ -84,10 +84,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	fileList := state.Files
 	if s.keepInternalFiles {
-		fileList, err = withoutInternalFiles(ctx, b, fileList)
-		if err != nil {
-			return diag.FromErr(err)
-		}
+		fileList = withoutInternalFiles(b.Config.Bundle.Target, fileList)
 	}
 
 	log.Infof(ctx, "Creating new snapshot")
@@ -127,28 +124,23 @@ func (s *statePull) Name() string {
 	return "deploy:state-pull"
 }
 
-// withoutInternalFiles drops the entries under the bundle's internal directory.
-func withoutInternalFiles(ctx context.Context, b *bundle.Bundle, fl Filelist) (Filelist, error) {
-	internalDir, err := b.InternalDir(ctx)
-	if err != nil {
-		return nil, err
-	}
-	rel, relErr := filepath.Rel(b.SyncRootPath, internalDir)
-	insideSyncRoot := relErr == nil && filepath.IsLocal(rel)
-	if !insideSyncRoot {
-		// The file sync never touches it.
-		return fl, nil
-	}
-	prefix := filepath.ToSlash(rel) + "/"
+// internalDirName is the last element of the directory bundle.InternalDir returns,
+// <cache dir>/<target>/.internal.
+const internalDirName = ".internal"
 
+// withoutInternalFiles drops the entries under a "<target>/.internal" directory. It
+// matches that shape anywhere in the path rather than this process's InternalDir,
+// because the deploy that wrote the state may have used another cache directory
+// (DATABRICKS_BUNDLE_TMP).
+func withoutInternalFiles(target string, fl Filelist) Filelist {
+	marker := "/" + target + "/" + internalDirName + "/"
 	var out Filelist
 	for _, f := range fl {
-		if strings.HasPrefix(filepath.ToSlash(f.LocalPath), prefix) {
-			continue
+		if !strings.Contains("/"+filepath.ToSlash(f.LocalPath), marker) {
+			out = append(out, f)
 		}
-		out = append(out, f)
 	}
-	return out, nil
+	return out
 }
 
 // StatePull returns a mutator that pulls the deployment state from the Databricks workspace
