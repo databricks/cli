@@ -106,6 +106,62 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "uses incompatible DBR version 12.2.x-scala2.12")
 }
 
+func TestWheelTasksWithServerlessJobCluster(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		cluster jobs.JobCluster
+	}{
+		{
+			name: "serverless_compute",
+			cluster: jobs.JobCluster{
+				ServerlessCompute: &jobs.JobClusterServerlessCompute{},
+			},
+		},
+		{
+			name: "serverless_compute_policy",
+			cluster: jobs.JobCluster{
+				ServerlessCompute: &jobs.JobClusterServerlessCompute{PolicyId: "test-policy"},
+			},
+		},
+		{
+			name: "serverless_compute_id",
+			cluster: jobs.JobCluster{
+				ServerlessComputeId: "test-compute",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cluster := tc.cluster
+			cluster.JobClusterKey = "shared"
+			job := &resources.Job{}
+			job.JobClusters = []jobs.JobCluster{cluster}
+			job.Tasks = []jobs.Task{{
+				TaskKey:         "wheel",
+				JobClusterKey:   cluster.JobClusterKey,
+				PythonWheelTask: &jobs.PythonWheelTask{PackageName: "my_package", EntryPoint: "main"},
+				EnvironmentKey:  "env",
+			}}
+			job.Environments = []jobs.JobEnvironment{{
+				EnvironmentKey: "env",
+				Spec: &compute.Environment{
+					EnvironmentVersion: "4",
+					Dependencies:       []string{"./dist/test.whl"},
+				},
+			}}
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Resources: config.Resources{
+						Jobs: map[string]*resources.Job{"serverless": job},
+					},
+				},
+			}
+
+			diags := bundle.Apply(t.Context(), b, WrapperWarning())
+			require.Empty(t, diags)
+		})
+	}
+}
+
 func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -304,7 +360,7 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Experimental: &config.Experimental{
-				PythonWheelWrapper: true,
+				PythonWheelWrapper: new(true),
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

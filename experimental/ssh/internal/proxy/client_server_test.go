@@ -562,3 +562,38 @@ func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
 		t.Fatal("RunClientProxy did not abort on the handshake timeout")
 	}
 }
+
+func TestSingleSessionCannotStartAgainAfterDisconnect(t *testing.T) {
+	manager := NewConnectionsManager(1, 0, WithoutIdleShutdown())
+	completed := make(chan struct{})
+	var started atomic.Int32
+	handler := NewProxyServer(t.Context(), manager, func(ctx context.Context) *exec.Cmd {
+		started.Add(1)
+		return exec.CommandContext(ctx, "cat")
+	}, WithSingleSession(), WithSessionCompletion(func(error) { close(completed) }))
+	server := httptest.NewServer(handler)
+	defer server.Close()
+	connection, response, err := websocket.DefaultDialer.Dial("ws"+server.URL[4:]+"?id=session", nil)
+	if response != nil {
+		response.Body.Close()
+	}
+	require.NoError(t, err)
+	require.NoError(t, connection.WriteMessage(websocket.BinaryMessage, []byte("first-session")))
+	require.NoError(t, connection.SetReadDeadline(time.Now().Add(5*time.Second)))
+	_, message, err := connection.ReadMessage()
+	require.NoError(t, err)
+	require.Equal(t, "first-session", string(message))
+	require.NoError(t, connection.Close())
+	select {
+	case <-completed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("logical session completion was not reported")
+	}
+	require.Zero(t, manager.Count())
+	for _, id := range []string{"session", "another-session"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/ssh?id="+id, nil))
+		require.Equal(t, http.StatusServiceUnavailable, response.Code)
+	}
+	require.Equal(t, int32(1), started.Load())
+}

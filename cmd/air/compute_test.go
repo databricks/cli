@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -35,7 +36,9 @@ func TestParseGPUTypeInvalid(t *testing.T) {
 		t.Run(in, func(t *testing.T) {
 			_, err := parseGPUType(in)
 			require.Error(t, err)
-			assert.Contains(t, err.Error(), "valid types are")
+			assert.Equal(t, fmt.Sprintf("%q is not a recognized accelerator type", in), err.Error())
+			// The CLI must not suggest types: only the workspace knows which it can use.
+			assert.NotContains(t, err.Error(), "GPU_1xA10")
 		})
 	}
 }
@@ -66,25 +69,26 @@ func TestGPUsPerNode(t *testing.T) {
 func TestParsePriorityClass(t *testing.T) {
 	// Case-insensitive: mixed/lower case and surrounding whitespace normalize to
 	// the enum's contract value.
-	for _, in := range []string{"CRITICAL", "critical", "Critical", "  critical  "} {
+	for _, in := range []string{"NORMAL", "normal", "Normal", "  normal  "} {
 		got, err := parsePriorityClass(in)
 		require.NoError(t, err)
-		assert.Equal(t, priorityClassCritical, got)
+		assert.Equal(t, priorityClassNormal, got)
 	}
 
-	for _, in := range []string{"urgent", "", "high"} {
+	for _, in := range []string{"urgent", "", "HIGH", "high", "CRITICAL"} {
 		_, err := parsePriorityClass(in)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "valid values are")
+		assert.ErrorContains(t, err, "valid values are: NORMAL")
+		assert.NotContains(t, err.Error(), "BEST_EFFORT")
 	}
 }
 
 func TestComputeConfigValidateNormalizesPriorityClass(t *testing.T) {
 	// A lower-case value is upper-cased in place so the submitted payload carries
 	// the enum's contract value.
-	cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("critical")}
+	cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: new("cap"), PriorityClass: new("best_effort")}
 	require.NoError(t, cfg.validate())
-	assert.Equal(t, "CRITICAL", *cfg.PriorityClass)
+	assert.Equal(t, "BEST_EFFORT", *cfg.PriorityClass)
 }
 
 func TestComputeConfigValidate(t *testing.T) {
@@ -96,9 +100,9 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"single node", computeConfig{NumAccelerators: 8, AcceleratorType: "GPU_8xH100"}, ""},
 		{"multiple nodes", computeConfig{NumAccelerators: 16, AcceleratorType: "GPU_8xH100"}, ""},
 		{"single-gpu partitions", computeConfig{NumAccelerators: 3, AcceleratorType: "GPU_1xH100"}, ""},
-		{"pool id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new(" capacity ")}, ""},
-		{"empty pool id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new(" ")}, "cannot be empty"},
-		{"long pool id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new(strings.Repeat("a", 256))}, "255 characters or less"},
+		{"pool id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: new(" capacity ")}, ""},
+		{"empty pool id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: new(" ")}, "cannot be empty"},
+		{"long pool id", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: new(strings.Repeat("a", 256))}, "255 characters or less"},
 		{"unknown type", computeConfig{NumAccelerators: 8, AcceleratorType: "b200"}, "accelerator_type"},
 		{"legacy type rejected", computeConfig{NumAccelerators: 8, AcceleratorType: "h100_80gb"}, "accelerator_type"},
 		{"non-positive count", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_1xH100"}, "must be positive"},
@@ -114,9 +118,9 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"B300 count twelve", computeConfig{NumAccelerators: 12, AcceleratorType: "GPU_8xB300"}, "multiple of 8"},
 		{"B300 zero", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_8xB300"}, "must be positive"},
 		{"B300 negative", computeConfig{NumAccelerators: -8, AcceleratorType: "GPU_8xB300"}, "must be positive"},
-		{"priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("critical")}, ""},
-		{"priority class requires reservation", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PriorityClass: new("NORMAL")}, "requires compute.pool_id"},
-		{"invalid priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PoolID: new("cap"), PriorityClass: new("urgent")}, "invalid priority_class"},
+		{"priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: new("cap"), PriorityClass: new("normal")}, ""},
+		{"priority class requires reservation", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PriorityClass: new("NORMAL")}, "requires compute.accelerator_pool_id"},
+		{"invalid priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: new("cap"), PriorityClass: new("urgent")}, "invalid priority_class"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -129,4 +133,38 @@ func TestComputeConfigValidate(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
+}
+
+func TestComputeConfigAcceleratorPool(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		poolID  *string
+		want    *string
+		wantErr string
+	}{
+		{name: "omitted"},
+		{name: "explicit", poolID: new("pool-1"), want: new("pool-1")},
+		{name: "trimmed", poolID: new(" pool-1 "), want: new("pool-1")},
+		{name: "empty", poolID: new(""), wantErr: "compute.accelerator_pool_id cannot be empty"},
+		{name: "blank", poolID: new("  "), wantErr: "compute.accelerator_pool_id cannot be empty"},
+		{name: "maximum length", poolID: new(strings.Repeat("x", 255)), want: new(strings.Repeat("x", 255))},
+		{name: "too long", poolID: new(strings.Repeat("x", 256)), wantErr: "compute.accelerator_pool_id must be 255 characters or less"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: tc.poolID}
+			err := cfg.validate()
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, cfg.AcceleratorPoolID)
+		})
+	}
+}
+
+func TestComputeConfigPriorityWithAcceleratorPool(t *testing.T) {
+	cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", AcceleratorPoolID: new("pool-1"), PriorityClass: new("normal")}
+	require.NoError(t, cfg.validate())
+	assert.Equal(t, "NORMAL", *cfg.PriorityClass)
 }

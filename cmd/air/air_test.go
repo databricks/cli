@@ -1,9 +1,12 @@
 package aircmd
 
 import (
+	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +15,7 @@ import (
 // expected subcommand, so none is accidentally dropped from New.
 func TestNewRegistersAllSubcommands(t *testing.T) {
 	registered := make(map[string]bool)
-	for _, c := range New().Commands() {
+	for _, c := range root.NewCommand(t.Context(), Spec).Commands() {
 		registered[c.Name()] = true
 	}
 
@@ -24,10 +27,52 @@ func TestNewRegistersAllSubcommands(t *testing.T) {
 }
 
 func TestNewHelpMetadata(t *testing.T) {
-	cmd := New()
+	cmd := root.NewCommand(t.Context(), Spec)
 
 	assert.Equal(t, "development", cmd.GroupID)
-	assert.Contains(t, cmd.Short, "*Public Preview*")
+	assert.Equal(t, "Run and manage AI Runtime workloads on serverless GPU compute", cmd.Short)
+}
+
+// TestNewGroupsSubcommands asserts every subcommand is listed under a help
+// heading, so none falls into cobra's catch-all "Additional Commands".
+func TestNewGroupsSubcommands(t *testing.T) {
+	cmd := root.NewCommand(t.Context(), Spec)
+	groups := map[string]string{}
+	for _, g := range cmd.Groups() {
+		groups[g.ID] = g.Title
+	}
+	for _, c := range cmd.Commands() {
+		assert.Contains(t, groups, c.GroupID, "subcommand %q has no help group", c.Name())
+	}
+	assert.Equal(t, capacityGroupID, findSubcommand(t, cmd, "pools").GroupID)
+	assert.Equal(t, runGroupID, findSubcommand(t, cmd, "run").GroupID)
+}
+
+func TestHelpFooterOnlyOnAirCommand(t *testing.T) {
+	cmd := root.NewCommand(t.Context(), Spec)
+	var airOut bytes.Buffer
+	cmd.SetOut(&airOut)
+	cmd.HelpFunc()(cmd, nil)
+	assert.Contains(t, airOut.String(), "Learn more:")
+	assert.Contains(t, airOut.String(), "databricks air run -h config")
+
+	list := findSubcommand(t, cmd, "list")
+	var listOut bytes.Buffer
+	list.SetOut(&listOut)
+	list.HelpFunc()(list, nil)
+	assert.True(t, strings.HasPrefix(listOut.String(), "List active runs"))
+	assert.NotContains(t, listOut.String(), "Learn more:")
+}
+
+func findSubcommand(t *testing.T, parent *cobra.Command, name string) *cobra.Command {
+	t.Helper()
+	for _, c := range parent.Commands() {
+		if c.Name() == name {
+			return c
+		}
+	}
+	t.Fatalf("subcommand %q not found", name)
+	return nil
 }
 
 func TestRunErrorIncludesDebugTip(t *testing.T) {
@@ -72,4 +117,13 @@ func TestRunErrorOmitsDebugTipWhenDebugEnabled(t *testing.T) {
 
 	assert.Same(t, originalErr, err)
 	assert.NotContains(t, err.Error(), "use the --debug flag")
+}
+
+func TestRunHelpPointsToAgentSkill(t *testing.T) {
+	run := findSubcommand(t, root.NewCommand(t.Context(), Spec), "run")
+	var out bytes.Buffer
+	run.SetOut(&out)
+	run.HelpFunc()(run, nil)
+	assert.Contains(t, out.String(), "databricks-ai-runtime skill")
+	assert.Contains(t, out.String(), "  "+skillInstallCommand+"\n")
 }

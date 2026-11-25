@@ -5,7 +5,7 @@
 # merge this PR introduces for load performance.
 trace $CLI bundle plan
 
-title "job_a merged max_concurrent_runs from the override file\n"
+title "job_a merged max_concurrent_runs from the override file"
 # The located warning is already asserted by the plan above; drop the duplicate here so
 # this step only shows the merged value.
 trace $CLI bundle validate -o json 2>/dev/null | jq '.resources.jobs.job_a.max_concurrent_runs'

@@ -3,18 +3,23 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -27,8 +32,8 @@ const (
 var (
 	// DAR uses the OCI repository-component grammar without dots or slashes,
 	// which are forbidden in Unity Catalog names.
-	artifactNamePattern = regexp.MustCompile(`^[a-z0-9]+((_|__|-+)[a-z0-9]+)*$`)
-	imageTagPattern     = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$`)
+	artifactNamePattern = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z0-9]+((_|__|-+)[a-z0-9]+)*$`) })
+	imageTagPattern     = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$`) })
 )
 
 type imagePushOptions struct {
@@ -71,6 +76,7 @@ func configureImageDocker(ctx context.Context, profile string) (string, error) {
 
 	var output bytes.Buffer
 	cmd := exec.CommandContext(ctx, executable, "auth", "docker", "configure", profile)
+	cmd.Env = agents.SelfExecEnv(os.Environ())
 	cmd.Stdout = &output
 	cmd.Stderr = &output
 	if err := cmd.Run(); err != nil {
@@ -105,7 +111,7 @@ func registryHostFromDockerConfigureOutput(output string) (string, error) {
 func newImagesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "images",
-		Short: "Manage container images for AI Runtime",
+		Short: "Push container images for custom environments",
 		RunE:  root.ReportUnknownSubcommand,
 	}
 	cmd.AddCommand(newImagePushCommand())
@@ -124,7 +130,7 @@ func newImagePushCommandWithDeps(deps imagePushDeps) *cobra.Command {
 		Use:   "push",
 		Short: "*Preview* Push a container image to Databricks Artifact Registry",
 		Long: `This CLI command is in Preview. For current feature status and requirements, see:
-  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/docker-images
   Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/docker-images
 
 Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
@@ -149,6 +155,101 @@ The destination --artifact ARTIFACT[:TAG] defaults to the source image name and 
 	cmd.Flags().StringVar(&opts.artifact, "artifact", "", "Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag")
 	cmd.Flags().BoolVar(&opts.pull, "pull", false, "Pull the source image even when it is already available locally")
 	return cmd
+}
+
+// formatImageSize renders a byte count in decimal MB or GB, the units docker images uses.
+func formatImageSize(sizeBytes int64) string {
+	if sizeBytes < 1e9 {
+		return fmt.Sprintf("%.1f MB", float64(sizeBytes)/1e6)
+	}
+	return fmt.Sprintf("%.1f GB", float64(sizeBytes)/1e9)
+}
+
+// logCompressedImageSize prints the compressed size and layer count from the pushed manifest of the
+// given platform. The registry stores compressed layers; the local image store only knows the uncompressed size.
+func logCompressedImageSize(ctx context.Context, deps imagePushDeps, dockerPath, target, platform string) {
+	var manifest, errOut bytes.Buffer
+	if err := deps.runCommand(ctx, nil, &manifest, &errOut, dockerPath, "manifest", "inspect", "--verbose", target); err != nil {
+		detail, _, _ := strings.Cut(strings.TrimSpace(errOut.String()), "\n")
+		if detail == "" {
+			detail = err.Error()
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the compressed size of %s: %s", target, detail))
+		return
+	}
+	sizeBytes, layers, err := compressedImageSize(manifest.Bytes(), platform)
+	if err != nil {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the compressed size of %s: %v", target, err))
+		return
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Compressed image size: %s (layers: %d).", formatImageSize(sizeBytes), layers))
+}
+
+type manifestLayers struct {
+	Layers []struct {
+		Size int64 `json:"size"`
+	} `json:"layers"`
+}
+
+type verboseManifest struct {
+	Descriptor struct {
+		Platform *struct {
+			OS           string `json:"os"`
+			Architecture string `json:"architecture"`
+		} `json:"platform"`
+	}
+	SchemaV2Manifest *manifestLayers
+	OCIManifest      *manifestLayers
+}
+
+// compressedImageSize sums the layer sizes in `docker manifest inspect --verbose` output. That
+// output is one object for an image manifest and an array for an index, whose entry for platform is used.
+// The JSON is Docker CLI's ImageManifest (https://github.com/docker/cli/blob/master/cli/manifest/types/types.go),
+// printed by https://github.com/docker/cli/blob/master/cli/command/manifest/inspect.go.
+func compressedImageSize(output []byte, platform string) (int64, int, error) {
+	output = bytes.TrimSpace(output)
+	var entries []verboseManifest
+	if bytes.HasPrefix(output, []byte("[")) {
+		if err := json.Unmarshal(output, &entries); err != nil {
+			return 0, 0, err
+		}
+	} else {
+		var entry verboseManifest
+		if err := json.Unmarshal(output, &entry); err != nil {
+			return 0, 0, err
+		}
+		entries = []verboseManifest{entry}
+	}
+	for _, e := range entries {
+		if p := e.Descriptor.Platform; p != nil && p.OS+"/"+p.Architecture != platform {
+			continue
+		}
+		m := e.OCIManifest
+		if m == nil {
+			m = e.SchemaV2Manifest
+		}
+		if m == nil || len(m.Layers) == 0 {
+			continue
+		}
+		var sizeBytes int64
+		for _, l := range m.Layers {
+			sizeBytes += l.Size
+		}
+		return sizeBytes, len(m.Layers), nil
+	}
+	return 0, 0, fmt.Errorf("no %s image manifest with layers", platform)
+}
+
+// darLimitationsURL returns the DAR limitations docs for the workspace's cloud.
+func darLimitationsURL(cfg *config.Config) string {
+	switch {
+	case cfg.IsAzure():
+		return "https://learn.microsoft.com/azure/databricks/artifact-registry/#limitations"
+	case cfg.IsGcp():
+		return "https://docs.databricks.com/gcp/en/artifact-registry/#limitations"
+	default:
+		return "https://docs.databricks.com/aws/en/artifact-registry/#limitations"
+	}
 }
 
 // runImagePush validates inputs, prepares a compatible source image, and pushes it to DAR.
@@ -195,24 +296,46 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 		cmdio.LogString(ctx, "Using local source image "+resolved.source)
 	}
 
-	var platform bytes.Buffer
-	if err := deps.runCommand(ctx, nil, &platform, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", resolved.source); err != nil {
+	var inspected bytes.Buffer
+	// {{with .Config}} keeps an image with no config from failing the template (https://docs.docker.com/engine/cli/formatting/).
+	// WorkingDir comes last because it is the only field that may itself contain the separator.
+	if err := deps.runCommand(ctx, nil, &inspected, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}}", resolved.source); err != nil {
 		return fmt.Errorf("inspect source image %s: %w", resolved.source, err)
 	}
-	if got := strings.TrimSpace(platform.String()); got != airImagePlatform {
-		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, got, airImagePlatform, airImagePlatform)
+	platform, rest, _ := strings.Cut(strings.TrimSpace(inspected.String()), "|")
+	size, workingDir, _ := strings.Cut(rest, "|")
+	if platform != airImagePlatform {
+		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, platform, airImagePlatform, airImagePlatform)
+	}
+	// Sizes are informational only: a size that can't be read never blocks the push.
+	if sizeBytes, err := strconv.ParseInt(size, 10, 64); err == nil {
+		cmdio.LogString(ctx, fmt.Sprintf("Source image %s is %s uncompressed.", resolved.source, formatImageSize(sizeBytes)))
+	} else {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: could not read the uncompressed size of source image %s (got %q).", resolved.source, size))
+	}
+	// With no WORKDIR or WORKDIR /, relative paths don't depend on a directory the image chose.
+	if workingDir != "" && workingDir != "/" {
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: source image %s sets WORKDIR %s. Use absolute paths in your command and scripts. See how AI Runtime command paths work:\n"+
+			"  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/yaml-config#command\n"+
+			"  Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/yaml-config#command", resolved.source, workingDir))
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "tag", resolved.source, target); err != nil {
 		return fmt.Errorf("tag source image %s: %w", resolved.source, err)
 	}
+	// DAR sets and may change its own limits, so the CLI links them instead of enforcing one.
+	limitsURL := darLimitationsURL(w.Config)
 	cmdio.LogProgress(ctx, "Pushing image to "+target)
 	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "push", target); err != nil {
+		// A push can fail for many reasons, so the link is offered without naming size as the cause.
+		cmdio.LogString(ctx, "If the registry rejected the image for its size, see the Databricks Artifact Registry image limits: "+limitsURL)
 		return fmt.Errorf("push image %s: %w", target, err)
 	}
 
 	cmdio.LogString(ctx, "Pushed image.")
+	logCompressedImageSize(ctx, deps, dockerPath, target, platform)
+	cmdio.LogString(ctx, "For Databricks Artifact Registry image limits, see "+limitsURL)
 	if root.OutputType(cmd) == flags.OutputJSON {
 		return renderEnvelope(ctx, struct {
 			UnityCatalogImage string `json:"unity_catalog_image"`
@@ -240,14 +363,14 @@ func resolveImagePushOptions(
 	if err != nil {
 		return resolvedImagePushOptions{}, err
 	}
-	if !artifactNamePattern.MatchString(catalog) {
+	if !artifactNamePattern().MatchString(catalog) {
 		return resolvedImagePushOptions{}, fmt.Errorf("invalid catalog %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", catalog)
 	}
 	schema, err := promptImagePushValue(ctx, opts.schema, "Unity Catalog schema", "", "--schema")
 	if err != nil {
 		return resolvedImagePushOptions{}, err
 	}
-	if !artifactNamePattern.MatchString(schema) {
+	if !artifactNamePattern().MatchString(schema) {
 		return resolvedImagePushOptions{}, fmt.Errorf("invalid schema %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", schema)
 	}
 
@@ -312,7 +435,7 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 		tag = after
 	}
 
-	if !artifactNamePattern.MatchString(artifact) {
+	if !artifactNamePattern().MatchString(artifact) {
 		return "", "", fmt.Errorf("invalid artifact name %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", artifact)
 	}
 	if tag == "" {
@@ -321,7 +444,7 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 	if len(tag) > maxImageTagLength {
 		return "", "", fmt.Errorf("invalid image tag: must be %d characters or less", maxImageTagLength)
 	}
-	if !imageTagPattern.MatchString(tag) {
+	if !imageTagPattern().MatchString(tag) {
 		return "", "", fmt.Errorf("invalid image tag %q", tag)
 	}
 	return artifact, tag, nil
@@ -338,7 +461,7 @@ func sourceImageDefaults(source string) (string, string) {
 		tag = source[lastColon+1:]
 	}
 	artifact := repository[strings.LastIndex(repository, "/")+1:]
-	if !artifactNamePattern.MatchString(artifact) {
+	if !artifactNamePattern().MatchString(artifact) {
 		artifact = ""
 	}
 	return artifact, tag

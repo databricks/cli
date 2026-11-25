@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -22,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -47,8 +49,11 @@ var testConfig map[string]any = map[string]any{
 	"catalogs": &resources.Catalog{
 		Name:    "mycatalog",
 		Comment: "Test catalog",
-		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
-		// only during updates. They are not included in the test config.
+		// Note: EnablePredictiveOptimization cannot be set during creation,
+		// only during updates. It is not included in the test config.
+		// IsolationMode has the same restriction but is applied by DoCreate with a
+		// follow-up update, so it is set here to cover that path.
+		IsolationMode: catalog.CatalogIsolationModeIsolated,
 	},
 
 	"external_locations": &resources.ExternalLocation{
@@ -148,6 +153,31 @@ var testConfig map[string]any = map[string]any{
 				},
 			},
 		},
+	},
+
+	// The fake accepts a declarative feature alongside lookups and functions, which the real API
+	// rejects.
+	"feature_specs": &resources.FeatureSpec{
+		Name: "main.default.my_feature_spec",
+		Features: []ml.Features{
+			{FeatureLookup: &ml.FeatureLookup{
+				Table:               "main.default.my_table",
+				LookupKeys:          []string{"id"},
+				TimestampLookupKeys: []string{"ts"},
+				LookbackWindow:      duration.New(time.Hour),
+				FeatureNames:        []string{"amount", "country"},
+				RenameOutputs:       []ml.RenameOutput{{Feature: "amount", Output: "total_amount"}},
+				DefaultValues:       []ml.DefaultValue{{Feature: "country", DefaultValue: "unknown"}},
+			}},
+			{FeatureFunction: &ml.FeatureFunction{
+				Udf:           "main.default.my_udf",
+				Output:        "score",
+				InputBindings: []ml.FeatureFunctionInputBinding{{Parameter: "x", BoundFeature: "amount"}},
+			}},
+			{DeclarativeFeature: &ml.DeclarativeFeature{Feature: "main.default.my_feature"}},
+		},
+		ExcludeColumns:       []string{"country"},
+		ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{"numpy==2.1.0"}},
 	},
 
 	"experiments": &resources.MlflowExperiment{
@@ -740,6 +770,17 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"feature_specs.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "function",
+			FullName:      "main.default.my_feature_spec",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "table",
@@ -927,6 +968,46 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"postgres_data_apis": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Creating the project implicitly provisions the "production" branch and
+		// its primary read-write endpoint, which the Data API requires.
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-data-api",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Data API",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		waiter, err := client.Postgres.CreateDatabase(ctx, postgres.CreateDatabaseRequest{
+			Parent:     "projects/test-project-for-data-api/branches/production",
+			DatabaseId: "test-database",
+			Database: postgres.Database{
+				Spec: &postgres.DatabaseDatabaseSpec{
+					PostgresDatabase: "app_db",
+					Role:             "projects/test-project-for-data-api/branches/production/roles/owner",
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		database, err := waiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresDataApi{
+			Parent:    database.Name,
+			DbSchemas: []string{"public"},
+		}, nil
+	},
+
 	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
@@ -1070,7 +1151,9 @@ func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgA
 	require.Empty(t, relevantChanges, msgAndArgs...)
 }
 
-func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+// prepareTestState creates the resources group depends on and returns the state DoCreate takes,
+// built from the group's fixture in testDeps or testConfig.
+func prepareTestState(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) any {
 	var inputConfig any
 	var err error
 
@@ -1110,6 +1193,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		ss.RelativePath = ss.BundleID + "/" + hash
 		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath + "/" + snapshot.ContentSubdir
 	}
+
+	return newState
+}
+
+func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+	newState := prepareTestState(t, group, adapter, client)
 
 	ctx := t.Context()
 
@@ -1313,6 +1402,9 @@ func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cf
 	}
 	for _, p := range cfg.UpdatableIDFields {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdatableIDFields: %s", p.Field)
+	}
+	for _, p := range cfg.ParentIDFields {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "ParentIDFields: %s", p.Field)
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)

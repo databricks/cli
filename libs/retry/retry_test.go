@@ -26,6 +26,20 @@ func TestIsTransient(t *testing.T) {
 	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "deadline exceeded"}))
 	assert.False(t, IsTransient(ctx, &apierr.APIError{StatusCode: http.StatusForbidden}))
 	assert.False(t, IsTransient(ctx, errors.New("boom")))
+
+	// The SDK's inactivity timeout, which it does not retry itself.
+	inactivity := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: errors.New("request timed out after 1m30s of inactivity")}
+	assert.True(t, IsTransient(ctx, inactivity))
+	assert.True(t, IsTransient(ctx, fmt.Errorf("failed to upload: %w", inactivity)))
+	assert.True(t, IsTransientRead(ctx, inactivity))
+	cancelled := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: context.Canceled}
+	assert.False(t, IsTransient(ctx, cancelled))
+
+	// The HTTP/2 health check closed a dead connection, which ends the request before the
+	// inactivity timeout would.
+	connLost := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a", Err: errors.New("http2: client connection lost")}
+	assert.True(t, IsTransient(ctx, connLost))
+	assert.True(t, IsTransient(ctx, fmt.Errorf("failed to upload: %w", connLost)))
 }
 
 func TestIsTransientRead(t *testing.T) {
@@ -39,6 +53,9 @@ func TestIsTransientRead(t *testing.T) {
 	// The connection cut mid-response, seen on GET /clusters/get.
 	unexpectedEOF := &url.Error{Op: "Get", URL: "https://example.test/api/2.1/clusters/get", Err: io.ErrUnexpectedEOF}
 	assert.True(t, IsTransientRead(ctx, unexpectedEOF))
+	// The HTTP/2 health check closed a dead connection; the retry dials a new one.
+	connLost := &url.Error{Op: "Post", URL: "https://example.test/api/2.0/workspace-files/import-file/a?overwrite=true", Err: errors.New("http2: client connection lost")}
+	assert.True(t, IsTransientRead(ctx, connLost))
 	// Transport errors the SDK already retries for its full RetryTimeout must not be retried again.
 	connRefused := &url.Error{Op: "Get", URL: "https://example.test/api/2.0/workspace/get-status", Err: errors.New("dial tcp 10.0.0.1:443: connect: connection refused")}
 	assert.False(t, IsTransientRead(ctx, connRefused))
@@ -115,7 +132,7 @@ func TestWithStopsOnContextCancel(t *testing.T) {
 
 func TestRetryMessage(t *testing.T) {
 	apiErr := &apierr.APIError{StatusCode: http.StatusGatewayTimeout, Message: "boom"}
-	assert.Equal(t, "retrying", retryMessage(errors.New("x")))
+	assert.Equal(t, "retrying after x", retryMessage(errors.New("x")))
 	assert.Equal(t, "retrying after 504 Gateway Timeout", retryMessage(apiErr))
 	assert.Equal(t, "retrying after 504 Gateway Timeout: failed to upload /a/b: boom", retryMessage(fmt.Errorf("failed to upload /a/b: %w", apiErr)))
 }

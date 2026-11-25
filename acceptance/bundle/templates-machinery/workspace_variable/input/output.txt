@@ -1,0 +1,108 @@
+
+=== String input
+
+>>> [CLI] bundle debug render-template-schema ./string
+{
+  "welcome_message": null,
+  "success_message": "Created for \"\"",
+  "properties": {
+    "message": {
+      "description": "Message for ",
+      "default": "Deploying to "
+    },
+    "workspace": {
+      "description": "Workspace name",
+      "default": ""
+    }
+  }
+}
+
+>>> [CLI] bundle debug render-template-schema ./string --input-file input.value.json
+{
+  "welcome_message": null,
+  "success_message": "Created for \"team-dev\"",
+  "properties": {
+    "message": {
+      "description": "Message for team-dev",
+      "default": "Deploying to team-dev"
+    },
+    "workspace": {
+      "description": "Workspace name",
+      "default": ""
+    }
+  }
+}
+
+>>> [CLI] bundle init ./string
+Created for ""
+workspace_name: ""
+message: "Deploying to "
+
+>>> [CLI] bundle init ./string --config-file input.empty.json
+Created for ""
+workspace_name: ""
+message: "Deploying to "
+
+>>> [CLI] bundle init ./string --config-file input.value.json
+Created for "team-dev"
+workspace_name: "team-dev"
+message: "Deploying to team-dev"
+
+>>> musterr [CLI] bundle init ./string --config-file input.invalid.json
+Error: failed to load config from file input.invalid.json: invalid value for workspace: "Team Dev". Use lowercase letters and dashes
+
+=== Input without a value yet
+
+>>> [CLI] bundle debug render-template-schema ./no_value
+{
+  "welcome_message": "Welcome, team-prod",
+  "success_message": null,
+  "properties": {
+    "workspace": {
+      "description": "Workspace name",
+      "default": "team-prod"
+    }
+  }
+}
+
+>>> musterr [CLI] bundle init ./no_value
+Error: variable "workspace" not defined
+
+>>> [CLI] bundle init ./no_value --config-file input.value.json
+Welcome, team-dev
+✨ Successfully initialized template
+workspace: team-dev
+
+=== Boolean input
+
+>>> [CLI] bundle init ./boolean
+✨ Successfully initialized template
+workspace: false
+
+>>> [CLI] bundle init ./boolean --config-file input.false.json
+✨ Successfully initialized template
+workspace: false
+
+=== Integer input
+
+>>> [CLI] bundle init ./integer
+✨ Successfully initialized template
+workspace: 0
+
+>>> [CLI] bundle init ./integer --config-file input.zero.json
+✨ Successfully initialized template
+workspace: 0
+
+=== Undeclared input
+
+>>> [CLI] bundle debug render-template-schema ./undeclared --input-file input.value.json
+{
+  "welcome_message": "workspace: {[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}",
+  "success_message": null,
+  "properties": {}
+}
+
+>>> [CLI] bundle init ./undeclared --config-file input.value.json
+workspace: {[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}
+✨ Successfully initialized template
+workspace: {[CUSTOM_HOSTNAME] [CUSTOM_HOST] [WORKSPACE_ID] [WORKSPACE_ID]}

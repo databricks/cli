@@ -19,12 +19,12 @@ class AzureKeyVaultSecretScopeMetadata:
 
     dns_name: VariableOr[str]
     """
-    The DNS of the KeyVault
+    The DNS name of the key vault, for example ``https://my-key-vault.vault.azure.net/``.
     """
 
     resource_id: VariableOr[str]
     """
-    The resource id of the azure KeyVault that user wants to associate the scope with.
+    The Azure resource ID of the key vault to associate with the scope.
     """
 
     @classmethod
@@ -40,12 +40,12 @@ class AzureKeyVaultSecretScopeMetadataDict(TypedDict, total=False):
 
     dns_name: VariableOr[str]
     """
-    The DNS of the KeyVault
+    The DNS name of the key vault, for example ``https://my-key-vault.vault.azure.net/``.
     """
 
     resource_id: VariableOr[str]
     """
-    The resource id of the azure KeyVault that user wants to associate the scope with.
+    The Azure resource ID of the key vault to associate with the scope.
     """
 
 

@@ -1,3 +1,5 @@
+Badness = "Adding a tag to an existing experiment is silently ignored: tags are excluded from the diff (configs/experiments.yml, terraform_compat), so the plan is empty and k2 never reaches the experiment. Tag changes should be applied in place (SetExperimentTag/DeleteExperimentTag), or at least reported."
+
 Cloud = true
 RecordRequests = false
 RunsOnDbr = true

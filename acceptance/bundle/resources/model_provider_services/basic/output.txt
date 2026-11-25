@@ -1,5 +1,6 @@
 
 === Initial summary before deploy
+
 >>> [CLI] bundle summary -o json
 {
   "comment": "COMMENT1",
@@ -28,6 +29,7 @@
 }
 
 === Verify it does not exist yet
+
 >>> musterr [CLI] ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice
 Error: Resource catalog.ModelProviderService not found: main.myschema.myservice
 
@@ -70,6 +72,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Summary should show the id and the Catalog Explorer url
+
 >>> [CLI] bundle summary -o json
 {
   "id": "main.myschema.myservice",
@@ -77,6 +80,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Verify deployment
+
 >>> [CLI] ai-gateway get-model-provider-service model-provider-services/main.myschema.myservice
 {
   "name": "model-provider-services/main.myschema.myservice",
@@ -84,6 +88,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Update comment (should update in place, not recreate)
+
 >>> update_file.py databricks.yml COMMENT1 COMMENT2
 
 >>> [CLI] bundle deploy
@@ -127,6 +132,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 "COMMENT2"
 
 === Change an immutable field (should plan a recreate)
+
 >>> update_file.py databricks.yml EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC
 
 >>> [CLI] bundle plan

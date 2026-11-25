@@ -8,6 +8,7 @@
 >>> export SCHEMA_NAME=default
 
 === create catalog and schema to test diff functionality
+
 >>> [CLI] catalogs create mycatalog-[UNIQUE_NAME]
 {
   "full_name": "mycatalog-[UNIQUE_NAME]"
@@ -19,6 +20,7 @@
 }
 
 === create the registered model
+
 >>> [CLI] bundle plan
 create registered_models.my_registered_model
 
@@ -39,6 +41,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === update the comment, this should not recreate
+
 >>> [CLI] bundle plan
 update registered_models.my_registered_model
 
@@ -58,17 +61,18 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "schema_name": "default"
 }
 
-=== update the name, this should recreate
->>> [CLI] bundle plan
-recreate registered_models.my_registered_model
+=== update the name, this renames the model in place
 
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+>>> [CLI] bundle plan
+update registered_models.my_registered_model
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-Recreated registered_models.my_registered_model
+Updated registered_models.my_registered_model
 Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] registered-models get main.default.my-registered-model-updated-[UNIQUE_NAME]
 {
@@ -79,6 +83,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 }
 
 === update the catalog name, this should recreate
+
 >>> [CLI] bundle plan
 recreate registered_models.my_registered_model
 
@@ -99,6 +104,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 }
 
 === update the schema name, this should recreate
+
 >>> [CLI] bundle plan
 recreate registered_models.my_registered_model
 

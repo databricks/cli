@@ -685,7 +685,7 @@ func (r *Root) GetResourceConfig(path string) (any, error) {
 	}
 
 	// Resolve the Go type that represents a single resource in this group.
-	typ, ok := ResourcesTypes[resourceType]
+	typ, ok := ResourcesTypes()[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("no such resource type in the config: %q", resourceType)
 	}

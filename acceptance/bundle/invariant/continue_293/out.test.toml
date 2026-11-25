@@ -17,6 +17,7 @@ EnvMatrix.INPUT_CONFIG = [
   "experiment.yml.tmpl",
   "external_location.yml.tmpl",
   "feature.yml.tmpl",
+  "feature_spec.yml.tmpl",
   "job.yml.tmpl",
   "job_pydabs_10_tasks.yml.tmpl",
   "job_run_job_ref.yml.tmpl",

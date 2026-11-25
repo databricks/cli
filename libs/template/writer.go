@@ -125,6 +125,10 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 	if err != nil {
 		return err
 	}
+	tmpl.renderer.workspace, err = loadWorkspaceContext(ctx, tmpl.config.schema)
+	if err != nil {
+		return err
+	}
 
 	// Print welcome message
 	welcome := tmpl.config.schema.WelcomeMessage

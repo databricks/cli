@@ -39,7 +39,7 @@ class CronSchedule:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] SQL condition that must be satisfied before a scheduled run is triggered. The condition is evaluated
+    [Beta] SQL condition that must be satisfied before a scheduled run is triggered. The condition is evaluated
     after the cron expression fires and must return a truthy result for the run to proceed.
     """
 
@@ -73,7 +73,7 @@ class CronScheduleDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] SQL condition that must be satisfied before a scheduled run is triggered. The condition is evaluated
+    [Beta] SQL condition that must be satisfied before a scheduled run is triggered. The condition is evaluated
     after the cron expression fires and must return a truthy result for the run to proceed.
     """
 

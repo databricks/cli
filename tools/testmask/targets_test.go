@@ -39,6 +39,13 @@ func TestGetTargets(t *testing.T) {
 			targets: []string{"test-exp-aitools"},
 		},
 		{
+			name: "hostenv_triggers_test",
+			files: []string{
+				"internal/testutil/hostenv/hostenv.go",
+			},
+			targets: []string{"test"},
+		},
+		{
 			name: "sandbox",
 			files: []string{
 				"cmd/sandbox/create.go",
@@ -86,6 +93,55 @@ func TestGetTargets(t *testing.T) {
 		{
 			name:    "empty_files",
 			files:   []string{},
+			targets: []string{"test"},
+		},
+		{
+			name: "codeowners_only",
+			files: []string{
+				".github/CODEOWNERS",
+			},
+			targets: []string{},
+		},
+		{
+			name: "codeowners_with_other_files",
+			files: []string{
+				".github/CODEOWNERS",
+				"bundle/config.go",
+			},
+			targets: []string{"test"},
+		},
+		{
+			name: "docs_and_agent_files_only",
+			files: []string{
+				".agents/rules/testing.md",
+				".claude/settings.json",
+				".cursor/rules/testing.mdc",
+				".github/PULL_REQUEST_TEMPLATE.md",
+				".nextchanges/cli/7483.md",
+				"AGENTS.md",
+				"README.md",
+			},
+			targets: []string{},
+		},
+		{
+			name: "acceptance_output_readme_not_ignored",
+			files: []string{
+				"acceptance/bundle/templates/default-python/classic/output/my_default_python/README.md",
+			},
+			targets: []string{"test"},
+		},
+		{
+			name: "embedded_template_readme_not_ignored",
+			files: []string{
+				"libs/template/templates/default-sql/template/{{.project_name}}/scratch/README.md",
+			},
+			targets: []string{"test"},
+		},
+		{
+			name: "nextchanges_version_not_ignored",
+			files: []string{
+				".nextchanges/version",
+			},
 			targets: []string{"test"},
 		},
 	}

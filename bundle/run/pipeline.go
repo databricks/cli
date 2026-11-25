@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -58,10 +59,12 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId
 	// Otherwise for long lived pipelines, there can be a lot of unnecessary
 	// latency due to multiple pagination API calls needed underneath the hood for
 	// ListPipelineEventsAll
-	events, err := w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
-		Filter:     `level='ERROR'`,
-		MaxResults: 100,
-		PipelineId: pipelineId,
+	events, err := retry.With(ctx, retry.IsTransientRead, func() ([]pipelines.PipelineEvent, error) {
+		return w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
+			Filter:     `level='ERROR'`,
+			MaxResults: 100,
+			PipelineId: pipelineId,
+		})
 	})
 	if err != nil {
 		return err
@@ -102,6 +105,25 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	if err != nil {
 		return nil, err
 	}
+	var hasQuotedTables bool
+	for _, tables := range [][]string{req.RefreshSelection, req.FullRefreshSelection} {
+		for _, table := range tables {
+			hasQuotedTables = hasQuotedTables || strings.ContainsRune(table, '`')
+		}
+	}
+	if hasQuotedTables {
+		pipeline, err := w.Pipelines.GetByPipelineId(ctx, pipelineID)
+		if err != nil {
+			return nil, err
+		}
+		// Legacy mode takes raw names; default publishing mode parses SQL identifiers.
+		// Unset modes follow the backend's schema-based legacy detection.
+		if pipeline.EffectivePublishingMode == pipelines.PublishingModeLegacyPublishingMode ||
+			(pipeline.EffectivePublishingMode == "" && pipeline.Spec.Schema == "") {
+			req.RefreshSelection = unquoteRefreshTables(req.RefreshSelection)
+			req.FullRefreshSelection = unquoteRefreshTables(req.FullRefreshSelection)
+		}
+	}
 
 	res, err := w.Pipelines.StartUpdate(ctx, *req)
 	if err != nil {
@@ -135,7 +157,9 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 			log.Info(ctx, event.String())
 		}
 
-		update, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
+		update, err := retry.With(ctx, retry.IsTransientRead, func() (*pipelines.GetUpdateResponse, error) {
+			return w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -185,6 +209,18 @@ func (r *pipelineRunner) Cancel(ctx context.Context) error {
 }
 
 func (r *pipelineRunner) Restart(ctx context.Context, opts *Options) (output.RunOutput, error) {
+	hasFiles := len(opts.Pipeline.RefreshByPath) > 0 || len(opts.Pipeline.FullRefreshByPath) > 0
+	// Check before stopping the active update.
+	if hasFiles {
+		pipeline, err := r.bundle.WorkspaceClient(ctx).Pipelines.GetByPipelineId(ctx, r.pipeline.ID)
+		if err != nil {
+			return nil, err
+		}
+		if pipeline.Spec.Continuous { //nolint:staticcheck // Direct pipeline runs honor this setting.
+			return nil, errors.New("file selectors with --restart require a triggered pipeline")
+		}
+	}
+
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Cancelling the active pipeline update")
 	err := r.Cancel(ctx)

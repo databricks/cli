@@ -121,17 +121,14 @@ for e in r["environments"]:
 EOF
 
 title "Detect and save changes"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
 title "Telemetry"
-echo
 # The engine name is dropped because both EnvMatrix variants share this output;
 # every other counter is engine-agnostic. This run exercises refs_retargeted
 # (the env param re-targeted to a different variable) and refs_from_siblings

@@ -1,42 +1,60 @@
 
 === help
->>> [CLI] air --help
-Run and manage AI Runtime training workloads on Databricks serverless GPU compute.
 
-These commands are under active development.
+>>> [CLI] air --help
+Run GPU workloads on Databricks serverless compute.
+
+Describe a workload in a YAML file and submit it with "databricks air run".
+Follow a run with "databricks air logs --follow" and "databricks air get", or
+see your active runs with "databricks air list".
 
 Usage:
   databricks air [command]
 
-Available Commands:
+Run workloads:
+  run             Submit a workload from a YAML config
+
+Manage runs:
   cancel          Cancel one or more runs
-  convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
-  get             Show status, configuration, and timing details for a specified run
-  images          Manage container images for AI Runtime
-  list            List active runs for the current user
-  logs            Stream or fetch logs for a run
-  pools           View provisioned GPU pools
-  run             Submit a training workload from a YAML config
+  get             Show a run's status, configuration, and timing
+  list            List your active runs
+  logs            Print or follow a run's logs
+
+Package and deploy:
+  convert-to-dabs Convert a workload YAML into a Databricks Asset Bundle
+  images          Push container images for custom environments
+
+Provisioned capacity:
+  pools           View provisioned GPU Pools, if any (not required to run)
 
 Flags:
-  -h, --help   help for air
+  -h, --help[=true|false]   help for air
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 Use "databricks air [command] --help" for more information about a command.
 
+Learn more:
+  YAML fields and example  databricks air run -h config
+  Quickstart (AWS)         https://docs.databricks.com/aws/en/machine-learning/ai-runtime/quickstart
+  Quickstart (Azure)       https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/quickstart
+  Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
+
 === list help
+
 >>> [CLI] air list --help
 List active runs for the current user.
 
 Filters:
   Use --filter KEY=VALUE per condition. A run must match every condition.
 
-  accelerator_type  Accelerator type, such as A10 or H100.
+  accelerator_type  Accelerator family or full YAML type. Examples:
+                    A10, H100, GPU_1xA10, GPU_8xH100.
+                    Workspace types: databricks air run -h config.compute.accelerator_type
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
   user              Run creator identifier.
@@ -47,68 +65,86 @@ Usage:
 Examples:
   databricks air list --filter accelerator_type=H100
 
+  databricks air list --filter accelerator_type=GPU_8xH100
+
   databricks air list --all-status \
     --filter 'experiment=qwen*' \
     --filter num_accelerators=8 \
     --filter user=person@example.com
 
 Flags:
-      --all-status           Show runs in all states (default: active only)
-      --all-users            Show runs from all users
-      --filter stringArray   Filter runs by KEY=VALUE (repeatable)
-  -h, --help                 help for list
-      --limit int            Maximum number of runs to show (default 20)
+      --all-status[=true|false]   Show runs in all states (default: active only)
+      --all-users[=true|false]    Show runs from all users
+      --filter stringArray        Filter runs by KEY=VALUE (repeatable)
+  -h, --help[=true|false]         help for list
+      --limit int                 Maximum number of runs to show; a run with several AI Runtime tasks shows one row per task (default 20)
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === get help
->>> [CLI] air get --help
-Show status, configuration, and timing details for a specified run.
 
-JOB_RUN_ID is the job run ID returned by "air run".
+>>> [CLI] air get --help
+Show a run's status, configuration, and timing.
+
+JOB_RUN_ID is the job run ID returned by "databricks air run".
+
+A job may run other tasks around its AI Runtime task (for example a notebook
+that prepares data first); the view shows the first AI Runtime task in task
+order. When a job has several AI Runtime tasks, pass --task-key to show another
+one. The status is that task's own, except that a task whose latest attempt
+failed shows RUNNING while another task of the run is still active, since it
+may yet be retried.
 
 Usage:
   databricks air get JOB_RUN_ID [flags]
 
 Flags:
-  -h, --help   help for get
+  -h, --help[=true|false]             help for get
+      --include-config[=true|false]   Include stored config in JSON (downloads over 1 MiB are omitted; may contain plaintext env_variables and parameters)
+      --task-key string               Show this AI Runtime task of the run (default: the first in task order)
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === pools help
+
 >>> [CLI] air pools --help
-View provisioned GPU pools
+View GPU Pools provisioned for your workspace.
+
+A GPU Pool is dedicated accelerator capacity that your Databricks account team
+provisions. Pools are optional: a run uses one only when its YAML sets
+compute.accelerator_pool_id.
 
 Usage:
   databricks air pools [flags]
   databricks air pools [command]
 
 Available Commands:
-  get         Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)
-  list        List the GPU pools available to the current workspace
+  get         Show a GPU Pool and its accelerator usage
+  list        List the GPU Pools available to the current workspace
 
 Flags:
-  -h, --help   help for pools
+  -h, --help[=true|false]   help for pools
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 Use "databricks air pools [command] --help" for more information about a command.
 
 === images help
+
 >>> [CLI] air images --help
-Manage container images for AI Runtime
+Push container images for custom environments
 
 Usage:
   databricks air images [flags]
@@ -118,20 +154,21 @@ Available Commands:
   push        *Preview* Push a container image to Databricks Artifact Registry
 
 Flags:
-  -h, --help   help for images
+  -h, --help[=true|false]   help for images
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 Use "databricks air images [command] --help" for more information about a command.
 
 === images push help
+
 >>> [CLI] air images push --help
 This CLI command is in Preview. For current feature status and requirements, see:
-  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/docker-images
+  AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/docker-images
   Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/docker-images
 
 Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
@@ -148,52 +185,61 @@ Usage:
   databricks air images push [flags]
 
 Flags:
-      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag
-      --catalog string    Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
-  -h, --help              help for push
-      --pull              Pull the source image even when it is already available locally
-      --schema string     Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens
-  -s, --source string     Source container image to push (NAME[:TAG] or NAME@DIGEST)
+      --artifact string     Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag
+      --catalog string      Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -h, --help[=true|false]   help for push
+      --pull[=true|false]   Pull the source image even when it is already available locally
+      --schema string       Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -s, --source string       Source container image to push (NAME[:TAG] or NAME@DIGEST)
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === logs help
->>> [CLI] air logs --help
-Stream logs from an active run until it completes, or fetch logs from a
-completed run.
 
-JOB_RUN_ID is the job run ID returned by "air run".
+>>> [CLI] air logs --help
+Print a run's logs and exit, or follow an active run with --follow.
+
+JOB_RUN_ID is the job run ID returned by "databricks air run". By default this
+prints the logs available now: the last 10000 lines, or --tail N lines. With
+--follow it prints them and then streams new lines until the run completes.
 
 Usage:
   databricks air logs JOB_RUN_ID [flags]
 
 Examples:
   databricks air logs 123456789
+  databricks air logs 123456789 --tail 50
+  databricks air logs 123456789 --follow
   databricks air logs 123456789 --node 1 --retry 0
   databricks air logs 123456789 --download-to ./logs
 
 Flags:
-      --download-to string   Download all logs to this directory instead of printing
-  -h, --help                 help for logs
-      --minutes int          Fetch only logs from the last N minutes
-      --node int             Fetch logs from this node
-      --retry int            View logs from a specific retry attempt; -1 means latest (default -1)
-      --tail int             Print the last N existing lines before following, or from a completed run (default 10000)
+      --download-to string    Download all logs to this directory instead of printing; not combinable with --tail, --minutes, or --follow
+  -f, --follow[=true|false]   Stream new lines until the run completes
+  -h, --help[=true|false]     help for logs
+      --minutes int           Fetch only logs from the last N minutes
+      --node int              Fetch logs from this node
+      --retry int             View logs from a specific retry attempt; -1 means latest (default -1)
+      --tail int              Print the last N lines (default 10000); with --follow, before streaming new ones
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
 
 === cancel help
+
 >>> [CLI] air cancel --help
 Cancel one or more runs by job run ID, or use --all to cancel
 all active runs submitted by the current user.
+
+Cancelling a run stops all of its tasks: every AI Runtime task in the job, and
+any other task such as a notebook that prepares data.
 
 --all prompts for confirmation. Use --yes to skip the prompt.
 
@@ -201,12 +247,12 @@ Usage:
   databricks air cancel [JOB_RUN_ID...] [flags]
 
 Flags:
-      --all    Cancel all of your active runs
-  -h, --help   help for cancel
-  -y, --yes    Skip the confirmation prompt
+      --all[=true|false]    Cancel all of your active runs
+  -h, --help[=true|false]   help for cancel
+  -y, --yes[=true|false]    Skip the confirmation prompt
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)

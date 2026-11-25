@@ -1,5 +1,6 @@
 
 === deploy triggers the run with only the overridden parameter
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default/files...
 Created jobs.my_job
@@ -23,6 +24,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === plan is stable: the resolved job default does not look like drift
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

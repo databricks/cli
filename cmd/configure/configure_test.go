@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/cmd"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/ini.v1"
 )
@@ -56,9 +55,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	os.Stdin = inp
 
 	cmd := cmd.New(ctx)
-	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
-
-	err := root.Execute(ctx, cmd)
+	err := cmd.Execute(ctx, []string{"configure", "--token", "--host", "https://host"})
 	assert.NoError(t, err)
 
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
@@ -90,9 +87,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	os.Stdin = inp
 
 	cmd := cmd.New(ctx)
-	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
-
-	err := root.Execute(ctx, cmd)
+	err := cmd.Execute(ctx, []string{"configure", "--token", "--host", "https://host"})
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -130,9 +125,7 @@ func TestEnvVarsConfigureNoInteractive(t *testing.T) {
 	t.Setenv("DATABRICKS_METADATA_SERVICE_URL", "https://metadata")
 
 	cmd := cmd.New(ctx)
-	cmd.SetArgs([]string{"configure", "--token"})
-
-	err := root.Execute(ctx, cmd)
+	err := cmd.Execute(ctx, []string{"configure", "--token"})
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -163,9 +156,7 @@ func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
 	t.Setenv("DATABRICKS_TOKEN", "secret")
 
 	cmd := cmd.New(ctx)
-	cmd.SetArgs([]string{"configure"})
-
-	err := root.Execute(ctx, cmd)
+	err := cmd.Execute(ctx, []string{"configure"})
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -194,9 +185,7 @@ func TestEnvProfileConfigureNoInteractive(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "FROM-ENV")
 
 	cmd := cmd.New(ctx)
-	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
-
-	err := root.Execute(ctx, cmd)
+	err := cmd.Execute(ctx, []string{"configure", "--token", "--host", "https://host"})
 	assert.NoError(t, err)
 
 	cfg, err := ini.Load(cfgPath)
@@ -222,9 +211,7 @@ func TestProfileShorthandOverridesEnvConfigureNoInteractive(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "FROM-ENV")
 
 	cmd := cmd.New(ctx)
-	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "-p", "FROM-FLAG"})
-
-	err := root.Execute(ctx, cmd)
+	err := cmd.Execute(ctx, []string{"configure", "--token", "--host", "https://host", "-p", "FROM-FLAG"})
 	assert.NoError(t, err)
 
 	cfg, err := ini.Load(cfgPath)
@@ -251,9 +238,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	os.Stdin = inp
 
 	cmd := cmd.New(ctx)
-	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
-
-	err := root.Execute(ctx, cmd)
+	err := cmd.Execute(ctx, []string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)

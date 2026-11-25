@@ -25,8 +25,9 @@ import (
 func queued() *OperationBuffer {
 	return &OperationBuffer{
 		queue:       make(chan string, bufferedOperations),
-		pending:     make(map[string]OperationUpdate),
+		pending:     make(map[string]*bufferedUpdate),
 		latestState: make(map[string]OperationUpdate),
+		operations:  make(map[string]*bufferedUpdate),
 	}
 }
 
@@ -46,17 +47,20 @@ func TestBufferCoalescesWhileAKeyIsPending(t *testing.T) {
 	s.record("resources.jobs.foo", stateUpdate(t, "v2"), false, nil)
 
 	assert.Len(t, s.queue, 1)
-	update, ok := s.take("resources.jobs.foo")
+	entry, ok := s.take("resources.jobs.foo")
 	require.True(t, ok)
-	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(update.State))
+	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(entry.update.State))
+	first := entry
 
 	// Taken means a request has it, and an in-flight request cannot be recalled, so the next
 	// write gets its own slot rather than joining it.
 	s.record("resources.jobs.foo", stateUpdate(t, "v3"), false, nil)
 	assert.Len(t, s.queue, 2)
-	update, ok = s.take("resources.jobs.foo")
+	entry, ok = s.take("resources.jobs.foo")
 	require.True(t, ok)
-	assert.JSONEq(t, `{"state":{"name":"v3"}}`, string(update.State))
+	assert.JSONEq(t, `{"state":{"name":"v3"}}`, string(entry.update.State))
+	assert.NotSame(t, first, entry)
+	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(first.update.State))
 }
 
 func TestBufferFailsOnOversizedState(t *testing.T) {
@@ -64,12 +68,15 @@ func TestBufferFailsOnOversizedState(t *testing.T) {
 	// Failing here says so, where reporting nothing would leave DMS without the resource
 	// and the next plan would create it again.
 	s := queued()
+	s.stats.StagedOperationCount = 1
 
 	s.RecordOperation(t.Context(), "resources.jobs.foo", false, "id-1", json.RawMessage(strings.Repeat("x", maxStateSize+1)))
 
 	assert.ErrorContains(t, s.Err(), "exceeds the 65536 byte limit")
 	assert.Empty(t, s.queue)
 	assert.Empty(t, s.pending)
+	assert.Equal(t, 1, s.Stats().OperationRecordingFailureCount)
+	assert.Zero(t, s.Stats().OperationRecordingPendingCount)
 }
 
 func TestDrainIsIdempotent(t *testing.T) {
@@ -93,12 +100,12 @@ func TestRecordFailureKeepsTheStateTheLastWriteRecorded(t *testing.T) {
 	// state), which it must not use: the write already recorded v2, which the service may hold.
 	s.RecordFailure("resources.jobs.foo", "id-old", json.RawMessage(`{"state":{"name":"v1"}}`), errors.New("wait timed out"))
 
-	update, ok := s.take("resources.jobs.foo")
+	entry, ok := s.take("resources.jobs.foo")
 	require.True(t, ok)
-	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(update.State), "keeps the state the write recorded")
-	assert.Equal(t, "id-new", update.ResourceID, "keeps the id the write recorded, not the pre-deploy id")
-	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.Status)
-	assert.Contains(t, update.ErrorMessage, "wait timed out")
+	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(entry.update.State), "keeps the state the write recorded")
+	assert.Equal(t, "id-new", entry.update.ResourceID, "keeps the id the write recorded, not the pre-deploy id")
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, entry.update.Status)
+	assert.Contains(t, entry.update.ErrorMessage, "wait timed out")
 }
 
 func TestRecordFailureUsesTheGivenStateWhenNoWriteRecorded(t *testing.T) {
@@ -108,10 +115,10 @@ func TestRecordFailureUsesTheGivenStateWhenNoWriteRecorded(t *testing.T) {
 
 	s.RecordFailure("resources.jobs.foo", "id-1", json.RawMessage(`{"state":{"name":"v1"}}`), errors.New("create failed"))
 
-	update, ok := s.take("resources.jobs.foo")
+	entry, ok := s.take("resources.jobs.foo")
 	require.True(t, ok)
-	assert.JSONEq(t, `{"state":{"name":"v1"}}`, string(update.State))
-	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, update.Status)
+	assert.JSONEq(t, `{"state":{"name":"v1"}}`, string(entry.update.State))
+	assert.Equal(t, bundledeployments.OperationStatusOperationStatusFailed, entry.update.Status)
 }
 
 func TestHistoryQueueDoesNotBlockWhenWriterStops(t *testing.T) {
@@ -119,7 +126,7 @@ func TestHistoryQueueDoesNotBlockWhenWriterStops(t *testing.T) {
 		const operationCount = 1000
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
-		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{BestEffort: true, OperationCount: operationCount})
+		b := StartOperationBuffer(ctx, "dep-1", 1, BufferOptions{BestEffort: true, StagedOperationCount: operationCount})
 		synctest.Wait()
 		cancel()
 		<-b.done

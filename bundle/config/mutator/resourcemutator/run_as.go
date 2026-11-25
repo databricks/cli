@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -226,7 +227,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Track the use of the legacy run_as mode.
-	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
+	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.UseLegacyRunAs))
 
 	// Track whether top level run_as is set.
 	b.Metrics.AddBoolValue("run_as_set", b.Config.Value().Get("run_as").Kind() != dyn.KindInvalid)
@@ -238,7 +239,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	// User has opted to use the legacy behavior of run_as with the
 	// experimental.use_legacy_run_as flag.
-	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
+	if b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.UseLegacyRunAs) {
 		if b.Config.Value().Get("run_as").Get("group_name").Kind() != dyn.KindInvalid {
 			return diag.Errorf("run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity")
 		}

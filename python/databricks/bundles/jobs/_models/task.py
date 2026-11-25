@@ -38,10 +38,7 @@ from databricks.bundles.jobs._models.dbt_platform_task import (
     DbtPlatformTaskParam,
 )
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
-from databricks.bundles.jobs._models.for_each_task import (
-    ForEachTask,
-    ForEachTaskParam,
-)
+from databricks.bundles.jobs._models.for_each_task import ForEachTask, ForEachTaskParam
 from databricks.bundles.jobs._models.gen_ai_compute_task import (
     GenAiComputeTask,
     GenAiComputeTaskParam,
@@ -119,7 +116,7 @@ class Task:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Applies an AI function to a set of input documents or rows.
+    [Beta] Applies an AI function to a set of input documents or rows.
     """
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTask] = None
@@ -237,7 +234,7 @@ class Task:
 
     health: VariableOrOptional[JobsHealthRules] = None
     """
-    An optional set of health rules that can be defined for this job.
+    An optional set of health rules that can be defined for this task.
     """
 
     job_cluster_key: VariableOrOptional[str] = None
@@ -373,7 +370,7 @@ class TaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Applies an AI function to a set of input documents or rows.
+    [Beta] Applies an AI function to a set of input documents or rows.
     """
 
     ai_runtime_task: VariableOrOptional[AiRuntimeTaskParam]
@@ -491,7 +488,7 @@ class TaskDict(TypedDict, total=False):
 
     health: VariableOrOptional[JobsHealthRulesParam]
     """
-    An optional set of health rules that can be defined for this job.
+    An optional set of health rules that can be defined for this task.
     """
 
     job_cluster_key: VariableOrOptional[str]

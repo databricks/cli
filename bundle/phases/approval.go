@@ -44,6 +44,7 @@ var approvalTable = []approvalEntry{
 	// Deploy only.
 	{group: "materialization_sets", deployMessage: deleteOrRecreateMaterializationSetMessage},
 	{group: "features", deployMessage: deleteOrRecreateFeatureMessage, destroyMessage: new(deleteFeatureMessage)},
+	{group: "feature_specs", deployMessage: deleteOrRecreateFeatureSpecMessage, destroyMessage: new(deleteFeatureSpecMessage)},
 }
 
 var deployApprovalGroups = deployGroups()

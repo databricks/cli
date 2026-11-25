@@ -104,7 +104,7 @@ func waitForStopped(ctx context.Context, api *sandboxAPI, s *spinner, id string)
 }
 
 // Centralizing lifecycle polling keeps timeout, cancellation, and terminal
-// state handling consistent across start and SSH.
+// state handling consistent across start and port forwarding.
 func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetStatus, operation string, unexpectedStatuses ...string) (*sandboxEntry, error) {
 	start := time.Now()
 	deadline := start.Add(startWaitTimeout)
@@ -132,4 +132,47 @@ func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetSt
 		case <-time.After(startPollInterval):
 		}
 	}
+}
+
+// ensureRunning starts the sandbox before port forwarding opens a connection.
+// The caller must not have a spinner open.
+func ensureRunning(ctx context.Context, api *sandboxAPI, id, currentStatus string) (*sandboxEntry, error) {
+	if strings.EqualFold(currentStatus, "running") {
+		return &sandboxEntry{SandboxID: id, Status: currentStatus}, nil
+	}
+
+	s := spin(ctx, "Starting "+cmdio.Bold(ctx, id)+"…")
+	defer s.Close()
+
+	var sb *sandboxEntry
+	if strings.EqualFold(currentStatus, "stopping") {
+		stopped, err := waitForStopped(ctx, api, s, id)
+		if err != nil {
+			s.fail("Failed to start " + id)
+			return nil, err
+		}
+		currentStatus = stopped.Status
+		s.Update("Starting " + id + "…")
+	}
+
+	if strings.EqualFold(currentStatus, "stopped") {
+		updated, err := api.start(ctx, id)
+		if err != nil {
+			s.fail("Failed to start " + id)
+			return nil, fmt.Errorf("failed to start sandbox %s: %w", id, err)
+		}
+		sb = updated
+	}
+
+	if sb == nil || !strings.EqualFold(sb.Status, "running") {
+		final, err := waitForRunning(ctx, api, s, id)
+		if err != nil {
+			s.fail("Failed to start " + id)
+			return nil, err
+		}
+		sb = final
+	}
+
+	s.ok("Started " + cmdio.Bold(ctx, id))
+	return sb, nil
 }

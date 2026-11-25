@@ -15,10 +15,7 @@ from databricks.bundles.pipelines._models.event_log_spec import (
     EventLogSpec,
     EventLogSpecParam,
 )
-from databricks.bundles.pipelines._models.filters import (
-    Filters,
-    FiltersParam,
-)
+from databricks.bundles.pipelines._models.filters import Filters, FiltersParam
 from databricks.bundles.pipelines._models.ingestion_gateway_pipeline_definition import (
     IngestionGatewayPipelineDefinition,
     IngestionGatewayPipelineDefinitionParam,
@@ -27,10 +24,7 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionParam,
 )
-from databricks.bundles.pipelines._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.pipelines._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
@@ -46,6 +40,10 @@ from databricks.bundles.pipelines._models.pipeline_library import (
 from databricks.bundles.pipelines._models.pipeline_permission import (
     PipelinePermission,
     PipelinePermissionParam,
+)
+from databricks.bundles.pipelines._models.pipeline_testing import (
+    PipelineTesting,
+    PipelineTestingParam,
 )
 from databricks.bundles.pipelines._models.pipelines_environment import (
     PipelinesEnvironment,
@@ -68,11 +66,16 @@ class Pipeline(Resource):
     allow_duplicate_names: VariableOrOptional[bool] = None
     """
     If false, deployment will fail if name conflicts with that of another pipeline.
+    
+    Ignored when `parent_path` is set. A pipeline in a workspace folder must have a name that is
+    unique within that folder, and creation fails if the folder already contains an object with the
+    same name.
     """
 
     budget_policy_id: VariableOrOptional[str] = None
     """
-    [Public Preview] Budget policy of this pipeline.
+    [Public Preview] ID (UUID) of the serverless budget policy applied to this pipeline. Only supported for serverless
+    pipelines.
     """
 
     cascade_on_destroy: VariableOrOptional[bool] = None
@@ -82,12 +85,16 @@ class Pipeline(Resource):
 
     catalog: VariableOrOptional[str] = None
     """
-    A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.
+    A catalog in Unity Catalog to publish data from this pipeline to. Tables are published to the
+    schema set in `schema` (or the legacy `target`) inside this catalog, for example
+    `catalog`.`schema`.`table`; source code can also use fully qualified names to write to other
+    schemas and catalogs. If `catalog` is not specified, the pipeline uses the legacy Hive metastore.
     """
 
     channel: VariableOrOptional[str] = None
     """
-    SDP Release Channel that specifies which version to use.
+    Release channel that selects the pipeline runtime version: `CURRENT` (the default) or `PREVIEW`,
+    which runs on the upcoming runtime release.
     """
 
     clusters: VariableOrList[PipelineCluster] = field(default_factory=list)
@@ -119,7 +126,7 @@ class Pipeline(Resource):
 
     edition: VariableOrOptional[str] = None
     """
-    Pipeline product edition.
+    Pipeline product edition: `CORE`, `PRO`, or `ADVANCED`. Serverless pipelines require `ADVANCED`.
     """
 
     environment: VariableOrOptional[PipelinesEnvironment] = None
@@ -186,9 +193,11 @@ class Pipeline(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path of the pipeline parent folder in workspace file tree.
+    [Beta] Path of the pipeline parent folder in workspace file tree.
     
-    If absent, the pipeline doesn't have a workspace object.
+    If absent, the pipeline doesn't have a parent folder.
+    
+    Example: /Workspace/Projects/my_project
     """
 
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
@@ -217,9 +226,8 @@ class Pipeline(Resource):
 
     run_as: VariableOrOptional[RunAs] = None
     """
-    Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
-    
-    Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+    The user or service principal that the pipeline runs as. If not specified, the pipeline runs as
+    the user who created the pipeline.
     """
 
     schema: VariableOrOptional[str] = None
@@ -241,6 +249,7 @@ class Pipeline(Resource):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
+    Use compute_policy_id instead. Only one of these fields may be set.
     """
 
     storage: VariableOrOptional[str] = None
@@ -258,6 +267,13 @@ class Pipeline(Resource):
     target: VariableOrOptional[str] = None
     """
     [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    """
+
+    testing: VariableOrOptional[PipelineTesting] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Test configuration for this pipeline. Used only by test-only updates.
     """
 
     usage_policy_id: VariableOrOptional[str] = None
@@ -281,11 +297,16 @@ class PipelineDict(TypedDict, total=False):
     allow_duplicate_names: VariableOrOptional[bool]
     """
     If false, deployment will fail if name conflicts with that of another pipeline.
+    
+    Ignored when `parent_path` is set. A pipeline in a workspace folder must have a name that is
+    unique within that folder, and creation fails if the folder already contains an object with the
+    same name.
     """
 
     budget_policy_id: VariableOrOptional[str]
     """
-    [Public Preview] Budget policy of this pipeline.
+    [Public Preview] ID (UUID) of the serverless budget policy applied to this pipeline. Only supported for serverless
+    pipelines.
     """
 
     cascade_on_destroy: VariableOrOptional[bool]
@@ -295,12 +316,16 @@ class PipelineDict(TypedDict, total=False):
 
     catalog: VariableOrOptional[str]
     """
-    A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.
+    A catalog in Unity Catalog to publish data from this pipeline to. Tables are published to the
+    schema set in `schema` (or the legacy `target`) inside this catalog, for example
+    `catalog`.`schema`.`table`; source code can also use fully qualified names to write to other
+    schemas and catalogs. If `catalog` is not specified, the pipeline uses the legacy Hive metastore.
     """
 
     channel: VariableOrOptional[str]
     """
-    SDP Release Channel that specifies which version to use.
+    Release channel that selects the pipeline runtime version: `CURRENT` (the default) or `PREVIEW`,
+    which runs on the upcoming runtime release.
     """
 
     clusters: VariableOrList[PipelineClusterParam]
@@ -332,7 +357,7 @@ class PipelineDict(TypedDict, total=False):
 
     edition: VariableOrOptional[str]
     """
-    Pipeline product edition.
+    Pipeline product edition: `CORE`, `PRO`, or `ADVANCED`. Serverless pipelines require `ADVANCED`.
     """
 
     environment: VariableOrOptional[PipelinesEnvironmentParam]
@@ -399,9 +424,11 @@ class PipelineDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path of the pipeline parent folder in workspace file tree.
+    [Beta] Path of the pipeline parent folder in workspace file tree.
     
-    If absent, the pipeline doesn't have a workspace object.
+    If absent, the pipeline doesn't have a parent folder.
+    
+    Example: /Workspace/Projects/my_project
     """
 
     permissions: VariableOrList[PipelinePermissionParam]
@@ -430,9 +457,8 @@ class PipelineDict(TypedDict, total=False):
 
     run_as: VariableOrOptional[RunAsParam]
     """
-    Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
-    
-    Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+    The user or service principal that the pipeline runs as. If not specified, the pipeline runs as
+    the user who created the pipeline.
     """
 
     schema: VariableOrOptional[str]
@@ -454,6 +480,7 @@ class PipelineDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
+    Use compute_policy_id instead. Only one of these fields may be set.
     """
 
     storage: VariableOrOptional[str]
@@ -471,6 +498,13 @@ class PipelineDict(TypedDict, total=False):
     target: VariableOrOptional[str]
     """
     [DEPRECATED] Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.
+    """
+
+    testing: VariableOrOptional[PipelineTestingParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Test configuration for this pipeline. Used only by test-only updates.
     """
 
     usage_policy_id: VariableOrOptional[str]

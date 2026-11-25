@@ -23,8 +23,13 @@ resources.vector_search_endpoints.*.modified_status	string	INPUT
 resources.vector_search_endpoints.*.name	string	ALL
 resources.vector_search_endpoints.*.num_indexes	int	REMOTE
 resources.vector_search_endpoints.*.scaling_info	*vectorsearch.EndpointScalingInfo	REMOTE
+resources.vector_search_endpoints.*.scaling_info.delayed_reason	vectorsearch.EndpointScalingInfoScalingDelayReason	REMOTE
+resources.vector_search_endpoints.*.scaling_info.estimated_completion_timestamp	int64	REMOTE
+resources.vector_search_endpoints.*.scaling_info.index_initialization_percentage	int	REMOTE
+resources.vector_search_endpoints.*.scaling_info.phase	vectorsearch.EndpointScalingInfoScalingPhase	REMOTE
 resources.vector_search_endpoints.*.scaling_info.requested_target_qps	int64	REMOTE
 resources.vector_search_endpoints.*.scaling_info.state	vectorsearch.ScalingChangeState	REMOTE
+resources.vector_search_endpoints.*.scaling_info.target_qps_change_allowed_after_timestamp	int64	REMOTE
 resources.vector_search_endpoints.*.target_qps	int64	ALL
 resources.vector_search_endpoints.*.url	string	INPUT
 resources.vector_search_endpoints.*.usage_policy_id	string	INPUT	STATE

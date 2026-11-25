@@ -3,6 +3,7 @@
 package sandbox
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,21 +23,25 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "sandbox",
-		Short: `*Beta* Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "sandbox",
+	Short:   `*Beta* Create, manage, and control the lifecycle of sandboxes -- isolated, pre-configured, low-latency Serverless compute environments for running code.`,
+	GroupID: "sandbox",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
 
 Create, manage, and control the lifecycle of sandboxes -- isolated,
-  pre-configured, low-latency Serverless compute environments for running code.`,
-		GroupID: "sandbox",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  pre-configured, low-latency Serverless compute environments for running code.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateDirectory())
@@ -59,8 +64,6 @@ Create, manage, and control the lifecycle of sandboxes -- isolated,
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-directory command
@@ -183,11 +186,18 @@ func newCreateSandbox() *cobra.Command {
 
 Create a sandbox.
 
-  Creates a new Sandbox.
+  Creates a sandbox with the given sandbox_id and starts provisioning it.
+  Provisioning is asynchronous: the response usually shows the sandbox in
+  SANDBOX_STATE_PENDING, so poll GetSandbox until the state is
+  SANDBOX_STATE_RUNNING before running commands in it. A sandbox that fails to
+  provision ends in SANDBOX_STATE_STOPPED. Returns ALREADY_EXISTS if a sandbox
+  with the same ID already exists in the workspace.
 
   Arguments:
     SANDBOX_ID: Client-supplied ID that becomes the final path segment of the resource
-      name.`
+      name. It must start with a lowercase letter, contain only lowercase
+      letters, digits and hyphens, end with a letter or digit, and be at most 63
+      characters long. Values shaped like a UUID are rejected.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -348,7 +358,14 @@ func newDeleteSandbox() *cobra.Command {
 
 Delete a sandbox.
 
-  Deletes a Sandbox.`
+  Deletes a sandbox, including the data in its home directory. A pending or
+  running sandbox is stopped first and is removed once the teardown completes,
+  after which GetSandbox returns NOT_FOUND. Deleting a sandbox that is already
+  being deleted succeeds.
+
+  Arguments:
+    NAME: Resource name of the sandbox to delete, in the form
+      sandboxes/{sandbox_id}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -662,7 +679,11 @@ func newGetSandbox() *cobra.Command {
 
 Get a sandbox.
 
-  Retrieves a Sandbox by name.`
+  Retrieves a Sandbox by name.
+
+  Arguments:
+    NAME: Resource name of the sandbox to retrieve, in the form
+      sandboxes/{sandbox_id}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -863,7 +884,7 @@ func newListSandboxes() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listSandboxesLimit int
 
-	cmd.Flags().IntVar(&listSandboxesReq.PageSize, "page-size", listSandboxesReq.PageSize, ``)
+	cmd.Flags().IntVar(&listSandboxesReq.PageSize, "page-size", listSandboxesReq.PageSize, `Maximum number of sandboxes to return in one page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listSandboxesLimit, "limit", 0, `Maximum number of results to return.`)
@@ -878,7 +899,8 @@ func newListSandboxes() *cobra.Command {
 
 List sandboxes.
 
-  Lists all Sandboxes.`
+  Lists the sandboxes in the workspace that are visible to the caller, including
+  stopped sandboxes. Sandboxes that are being deleted are not returned.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1030,8 +1052,12 @@ func newStartSandbox() *cobra.Command {
 
 Start a sandbox.
 
-  Starts a previously stopped Sandbox under the same sandbox name. Returns
-  NOT_FOUND if there is no stopped sandbox to start for the given name.
+  Starts a previously stopped sandbox under the same sandbox name, with the data
+  in its home directory intact. Starting is asynchronous: the response usually
+  shows the sandbox in SANDBOX_STATE_PENDING, so poll GetSandbox until the
+  state is SANDBOX_STATE_RUNNING. Returns NOT_FOUND if the sandbox does not
+  exist, FAILED_PRECONDITION if it is pending or running, and ABORTED while it
+  is still stopping.
 
   Arguments:
     NAME: Resource name of the sandbox to start, in the form
@@ -1093,8 +1119,12 @@ func newStopSandbox() *cobra.Command {
 
 Stop a sandbox.
 
-  Stops a running Sandbox, preserving it so it can later be restarted with a
-  Start request.
+  Stops a running sandbox, preserving it so it can later be restarted with a
+  Start request. Stopping is asynchronous: the response usually shows the
+  sandbox in SANDBOX_STATE_STOPPING, and it settles to SANDBOX_STATE_STOPPED
+  once the shutdown completes. The data in the home directory is kept; other
+  local changes are discarded. Stopping a sandbox that is already stopped or
+  stopping succeeds without changes.
 
   Arguments:
     NAME: Resource name of the sandbox to stop, in the form

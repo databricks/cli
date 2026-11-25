@@ -571,26 +571,25 @@ func preResolvedValueAt(preResolved dyn.Value, fieldPath string) (dyn.Value, boo
 	return v, true
 }
 
-// parentIsVariableReference reports whether the parent of fieldPath resolves to a
+// ancestorIsVariableReference reports whether an ancestor of fieldPath resolves to a
 // scalar variable reference in the pre-resolved config (e.g. spark_conf:
 // ${var.spark_conf}). A nested key or index cannot be written into such a scalar,
 // so config-remote-sync skips the change. fieldPath is a merged-index path, the
 // same space as FieldChange.originalPath.
-func parentIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
+func ancestorIsVariableReference(preResolved dyn.Value, fieldPath string) bool {
 	node, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
 		return false
 	}
-	parent := node.Parent()
-	if parent == nil {
-		return false
+	for parent := node.Parent(); parent != nil; parent = parent.Parent() {
+		v, ok := preResolvedValueAt(preResolved, parent.String())
+		if !ok {
+			continue
+		}
+		s, ok := v.AsString()
+		return ok && dynvar.ContainsVariableReference(s)
 	}
-	v, ok := preResolvedValueAt(preResolved, parent.String())
-	if !ok {
-		return false
-	}
-	s, ok := v.AsString()
-	return ok && dynvar.ContainsVariableReference(s)
+	return false
 }
 
 // sequenceSiblings returns the sibling elements of the parent sequence when

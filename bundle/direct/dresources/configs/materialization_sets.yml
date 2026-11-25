@@ -7,6 +7,8 @@ recreate_on_changes:
     reason: immutable
   - field: materialized_features[*].table_trigger
     reason: immutable
+  - field: materialized_features[*].external_trigger
+    reason: immutable
   - field: materialized_features[*].streaming_mode
     reason: immutable
   - field: materialized_features[*].pipeline_schedule_state
@@ -14,6 +16,8 @@ recreate_on_changes:
   - field: materialized_features[*].tags
     reason: immutable
   - field: materialized_features[*].budget_policy_id
+    reason: immutable
+  - field: materialized_features[*].notifications
     reason: immutable
   - field: notifications
     reason: immutable

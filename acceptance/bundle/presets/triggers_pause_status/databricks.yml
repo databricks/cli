@@ -1,0 +1,44 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    mixed_cron:
+      name: mixed_cron
+      triggers:
+        - schedule:
+            quartz_cron_expression: "0 0 0 1 1 ? 2099"
+            timezone_id: UTC
+        - schedule:
+            quartz_cron_expression: "0 0 0 2 1 ? 2099"
+            timezone_id: UTC
+          pause_status: UNPAUSED
+
+    file_arrival:
+      name: file_arrival
+      triggers:
+        - file_arrival:
+            url: /Volumes/main/default/landing/
+
+    table_update:
+      name: table_update
+      triggers:
+        - table_update:
+            table_names:
+              - main.default.src
+        - schedule:
+            quartz_cron_expression: "0 0 0 3 1 ? 2099"
+            timezone_id: UTC
+          pause_status: PAUSED
+
+targets:
+  no_preset:
+    default: true
+  paused:
+    presets:
+      trigger_pause_status: PAUSED
+  unpaused:
+    presets:
+      trigger_pause_status: UNPAUSED
+  dev:
+    mode: development

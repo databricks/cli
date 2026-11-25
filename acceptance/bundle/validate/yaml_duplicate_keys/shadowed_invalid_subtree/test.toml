@@ -1,1 +1,1 @@
-Badness = 'The duplicate tags key is accepted silently (the later one wins); YAML requires keys to be unique.'
+Badness = 'The duplicate tags key is not reported (YAML requires keys to be unique); the only error is about the integer key inside the shadowed first value (invalid key tag: !!int).'

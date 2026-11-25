@@ -1,0 +1,5 @@
+trace $CLI pipelines deploy
+
+title "A 500 from the events API while polling the update is retried"
+fault.py "GET /api/2.0/pipelines/*/events" 500 0 1 INTERNAL_ERROR
+trace $CLI pipelines run

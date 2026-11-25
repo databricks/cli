@@ -40,12 +40,15 @@ class DatabaseInstance(Resource):
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the instance. This is the unique identifier for the instance.
+    [Public Preview] The name of the instance. This is the unique identifier for the instance. Must be 1 to 63
+    characters long, contain only letters, digits and hyphens, start with a letter, and not contain
+    consecutive hyphens.
     """
 
     capacity: VariableOrOptional[str] = None
     """
-    [Public Preview] The sku of the instance. Valid values are "CU_1", "CU_2", "CU_4", "CU_8".
+    [Public Preview] The sku of the instance. Valid values are "CU_1", "CU_2", "CU_4", "CU_8". Must be set when
+    creating an instance.
     """
 
     custom_tags: VariableOrList[CustomTag] = field(default_factory=list)
@@ -53,6 +56,7 @@ class DatabaseInstance(Resource):
     :meta private: [EXPERIMENTAL]
     
     [Beta] Custom tags associated with the instance. This field is only included on create and update responses.
+    An instance can have at most 10 tags; keys must be unique ignoring case.
     """
 
     enable_pg_native_login: VariableOrOptional[bool] = None
@@ -62,7 +66,8 @@ class DatabaseInstance(Resource):
 
     enable_readable_secondaries: VariableOrOptional[bool] = None
     """
-    [Public Preview] Whether to enable secondaries to serve read-only traffic. Defaults to false.
+    [Public Preview] Whether to enable secondaries to serve read-only traffic. Defaults to false. Requires a
+    node_count greater than 1.
     """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -78,8 +83,9 @@ class DatabaseInstance(Resource):
 
     parent_instance_ref: VariableOrOptional[DatabaseInstanceRef] = None
     """
-    [Public Preview] The ref of the parent instance. This is only available if the instance is
-    child instance.
+    [Public Preview] The ref of the parent instance. This is only available if the instance is a
+    child instance. A child instance inherits custom_tags and usage_policy_id from
+    its parent and cannot set them.
     Input: For specifying the parent instance to create a child instance. Optional.
     Output: Only populated if provided as input to create a child instance.
     """
@@ -98,7 +104,9 @@ class DatabaseInstance(Resource):
 
     stopped: VariableOrOptional[bool] = None
     """
-    [Public Preview] Whether to stop the instance. An input only param, see effective_stopped for the output.
+    [Public Preview] Whether to stop the instance. An input only param, see effective_stopped for the output. An
+    instance cannot be created in the stopped state; set this field on update to stop or start
+    the instance.
     """
 
     usage_policy_id: VariableOrOptional[str] = None
@@ -121,12 +129,15 @@ class DatabaseInstanceDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    [Public Preview] The name of the instance. This is the unique identifier for the instance.
+    [Public Preview] The name of the instance. This is the unique identifier for the instance. Must be 1 to 63
+    characters long, contain only letters, digits and hyphens, start with a letter, and not contain
+    consecutive hyphens.
     """
 
     capacity: VariableOrOptional[str]
     """
-    [Public Preview] The sku of the instance. Valid values are "CU_1", "CU_2", "CU_4", "CU_8".
+    [Public Preview] The sku of the instance. Valid values are "CU_1", "CU_2", "CU_4", "CU_8". Must be set when
+    creating an instance.
     """
 
     custom_tags: VariableOrList[CustomTagParam]
@@ -134,6 +145,7 @@ class DatabaseInstanceDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Beta] Custom tags associated with the instance. This field is only included on create and update responses.
+    An instance can have at most 10 tags; keys must be unique ignoring case.
     """
 
     enable_pg_native_login: VariableOrOptional[bool]
@@ -143,7 +155,8 @@ class DatabaseInstanceDict(TypedDict, total=False):
 
     enable_readable_secondaries: VariableOrOptional[bool]
     """
-    [Public Preview] Whether to enable secondaries to serve read-only traffic. Defaults to false.
+    [Public Preview] Whether to enable secondaries to serve read-only traffic. Defaults to false. Requires a
+    node_count greater than 1.
     """
 
     lifecycle: VariableOrOptional[LifecycleParam]
@@ -159,8 +172,9 @@ class DatabaseInstanceDict(TypedDict, total=False):
 
     parent_instance_ref: VariableOrOptional[DatabaseInstanceRefParam]
     """
-    [Public Preview] The ref of the parent instance. This is only available if the instance is
-    child instance.
+    [Public Preview] The ref of the parent instance. This is only available if the instance is a
+    child instance. A child instance inherits custom_tags and usage_policy_id from
+    its parent and cannot set them.
     Input: For specifying the parent instance to create a child instance. Optional.
     Output: Only populated if provided as input to create a child instance.
     """
@@ -179,7 +193,9 @@ class DatabaseInstanceDict(TypedDict, total=False):
 
     stopped: VariableOrOptional[bool]
     """
-    [Public Preview] Whether to stop the instance. An input only param, see effective_stopped for the output.
+    [Public Preview] Whether to stop the instance. An input only param, see effective_stopped for the output. An
+    instance cannot be created in the stopped state; set this field on update to stop or start
+    the instance.
     """
 
     usage_policy_id: VariableOrOptional[str]

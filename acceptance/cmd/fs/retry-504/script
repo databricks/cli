@@ -1,0 +1,25 @@
+# A 504 the SDK does not retry itself is retried by the fs commands for reads and deletes.
+DBFS="dbfs:/tmp/fs-retry-504-${UNIQUE_NAME}"
+
+cleanup() {
+  $CLI fs rm -r ${DBFS} 2>/dev/null || true
+  rm -f hello.txt
+}
+trap cleanup EXIT
+
+echo hello > hello.txt
+$CLI fs mkdir ${DBFS}
+$CLI fs cp hello.txt ${DBFS}/hello.txt > /dev/null
+
+title "A 504 on list is retried"
+fault.py "GET /api/2.0/dbfs/list" 504 0 1
+trace $CLI fs ls ${DBFS}
+
+title "A 504 on get-status is retried"
+fault.py "GET /api/2.0/dbfs/get-status" 504 0 1
+trace $CLI fs cat ${DBFS}/hello.txt
+
+title "A 504 on delete is retried"
+fault.py "POST /api/2.0/dbfs/delete" 504 0 1
+trace $CLI fs rm ${DBFS}/hello.txt
+trace $CLI fs ls ${DBFS}

@@ -1,0 +1,40 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+SCHEMA="main.test-schema-${UNIQUE_NAME}"
+MOVED_SCHEMA="main.test-schema-moved-${UNIQUE_NAME}"
+
+cleanup() {
+    # Whatever destroy left behind.
+    errcode $CLI schemas delete "$MOVED_SCHEMA" --force > LOG.cleanup 2>&1
+    errcode $CLI schemas delete "$SCHEMA" --force >> LOG.cleanup 2>&1
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+# Drop the remote_state fields that differ between clouds or from the test server.
+plan() {
+    trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
+}
+
+title "Deploy a schema"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+add_repl "$($CLI schemas get "$SCHEMA" | jq -r .schema_id)" SCHEMA_ID
+
+title "Out of band, rename the schema away, and create another one under its name"
+trace $CLI schemas update "$SCHEMA" --new-name "test-schema-moved-${UNIQUE_NAME}" | jq '{full_name, schema_id}'
+add_repl "$($CLI schemas create "test-schema-${UNIQUE_NAME}" main | jq -r .schema_id)" FOREIGN_SCHEMA_ID
+print_requests.py //unity-catalog &> LOG.oob_requests
+
+title "The plan takes the other schema for the bundle's, though its schema_id differs, and plans to update it"
+plan
+
+title "Destroy deletes the other schema"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+trace musterr $CLI schemas get "$SCHEMA"
+
+title "The bundle's own schema is left behind"
+trace $CLI schemas get "$MOVED_SCHEMA" | jq '{full_name, schema_id}'

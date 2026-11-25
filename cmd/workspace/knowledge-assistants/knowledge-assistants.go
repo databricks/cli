@@ -3,6 +3,7 @@
 package knowledge_assistants
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,20 +21,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "knowledge-assistants",
-		Short: `*Beta* Manage legacy Knowledge Assistants and related resources.`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "knowledge-assistants",
+	Short:   `*Beta* Manage legacy Knowledge Assistants and related resources.`,
+	GroupID: "agentbricks",
+	Build:   buildCommand,
+}
 
-Manage legacy Knowledge Assistants and related resources.`,
-		GroupID: "agentbricks",
-		RunE:    root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Manage legacy Knowledge Assistants and related resources.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newCreateExample())
@@ -61,8 +66,6 @@ Manage legacy Knowledge Assistants and related resources.`,
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-example command

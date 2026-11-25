@@ -11,28 +11,28 @@ job_id="$(read_id.py job_with_permissions)"
 trace $CLI permissions get jobs "$job_id"
 rm -f "$OUT_REQUESTS"
 
-title "Update one permission and deploy again\n"
+title "Update one permission and deploy again"
 update_file.py databricks.yml CAN_VIEW CAN_MANAGE
 trace $CLI bundle plan -o json | nostamp > out.plan_update.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs/ > out.requests_update.json
 trace $CLI bundle plan
 
-title "Delete one permission and deploy again\n"
+title "Delete one permission and deploy again"
 grep -v DELETE_ONE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace $CLI bundle plan -o json | nostamp > out.plan_delete_one.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs/ > out.requests_delete_one.json
 trace $CLI bundle plan
 
-title "Delete the whole block and deploy again\n"
+title "Delete the whole block and deploy again"
 grep -v PERMISSIONS databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace $CLI bundle plan -o json | nostamp > out.plan_delete_all.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs/ > out.requests_delete_all.json
 trace $CLI bundle plan
 
-title "Restore original config\n"
+title "Restore original config"
 trace diff.py databricks.yml.saved databricks.yml
 
 mv databricks.yml.saved databricks.yml
@@ -41,7 +41,7 @@ trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs/ > out.requests_restore_original.json
 trace $CLI bundle plan
 
-title "Set permissions: []\n"
+title "Set permissions: []"
 grep -vE '(PERMISSIONS|DELETE_ONE)' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 update_file.py databricks.yml '# permissions: [] # EXPLICIT_EMPTY' 'permissions: [] # EXPLICIT_EMPTY'
 trace $CLI bundle plan -o json | nostamp > out.plan_set_empty.json

@@ -27,7 +27,7 @@ class EmbeddingSourceColumn:
 
     name: VariableOrOptional[str] = None
     """
-    Name of the column
+    Name of the column that contains the text to embed.
     """
 
     @classmethod
@@ -53,7 +53,7 @@ class EmbeddingSourceColumnDict(TypedDict, total=False):
 
     name: VariableOrOptional[str]
     """
-    Name of the column
+    Name of the column that contains the text to embed.
     """
 
 

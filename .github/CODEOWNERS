@@ -4,14 +4,17 @@
 
 # Bundles
 /bundle/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/bundle/configsync/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
 /cmd/bundle/                            @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /acceptance/bundle/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/acceptance/bundle/config-remote-sync/  @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
+/acceptance/bundle/telemetry/config-remote-sync*/ @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
 /libs/template/                         @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /python/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
 
 # Pipelines
-/cmd/pipelines/                         @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
-/acceptance/pipelines/                  @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
+/cmd/pipelines/                         @databricks/eng-deco-cli @databricks/eng-pipelines
+/acceptance/pipelines/                  @databricks/eng-deco-cli @databricks/eng-pipelines
 
 # Labs
 /cmd/labs/                              @databricks/eng-deco-cli @alexott @asnare
@@ -23,6 +26,7 @@
 
 # SSH tunnel
 /experimental/ssh/                      @databricks/eng-deco-cli @databricks/eng-deco-ax
+/experimental/ssh/sandbox/              @databricks/eng-deco-cli @databricks/eng-sandbox
 /acceptance/ssh/                        @databricks/eng-deco-cli @databricks/eng-deco-ax
 
 # Apps
@@ -49,7 +53,8 @@
 /.nextchanges/cli/docker-*.md           @databricks/eng-deco-cli @databricks/eng-artifact-registry
 
 # Filesystem & sync
-/cmd/fs/                                @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/fs/                                @databricks/eng-deco-cli @databricks/eng-deco-platform @databricks/osp
+/acceptance/cmd/fs/                     @databricks/eng-deco-cli @databricks/eng-deco-platform @databricks/osp
 /cmd/sync/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
 /libs/filer/                            @databricks/eng-deco-cli @databricks/eng-deco-platform
 /libs/sync/                             @databricks/eng-deco-cli @databricks/eng-deco-platform
@@ -79,6 +84,17 @@
 /integration/                           @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 /integration/cmd/environments/          @databricks/eng-deco-cli @databricks/eng-deco-ax
+/integration/cmd/fs/                    @databricks/eng-deco-cli @databricks/eng-deco-platform @databricks/osp
+
+# Setup-local files outside the local environments paths. These rules come
+# after /libs/telemetry/ because the last matching rule wins.
+/cmd/workspace/environments/overrides.go @databricks/eng-deco-cli @databricks/eng-deco-ax
+/libs/telemetry/protos/setup_local.go   @databricks/eng-deco-cli @databricks/eng-deco-ax
+
+# Config-remote-sync files outside the configsync paths. These rules come
+# after /cmd/bundle/ and /libs/telemetry/ because the last matching rule wins.
+/cmd/bundle/config_remote_sync.go       @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
+/libs/telemetry/protos/bundle_config_remote_sync.go @databricks/eng-deco-cli @databricks/eng-deco-dabs @databricks/eng-deco-dabs-ws
 
 # Internal
 /internal/                              @databricks/eng-deco-cli @databricks/eng-deco-platform

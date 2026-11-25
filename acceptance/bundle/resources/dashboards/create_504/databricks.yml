@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  dashboards:
+    dashboard1:
+      display_name: test-dashboard
+      warehouse_id: warehouse-1234
+      file_path: dashboard.lvdash.json
+      parent_path: /Users/${workspace.current_user.userName}

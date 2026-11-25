@@ -1,0 +1,2 @@
+# Checks the test server's Unity Catalog renames and deletes against a real workspace.
+Cloud = true

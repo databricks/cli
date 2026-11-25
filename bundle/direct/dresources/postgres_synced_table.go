@@ -99,7 +99,7 @@ func (r *ResourcePostgresSyncedTable) DoRead(ctx context.Context, id string) (*P
 }
 
 func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *PostgresSyncedTableState) (string, *PostgresSyncedTableRemote, error) {
-	waiter, err := r.client.Postgres.CreateSyncedTable(ctx, postgres.CreateSyncedTableRequest{
+	req := postgres.CreateSyncedTableRequest{
 		SyncedTableId: config.SyncedTableId,
 		SyncedTable: postgres.SyncedTable{
 			Spec: &config.SyncedTableSyncedTableSpec,
@@ -112,16 +112,59 @@ func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *Post
 			Uid:             "",
 			ForceSendFields: nil,
 		},
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateSyncedTable(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
+	}
+	return remote.Name, remote, nil
+}
+
+// waitCreated waits for the create operation of a synced table that a create request returned.
+func (r *ResourcePostgresSyncedTable) waitCreated(ctx context.Context, waiter postgres.CreateSyncedTableOperationInterface) (*PostgresSyncedTableRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresSyncedTableRemote(result), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate. A synced table that
+// is still being deleted (see WaitAfterDelete) predates the request, so it is not taken over.
+func (r *ResourcePostgresSyncedTable) recoverFailedCreate(ctx context.Context, req postgres.CreateSyncedTableRequest, start time.Time, createErr error) (string, *PostgresSyncedTableRemote, error) {
+	if req.SyncedTableId == "" {
+		return "", nil, createErr
 	}
 
-	result, err := waiter.Wait(ctx)
+	name := "synced_tables/" + req.SyncedTableId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.SyncedTable, *PostgresSyncedTableRemote]{
+		name:  "synced table " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.SyncedTable, error) {
+			return r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: name})
+		},
+		createTime:      func(found *postgres.SyncedTable) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isAlreadyExists,
+		createdByCaller: nil,
+		use: func(_ context.Context, found *postgres.SyncedTable) (*PostgresSyncedTableRemote, error) {
+			return makePostgresSyncedTableRemote(found), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresSyncedTableRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateSyncedTable(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresSyncedTableRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
 	if err != nil {
 		return "", nil, err
 	}
-	remote := makePostgresSyncedTableRemote(result)
 	return remote.Name, remote, nil
 }
 

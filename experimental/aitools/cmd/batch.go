@@ -58,8 +58,10 @@ type batchResultError struct {
 // params, if non-nil, are bound on every statement. The same parameter set is
 // reused across the batch, so callers must ensure each SQL uses only markers
 // that are covered.
-func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int) []batchResult {
-	client := sqlexec.New(api, warehouseID)
+//
+// Tests pass sqlexec.WithPollInterval in opts to skip the real poll backoff.
+func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int, opts ...sqlexec.Option) []batchResult {
+	client := sqlexec.New(api, warehouseID, opts...)
 
 	pollCtx, pollCancel := context.WithCancel(ctx)
 	defer pollCancel()

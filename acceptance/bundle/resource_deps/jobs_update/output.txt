@@ -18,6 +18,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged
+
 >>> update_file.py databricks.yml DAYS HOURS
 
 >>> [CLI] bundle plan
@@ -37,6 +38,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Fetch job ID and verify remote state
+
 >>> [CLI] jobs get [FOO_ID]
 
 >>> [CLI] jobs get [BAR_ID]

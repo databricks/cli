@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class QualifiedName:
     """
-    :meta private: [EXPERIMENTAL]
-
     A three-level Unity Catalog name (catalog.schema.table); any level may be unset.
     """
 
@@ -23,21 +21,21 @@ class QualifiedName:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog catalog.
+    [Beta] Unity Catalog catalog.
     """
 
     schema: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog schema, within the catalog.
+    [Beta] Unity Catalog schema, within the catalog.
     """
 
     table: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Table, within the catalog and schema.
+    [Beta] Table, within the catalog and schema.
     """
 
     @classmethod
@@ -55,21 +53,21 @@ class QualifiedNameDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog catalog.
+    [Beta] Unity Catalog catalog.
     """
 
     schema: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog schema, within the catalog.
+    [Beta] Unity Catalog schema, within the catalog.
     """
 
     table: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Table, within the catalog and schema.
+    [Beta] Table, within the catalog and schema.
     """
 
 

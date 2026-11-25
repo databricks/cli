@@ -30,14 +30,14 @@ Usage:
 Flags:
       --branch string         Git branch to use for template initialization
       --config-file string    JSON file containing key value pairs of input parameters required for template initialization.
-  -h, --help                  help for init
+  -h, --help[=true|false]     help for init
       --output-dir string     Directory to write the initialized template to.
       --tag string            Git tag to use for template initialization
       --template-dir string   Directory path within a Git repository containing the template.
 
 Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+      --var strings          set values for variables defined in bundle config. Example: --var="foo=bar"

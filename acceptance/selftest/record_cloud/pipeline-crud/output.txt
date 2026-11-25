@@ -23,6 +23,7 @@
 }
 
 === Get the pipeline
+
 >>> [CLI] pipelines get [UUID]
 "test-pipeline-1"
 
@@ -33,6 +34,7 @@
 }
 
 === Update the pipeline
+
 >>> [CLI] pipelines update [UUID] --json @pipeline2.json
 
 >>> print_requests
@@ -53,6 +55,7 @@
 }
 
 === Verify the update
+
 >>> [CLI] pipelines get [UUID]
 "test-pipeline-2"
 
@@ -63,6 +66,7 @@
 }
 
 === Delete the pipeline
+
 >>> [CLI] pipelines delete [UUID]
 
 >>> print_requests
@@ -72,6 +76,7 @@
 }
 
 === Verify the deletion
+
 >>> [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
 

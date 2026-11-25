@@ -11,18 +11,12 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.jobs._models.continuous import (
-    Continuous,
-    ContinuousParam,
-)
+from databricks.bundles.jobs._models.continuous import Continuous, ContinuousParam
 from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,
 )
-from databricks.bundles.jobs._models.git_source import (
-    GitSource,
-    GitSourceParam,
-)
+from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
 from databricks.bundles.jobs._models.job_email_notifications import (
     JobEmailNotifications,
@@ -192,7 +186,9 @@ class Job(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.
+    [Beta] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a parent folder.
+    
+    Example: /Workspace/Projects/my_project
     """
 
     performance_target: VariableOrOptional[PerformanceTarget] = None
@@ -388,7 +384,9 @@ class JobDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a workspace object.
+    [Beta] Path of the job parent folder in workspace file tree. If absent, the job doesn't have a parent folder.
+    
+    Example: /Workspace/Projects/my_project
     """
 
     performance_target: VariableOrOptional[PerformanceTargetParam]

@@ -18,8 +18,8 @@ HH:MM:SS Debug: POST /telemetry-ext
 > {
 >   "items": null,
 >   "protoLogs": [
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
->     "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
+>     "{\"frontend_log_event_id\":\"[UUID][0]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)",
+>     "{\"frontend_log_event_id\":\"[UUID][1]\",\"entry\":{\"databricks_cli_log\":{\"... (N more bytes)"
 >   ],
 >   "uploadTime": [UNIX_TIME_MILLIS]
 > }
@@ -32,7 +32,7 @@ HH:MM:SS Debug: All 2 logs uploaded successfully pid=PID
 
 >>> cat [OUTPUT_DIR]/out.requests.txt
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][0]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {
@@ -50,7 +50,7 @@ HH:MM:SS Debug: All 2 logs uploaded successfully pid=PID
   }
 }
 {
-  "frontend_log_event_id": "[UUID]",
+  "frontend_log_event_id": "[UUID][1]",
   "entry": {
     "databricks_cli_log": {
       "execution_context": {

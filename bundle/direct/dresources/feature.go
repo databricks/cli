@@ -3,6 +3,8 @@ package dresources
 import (
 	"context"
 	"slices"
+	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -28,9 +30,30 @@ func (r *ResourceFeature) DoRead(ctx context.Context, id string) (*ml.Feature, e
 }
 
 func (r *ResourceFeature) DoCreate(ctx context.Context, config *ml.Feature) (string, *ml.Feature, error) {
-	response, err := r.client.FeatureEngineering.CreateFeature(ctx, ml.CreateFeatureRequest{Feature: *config})
+	create := func(ctx context.Context) (*ml.Feature, error) {
+		return r.client.FeatureEngineering.CreateFeature(ctx, ml.CreateFeatureRequest{Feature: *config})
+	}
+	start := time.Now()
+	response, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The feature is keyed by full_name, which the bundle chooses and the API keeps unique. UC
+		// stores the name lowercased, which is also the id a successful create returns.
+		fullName := strings.ToLower(config.FullName)
+		response, err = recoverCreate(ctx, createRecovery[ml.Feature, *ml.Feature]{
+			name:  "feature " + fullName,
+			start: start,
+			get: func(ctx context.Context) (*ml.Feature, error) {
+				return r.client.FeatureEngineering.GetFeature(ctx, ml.GetFeatureRequest{FullName: fullName})
+			},
+			createTime:      func(found *ml.Feature) (time.Time, bool) { return sdkTime(found.CreatedAt) },
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[ml.Feature],
+			create:          repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	return response.FullName, response, nil
 }

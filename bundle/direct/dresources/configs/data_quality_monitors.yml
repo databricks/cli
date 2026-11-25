@@ -5,9 +5,3 @@ provided_id_fields:
     reason: id_field
   - field: object_id
     reason: id_field
-
-recreate_on_changes:
-  # Create:REQ Update:IGN in the data-quality API: the update endpoint ignores it.
-  # Same as quality_monitors.assets_dir.
-  - field: data_profiling_config.assets_dir
-    reason: immutable

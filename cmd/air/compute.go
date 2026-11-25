@@ -18,26 +18,15 @@ const (
 	gpuType1xRTX6000 gpuType = "GPU_1xRTX6000"
 )
 
-// gpuTypes lists every accelerator type understood by this CLI.
-// Workspace availability is enforced by the server.
-var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100, gpuType8xB300, gpuType1xRTX6000}
-
-func validGPUTypesHint() string {
-	names := make([]string, len(gpuTypes))
-	for i, g := range gpuTypes {
-		names[i] = string(g)
-	}
-	return "valid types are: " + strings.Join(names, ", ")
-}
-
 // parseGPUType resolves a YAML accelerator_type string to a gpuType. The match is
-// exact: the server's lookup is case-sensitive.
+// exact: the server's lookup is case-sensitive. The error lists no types because
+// which ones a workspace can use comes from the server, not this CLI.
 func parseGPUType(value string) (gpuType, error) {
 	switch gpuType(value) {
 	case gpuType1xA10, gpuType8xH100, gpuType1xH100, gpuType8xB300, gpuType1xRTX6000:
 		return gpuType(value), nil
 	}
-	return "", fmt.Errorf("invalid GPU type %q: %s", value, validGPUTypesHint())
+	return "", fmt.Errorf("%q is not a recognized accelerator type", value)
 }
 
 // priorityClass is the AI Runtime scheduling priority a run is given within its
@@ -48,27 +37,19 @@ type priorityClass string
 const (
 	priorityClassBestEffort priorityClass = "BEST_EFFORT"
 	priorityClassNormal     priorityClass = "NORMAL"
-	priorityClassCritical   priorityClass = "CRITICAL"
 )
 
-// priorityClasses lists every valid value, low to high. Used for validation
-// error messages.
-var priorityClasses = []priorityClass{priorityClassBestEffort, priorityClassNormal, priorityClassCritical}
-
 func validPriorityClassesHint() string {
-	names := make([]string, len(priorityClasses))
-	for i, p := range priorityClasses {
-		names[i] = string(p)
-	}
-	return "valid values are: " + strings.Join(names, ", ")
+	// BEST_EFFORT remains accepted for compatibility with existing YAML.
+	return "valid values are: " + string(priorityClassNormal)
 }
 
 // parsePriorityClass normalizes a YAML priority_class to the enum's contract
 // value. Unlike accelerator_type, the match is case-insensitive: the input is
-// trimmed and upper-cased, so `critical` and `CRITICAL` both resolve.
+// trimmed and upper-cased, so `normal` and `NORMAL` both resolve.
 func parsePriorityClass(value string) (priorityClass, error) {
 	switch p := priorityClass(strings.ToUpper(strings.TrimSpace(value))); p {
-	case priorityClassBestEffort, priorityClassNormal, priorityClassCritical:
+	case priorityClassBestEffort, priorityClassNormal:
 		return p, nil
 	}
 	return "", fmt.Errorf("invalid priority_class %q: %s", value, validPriorityClassesHint())
@@ -92,17 +73,17 @@ func gpusPerNode(g gpuType) (int, error) {
 // computeConfig is the `compute` block of the run YAML: which accelerators to
 // use and how many.
 type computeConfig struct {
-	NumAccelerators int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types."`
-	AcceleratorType string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
-	PoolID          *string `yaml:"pool_id" help:"GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air pools list'."`
-	PriorityClass   *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires pool_id."`
+	NumAccelerators   int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See Docs below for GPUs per node." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
+	AcceleratorType   string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. Matched case-sensitively." required:"yes" docs:"/machine-learning/ai-runtime/connecting/cli/yaml-config#accelerator-types"`
+	AcceleratorPoolID *string `yaml:"accelerator_pool_id" help:"GPU Pool to run on, by ID. Must be 1-255 characters. List available pools with 'databricks air pools list'." group:"GPU Pools (optional)"`
+	PriorityClass     *string `yaml:"priority_class" help:"Scheduling priority within the GPU Pool: NORMAL. Requires accelerator_pool_id." group:"GPU Pools (optional)"`
 }
 
 // validate checks the compute block against the backend's constraints.
 func (c *computeConfig) validate() error {
 	g, err := parseGPUType(c.AcceleratorType)
 	if err != nil {
-		return fmt.Errorf("compute.accelerator_type: %w", err)
+		return fmt.Errorf("compute.accelerator_type: %w. Run 'databricks air run -h config.compute' to see the types available in your workspace", err)
 	}
 
 	if c.NumAccelerators <= 0 {
@@ -117,15 +98,15 @@ func (c *computeConfig) validate() error {
 		return fmt.Errorf("compute.num_accelerators for %s must be a multiple of %d, got %d", c.AcceleratorType, perNode, c.NumAccelerators)
 	}
 
-	if c.PoolID != nil {
-		v := strings.TrimSpace(*c.PoolID)
+	if c.AcceleratorPoolID != nil {
+		v := strings.TrimSpace(*c.AcceleratorPoolID)
 		if v == "" {
-			return errors.New("compute.pool_id cannot be empty")
+			return errors.New("compute.accelerator_pool_id cannot be empty")
 		}
 		if len(v) > 255 {
-			return fmt.Errorf("compute.pool_id must be 255 characters or less, got %d", len(v))
+			return fmt.Errorf("compute.accelerator_pool_id must be 255 characters or less, got %d", len(v))
 		}
-		*c.PoolID = v
+		*c.AcceleratorPoolID = v
 	}
 
 	if c.PriorityClass != nil {
@@ -135,8 +116,8 @@ func (c *computeConfig) validate() error {
 		}
 		// A priority class only ranks pending work within a pool, so it requires
 		// one.
-		if c.PoolID == nil {
-			return errors.New("compute.priority_class requires compute.pool_id — priority applies only within a GPU pool")
+		if c.AcceleratorPoolID == nil {
+			return errors.New("compute.priority_class requires compute.accelerator_pool_id — priority applies only within a GPU Pool")
 		}
 		*c.PriorityClass = string(p)
 	}
