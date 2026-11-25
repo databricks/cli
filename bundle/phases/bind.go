@@ -34,7 +34,7 @@ type BindOptions struct {
 	ResourceId  string
 }
 
-// createBindingDeployment creates a deployment record for the first recorded bind, without a deployed file path.
+// createBindingDeployment creates a deployment record for the first recorded binding change, without a deployed file path.
 func createBindingDeployment(ctx context.Context, b *bundle.Bundle) (string, error) {
 	// Bind does not upload bundle files, so it cannot report a deployed file path.
 	metadata := bundleMetadata(b)
@@ -152,7 +152,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 	if db.RecordsHistory() {
-		if err := prepareBindHistory(ctx, b, resourceKey); err != nil {
+		if err := prepareBindingHistory(ctx, b, []string{resourceKey}); err != nil {
 			log.Warnf(ctx, "Failed to record bind history: %s", err)
 		}
 	}
@@ -185,7 +185,17 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 		return
 	}
 
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+	}
+	db := &b.DeploymentBundle.StateDB
 	defer func() {
+		if _, err := db.Finalize(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+		if _, err := db.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
@@ -198,8 +208,35 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 
 	fullResourceKey := fmt.Sprintf("resources.%s.%s", group, resourceKey)
 	_, statePath := b.StateFilenameDirect(ctx)
-	err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
-	if err != nil {
+	if err := db.Open(ctx, statePath, dstate.ReadingFile, dstate.WithRecovery(true), dstate.OpenDmsArgs{}); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	keys := b.DeploymentBundle.UnbindResourceKeys(fullResourceKey)
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
+	if db.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured) {
+		if db.Data.Features == nil {
+			db.Data.Features = make(map[string]struct{})
+		}
+		db.Data.Features[dstate.FeatureDeploymentHistoryShadow] = struct{}{}
+	}
+	if err := db.UpgradeToWrite(); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if db.RecordsHistory() {
+		if err := prepareBindingHistory(ctx, b, keys); err != nil {
+			log.Warnf(ctx, "Failed to record unbind history: %s", err)
+		}
+	}
+	if err := b.DeploymentBundle.Unbind(ctx, fullResourceKey, keys); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if _, err := db.Finalize(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -207,8 +244,11 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 	statemgmt.PushResourcesState(ctx, b)
 }
 
-// prepareBindHistory stages only the approved binding, preserving deployed file metadata.
-func prepareBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string) error {
+// prepareBindingHistory stages only binding changes, preserving deployed file metadata.
+func prepareBindingHistory(ctx context.Context, b *bundle.Bundle, resourceKeys []string) error {
+	if len(resourceKeys) == 0 {
+		return nil
+	}
 	deploymentID, current, err := dms.FetchDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return err
@@ -226,8 +266,12 @@ func prepareBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey strin
 	}
 	db := &b.DeploymentBundle.StateDB
 	db.DeploymentID, db.VersionID = deploymentID, previous
-	return startVersion(ctx, b, dms.VersionTypeDeploy, []bundledeployments.StagedOperation{{
-		ResourceKey: strings.TrimPrefix(resourceKey, dms.StatePrefix),
-		ActionType:  bundledeployments.OperationActionTypeOperationActionTypeUpdate,
-	}})
+	staged := make([]bundledeployments.StagedOperation, 0, len(resourceKeys))
+	for _, key := range resourceKeys {
+		staged = append(staged, bundledeployments.StagedOperation{
+			ResourceKey: strings.TrimPrefix(key, dms.StatePrefix),
+			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeUpdate,
+		})
+	}
+	return startVersion(ctx, b, dms.VersionTypeDeploy, staged)
 }
