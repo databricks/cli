@@ -97,6 +97,10 @@ func (*ModelProviderService) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*ModelProviderService) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "model_provider_service"}
+}
+
 func (m *ModelProviderService) InitializeURL(baseURL url.URL) {
 	if m.ID == "" {
 		return

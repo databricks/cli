@@ -78,6 +78,13 @@ var requestObjectTypeToObjectType = map[string]string{
 	"alertsv2":                "alertv2",
 }
 
+// PermissionsObjectType returns the object_type the fake permissions API returns for
+// objects of requestObjectType, for example "warehouses" for "sql/warehouses".
+func PermissionsObjectType(requestObjectType string) (string, bool) {
+	objectType, ok := requestObjectTypeToObjectType[requestObjectType]
+	return objectType, ok
+}
+
 // aclPrincipalKey returns a unique key identifying the principal in an ACL entry.
 func aclPrincipalKey(acl iam.AccessControlResponse) string {
 	switch {

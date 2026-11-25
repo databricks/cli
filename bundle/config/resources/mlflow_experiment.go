@@ -47,6 +47,18 @@ func (s *MlflowExperiment) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*MlflowExperiment) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+		},
+		RequestObjectType:  "experiments",
+		ResponseObjectType: "mlflowExperiment",
+		ObjectIDField:      "id",
+	}
+}
+
 func (s *MlflowExperiment) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

@@ -94,6 +94,18 @@ func (*GenieSpace) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*GenieSpace) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+		},
+		RequestObjectType:  "genie",
+		ResponseObjectType: "genie-space",
+		ObjectIDField:      "id",
+	}
+}
+
 func (r *GenieSpace) InitializeURL(baseURL url.URL) {
 	if r.ID == "" {
 		return

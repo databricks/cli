@@ -5,7 +5,8 @@
     "changes": [
       {
         "add": [
-          "APPLY_TAG"
+          "APPLY_TAG",
+          "EXECUTE"
         ],
         "principal": "deco-test-user@databricks.com",
         "remove": [

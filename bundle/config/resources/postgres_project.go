@@ -66,6 +66,18 @@ func (p *PostgresProject) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresProject) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_USE",
+		},
+		RequestObjectType:  "database-projects",
+		ResponseObjectType: "database-projects",
+		ObjectIDField:      "project_id", // bare project_id, not the hierarchical "projects/{id}" state ID
+	}
+}
+
 func (p *PostgresProject) GetName() string {
 	return p.DisplayName
 }

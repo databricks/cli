@@ -4,21 +4,12 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 )
-
-// Resource types that support grants.
-var grantResourceTypes = []string{
-	"catalogs",
-	"schemas",
-	"external_locations",
-	"secrets",
-	"volumes",
-	"registered_models",
-	"vector_search_indexes",
-}
 
 type mergeGrants struct{}
 
@@ -38,7 +29,7 @@ func (m *mergeGrants) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			return v, nil
 		}
 
-		for _, resourceType := range grantResourceTypes {
+		for resourceType := range config.ResourceTypesImplementing[resources.GrantsDeclarer]() {
 			var mapErr error
 			v, mapErr = dyn.Map(v, "resources."+resourceType, dyn.Foreach(func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
 				// Merge grant entries by principal. This concatenates privileges

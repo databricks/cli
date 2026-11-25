@@ -57,6 +57,10 @@ func (*FeatureSpec) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*FeatureSpec) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "function"}
+}
+
 func (f *FeatureSpec) InitializeURL(baseURL url.URL) {
 	if f.ID == "" {
 		return

@@ -2,7 +2,6 @@ package resourcemutator
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 	"testing"
 
@@ -17,39 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// This list exists to ensure that this mutator is updated when new resource is added.
-// These resources are there because they use grants, not permissions:
-var unsupportedResources = []string{
-	"catalogs",
-	"external_locations",
-	"volumes",
-	"schemas",
-	"features",
-	"materialization_sets",
-	"feature_specs",
-	"quality_monitors",
-	"data_quality_monitors",
-	"registered_models",
-	"model_services",
-	"mcp_services",
-	"model_provider_services",
-	"database_catalogs",
-	"synced_database_tables",
-	"postgres_branches",
-	"postgres_data_apis",
-	"postgres_databases",
-	"postgres_endpoints",
-	"postgres_catalogs",
-	"postgres_roles",
-	"postgres_snapshot_schedules",
-	"postgres_synced_tables",
-	"vector_search_indexes",
-	"job_runs",
-	"internal_immutable_snapshots",
-	"secrets",
-	"cluster_policies",
-}
 
 func TestApplyBundlePermissions(t *testing.T) {
 	b := &bundle.Bundle{
@@ -225,7 +191,11 @@ func TestResourcePermissionsOverrideRoot(t *testing.T) {
 }
 
 func TestResourcePermissionsOverrideDefaultsWithoutWarning(t *testing.T) {
-	for resourceType, lm := range levelsMap {
+	for resourceType := range config.ResourceTypesImplementing[resources.PermissionsDeclarer]() {
+		lm, ok := bundleLevels(resourceType)
+		if !ok {
+			continue
+		}
 		for _, resourceLayer := range []string{"root", "target"} {
 			for _, defaultsLayer := range []string{"root", "target", "both"} {
 				t.Run(fmt.Sprintf("%s/resource=%s/defaults=%s", resourceType, resourceLayer, defaultsLayer), func(t *testing.T) {
@@ -237,7 +207,7 @@ resources:
         - {group_name: principal, level: %s}
         - {user_name: principal, level: %s}
         - {service_principal_name: principal, level: %s}
-`, resourceType, lm[permissions.CAN_MANAGE], lm[permissions.CAN_MANAGE], lm[permissions.CAN_MANAGE])
+`, resourceType, lm.CanManage, lm.CanManage, lm.CanManage)
 					defaultPermissions := `permissions:
   - {group_name: principal, level: CAN_VIEW}
   - {user_name: principal, level: CAN_VIEW}
@@ -267,10 +237,10 @@ resources:
 					require.Empty(t, diags)
 					actual := b.Config.Value().Get("resources").Get(resourceType).Get("test").Get("permissions").AsAny()
 					assert.Equal(t, []any{
-						map[string]any{"group_name": "principal", "level": lm[permissions.CAN_MANAGE]},
-						map[string]any{"user_name": "principal", "level": lm[permissions.CAN_MANAGE]},
-						map[string]any{"service_principal_name": "principal", "level": lm[permissions.CAN_MANAGE]},
-						map[string]any{"group_name": "inherited", "level": lm[permissions.CAN_VIEW]},
+						map[string]any{"group_name": "principal", "level": lm.CanManage},
+						map[string]any{"user_name": "principal", "level": lm.CanManage},
+						map[string]any{"service_principal_name": "principal", "level": lm.CanManage},
+						map[string]any{"group_name": "inherited", "level": lm.CanView},
 					}, actual)
 				})
 			}
@@ -335,22 +305,6 @@ resources:
 			require.Empty(t, diags)
 			assert.Equal(t, []resources.JobPermission{{GroupName: "developers", Level: "CAN_MANAGE_RUN"}}, b.Config.Resources.Jobs["test"].Permissions)
 		})
-	}
-}
-
-func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
-	r := config.Resources{}
-
-	for _, resource := range unsupportedResources {
-		_, ok := levelsMap[resource]
-		assert.False(t, ok, "Resource %s is defined in both levelsMap and unsupportedResources", resource)
-	}
-
-	for _, resource := range r.AllResources() {
-		_, ok := levelsMap[resource.Description.PluralName]
-		if !slices.Contains(unsupportedResources, resource.Description.PluralName) && !ok {
-			assert.Fail(t, fmt.Sprintf("Resource %s is not explicitly defined in levelsMap or unsupportedResources", resource.Description.PluralName))
-		}
 	}
 }
 

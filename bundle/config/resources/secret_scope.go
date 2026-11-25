@@ -98,6 +98,17 @@ func (s SecretScope) ResourceDescription() ResourceDescription {
 	}
 }
 
+// Secret scopes have their own ACL API, deployed by a dedicated adapter.
+func (SecretScope) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "MANAGE",
+			CanView:   "READ",
+		},
+		SkipFixup: true,
+	}
+}
+
 func (s SecretScope) GetName() string {
 	if s.ID != "" {
 		return s.ID

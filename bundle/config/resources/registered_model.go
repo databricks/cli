@@ -49,6 +49,10 @@ func (*RegisteredModel) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*RegisteredModel) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "function"}
+}
+
 func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

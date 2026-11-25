@@ -57,6 +57,10 @@ func (*Secret) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Secret) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "secret"}
+}
+
 func (s *Secret) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

@@ -52,6 +52,10 @@ func (e *VectorSearchIndex) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*VectorSearchIndex) GrantsSupport() GrantsSupport {
+	return GrantsSupport{SecurableType: "table"}
+}
+
 func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
 	// UC explore expects /{catalog}/{schema}/{name}, so bail if the name isn't
 	// a fully resolved three-part identifier; an unresolved ${...} reference
