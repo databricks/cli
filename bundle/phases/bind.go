@@ -235,7 +235,7 @@ func createBindingVersion(ctx context.Context, b *bundle.Bundle, serial int, sta
 	}
 	// Deploy owns existing metadata; binding does not publish pending config changes.
 	if current == nil {
-		deployment := bundleMetadata(b).Deployment()
+		deployment := deploymentMetadataForBind(b).Deployment()
 		deployment.InitialParentPath = b.Config.Workspace.StatePath
 		created, err := w.BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: deployment})
 		if err != nil {
