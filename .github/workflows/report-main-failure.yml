@@ -1,0 +1,52 @@
+name: Report main failure
+
+# Open (or comment on) a tracking issue when one of the workflows below fails
+# on main. A failed run on main is otherwise only visible in the Actions tab.
+# The merge queue runs most of the same checks before a commit lands, but not
+# all of them: the Windows and macOS test cells only run on push, and the
+# changelog preview is not a merge-queue check. Integration tests run in
+# another repository and are not expected to be green at all times, so they
+# are not covered.
+on:
+  workflow_run:
+    workflows:
+      - build
+      - check
+      - python build
+      - Changelog Preview
+      - conftest
+      - release-build
+    types: [completed]
+    branches: [main]
+
+permissions:
+  issues: write
+
+# One push can fail several of these workflows at once. Serialize so the
+# first run opens the issue and the others comment on it.
+concurrency:
+  group: report-main-failure
+
+jobs:
+  report:
+    # The "branches" filter matches the head branch of the triggering run, so
+    # it also admits a pull request from a fork's main branch; the event check
+    # narrows this to runs of main itself (push and the nightly schedule).
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'schedule')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions/report-failure
+
+      - name: Report failure
+        uses: ./.github/actions/report-failure
+        with:
+          label: main-failure
+          assignees: simonfaltum,andrewnester,anton-107,denik,janniklasrose,pietern,shreyas-goenka
+          workflow: ${{ github.event.workflow_run.name }}
+          run-url: ${{ github.event.workflow_run.html_url }}
