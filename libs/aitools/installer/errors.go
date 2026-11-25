@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/databricks/cli/libs/skills"
 )
 
 // ErrNothingInstalled reports that update or uninstall found no install state
@@ -82,7 +84,7 @@ var ErrManifestTooLarge = fmt.Errorf("skills manifest is larger than %d MiB", ma
 // ErrUnsafeManifestPath reports a skills manifest that names a skill or file
 // outside the skills directory. The command layer classifies it like a
 // manifest that does not parse.
-var ErrUnsafeManifestPath = errors.New("skills manifest names a path outside the skills directory")
+var ErrUnsafeManifestPath = skills.ErrUnsafeManifestPath
 
 // Stages of fetching skills content, recorded on FetchError so a failed
 // release lookup can be told apart from a failed download.

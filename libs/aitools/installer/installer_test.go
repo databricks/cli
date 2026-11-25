@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +41,7 @@ func (m *mockManifestSource) FetchManifest(_ context.Context, _ string) (*Manife
 	if m.fetchErr != nil {
 		return nil, m.fetchErr
 	}
-	normalizeManifest(m.manifest)
+	skills.NormalizeManifest(m.manifest)
 	return m.manifest, nil
 }
 
