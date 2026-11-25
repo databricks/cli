@@ -9,6 +9,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+const TestDefaultClusterId = "0123-456789-cluster0"
+
 func init() {
 	registerRoutes("clusters", addClustersRoutes)
 	registerStore("clusters", newClustersStore)

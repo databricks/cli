@@ -36,9 +36,6 @@ const (
 	// disappearing (so the direct engine's post-delete poll has a teardown to wait out).
 	EventualConsistencyTokenPrefix = "dbapi3"
 	UserID                         = "1000012345"
-	TestDefaultClusterId           = "0123-456789-cluster0"
-	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId      = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -144,13 +141,6 @@ func nextUUID() string {
 	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
 	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
 	return uuid.UUID(b).String()
-}
-
-func nextDashboardID() string {
-	var b [16]byte
-	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
-	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
-	return fmt.Sprintf("%032x", b)
 }
 
 type FileEntry struct {

@@ -8,6 +8,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+const TestDefaultWarehouseId = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+
 func init() {
 	registerRoutes("sql_warehouses", addSqlWarehousesRoutes)
 	registerStore("sql_warehouses", newSqlWarehousesStore)

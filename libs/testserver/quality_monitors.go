@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -120,4 +121,11 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 	return Response{
 		Body: info,
 	}
+}
+
+func nextDashboardID() string {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
+	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
+	return fmt.Sprintf("%032x", b)
 }
