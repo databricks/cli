@@ -118,3 +118,20 @@ func TestExpandGlobReferencesOrder(t *testing.T) {
 		"resources.clusters.*.libraries",
 	}, patternStrings(actual))
 }
+
+// TestSameNamePatternsOrder pins the order in which libraries are checked for
+// duplicate names: of two libraries with the same name, the one visited first is
+// reported first.
+func TestSameNamePatternsOrder(t *testing.T) {
+	assert.Equal(t, []string{
+		"resources.jobs.*.tasks[*].libraries[*].whl",
+		"resources.jobs.*.tasks[*].libraries[*].jar",
+		"resources.jobs.*.tasks[*].for_each_task.task.libraries[*].whl",
+		"resources.jobs.*.tasks[*].for_each_task.task.libraries[*].jar",
+		"resources.clusters.*.libraries[*].whl",
+		"resources.clusters.*.libraries[*].jar",
+		"resources.jobs.*.environments[*].spec.dependencies[*]",
+		"resources.pipelines.*.environment.dependencies[*]",
+		"resources.pipelines.*.testing.environment.dependencies[*]",
+	}, patternStrings(sameNamePatterns()))
+}

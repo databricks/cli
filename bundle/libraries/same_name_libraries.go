@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -13,16 +14,20 @@ import (
 
 type checkForSameNameLibraries struct{}
 
-var patterns = []dyn.Pattern{
-	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	envDepsPattern.Append(dyn.AnyIndex()),
-	pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
-	pipelineTestingEnvDepsPattern.Append(dyn.AnyIndex()),
+// sameNamePatterns returns the patterns of the library values in the
+// locations that hold lists, in the order of [locationsByKind]. Of two
+// libraries with the same name, the one visited first is reported first.
+func sameNamePatterns() []dyn.Pattern {
+	var out []dyn.Pattern
+	for _, l := range locationsByKind() {
+		switch l.Kind {
+		case resources.LibraryList, resources.DependencyList:
+			out = append(out, l.valuePatterns()...)
+		case resources.LibraryFile:
+			// Not checked; see [resources.LibraryFile].
+		}
+	}
+	return out
 }
 
 type libData struct {
@@ -38,7 +43,7 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 
 	err := b.Config.Mutate(func(rootConfig dyn.Value) (dyn.Value, error) {
 		var err error
-		for _, pattern := range patterns {
+		for _, pattern := range sameNamePatterns() {
 			rootConfig, err = dyn.MapByPattern(rootConfig, pattern, func(p dyn.Path, libraryValue dyn.Value) (dyn.Value, error) {
 				libPath, ok := libraryValue.AsString()
 				if !ok {

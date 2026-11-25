@@ -1,7 +1,9 @@
 package libraries
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -27,6 +29,16 @@ func locations() []location {
 			out = append(out, location{LibraryLocation: l, pattern: base.Append(l.Pattern...)})
 		}
 	}
+	return out
+}
+
+// locationsByKind returns the locations of [locations] ordered by kind, and
+// within a kind in the order of [locations].
+func locationsByKind() []location {
+	out := locations()
+	slices.SortStableFunc(out, func(a, b location) int {
+		return cmp.Compare(a.Kind, b.Kind)
+	})
 	return out
 }
 
