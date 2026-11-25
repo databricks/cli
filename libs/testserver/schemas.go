@@ -9,6 +9,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("schemas", addSchemasRoutes)
+}
+
+func addSchemasRoutes(server *Server) {
+	// Schemas:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
+		return MapGetUC(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"], "Schema")
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/schemas", func(req Request) any {
+		return req.Workspace.SchemasCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
+		return req.Workspace.SchemasUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
+		return req.Workspace.SchemasDelete(req, req.Vars["full_name"])
+	})
+}
+
 const testMetastoreName = "deco-uc-prod-isolated-aws-us-east-1"
 
 // schemaNameManagedDefaults is the schema name the backend-default drift test uses

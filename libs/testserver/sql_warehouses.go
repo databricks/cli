@@ -8,6 +8,46 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+func init() {
+	registerRoutes("sql_warehouses", addSqlWarehousesRoutes)
+}
+
+func addSqlWarehousesRoutes(server *Server) {
+	// SQL Warehouses:
+
+	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/sql/warehouses", func(req Request) any {
+		return req.Workspace.SqlWarehousesList(req)
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses", func(req Request) any {
+		return req.Workspace.SqlWarehousesUpsert(req, "")
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/edit", func(req Request) any {
+		return req.Workspace.SqlWarehousesUpsert(req, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/start", func(req Request) any {
+		return req.Workspace.SqlWarehousesStart(req, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/stop", func(req Request) any {
+		return req.Workspace.SqlWarehousesStop(req, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req Request) any {
+		return req.Workspace.SqlDataSourcesList(req)
+	})
+}
+
 func sqlWarehouseFixUps(warehouse *sql.GetWarehouseResponse, userName string) {
 	if warehouse.CreatorName == "" {
 		warehouse.CreatorName = userName

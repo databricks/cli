@@ -11,6 +11,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("model_provider_services", addModelProviderServicesRoutes)
+}
+
+func addModelProviderServicesRoutes(server *Server) {
+	// Model Provider Services (AI Gateway):
+
+	server.Handle("POST", "/api/2.1/unity-catalog/model-provider-services", func(req Request) any {
+		return req.Workspace.ModelProviderServicesCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/model-provider-services/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.ModelProviderServices, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/model-provider-services/{name}", func(req Request) any {
+		return req.Workspace.ModelProviderServicesUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/model-provider-services/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ModelProviderServices, req.Vars["name"])
+	})
+}
+
 // ModelProviderServicesCreate fakes POST
 // /api/2.1/unity-catalog/model-provider-services. See ModelServicesCreate for
 // the shape: the ModelProviderService body is sent directly, parent and

@@ -11,6 +11,43 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("registered_models", addRegisteredModelsRoutes)
+}
+
+func addRegisteredModelsRoutes(server *Server) {
+	// Registered Models:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return req.Workspace.RegisteredModelsGet(req, req.Vars["full_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return req.Workspace.RegisteredModelsUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return req.Workspace.RegisteredModelsDelete(req.Vars["full_name"])
+	})
+
+	server.Handle("PUT", "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}", func(req Request) any {
+		return req.Workspace.RegisteredModelsSetAlias(req, req.Vars["full_name"], req.Vars["alias"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}/aliases/{alias}", func(req Request) any {
+		return req.Workspace.RegisteredModelsDeleteAlias(req.Vars["full_name"], req.Vars["alias"])
+	})
+
+	// Model versions of Unity Catalog models are registered through the MLflow registry API.
+	server.Handle("POST", "/api/2.0/mlflow/unity-catalog/model-versions/create", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreateVersion(req)
+	})
+}
+
 // modelNameBrowseOnly scopes the computed browse_only flag to the browse_only
 // drift test, keeping unrelated tests free of it.
 const modelNameBrowseOnly = "model_browse_only"

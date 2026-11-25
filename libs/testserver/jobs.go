@@ -20,6 +20,71 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("jobs", addJobsRoutes)
+}
+
+func addJobsRoutes(server *Server) {
+	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
+		return req.Workspace.JobsCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
+		var request jobs.DeleteJob
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("request parsing error: %s", err),
+			}
+		}
+		return req.Workspace.JobsDelete(req, request.JobId)
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/reset", func(req Request) any {
+		return req.Workspace.JobsReset(req)
+	})
+
+	server.Handle("GET", "/api/2.0/jobs/get", func(req Request) any {
+		return req.Workspace.JobsGet(req)
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/get", func(req Request) any {
+		return req.Workspace.JobsGet(req)
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/list", func(req Request) any {
+		return req.Workspace.JobsList()
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/run-now", func(req Request) any {
+		return req.Workspace.JobsRunNow(req)
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req Request) any {
+		return req.Workspace.JobsSubmit(req)
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
+		return req.Workspace.JobsGetRun(req)
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req Request) any {
+		return req.Workspace.JobsCancelRun(req)
+	})
+
+	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req Request) any {
+		return req.Workspace.JobsDeleteRun(req)
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req Request) any {
+		return req.Workspace.JobsGetRunOutput(req)
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.JobRuns, "runs")
+	})
+}
+
 const missingJobGitProviderMessage = "git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit"
 
 // errNoCodeInWorkspace marks a task there is nothing to execute for, e.g. code

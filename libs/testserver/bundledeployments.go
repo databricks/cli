@@ -15,6 +15,47 @@ import (
 
 // Handlers for the Deployment Metadata Service (DMS) API under /api/2.0/bundle.
 
+func init() {
+	registerRoutes("bundledeployments", addBundleDeploymentsRoutes)
+}
+
+func addBundleDeploymentsRoutes(server *Server) {
+	// Deployment Metadata Service (DMS) endpoints.
+	server.Handle("POST", "/api/2.0/bundle/deployments", func(req Request) any {
+		return req.Workspace.CreateDeployment(req)
+	})
+	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.GetDeployment(req.Vars["deployment_id"])
+	})
+	server.Handle("PATCH", "/api/2.0/bundle/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.UpdateDeployment(req, req.Vars["deployment_id"])
+	})
+	server.Handle("DELETE", "/api/2.0/bundle/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.DeleteDeployment(req.Vars["deployment_id"])
+	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions", func(req Request) any {
+		return req.Workspace.CreateVersion(req, req.Vars["deployment_id"])
+	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/complete", func(req Request) any {
+		return req.Workspace.CompleteVersion(req, req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/heartbeat", func(req Request) any {
+		return req.Workspace.Heartbeat()
+	})
+	server.Handle("PATCH", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations/{resource_key}", func(req Request) any {
+		return req.Workspace.UpdateOperation(req, req.Vars["deployment_id"], req.Vars["version_id"], req.Vars["resource_key"])
+	})
+	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/resources", func(req Request) any {
+		return req.Workspace.ListResources(req.Vars["deployment_id"])
+	})
+	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations", func(req Request) any {
+		return req.Workspace.ListOperations(req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+	server.Handle("GET", "/api/2.0/bundle/enrollments:check", func(req Request) any {
+		return dmsCheckEnrollments(req.URL.Query()["features"])
+	})
+}
+
 // maxOperationsPerVersion mirrors the service's compiled-in default. A bundle past it cannot
 // be recorded, since the operation set is fixed when the version is created.
 const maxOperationsPerVersion = 800

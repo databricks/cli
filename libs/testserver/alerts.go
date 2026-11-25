@@ -13,6 +13,34 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("alerts", addAlertsRoutes)
+}
+
+func addAlertsRoutes(server *Server) {
+	// Alerts v2:
+	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
+		return req.Workspace.AlertsGet(req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.Alerts, "alerts")
+	})
+
+	server.Handle("POST", "/api/2.0/alerts", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/alerts/{id}", func(req Request) any {
+		return req.Workspace.AlertsUpsert(req, req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req Request) any {
+		purge := req.URL.Query().Get("purge") == "true"
+		return req.Workspace.AlertsDelete(req.Vars["id"], purge)
+	})
+}
+
 // alertFile mirrors the schema of a .dbalert.json file. It is the inverse of
 // bundle/config/mutator/load_dbalert_files.go: API-only fields (display_name,
 // warehouse_id) are dropped and the joined query_text/custom_description are

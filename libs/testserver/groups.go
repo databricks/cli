@@ -8,6 +8,17 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+func init() {
+	registerRoutes("groups", addGroupsRoutes)
+}
+
+func addGroupsRoutes(server *Server) {
+	// Groups:
+	server.Handle("POST", "/api/2.0/preview/scim/v2/Groups", func(req Request) any {
+		return req.Workspace.GroupsCreate(req)
+	})
+}
+
 func (s *FakeWorkspace) GroupsCreate(req Request) Response {
 	defer s.LockUnlock()()
 

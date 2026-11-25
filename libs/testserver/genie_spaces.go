@@ -10,6 +10,26 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
+func init() {
+	registerRoutes("genie_spaces", addGenieSpacesRoutes)
+}
+
+func addGenieSpacesRoutes(server *Server) {
+	// Genie Spaces:
+	server.Handle("GET", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceGet(req)
+	})
+	server.Handle("POST", "/api/2.0/genie/spaces", func(req Request) any {
+		return req.Workspace.GenieSpaceCreate(req)
+	})
+	server.Handle("PATCH", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceTrash(req)
+	})
+}
+
 // generateGenieSpaceId returns a random 32-character hex string.
 func generateGenieSpaceId() (string, error) {
 	randomBytes := make([]byte, 16)

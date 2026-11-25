@@ -14,6 +14,36 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sandbox"
 )
 
+func init() {
+	registerRoutes("sandbox_files", addSandboxFilesRoutes)
+}
+
+func addSandboxFilesRoutes(server *Server) {
+	// Sandbox file APIs:
+	sandboxFiles := "/api/2.0/sandbox-files/sandboxes/{sandbox_id}"
+	server.Handle("PUT", sandboxFiles+"/content", func(req Request) any {
+		return req.Workspace.SandboxFilesUpload(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/content", func(req Request) any {
+		return req.Workspace.SandboxFilesDownload(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/paths:describe", func(req Request) any {
+		return req.Workspace.SandboxFilesGetMetadata(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/directory-entries", func(req Request) any {
+		return req.Workspace.SandboxFilesList(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/directories:make", func(req Request) any {
+		return req.Workspace.SandboxFilesMkdir(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/paths:remove", func(req Request) any {
+		return req.Workspace.SandboxFilesDelete(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/paths:rename", func(req Request) any {
+		return req.Workspace.SandboxFilesRename(req, req.Vars["sandbox_id"])
+	})
+}
+
 // TestDefaultSandboxId is the sandbox that acceptance tests address locally (TEST_SANDBOX_ID).
 const TestDefaultSandboxId = "test-sandbox-1234"
 

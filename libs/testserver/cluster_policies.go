@@ -13,6 +13,23 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+func init() {
+	registerRoutes("cluster_policies", addClusterPoliciesRoutes)
+}
+
+func addClusterPoliciesRoutes(server *Server) {
+	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req Request) any {
+		return req.Workspace.ClusterPoliciesList(req)
+	})
+
+	server.Handle("POST", "/api/2.0/policies/clusters/create", func(req Request) any { return req.Workspace.ClusterPoliciesCreate(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/edit", func(req Request) any { return req.Workspace.ClusterPoliciesEdit(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/delete", func(req Request) any { return req.Workspace.ClusterPoliciesDelete(req) })
+	server.Handle("GET", "/api/2.0/policies/clusters/get", func(req Request) any {
+		return req.Workspace.ClusterPoliciesGet(req, req.URL.Query().Get("policy_id"))
+	})
+}
+
 // policyFamilyDefinition mimics the real backend: a policy created from a policy
 // family has its definition computed from the family and returned on read, even
 // though the config never sets definition. One fixed key is enough to reproduce a

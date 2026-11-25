@@ -11,6 +11,32 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+func init() {
+	registerRoutes("statements", addStatementsRoutes)
+}
+
+func addStatementsRoutes(server *Server) {
+	// SQL Statement Execution lifecycle. Tests program these by registering
+	// matchers via Server.HandleSQL / HandleSQLPattern (see statements.go).
+	// They live here, not in New, so they act as overridable defaults: a test
+	// that needs raw control over a SQL endpoint (malformed body, transport
+	// error, custom status) can register its own handler for the same pattern
+	// before calling AddDefaultHandlers, or stub it via test.toml in acceptance.
+	server.Handle("POST", "/api/2.0/sql/statements", server.sqlExecuteStatement)
+	// The API also accepts a trailing slash, which acceptance scripts send.
+	server.Handle("POST", "/api/2.0/sql/statements/", server.sqlExecuteStatement)
+	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}", server.sqlGetStatement)
+	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}", server.sqlGetStatementResultChunk)
+	server.Handle("POST", "/api/2.0/sql/statements/{statement_id}/cancel", server.sqlCancelStatement)
+
+	// The fake keeps no tables or functions, so the statements acceptance scripts
+	// run to set them up succeed without effect.
+	fixtureStatement := regexp.MustCompile(`(?i)^(CREATE\s+(TABLE|FUNCTION)|INSERT\s+INTO)\s`)
+	server.sqlHandler.HandleFallbackPattern(fixtureStatement, func(testsql.Request) testsql.Result {
+		return testsql.Result{}
+	})
+}
+
 // HandleSQL registers a matcher that runs fn when a submitted statement equals
 // statement exactly (after trimming).
 func (s *Server) HandleSQL(statement string, fn func(testsql.Request) testsql.Result) {

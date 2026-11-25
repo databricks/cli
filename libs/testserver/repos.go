@@ -9,6 +9,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("repos", addReposRoutes)
+}
+
+func addReposRoutes(server *Server) {
+	// Repos:
+
+	server.Handle("POST", "/api/2.0/repos", func(req Request) any {
+		return req.Workspace.ReposCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/repos/{repo_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Repos, req.Vars["repo_id"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/repos/{repo_id}", func(req Request) any {
+		return req.Workspace.ReposUpdate(req)
+	})
+
+	server.Handle("DELETE", "/api/2.0/repos/{repo_id}", func(req Request) any {
+		return req.Workspace.ReposDelete(req)
+	})
+}
+
 // fakeHeadCommitID is the commit the fake reports a clone is checked out to.
 // Nothing is cloned here, so the remote's real HEAD is unknowable. The counting
 // prefix marks it as synthetic, so it is not mistaken for a real sha.
