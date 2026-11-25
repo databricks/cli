@@ -60,3 +60,9 @@ func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 func (s *ModelServingEndpoint) GetName() string {
 	return s.Name
 }
+
+func (s *ModelServingEndpoint) ApplyPresets(p *PresetSettings) {
+	s.Name = normalizePrefix(p.NamePrefix) + s.Name
+
+	// As of 2024-06, model serving endpoints don't yet support tags
+}

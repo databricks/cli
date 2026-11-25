@@ -98,6 +98,10 @@ func (s SecretScope) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*SecretScope) NamePrefixExemptReason() string {
+	return "the scope name is its ID"
+}
+
 func (s SecretScope) GetName() string {
 	if s.ID != "" {
 		return s.ID

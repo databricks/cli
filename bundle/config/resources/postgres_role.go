@@ -71,6 +71,10 @@ func (r *PostgresRole) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresRole) NamePrefixExemptReason() string {
+	return "a role has no name of its own: its resource name is its ID"
+}
+
 func (r *PostgresRole) GetName() string {
 	// Roles have no name field of their own; the resource name is the ID
 	// ("projects/{project_id}/branches/{branch_id}/roles/{role_id}").

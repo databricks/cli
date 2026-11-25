@@ -56,6 +56,11 @@ func (e *VectorSearchEndpoint) InitializeURL(baseURL url.URL) {
 	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_endpoints", e.Name)
 }
 
+func (*VectorSearchEndpoint) NamePrefixExemptReason() string {
+	// GET/UPDATE/DELETE address the endpoint by name.
+	return "the endpoint name is the primary key, so prefixing it would change the resource's identity rather than just its display name"
+}
+
 func (e *VectorSearchEndpoint) GetName() string {
 	return e.Name
 }

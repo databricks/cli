@@ -98,6 +98,10 @@ func (s *Snapshot) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Snapshot) NamePrefixExemptReason() string {
+	return "an internal resource whose name is its path"
+}
+
 func (s *Snapshot) GetName() string {
 	return s.RelativePath()
 }

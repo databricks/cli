@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -46,63 +48,17 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	defaults := []struct {
-		pattern string
-		value   any
-	}{
-		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
-		{"resources.dashboards.*.embed_credentials", false},
-		{"resources.genie_spaces.*.parent_path", b.Config.Workspace.ResourcePath},
-		{"resources.volumes.*.volume_type", "MANAGED"},
-
-		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},
-
-		// Jobs:
-
-		// The defaults are the same as for terraform provider latest version (v1.75.0)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/jobs/resource_job.go#L532
-		{"resources.jobs.*.name", "Untitled"},
-		{"resources.jobs.*.max_concurrent_runs", 1},
-		{"resources.jobs.*.schedule.pause_status", "UNPAUSED"},
-		{"resources.jobs.*.trigger.pause_status", "UNPAUSED"},
-		{"resources.jobs.*.continuous.pause_status", "UNPAUSED"},
-
-		// Enable queueing for jobs by default, following the behavior from API 2.2+.
-		// As of 2024-04, we're still using API 2.1 which has queueing disabled by default.
-		{"resources.jobs.*.queue", map[string]dyn.Value{
-			"enabled": dyn.V(true),
-		}},
-
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
-		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
-		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
-
-		// Pipelines (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
-		{"resources.pipelines.*.edition", "ADVANCED"},
-		{"resources.pipelines.*.channel", "CURRENT"},
-
-		// SqlWarehouses (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
-		{"resources.sql_warehouses.*.auto_stop_mins", 120},
-		{"resources.sql_warehouses.*.enable_photon", true},
-		{"resources.sql_warehouses.*.max_num_clusters", 1},
-		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
-
-		// Apps:
-		{"resources.apps.*.description", ""},
-
-		// Clusters (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
-		{"resources.clusters.*.autotermination_minutes", 60},
-		{"resources.clusters.*.workload_type.clients.notebooks", true},
-		{"resources.clusters.*.workload_type.clients.jobs", true},
+	// The defaults of different resource types set disjoint fields, so their
+	// relative order does not matter.
+	defaultsContext := resources.DefaultsContext{
+		ResourcePath: b.Config.Workspace.ResourcePath,
 	}
-
-	for _, defaultDef := range defaults {
-		bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value)
-		if logdiag.HasError(ctx) {
-			return
+	for key, d := range config.ResourceTypesImplementing[resources.FieldDefaulter]() {
+		for _, fd := range d.FieldDefaults(defaultsContext) {
+			bundle.SetDefault(ctx, b, "resources."+key+".*."+fd.Path, fd.Value)
+			if logdiag.HasError(ctx) {
+				return
+			}
 		}
 	}
 

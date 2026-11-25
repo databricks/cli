@@ -59,3 +59,9 @@ func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 func (s *RegisteredModel) GetName() string {
 	return s.Name
 }
+
+func (s *RegisteredModel) ApplyPresets(p *PresetSettings) {
+	s.Name = normalizePrefix(p.NamePrefix) + s.Name
+
+	// As of 2024-06, registered models don't yet support tags
+}

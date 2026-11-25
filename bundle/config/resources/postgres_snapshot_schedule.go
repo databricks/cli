@@ -67,6 +67,10 @@ func (b *PostgresSnapshotSchedule) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresSnapshotSchedule) NamePrefixExemptReason() string {
+	return "the schedule has no name of its own: its resource name is its ID"
+}
+
 func (b *PostgresSnapshotSchedule) GetName() string {
 	// The schedule has no name field of its own; its resource name is its ID
 	// ("{branch}/snapshot-schedule").

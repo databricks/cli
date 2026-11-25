@@ -66,3 +66,43 @@ func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 func (sw *SqlWarehouse) GetName() string {
 	return sw.Name
 }
+
+func (sw *SqlWarehouse) ApplyPresets(p *PresetSettings) {
+	sw.Name = p.NamePrefix + sw.Name
+	if len(p.Tags) > 0 {
+		if sw.Tags == nil {
+			sw.Tags = &sql.EndpointTags{}
+		}
+		for _, tag := range p.Tags {
+			normalisedKey := p.Tagging.NormalizeKey(tag.Key)
+			normalisedValue := p.Tagging.NormalizeValue(tag.Value)
+
+			// Check if the tag already exists
+			exists := false
+			for _, t := range sw.Tags.CustomTags {
+				if t.Key == normalisedKey {
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				sw.Tags.CustomTags = append(sw.Tags.CustomTags, sql.EndpointTagPair{
+					Key:   normalisedKey,
+					Value: normalisedValue,
+				})
+			}
+		}
+	}
+}
+
+func (sw *SqlWarehouse) FieldDefaults(DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		// Same as terraform
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
+		{"auto_stop_mins", 120},
+		{"enable_photon", true},
+		{"max_num_clusters", 1},
+		{"spot_instance_policy", "COST_OPTIMIZED"},
+	}
+}

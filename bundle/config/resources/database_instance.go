@@ -46,6 +46,10 @@ func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*DatabaseInstance) NamePrefixExemptReason() string {
+	return "the instance name is its ID"
+}
+
 func (d *DatabaseInstance) GetName() string {
 	return d.Name
 }

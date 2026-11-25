@@ -66,6 +66,10 @@ func (p *PostgresProject) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresProject) NamePrefixExemptReason() string {
+	return "the project is addressed by its ID (projects/{project_id}); its display_name is left as configured"
+}
+
 func (p *PostgresProject) GetName() string {
 	return p.DisplayName
 }

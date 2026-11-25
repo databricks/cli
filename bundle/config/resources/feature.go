@@ -60,6 +60,10 @@ func (f *Feature) InitializeURL(baseURL url.URL) {
 	f.URL = workspaceurls.ResourceURL(baseURL, "features", f.ID)
 }
 
+func (*Feature) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 // GetName returns the fully qualified name. Callers read it off the config, which only ever carries
 // what the user wrote plus id and modified_status (see statemgmt.StateToBundle), so the OUTPUT_ONLY
 // name field is always empty here.
