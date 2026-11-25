@@ -36,6 +36,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
@@ -718,16 +719,20 @@ func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle) <-chan bool
 const enrollmentCheckTimeout = 5 * time.Second
 
 // checkAutoEnrollment asks, in the background, whether the workspace records deployment history
-// by default. Any failure, including the rejection a workspace the service does not serve gets,
-// reads as not enrolled.
+// by default. Any failure reads as not enrolled; only an unexpected one warns.
 func checkAutoEnrollment(ctx context.Context, w *databricks.WorkspaceClient, timeout time.Duration) <-chan bool {
 	result := make(chan bool, 1)
 	go func() {
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		enrollments, err := dms.CheckEnrollments(ctx, w, dms.FeatureRecordHistoryAuto)
-		if err != nil {
-			log.Debugf(ctx, "Could not check deployment history enrollment: %s", err)
+		switch {
+		case err == nil:
+		case errors.Is(err, apierr.ErrPermissionDenied), errors.Is(err, apierr.ErrNotFound):
+			// The service does not serve this workspace, or predates the API.
+			log.Debugf(ctx, "Deployment history enrollment: %s", err)
+		default:
+			log.Warnf(ctx, "Skipping deployment history: could not check whether this workspace is enrolled: %s", err)
 		}
 		result <- enrollments[dms.FeatureRecordHistoryAuto]
 	}()
