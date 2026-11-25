@@ -1,0 +1,15 @@
+bundle:
+  name: space-$UNIQUE_NAME
+
+resources:
+  apps:
+    omitted:
+      name: $UNIQUE_NAME-omitted
+      space: default-app-space
+      source_code_path: ./app
+    stopped:
+      name: $UNIQUE_NAME-stopped
+      space: default-app-space
+      source_code_path: ./app2
+      lifecycle:
+        started: false

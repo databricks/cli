@@ -141,7 +141,9 @@ func appUpdateBody(config *AppState) apps.App {
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
-	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
+	// Apps in a space always start compute on create and the API rejects no_compute=true for them;
+	// lifecycle.started=false is then honored by the stop in manageLifecycle.
+	noCompute := config.Space == "" && (config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started)
 	request := apps.CreateAppRequest{
 		App:             appRequestBody(config.App),
 		NoCompute:       noCompute,

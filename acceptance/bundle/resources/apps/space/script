@@ -1,0 +1,11 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Apps in a space are created without no_compute; started: false stops the app after create"
+trace $CLI bundle deploy
+trace print_requests.py //apps --sort

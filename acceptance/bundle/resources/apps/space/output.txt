@@ -1,0 +1,45 @@
+
+=== Apps in a space are created without no_compute; started: false stops the app after create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/space-[UNIQUE_NAME]/default/files...
+Created apps.omitted
+Created apps.stopped
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //apps --sort
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "body": {
+    "description": "",
+    "name": "[UNIQUE_NAME]-omitted",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/space-[UNIQUE_NAME]/default/files/app",
+    "space": "default-app-space"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "body": {
+    "description": "",
+    "name": "[UNIQUE_NAME]-stopped",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/space-[UNIQUE_NAME]/default/files/app2",
+    "space": "default-app-space"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]-stopped/stop",
+  "body": {}
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.omitted
+  delete resources.apps.stopped
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/space-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

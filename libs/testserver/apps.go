@@ -377,6 +377,16 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		}
 	}
 
+	if app.Space != "" && req.URL.Query().Get("no_compute") == "true" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Cannot set no_compute to true for apps in spaces",
+			},
+		}
+	}
+
 	// A no_compute app is created without running compute, so on cloud it
 	// reports an UNAVAILABLE application status until it is started.
 	if req.URL.Query().Get("no_compute") == "true" {

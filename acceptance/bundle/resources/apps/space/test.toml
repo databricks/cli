@@ -1,0 +1,5 @@
+# Cloud is off until the apps service accepts source_code_path on create for apps in a space.
+Cloud = false
+RecordRequests = true
+
+Ignore = [".databricks", "databricks.yml"]
