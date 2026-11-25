@@ -28,13 +28,13 @@ trace $CLI schemas update "$SCHEMA" --new-name "test-schema-moved-${UNIQUE_NAME}
 add_repl "$($CLI schemas create "test-schema-${UNIQUE_NAME}" main | jq -r .schema_id)" FOREIGN_SCHEMA_ID
 print_requests.py //unity-catalog &> LOG.oob_requests
 
-title "The plan takes the other schema for the bundle's, though its schema_id differs, and plans to update it"
+title "The other schema has another schema_id, so the plan does not take it for the bundle's: it plans a create"
 plan
 
-title "Destroy deletes the other schema"
+title "Destroy finds the bundle's schema by its schema_id and deletes it, not the other one"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
-trace musterr $CLI schemas get "$SCHEMA"
+trace musterr $CLI schemas get "$MOVED_SCHEMA"
 
-title "The bundle's own schema is left behind"
-trace $CLI schemas get "$MOVED_SCHEMA" | jq '{full_name, schema_id}'
+title "The other schema is left alone"
+trace $CLI schemas get "$SCHEMA" | jq '{full_name, schema_id}'

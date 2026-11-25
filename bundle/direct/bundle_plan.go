@@ -245,12 +245,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			remoteState, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 				return adapter.DoRead(ctx, id)
 			})
+			missing := false
 			if err != nil {
 				if apierr.IsMissing(err) {
-					// The resource is already deleted remotely. Keep the Delete entry so
-					// that applying it removes the stale state entry, but mark it Gone so
-					// apply skips the delete call and prompts don't list it as a deletion.
-					entry.Gone = true
+					missing = true
 				} else {
 					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 					// This is not an error during deletion, so don't return false here
@@ -260,6 +258,41 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				// DELETING) that a GET still returns but a second delete would reject.
 				// Treat it as gone: apply cleans up state without re-issuing the delete.
 				entry.Gone = true
+			}
+
+			var savedState any
+			if adapter.HasInternalID() && (missing || (err == nil && !entry.Gone)) {
+				dbentry, _ := b.StateDB.GetResourceEntry(resourceKey)
+				savedState, err = parseState(adapter.StateType(), dbentry.State)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
+					return false
+				}
+			}
+
+			if !missing && !entry.Gone && savedState != nil {
+				other, err := isOtherResource(adapter, savedState, remoteState)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+					return false
+				}
+				// Never delete what someone else created under the name ours had.
+				missing = other
+			}
+
+			if missing {
+				remoteState = nil
+				if savedState != nil {
+					entry.ID, remoteState, err = findByInternalID(ctx, adapter, savedState)
+					if err != nil {
+						logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+						return false
+					}
+				}
+				// Not found anywhere: the resource is already deleted remotely. Keep the Delete
+				// entry so that applying it removes the stale state entry, but mark it Gone so
+				// apply skips the delete call and prompts don't list it as a deletion.
+				entry.Gone = remoteState == nil
 			}
 
 			entry.RemoteState = remoteState
@@ -348,6 +381,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
 				return false
 			}
+		}
+		// Someone else's resource under the name ours had is not ours: plan as if ours were not
+		// there, so the plan neither updates nor later deletes it.
+		other, err := isOtherResource(adapter, savedState, remoteState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+		if other {
+			remoteState = nil
 		}
 		if remoteState == nil {
 			entry.ID, remoteState, err = findMoved(ctx, adapter, sv, dbentry.ID, savedState)
@@ -943,6 +986,69 @@ func findMoved(ctx context.Context, adapter *dresources.Adapter, sv *structvar.S
 		// This read only looks for the resource. Failing it fails nothing: the plan goes on as if
 		// it were not there, as it did before this lookup existed.
 		log.Warnf(ctx, "looking for a moved resource at id=%q: %s", id, err)
+		return "", nil, nil
+	}
+	found, err := adapter.RemapState(remote)
+	if err != nil {
+		return "", nil, err
+	}
+	foundInternalID, err := adapter.InternalID(found)
+	if err != nil || foundInternalID != savedInternalID {
+		return "", nil, err
+	}
+	return id, remote, nil
+}
+
+// isOtherResource reports whether remote, read at the recorded ID, is another object than the one
+// savedState records: both have an internal ID and they differ. The resource was renamed away and
+// another one created under its old name.
+func isOtherResource(adapter *dresources.Adapter, savedState, remote any) (bool, error) {
+	if !adapter.HasInternalID() || remote == nil {
+		return false, nil
+	}
+	saved, err := adapter.InternalID(savedState)
+	if err != nil || saved == "" {
+		return false, err
+	}
+	remapped, err := adapter.RemapState(remote)
+	if err != nil {
+		return false, err
+	}
+	found, err := adapter.InternalID(remapped)
+	return found != "" && found != saved, err
+}
+
+// findByInternalID looks for a resource to be deleted that is not at its recorded ID: renamed out of
+// band. Destroy has no config to give its new name, as findMoved uses, so the resource searches for
+// it (DoFindByInternalID). As in findMoved, what is found is taken only if its internal ID matches.
+// A failed search finds nothing: the delete then only drops the state entry, as it did before.
+func findByInternalID(ctx context.Context, adapter *dresources.Adapter, savedState any) (string, any, error) {
+	if !adapter.HasFindByInternalID() {
+		return "", nil, nil
+	}
+	savedInternalID, err := adapter.InternalID(savedState)
+	if err != nil || savedInternalID == "" {
+		return "", nil, err
+	}
+	id, err := retry.With(ctx, retry.IsTransientRead, func() (string, error) {
+		return adapter.DoFindByInternalID(ctx, savedState)
+	})
+	if err != nil {
+		if !apierr.IsMissing(err) {
+			log.Warnf(ctx, "looking for a renamed resource by its internal id %q: %s", savedInternalID, err)
+		}
+		return "", nil, nil
+	}
+	if id == "" {
+		return "", nil, nil
+	}
+	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
+		return adapter.DoRead(ctx, id)
+	})
+	if err != nil {
+		if !apierr.IsMissing(err) {
+			log.Warnf(ctx, "reading a renamed resource at id=%q: %s", id, err)
+		}
 		return "", nil, nil
 	}
 	found, err := adapter.RemapState(remote)

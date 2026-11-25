@@ -121,7 +121,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				// without calling the delete API.
 				err = b.StateDB.DeleteState(ctx, resourceKey, false)
 			} else {
-				err = d.Destroy(ctx, &b.StateDB)
+				err = d.Destroy(ctx, &b.StateDB, entry.ID)
 			}
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))

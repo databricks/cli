@@ -125,6 +125,13 @@ type IResource interface {
 	// parent's rename is applied without calling DoUpdateWithID (see PlanEntry.StateOnly).
 	// Example: func (*ResourceVolume) IDFromState(state *VolumeState) string
 	IDFromState(state any) string
+
+	// [Optional] DoFindByInternalID returns the ID of the resource whose internal ID (see
+	// internal_id_field) is the one in state, or "" if none is found. It looks where the resource
+	// can be without its name: destroy has no config to give the new name of a resource renamed
+	// out of band. The engine reads what it returns and checks the internal ID again.
+	// Example: func (r *ResourceSchema) DoFindByInternalID(ctx context.Context, state *SchemaState) (string, error)
+	DoFindByInternalID(ctx context.Context, state any) (string, error)
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -149,6 +156,7 @@ type Adapter struct {
 	doResize           *calladapt.BoundCaller
 	isGone             *calladapt.BoundCaller
 	idFromState        *calladapt.BoundCaller
+	findByInternalID   *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -194,6 +202,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		overrideChangeDesc:      nil,
 		isGone:                  nil,
 		idFromState:             nil,
+		findByInternalID:        nil,
 		internalIDPath:          nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
@@ -326,6 +335,11 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.findByInternalID, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoFindByInternalID")
+	if err != nil {
+		return err
+	}
+
 	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
@@ -436,6 +450,13 @@ func (a *Adapter) validate() error {
 			return fmt.Errorf("internal_id_field: %w", err)
 		}
 		a.internalIDPath = path
+	}
+
+	if a.findByInternalID != nil {
+		if a.internalIDPath == nil {
+			return errors.New("DoFindByInternalID requires internal_id_field")
+		}
+		validations = append(validations, "DoFindByInternalID state", a.findByInternalID.InTypes[1], stateType)
 	}
 
 	if a.resourceConfig != nil && len(a.resourceConfig.ParentIDFields) > 0 && a.idFromState == nil {
@@ -800,6 +821,21 @@ func (a *Adapter) InternalID(state any) (string, error) {
 	}
 	id, _ := value.(string)
 	return id, nil
+}
+
+// HasFindByInternalID reports whether the resource implements DoFindByInternalID.
+func (a *Adapter) HasFindByInternalID() bool {
+	return a.findByInternalID != nil
+}
+
+// DoFindByInternalID returns the ID of the resource with the internal ID recorded in state, "" if
+// none is found; see IResource.DoFindByInternalID.
+func (a *Adapter) DoFindByInternalID(ctx context.Context, state any) (string, error) {
+	outs, err := a.findByInternalID.Call(ctx, state)
+	if err != nil {
+		return "", err
+	}
+	return outs[0].(string), nil
 }
 
 // RecordInternalID copies the internal ID from remoteState into state, which is about to be saved.

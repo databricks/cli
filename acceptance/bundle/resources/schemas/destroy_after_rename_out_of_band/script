@@ -22,9 +22,9 @@ trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE
 print_requests.py //unity-catalog &> LOG.rename_requests
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 
-title "Destroy"
+title "Destroy finds the schema at its new name by its schema_id and deletes it, with its volume"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
 
-title "The renamed schema is still there"
-trace $CLI schemas get "$NEW_SCHEMA" | jq '{full_name, schema_id}'
+title "The renamed schema is gone, and the volume with it"
+trace musterr $CLI schemas get "$NEW_SCHEMA"

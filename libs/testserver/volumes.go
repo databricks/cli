@@ -3,7 +3,9 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -112,4 +114,26 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 	return Response{
 		Body: existing,
 	}
+}
+
+// VolumesList returns the volumes in a schema, in one page. Like UC, it fails for a schema that
+// does not exist.
+func (s *FakeWorkspace) VolumesList(req Request) Response {
+	defer s.LockUnlock()()
+
+	catalogName := req.URL.Query().Get("catalog_name")
+	schemaName := req.URL.Query().Get("schema_name")
+	if _, ok := s.Schemas[catalogName+"."+schemaName]; !ok {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body:       map[string]string{"error_code": "SCHEMA_DOES_NOT_EXIST", "message": fmt.Sprintf("Schema '%s.%s' does not exist.", catalogName, schemaName)},
+		}
+	}
+	result := catalog.ListVolumesResponseContent{Volumes: []catalog.VolumeInfo{}}
+	for _, key := range slices.Sorted(maps.Keys(s.Volumes)) {
+		if volume := s.Volumes[key]; volume.CatalogName == catalogName && volume.SchemaName == schemaName {
+			result.Volumes = append(result.Volumes, volume)
+		}
+	}
+	return Response{Body: result}
 }
