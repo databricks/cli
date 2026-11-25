@@ -47,6 +47,6 @@ field name.
 - Each type is expanded exactly once, at its first occurrence in struct
   declaration order. Fields of types that occur again later are documented at
   that first occurrence. This is why types shared by several resources (for
-  example `lifecycle` or `permissions`) are expanded in the file of the first
-  resource declared in `config.Resources`, and why everything under `targets`
-  is documented at the top-level keys it overrides.
+  example `lifecycle`) are expanded in the file of the first resource declared
+  in `config.Resources`, and why everything under `targets` is documented at
+  the top-level keys it overrides.
