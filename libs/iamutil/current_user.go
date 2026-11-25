@@ -2,16 +2,11 @@ package iamutil
 
 import (
 	"context"
-	"time"
 
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
-
-// meRetryTimeout bounds how long GetCurrentUser retries transient errors.
-const meRetryTimeout = 30 * time.Second
 
 // GetCurrentUser returns the current user, retrying on the errors [retry.IsTransientRead]
 // covers: 5xx responses the SDK does not retry itself and transport errors such as the server
@@ -25,14 +20,7 @@ const meRetryTimeout = 30 * time.Second
 // call runs at the start of every bundle command, so an unretried error fails the
 // whole command; we close that gap here.
 func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	return retries.Poll(ctx, meRetryTimeout, func() (*iam.User, *retries.Err) {
-		user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
-		if err == nil {
-			return user, nil
-		}
-		if retry.IsTransientRead(ctx, err) {
-			return nil, retries.Continue(err)
-		}
-		return nil, retries.Halt(err)
+	return retry.With(ctx, retry.IsTransientRead, func() (*iam.User, error) {
+		return w.CurrentUser.Me(ctx, iam.MeRequest{})
 	})
 }
