@@ -1,42 +1,32 @@
-package resources
+package metrics
 
 import (
 	"reflect"
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// Task-type usage is recorded generically at deploy as one "has_<task_type>" key per
-// task type present in the bundle (e.g. has_notebook_task, has_ai_runtime_task); see
-// collectTaskTypes. The two keys below are extra ai_runtime_task-specific dimensions,
-// emitted only when the bundle declares an ai_runtime_task, so a false value means "has
-// an ai_runtime_task, but it is not scheduled / not multi-task". GPU type and count are
-// intentionally not recorded here.
-const (
-	aiRuntimeTaskScheduled = "ai_runtime_task_scheduled"
-	aiRuntimeTaskMultitask = "ai_runtime_task_multitask"
-)
+func init() {
+	DeployBoolValues.Register("jobs", jobsDeployBoolValues)
+}
 
-// DeployTelemetryBoolValues records which task types the bundle's jobs use
-// (has_<task_type> per type present), plus the ai_runtime_task-specific scheduling and
-// multi-task dimensions.
-func (*Job) DeployTelemetryBoolValues(group map[string]any) []protos.BoolMapEntry {
-	jobs := make(map[string]*Job, len(group))
-	for key, r := range group {
-		jobs[key] = r.(*Job)
-	}
-
+// jobsDeployBoolValues records which task types the bundle's jobs use (has_<task_type>
+// per type present), plus the ai_runtime_task-specific scheduling and multi-task
+// dimensions.
+func jobsDeployBoolValues(b *bundle.Bundle) []protos.BoolMapEntry {
 	var values []protos.BoolMapEntry
-	for _, key := range collectTaskTypes(jobs) {
+	for _, key := range collectTaskTypes(b.Config.Resources.Jobs) {
 		values = append(values, protos.BoolMapEntry{Key: key, Value: true})
 	}
-	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(jobs); airPresent {
+	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs); airPresent {
 		values = append(values,
-			protos.BoolMapEntry{Key: aiRuntimeTaskScheduled, Value: airScheduled},
-			protos.BoolMapEntry{Key: aiRuntimeTaskMultitask, Value: airMultitask},
+			protos.BoolMapEntry{Key: AiRuntimeTaskScheduled, Value: airScheduled},
+			protos.BoolMapEntry{Key: AiRuntimeTaskMultitask, Value: airMultitask},
 		)
 	}
 	return values
@@ -65,7 +55,7 @@ func addTaskTypeKeys(task jobs.Task, out map[string]bool) {
 // collectTaskTypes returns the sorted "has_<task_type>" telemetry keys for every
 // task type used across the bundle's jobs. A for_each_task is unwrapped so the
 // wrapped task's type is recorded too. Sorted for deterministic telemetry output.
-func collectTaskTypes(jobs map[string]*Job) []string {
+func collectTaskTypes(jobs map[string]*resources.Job) []string {
 	seen := map[string]bool{}
 	for _, job := range jobs {
 		if job == nil {
@@ -95,7 +85,7 @@ func collectTaskTypes(jobs map[string]*Job) []string {
 // code_source_path is deliberately not inspected: it is rewritten to its uploaded
 // remote path before this runs, so it would always read as remote. GPU type and
 // count are likewise not recorded here.
-func aiRuntimeTaskMetrics(jobs map[string]*Job) (present, scheduled, multitask bool) {
+func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, multitask bool) {
 	for _, job := range jobs {
 		if job == nil {
 			continue

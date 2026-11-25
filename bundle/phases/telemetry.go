@@ -210,16 +210,8 @@ func recordLifecycleStarted(b *bundle.Bundle) {
 // recordResourceBoolValues records the boolean values that resource types report about
 // their resources, type by type in canonical order.
 func recordResourceBoolValues(b *bundle.Bundle) {
-	for _, group := range b.Config.Resources.AllResources() {
-		d, ok := config.ResourceTypeAs[resources.DeployTelemetryBoolValues](group.Description.PluralName)
-		if !ok {
-			continue
-		}
-		all := make(map[string]any, len(group.Resources))
-		for key, r := range group.Resources {
-			all[key] = r
-		}
-		for _, v := range d.DeployTelemetryBoolValues(all) {
+	for _, values := range metrics.DeployBoolValues.All() {
+		for _, v := range values(b) {
 			b.Metrics.SetBoolValue(v.Key, v.Value)
 		}
 	}
