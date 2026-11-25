@@ -2,6 +2,7 @@ package skills
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -11,6 +12,12 @@ import (
 
 func fixtureSource() Source {
 	return NewFSSource(os.DirFS("testdata/release"), "test release")
+}
+
+// lf normalizes line endings, so the fixtures compare equal on a checkout
+// that turns LF into CRLF, as Windows does.
+func lf(s string) string {
+	return strings.ReplaceAll(s, "\r\n", "\n")
 }
 
 func mapSource(manifest string) Source {
@@ -25,7 +32,7 @@ func TestCatalogFromFixture(t *testing.T) {
 	assert.Equal(t, "test release", catalog.Label)
 	assert.False(t, catalog.Stale)
 	assert.False(t, catalog.FetchedAt.IsZero())
-	assert.Equal(t, "Use the catalog before you read a skill.\n", catalog.Rules)
+	assert.Equal(t, "Use the catalog before you read a skill.\n", lf(catalog.Rules))
 
 	require.Len(t, catalog.Skills, 2)
 	assert.Equal(t, Skill{
@@ -53,7 +60,7 @@ func TestReadFiles(t *testing.T) {
 
 	data, err = src.ReadFile(t.Context(), "alpha", "references/guide.md")
 	require.NoError(t, err)
-	assert.Equal(t, "# Guide\n\nRead this for details.\n", string(data))
+	assert.Equal(t, "# Guide\n\nRead this for details.\n", lf(string(data)))
 
 	// An experimental skill is read from its repo_dir.
 	data, err = src.ReadFile(t.Context(), "beta", "SKILL.md")
