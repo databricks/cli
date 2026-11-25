@@ -190,37 +190,45 @@ func (s *launchSpeculation) abort() {
 	_ = s.group.Wait()
 }
 
-// startExperimentDirectoryCheck reads experimentDir in the background and returns
-// the function that creates it if missing, matching the CLI's convention for its
-// other artifact directories. Without the create, a missing parent surfaces only as
-// a server-side INTERNAL_ERROR after the run is wasted. Only the read runs before
-// Me; the returned function is called once, after Me, and does the write. An empty
-// dir means the default (/Users/<user>/...), which always exists.
-func startExperimentDirectoryCheck(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string) func() error {
+// experimentDirStatus is the get-status result for the experiment directory.
+type experimentDirStatus struct {
+	info *workspace.ObjectInfo
+	err  error
+}
+
+// startExperimentDirectoryRead reads experimentDir in the background. The channel
+// receives exactly one value and is buffered, so the read never blocks on a caller
+// that returned early. An empty dir means the default (/Users/<user>/...), which
+// always exists, so nothing is read.
+func startExperimentDirectoryRead(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string) <-chan experimentDirStatus {
+	status := make(chan experimentDirStatus, 1)
 	if experimentDir == "" {
-		return func() error { return nil }
+		status <- experimentDirStatus{}
+		return status
 	}
-	type statusResult struct {
-		info *workspace.ObjectInfo
-		err  error
-	}
-	// Buffered, so an early return from the submit does not block the goroutine.
-	status := make(chan statusResult, 1)
 	go func() {
 		info, err := w.Workspace.GetStatusByPath(ctx, experimentDir)
-		status <- statusResult{info, err}
+		status <- experimentDirStatus{info, err}
 	}()
-	return func() error {
-		r := <-status
-		if errors.Is(r.err, apierr.ErrNotFound) {
-			return w.Workspace.MkdirsByPath(ctx, experimentDir)
-		}
-		if r.err != nil {
-			return fmt.Errorf("failed to check experiment_directory %q: %w", experimentDir, r.err)
-		}
-		if r.info.ObjectType != workspace.ObjectTypeDirectory {
-			return fmt.Errorf("experiment_directory %q is not a directory (object_type=%s)", experimentDir, r.info.ObjectType)
-		}
+	return status
+}
+
+// ensureExperimentDirectory creates experimentDir if the read found it missing,
+// matching the CLI's convention for its other artifact directories. Without this, a
+// missing parent surfaces only as a server-side INTERNAL_ERROR after the run is
+// wasted.
+func ensureExperimentDirectory(ctx context.Context, w *databricks.WorkspaceClient, experimentDir string, status experimentDirStatus) error {
+	if experimentDir == "" {
 		return nil
 	}
+	if errors.Is(status.err, apierr.ErrNotFound) {
+		return w.Workspace.MkdirsByPath(ctx, experimentDir)
+	}
+	if status.err != nil {
+		return fmt.Errorf("failed to check experiment_directory %q: %w", experimentDir, status.err)
+	}
+	if status.info.ObjectType != workspace.ObjectTypeDirectory {
+		return fmt.Errorf("experiment_directory %q is not a directory (object_type=%s)", experimentDir, status.info.ObjectType)
+	}
+	return nil
 }
