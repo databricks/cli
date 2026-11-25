@@ -38,21 +38,18 @@ func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandl
 	}, nil
 }
 
-// dropShadowingPlaceholders removes PLACEHOLDER descriptions from fromFile for
-// fields that cli.json documents. A PLACEHOLDER marks a field with no
-// documentation anywhere, so once upstream gains a description the marker is
-// stale and would otherwise shadow it in the merge, leaving the schema with no
-// description at all. fromFile is mutated in place: the sync step then rewrites
-// the annotations file without the stale markers. Entries that carry other
-// hand-authored fields (e.g. deprecation_message) lose only the placeholder.
-func dropShadowingPlaceholders(fromFile, extracted annotation.File) {
+// dropPlaceholders removes PLACEHOLDER descriptions from fromFile. Placeholders
+// belong in the generated file (see syncAnnotationFiles); one that was
+// hand-added to annotations.yml, or left over from before the files were split,
+// would otherwise shadow an upstream description in the merge and hide the
+// field from the undocumented list. fromFile is mutated in place so the sync
+// step rewrites the annotations file without the markers. Entries that carry
+// other hand-authored fields (e.g. deprecation_message) lose only the
+// placeholder.
+func dropPlaceholders(fromFile annotation.File) {
 	for typePath, ta := range fromFile {
 		for key, d := range ta.Fields {
 			if d.Description != annotation.Placeholder {
-				continue
-			}
-			if extracted[typePath].Fields[key].Description == "" {
-				// Genuinely undocumented: keep the TODO marker.
 				continue
 			}
 			d.Description = ""
@@ -69,9 +66,9 @@ func dropShadowingPlaceholders(fromFile, extracted annotation.File) {
 }
 
 // isEmptyDescriptor reports whether d carries no annotation data. It runs after
-// a stale placeholder is cleared, to decide whether the whole entry can be
-// dropped. Comparing against the zero value stays correct as new Descriptor
-// fields are added.
+// a placeholder is cleared, to decide whether the whole entry can be dropped.
+// Comparing against the zero value stays correct as new Descriptor fields are
+// added.
 func isEmptyDescriptor(d annotation.Descriptor) bool {
 	return reflect.DeepEqual(d, annotation.Descriptor{})
 }
@@ -121,23 +118,25 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 	return s
 }
 
-// Writes the annotations file back in canonical form, adding placeholder
-// descriptions for fields that have no documentation anywhere. Entries for
-// fields that no longer exist in the config are dropped with a warning.
-func (d *annotationHandler) syncWithMissingAnnotations(outputPath string, g *typeGraph) error {
-	updated, err := mergeAnnotationFiles(d.fileAnnotations, d.missingAnnotations)
-	if err != nil {
-		return err
-	}
-
-	detached, err := saveAnnotationsFile(outputPath, updated, g)
+// syncAnnotationFiles writes both annotation files back in canonical form.
+// annotationsPath receives the hand-authored docs; generatedPath receives a
+// placeholder entry for every field that has no documentation anywhere, so new
+// undocumented fields show up as a diff in a file that is visibly generated.
+// Entries for fields that no longer exist in the config are dropped with a
+// warning.
+func (d *annotationHandler) syncAnnotationFiles(annotationsPath, generatedPath string, g *typeGraph) error {
+	detached, err := saveAnnotationsFile(annotationsPath, annotationsFileHeader, d.fileAnnotations, g)
 	if err != nil {
 		return err
 	}
 	for _, k := range detached {
 		fmt.Printf("Dropping annotation for `%s`: no matching field in the bundle configuration\n", k)
 	}
-	return nil
+
+	// Missing annotations are computed from the current config, so nothing can
+	// be detached here.
+	_, err = saveAnnotationsFile(generatedPath, generatedFileHeader, d.missingAnnotations, g)
+	return err
 }
 
 func getPath(typ reflect.Type) string {

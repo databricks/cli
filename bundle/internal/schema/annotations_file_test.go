@@ -40,7 +40,7 @@ func TestAnnotationsFileRoundTrip(t *testing.T) {
 	}
 
 	path := filepath.Join(t.TempDir(), "annotations.yml")
-	detached, err := saveAnnotationsFile(path, data, g)
+	detached, err := saveAnnotationsFile(path, annotationsFileHeader, data, g)
 	require.NoError(t, err)
 	assert.Empty(t, detached)
 
@@ -91,7 +91,7 @@ mode:
 
 	// Saving the loaded data again must be byte-identical.
 	path2 := filepath.Join(t.TempDir(), "annotations.yml")
-	_, err = saveAnnotationsFile(path2, loaded, g)
+	_, err = saveAnnotationsFile(path2, annotationsFileHeader, loaded, g)
 	require.NoError(t, err)
 	b2, err := os.ReadFile(path2)
 	require.NoError(t, err)
@@ -159,7 +159,7 @@ func TestAnnotationsFileDetachedEntries(t *testing.T) {
 	}
 
 	path := filepath.Join(t.TempDir(), "annotations.yml")
-	detached, err := saveAnnotationsFile(path, data, g)
+	detached, err := saveAnnotationsFile(path, annotationsFileHeader, data, g)
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"github.com/databricks/cli/bundle/internal/schema.tgRoot: no_such_field",

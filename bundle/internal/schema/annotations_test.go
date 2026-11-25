@@ -55,85 +55,62 @@ func TestConvertLinksToAbsoluteUrl(t *testing.T) {
 
 const testTypePath = "github.com/databricks/cli/bundle/config.Foo"
 
-func TestDropShadowingPlaceholders(t *testing.T) {
+func TestDropPlaceholders(t *testing.T) {
 	tests := []struct {
-		name      string
-		fromFile  annotation.File
-		extracted annotation.File
-		want      annotation.File
+		name     string
+		fromFile annotation.File
+		want     annotation.File
 	}{
 		{
-			name: "placeholder shadowing an upstream description is dropped",
+			name: "placeholder-only entry is dropped with its type",
 			fromFile: annotation.File{
 				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder}}},
-			},
-			extracted: annotation.File{
-				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
 			},
 			want: annotation.File{},
-		},
-		{
-			name: "placeholder without upstream description is kept",
-			fromFile: annotation.File{
-				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder}}},
-			},
-			extracted: annotation.File{},
-			want: annotation.File{
-				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder}}},
-			},
 		},
 		{
 			name: "placeholder with other fields loses only the placeholder",
 			fromFile: annotation.File{
 				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder, DeprecationMessage: "deprecated"}}},
 			},
-			extracted: annotation.File{
-				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
-			},
 			want: annotation.File{
 				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {DeprecationMessage: "deprecated"}}},
 			},
 		},
 		{
-			name: "real description override is untouched",
+			name: "real description is untouched",
 			fromFile: annotation.File{
 				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "hand-written override"}}},
-			},
-			extracted: annotation.File{
-				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
 			},
 			want: annotation.File{
 				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "hand-written override"}}},
 			},
 		},
 		{
-			name: "other fields of the same type are kept",
+			name: "type docs keep the entry alive",
 			fromFile: annotation.File{
-				testTypePath: {Fields: map[string]annotation.Descriptor{
-					"stale": {Description: annotation.Placeholder},
-					"todo":  {Description: annotation.Placeholder},
-				}},
-			},
-			extracted: annotation.File{
-				testTypePath: {Fields: map[string]annotation.Descriptor{"stale": {Description: "upstream description"}}},
+				testTypePath: {
+					Self:   annotation.Descriptor{Description: "the type"},
+					Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder}},
+				},
 			},
 			want: annotation.File{
-				testTypePath: {Fields: map[string]annotation.Descriptor{"todo": {Description: annotation.Placeholder}}},
+				testTypePath: {Self: annotation.Descriptor{Description: "the type"}, Fields: map[string]annotation.Descriptor{}},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			dropShadowingPlaceholders(test.fromFile, test.extracted)
+			dropPlaceholders(test.fromFile)
 			assert.Equal(t, test.want, test.fromFile)
 		})
 	}
 }
 
-// A stale placeholder must not swallow the upstream description in the merged
-// view the schema is generated from.
-func TestStalePlaceholderDoesNotShadowMergedDescription(t *testing.T) {
+// A placeholder left in the annotations file must not swallow the upstream
+// description in the merged view the schema is generated from.
+func TestPlaceholderDoesNotShadowMergedDescription(t *testing.T) {
 	extracted := annotation.File{
 		testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
 	}
@@ -141,7 +118,7 @@ func TestStalePlaceholderDoesNotShadowMergedDescription(t *testing.T) {
 		testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder, DeprecationMessage: "deprecated"}}},
 	}
 
-	dropShadowingPlaceholders(fromFile, extracted)
+	dropPlaceholders(fromFile)
 	h, err := newAnnotationHandler(extracted, fromFile)
 	require.NoError(t, err)
 
