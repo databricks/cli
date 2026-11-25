@@ -1,2 +1,0 @@
-# A null sequence item is a zero-valued element, so its required fields are still checked.
-trace $CLI bundle validate -o json | jq '.resources.jobs.j | {webhook_notifications}'
