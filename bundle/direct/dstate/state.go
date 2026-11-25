@@ -18,6 +18,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/atomicfile"
@@ -1044,22 +1045,13 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		// sub-resource entry like resources.<group>.<name>.permissions is not
 		// mistaken for the resource itself.
 		resourceType := config.GetResourceTypeFromKey(key)
+		rc := dresources.GetResourceConfig(resourceType)
 
 		var etag string
 		// Extract etag for resources that use it for drift detection
-		// (dashboards and genie_spaces). Both follow the same pattern of
-		// persisting the backend-returned etag in state and comparing it
-		// against the remote on the next plan via OverrideChangeDesc.
-		// covered by test cases:
-		//   - bundle/deploy/dashboard/detect-change
-		//   - bundle/resources/genie_spaces/simple
-		if (resourceType == "dashboards" || resourceType == "genie_spaces") && len(entry.State) > 0 {
-			var holder struct {
-				Etag string `json:"etag"`
-			}
-			if err := json.Unmarshal(entry.State, &holder); err == nil {
-				etag = holder.Etag
-			}
+		// (see ResourceLifecycleConfig.EtagField).
+		if rc.EtagField != "" && len(entry.State) > 0 {
+			etag = stateField[string](entry.State, rc.EtagField)
 		}
 
 		// Persist a run's resolved job_id so read-only commands can build its
@@ -1082,6 +1074,25 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		}
 	}
 	return result
+}
+
+// stateField decodes the top-level field of a resource's JSON state. It returns the zero value if
+// the state has no such field or the field does not decode into T.
+func stateField[T any](state json.RawMessage, field string) T {
+	var zero T
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(state, &fields); err != nil {
+		return zero
+	}
+	raw, ok := fields[field]
+	if !ok {
+		return zero
+	}
+	var value T
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return zero
+	}
+	return value
 }
 
 func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {

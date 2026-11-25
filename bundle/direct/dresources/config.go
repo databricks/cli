@@ -122,6 +122,12 @@ type ResourceLifecycleConfig struct {
 	// StampDeploymentIdForFirstVersion).
 	DeploymentIDField string `yaml:"deployment_id_field,omitempty"`
 
+	// EtagField: the top-level field, in both the state and the remote state, holding the etag
+	// the backend returns, for resources whose drift detection compares the etag in state
+	// against the remote one. The config does not provide it, so bind copies it from the remote
+	// state, and the exported state carries it (resourcestate.ResourceState.ETag).
+	EtagField string `yaml:"etag_field,omitempty"`
+
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
@@ -221,6 +227,7 @@ var empty = ResourceLifecycleConfig{
 	IgnoreLocalChanges:    nil,
 	InternalIDField:       "",
 	DeploymentIDField:     "",
+	EtagField:             "",
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,

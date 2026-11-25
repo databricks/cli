@@ -1,3 +1,7 @@
+# Drift is detected by comparing the etag the last deploy recorded against the
+# remote one (see OverrideChangeDesc). Covered by bundle/resources/genie_spaces/simple.
+etag_field: etag
+
 ignore_remote_changes:
   # serialized_space locally (structured YAML) and remotely (JSON string) will differ
   # textually, so we cannot meaningfully compare them for drift.

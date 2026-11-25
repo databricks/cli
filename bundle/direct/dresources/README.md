@@ -92,6 +92,10 @@ Declaring a field under `hashed_fields` in `resources.yml` makes the engine pers
 
 If the resource records the id of the deployment it belongs to (a job's `deployment.deployment_id`), name that state field as `deployment_id_field`. A first deploy plans before its deployment exists, so the framework fills the id into the planned state once approval creates the deployment.
 
+## etag_field: etag-based drift detection
+
+If drift is detected by comparing the etag the last deploy recorded against the remote one (in `OverrideChangeDesc`), name the top-level etag field as `etag_field`. It must exist in both the state and the remote type. The config does not provide the etag, so bind copies it from the remote state, and the exported resource state carries it.
+
 ## RemapState is a dumb copy; DoRead owns all remapping
 
 `RemapState` converts `RemoteType` to `StateType` only because `StateType` is typically a

@@ -453,6 +453,16 @@ func (a *Adapter) validate() error {
 		a.deploymentIDPath = path
 	}
 
+	if a.resourceConfig != nil && a.resourceConfig.EtagField != "" {
+		path := structpath.NewStringKey(nil, a.resourceConfig.EtagField)
+		if err := structaccess.ValidatePath(stateType, path); err != nil {
+			return fmt.Errorf("etag_field: %w", err)
+		}
+		if err := structaccess.ValidatePath(remoteType, path); err != nil {
+			return fmt.Errorf("etag_field: %w", err)
+		}
+	}
+
 	if a.resourceConfig != nil && len(a.resourceConfig.ParentIDFields) > 0 && a.idFromState == nil {
 		return errors.New("parent_id_fields requires IDFromState")
 	}

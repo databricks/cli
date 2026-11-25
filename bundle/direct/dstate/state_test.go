@@ -275,6 +275,15 @@ func TestExportStateFromDataDashboardEtag(t *testing.T) {
 				ID:    "abc",
 				State: json.RawMessage(`{"etag": "v2"}`),
 			},
+			"resources.genie_spaces.my_space": {
+				ID:    "def",
+				State: json.RawMessage(`{"etag": "v3"}`),
+			},
+			// Only types that declare an etag_field export one.
+			"resources.jobs.my_job": {
+				ID:    "123",
+				State: json.RawMessage(`{"etag": "v4"}`),
+			},
 		},
 	}
 
@@ -282,6 +291,8 @@ func TestExportStateFromDataDashboardEtag(t *testing.T) {
 
 	assert.Equal(t, "v1", result["resources.dashboards.my_dash"].ETag)
 	assert.Empty(t, result["resources.dashboards.my_dash.permissions"].ETag)
+	assert.Equal(t, "v3", result["resources.genie_spaces.my_space"].ETag)
+	assert.Empty(t, result["resources.jobs.my_job"].ETag)
 }
 
 func TestPanicOnDoubleOpen(t *testing.T) {
