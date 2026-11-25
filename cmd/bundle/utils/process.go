@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -520,7 +521,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// --plan` recomputes fingerprints that the loaded plan then overrides with the
 	// ones it recorded.
 	if !opts.SkipInitialize {
-		bundle.ApplyContext(ctx, b, mutator.ResolveJobRunFileTriggers())
+		bundle.ApplyContext(ctx, b, resourcemutator.ResolveJobRunFileTriggers())
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}

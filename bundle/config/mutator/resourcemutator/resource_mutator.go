@@ -202,7 +202,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// Reads (typed): resources.alerts.*.file_path
 		// Updates (typed): resources.alerts.* (loads alert configuration from .dbalert.json file)
-		mutator.LoadDBAlertFiles(),
+		LoadDBAlertFiles(),
 
 		// Reads and updates (typed): resources.jobs.*.**
 		JobClustersFixups(),

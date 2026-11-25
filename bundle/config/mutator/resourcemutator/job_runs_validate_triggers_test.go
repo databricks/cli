@@ -1,11 +1,11 @@
-package mutator_test
+package resourcemutator_test
 
 import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"
 )
@@ -113,7 +113,7 @@ func TestValidateJobRunTriggers(t *testing.T) {
 					},
 				},
 			}
-			diags := bundle.Apply(t.Context(), b, mutator.ValidateJobRunTriggers())
+			diags := bundle.Apply(t.Context(), b, resourcemutator.ValidateJobRunTriggers())
 			if tt.summary == "" {
 				assert.Empty(t, diags)
 				return

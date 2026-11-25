@@ -37,7 +37,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
-		mutator.ValidateSecretValueIsVariable(),
+		resourcemutator.ValidateSecretValueIsVariable(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -169,7 +169,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
 		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).
-		mutator.InitializeVolumePaths(),
+		resourcemutator.InitializeVolumePaths(),
 		mutator.ResolveVolumePathReferencesOnlyResources(),
 
 		// Default the `source` field on job tasks (GIT for git_source jobs, else
@@ -215,7 +215,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.PostgresDataApiSettings(),
 
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
-		mutator.ValidateJobRunTriggers(),
+		resourcemutator.ValidateJobRunTriggers(),
 
 		// Reads (dynamic): resources.*.*.lifecycle.depends_on
 		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.
