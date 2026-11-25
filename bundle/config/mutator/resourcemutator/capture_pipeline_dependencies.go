@@ -74,8 +74,8 @@ func (m *capturePipelineDependencies) Apply(ctx context.Context, b *bundle.Bundl
 	return nil
 }
 
-// hasPrivileges reports whether the node is a grants or permissions list with entries, which is the
-// only case where the deployment creates it.
+// hasPrivileges reports whether the node is a grants or permissions list with entries. An empty list
+// grants nothing and at most revokes earlier grants, so a pipeline gains nothing by waiting for it.
 func hasPrivileges(b *bundle.Bundle, node string) bool {
 	path, err := dyn.NewPathFromString(node)
 	if err != nil {
