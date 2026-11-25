@@ -92,7 +92,8 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		}
 	}
 
-	// Iterate in AllResources order so diagnostics keep a stable order.
+	// Errors are reported in AllResources order. Dashboards are checked inside
+	// the loop to keep their place in that order.
 	for _, group := range b.Config.Resources.AllResources() {
 		resourceType := group.Description.PluralName
 
