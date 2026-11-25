@@ -27,3 +27,24 @@ resources:
 	assert.Equal(t, `required field "quartz_cron_expression" is not set`, diags[0].Summary)
 	assert.Equal(t, "resources.jobs.missing.schedule", diags[0].Paths[0].String())
 }
+
+func TestRequiredSkipsNullField(t *testing.T) {
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(`
+resources:
+  jobs:
+    j:
+      schedule: null
+      tasks:
+        - task_key: a
+          notebook_task:
+        -
+`))
+	require.Empty(t, diags)
+	b := &bundle.Bundle{Config: *root}
+
+	// A null sequence item is still a (zero-valued) element, so it is checked.
+	diags = Required().Apply(t.Context(), b)
+	require.Len(t, diags, 1)
+	assert.Equal(t, `required field "task_key" is not set`, diags[0].Summary)
+	assert.Equal(t, "resources.jobs.j.tasks[1]", diags[0].Paths[0].String())
+}
