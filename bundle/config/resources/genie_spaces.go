@@ -19,7 +19,7 @@ type GenieSpaceConfig struct {
 	// Etag for change detection. The bundle persists the value the backend
 	// returned on the last Create/Update and uses it both as an If-Match for
 	// the next Update and as the signal for `bundle plan` to detect remote
-	// drift (see OverrideChangeDesc in bundle/direct/dresources/genie_space.go).
+	// drift (see OverrideChangeDesc in bundle/direct/dresources/genie_spaces.go).
 	// Mirrors dashboards.DashboardConfig.Etag.
 	Etag string `json:"etag,omitempty"`
 	// Title of the Genie Space

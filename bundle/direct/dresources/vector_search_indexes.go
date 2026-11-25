@@ -187,7 +187,7 @@ func isIndexPendingDeletion(err error) bool {
 // declared in vector_search_indexes.yml under recreate_on_changes or ignore_remote_changes.
 // If a future SDK bump adds a new field that isn't classified, the framework
 // rejects the resulting Update plan at bundle_plan.go (see also the reflection
-// test in vector_search_index_test.go which catches it earlier at unit-test time).
+// test in vector_search_indexes_test.go which catches it earlier at unit-test time).
 
 func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string, _ *VectorSearchIndexState) error {
 	return r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)

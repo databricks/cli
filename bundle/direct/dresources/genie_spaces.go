@@ -21,7 +21,7 @@ func init() {
 	registerAdapter("genie_spaces", (*ResourceGenieSpace)(nil))
 }
 
-// ResourceGenieSpace mirrors the dashboard resource pattern (see dashboard.go),
+// ResourceGenieSpace mirrors the dashboard resource pattern (see dashboards.go),
 // with these intentional divergences:
 //   - No Published wrapper: Genie spaces have no publish lifecycle, so
 //     PrepareState returns the config directly.
@@ -164,7 +164,7 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 	// Persist the etag in state. The deploy framework saves `config` (the input
 	// to DoCreate) as the state record, so mutating it here is what gets the
 	// backend-returned etag onto disk for the next plan's drift check.
-	// Matches the dashboard pattern (dashboard.go DoCreate).
+	// Matches the dashboard pattern (dashboards.go DoCreate).
 	config.Etag = createResp.Etag
 
 	return createResp.SpaceId, responseToGenieSpaceConfig(createResp, serializedSpace), nil
