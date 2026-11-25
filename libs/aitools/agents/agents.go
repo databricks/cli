@@ -328,8 +328,15 @@ var Registry = []*Agent{
 		Name:        NameCodex,
 		DisplayName: "Codex CLI",
 		ConfigDir:   homeSubdir(".codex"),
-		// Codex reads repository skills from .agents/skills, but its plugin
-		// (`codex plugin add`) has no scope option, so the plugin is user-only.
+		// Codex reads repository skills from .agents/skills and follows
+		// symlinked skill folders, but its plugin (`codex plugin add`) has no
+		// scope option, so the plugin is user-only.
+		// See https://learn.chatgpt.com/docs/build-skills.
+		// Pi and Gemini CLI also read .agents/skills next to their own project
+		// dirs, so a project install for Codex and one of them exposes each
+		// skill to that agent twice (both links point at the same canonical
+		// copy). See https://docs.pi.dev/latest/skills and
+		// https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/using-agent-skills.md.
 		SupportsProjectSkills:    true,
 		ProjectConfigDir:         ".agents",
 		Binary:                   "codex",

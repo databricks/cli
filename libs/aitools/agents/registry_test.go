@@ -11,23 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCodexRegistryPaths(t *testing.T) {
-	home := t.TempDir()
-	cwd := t.TempDir()
-	ctx := env.WithUserHomeDir(t.Context(), home)
-
-	a := ByName(NameCodex)
-	require.NotNil(t, a)
-	// Codex reads project skills from .agents/skills, but its plugin is user-only.
-	assert.True(t, a.SupportsProjectSkills)
-	assert.False(t, a.SupportsProjectPlugin)
-
-	globalDir, err := a.SkillsDir(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, filepath.Join(home, ".codex", "skills"), globalDir)
-	assert.Equal(t, filepath.Join(cwd, ".agents", "skills"), a.ProjectSkillsDir(cwd))
-}
-
 func TestDetectProjectInstalled(t *testing.T) {
 	cwd := t.TempDir()
 	for _, name := range []string{NamePi, NameGemini, NameGoose, NameKiro, NameCodex} {

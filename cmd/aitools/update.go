@@ -230,7 +230,7 @@ func runUpdate(ctx context.Context, f updateFlags) error {
 				if err != nil {
 					return err
 				}
-				targetAgents = projectUpdateAgents(installed, cwd)
+				targetAgents = projectUpdateAgents(installed, cwd, dir, state)
 			}
 
 			fileAgents, manifestPlugins := excludePluginAgents(ctx, scope, targetAgents, state)
@@ -385,14 +385,23 @@ func printPluginCheckResults(ctx context.Context, state *installer.InstallState,
 // files for: the agents detected on the machine and the agents that have
 // databricks skills in the project. A default project install skips a plugin
 // agent whose plugin is user-only (Codex), so its project skill files come only
-// from an explicit --skills-only install. Such an agent is kept only when the
-// project already has its skills; otherwise update would add skill files no
+// from an explicit --skills-only install. Such an agent is kept only when that
+// install recorded it in state.SkillsOnlyAgents or its project skills dir holds
+// skills the CLI wrote from baseDir; otherwise update would add skill files no
 // install gave it, next to a user-level plugin that already serves every skill.
-func projectUpdateAgents(installed []*agents.Agent, cwd string) []*agents.Agent {
-	detected := slices.DeleteFunc(slices.Clone(installed), func(a *agents.Agent) bool {
-		return a.Plugin != nil && !a.SupportsProjectPlugin
+// Codex's .agents/skills is shared with other tools, so a databricks skill there
+// is not proof on its own. Agents without project skills (Copilot) stay in the
+// list, so UpdateSkills names them when it skips them.
+func projectUpdateAgents(installed []*agents.Agent, cwd, baseDir string, state *installer.InstallState) []*agents.Agent {
+	return slices.DeleteFunc(mergeAgents(installed, agents.DetectProjectInstalled(cwd)), func(a *agents.Agent) bool {
+		if a.Plugin == nil || a.SupportsProjectPlugin || !a.SupportsProjectSkills {
+			return false
+		}
+		if state != nil && slices.Contains(state.SkillsOnlyAgents, a.Name) {
+			return false
+		}
+		return !installer.HasOwnSkillsIn(a.ProjectSkillsDir(cwd), baseDir, state)
 	})
-	return mergeAgents(detected, agents.DetectProjectInstalled(cwd))
 }
 
 // mergeAgents concatenates two agent lists, skipping duplicate names.

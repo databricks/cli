@@ -85,6 +85,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		}
 		incompatible := incompatibleAgentNames(targetAgents)
 		targetAgents = filterProjectAgents(ctx, targetAgents)
+		if len(targetAgents) == 0 && len(incompatible) == 0 {
+			return nil, errors.New("no agents have project-scoped skills to update. Run 'databricks aitools install --scope project' to install them; Codex CLI gets project skill files only with --skills-only --agents=codex")
+		}
 		if len(targetAgents) == 0 {
 			return nil, fmt.Errorf("no agents support project-scoped skills. The following detected agents are global-only: %s", strings.Join(incompatible, ", "))
 		}
@@ -394,6 +397,27 @@ func removeSkillExposures(ctx context.Context, baseDir, skillName, scope, cwd st
 	if err := os.RemoveAll(canonicalDir); err != nil {
 		log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
 	}
+}
+
+// HasOwnSkillsIn reports whether agentDir holds a databricks skill the CLI
+// wrote from baseDir: a symlink into baseDir or an unmodified copy (see
+// exposureRemovable). A databricks skill another tool put in a shared
+// directory such as .agents/skills does not count.
+func HasOwnSkillsIn(agentDir, baseDir string, state *InstallState) bool {
+	entries, err := os.ReadDir(agentDir)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasPrefix(name, "databricks") {
+			continue
+		}
+		if exposureRemovable(filepath.Join(agentDir, name), filepath.Join(baseDir, name), name, state) {
+			return true
+		}
+	}
+	return false
 }
 
 // exposureRemovable reports whether an agent's skill entry is ours and safe to
