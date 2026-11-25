@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"net/url"
+	"slices"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
@@ -56,4 +57,17 @@ func (s *MlflowModel) InitializeURL(baseURL url.URL) {
 
 func (s *MlflowModel) GetName() string {
 	return s.Name
+}
+
+func (s *MlflowModel) ApplyPresets(p *PresetSettings) {
+	s.Name = p.NamePrefix + s.Name
+	for _, t := range p.Tags {
+		exists := slices.ContainsFunc(s.Tags, func(modelTag ml.ModelTag) bool {
+			return modelTag.Key == t.Key
+		})
+		if !exists {
+			// Only add this tag if the resource didn't include any tag that overrides its value.
+			s.Tags = append(s.Tags, ml.ModelTag{Key: t.Key, Value: t.Value})
+		}
+	}
 }

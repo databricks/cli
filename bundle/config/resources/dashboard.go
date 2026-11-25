@@ -129,3 +129,14 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 func (r *Dashboard) GetName() string {
 	return r.DisplayName
 }
+
+func (r *Dashboard) ApplyPresets(p *PresetSettings) {
+	r.DisplayName = p.NamePrefix + r.DisplayName
+}
+
+func (r *Dashboard) FieldDefaults(c DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		{"parent_path", c.ResourcePath},
+		{"embed_credentials", false},
+	}
+}

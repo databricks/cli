@@ -61,3 +61,19 @@ func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 func (s *QualityMonitor) GetName() string {
 	return s.TableName
 }
+
+func (s *QualityMonitor) ApplyPresets(p *PresetSettings) {
+	if p.TriggerPauseStatus != TriggerPauseStatusPaused {
+		return
+	}
+	// Remove all schedules from monitors, since they don't support pausing/unpausing.
+	// Quality monitors might support the "pause" property in the future, so at the
+	// CLI level we do respect that property if it is set to "unpaused."
+	if s.Schedule != nil && s.Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
+		s.Schedule = nil
+	}
+}
+
+func (*QualityMonitor) NamePrefixExemptReason() string {
+	return "the name is the full name of the monitored table"
+}

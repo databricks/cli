@@ -107,6 +107,16 @@ func (a *App) InitializeURL(baseURL url.URL) {
 	a.URL = workspaceurls.ResourceURL(baseURL, "apps", a.GetName())
 }
 
+func (*App) NamePrefixExemptReason() string {
+	return "the app name is its ID; it is not prefixed today and no rationale for that has been recorded"
+}
+
+func (*App) FieldDefaults(DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		{"description", ""},
+	}
+}
+
 func (a *App) GetName() string {
 	// Prefer name from the state - that is what is actually deployed
 	if a.ID != "" {

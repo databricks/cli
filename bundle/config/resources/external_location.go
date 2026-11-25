@@ -58,6 +58,10 @@ func (e *ExternalLocation) GetURL() (string, bool) {
 	return "", false
 }
 
+func (*ExternalLocation) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (e *ExternalLocation) GetName() string {
 	return e.Name
 }

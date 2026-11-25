@@ -72,6 +72,10 @@ func (b *PostgresBranch) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresBranch) NamePrefixExemptReason() string {
+	return "a branch has no name of its own: its resource name is its ID"
+}
+
 func (b *PostgresBranch) GetName() string {
 	// Branches have no name field of their own; the resource name is the ID
 	// ("projects/{project_id}/branches/{branch_id}").

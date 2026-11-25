@@ -62,6 +62,11 @@ func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
 	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_indexes", e.Name)
 }
 
+func (*VectorSearchIndex) NamePrefixExemptReason() string {
+	// CreateIndex addresses the index by name and DoCreate returns it as the deployment id.
+	return "the 3-part UC name (catalog.schema.index) is the API primary key, so prefixing it would change the resource's identity rather than just its display name"
+}
+
 func (e *VectorSearchIndex) GetName() string {
 	return e.Name
 }

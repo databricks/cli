@@ -61,6 +61,10 @@ func (s *PostgresSyncedTable) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresSyncedTable) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (s *PostgresSyncedTable) GetName() string {
 	// Synced tables don't expose a display name distinct from their three-part
 	// id, so the id IS the name. Prefer the post-deploy ID

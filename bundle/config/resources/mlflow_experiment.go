@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"net/url"
+	"path"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
@@ -56,4 +57,27 @@ func (s *MlflowExperiment) InitializeURL(baseURL url.URL) {
 
 func (s *MlflowExperiment) GetName() string {
 	return s.Name
+}
+
+func (s *MlflowExperiment) ApplyPresets(p *PresetSettings) {
+	filepath := s.Name
+	dir := path.Dir(filepath)
+	base := path.Base(filepath)
+	if dir == "." {
+		s.Name = p.NamePrefix + base
+	} else {
+		s.Name = dir + "/" + p.NamePrefix + base
+	}
+	for _, t := range p.Tags {
+		exists := false
+		for _, experimentTag := range s.Tags {
+			if experimentTag.Key == t.Key {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			s.Tags = append(s.Tags, ml.ExperimentTag{Key: t.Key, Value: t.Value})
+		}
+	}
 }

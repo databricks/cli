@@ -64,6 +64,10 @@ func (d *PostgresDataApi) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresDataApi) NamePrefixExemptReason() string {
+	return "the Data API has no name of its own: its resource name is its ID"
+}
+
 func (d *PostgresDataApi) GetName() string {
 	// The Data API has no name field of its own; its resource name is its ID
 	// ("{parent}/data-api").

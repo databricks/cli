@@ -65,3 +65,12 @@ func (s *Schema) UnmarshalJSON(b []byte) error {
 func (s Schema) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
+
+func (s *Schema) ApplyPresets(p *PresetSettings) {
+	if p.SkipNamePrefixForSchema {
+		return
+	}
+	s.Name = normalizePrefix(p.NamePrefix) + s.Name
+	// HTTP API for schemas doesn't yet support tags. It's only supported in
+	// the Databricks UI and via the SQL API.
+}

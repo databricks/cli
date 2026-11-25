@@ -54,3 +54,19 @@ func (s *InstancePool) InitializeURL(baseURL url.URL) {
 func (s *InstancePool) GetName() string {
 	return s.InstancePoolName
 }
+
+func (s *InstancePool) ApplyPresets(p *PresetSettings) {
+	s.InstancePoolName = p.NamePrefix + s.InstancePoolName
+	if len(p.Tags) > 0 {
+		if s.CustomTags == nil {
+			s.CustomTags = make(map[string]string, len(p.Tags))
+		}
+		for _, tag := range p.Tags {
+			k := p.Tagging.NormalizeKey(tag.Key)
+			v := p.Tagging.NormalizeValue(tag.Value)
+			if _, ok := s.CustomTags[k]; !ok {
+				s.CustomTags[k] = v
+			}
+		}
+	}
+}

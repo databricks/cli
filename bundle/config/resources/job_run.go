@@ -132,6 +132,10 @@ func (r *JobRun) GetLifecycle() LifecycleConfig {
 	return r.Lifecycle.Lifecycle
 }
 
+func (*JobRun) NamePrefixExemptReason() string {
+	return "a run has no name"
+}
+
 // GetName returns the in-product name, which is empty: a run has no name.
 func (r *JobRun) GetName() string {
 	return ""
