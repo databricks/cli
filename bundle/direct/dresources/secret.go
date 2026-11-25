@@ -15,6 +15,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerAdapter("secrets", (*ResourceSecret)(nil))
+}
+
 // Terraform provider implementation:
 // https://github.com/databricks/terraform-provider-databricks/blob/main/catalog/resource_secret.go
 type ResourceSecret struct {

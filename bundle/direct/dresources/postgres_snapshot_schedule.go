@@ -39,6 +39,10 @@ func (s PostgresSnapshotScheduleRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("postgres_snapshot_schedules", (*ResourcePostgresSnapshotSchedule)(nil))
+}
+
 type ResourcePostgresSnapshotSchedule struct {
 	client *databricks.WorkspaceClient
 }

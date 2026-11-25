@@ -11,6 +11,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerAdapter("secret_scopes", (*ResourceSecretScope)(nil))
+}
+
 type ResourceSecretScope struct {
 	client *databricks.WorkspaceClient
 }

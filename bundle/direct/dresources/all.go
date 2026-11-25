@@ -2,94 +2,87 @@ package dresources
 
 import (
 	"fmt"
+	"iter"
+	"maps"
+	"sync"
 
 	"github.com/databricks/databricks-sdk-go"
 )
 
-var SupportedResources = map[string]any{
-	"jobs":                        (*ResourceJob)(nil),
-	"job_runs":                    (*ResourceJobRun)(nil),
-	"pipelines":                   (*ResourcePipeline)(nil),
-	"experiments":                 (*ResourceExperiment)(nil),
-	"features":                    (*ResourceFeature)(nil),
-	"materialization_sets":        (*ResourceMaterializationSet)(nil),
-	"feature_specs":               (*ResourceFeatureSpec)(nil),
-	"catalogs":                    (*ResourceCatalog)(nil),
-	"schemas":                     (*ResourceSchema)(nil),
-	"external_locations":          (*ResourceExternalLocation)(nil),
-	"volumes":                     (*ResourceVolume)(nil),
-	"models":                      (*ResourceMlflowModel)(nil),
-	"apps":                        (*ResourceApp)(nil),
-	"sql_warehouses":              (*ResourceSqlWarehouse)(nil),
-	"database_instances":          (*ResourceDatabaseInstance)(nil),
-	"database_catalogs":           (*ResourceDatabaseCatalog)(nil),
-	"synced_database_tables":      (*ResourceSyncedDatabaseTable)(nil),
-	"postgres_projects":           (*ResourcePostgresProject)(nil),
-	"postgres_branches":           (*ResourcePostgresBranch)(nil),
-	"postgres_endpoints":          (*ResourcePostgresEndpoint)(nil),
-	"postgres_catalogs":           (*ResourcePostgresCatalog)(nil),
-	"postgres_databases":          (*ResourcePostgresDatabase)(nil),
-	"postgres_roles":              (*ResourcePostgresRole)(nil),
-	"postgres_synced_tables":      (*ResourcePostgresSyncedTable)(nil),
-	"postgres_snapshot_schedules": (*ResourcePostgresSnapshotSchedule)(nil),
-	"postgres_data_apis":          (*ResourcePostgresDataApi)(nil),
-	"alerts":                      (*ResourceAlert)(nil),
-	"clusters":                    (*ResourceCluster)(nil),
-	"registered_models":           (*ResourceRegisteredModel)(nil),
-	"dashboards":                  (*ResourceDashboard)(nil),
-	"genie_spaces":                (*ResourceGenieSpace)(nil),
-	"secret_scopes":               (*ResourceSecretScope)(nil),
-	"model_serving_endpoints":     (*ResourceModelServingEndpoint)(nil),
-	"model_services":              (*ResourceModelService)(nil),
-	"mcp_services":                (*ResourceMcpService)(nil),
-	"model_provider_services":     (*ResourceModelProviderService)(nil),
-	"quality_monitors":            (*ResourceQualityMonitor)(nil),
-	"data_quality_monitors":       (*ResourceDataQualityMonitor)(nil),
-	"vector_search_endpoints":     (*ResourceVectorSearchEndpoint)(nil),
-	"vector_search_indexes":       (*ResourceVectorSearchIndex)(nil),
-	"instance_pools":              (*ResourceInstancePool)(nil),
-	"secrets":                     (*ResourceSecret)(nil),
-	"cluster_policies":            (*ResourceClusterPolicy)(nil),
+type adapterRegistration struct {
+	resourceType string
+	resource     any
+}
 
-	// Permissions
-	"jobs.permissions":                    (*ResourcePermissions)(nil),
-	"pipelines.permissions":               (*ResourcePermissions)(nil),
-	"apps.permissions":                    (*ResourcePermissions)(nil),
-	"alerts.permissions":                  (*ResourcePermissions)(nil),
-	"clusters.permissions":                (*ResourcePermissions)(nil),
-	"cluster_policies.permissions":        (*ResourcePermissions)(nil),
-	"database_instances.permissions":      (*ResourcePermissions)(nil),
-	"postgres_projects.permissions":       (*ResourcePermissions)(nil),
-	"experiments.permissions":             (*ResourcePermissions)(nil),
-	"models.permissions":                  (*ResourcePermissions)(nil),
-	"sql_warehouses.permissions":          (*ResourcePermissions)(nil),
-	"secret_scopes.permissions":           (*ResourceSecretScopeAcls)(nil),
-	"model_serving_endpoints.permissions": (*ResourcePermissions)(nil),
-	"dashboards.permissions":              (*ResourcePermissions)(nil),
-	"genie_spaces.permissions":            (*ResourcePermissions)(nil),
-	"vector_search_endpoints.permissions": (*ResourcePermissions)(nil),
-	"instance_pools.permissions":          (*ResourcePermissions)(nil),
+// adapterRegistrations holds what the init() of each adapter's file registered.
+var adapterRegistrations []adapterRegistration
 
-	// Grants
-	"catalogs.grants":                (*ResourceGrants)(nil),
-	"schemas.grants":                 (*ResourceGrants)(nil),
-	"external_locations.grants":      (*ResourceGrants)(nil),
-	"volumes.grants":                 (*ResourceGrants)(nil),
-	"registered_models.grants":       (*ResourceGrants)(nil),
-	"feature_specs.grants":           (*ResourceGrants)(nil),
-	"vector_search_indexes.grants":   (*ResourceGrants)(nil),
-	"secrets.grants":                 (*ResourceGrants)(nil),
-	"model_services.grants":          (*ResourceGrants)(nil),
-	"mcp_services.grants":            (*ResourceGrants)(nil),
-	"model_provider_services.grants": (*ResourceGrants)(nil),
+// derivedAdapterSources yield adapters for resource types that follow from what the
+// resource types declare in bundle/config/resources. They are read on first use only,
+// since computing them inspects every resource type.
+var derivedAdapterSources []iter.Seq2[string, any]
 
-	// Internal resources
-	"internal_immutable_snapshots": (*ResourceSnapshot)(nil),
+// adaptersRead is set when the registrations are merged on first use. A registration
+// made after that would be dropped without notice, so it panics instead. This happens
+// when something reads the adapters from a package-level initialiser or an init().
+var adaptersRead bool
+
+// registerAdapter registers resource, a typed nil pointer to the adapter
+// implementation, under resourceType. Call it from the init() of the adapter's file.
+func registerAdapter(resourceType string, resource any) {
+	if adaptersRead {
+		panic(fmt.Sprintf("adapter for %q registered after the adapters were first read", resourceType))
+	}
+	adapterRegistrations = append(adapterRegistrations, adapterRegistration{resourceType: resourceType, resource: resource})
+}
+
+// registerDerivedAdapters registers a source of adapters in the form registerAdapter takes.
+// Call it from an init(); the source is not read until the adapters are first used.
+func registerDerivedAdapters(source iter.Seq2[string, any]) {
+	if adaptersRead {
+		panic("derived adapters registered after the adapters were first read")
+	}
+	derivedAdapterSources = append(derivedAdapterSources, source)
+}
+
+var supportedResources = sync.OnceValue(func() map[string]any {
+	adaptersRead = true
+	return mergeAdapters(adapterRegistrations, derivedAdapterSources)
+})
+
+// mergeAdapters returns the registered and the derived adapters by resource type. The
+// result does not depend on the order of registration, because a resource type with
+// more than one adapter panics.
+func mergeAdapters(registrations []adapterRegistration, sources []iter.Seq2[string, any]) map[string]any {
+	result := make(map[string]any)
+	add := func(resourceType string, resource any) {
+		if _, ok := result[resourceType]; ok {
+			panic(fmt.Sprintf("resource type %q has more than one adapter", resourceType))
+		}
+		result[resourceType] = resource
+	}
+	for _, r := range registrations {
+		add(r.resourceType, r.resource)
+	}
+	for _, source := range sources {
+		for resourceType, resource := range source {
+			add(resourceType, resource)
+		}
+	}
+	return result
+}
+
+// SupportedResources returns the adapter of every resource type the direct engine
+// deploys, keyed by resource type ("jobs", "jobs.permissions"). Each adapter is a
+// typed nil pointer to its implementation, as [NewAdapter] takes it. It returns a new
+// map on every call, so the caller may modify it.
+func SupportedResources() map[string]any {
+	return maps.Clone(supportedResources())
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {
 	result := make(map[string]*Adapter)
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range supportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, client)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", resourceType, err)

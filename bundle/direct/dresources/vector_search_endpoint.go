@@ -49,6 +49,10 @@ func newVectorSearchEndpointRemote(info *vectorsearch.EndpointInfo) *VectorSearc
 	}
 }
 
+func init() {
+	registerAdapter("vector_search_endpoints", (*ResourceVectorSearchEndpoint)(nil))
+}
+
 type ResourceVectorSearchEndpoint struct {
 	client *databricks.WorkspaceClient
 }

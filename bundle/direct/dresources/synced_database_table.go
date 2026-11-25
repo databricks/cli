@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
+func init() {
+	registerAdapter("synced_database_tables", (*ResourceSyncedDatabaseTable)(nil))
+}
+
 type ResourceSyncedDatabaseTable struct {
 	client *databricks.WorkspaceClient
 }

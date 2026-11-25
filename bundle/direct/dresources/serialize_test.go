@@ -68,7 +68,7 @@ func assertJSONRoundTrip(t *testing.T, v any, label string) {
 func TestRoundtripFixtureStateType(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		// secrets are dropping value from state, so we skip it
 		if resourceType == "secrets" {
 			continue
@@ -99,7 +99,7 @@ func TestRoundtripFixtureStateType(t *testing.T) {
 // RemoteType are validated as pointer-to-struct by the adapter, so typeOf always
 // returns a pointer here.
 func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) reflect.Type, skip []string) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		if slices.Contains(skip, resourceType) {
 			continue
 		}
@@ -219,7 +219,7 @@ func collectPointerOnlyMarshalers(t reflect.Type, seen, found map[reflect.Type]b
 // The round-trip tests above cannot catch any of this: they build values with
 // reflect.New, so they only ever marshal a pointer.
 func TestMarshalerValueReceiver(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
@@ -321,7 +321,7 @@ func TestForceSendZeroValues(t *testing.T) {
 		{"StateType", (*Adapter).StateType},
 		{"RemoteType", (*Adapter).RemoteType},
 	} {
-		for resourceType, resource := range SupportedResources {
+		for resourceType, resource := range SupportedResources() {
 			adapter, err := NewAdapter(resource, resourceType, nil)
 			require.NoError(t, err)
 			t.Run(dim.label+"/"+resourceType, func(t *testing.T) {

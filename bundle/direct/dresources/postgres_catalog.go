@@ -37,6 +37,10 @@ func (s PostgresCatalogRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("postgres_catalogs", (*ResourcePostgresCatalog)(nil))
+}
+
 type ResourcePostgresCatalog struct {
 	client *databricks.WorkspaceClient
 }

@@ -12,6 +12,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerAdapter("experiments", (*ResourceExperiment)(nil))
+}
+
 type ResourceExperiment struct {
 	client *databricks.WorkspaceClient
 }

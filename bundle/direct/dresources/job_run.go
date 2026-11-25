@@ -77,6 +77,10 @@ func (s JobRunRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("job_runs", (*ResourceJobRun)(nil))
+}
+
 type ResourceJobRun struct {
 	client *databricks.WorkspaceClient
 }

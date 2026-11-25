@@ -47,6 +47,10 @@ func (s PostgresEndpointRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("postgres_endpoints", (*ResourcePostgresEndpoint)(nil))
+}
+
 type ResourcePostgresEndpoint struct {
 	client *databricks.WorkspaceClient
 }

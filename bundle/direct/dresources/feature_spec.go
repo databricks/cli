@@ -9,6 +9,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerAdapter("feature_specs", (*ResourceFeatureSpec)(nil))
+}
+
 // https://docs.databricks.com/api/workspace/featureengineering
 // The API has no update: every field is immutable, so any change recreates the feature spec.
 type ResourceFeatureSpec struct {

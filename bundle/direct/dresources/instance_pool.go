@@ -9,6 +9,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+func init() {
+	registerAdapter("instance_pools", (*ResourceInstancePool)(nil))
+}
+
 type ResourceInstancePool struct {
 	client *databricks.WorkspaceClient
 }

@@ -1567,6 +1567,8 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
 	}
 
+	supportedResources := dresources.SupportedResources()
+
 	// Walk?
 	if configRoot != nil {
 		for _, pat := range patterns {
@@ -1579,7 +1581,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 					if resourceType == "" {
 						return v, fmt.Errorf("cannot parse resource key: %q", s)
 					}
-					_, ok := dresources.SupportedResources[resourceType]
+					_, ok := supportedResources[resourceType]
 					if !ok {
 						return v, fmt.Errorf("unsupported resource type: %s", resourceType)
 					}

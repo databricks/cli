@@ -1,3 +1,5 @@
+api_type: catalog.McpService
+
 provided_id_fields:
   # parent + mcp_service_id compose the server-derived resource name
   # (mcp-services/{catalog}.{schema}.{mcp_service}), which is the ID the

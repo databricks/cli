@@ -22,6 +22,10 @@ import (
 // mcp_service_id) from the server-derived resource name.
 const mcpServiceNamePrefix = "mcp-services/"
 
+func init() {
+	registerAdapter("mcp_services", (*ResourceMcpService)(nil))
+}
+
 type ResourceMcpService struct {
 	client *databricks.WorkspaceClient
 }

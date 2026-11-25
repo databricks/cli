@@ -49,6 +49,10 @@ func (s PostgresDataApiRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("postgres_data_apis", (*ResourcePostgresDataApi)(nil))
+}
+
 type ResourcePostgresDataApi struct {
 	client *databricks.WorkspaceClient
 }

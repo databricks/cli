@@ -9,6 +9,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
+func init() {
+	registerAdapter("database_instances", (*ResourceDatabaseInstance)(nil))
+}
+
 type ResourceDatabaseInstance struct {
 	client *databricks.WorkspaceClient
 }

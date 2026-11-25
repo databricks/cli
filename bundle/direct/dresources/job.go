@@ -38,6 +38,10 @@ func (s JobRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("jobs", (*ResourceJob)(nil))
+}
+
 type ResourceJob struct {
 	client *databricks.WorkspaceClient
 }

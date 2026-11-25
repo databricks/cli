@@ -80,6 +80,10 @@ func (r ClusterRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(r)
 }
 
+func init() {
+	registerAdapter("clusters", (*ResourceCluster)(nil))
+}
+
 type ResourceCluster struct {
 	client *databricks.WorkspaceClient
 }

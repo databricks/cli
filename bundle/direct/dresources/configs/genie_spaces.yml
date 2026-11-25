@@ -1,3 +1,10 @@
+# The field-overlap heuristic ties GenieSpace and GenieUpdateSpaceRequest and
+# breaks the tie toward GenieUpdateSpaceRequest because GenieSpace carries one
+# extra field (space_id). Pin GenieSpace: its etag is OUTPUT_ONLY (server-managed),
+# so we ignore remote changes to it, whereas on GenieUpdateSpaceRequest etag is a
+# caller-supplied optimistic-concurrency token and that behavior is lost.
+api_type: dashboards.GenieSpace
+
 ignore_remote_changes:
   # serialized_space locally (structured YAML) and remotely (JSON string) will differ
   # textually, so we cannot meaningfully compare them for drift.

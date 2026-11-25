@@ -27,6 +27,10 @@ import (
 // re-added when addressing the resource through the SDK.
 const modelServiceNamePrefix = "model-services/"
 
+func init() {
+	registerAdapter("model_services", (*ResourceModelService)(nil))
+}
+
 type ResourceModelService struct {
 	client *databricks.WorkspaceClient
 }

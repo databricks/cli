@@ -30,6 +30,10 @@ func (s CatalogState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("catalogs", (*ResourceCatalog)(nil))
+}
+
 type ResourceCatalog struct {
 	client *databricks.WorkspaceClient
 }
