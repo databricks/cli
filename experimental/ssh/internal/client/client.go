@@ -62,7 +62,10 @@ var errPortForwardingDisabled = errors.New("port forwarding to serverless comput
 // connection, e.g. because an administrator disabled port forwarding to serverless compute.
 var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
 
-var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+var (
+	connectionNameRegex  = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+	acceleratorNameRegex = regexp.MustCompile(`^GPU_[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
+)
 
 // Serverless environment versions used when --environment-version is not set. GPU stays on 4
 // because the standard version 5 and 6 environments ship no torch on GPU.
@@ -169,8 +172,11 @@ func (o *ClientOptions) Validate() error {
 	if o.UsagePolicyID != "" && o.ClusterID != "" {
 		return errors.New("--usage-policy-id flag can only be used with serverless compute (--name flag)")
 	}
-	if o.Accelerator != "" && o.Accelerator != "GPU_1xA10" && o.Accelerator != "GPU_8xH100" {
-		return fmt.Errorf("invalid accelerator value: %q, expected %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
+	// The accelerator is interpolated into the ProxyCommand and connection name. Enforce
+	// a safe shape; the backend validates available GPU types and environment versions,
+	// so new GPU types need no CLI change.
+	if o.Accelerator != "" && !acceleratorNameRegex.MatchString(o.Accelerator) {
+		return fmt.Errorf("invalid accelerator value %q: expected a GPU type name such as GPU_1xA10 (1-64 characters after GPU_: letters, numbers, dashes and underscores)", o.Accelerator)
 	}
 	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
 		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)
