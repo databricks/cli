@@ -243,7 +243,7 @@ func newCreateMemory() *cobra.Command {
 
 	cmd.Flags().Var(&createMemoryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntryId, "managed-memory-entry-id", createMemoryReq.ManagedMemoryEntryId, `Optional caller-selected memory entry ID.`)
+	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntryId, "managed-memory-entry-id", createMemoryReq.ManagedMemoryEntryId, `Caller-selected memory entry ID.`)
 	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.Content, "content", createMemoryReq.ManagedMemoryEntry.Content, `Optional free-form memory content.`)
 	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.Description, "description", createMemoryReq.ManagedMemoryEntry.Description, `Human-readable description of the memory entry.`)
 	cmd.Flags().StringVar(&createMemoryReq.ManagedMemoryEntry.Name, "name", createMemoryReq.ManagedMemoryEntry.Name, `Resource name in the form memory-stores/{managed_memory_store_id}/entries/{managed_memory_entry_id}.`)
@@ -1066,9 +1066,8 @@ func newGetMemory() *cobra.Command {
 
 Get a memory entry by resource name.
 
-  Retrieves a memory entry by resource name. view controls whether the
-  response includes memory content. Returns NOT_FOUND when the entry does not
-  exist in the caller's workspace.
+  Retrieves a memory entry by resource name. Returns NOT_FOUND when the entry
+  does not exist in the caller's workspace.
 
   Arguments:
     NAME: Resource name in the form
@@ -2386,14 +2385,14 @@ func newSearchMemories() *cobra.Command {
 Search memory entries.
 
   Searches memory entries by text query for one actor. Returns matching entries
-  and scores ranked by relevance; view controls whether each returned entry
-  includes content.
+  and scores ranked by relevance.
 
   Arguments:
     PARENT: Memory store whose entries are searched, in the form
       memory-stores/{managed_memory_store_id}.
     ACTOR_ID: Customer-provided identifier for the actor whose entries are searched.
-    QUERY: Free-form search query.`
+    QUERY: Free-form search query. Entries are ranked by how well their content and
+      description match it.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
