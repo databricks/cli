@@ -3,9 +3,10 @@ package run
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config"
 	refs "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run/output"
 )
@@ -39,30 +40,41 @@ type Runner interface {
 	argsHandler
 }
 
+// OptionsResolver is implemented by runners whose options must be resolved
+// against the bundle after positional arguments are parsed and before the run starts.
+type OptionsResolver interface {
+	ResolveOptions(ctx context.Context, opts *Options) error
+}
+
+type runnerFactory func(b *bundle.Bundle, k key, resource config.ConfigResource) Runner
+
+// runnerFactories is keyed by the resource's Go type, so lookups do not
+// depend on the order in which runner files register.
+var runnerFactories = map[reflect.Type]runnerFactory{}
+
+// registerRunner makes resources of type T runnable. Call it from the
+// runner's file in func init().
+func registerRunner[T config.ConfigResource](newRunner func(b *bundle.Bundle, k key, resource T) Runner) {
+	t := reflect.TypeFor[T]()
+	if _, ok := runnerFactories[t]; ok {
+		panic(fmt.Sprintf("runner for %v registered twice", t))
+	}
+	runnerFactories[t] = func(b *bundle.Bundle, k key, resource config.ConfigResource) Runner {
+		return newRunner(b, k, resource.(T))
+	}
+}
+
 // IsRunnable returns a filter that only allows runnable resources.
 func IsRunnable(ref refs.Reference) bool {
-	switch ref.Resource.(type) {
-	case *resources.Job, *resources.Pipeline, *resources.App:
-		return true
-	default:
-		return false
-	}
+	_, ok := runnerFactories[reflect.TypeOf(ref.Resource)]
+	return ok
 }
 
 // ToRunner converts a resource reference to a runnable resource.
 func ToRunner(b *bundle.Bundle, ref refs.Reference) (Runner, error) {
-	switch resource := ref.Resource.(type) {
-	case *resources.Job:
-		return &jobRunner{key: key(ref.KeyWithType), bundle: b, job: resource}, nil
-	case *resources.Pipeline:
-		return &pipelineRunner{key: key(ref.KeyWithType), bundle: b, pipeline: resource}, nil
-	case *resources.App:
-		return &appRunner{
-			key:    key(ref.KeyWithType),
-			bundle: b,
-			app:    resource,
-		}, nil
-	default:
-		return nil, fmt.Errorf("unsupported resource type: %T", resource)
+	newRunner, ok := runnerFactories[reflect.TypeOf(ref.Resource)]
+	if !ok {
+		return nil, fmt.Errorf("unsupported resource type: %T", ref.Resource)
 	}
+	return newRunner(b, key(ref.KeyWithType), ref.Resource), nil
 }

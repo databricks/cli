@@ -77,6 +77,12 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId
 	return nil
 }
 
+func init() {
+	registerRunner(func(b *bundle.Bundle, k key, pipeline *resources.Pipeline) Runner {
+		return &pipelineRunner{key: k, bundle: b, pipeline: pipeline}
+	})
+}
+
 type pipelineRunner struct {
 	key
 
@@ -238,6 +244,10 @@ func (r *pipelineRunner) ParseArgs(args []string, opts *Options) error {
 	}
 
 	return fmt.Errorf("received %d unexpected positional arguments", len(args))
+}
+
+func (r *pipelineRunner) ResolveOptions(ctx context.Context, opts *Options) error {
+	return opts.Pipeline.ResolveRefreshSelectors(ctx, r.bundle)
 }
 
 func (r *pipelineRunner) CompleteArgs(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

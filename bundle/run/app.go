@@ -21,6 +21,16 @@ func logProgress(ctx context.Context, msg string) {
 	cmdio.LogString(ctx, "✓ "+msg)
 }
 
+func init() {
+	registerRunner(func(b *bundle.Bundle, k key, app *resources.App) Runner {
+		return &appRunner{
+			key:    k,
+			bundle: b,
+			app:    app,
+		}
+	})
+}
+
 type appRunner struct {
 	key
 
