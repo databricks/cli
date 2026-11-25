@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
 	"path"
 	"strings"
 	"time"
@@ -34,6 +35,58 @@ func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	return me.UserName, nil
 }
 
+// userNameCacheComponent segments the cached user name from the bundle's "user"
+// component, which stores the full user. Sharing that entry would hand a bundle a
+// userName-only record.
+const userNameCacheComponent = "air-user-name"
+
+// userNameCacheTTL matches the bundle's user cache.
+const userNameCacheTTL = 30 * time.Minute
+
+// userNameCacheKey is keyed like bundle.UserFingerprint: the host and the
+// Authorization header the credential produces, so an entry only serves the
+// credential that stored it. The cache stores a hash of the key, never the header.
+type userNameCacheKey struct {
+	Host       string `json:"host"`
+	AuthHeader string `json:"auth_header"`
+}
+
+// userNameKeyFor returns the cache key for the credential. It reports false when
+// the credential yields no Authorization header, and then nothing is cached.
+func userNameKeyFor(w *databricks.WorkspaceClient) (userNameCacheKey, bool) {
+	req := &http.Request{Header: http.Header{}}
+	if err := w.Config.Authenticate(req); err != nil {
+		return userNameCacheKey{}, false
+	}
+	header := req.Header.Get("Authorization")
+	if header == "" {
+		return userNameCacheKey{}, false
+	}
+	return userNameCacheKey{Host: w.Config.Host, AuthHeader: header}, true
+}
+
+// cachedCurrentUserEmail is currentUserEmail for launch paths. A hit skips the
+// SCIM round trip that the launch path otherwise waits on before any upload or submit.
+func cachedCurrentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	key, ok := userNameKeyFor(w)
+	if !ok {
+		return currentUserEmail(ctx, w)
+	}
+	c := cache.NewCache(ctx, userNameCacheComponent, userNameCacheTTL, nil)
+	return cache.GetOrCompute(ctx, c, key, func(ctx context.Context) (string, error) {
+		return currentUserEmail(ctx, w)
+	})
+}
+
+// cachedUserName returns the user name cached for this credential, without calling Me.
+func cachedUserName(ctx context.Context, w *databricks.WorkspaceClient) (string, bool) {
+	key, ok := userNameKeyFor(w)
+	if !ok {
+		return "", false
+	}
+	return cache.Get[string](ctx, cache.NewCache(ctx, userNameCacheComponent, userNameCacheTTL, nil), key)
+}
+
 // workspaceDirOverride returns the configured workspace home, or "" when the home
 // has to come from the current user.
 func workspaceDirOverride(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
@@ -53,7 +106,7 @@ func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	if err != nil || override != "" {
 		return override, err
 	}
-	email, err := currentUserEmail(ctx, w)
+	email, err := cachedCurrentUserEmail(ctx, w)
 	if err != nil {
 		return "", err
 	}
