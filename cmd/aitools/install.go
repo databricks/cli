@@ -390,15 +390,17 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}, classifyInstallError(topLevelFailure(runErr)), outcomes)
 			}()
 
-			// The global installation this run makes is the user's, so a
-			// later auto-install updates it instead of finishing an unfinished
-			// first install of its own for the agents the user left out.
-			if opts.Scope == installer.ScopeGlobal {
+			outcomes, runErr = executePlan(ctx, src, plan, opts, rerun, jsonMode)
+			// A global installation this run sets an agent up in is the
+			// user's, so a later auto-install updates it instead of finishing
+			// an unfinished first install of its own for the agents the user
+			// left out. A run that set no agent up leaves that install
+			// unfinished.
+			if opts.Scope == installer.ScopeGlobal && anyInstalled(outcomes) {
 				if err := autoinstall.ClearInstalling(ctx); err != nil {
 					log.Warnf(ctx, "Could not update the auto-install state: %v", err)
 				}
 			}
-			outcomes, runErr = executePlan(ctx, src, plan, opts, rerun, jsonMode)
 			for _, s := range deliverySteps(outcomes) {
 				funnel.step(ctx, s)
 			}

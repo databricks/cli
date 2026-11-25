@@ -128,9 +128,9 @@ func MarkInstalling(ctx context.Context) error {
 }
 
 // ClearInstalling clears State.Installing before an attempt that updates the
-// existing installation instead of finishing the first install, and before a
-// global `databricks aitools install`, which makes the installation the
-// user's. It writes nothing when the marker is not set.
+// existing installation instead of finishing the first install, and after a
+// global `databricks aitools install` that sets an agent up, which makes the
+// installation the user's. It writes nothing when the marker is not set.
 func ClearInstalling(ctx context.Context) error {
 	unlock, err := lock(ctx, stateLockFileName, stateLockWait)
 	if err != nil {
