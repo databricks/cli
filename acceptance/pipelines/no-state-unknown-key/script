@@ -7,3 +7,6 @@ for cmd in run stop dry-run test; do
   title "pipelines $cmd with a defined key"
   trace musterr $CLI pipelines $cmd my_pipeline
 done
+
+title "pipelines dry-run with a key that is not a pipeline"
+trace musterr $CLI pipelines dry-run my_job

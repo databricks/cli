@@ -46,3 +46,9 @@ Error: "foo" is not a pipeline in this bundle (pipelines: my_pipeline). Usage: d
 >>> musterr [CLI] pipelines test my_pipeline
 Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
 
+
+=== pipelines dry-run with a key that is not a pipeline
+
+>>> musterr [CLI] pipelines dry-run my_job
+Error: resource my_job is not a pipeline
+

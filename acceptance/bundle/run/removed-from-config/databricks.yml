@@ -1,7 +1,0 @@
-bundle:
-  name: removed-from-config
-
-resources:
-  jobs:
-    foo:
-      name: foo

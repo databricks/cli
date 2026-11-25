@@ -45,7 +45,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 				if len(args) == 0 {
 					return nil
 				}
-				_, err := resources.Lookup(b, args[0])
+				_, _, err := lookupPipeline(b, args[0])
 				return err
 			},
 			SkipInitContext: true,
