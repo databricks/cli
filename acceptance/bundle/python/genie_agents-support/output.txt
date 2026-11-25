@@ -1,0 +1,62 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_genie_agent"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "genie_agents": {
+      "my_genie_agent_1": {
+        "definition": {
+          "config": {
+            "sample_questions": [
+              {
+                "id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+                "question": "What was the average trip distance last month?"
+              }
+            ]
+          },
+          "data_sources": {
+            "tables": [
+              {
+                "identifier": "samples.nyctaxi.trips"
+              }
+            ]
+          }
+        },
+        "display_name": "my_genie_agent_1 (updated)",
+        "parent_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/resources",
+        "warehouse_id": "abc123"
+      },
+      "my_genie_agent_2": {
+        "definition": {
+          "config": {
+            "sample_questions": [
+              {
+                "id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+                "question": "What was the average trip distance last month?"
+              }
+            ]
+          },
+          "data_sources": {
+            "tables": [
+              {
+                "identifier": "samples.nyctaxi.trips"
+              }
+            ]
+          }
+        },
+        "display_name": "my_genie_agent_2 (updated)",
+        "parent_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/resources",
+        "warehouse_id": "abc123"
+      }
+    }
+  }
+}

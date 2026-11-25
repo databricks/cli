@@ -48,6 +48,10 @@ from databricks.bundles.core._generated.features import (
     _FeatureResources,
     feature_mutator,
 )
+from databricks.bundles.core._generated.genie_agents import (
+    _GenieAgentResources,
+    genie_agent_mutator,
+)
 from databricks.bundles.core._generated.genie_spaces import (
     _GenieSpaceResources,
     genie_space_mutator,
@@ -139,6 +143,7 @@ __all__ = [
     "external_location_mutator",
     "feature_mutator",
     "feature_spec_mutator",
+    "genie_agent_mutator",
     "genie_space_mutator",
     "instance_pool_mutator",
     "job_mutator",
@@ -178,6 +183,7 @@ class _GeneratedResources(
     _ExternalLocationResources,
     _FeatureSpecResources,
     _FeatureResources,
+    _GenieAgentResources,
     _GenieSpaceResources,
     _InstancePoolResources,
     _JobRunResources,
@@ -218,6 +224,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         external_locations,
         feature_specs,
         features,
+        genie_agents,
         genie_spaces,
         instance_pools,
         job_runs,
@@ -255,6 +262,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         external_locations._resource_type(),
         feature_specs._resource_type(),
         features._resource_type(),
+        genie_agents._resource_type(),
         genie_spaces._resource_type(),
         instance_pools._resource_type(),
         job_runs._resource_type(),

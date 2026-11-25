@@ -1238,7 +1238,7 @@
                 "oneOf": [
                   {
                     "type": "object",
-                    "description": "[Private Preview] A Genie Agent resource.",
+                    "description": "A Genie Agent resource.",
                     "properties": {
                       "definition": {
                         "description": "[Private Preview] The definition of the Genie Agent: its sample questions, data sources, instructions, and benchmarks. Must set at least one field. Replaced as a whole on update.",
@@ -1289,9 +1289,7 @@
                       "definition",
                       "display_name",
                       "warehouse_id"
-                    ],
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true
+                    ]
                   },
                   {
                     "type": "string",

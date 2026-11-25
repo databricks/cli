@@ -120,19 +120,6 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	return s
 }
 
-func removeGenieAgentFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	switch typ {
-	case reflect.TypeFor[resources.GenieAgent]():
-		// The SDK does not mark name as output-only, but the server derives it from
-		// genie_agent_id, so it is not exposed to the user.
-		delete(s.Properties, "name")
-	default:
-		// Do nothing
-	}
-
-	return s
-}
-
 func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	switch typ {
 	case reflect.TypeFor[resources.Pipeline]():
@@ -248,7 +235,7 @@ func main() {
 // only documents fields the generated schema actually contains. Both the
 // generator and the detached-annotation test use it to stay in lockstep.
 func configTypeGraph() (*typeGraph, error) {
-	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields, removeGenieAgentFields)
+	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields)
 }
 
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
@@ -297,7 +284,6 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
 		removePipelineFields,
-		removeGenieAgentFields,
 		removeDeploymentFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,

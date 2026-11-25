@@ -23,3 +23,12 @@ trace $CLI bundle deploy
 trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields
 
 trace $CLI bundle plan
+
+title "Update the definition: change a sample question and remove the table description"
+trace update_file.py databricks.yml "average trip distance" "average fare amount"
+trace update_file.py databricks.yml $'\n              description: "NYC taxi trip records"' ""
+trace $CLI bundle deploy
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_definition
+
+trace $CLI bundle plan

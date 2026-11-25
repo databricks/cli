@@ -1,0 +1,8 @@
+
+=== Development mode prefixes the agent display name
+
+>>> [CLI] bundle validate -o json
+"[dev [USERNAME]] taxi_agent"
+
+>>> [CLI] bundle validate -o json -t prod
+"taxi_agent"

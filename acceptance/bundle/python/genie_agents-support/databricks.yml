@@ -1,0 +1,24 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_genie_agent"
+
+resources:
+  genie_agents:
+    my_genie_agent_1:
+      display_name: "my_genie_agent_1"
+      warehouse_id: "abc123"
+      definition:
+        config:
+          sample_questions:
+            - id: "01f0a1b2c3d4e5f60718293a4b5c6d7e"
+              question: "What was the average trip distance last month?"
+        data_sources:
+          tables:
+            - identifier: samples.nyctaxi.trips

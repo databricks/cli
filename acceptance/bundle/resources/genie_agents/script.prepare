@@ -4,3 +4,10 @@
 agent_fields() {
     jq '{name, display_name, description, warehouse_id}'
 }
+
+# Project the definition the client authored. The API returns it exactly as
+# submitted, and it holds no server-derived values (those live beside it on
+# the agent: etag, create/update time).
+agent_definition() {
+    jq '.definition'
+}

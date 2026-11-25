@@ -67,16 +67,9 @@ func (r *ResourceGenieAgent) DoRead(ctx context.Context, id string) (*resources.
 	return responseToGenieAgentConfig(agent), nil
 }
 
-// DoCreate deliberately issues up to three SDK calls — create, mkdirs, create —
-// an exception to the one-SDK-call-per-DoCreate rule in
-// bundle/direct/dresources/README.md. The default parent_path is the bundle's
-// workspace resource folder (workspace.resource_path), which does not exist on
-// a first deploy, so create retries once after mkdirs. ResourceGenieSpace.DoCreate
-// handles the same condition the same way; isMissingGenieParentPathError
-// recognises the two shapes the Genie backend uses for a missing folder. The
-// Agents API is expected to surface the standard 404 RESOURCE_DOES_NOT_EXIST
-// shape, which apierr.IsMissing catches; the legacy 400 shape is kept for
-// parity with genie_spaces on the same backend object.
+// DoCreate retries once after creating the default parent folder
+// (${workspace.resource_path}), which does not exist on a first deploy.
+// ResourceGenieSpace.DoCreate handles the same condition the same way.
 func (r *ResourceGenieAgent) DoCreate(ctx context.Context, config *resources.GenieAgentConfig) (string, *resources.GenieAgentConfig, error) {
 	req := genieagents.CreateGenieAgentRequest{
 		GenieAgent:      config.GenieAgent,

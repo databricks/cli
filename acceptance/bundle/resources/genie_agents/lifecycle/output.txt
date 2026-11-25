@@ -37,6 +37,49 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
+=== Update the definition: change a sample question and remove the table description
+
+>>> update_file.py databricks.yml average trip distance average fare amount
+
+>>> update_file.py databricks.yml 
+              description: "NYC taxi trip records" 
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-genie-agent-test-[UNIQUE_NAME]/default/files...
+Updated genie_agents.agent
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] genie-agents get-genie-agent agents/[AGENT_ID]
+{
+  "name": "agents/[AGENT_ID]",
+  "display_name": "test_agent_[UNIQUE_NAME]",
+  "description": "Agent grounded in taxi trip data, updated",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+>>> [CLI] genie-agents get-genie-agent agents/[AGENT_ID]
+{
+  "config": {
+    "sample_questions": [
+      {
+        "id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+        "question": "What was the average fare amount last month?"
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "samples.nyctaxi.trips"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.genie_agents.agent

@@ -1,0 +1,7 @@
+# The development-mode display-name prefix is applied while loading the
+# configuration, so this case stays local: no deploy, no API calls.
+
+title "Development mode prefixes the agent display name"
+trace $CLI bundle validate -o json | jq .resources.genie_agents.agent.display_name
+
+trace $CLI bundle validate -o json -t prod | jq .resources.genie_agents.agent.display_name

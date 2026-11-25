@@ -1012,6 +1012,9 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "name":
+          "x-databricks-field-behaviors_output_only": |-
+            true
         "parent_path":
           "description": |-
             Workspace folder in which to create the Genie Agent. Defaults to the bundle's workspace resource path (${workspace.resource_path}). On update, setting it moves the agent and clearing it does not.
