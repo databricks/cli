@@ -124,16 +124,12 @@ func (s *statePull) Name() string {
 	return "deploy:state-pull"
 }
 
-// internalDirName is the last element of the directory bundle.InternalDir returns,
-// <cache dir>/<target>/.internal.
-const internalDirName = ".internal"
-
 // withoutInternalFiles drops the entries under a "<target>/.internal" directory. It
 // matches that shape anywhere in the path rather than this process's InternalDir,
 // because the deploy that wrote the state may have used another cache directory
 // (DATABRICKS_BUNDLE_TMP).
 func withoutInternalFiles(target string, fl Filelist) Filelist {
-	marker := "/" + target + "/" + internalDirName + "/"
+	marker := "/" + target + "/" + bundle.InternalDirName + "/"
 	var out Filelist
 	for _, f := range fl {
 		if !strings.Contains("/"+filepath.ToSlash(f.LocalPath), marker) {
