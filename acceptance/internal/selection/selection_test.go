@@ -177,6 +177,18 @@ func TestFromDiffConfigAndItsInitScript(t *testing.T) {
 	}, result.Tests())
 }
 
+func TestFromDiffConfigExclusions(t *testing.T) {
+	// A config's exclusions sidecar changes which of its variants run, so it selects that
+	// config's variants and scores as a fixture change, not as a new config.
+	diff := diffLines("A\tacceptance/bundle/invariant/configs/job.yml.tmpl-exclude.toml")
+	result := fromDiff(t, diff, 10)
+	assert.Equal(t, map[string][]string{
+		"bundle/invariant/jobs": {"INPUT_CONFIG=job.yml.tmpl"},
+		"bundle/invariant/apps": {"INPUT_CONFIG=job.yml.tmpl"},
+	}, result.Tests())
+	assert.Equal(t, 5, result.Selected[0].Score)
+}
+
 func TestFromDiffHyphenatedConfigName(t *testing.T) {
 	// The companion script names the config it belongs to, whose own name may contain a
 	// hyphen: only the exact suffix is stripped.

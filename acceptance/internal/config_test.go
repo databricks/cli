@@ -281,3 +281,53 @@ func TestLoadConfigPhaseIsNotInherited(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadConfigEnvMatrixFiles(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	files := map[string]string{
+		"suite/test.toml":       "EnvMatrixFiles.VALUE = \"values/*.txt\"\n",
+		"suite/values/b.txt":    "",
+		"suite/values/a.txt":    "",
+		"suite/values/c.txt":    "",
+		"suite/values/d.md":     "",
+		"suite/one/script":      "",
+		"suite/two/script":      "",
+		"suite/three/script":    "",
+		"suite/three/test.toml": "EnvMatrix.VALUE = [\"x\"]\n",
+		"suite/values/b.txt-exclude.toml": `
+[[Exclude]]
+Tests = ["one"]
+Reason = "b does not apply to one"
+
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = "b is local-only"
+`,
+	}
+	for path, contents := range files {
+		absPath := filepath.Join(root, filepath.FromSlash(path))
+		require.NoError(t, os.MkdirAll(filepath.Dir(absPath), 0o755))
+		require.NoError(t, os.WriteFile(absPath, []byte(contents), 0o644))
+	}
+
+	assert.Equal(t, []string{"VALUE=a.txt", "VALUE=c.txt"}, loadVariants(t, "suite/one"))
+	assert.Equal(t, []string{"VALUE=a.txt", "VALUE=b.txt", "VALUE=c.txt"}, loadVariants(t, "suite/two"))
+	assert.Equal(t, []string{"VALUE=a.txt", "VALUE=c.txt"}, loadVariants(t, "suite/two", "CONFIG_Cloud=true"))
+	assert.Equal(t, []string{"VALUE=x"}, loadVariants(t, "suite/three"))
+
+	// Exclusions without conditions apply to the materialized config, as EnvMatrixExclude does.
+	config, _ := LoadConfig(t, "suite/one")
+	assert.Equal(t, "EnvMatrix.VALUE = [\"a.txt\", \"c.txt\"]\n", GenerateMaterializedConfig(&config))
+}
+
+// loadVariants returns the variants the harness runs for dir, as their subtest names.
+func loadVariants(t *testing.T, dir string, extraVars ...string) []string {
+	config, _ := LoadConfig(t, dir)
+	var result []string
+	for _, envset := range ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars) {
+		result = append(result, strings.Join(envset, "/"))
+	}
+	return result
+}

@@ -469,9 +469,11 @@ func invariantConfigName(path string) string {
 		return ""
 	}
 	name := strings.TrimPrefix(path, invariantConfigsPrefix)
-	// A config's setup and teardown scripts belong to the config they are named after.
+	// A config's setup and teardown scripts, and its exclusions, belong to the config they are
+	// named after.
 	name = strings.TrimSuffix(name, "-init.sh")
 	name = strings.TrimSuffix(name, "-cleanup.sh")
+	name = strings.TrimSuffix(name, internal.MatrixFileExcludeSuffix)
 	if !strings.HasSuffix(name, ".yml.tmpl") {
 		return ""
 	}
@@ -545,8 +547,8 @@ func FromDiff(root, diff string, testDirs map[string]bool, limit int) Result {
 				d := dirs.get(dir)
 				// The config is the fixture these dirs are generated from. A new config
 				// adds one variant of each dir, so only that variant is new; the
-				// -init.sh / -cleanup.sh companions of a config change how an existing
-				// variant runs.
+				// -init.sh / -cleanup.sh / -exclude.toml companions of a config change
+				// how, or where, an existing variant runs.
 				d.fixture = true
 				isNewConfig := status == "A" && strings.HasSuffix(path, configName)
 				d.addFilter(filter, isNewConfig)
