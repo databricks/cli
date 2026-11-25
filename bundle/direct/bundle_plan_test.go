@@ -1067,3 +1067,29 @@ func TestFindDeleteTargetUnverifiedRead(t *testing.T) {
 	assert.Empty(t, id)
 	assert.Nil(t, got)
 }
+
+func TestIDUnderMovedParent(t *testing.T) {
+	const schemaKey = "resources.schemas.schema1"
+	dep := deployplan.DependsOnEntry{Node: schemaKey, Label: "${resources.schemas.schema1.name}"}
+
+	for name, tt := range map[string]struct {
+		schemaID, foundID, volumeID, want string
+	}{
+		"moved":                   {schemaID: "main.s", foundID: "main.t", volumeID: "main.s.v", want: "main.t.v"},
+		"schema named as catalog": {schemaID: "main.main", foundID: "main.moved", volumeID: "main.main.v", want: "main.moved.v"},
+		"parent not moved":        {schemaID: "main.s", foundID: "", volumeID: "main.s.v", want: ""},
+		"not under the parent":    {schemaID: "main.s", foundID: "main.t", volumeID: "main.other.v", want: ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			plan := deployplan.NewPlanDirect()
+			plan.Plan[schemaKey] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: tt.foundID}
+			b := &DeploymentBundle{}
+			b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
+				schemaKey: {ID: tt.schemaID},
+			}})
+			got, parentDeleted := b.idUnderMovedParent(plan, dstate.ResourceEntry{ID: tt.volumeID, DependsOn: []deployplan.DependsOnEntry{dep}})
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want != "", parentDeleted)
+		})
+	}
+}

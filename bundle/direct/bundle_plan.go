@@ -906,64 +906,36 @@ func isParentIDField(adapter *dresources.Adapter, path *structpath.PathNode) boo
 	return ok
 }
 
-// findInMovedParents handles a Delete of a resource with an internal ID that was not found (Gone)
-// while its parent, as recorded in its state's depends_on, is deleted at another ID: renamed out of
-// band and found there by its internal ID (see findByInternalID). The rename moved the resource with
-// the parent, so it is looked for under the parent's new name and, if found there with its internal
-// ID, deleted as itself before the parent. Otherwise it would go with the parent's delete unlisted,
-// past its own lifecycle.prevent_destroy.
+// findInMovedParents handles a Delete of a resource not found at its recorded ID (Gone) while its
+// parent, as recorded in its state's depends_on, was found at another ID in this plan: renamed out of
+// band (see findMoved and findByInternalID). The rename moved the resource with the parent, so it is
+// looked for under the parent's new ID and, if found there with its internal ID, deleted as itself,
+// before the parent. When the parent is deleted too, the resource is deleted there even if it is not
+// found: it is in the parent, whose delete would take it along unlisted, past its own
+// lifecycle.prevent_destroy.
 func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployplan.Plan) error {
 	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
 		entry := plan.Plan[resourceKey]
 		if entry.Action != deployplan.Delete || !entry.Gone {
 			continue
 		}
+		dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
+		if !ok {
+			continue
+		}
+		id, parentDeleted := b.idUnderMovedParent(plan, dbentry)
+		if id == "" {
+			continue
+		}
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
 			return err
 		}
-		dbentry, ok := b.StateDB.GetResourceEntry(resourceKey)
-		if !adapter.HasInternalID() || !ok || len(dbentry.State) == 0 {
-			continue
-		}
-		state, err := parseState(adapter.StateType(), dbentry.State)
-		if err != nil {
-			return fmt.Errorf("%s: interpreting state: %w", resourceKey, err)
-		}
-		savedInternalID, err := adapter.InternalID(state)
-		if err != nil || savedInternalID == "" {
-			continue
-		}
-
-		moved := false
-		for _, dep := range dbentry.DependsOn {
-			changed, err := b.followMovedParent(plan, adapter, state, dep)
-			if err != nil {
-				return fmt.Errorf("%s: %w", resourceKey, err)
-			}
-			moved = moved || changed
-		}
-		if !moved {
-			continue
-		}
-
-		id, err := adapter.IDFromState(state)
+		remote, err := b.readIfOwn(ctx, adapter, dbentry, id)
 		if err != nil {
 			return fmt.Errorf("%s: %w", resourceKey, err)
 		}
-		remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
-			return adapter.DoRead(ctx, id)
-		})
-		if err != nil {
-			if err := ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("%s: reading at id=%q under its renamed parent", resourceKey, id)); err != nil {
-				return err
-			}
-			continue
-		}
-		if ok, err := hasInternalIDOf(adapter, remote, savedInternalID); err != nil || !ok {
-			if err != nil {
-				return fmt.Errorf("%s: %w", resourceKey, err)
-			}
+		if remote == nil && !parentDeleted {
 			continue
 		}
 		entry.ID = id
@@ -973,59 +945,52 @@ func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployp
 	return nil
 }
 
-// followMovedParent sets in state, the saved state of a resource, the new values of its parent ID
-// fields if dep is a parent deleted at another ID than its own recorded one. It reports whether it
-// changed anything.
-func (b *DeploymentBundle) followMovedParent(plan *deployplan.Plan, adapter *dresources.Adapter, state any, dep deployplan.DependsOnEntry) (bool, error) {
-	parent := plan.Plan[dep.Node]
-	if parent == nil || parent.Action != deployplan.Delete || parent.ID == "" || parent.RemoteState == nil {
-		return false, nil
+// readIfOwn reads the resource recorded in dbentry at id and returns it if it has its recorded
+// internal ID; nil if it is not there, is another one, or there is no internal ID to tell.
+func (b *DeploymentBundle) readIfOwn(ctx context.Context, adapter *dresources.Adapter, dbentry dstate.ResourceEntry, id string) (any, error) {
+	if !adapter.HasInternalID() || len(dbentry.State) == 0 {
+		return nil, nil
 	}
-	targetKey, targetField, ok, err := pureRefTarget(dep.Label)
-	if err != nil || !ok || targetKey != dep.Node {
-		return false, err
-	}
-	parentAdapter, err := b.getAdapterForKey(dep.Node)
+	state, err := parseState(adapter.StateType(), dbentry.State)
 	if err != nil {
-		return false, err
+		return nil, fmt.Errorf("interpreting state: %w", err)
 	}
-	parentEntry, ok := b.StateDB.GetResourceEntry(dep.Node)
-	if !ok || len(parentEntry.State) == 0 {
-		return false, nil
+	savedInternalID, err := adapter.InternalID(state)
+	if err != nil || savedInternalID == "" {
+		return nil, err
 	}
-	parentSaved, err := parseState(parentAdapter.StateType(), parentEntry.State)
+	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
+		return adapter.DoRead(ctx, id)
+	})
 	if err != nil {
-		return false, fmt.Errorf("%s: interpreting state: %w", dep.Node, err)
+		return nil, ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("reading at id=%q under its renamed parent", id))
 	}
-	parentRemote, err := parentAdapter.RemapState(parent.RemoteState)
-	if err != nil {
-		return false, err
+	ok, err := hasInternalIDOf(adapter, remote, savedInternalID)
+	if err != nil || !ok {
+		return nil, err
 	}
-	oldValue, err := structaccess.Get(parentSaved, targetField)
-	if err != nil {
-		return false, nil
-	}
-	newValue, err := structaccess.Get(parentRemote, targetField)
-	if err != nil || structdiff.IsEqual(oldValue, newValue) {
-		return false, nil
-	}
+	return remote, nil
+}
 
-	changed := false
-	for _, rule := range adapter.ResourceConfig().ParentIDFields {
-		path, err := structpath.ParsePath(rule.Field.String())
-		if err != nil {
-			return false, err
-		}
-		value, err := structaccess.Get(state, path)
-		if err != nil || !structdiff.IsEqual(value, oldValue) {
+// idUnderMovedParent returns the ID of the resource recorded in dbentry under the new ID of a parent
+// (from its depends_on) found at another ID in this plan, "" if there is none, and whether that parent
+// is deleted. A UC full name starts with its parent's: main.s.v is in main.s, so in main.t after the
+// schema's rename.
+func (b *DeploymentBundle) idUnderMovedParent(plan *deployplan.Plan, dbentry dstate.ResourceEntry) (string, bool) {
+	for _, dep := range dbentry.DependsOn {
+		parent := plan.Plan[dep.Node]
+		if parent == nil || parent.ID == "" {
 			continue
 		}
-		if err := structaccess.Set(state, path, newValue); err != nil {
-			return false, fmt.Errorf("setting %s: %w", path, err)
+		parentID := b.StateDB.GetResourceID(dep.Node)
+		if parentID == "" || parentID == parent.ID {
+			continue
 		}
-		changed = true
+		if rest, ok := strings.CutPrefix(dbentry.ID, parentID+"."); ok {
+			return parent.ID + "." + rest, parent.Action == deployplan.Delete && !parent.Gone
+		}
 	}
-	return changed, nil
+	return "", false
 }
 
 // recordRefTypes records, for each pure-reference field of resourceKey, the type of the resource it

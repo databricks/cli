@@ -24,3 +24,10 @@ title "Destroy finds the volume in the renamed schema, so prevent_destroy still 
 trace musterr $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
 trace $CLI volumes read "$NEW_SCHEMA.myvolume" | jq '{full_name}'
+
+title "With the volume renamed out of band too, it is not found, but destroy still lists it, so prevent_destroy still stops it"
+trace $CLI volumes update "$NEW_SCHEMA.myvolume" --new-name myvolume2 | jq '{full_name}'
+print_requests.py //unity-catalog &> LOG.rename2_requests
+trace musterr $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+trace $CLI volumes read "$NEW_SCHEMA.myvolume2" | jq '{full_name}'
