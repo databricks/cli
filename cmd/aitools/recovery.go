@@ -471,12 +471,17 @@ func pluginFailureText(ctx context.Context, inv installInvocation, it agentPlanI
 
 // skipRecovery returns the recovery step for an agent the plan skipped. An
 // agent skipped under --skills-only because it has the plugin gets the steps
-// that replace the plugin with skill files. Every other skip is an agent
-// without support for the project scope, so the step is the command that sets
-// up just this agent in the global scope.
+// that replace the plugin with skill files. Every other skip is a project-scoped
+// install the agent cannot take: an agent that reads project skill files was
+// skipped only because its plugin is user-only (see mapAgentScope), so the step
+// is the --skills-only install in the same scope. For any other agent the step
+// is the command that sets up just this agent in the global scope.
 func skipRecovery(inv installInvocation, it agentPlanItem) string {
 	if it.pluginRemoval != "" {
 		return "To use skill files instead, " + it.pluginRemoval + ", then run: " + skillsOnlyCommand(inv, it)
+	}
+	if it.agent.SupportsProjectSkills {
+		return "To install skill files for " + it.agent.DisplayName + " in the project scope instead, run: " + skillsOnlyCommand(inv, it)
 	}
 	inv.scope = installer.ScopeGlobal
 	return "To set up " + it.agent.DisplayName + " in the global scope, run: " + installCommand(inv, it)

@@ -230,7 +230,7 @@ func runUpdate(ctx context.Context, f updateFlags) error {
 				if err != nil {
 					return err
 				}
-				targetAgents = mergeAgents(installed, agents.DetectProjectInstalled(cwd))
+				targetAgents = projectUpdateAgents(installed, cwd)
 			}
 
 			fileAgents, manifestPlugins := excludePluginAgents(ctx, scope, targetAgents, state)
@@ -252,7 +252,7 @@ func runUpdate(ctx context.Context, f updateFlags) error {
 			// Without install state the reconcile still runs, for the
 			// "no skills or plugins installed" and legacy-install guidance.
 			if state != nil && len(manifestPlugins) > 0 && !slices.ContainsFunc(fileAgents, func(a *agents.Agent) bool {
-				return scope != installer.ScopeProject || a.SupportsProjectScope
+				return scope != installer.ScopeProject || a.SupportsProjectSkills
 			}) {
 				continue
 			}
@@ -379,6 +379,20 @@ func printPluginCheckResults(ctx context.Context, state *installer.InstallState,
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s (%s)", agentDisplayName(name), versionToken(rec.Version), status))
 	}
+}
+
+// projectUpdateAgents returns the agents a project-scope update reconciles skill
+// files for: the agents detected on the machine and the agents that have
+// databricks skills in the project. A default project install skips a plugin
+// agent whose plugin is user-only (Codex), so its project skill files come only
+// from an explicit --skills-only install. Such an agent is kept only when the
+// project already has its skills; otherwise update would add skill files no
+// install gave it, next to a user-level plugin that already serves every skill.
+func projectUpdateAgents(installed []*agents.Agent, cwd string) []*agents.Agent {
+	detected := slices.DeleteFunc(slices.Clone(installed), func(a *agents.Agent) bool {
+		return a.Plugin != nil && !a.SupportsProjectPlugin
+	})
+	return mergeAgents(detected, agents.DetectProjectInstalled(cwd))
 }
 
 // mergeAgents concatenates two agent lists, skipping duplicate names.

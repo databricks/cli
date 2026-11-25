@@ -526,7 +526,7 @@ func skillsDir(ctx context.Context, scope string) (string, error) {
 func filterProjectAgents(ctx context.Context, targetAgents []*agents.Agent) []*agents.Agent {
 	var compatible []*agents.Agent
 	for _, a := range targetAgents {
-		if a.SupportsProjectScope {
+		if a.SupportsProjectSkills {
 			compatible = append(compatible, a)
 		} else {
 			cmdio.LogProgress(ctx, "Skipped "+a.DisplayName+": does not support project-scoped skills.")
@@ -539,7 +539,7 @@ func filterProjectAgents(ctx context.Context, targetAgents []*agents.Agent) []*a
 func incompatibleAgentNames(targetAgents []*agents.Agent) []string {
 	var names []string
 	for _, a := range targetAgents {
-		if !a.SupportsProjectScope {
+		if !a.SupportsProjectSkills {
 			names = append(names, a.DisplayName)
 		}
 	}
