@@ -139,4 +139,7 @@ Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` se
    - See existing configs in that directory for the format.
  - Add bind/unbind tests in acceptance/bundle/deployment/bind/<resource>/
    - These verify that binding an existing resource and then deploying/destroying works correctly.
+ - `<resource>` in both directories is the key under `resources:` in databricks.yml.
+   `TestResourceTestDirsCoverage` in acceptance/resource_test_dirs_test.go fails for a type without either directory;
+   a type that cannot have one goes on `LackingResourceTests` or `LackingBindTests` there, with the reason.
  - For new resource types, run at least one test on a live cloud environment.
