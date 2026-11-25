@@ -1,3 +1,7 @@
+# The job points back at its DMS deployment, which lineage uses to resolve a
+# job to its bundle.
+deployment_id_field: deployment.deployment_id
+
 # version_id is set to the current DMS deployment version on every deploy, so
 # it changes constantly. Ignoring it as a local and remote change keeps that
 # churn from driving an update or showing as drift on its own; when the job is

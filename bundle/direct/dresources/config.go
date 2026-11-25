@@ -116,6 +116,12 @@ type ResourceLifecycleConfig struct {
 	// if this field matches. Requires IDFromState and DoUpdateWithID.
 	InternalIDField string `yaml:"internal_id_field,omitempty"`
 
+	// DeploymentIDField: the state field that records the id of the deployment the resource
+	// belongs to, so the workspace resource points back at its deployment. A first deploy has no
+	// id when it plans, so the framework fills it in once approval creates the deployment (see
+	// StampDeploymentIdForFirstVersion).
+	DeploymentIDField string `yaml:"deployment_id_field,omitempty"`
+
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
@@ -214,6 +220,7 @@ var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
 	InternalIDField:       "",
+	DeploymentIDField:     "",
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,

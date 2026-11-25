@@ -991,3 +991,38 @@ func TestAddParentMoves(t *testing.T) {
 		})
 	}
 }
+
+// A first deploy plans before its deployment exists, so the deployment id is filled into every
+// state that records one and does not have it yet, and nothing else.
+func TestStampDeploymentIdForFirstVersion(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	states := map[string]any{
+		"resources.jobs.new":      &jobs.JobSettings{Name: "new", Deployment: &jobs.JobDeployment{Kind: jobs.JobDeploymentKindBundle}},
+		"resources.jobs.stamped":  &jobs.JobSettings{Name: "stamped", Deployment: &jobs.JobDeployment{Kind: jobs.JobDeploymentKindBundle, DeploymentId: "other"}},
+		"resources.pipelines.new": &dresources.PipelineState{Name: "new", Deployment: &pipelines.PipelineDeployment{Kind: pipelines.DeploymentKindBundle}},
+		"resources.schemas.new":   &dresources.SchemaState{CatalogName: "main", Name: "new"},
+	}
+
+	plan := deployplan.NewPlanDirect()
+	b := &DeploymentBundle{Adapters: adapters, Plan: plan}
+	for key, state := range states {
+		sv := structvar.NewStructVar(state, nil)
+		svj := &structvar.StructVarJSON{}
+		require.NoError(t, sv.SyncToJSON(svj))
+		plan.Plan[key] = &deployplan.PlanEntry{Action: deployplan.Create, NewState: svj}
+		b.StateCache.Store(key, sv)
+	}
+	schemaJSON := slices.Clone(plan.Plan["resources.schemas.new"].NewState.Value)
+
+	require.NoError(t, b.StampDeploymentIdForFirstVersion("dep-1"))
+
+	assert.Equal(t, "dep-1", states["resources.jobs.new"].(*jobs.JobSettings).Deployment.DeploymentId)
+	assert.Equal(t, "other", states["resources.jobs.stamped"].(*jobs.JobSettings).Deployment.DeploymentId)
+	assert.Equal(t, "dep-1", states["resources.pipelines.new"].(*dresources.PipelineState).Deployment.DeploymentId)
+	assert.Contains(t, string(plan.Plan["resources.jobs.new"].NewState.Value), `"deployment_id":"dep-1"`)
+	assert.Contains(t, string(plan.Plan["resources.pipelines.new"].NewState.Value), `"deployment_id":"dep-1"`)
+	assert.Contains(t, string(plan.Plan["resources.jobs.stamped"].NewState.Value), `"deployment_id":"other"`)
+	assert.Equal(t, schemaJSON, plan.Plan["resources.schemas.new"].NewState.Value)
+}

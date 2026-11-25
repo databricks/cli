@@ -156,6 +156,9 @@ type Adapter struct {
 
 	// internalIDPath is InternalIDField, parsed; nil for a resource type without one.
 	internalIDPath *structpath.PathNode
+
+	// deploymentIDPath is DeploymentIDField, parsed; nil for a resource type without one.
+	deploymentIDPath *structpath.PathNode
 }
 
 func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -195,6 +198,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		isGone:                  nil,
 		idFromState:             nil,
 		internalIDPath:          nil,
+		deploymentIDPath:        nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -436,6 +440,17 @@ func (a *Adapter) validate() error {
 			return fmt.Errorf("internal_id_field: %w", err)
 		}
 		a.internalIDPath = path
+	}
+
+	if a.resourceConfig != nil && a.resourceConfig.DeploymentIDField != "" {
+		path, err := structpath.ParsePath(a.resourceConfig.DeploymentIDField)
+		if err != nil {
+			return fmt.Errorf("deployment_id_field: %w", err)
+		}
+		if err := structaccess.ValidatePath(stateType, path); err != nil {
+			return fmt.Errorf("deployment_id_field: %w", err)
+		}
+		a.deploymentIDPath = path
 	}
 
 	if a.resourceConfig != nil && len(a.resourceConfig.ParentIDFields) > 0 && a.idFromState == nil {
@@ -817,6 +832,25 @@ func (a *Adapter) RecordInternalID(state, remoteState any) error {
 		return err
 	}
 	return structaccess.Set(state, a.internalIDPath, id)
+}
+
+// StampDeploymentID sets deploymentID in state if the resource type records a deployment id (see
+// DeploymentIDField) and state has none yet. It reports whether it changed state.
+func (a *Adapter) StampDeploymentID(state any, deploymentID string) (bool, error) {
+	if a.deploymentIDPath == nil {
+		return false, nil
+	}
+	current, err := structaccess.Get(state, a.deploymentIDPath)
+	if err != nil {
+		return false, err
+	}
+	if id, _ := current.(string); id != "" {
+		return false, nil
+	}
+	if err := structaccess.Set(state, a.deploymentIDPath, deploymentID); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

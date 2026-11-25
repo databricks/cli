@@ -88,6 +88,10 @@ on field behaviour might result in recreate. See dstate/migrate.go on how to han
 
 Declaring a field under `hashed_fields` in `resources.yml` makes the engine persist only a `sha256:<hex>` content hash of it in state (via `CompactState`) rather than the full contents, for large equality-only fields that are never read back from state (e.g. `dashboards.serialized_dashboard`).
 
+## deployment_id_field: pointing back at the deployment
+
+If the resource records the id of the deployment it belongs to (a job's `deployment.deployment_id`), name that state field as `deployment_id_field`. A first deploy plans before its deployment exists, so the framework fills the id into the planned state once approval creates the deployment.
+
 ## RemapState is a dumb copy; DoRead owns all remapping
 
 `RemapState` converts `RemoteType` to `StateType` only because `StateType` is typically a
