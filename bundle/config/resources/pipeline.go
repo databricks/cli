@@ -3,7 +3,9 @@ package resources
 import (
 	"context"
 	"net/url"
+	"reflect"
 
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -41,6 +43,32 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 		return false, err
 	}
 	return true, nil
+}
+
+func (*Pipeline) SchemaTransforms() map[reflect.Type]func(jsonschema.Schema) jsonschema.Schema {
+	return map[reflect.Type]func(jsonschema.Schema) jsonschema.Schema{
+		reflect.TypeFor[Pipeline](): func(s jsonschema.Schema) jsonschema.Schema {
+			// Even though DABs supports this field, TF provider does not. Thus, we
+			// should not expose it to the user.
+			delete(s.Properties, "dry_run")
+
+			// These fields are only meant to be set by the DABs client (ie the CLI)
+			// and thus should not be exposed to the user. These are used to annotate
+			// pipelines that were created by DABs.
+			delete(s.Properties, "deployment")
+			return s
+		},
+		// The CLI sets these to track the bundle deployment in the Deployment
+		// Metadata Service; they are not user-configurable, so they must not
+		// appear in the JSON schema or the generated annotation files. The
+		// parent "deployment" block is already removed from the Pipeline schema
+		// above; this removes the fields from the type definition itself.
+		reflect.TypeFor[pipelines.PipelineDeployment](): func(s jsonschema.Schema) jsonschema.Schema {
+			delete(s.Properties, "deployment_id")
+			delete(s.Properties, "version_id")
+			return s
+		},
+	}
 }
 
 func (p *Pipeline) ResourceDescription() ResourceDescription {

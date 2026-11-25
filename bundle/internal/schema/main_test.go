@@ -28,7 +28,7 @@ func TestJobRunIdempotencyTokenIsNotInSchema(t *testing.T) {
 		},
 	}
 
-	s = removeJobsFields(reflect.TypeFor[resources.JobRun](), s)
+	s = resourceSchemaTransforms()(reflect.TypeFor[resources.JobRun](), s)
 
 	assert.NotContains(t, s.Properties, "idempotency_token")
 	assert.Contains(t, s.Properties, "job_id")

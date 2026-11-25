@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -56,6 +57,10 @@ func (b *PostgresSnapshotSchedule) Exists(ctx context.Context, w *databricks.Wor
 		return false, err
 	}
 	return true, nil
+}
+
+func (*PostgresSnapshotSchedule) SchemaLaunchStage() clijson.LaunchStage {
+	return clijson.LaunchStagePublicBeta
 }
 
 func (b *PostgresSnapshotSchedule) ResourceDescription() ResourceDescription {
