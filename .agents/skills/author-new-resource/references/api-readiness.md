@@ -110,6 +110,8 @@ list each non-echoed field under `ignore_remote_changes` with `spec:input_only`.
   value (for example `parent_path` versus `effective_parent_path`): **ASK** how out-of-band edits
   are detected. Echo equality alone does not prove drift detection. Compare the observed value in
   `DoRead`, with documented normalization, and test an external edit followed by plan and deploy.
+  Preserve explicit clearing semantics: when an empty input stops managing that setting, replacing
+  it unconditionally with the effective value would introduce permanent drift after clearing.
 - A field is not echoed and not annotated: **ASK** for the annotation (or for the field to be
   echoed). Until then a hand-written `ignore_remote_changes` rule with a comment is acceptable for
   a setting, never for the resource's main content: ignoring a content field disables drift
@@ -289,12 +291,16 @@ schedule (content migrations, re-keying): **ASK** for a content-stable etag or a
 note that the adapter omits it on update. Absent: **NOTE**; drift detection falls back to full read
 comparison.
 
-Separate drift detection from optimistic concurrency. A token sent on Update must describe the
-remote version the plan read; the authored config has no current server token, and the last
-deployment's token would reject an intentional correction of later remote drift. Check saved-plan
-rehydration preserves the token. A request mock only proves it is sent: acceptance coverage should
-save a plan, edit the remote content, reject the stale deploy, then re-plan and succeed. Read which
-fields the etag covers; metadata-only updates may leave a content etag unchanged.
+Separate drift detection from optimistic concurrency, and identify the comparison interval.
+Dashboards inject the last deployment's persisted token into config in `statemgmt/state_load.go`
+and send it on Update; Genie Spaces persist it for drift detection but omit the precondition.
+A guard against edits since planning instead uses the plan's remote read, which lets a fresh plan
+intentionally reconcile earlier drift. The authored config alone has no current server token.
+Check saved-plan rehydration preserves a plan-time token. A request mock only proves it is sent:
+acceptance coverage should save a plan, edit the remote content, reject the stale deploy, then
+re-plan and succeed. Read which fields the etag covers; metadata-only updates may leave a content
+etag unchanged. An unexpected remote-state type should not silently disable the guard; a checked
+assertion as in `ResourceRegisteredModel.DoUpdate` is an existing precedent.
 
 ### 2.12 References from existing resources
 

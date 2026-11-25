@@ -89,8 +89,9 @@ Apply the readiness gate to the result. For each row, cite the file and line.
   after an external move while an ignored effective-path field reports the drift. Trace how the
   adapter restores each configured value after an out-of-band edit.
 - For etags, distinguish a plan-time concurrency precondition from saved-state drift detection.
-  Check the token's source, saved-plan rehydration, and the fields it covers; do not suggest using
-  the config's empty token or a stale token from the last deployment instead of the remote read.
+  Check the token's source, saved-plan rehydration, and the fields it covers. Compare the policy
+  with existing adapters: dashboards send a persisted token injected into config; Genie Spaces
+  omit the precondition. A guard against edits since planning needs the plan's remote read.
 - Sibling resources: if another resource manages the same kind of object or the same service
   (an older API generation, a related type in the same package), list where this one behaves
   differently (approvals, presets, URL, fix-ups) and ask whether each difference is intended.
@@ -172,8 +173,9 @@ to the author, not an upstream ask.
 Check the reason for a launch-stage override: repeating the API's field stage alone does not
 justify a separate bundle availability policy. Trace field labels, the resource type's stage, and
 PyDABs registration separately. Likewise, a planner ignore rule does not hide an input from schema;
-read the proto's `IDENTIFIER` annotation and existing field tags before asking for `OUTPUT_ONLY` or
-another schema transform.
+read the proto's `IDENTIFIER` annotation and `annotation.Descriptor.OutputOnly` before asking for
+an API annotation change or another schema transform. The local schema annotation
+`x-databricks-field-behaviors_output_only` already supports hiding a field from authored input.
 Table: `generated file | consistent with source? | note`
 
 ### P8. User-facing text

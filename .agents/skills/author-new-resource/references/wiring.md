@@ -34,9 +34,12 @@ Use `<singular>` and `<plural>` for the resource names, `<Type>` for the Go iden
 
 Planning rules and the user-facing schema are separate. `configs/<plural>.yml` controls plan
 classification; `ignore_remote_changes` does not hide a field from JSON schema or Python models.
-Trace proto annotations and existing `bundle:"readonly"` field tags before adding a resource-specific
-schema transform. An `IDENTIFIER` field may legitimately remain part of the SDK resource even when
-the bundle exposes a separate create-time ID.
+Before adding a resource-specific schema transform, check `annotation.Descriptor.OutputOnly`:
+`annotations.yml` accepts `x-databricks-field-behaviors_output_only: true` under a field. The existing
+`addAnnotations` and `removeOutputOnlyFields` passes then hide it from authored input without changing
+the SDK or proto. An `IDENTIFIER` field can legitimately remain in the API even when the bundle
+exposes a separate create-time ID. Do not assume a `bundle:"readonly"` shadow hides an embedded SDK
+field: `fromTypeStruct` skips tagged fields before deduplicating property names, so check the output.
 
 Run in this order after the Go types compile; `./task generate` runs all of them.
 
