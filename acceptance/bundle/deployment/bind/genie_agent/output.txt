@@ -29,6 +29,11 @@ Run 'bundle deploy' to deploy changes to your workspace
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
+=== Bind remembers the deployment etag for remote-edit detection
+
+>>> print_state.py --no-dms
+true
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 2 uploaded, 0 deleted

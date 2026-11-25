@@ -11,9 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The plan's remote read carries the etag the update is guarded by. The
-// config (and so the persisted state) never carries it, so the etag must come
-// from the plan entry.
+// The plan-time token guards updates; the deployed token is saved separately.
 func TestGenieAgentDoUpdateSendsPlannedEtag(t *testing.T) {
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
@@ -22,6 +20,7 @@ func TestGenieAgentDoUpdateSendsPlannedEtag(t *testing.T) {
 	config := &resources.GenieAgentConfig{
 		DisplayName: "new",
 		WarehouseId: "wh",
+		Etag:        "deployed-etag",
 	}
 	entry := &deployplan.PlanEntry{
 		RemoteState: &resources.GenieAgentConfig{Etag: "etag-3"},
@@ -41,6 +40,7 @@ func TestGenieAgentDoUpdateSendsPlannedEtag(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "agent-id", remote.GenieAgentId)
 	require.Equal(t, "new", remote.DisplayName)
+	require.Equal(t, "etag-4", config.Etag)
 }
 
 // Without a plan-time remote read there is nothing to guard the update with.
@@ -64,7 +64,7 @@ func TestGenieAgentDoUpdateWithoutPlannedRemoteSendsNoEtag(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// Server-derived fields must not reach the persisted state or the local diff.
+// User-authored server fields must not reach the local diff.
 func TestGenieAgentPrepareStateZeroesServerDerivedFields(t *testing.T) {
 	input := &resources.GenieAgent{
 		GenieAgentId:        "agent-id",
@@ -113,4 +113,18 @@ func TestGenieAgentPrepareStateParentPath(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenieAgentDoCreatePersistsEtag(t *testing.T) {
+	ctx := t.Context()
+	m := mocks.NewMockWorkspaceClient(t)
+	r := (&ResourceGenieAgent{}).New(m.WorkspaceClient)
+	config := &resources.GenieAgentConfig{DisplayName: "new", WarehouseId: "wh"}
+	m.GetMockGenieAgentsAPI().EXPECT().CreateGenieAgent(ctx, genieagents.CreateGenieAgentRequest{
+		GenieAgent: config.GenieAgent,
+	}).Return(&genieagents.GenieAgent{Name: "agents/agent-id", Etag: "etag-1"}, nil).Once()
+	id, _, err := r.DoCreate(ctx, config)
+	require.NoError(t, err)
+	require.Equal(t, "agent-id", id)
+	require.Equal(t, "etag-1", config.Etag)
 }

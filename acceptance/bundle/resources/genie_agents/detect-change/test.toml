@@ -1,0 +1,4 @@
+Cloud = true
+RecordRequests = false
+Env.INJECT_STALE_ON_DIRECT = "0"
+Ignore = ["databricks.yml", ".databricks", "remote.json", "plan.json"]

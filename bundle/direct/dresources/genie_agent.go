@@ -36,9 +36,9 @@ func (*ResourceGenieAgent) New(client *databricks.WorkspaceClient) *ResourceGeni
 
 func (*ResourceGenieAgent) PrepareState(input *resources.GenieAgent) *resources.GenieAgentConfig {
 	state := input.GenieAgentConfig
-	// Server-derived fields are never user input. Zeroing them keeps the saved
-	// state and local diffs to the authored body; their remote values are read by
-	// DoRead and skipped via ignore_remote_changes.
+	// Server-derived fields are never user input. Zeroing them keeps local diffs
+	// to the authored body; their remote values are read by DoRead.
+	// Successful writes persist the deployment etag to detect later remote edits.
 	state.Name = ""
 	state.Etag = ""
 	state.CreateTime = nil
@@ -96,6 +96,8 @@ func (r *ResourceGenieAgent) DoCreate(ctx context.Context, config *resources.Gen
 		return "", nil, err
 	}
 
+	// Remember the deployed definition, not a later plan's GET.
+	config.Etag = resp.Etag
 	return strings.TrimPrefix(resp.Name, genieAgentNamePrefix), responseToGenieAgentConfig(resp), nil
 }
 
@@ -120,6 +122,8 @@ func (r *ResourceGenieAgent) DoUpdate(ctx context.Context, id string, config *re
 	if err != nil {
 		return nil, err
 	}
+	// Remember the deployed definition, not a later plan's GET.
+	config.Etag = resp.Etag
 	return responseToGenieAgentConfig(resp), nil
 }
 
@@ -136,10 +140,8 @@ func plannedGenieAgentEtag(planEntry *PlanEntry) string {
 	return remote.Etag
 }
 
-// DoDelete sends no etag. The engine passes only the persisted state here, and
-// PrepareState does not persist the etag, so no plan-time etag is available. Using
-// the etag from the last deploy instead would make destroy fail after any
-// definition edit made since then.
+// DoDelete sends no etag: using the last deployment's etag would prevent destroy
+// after a remote definition edit.
 func (r *ResourceGenieAgent) DoDelete(ctx context.Context, id string, _ *resources.GenieAgentConfig) error {
 	// Delete moves the agent to trash; NOT_FOUND afterwards means it is gone
 	// (the trash is not readable through this API).

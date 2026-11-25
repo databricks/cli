@@ -31,6 +31,10 @@ trace $CLI bundle deployment bind agent1 "$AGENT" --auto-approve
 # be clean (no recreate).
 trace $CLI bundle plan
 
+title "Bind remembers the deployment etag for remote-edit detection"
+ETAG=$($CLI genie-agents get-genie-agent "agents/$AGENT" | jq -r .etag)
+trace print_state.py --no-dms | jq -e --arg etag "$ETAG" '.state["resources.genie_agents.agent1"].state.etag == $etag and ($etag | length > 0)'
+
 trace $CLI bundle deploy
 
 trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields
