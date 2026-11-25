@@ -17,7 +17,7 @@ func TestArtifactPathsVisitor(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitArtifactPaths)
+	actual := collectVisitedPaths(t, root)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("artifacts.artifact0.path"),
 	}

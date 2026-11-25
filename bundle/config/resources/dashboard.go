@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -128,4 +129,14 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 
 func (r *Dashboard) GetName() string {
 	return r.DisplayName
+}
+
+func (r *Dashboard) LocalPaths() []LocalPath {
+	return []LocalPath{
+		{
+			Pattern: dyn.NewPattern(dyn.Key("file_path")),
+			Mode:    TranslateModeLocalRelative,
+			When:    TranslateOnLoad,
+		},
+	}
 }

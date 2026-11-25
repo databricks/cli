@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -61,4 +62,53 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 
 func (p *Pipeline) GetName() string {
 	return p.Name
+}
+
+func (p *Pipeline) LocalPaths() []LocalPath {
+	libraries := dyn.NewPattern(dyn.Key("libraries"), dyn.AnyIndex())
+	paths := []LocalPath{
+		{
+			Pattern: libraries.Append(dyn.Key("notebook"), dyn.Key("path")),
+			Mode:    TranslateModeNotebook,
+		},
+		{
+			Pattern: libraries.Append(dyn.Key("file"), dyn.Key("path")),
+			Mode:    TranslateModeFile,
+		},
+		{
+			Pattern: libraries.Append(dyn.Key("glob"), dyn.Key("include")),
+			Mode:    TranslateModeGlob,
+		},
+		{
+			Pattern: dyn.NewPattern(dyn.Key("root_path")),
+			Mode:    TranslateModeDirectory,
+		},
+		{
+			Pattern: dyn.NewPattern(dyn.Key("testing"), dyn.Key("sources"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
+			Mode:    TranslateModeGlob,
+		},
+	}
+
+	// Test dependencies take the same forms as the pipeline's environment dependencies.
+	dependencies := []dyn.Pattern{
+		dyn.NewPattern(dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
+		dyn.NewPattern(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
+	}
+	for _, pattern := range dependencies {
+		paths = append(paths, LocalPath{
+			Pattern:              pattern,
+			Mode:                 TranslateModeLocalRelativeWithPrefix,
+			Filter:               OnlyLocalLibraries,
+			AllowOutsideSyncRoot: true,
+		})
+	}
+	for _, pattern := range dependencies {
+		paths = append(paths, LocalPath{
+			Pattern:              pattern,
+			Mode:                 TranslateModeEnvironmentPipFlag,
+			Filter:               OnlyPipFlagPaths,
+			AllowOutsideSyncRoot: true,
+		})
+	}
+	return paths
 }

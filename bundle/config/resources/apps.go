@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -113,4 +114,17 @@ func (a *App) GetName() string {
 		return a.ID
 	}
 	return a.Name
+}
+
+func (a *App) LocalPaths() []LocalPath {
+	return []LocalPath{
+		{
+			Pattern: dyn.NewPattern(dyn.Key("source_code_path")),
+			Mode:    TranslateModeDirectory,
+		},
+		{
+			Pattern: dyn.NewPattern(dyn.Key("thumbnail_path")),
+			Mode:    TranslateModeLocalRelative,
+		},
+	}
 }
