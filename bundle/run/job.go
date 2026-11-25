@@ -24,6 +24,12 @@ import (
 // Default timeout for waiting for a job run to complete.
 var jobRunTimeout time.Duration = 24 * time.Hour
 
+func init() {
+	registerRunner(func(b *bundle.Bundle, k key, job *resources.Job) Runner {
+		return &jobRunner{key: k, bundle: b, job: job}
+	})
+}
+
 type jobRunner struct {
 	key
 
