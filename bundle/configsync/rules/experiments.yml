@@ -1,0 +1,3 @@
+server_side_defaults:
+  - field: artifact_location
+    skip: always

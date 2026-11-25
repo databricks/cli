@@ -1,0 +1,7 @@
+server_side_defaults:
+  - field: creator_name
+    skip: always
+  - field: min_num_clusters
+    value: 1
+  - field: warehouse_type
+    value: CLASSIC
