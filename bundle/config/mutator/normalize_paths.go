@@ -42,6 +42,7 @@ func NormalizePaths() bundle.Mutator {
 func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Do not normalize job task paths if using git source
 	gitSourcePaths := collectGitSourcePaths(b)
+	overridesFile := filepath.Join(b.BundleRootPath, getDefaultVariableFilePath(b.Config.Bundle.Target))
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return paths.VisitPaths(v, func(path dyn.Path, kind paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
@@ -54,7 +55,14 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 				return dyn.InvalidValue, fmt.Errorf("value at %s is not a string", path.String())
 			}
 
-			newValue, err := normalizePath(value, v.Location(), b.BundleRootPath)
+			location := v.Location()
+			// The variable overrides file lives under .databricks/bundle/<target>/, but users write
+			// its paths relative to the bundle root.
+			if location.File == overridesFile {
+				location.File = filepath.Join(b.BundleRootPath, filepath.Base(overridesFile))
+			}
+
+			newValue, err := normalizePath(value, location, b.BundleRootPath)
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
