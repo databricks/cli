@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -131,6 +132,13 @@ func TestWorkspaceOpenResourceTypes(t *testing.T) {
 	viaAlias, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://myworkspace.databricks.com", "sql_warehouses", "wh-1", "")
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/sql/warehouses/wh-1", viaAlias)
+
+	// The alias resolves to the "warehouses" entry of workspaceurls, while bundle
+	// summaries use the pattern that the sql_warehouses type declares. The two
+	// must build the same URL.
+	base, err := url.Parse("https://myworkspace.databricks.com")
+	require.NoError(t, err)
+	assert.Equal(t, bundleconfig.WorkspaceURLPatterns()["sql_warehouses"].URL(*base, "wh-1"), viaAlias)
 }
 
 func TestWorkspaceOpenCommandCompletion(t *testing.T) {
