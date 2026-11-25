@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"path"
 	"strings"
+	"time"
 	"uuid"
 
+	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -29,6 +32,36 @@ func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	return me.UserName, nil
 }
 
+// userNameCacheComponent segments the cached user name from the bundle's "user"
+// component, which stores the full user. Sharing that entry would hand a bundle a
+// userName-only record.
+const userNameCacheComponent = "air-user-name"
+
+// userNameCacheTTL matches the bundle's user cache.
+const userNameCacheTTL = 30 * time.Minute
+
+// userNameCacheKey is keyed like bundle.UserFingerprint: the host and the
+// Authorization header the credential produces, so an entry only serves the
+// credential that stored it. The cache stores a hash of the key, never the header.
+type userNameCacheKey struct {
+	Host       string `json:"host"`
+	AuthHeader string `json:"auth_header"`
+}
+
+// cachedCurrentUserEmail is currentUserEmail for launch paths. A hit skips the
+// SCIM round trip that the launch path otherwise waits on before any upload or submit.
+func cachedCurrentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	req := &http.Request{Header: http.Header{}}
+	if err := w.Config.Authenticate(req); err != nil || req.Header.Get("Authorization") == "" {
+		return currentUserEmail(ctx, w)
+	}
+	key := userNameCacheKey{Host: w.Config.Host, AuthHeader: req.Header.Get("Authorization")}
+	c := cache.NewCache(ctx, userNameCacheComponent, userNameCacheTTL, nil)
+	return cache.GetOrCompute(ctx, c, key, func(ctx context.Context) (string, error) {
+		return currentUserEmail(ctx, w)
+	})
+}
+
 // userWorkspaceDir returns the user's workspace home, honoring the env override.
 func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	if override := env.Get(ctx, userWorkspaceDirEnv); override != "" {
@@ -41,7 +74,7 @@ func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	if override != "" {
 		return override, nil
 	}
-	email, err := currentUserEmail(ctx, w)
+	email, err := cachedCurrentUserEmail(ctx, w)
 	if err != nil {
 		return "", err
 	}
