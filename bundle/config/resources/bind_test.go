@@ -42,9 +42,25 @@ func registerNotBindable(resource config.ConfigResource, reason string) {
 }
 
 func TestResourcesBindSupport(t *testing.T) {
+	// A registration is matched to its resource type by Go type, so that a
+	// registration for something that is not a resource type fails here.
+	keyByType := map[reflect.Type]string{}
+	for _, rt := range config.AllResourceTypes() {
+		keyByType[rt.Type] = rt.Key
+	}
+	keyOf := func(resource config.ConfigResource) string {
+		typ := reflect.TypeOf(resource)
+		if typ.Kind() == reflect.Pointer {
+			typ = typ.Elem()
+		}
+		key, ok := keyByType[typ]
+		require.True(t, ok, "%T is not the type of a field of config.Resources", resource)
+		return key
+	}
+
 	fixtures := map[string]bindFixture{}
 	for _, f := range bindFixtures {
-		key := f.resource.ResourceDescription().PluralName
+		key := keyOf(f.resource)
 		_, ok := fixtures[key]
 		require.False(t, ok, "resource type %q registers more than one bind fixture", key)
 		fixtures[key] = f
@@ -52,8 +68,9 @@ func TestResourcesBindSupport(t *testing.T) {
 
 	unbindable := map[string]bool{}
 	for _, n := range notBindables {
-		key := n.resource.ResourceDescription().PluralName
+		key := keyOf(n.resource)
 		require.NotEmpty(t, n.reason, "resource type %q is declared not bindable without a reason", key)
+		require.False(t, unbindable[key], "resource type %q is declared not bindable more than once", key)
 		unbindable[key] = true
 	}
 
