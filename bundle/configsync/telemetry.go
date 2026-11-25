@@ -3,6 +3,7 @@ package configsync
 import (
 	"cmp"
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -250,37 +251,37 @@ func collectResourceIDs(typeAndIDs []string) *protos.BundleConfigRemoteSyncResou
 		if strings.Contains(id, "/") {
 			continue
 		}
-		switch resourceType {
-		case "jobs":
-			if len(out.ResourceJobIDs) < resourceIDLimit {
-				out.ResourceJobIDs = append(out.ResourceJobIDs, id)
-				any = true
-			}
-		case "pipelines":
-			if len(out.ResourcePipelineIDs) < resourceIDLimit {
-				out.ResourcePipelineIDs = append(out.ResourcePipelineIDs, id)
-				any = true
-			}
-		case "clusters":
-			if len(out.ResourceClusterIDs) < resourceIDLimit {
-				out.ResourceClusterIDs = append(out.ResourceClusterIDs, id)
-				any = true
-			}
-		case "dashboards":
-			if len(out.ResourceDashboardIDs) < resourceIDLimit {
-				out.ResourceDashboardIDs = append(out.ResourceDashboardIDs, id)
-				any = true
-			}
+		field, ok := resourceIDFields[resourceType]
+		if !ok {
+			continue
+		}
+		if ids := field(out); len(*ids) < resourceIDLimit {
+			*ids = append(*ids, id)
+			any = true
 		}
 	}
 	if !any {
 		return nil
 	}
-	slices.Sort(out.ResourceJobIDs)
-	slices.Sort(out.ResourcePipelineIDs)
-	slices.Sort(out.ResourceClusterIDs)
-	slices.Sort(out.ResourceDashboardIDs)
+	for _, field := range resourceIDFields {
+		slices.Sort(*field(out))
+	}
 	return out
+}
+
+// resourceIDField returns the list of a resource type's ids in ids.
+type resourceIDField func(ids *protos.BundleConfigRemoteSyncResourceIds) *[]string
+
+// resourceIDFields holds, by resource key, where the ids of the resource types that
+// have an id list are reported.
+var resourceIDFields = map[string]resourceIDField{}
+
+// registerResourceIDField registers the id list of the resource type with the given key.
+func registerResourceIDField(resourceType string, field resourceIDField) {
+	if _, ok := resourceIDFields[resourceType]; ok {
+		panic(fmt.Sprintf("resource id field for %q registered twice", resourceType))
+	}
+	resourceIDFields[resourceType] = field
 }
 
 // CollectSelectedIDs records the ids the run was asked to sync.

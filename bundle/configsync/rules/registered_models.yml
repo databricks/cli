@@ -1,0 +1,9 @@
+server_side_defaults:
+  - field: full_name
+    skip: always
+  - field: metastore_id
+    skip: always
+  - field: owner
+    skip: always
+  - field: storage_location
+    skip: always

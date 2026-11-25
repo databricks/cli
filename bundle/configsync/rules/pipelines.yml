@@ -1,0 +1,12 @@
+server_side_defaults:
+  # deployment.* is CLI-managed, see jobs.yml.
+  - field: deployment.*
+    skip: always
+
+  - field: storage
+    skip: always
+  - field: continuous
+    value: false
+
+prefixed_name_fields:
+  - name

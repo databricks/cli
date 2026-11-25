@@ -1,8 +1,18 @@
 package configsync
 
 import (
+	"bytes"
+	"embed"
+	"errors"
+	"fmt"
+	"io"
+	"io/fs"
 	"reflect"
+	"slices"
 	"strings"
+	"sync"
+
+	"go.yaml.in/yaml/v3"
 )
 
 type (
@@ -13,103 +23,206 @@ type (
 	}
 )
 
-var (
-	alwaysSkip              = skipAlways{}
-	zeroOrNil               = skipIfZeroOrNil{}
-	emptyEmailNotifications = skipIfEmptyOrDefault{defaults: map[string]any{"no_alert_for_skipped_runs": false}}
-)
+// One file per resource type under rules/, named after the type's key under
+// resources:, holds the sync rules of that type. Fields in a file are relative
+// to the resource. A resource type without rules has no file.
+//
+//go:embed rules/*.yml
+var rulesFS embed.FS
 
-// serverSideDefaults contains all hardcoded server-side defaults.
-// This is a temporary solution until the bundle plan issue is resolved.
-// Fields mapped to alwaysSkip are always considered defaults regardless of value.
-// Other fields are compared using reflect.DeepEqual.
-var serverSideDefaults = map[string]any{
-	// Job-level fields
-	"resources.jobs.*.timeout_seconds":       zeroOrNil,
-	"resources.jobs.*.email_notifications":   emptyEmailNotifications,
-	"resources.jobs.*.webhook_notifications": map[string]any{},
-	"resources.jobs.*.edit_mode":             alwaysSkip, // set by CLI
-	"resources.jobs.*.performance_target":    "PERFORMANCE_OPTIMIZED",
+// resourceRulesFile is the content of one file under rules/.
+type resourceRulesFile struct {
+	// ServerSideDefaults are the hardcoded server-side defaults.
+	// This is a temporary solution until the bundle plan issue is resolved.
+	ServerSideDefaults []serverSideDefaultRule `yaml:"server_side_defaults"`
 
-	// Task-level fields
-	"resources.jobs.*.tasks[*].run_if":                     "ALL_SUCCESS",
-	"resources.jobs.*.tasks[*].disabled":                   false,
-	"resources.jobs.*.tasks[*].timeout_seconds":            zeroOrNil,
-	"resources.jobs.*.tasks[*].notebook_task.source":       "WORKSPACE",
-	"resources.jobs.*.tasks[*].email_notifications":        emptyEmailNotifications,
-	"resources.jobs.*.tasks[*].webhook_notifications":      map[string]any{},
-	"resources.jobs.*.tasks[*].pipeline_task.full_refresh": false,
+	// ResetValues are the values written to the config in place of a remote change that
+	// disables a CLI-defaulted field. Writing "null" would not do: the CLI default would
+	// be applied again.
+	ResetValues []fieldValueRule `yaml:"reset_values"`
 
-	"resources.jobs.*.tasks[*].for_each_task.task.run_if":                "ALL_SUCCESS",
-	"resources.jobs.*.tasks[*].for_each_task.task.disabled":              false,
-	"resources.jobs.*.tasks[*].for_each_task.task.timeout_seconds":       zeroOrNil,
-	"resources.jobs.*.tasks[*].for_each_task.task.notebook_task.source":  "WORKSPACE",
-	"resources.jobs.*.tasks[*].for_each_task.task.email_notifications":   emptyEmailNotifications,
-	"resources.jobs.*.tasks[*].for_each_task.task.webhook_notifications": map[string]any{},
+	// PrefixedNameFields are the name fields where the name prefix (e.g. "[dev user] ")
+	// is applied during deployment and should be stripped when syncing remote changes
+	// back to config.
+	PrefixedNameFields []string `yaml:"prefixed_name_fields"`
+}
 
-	// Cluster fields (tasks)
-	"resources.jobs.*.tasks[*].new_cluster.aws_attributes":      alwaysSkip,
-	"resources.jobs.*.tasks[*].new_cluster.azure_attributes":    alwaysSkip,
-	"resources.jobs.*.tasks[*].new_cluster.gcp_attributes":      alwaysSkip,
-	"resources.jobs.*.tasks[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-	"resources.jobs.*.tasks[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
-	"resources.jobs.*.tasks[*].new_cluster.single_user_name":    alwaysSkip,
+// serverSideDefaultRule marks a remote field value as a default. With skip "always"
+// the field is always considered a default regardless of value; with "zero_or_nil"
+// when it is nil or 0; with "empty_or_default" when it is an empty map or equals the
+// map in value. Without skip, it is compared with value using reflect.DeepEqual.
+type serverSideDefaultRule struct {
+	Field string `yaml:"field"`
+	Skip  string `yaml:"skip"`
+	Value any    `yaml:"value"`
+}
 
-	// Cluster fields (job_clusters)
-	"resources.jobs.*.job_clusters[*].new_cluster.aws_attributes":      alwaysSkip,
-	"resources.jobs.*.job_clusters[*].new_cluster.azure_attributes":    alwaysSkip,
-	"resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes":      alwaysSkip,
-	"resources.jobs.*.job_clusters[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-	"resources.jobs.*.job_clusters[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
-	"resources.jobs.*.job_clusters[*].new_cluster.single_user_name":    alwaysSkip,
+type fieldValueRule struct {
+	Field string `yaml:"field"`
+	Value any    `yaml:"value"`
+}
 
-	// Standalone cluster fields
-	"resources.clusters.*.aws_attributes":      alwaysSkip,
-	"resources.clusters.*.azure_attributes":    alwaysSkip,
-	"resources.clusters.*.gcp_attributes":      alwaysSkip,
-	"resources.clusters.*.data_security_mode":  "SINGLE_USER",
-	"resources.clusters.*.driver_node_type_id": alwaysSkip,
-	"resources.clusters.*.enable_elastic_disk": alwaysSkip,
-	"resources.clusters.*.single_user_name":    alwaysSkip,
+// fieldPattern pairs a full field pattern, such as "resources.jobs.*.queue", with a value.
+type fieldPattern struct {
+	pattern string
+	value   any
+}
 
-	// Experiment fields
-	"resources.experiments.*.artifact_location": alwaysSkip,
+type syncRules struct {
+	serverSideDefaults []fieldPattern
+	resetValues        []fieldPattern
+	prefixedNameFields []string
+}
 
-	// Registered model fields
-	"resources.registered_models.*.full_name":        alwaysSkip,
-	"resources.registered_models.*.metastore_id":     alwaysSkip,
-	"resources.registered_models.*.owner":            alwaysSkip,
-	"resources.registered_models.*.storage_location": alwaysSkip,
+// loadSyncRules parses the files under rules/ in order of resource key, keeping the
+// order of the rules within each file.
+var loadSyncRules = sync.OnceValue(func() syncRules {
+	var rules syncRules
+	for _, name := range rulesFileNames() {
+		data, err := rulesFS.ReadFile(name)
+		if err != nil {
+			panic(err)
+		}
+		file, err := parseRulesFile(name, data)
+		if err != nil {
+			panic(err)
+		}
+		rules.serverSideDefaults = append(rules.serverSideDefaults, file.serverSideDefaults...)
+		rules.resetValues = append(rules.resetValues, file.resetValues...)
+		rules.prefixedNameFields = append(rules.prefixedNameFields, file.prefixedNameFields...)
+	}
+	return rules
+})
 
-	// Volume fields
-	"resources.volumes.*.storage_location": alwaysSkip,
-	"resources.volumes.*.volume_path":      alwaysSkip,
+// parseRulesFile parses data, the content of the file under rules/ with the given name.
+func parseRulesFile(name string, data []byte) (syncRules, error) {
+	var rules syncRules
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	var file resourceRulesFile
+	if err := decoder.Decode(&file); err != nil {
+		if errors.Is(err, io.EOF) {
+			return rules, fmt.Errorf("%s: file is empty", name)
+		}
+		return rules, fmt.Errorf("%s: %w", name, err)
+	}
+	// The decoder reads one document at a time, so further ones would be dropped silently.
+	var extra yaml.Node
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		return rules, fmt.Errorf("%s: more than one YAML document", name)
+	}
 
-	// SQL warehouse fields
-	"resources.sql_warehouses.*.creator_name":     alwaysSkip,
-	"resources.sql_warehouses.*.min_num_clusters": int64(1),
-	"resources.sql_warehouses.*.warehouse_type":   "CLASSIC",
+	if err := checkFields(name, "server_side_defaults", file.ServerSideDefaults, func(r serverSideDefaultRule) string { return r.Field }); err != nil {
+		return rules, err
+	}
+	if err := checkFields(name, "reset_values", file.ResetValues, func(r fieldValueRule) string { return r.Field }); err != nil {
+		return rules, err
+	}
+	if err := checkFields(name, "prefixed_name_fields", file.PrefixedNameFields, func(field string) string { return field }); err != nil {
+		return rules, err
+	}
 
-	// deployment.* is CLI-managed: metadata.AnnotateJobs / AnnotatePipelines write
-	// kind + metadata_file_path on every deploy, and the Deployment Metadata Service
-	// sets deployment_id + version_id. None is user-authored (validate.ValidateDeploymentFields
-	// even rejects deployment_id / version_id in config), so no subfield is synced back.
-	"resources.jobs.*.deployment.*":      alwaysSkip,
-	"resources.pipelines.*.deployment.*": alwaysSkip,
+	prefix := "resources." + rulesResourceType(name) + ".*."
+	for _, rule := range file.ServerSideDefaults {
+		expected, err := rule.expected()
+		if err != nil {
+			return rules, fmt.Errorf("%s: %s: %w", name, rule.Field, err)
+		}
+		rules.serverSideDefaults = append(rules.serverSideDefaults, fieldPattern{pattern: prefix + rule.Field, value: expected})
+	}
+	for _, rule := range file.ResetValues {
+		if rule.Value == nil {
+			return rules, fmt.Errorf("%s: %s: value is required", name, rule.Field)
+		}
+		rules.resetValues = append(rules.resetValues, fieldPattern{pattern: prefix + rule.Field, value: asRemoteValue(rule.Value)})
+	}
+	for _, field := range file.PrefixedNameFields {
+		rules.prefixedNameFields = append(rules.prefixedNameFields, prefix+field)
+	}
+	return rules, nil
+}
 
-	// Pipeline fields
-	"resources.pipelines.*.storage":    alwaysSkip,
-	"resources.pipelines.*.continuous": false,
+// checkFields rejects an entry of the list with the given key whose field is empty or
+// repeats the field of an earlier entry: only the first of two entries would apply.
+func checkFields[T any](name, key string, entries []T, field func(T) string) error {
+	seen := make(map[string]bool, len(entries))
+	for i, entry := range entries {
+		f := field(entry)
+		if f == "" {
+			return fmt.Errorf("%s: %s entry %d: field is empty", name, key, i+1)
+		}
+		if seen[f] {
+			return fmt.Errorf("%s: %s entry %d: field %q is listed twice", name, key, i+1, f)
+		}
+		seen[f] = true
+	}
+	return nil
+}
 
-	// Dashboard fields
-	// etag is output-only and never present in config. The plan re-promotes etag
-	// drift to Update via ResourceDashboard.OverrideChangeDesc (needed for deploy's
-	// modified-remotely detection), so configsync cannot rely on the plan's Skip
-	// action and must exclude the field explicitly.
-	"resources.dashboards.*.etag": alwaysSkip,
-	// published is an internal state field (not part of the user config): DoRead
-	// derives it from the publish lifecycle, so it must never be synced into config.
-	"resources.dashboards.*.published": alwaysSkip,
+// rulesFileNames returns the files under rules/, sorted.
+func rulesFileNames() []string {
+	names, err := fs.Glob(rulesFS, "rules/*.yml")
+	if err != nil {
+		panic(err)
+	}
+	slices.Sort(names)
+	return names
+}
+
+// rulesResourceType returns the resource type a file under rules/ holds the rules of.
+func rulesResourceType(name string) string {
+	return strings.TrimSuffix(strings.TrimPrefix(name, "rules/"), ".yml")
+}
+
+// expected returns what shouldSkipField compares a remote value with.
+func (r serverSideDefaultRule) expected() (any, error) {
+	var expected any
+	switch r.Skip {
+	case "always":
+		expected = skipAlways{}
+	case "zero_or_nil":
+		expected = skipIfZeroOrNil{}
+	case "empty_or_default":
+		defaults, ok := asRemoteValue(r.Value).(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("skip %q requires a map value", r.Skip)
+		}
+		return skipIfEmptyOrDefault{defaults: defaults}, nil
+	case "":
+		if r.Value == nil {
+			return nil, errors.New("value is required without skip")
+		}
+		return asRemoteValue(r.Value), nil
+	default:
+		return nil, fmt.Errorf("unknown skip %q", r.Skip)
+	}
+	if r.Value != nil {
+		return nil, fmt.Errorf("skip %q takes no value", r.Skip)
+	}
+	return expected, nil
+}
+
+// asRemoteValue converts a value decoded from YAML to the types normalizeValue gives
+// remote values, so that reflect.DeepEqual can compare them: YAML integers decode as
+// int, remote integers normalize to int64.
+func asRemoteValue(v any) any {
+	switch v := v.(type) {
+	case int:
+		return int64(v)
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for key, value := range v {
+			out[key] = asRemoteValue(value)
+		}
+		return out
+	case []any:
+		out := make([]any, len(v))
+		for i, value := range v {
+			out[i] = asRemoteValue(value)
+		}
+		return out
+	}
+	return v
 }
 
 // shouldSkipField checks if a field should be skipped in change detection.
@@ -118,8 +231,9 @@ var serverSideDefaults = map[string]any{
 // field is not in config/state, matching the behavior of shouldSkipBackendDefault
 // in the direct deployment engine.
 func shouldSkipField(path string, value any, hasConfigValue bool) bool {
-	for pattern, expected := range serverSideDefaults {
-		if matchPattern(pattern, path) {
+	for _, rule := range loadSyncRules().serverSideDefaults {
+		expected := rule.value
+		if matchPattern(rule.pattern, path) {
 			if _, ok := expected.(skipAlways); ok {
 				return true
 			}
@@ -182,31 +296,15 @@ func matchParts(patternParts, pathParts []string) bool {
 	return false
 }
 
-// resetValues contains all values that should be used to reset CLI-defaulted fields.
-// If CLI-defaulted field is changed on remote and should be disabled (e.g. queueing disabled -> remote field is nil)
-// we can't define it in the config as "null" because CLI default will be applied again.
-var resetValues = map[string]any{
-	"resources.jobs.*.queue": map[string]any{
-		"enabled": false,
-	},
-}
-
+// resetValueIfNeeded returns the reset value of the CLI-defaulted field at path, or
+// value for any other field.
 func resetValueIfNeeded(path string, value any) any {
-	for pattern, expected := range resetValues {
-		if matchPattern(pattern, path) {
-			return expected
+	for _, rule := range loadSyncRules().resetValues {
+		if matchPattern(rule.pattern, path) {
+			return rule.value
 		}
 	}
 	return value
-}
-
-// prefixedNameFields lists resource name field patterns where the name prefix
-// (e.g. "[dev user] ") is applied during deployment and should be stripped
-// when syncing remote changes back to config.
-var prefixedNameFields = []string{
-	"resources.jobs.*.name",
-	"resources.pipelines.*.name",
-	"resources.dashboards.*.display_name",
 }
 
 // stripNamePrefix strips the configured name prefix from name field values
@@ -221,7 +319,7 @@ func stripNamePrefix(path string, value any, prefix string) any {
 		return value
 	}
 
-	for _, pattern := range prefixedNameFields {
+	for _, pattern := range loadSyncRules().prefixedNameFields {
 		if matchPattern(pattern, path) {
 			return strings.TrimPrefix(s, prefix)
 		}

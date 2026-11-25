@@ -25,6 +25,23 @@ const (
 // errPermissionsNotRead reports that a job's ACL was not read, so its owner is unknown.
 var errPermissionsNotRead = errors.New("permissions were not read")
 
+func init() {
+	registerChangeHook("jobs", changeHook{
+		keepSkipped:         keepSkippedRunAsChange,
+		syncsBackendDefault: isJobRunAsPath,
+		newSkip:             newJobRunAsSkip,
+	})
+}
+
+// newJobRunAsSkip returns the run_as changes skipJobRunAs rejects, given the owners
+// of the plan's jobs.
+func newJobRunAsSkip(ctx context.Context, plan *deployplan.Plan, remote map[string][]dresources.StatePermission) changeSkip {
+	owners := jobOwners(ctx, plan, remote)
+	return func(resourceKey, path string, cd *deployplan.ChangeDesc) bool {
+		return skipJobRunAs(path, cd, owners[resourceKey])
+	}
+}
+
 // isJobRunAsPath reports whether path is a job's run_as or one of its keys.
 // Unlike other backend defaults, these are synced when the config lacks them:
 // the keys always, the whole object only as decided by skipJobRunAs.

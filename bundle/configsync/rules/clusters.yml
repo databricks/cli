@@ -1,0 +1,15 @@
+server_side_defaults:
+  - field: aws_attributes
+    skip: always
+  - field: azure_attributes
+    skip: always
+  - field: gcp_attributes
+    skip: always
+  - field: data_security_mode
+    value: SINGLE_USER
+  - field: driver_node_type_id
+    skip: always
+  - field: enable_elastic_disk
+    skip: always
+  - field: single_user_name
+    skip: always

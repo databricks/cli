@@ -1,0 +1,88 @@
+server_side_defaults:
+  # Job-level fields
+  - field: timeout_seconds
+    skip: zero_or_nil
+  - field: email_notifications
+    skip: empty_or_default
+    value: {no_alert_for_skipped_runs: false}
+  - field: webhook_notifications
+    value: {}
+  - field: edit_mode
+    skip: always # set by CLI
+  - field: performance_target
+    value: PERFORMANCE_OPTIMIZED
+
+  # Task-level fields
+  - field: tasks[*].run_if
+    value: ALL_SUCCESS
+  - field: tasks[*].disabled
+    value: false
+  - field: tasks[*].timeout_seconds
+    skip: zero_or_nil
+  - field: tasks[*].notebook_task.source
+    value: WORKSPACE
+  - field: tasks[*].email_notifications
+    skip: empty_or_default
+    value: {no_alert_for_skipped_runs: false}
+  - field: tasks[*].webhook_notifications
+    value: {}
+  - field: tasks[*].pipeline_task.full_refresh
+    value: false
+
+  - field: tasks[*].for_each_task.task.run_if
+    value: ALL_SUCCESS
+  - field: tasks[*].for_each_task.task.disabled
+    value: false
+  - field: tasks[*].for_each_task.task.timeout_seconds
+    skip: zero_or_nil
+  - field: tasks[*].for_each_task.task.notebook_task.source
+    value: WORKSPACE
+  - field: tasks[*].for_each_task.task.email_notifications
+    skip: empty_or_default
+    value: {no_alert_for_skipped_runs: false}
+  - field: tasks[*].for_each_task.task.webhook_notifications
+    value: {}
+
+  # Cluster fields (tasks)
+  - field: tasks[*].new_cluster.aws_attributes
+    skip: always
+  - field: tasks[*].new_cluster.azure_attributes
+    skip: always
+  - field: tasks[*].new_cluster.gcp_attributes
+    skip: always
+  - field: tasks[*].new_cluster.data_security_mode
+    value: SINGLE_USER # TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
+  - field: tasks[*].new_cluster.enable_elastic_disk
+    skip: always # deprecated field
+  - field: tasks[*].new_cluster.single_user_name
+    skip: always
+
+  # Cluster fields (job_clusters)
+  - field: job_clusters[*].new_cluster.aws_attributes
+    skip: always
+  - field: job_clusters[*].new_cluster.azure_attributes
+    skip: always
+  - field: job_clusters[*].new_cluster.gcp_attributes
+    skip: always
+  - field: job_clusters[*].new_cluster.data_security_mode
+    value: SINGLE_USER # TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
+  - field: job_clusters[*].new_cluster.enable_elastic_disk
+    skip: always # deprecated field
+  - field: job_clusters[*].new_cluster.single_user_name
+    skip: always
+
+  # deployment.* is CLI-managed: metadata.AnnotateJobs / AnnotatePipelines write
+  # kind + metadata_file_path on every deploy, and the Deployment Metadata Service
+  # sets deployment_id + version_id. None is user-authored (validate.ValidateDeploymentFields
+  # even rejects deployment_id / version_id in config), so no subfield is synced back.
+  - field: deployment.*
+    skip: always
+
+reset_values:
+  # The CLI enables queueing by default, so a remote that disabled it (queue is nil)
+  # is written back as disabled.
+  - field: queue
+    value: {enabled: false}
+
+prefixed_name_fields:
+  - name
