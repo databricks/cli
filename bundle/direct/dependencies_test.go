@@ -46,6 +46,21 @@ resources:
 `,
 		},
 		{
+			// Empty grants are not planned, so depending on them is no edge.
+			name: "depends_on_empty_grants",
+			yaml: `
+resources:
+  schemas:
+    s:
+      catalog_name: main
+      name: s
+      grants: []
+      lifecycle:
+        depends_on:
+          - resource: schemas.s.grants
+`,
+		},
+		{
 			name: "self",
 			yaml: `
 resources:
@@ -71,7 +86,7 @@ resources:
 			root, diags := config.LoadFromBytes("databricks.yml", []byte(tc.yaml))
 			require.Empty(t, diags)
 
-			cycle := DetectDependencyCycle(root)
+			cycle := DetectDependencyCycle(t.Context(), root)
 			if tc.cycle == "" {
 				assert.Nil(t, cycle)
 				return

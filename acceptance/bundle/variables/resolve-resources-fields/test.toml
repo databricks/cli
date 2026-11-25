@@ -1,0 +1,3 @@
+# The config refers to schemas.bar.name inside bar, a cycle that validate reports, so the script
+# fails and leaves .databricks behind.
+Ignore = [".databricks"]

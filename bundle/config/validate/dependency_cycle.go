@@ -31,7 +31,7 @@ func (*dependencyCycle) Name() string {
 	return "validate:dependency_cycle"
 }
 
-func (m *dependencyCycle) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *dependencyCycle) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// The python wheel wrapper moves wheel task parameters, and the references in them, out of
 	// the job during the build, so before the build the config can have a cycle the plan does
 	// not see.
@@ -39,7 +39,7 @@ func (m *dependencyCycle) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 		return nil
 	}
 
-	cycle := direct.DetectDependencyCycle(&b.Config)
+	cycle := direct.DetectDependencyCycle(ctx, &b.Config)
 	if cycle == nil {
 		return nil
 	}
