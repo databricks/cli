@@ -20,8 +20,6 @@ Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === The wrapper notebook the job runs is still in the workspace
-
->>> [CLI] jobs get [WHL_ID]
 "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.databricks/bundle/default/.internal/notebook_3_whl_test_task"
 
 >>> [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.databricks/bundle/default/.internal -o json

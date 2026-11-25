@@ -10,5 +10,6 @@ trace rm -rf .databricks
 trace $CLI bundle deploy --plan tmp.plan.json
 
 title "The wrapper notebook the job runs is still in the workspace"
-trace $CLI jobs get $(read_id.py whl) | jq -c '.settings.tasks[0].notebook_task.notebook_path'
+job_id=$($CLI bundle summary -o json | jq -r '.resources.jobs.whl.id')
+$CLI jobs get "$job_id" | jq -c '.settings.tasks[0].notebook_task.notebook_path'
 trace $CLI workspace list "$INTERNAL" -o json | jq -c '[.[].path]'
