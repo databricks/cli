@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -139,10 +140,9 @@ New bundles use the direct engine automatically, no migration is needed.`)
 			}
 		}()
 
-		// Apply SecretScopeFixups so the config matches what the direct engine expects.
-		// This adds MANAGE ACL for the current user to all secret scopes, ensuring
-		// the migrated state and config agree on .permissions entries.
-		bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups())
+		// Adapt the config to what the direct engine expects, so that the migrated
+		// state and the config agree (for example on default .permissions entries).
+		bundle.ApplyContext(ctx, b, resourcemutator.ApplyStage(stages.StageBeforePlan))
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

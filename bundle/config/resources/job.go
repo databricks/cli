@@ -300,3 +300,10 @@ func (j *Job) LocalPaths() []LocalPath {
 func (j *Job) SkipLocalPaths() bool {
 	return j != nil && j.GitSource != nil
 }
+
+func (j *Job) BundleDeploymentIDs() (deploymentID, versionID string) {
+	if j.Deployment == nil {
+		return "", ""
+	}
+	return j.Deployment.DeploymentId, j.Deployment.VersionId
+}

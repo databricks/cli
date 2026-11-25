@@ -1,0 +1,43 @@
+package validate
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/structs/structpath"
+)
+
+func init() {
+	// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
+	stages.Register(stages.StageAfterFieldValidation, "dashboards", ValidateDashboardEtags)
+}
+
+func ValidateDashboardEtags() bundle.ReadOnlyMutator {
+	return &validateDashboardEtags{}
+}
+
+type validateDashboardEtags struct{ bundle.RO }
+
+func (v *validateDashboardEtags) Name() string {
+	return "validate:validate_dashboard_etags"
+}
+
+func (v *validateDashboardEtags) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// No dashboards should have etags set. They are purely internal state.
+	for k, dashboard := range b.Config.Resources.Dashboards {
+		if dashboard.Etag != "" {
+			return diag.Diagnostics{
+				{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("dashboard %q has an etag set. Etags must not be set in bundle configuration", dashboard.DisplayName),
+					Paths:     structpath.NewPathSlice("resources", "dashboards", k),
+					Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "dashboards", k)),
+				},
+			}
+		}
+	}
+	return nil
+}

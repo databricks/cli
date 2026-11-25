@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/permissions"
@@ -37,7 +38,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
-		mutator.ValidateSecretValueIsVariable(),
+		resourcemutator.ApplyStage(stages.StageBeforeVariables),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -162,21 +163,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
-		// Warn when the deprecated pipeline-level development property is set by the user.
-		// Must run after PythonMutator to see development values set by Python mutators.
-		validate.PipelineDevelopmentDeprecated(),
-
-		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
-		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
-		// model, so exposing it to Python would fail resource loading (like "deployment" below).
-		mutator.InitializeVolumePaths(),
-		mutator.ResolveVolumePathReferencesOnlyResources(),
-
-		// Default the `source` field on job tasks (GIT for git_source jobs, else
-		// WORKSPACE). Runs after PythonMutator so it sees the final git_source/tasks
-		// and does not expose the injected default to Python code, while remaining
-		// visible in `bundle validate`/`summary`.
-		resourcemutator.ApplyDefaultTaskSource(),
+		// Resource changes and checks that must see the resources Python code defined.
+		// Changes made here are not visible to Python code.
+		resourcemutator.ApplyStage(stages.StageAfterPython),
 
 		// Drop empty-string values on omitempty resource fields so they are not
 		// force-sent to the backend. Runs after variable resolution (a variable may
@@ -197,25 +186,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that all fields with enum values specified are set to a valid value.
 		validate.Enum(),
 
-		// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
-		validate.ValidateDashboardEtags(),
-
-		// Validate that no genie space etags are set. They are purely internal state and should not be set by the user.
-		validate.ValidateGenieSpaceEtags(),
-
-		// Validate that deployment_id / version_id are not set on jobs or pipelines.
+		// Validate that deployment_id / version_id are not set on resources that declare them.
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 
-		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
-		validate.ValidateJobRunIdempotencyToken(),
-
-		// Reads (dynamic): resources.postgres_data_apis.*
-		// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
-		validate.PostgresDataApiSettings(),
-
-		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
-		mutator.ValidateJobRunTriggers(),
+		resourcemutator.ApplyStage(stages.StageAfterFieldValidation),
 
 		// Reads (dynamic): resources.*.*.lifecycle.depends_on
 		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.

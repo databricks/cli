@@ -268,3 +268,10 @@ func (p *Pipeline) LocalPaths() []LocalPath {
 	}
 	return paths
 }
+
+func (p *Pipeline) BundleDeploymentIDs() (deploymentID, versionID string) {
+	if p.Deployment == nil {
+		return "", ""
+	}
+	return p.Deployment.DeploymentId, p.Deployment.VersionId
+}

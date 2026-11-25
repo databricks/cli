@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -39,16 +40,15 @@ func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) di
 		})
 	}
 
-	for name, job := range b.Config.Resources.Jobs {
-		if d := job.Deployment; d != nil {
-			reject("jobs", name, "deployment_id", d.DeploymentId)
-			reject("jobs", name, "version_id", d.VersionId)
-		}
-	}
-	for name, pipeline := range b.Config.Resources.Pipelines {
-		if d := pipeline.Deployment; d != nil {
-			reject("pipelines", name, "deployment_id", d.DeploymentId)
-			reject("pipelines", name, "version_id", d.VersionId)
+	for _, group := range b.Config.Resources.AllResources() {
+		for name, resource := range group.Resources {
+			tracked, ok := resource.(resources.BundleDeploymentTracked)
+			if !ok {
+				continue
+			}
+			deploymentID, versionID := tracked.BundleDeploymentIDs()
+			reject(group.Description.PluralName, name, "deployment_id", deploymentID)
+			reject(group.Description.PluralName, name, "version_id", versionID)
 		}
 	}
 
