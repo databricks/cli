@@ -163,12 +163,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
-		// Warn when the deprecated pipeline-level development property is set by the user.
-		// Must run after PythonMutator to see development values set by Python mutators.
-		validate.PipelineDevelopmentDeprecated(),
-
-		// Resource changes that must see the resources Python code defined and must not be
-		// visible to Python code.
+		// Resource changes and checks that must see the resources Python code defined.
+		// Changes made here are not visible to Python code.
 		resourcemutator.ApplyStage(stages.StageAfterPython),
 
 		// Drop empty-string values on omitempty resource fields so they are not
@@ -190,22 +186,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that all fields with enum values specified are set to a valid value.
 		validate.Enum(),
 
-		// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
-		validate.ValidateDashboardEtags(),
-
-		// Validate that no genie space etags are set. They are purely internal state and should not be set by the user.
-		validate.ValidateGenieSpaceEtags(),
-
-		// Validate that deployment_id / version_id are not set on jobs or pipelines.
+		// Validate that deployment_id / version_id are not set on resources that declare them.
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
-
-		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
-		validate.ValidateJobRunIdempotencyToken(),
-
-		// Reads (dynamic): resources.postgres_data_apis.*
-		// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
-		validate.PostgresDataApiSettings(),
 
 		resourcemutator.ApplyStage(stages.StageAfterFieldValidation),
 

@@ -12,8 +12,8 @@ import (
 
 // Stage is a point in the bundle pipeline at which mutators that each handle a single
 // resource type run. The pipeline applies a stage with resourcemutator.ApplyStage between
-// its generic steps; a mutator registers itself for a stage from the file of the type it
-// handles.
+// its generic steps, except [StageFastValidation], which package validate runs itself. A
+// mutator registers itself for a stage from the file of the type it handles.
 type Stage string
 
 const (
@@ -50,7 +50,9 @@ const (
 	StageAfterPython Stage = "after_python"
 
 	// StageAfterFieldValidation runs in the initialize phase after required fields and
-	// enum values are validated.
+	// enum values are validated. The checks registered here are independent of each
+	// other: the stage stops at the first one that reports an error, and which one that
+	// is follows the order that [Register] documents.
 	StageAfterFieldValidation Stage = "after_field_validation"
 
 	// StageBeforePlan runs before the configuration is planned or deployed, and before
@@ -61,6 +63,12 @@ const (
 	// script would run, also for commands that run neither of them. Mutators here see the
 	// files those steps produce.
 	StageAfterBuild Stage = "after_build"
+
+	// StageFastValidation runs after the initialize phase, when a command validates the
+	// configuration before it builds or deploys it. Package validate runs this stage in
+	// parallel, so mutators here must be read-only. Only package validate registers here,
+	// so that every caller of the stage links its mutators.
+	StageFastValidation Stage = "fast_validation"
 )
 
 type registration struct {
@@ -79,8 +87,16 @@ var registrations []registration
 // name of the first mutator of each call, so that the order depends neither on file
 // names nor on the order in which Go runs init functions. Mutators that must run in a
 // given order are therefore registered in one call.
-func Register(stage Stage, resourceKey string, newMutators ...func() bundle.Mutator) {
-	registrations = append(registrations, registration{stage: stage, resourceKey: resourceKey, newMutators: newMutators})
+//
+// M lets a call pass constructors of a narrower mutator type, such as
+// [bundle.ReadOnlyMutator], as they are. All constructors of one call have the same
+// return type.
+func Register[M bundle.Mutator](stage Stage, resourceKey string, newMutators ...func() M) {
+	var fns []func() bundle.Mutator
+	for _, newMutator := range newMutators {
+		fns = append(fns, func() bundle.Mutator { return newMutator() })
+	}
+	registrations = append(registrations, registration{stage: stage, resourceKey: resourceKey, newMutators: fns})
 }
 
 var mutatorsByStage = sync.OnceValue(func() map[Stage][]func() bundle.Mutator {

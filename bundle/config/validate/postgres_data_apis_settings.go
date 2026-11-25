@@ -5,9 +5,16 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
+
+func init() {
+	// Reads (dynamic): resources.postgres_data_apis.*
+	// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
+	stages.Register(stages.StageAfterFieldValidation, "postgres_data_apis", PostgresDataApiSettings)
+}
 
 // postgresDataApiNonSettingKeys are the keys of a postgres_data_apis entry that
 // are not sent as Data API settings.

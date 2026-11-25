@@ -5,9 +5,14 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
+
+func init() {
+	stages.Register(stages.StageFastValidation, "jobs", JobClusterKeyDefined)
+}
 
 func JobClusterKeyDefined() bundle.ReadOnlyMutator {
 	return &jobClusterKeyDefined{}

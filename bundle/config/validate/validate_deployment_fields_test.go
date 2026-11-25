@@ -78,3 +78,28 @@ func TestValidateDeploymentFieldsReportsAllOffenders(t *testing.T) {
 	diags := ValidateDeploymentFields().Apply(t.Context(), b)
 	require.Len(t, diags, 2)
 }
+
+func TestValidateDeploymentFieldsPointsAtTheField(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"my_job": {JobSettings: jobs.JobSettings{Deployment: &jobs.JobDeployment{DeploymentId: "a", VersionId: "b"}}},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"my_pipeline": {CreatePipeline: pipelines.CreatePipeline{Deployment: &pipelines.PipelineDeployment{DeploymentId: "c"}}},
+				},
+			},
+		},
+	}
+
+	var paths []string
+	for _, d := range ValidateDeploymentFields().Apply(t.Context(), b) {
+		paths = append(paths, d.Paths[0].String())
+	}
+	assert.Equal(t, []string{
+		"resources.jobs.my_job.deployment.deployment_id",
+		"resources.jobs.my_job.deployment.version_id",
+		"resources.pipelines.my_pipeline.deployment.deployment_id",
+	}, paths)
+}

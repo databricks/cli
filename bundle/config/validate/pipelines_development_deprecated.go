@@ -5,9 +5,16 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
+
+func init() {
+	// Warn when the deprecated pipeline-level development property is set by the user.
+	// Must run after PythonMutator to see development values set by Python mutators.
+	stages.Register(stages.StageAfterPython, "pipelines", PipelineDevelopmentDeprecated)
+}
 
 const (
 	pipelineDevelopmentDeprecatedSummary = `The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.`

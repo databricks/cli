@@ -5,9 +5,15 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
+
+func init() {
+	// Validate that no genie space etags are set. They are purely internal state and should not be set by the user.
+	stages.Register(stages.StageAfterFieldValidation, "genie_spaces", ValidateGenieSpaceEtags)
+}
 
 func ValidateGenieSpaceEtags() bundle.ReadOnlyMutator {
 	return &validateGenieSpaceEtags{}
