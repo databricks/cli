@@ -32,13 +32,13 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		inputSecret.SchemaName,
 		inputSecret.Name)
 
-	// Check if secret already exists
+	// UC answers 409 ALREADY_EXISTS (verified on AWS, Azure and GCP).
 	if _, exists := s.UCSecrets[fullName]; exists {
 		return Response{
 			StatusCode: 409,
 			Body: map[string]any{
-				"error_code": "RESOURCE_ALREADY_EXISTS",
-				"message":    fmt.Sprintf("Secret %s already exists", fullName),
+				"error_code": "ALREADY_EXISTS",
+				"message":    fmt.Sprintf("Secret '%s' already exists", fullName),
 			},
 		}
 	}
@@ -94,7 +94,7 @@ func (s *FakeWorkspace) SecretsUcGetSecret(req Request) Response {
 			StatusCode: 404,
 			Body: map[string]any{
 				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    fmt.Sprintf("Secret %s not found", fullName),
+				"message":    fmt.Sprintf("Secret '%s' does not exist.", fullName),
 			},
 		}
 	}
@@ -143,7 +143,7 @@ func (s *FakeWorkspace) SecretsUcUpdateSecret(req Request) Response {
 			StatusCode: 404,
 			Body: map[string]any{
 				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    fmt.Sprintf("Secret %s not found", fullName),
+				"message":    fmt.Sprintf("Secret '%s' does not exist.", fullName),
 			},
 		}
 	}
@@ -195,7 +195,7 @@ func (s *FakeWorkspace) SecretsUcDeleteSecret(req Request) Response {
 			StatusCode: 404,
 			Body: map[string]any{
 				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    fmt.Sprintf("Secret %s not found", fullName),
+				"message":    fmt.Sprintf("Secret '%s' does not exist.", fullName),
 			},
 		}
 	}
