@@ -182,6 +182,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 	b.Plan = plan
 
+	if !checkReferenceTargets(ctx, configRoot, plan) {
+		return nil, errors.New("planning failed")
+	}
+
 	g, err := makeGraph(plan)
 	if err != nil {
 		return nil, err
@@ -1761,6 +1765,49 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	return p, nil
+}
+
+// checkReferenceTargets reports references to resources that are not defined in the
+// configuration. Config validation does not check ${resources...} references, so such a
+// reference reaches the planner: if its target is still in the state (removed from config
+// since the last deploy), it is planned for deletion and has no new state to read from.
+func checkReferenceTargets(ctx context.Context, configRoot *config.Root, plan *deployplan.Plan) bool {
+	if configRoot == nil {
+		return true
+	}
+
+	ok := true
+	for _, node := range slices.Sorted(maps.Keys(plan.Plan)) {
+		entry := plan.Plan[node]
+		if entry.Action == deployplan.Delete {
+			continue
+		}
+		for _, dep := range entry.DependsOn {
+			if dep.Label == lifecycleDependsOnLabel || !strings.HasPrefix(dep.Node, "resources.") {
+				continue
+			}
+			target := plan.Plan[dep.Node]
+			if target != nil && target.Action != deployplan.Delete {
+				continue
+			}
+			// A target that is in the config but has no plan entry (e.g. empty grants)
+			// is not a missing resource; makeGraph reports it.
+			targetPath, err := dyn.NewPathFromString(dep.Node)
+			if err != nil {
+				continue
+			}
+			if v, _ := dyn.GetByPath(configRoot.Value(), targetPath); v.IsValid() {
+				continue
+			}
+			if target != nil {
+				logdiag.LogError(ctx, fmt.Errorf("cannot plan %s: %s refers to %s, which was removed from the bundle configuration and is planned for deletion; remove the reference or add the resource back", node, dep.Label, dep.Node))
+			} else {
+				logdiag.LogError(ctx, fmt.Errorf("cannot plan %s: %s refers to %s, which is not defined in the bundle configuration", node, dep.Label, dep.Node))
+			}
+			ok = false
+		}
+	}
+	return ok
 }
 
 // ExtractReferences extracts variable references from the config subtree rooted at node,

@@ -26,8 +26,8 @@ musterr trace $CLI bundle deploy --select jobs.producer
 # No delete request was sent by either command.
 trace print_requests.py --sort //jobs/delete --keep
 
-# A full plan still works and shows producer as a pending delete.
-trace $CLI bundle plan
+# A full plan errors too: consumer would be updated with the ID of a deleted job.
+musterr trace $CLI bundle plan
 
 # --- success case: both producer and consumer are removed from config ---
 # Remove producer and consumer from config; both are now planned for deletion.
