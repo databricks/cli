@@ -41,7 +41,9 @@ title "Plan is a no-op"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "The undeclared owner property is skipped as a backend default"
-trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1 | normalize_uc_payload.py
+# UC returns an empty comment on a schema created with SQL and the fake server returns none, so drop
+# the comment's "empty" skip entry from the plans to keep one golden.
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1 | normalize_uc_payload.py comment
 
 title "Deploying twice changes nothing"
 trace $CLI bundle deploy
@@ -52,7 +54,7 @@ trace print_requests.py --method PATCH //unity-catalog/schemas
 
 title "A property declared next to it is still planned and sent"
 trace update_file.py databricks.yml "# PROPERTIES" "properties: {team: data}"
-trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1 | normalize_uc_payload.py
+trace $CLI bundle plan --output json | plan_filter.py resources.schemas.schema1 | normalize_uc_payload.py comment
 trace $CLI bundle deploy
 trace print_requests.py --method PATCH //unity-catalog/schemas
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
