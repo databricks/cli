@@ -9,6 +9,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+func init() {
+	registerRunningCheck("jobs", IsJobRunning)
+}
+
 func IsJobRunning(ctx context.Context, w *databricks.WorkspaceClient, jobId string) (bool, error) {
 	id, err := strconv.Atoi(jobId)
 	if err != nil {

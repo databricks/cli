@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+func init() {
+	registerRunningCheck("pipelines", IsPipelineRunning)
+}
+
 func IsPipelineRunning(ctx context.Context, w *databricks.WorkspaceClient, pipelineId string) (bool, error) {
 	resp, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineId})
 	if apierr.IsMissing(err) {

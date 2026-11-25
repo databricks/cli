@@ -8,9 +8,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func TestRunningChecksByKeyRejectsUnknownType(t *testing.T) {
+	assert.PanicsWithValue(t, `running check registered for unknown resource type "nope"`, func() {
+		runningChecksByKey([]runningCheckRegistration{{resourceKey: "nope", isRunning: IsJobRunning}})
+	})
+}
+
+func TestRunningChecksByKeyRejectsDuplicate(t *testing.T) {
+	assert.PanicsWithValue(t, `running check registered more than once for resource type "jobs"`, func() {
+		runningChecksByKey([]runningCheckRegistration{
+			{resourceKey: "jobs", isRunning: IsJobRunning},
+			{resourceKey: "jobs", isRunning: IsJobRunning},
+		})
+	})
+}
 
 func TestIsAnyResourceRunningWithEmptyState(t *testing.T) {
 	mock := mocks.NewMockWorkspaceClient(t)
