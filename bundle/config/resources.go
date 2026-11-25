@@ -96,7 +96,7 @@ type ResourceGroup struct {
 // with one group per resource type in the order of [AllResourceTypes].
 func (r *Resources) AllResources() []ResourceGroup {
 	rv := reflect.ValueOf(r).Elem()
-	types := AllResourceTypes()
+	types := allResourceTypes()
 	groups := make([]ResourceGroup, 0, len(types))
 	for _, rt := range types {
 		field := rv.Field(rt.fieldIndex)
@@ -105,7 +105,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 			group[it.Key().String()] = it.Value().Interface().(ConfigResource)
 		}
 		groups = append(groups, ResourceGroup{
-			Description: rt.Zero.ResourceDescription(),
+			Description: rt.Description,
 			Resources:   group,
 		})
 	}
@@ -174,9 +174,10 @@ func (r *Resources) HasInternalResources() bool {
 
 // SupportedResources returns a map which keys correspond to the resource key in the bundle configuration.
 func SupportedResources() map[string]resources.ResourceDescription {
-	res := make(map[string]resources.ResourceDescription, len(AllResourceTypes()))
-	for _, rt := range AllResourceTypes() {
-		res[rt.Key] = rt.Zero.ResourceDescription()
+	types := allResourceTypes()
+	res := make(map[string]resources.ResourceDescription, len(types))
+	for _, rt := range types {
+		res[rt.Key] = rt.Description
 	}
 	return res
 }
