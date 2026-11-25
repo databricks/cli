@@ -1,6 +1,11 @@
 bundle:
   name: out-of-band-delete
 
+# The script writes LOG.* files into the bundle root; keep them out of the uploads it counts.
+sync:
+  exclude:
+    - LOG.*
+
 resources:
   jobs:
     foo:

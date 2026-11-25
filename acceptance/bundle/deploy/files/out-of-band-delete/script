@@ -22,8 +22,10 @@ title "Delete only the files directory out-of-band"
 trace $CLI workspace delete --recursive "$BUNDLE_PATH/files"
 
 title "A dry run reports the files as pending and does not recreate the directory"
-# The line starting with Action lists the files in non-deterministic order, so it is filtered out.
-trace $CLI bundle sync --dry-run --output text | grep -v "^Action" | sort
+# The output lists the files in non-deterministic order, so it goes to LOG.sync and only the uploads are asserted.
+trace $CLI bundle sync --dry-run --output text > LOG.sync
+# Unset MSYS_NO_PATHCONV for the Python helper, otherwise Python cannot find contains.py on Windows.
+env -u MSYS_NO_PATHCONV contains.py 'Uploaded databricks.yml' 'Uploaded hello_world.py' < LOG.sync > /dev/null
 trace musterr $CLI workspace get-status "$BUNDLE_PATH/files"
 
 title "bundle validate recreates the files directory without uploading anything"
