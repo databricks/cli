@@ -1,11 +1,14 @@
 package resourcemutator
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -45,7 +48,7 @@ func bundleWithCatalogs() *bundle.Bundle {
 }
 
 func TestResolveSchema(t *testing.T) {
-	b := bundleWithSchemas()
+	targets := newUCTargets(bundleWithSchemas().Config.Resources.AllResources())
 
 	tests := []struct {
 		name        string
@@ -65,13 +68,13 @@ func TestResolveSchema(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, resolveSchema(b, tc.catalogName, tc.schemaName))
+			assert.Equal(t, tc.expected, targets.resolveSchema(tc.catalogName, tc.schemaName))
 		})
 	}
 }
 
 func TestResolveCatalog(t *testing.T) {
-	b := bundleWithCatalogs()
+	targets := newUCTargets(bundleWithCatalogs().Config.Resources.AllResources())
 
 	tests := []struct {
 		name        string
@@ -86,14 +89,41 @@ func TestResolveCatalog(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, resolveCatalog(b, tc.catalogName))
+			assert.Equal(t, tc.expected, targets.resolveCatalog(tc.catalogName))
 		})
 	}
 }
 
+// When several resources define the same name, the smallest key wins, whatever the
+// map iteration order.
+func TestResolveDuplicateNames(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"c_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+					"a_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+					"b_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+				},
+				Schemas: map[string]*resources.Schema{
+					"c_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "foobar"}},
+					"a_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "foobar"}},
+					"b_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "foobar"}},
+				},
+			},
+		},
+	}
+
+	for range 10 {
+		targets := newUCTargets(b.Config.Resources.AllResources())
+		assert.Equal(t, "${resources.catalogs.a_catalog.name}", targets.resolveCatalog("catalog1"))
+		assert.Equal(t, "${resources.schemas.a_schema.name}", targets.resolveSchema("catalog1", "foobar"))
+	}
+}
+
 // Test that all resource types are wired correctly by defining a catalog, schema,
-// and one of each resource type in a single bundle. Also verifies the ordering fix:
-// schemas must be resolved last since their CatalogName gets mutated.
+// and one of each resource type in a single bundle. Also verifies that dependents
+// still match a schema whose own catalog name is rewritten.
 func TestCaptureUCDependencies(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -158,6 +188,16 @@ func TestCaptureUCDependencies(t *testing.T) {
 						Parent: "schemas/mycatalog.myschema", ModelProviderServiceId: "mymps",
 					}},
 				},
+				Secrets: map[string]*resources.Secret{
+					"my_secret": {Secret: catalog.Secret{
+						CatalogName: "mycatalog", SchemaName: "myschema", Name: "mysecret",
+					}},
+				},
+				FeatureSpecs: map[string]*resources.FeatureSpec{
+					"my_feature_spec": {FeatureSpec: ml.FeatureSpec{
+						Name: "mycatalog.myschema.myspec",
+					}},
+				},
 			},
 		},
 	}
@@ -205,6 +245,55 @@ func TestCaptureUCDependencies(t *testing.T) {
 
 	// Model provider service (same compound parent field).
 	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.ModelProviderServices["my_mps"].Parent)
+
+	// Secret.
+	assert.Equal(t, schemaRef, b.Config.Resources.Secrets["my_secret"].SchemaName)
+	assert.Equal(t, catalogRef, b.Config.Resources.Secrets["my_secret"].CatalogName)
+
+	// Feature spec (three-part "catalog.schema.spec" name).
+	assert.Equal(t, catalogRef+"."+schemaRef+".myspec", b.Config.Resources.FeatureSpecs["my_feature_spec"].Name)
+}
+
+// A parent that already contains a reference is left untouched, even when it
+// would otherwise split into a catalog and a schema defined in the bundle.
+func TestCaptureUCDependenciesParentReferences(t *testing.T) {
+	tests := []struct {
+		name       string
+		parent     string
+		schemaName string
+	}{
+		{"catalog_reference", "schemas/${resources.catalogs.c.name}.s", "s"},
+		{"undotted_schema_reference", "schemas/main.${x}", "${x}"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Resources: config.Resources{
+						Catalogs: map[string]*resources.Catalog{
+							"c": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
+						},
+						Schemas: map[string]*resources.Schema{
+							"s": {CreateSchema: catalog.CreateSchema{CatalogName: "main", Name: tc.schemaName}},
+						},
+						McpServices: map[string]*resources.McpService{
+							"m": {McpServiceConfig: resources.McpServiceConfig{Parent: tc.parent, McpServiceId: "mymcp"}},
+						},
+						ModelProviderServices: map[string]*resources.ModelProviderService{
+							"p": {ModelProviderServiceConfig: resources.ModelProviderServiceConfig{Parent: tc.parent, ModelProviderServiceId: "mymps"}},
+						},
+					},
+				},
+			}
+
+			d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+			require.Nil(t, d)
+
+			assert.Equal(t, tc.parent, b.Config.Resources.McpServices["m"].Parent)
+			assert.Equal(t, tc.parent, b.Config.Resources.ModelProviderServices["p"].Parent)
+		})
+	}
 }
 
 // Pipeline schema and target are mutually exclusive; only the populated field
@@ -397,6 +486,59 @@ func TestSplitUCName(t *testing.T) {
 			assert.Equal(t, tc.ok, ok)
 			assert.Equal(t, tc.expected, parts)
 		})
+	}
+}
+
+// ucNameLikeFields returns the JSON names of the fields of t, including those
+// promoted from embedded structs, that look like they name a catalog or schema.
+func ucNameLikeFields(t reflect.Type) []string {
+	var names []string
+	for _, field := range reflect.VisibleFields(t) {
+		if field.Anonymous || !field.IsExported() {
+			continue
+		}
+		name := structtag.JSONTag(field.Tag.Get("json")).Name()
+		if strings.Contains(name, "catalog") || strings.Contains(name, "schema") {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// A resource type with a field that names a catalog or schema must declare it, so that
+// a catalog or schema defined in the same bundle is deployed first.
+func TestResourceTypesWithUCNameFieldsDeclareThem(t *testing.T) {
+	// Resource types whose fields that look like catalog or schema names do not
+	// name a catalog or schema that the resource depends on.
+	notDeclaring := map[string][]string{
+		// Defaults for the catalog and schema of the dashboard's datasets. They are not
+		// captured today, and declaring them would change the deploy order.
+		"dashboards": {"dataset_catalog", "dataset_schema"},
+		// A provisioning state, not a name.
+		"synced_database_tables": {"unity_catalog_provisioning_state"},
+		// The name of the catalog that this resource creates.
+		"postgres_catalogs": {"catalog_id"},
+		// Postgres schemas in the database, not Unity Catalog schemas.
+		"postgres_data_apis": {"db_schemas"},
+	}
+
+	for _, rt := range config.AllResourceTypes() {
+		fields := ucNameLikeFields(rt.Type)
+		_, declares := config.ResourceTypeAs[resources.UCNameDeclarer](rt.Key)
+		listed, optedOut := notDeclaring[rt.Key]
+		switch {
+		case optedOut && declares:
+			t.Errorf("resource type %q implements resources.UCNameDeclarer but is listed as not declaring", rt.Key)
+		case optedOut:
+			assert.Equal(t, listed, fields, "fields of resource type %q that look like catalog or schema names", rt.Key)
+		case len(fields) > 0 && !declares:
+			t.Errorf("resource type %q has fields %v that look like catalog or schema names but does not implement resources.UCNameDeclarer", rt.Key, fields)
+		}
+	}
+	for key := range notDeclaring {
+		if _, ok := config.ResourceTypeAs[config.ConfigResource](key); !ok {
+			t.Errorf("%q is listed as not declaring but is not a resource type", key)
+		}
 	}
 }
 

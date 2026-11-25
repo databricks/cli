@@ -101,3 +101,7 @@ func (m *McpService) InitializeURL(baseURL url.URL) {
 func (m *McpService) GetName() string {
 	return m.McpServiceId
 }
+
+func (m *McpService) UCNames() []UCName {
+	return []UCName{ucSchemaParent(&m.Parent)}
+}
