@@ -46,51 +46,33 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 		return diag.FromErr(err)
 	}
 
-	// Load each run's resolved job_id into ResolvedJobID (for the URL only). We
-	// leave config's job_id ${resources.jobs.*.id} reference intact so it keeps
-	// its plan dependency. Typed-only write, like the dashboard etag below.
-	for resourceKey, rstate := range state {
-		if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {
-			continue
-		}
-		parts := strings.Split(resourceKey, ".")
-		if len(parts) != 3 {
-			continue
-		}
-
-		// A run in state but not config was deleted; skip it.
-		jrconfig, ok := b.Config.Resources.JobRuns[parts[2]]
-		if !ok {
-			continue
-		}
-		jrconfig.ResolvedJobID = rstate.JobID
-	}
-
-	// Merge dashboard etags into configuration.
-	for resourceKey, dstate := range state {
-		// Check if this is a dashboard resource key
-		if !strings.HasPrefix(resourceKey, "resources.dashboards.") {
-			continue
-		}
-		// Extract dashboard name from "resources.dashboards.name"
-		parts := strings.Split(resourceKey, ".")
-		if len(parts) != 3 {
-			continue
-		}
-		dashboardName := parts[2]
-
-		dconfig, ok := b.Config.Resources.Dashboards[dashboardName]
-
-		// Case: A dashboard is defined in state but not in configuration.
-		// In this case the dashboard has been deleted and we do not need to load the etag.
-		if !ok {
-			continue
-		}
-
-		dconfig.Etag = dstate.ETag
-	}
-
+	loadDeployedState(b, state)
 	return nil
+}
+
+// loadDeployedState passes each resource's exported state to its config, for resource types that
+// take values from it (see resources.DeployedStateLoader).
+func loadDeployedState(b *bundle.Bundle, state ExportedResourcesMap) {
+	byType := make(map[string]map[string]config.ConfigResource)
+	for _, group := range b.Config.Resources.AllResources() {
+		byType[group.Description.PluralName] = group.Resources
+	}
+
+	for resourceKey, rstate := range state {
+		// Only resources ("resources.<type>.<name>"), not their sub-resources.
+		parts := strings.Split(resourceKey, ".")
+		if len(parts) != 3 || parts[0] != "resources" {
+			continue
+		}
+
+		res, ok := byType[parts[1]][parts[2]]
+		if !ok {
+			continue
+		}
+		if loader, ok := res.(resources.DeployedStateLoader); ok {
+			loader.LoadDeployedState(rstate)
+		}
+	}
 }
 
 func ensureMap(v dyn.Value, path dyn.Path) (dyn.Value, error) {

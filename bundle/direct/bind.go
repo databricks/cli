@@ -142,26 +142,27 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			dependsOn = entry.DependsOn
 		}
 
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			os.Remove(tmpStatePath)
+			return nil, err
+		}
+
 		// Copy etag from remote state for resources that use etag-based drift
-		// detection (dashboards and genie spaces). The etag is not provided by the
+		// detection (see ResourceLifecycleConfig.EtagField). The etag is not provided by the
 		// user; it comes from remote. If we don't store it in state, we won't
 		// detect remote drift correctly and the next plan shows a bogus update.
-		if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && entry != nil && entry.RemoteState != nil {
-			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
+		if etagField := adapter.ResourceConfig().EtagField; etagField != "" && entry != nil && entry.RemoteState != nil {
+			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, etagField))
 			if err == nil && etag != nil {
 				if etagStr, ok := etag.(string); ok && etagStr != "" {
-					_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
+					_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, etagField), etagStr)
 				}
 			}
 		}
 
 		// Compact hashed_fields fields so the persisted state stays small. Not needed for
 		// correctness — the next plan (CalculatePlan) compacts the saved state on read.
-		adapter, err := b.getAdapterForKey(resourceKey)
-		if err != nil {
-			os.Remove(tmpStatePath)
-			return nil, err
-		}
 		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
 		if err != nil {
 			os.Remove(tmpStatePath)

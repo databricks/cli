@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
@@ -156,6 +157,9 @@ type Adapter struct {
 
 	// internalIDPath is InternalIDField, parsed; nil for a resource type without one.
 	internalIDPath *structpath.PathNode
+
+	// deploymentIDPath is DeploymentIDField, parsed; nil for a resource type without one.
+	deploymentIDPath *structpath.PathNode
 }
 
 func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -195,6 +199,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		isGone:                  nil,
 		idFromState:             nil,
 		internalIDPath:          nil,
+		deploymentIDPath:        nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -436,6 +441,34 @@ func (a *Adapter) validate() error {
 			return fmt.Errorf("internal_id_field: %w", err)
 		}
 		a.internalIDPath = path
+	}
+
+	if a.resourceConfig != nil && a.resourceConfig.DeploymentIDField != "" {
+		path, err := structpath.ParsePath(a.resourceConfig.DeploymentIDField)
+		if err != nil {
+			return fmt.Errorf("deployment_id_field: %w", err)
+		}
+		if err := validateFieldKind(stateType, "deployment_id_field", path, stringKinds); err != nil {
+			return err
+		}
+		a.deploymentIDPath = path
+	}
+
+	if a.resourceConfig != nil && a.resourceConfig.EtagField != "" {
+		path := structpath.NewStringKey(nil, a.resourceConfig.EtagField)
+		if err := validateFieldKind(stateType, "etag_field", path, stringKinds); err != nil {
+			return err
+		}
+		if err := validateFieldKind(remoteType, "etag_field", path, stringKinds); err != nil {
+			return err
+		}
+	}
+
+	if a.resourceConfig != nil && a.resourceConfig.JobIDField != "" {
+		path := structpath.NewStringKey(nil, a.resourceConfig.JobIDField)
+		if err := validateFieldKind(stateType, "job_id_field", path, integerKinds); err != nil {
+			return err
+		}
 	}
 
 	if a.resourceConfig != nil && len(a.resourceConfig.ParentIDFields) > 0 && a.idFromState == nil {
@@ -819,6 +852,30 @@ func (a *Adapter) RecordInternalID(state, remoteState any) error {
 	return structaccess.Set(state, a.internalIDPath, id)
 }
 
+// StampDeploymentID sets deploymentID in state if the resource type records a deployment id (see
+// DeploymentIDField) and state has none yet. It reports whether it changed state.
+func (a *Adapter) StampDeploymentID(state any, deploymentID string) (bool, error) {
+	if a.deploymentIDPath == nil {
+		return false, nil
+	}
+	current, err := structaccess.Get(state, a.deploymentIDPath)
+	if err != nil {
+		return false, err
+	}
+	if id, _ := current.(string); id != "" {
+		return false, nil
+	}
+	// Setting an empty value would add the field to ForceSendFields and serialize it as "".
+	// The value stays empty, but the state is reported as changed so the caller still syncs it.
+	if deploymentID == "" {
+		return true, nil
+	}
+	if err := structaccess.Set(state, a.deploymentIDPath, deploymentID); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // prepareCallRequired prepares a call and ensures the method is found.
 func prepareCallRequired(resource any, methodName string) (*calladapt.BoundCaller, error) {
 	caller, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), methodName)
@@ -829,6 +886,34 @@ func prepareCallRequired(resource any, methodName string) (*calladapt.BoundCalle
 		return nil, fmt.Errorf("%s method not found", methodName)
 	}
 	return caller, nil
+}
+
+// fieldKinds names a set of reflect kinds for the error validateFieldKind returns.
+type fieldKinds struct {
+	name  string
+	kinds []reflect.Kind
+}
+
+var (
+	stringKinds  = fieldKinds{name: "a string", kinds: []reflect.Kind{reflect.String}}
+	integerKinds = fieldKinds{name: "an integer", kinds: []reflect.Kind{
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+	}}
+)
+
+// validateFieldKind checks that the field a config key names exists in t and has one of the
+// wanted kinds. The engine reads these fields as a fixed Go type, so a field of another kind
+// would otherwise read as the zero value without any error.
+func validateFieldKind(t reflect.Type, key string, path *structpath.PathNode, want fieldKinds) error {
+	fieldType, err := structaccess.PathType(t, path)
+	if err != nil {
+		return fmt.Errorf("%s: %w", key, err)
+	}
+	if !slices.Contains(want.kinds, fieldType.Kind()) {
+		return fmt.Errorf("%s: field %q in %s is %s, must be %s", key, path.String(), t, fieldType, want.name)
+	}
+	return nil
 }
 
 // validatePointerToStruct checks if the type is a pointer to a struct.

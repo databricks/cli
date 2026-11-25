@@ -1,3 +1,6 @@
+# See jobs: the pipeline points back at its DMS deployment.
+deployment_id_field: deployment.deployment_id
+
 recreate_on_changes:
   - field: storage
     reason: immutable

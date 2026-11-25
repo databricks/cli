@@ -5,12 +5,14 @@ package resourcestate
 type ResourceState struct {
 	ID string
 
-	// For dashboards
+	// The etag the backend returned, for resource types that keep one in state
+	// (etag_field in their direct engine config).
 	ETag string
 
-	// For job_runs: the resolved job_id the run was launched against. In config it
-	// is a ${resources.jobs.*.id} reference resolved only at deploy, so we carry
-	// the deployed value to restore it at load time.
+	// The resolved id of the job the resource was launched against, for resource
+	// types that declare job_id_field in their direct engine config. In config it
+	// is a reference resolved only at deploy, so we carry the deployed value to
+	// restore it at load time.
 	JobID int64
 
 	// Size in bytes of the resource's serialized state blob. Populated by the

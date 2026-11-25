@@ -28,7 +28,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -124,9 +123,10 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-// StampDeploymentIdForFirstVersion fills deploymentID into the plan's jobs and pipelines that still lack one, in
-// both the state cache the apply reads and the plan JSON. It is called after approval creates the
-// deployment, for a first deploy whose deployment_id did not exist at plan time.
+// StampDeploymentIdForFirstVersion fills deploymentID into the plan's resources that record one
+// (see ResourceLifecycleConfig.DeploymentIDField) and still lack it, in both the state cache the
+// apply reads and the plan JSON. It is called after approval creates the deployment, for a first
+// deploy whose deployment_id did not exist at plan time.
 //
 // For subsequent deployments, the deployment_id is already stamped in the plan.
 func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string) error {
@@ -138,18 +138,13 @@ func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string)
 		if !ok {
 			continue
 		}
-		var stamped bool
-		switch v := sv.Value.(type) {
-		case *jobs.JobSettings:
-			if v.Deployment.DeploymentId == "" {
-				v.Deployment.DeploymentId = deploymentID
-				stamped = true
-			}
-		case *dresources.PipelineState:
-			if v.Deployment.DeploymentId == "" {
-				v.Deployment.DeploymentId = deploymentID
-				stamped = true
-			}
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return err
+		}
+		stamped, err := adapter.StampDeploymentID(sv.Value, deploymentID)
+		if err != nil {
+			return fmt.Errorf("%s: stamping deployment: %w", resourceKey, err)
 		}
 		if stamped {
 			if err := sv.SyncToJSON(entry.NewState); err != nil {
