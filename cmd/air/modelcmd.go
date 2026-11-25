@@ -164,6 +164,13 @@ var registeredModelRe = sync.OnceValue(func() *regexp.Regexp { return regexp.Mus
 // modelVersionRe matches a Unity Catalog model version number.
 var modelVersionRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[1-9][0-9]*$`) })
 
+// Audio tasks: their requests are multipart uploads of a recording, sent to the
+// endpoint's audio route rather than to invocations.
+const (
+	taskAudioTranscriptions = "llm/v1/audio/transcriptions"
+	taskAudioTranslations   = "llm/v1/audio/translations"
+)
+
 // validateUCModelName checks a Unity Catalog model name from source, the YAML field
 // or a flag.
 func validateUCModelName(name, source string) error {
