@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,6 +54,18 @@ func TestIsRecreateForcing(t *testing.T) {
 	assert.False(t, isRecreateForcing("pipelines", "configuration"))
 	assert.False(t, isRecreateForcing("jobs", "name"))
 	assert.False(t, isRecreateForcing("unknown", "storage"))
+}
+
+func TestCollectResourceIDs(t *testing.T) {
+	assert.Equal(t, &protos.BundleConfigRemoteSyncResourceIds{
+		ResourceJobIDs:       []string{"1", "2"},
+		ResourcePipelineIDs:  []string{"p"},
+		ResourceClusterIDs:   []string{"c"},
+		ResourceDashboardIDs: []string{"d"},
+	}, collectResourceIDs([]string{"jobs:2", "pipelines:p", "jobs:1", "clusters:c", "dashboards:d", "jobs:/jobs/3", "schemas:s", "jobs:", "invalid"}))
+
+	// Types without an id list are left out.
+	assert.Nil(t, collectResourceIDs([]string{"schemas:s"}))
 }
 
 func TestResourceTypeFromKey(t *testing.T) {

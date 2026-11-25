@@ -287,17 +287,39 @@ func isRequiredField(remote any, path *structpath.PathNode) bool {
 	return ok && !structtag.JSONTag(field.Tag.Get("json")).OmitEmpty()
 }
 
+// clusterPolicyRemotes holds, by resource key, whether a remote state is of a resource
+// type that expands cluster policy values into its remote state.
+var clusterPolicyRemotes = map[string]func(remote any) bool{}
+
+// registerClusterPolicyRemote registers R as the remote state type of the resource type
+// with the given key, which expands cluster policy values into it.
+func registerClusterPolicyRemote[R any](resourceType string) {
+	if _, ok := clusterPolicyRemotes[resourceType]; ok {
+		panic(fmt.Sprintf("cluster policy remote for %q registered twice", resourceType))
+	}
+	clusterPolicyRemotes[resourceType] = func(remote any) bool {
+		_, ok := remote.(R)
+		return ok
+	}
+}
+
+// clusterPolicyResourceType returns the registered resource type whose remote state remote is.
+func clusterPolicyResourceType(remote any) (string, bool) {
+	for _, resourceType := range slices.Sorted(maps.Keys(clusterPolicyRemotes)) {
+		if clusterPolicyRemotes[resourceType](remote) {
+			return resourceType, true
+		}
+	}
+	return "", false
+}
+
 func policyFilterForResource(b *bundle.Bundle, resourceKey string, remote any, lookupPolicy func(string) (clusterpolicy.Definition, error)) (*clusterPolicyFilter, error) {
-	filter := &clusterPolicyFilter{remote: remote, lookupPolicy: lookupPolicy}
-	switch remote.(type) {
-	case *dresources.JobRemote:
-		filter.clusterRoots = policyClusterRoots("jobs")
-	case *dresources.ClusterRemote:
-		filter.clusterRoots = policyClusterRoots("clusters")
-	default:
-		// Only jobs and clusters expand policy values into their remote state.
+	resourceType, ok := clusterPolicyResourceType(remote)
+	if !ok {
+		// Only the registered types expand policy values into their remote state.
 		return nil, nil
 	}
+	filter := &clusterPolicyFilter{remote: remote, lookupPolicy: lookupPolicy, clusterRoots: policyClusterRoots(resourceType)}
 	// Skip entries have no NewState; authored values must come from bundle config.
 	config, err := b.Config.GetResourceConfig(resourceKey)
 	if err != nil {

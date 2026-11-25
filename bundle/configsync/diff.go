@@ -141,9 +141,9 @@ func isPermissionsOrGrantsSubResource(resourceKey string) bool {
 // plan, and the resources whose remote permissions could not be read.
 func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (Changes, []SkippedChange, error) {
 	changes := make(Changes)
-	// Read first: a job's ACL names the owner that skipJobRunAs compares run_as to.
+	// Read first: change hooks may decide by a resource's ACL.
 	remote, skipped := readRemotePermissions(ctx, b, plan)
-	owners := jobOwners(ctx, plan, remote)
+	skip := newChangeSkip(ctx, plan, remote)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
@@ -160,7 +160,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				change, err := convertPlanChange(resourceKey, path, changeDesc, owners[resourceKey], b.Config.Presets.NamePrefix)
+				change, err := convertPlanChange(resourceKey, path, changeDesc, skip, b.Config.Presets.NamePrefix)
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
@@ -185,15 +185,15 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 }
 
 // convertPlanChange converts a plan change at path in resourceKey, returning nil when there is
-// nothing to write back. owner is the principal the resource runs as by default, if it is a job.
-func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, owner, namePrefix string) (*ConfigChangeDesc, error) {
+// nothing to write back. skip, if not nil, holds the changes the change hooks reject.
+func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, skip changeSkip, namePrefix string) (*ConfigChangeDesc, error) {
 	fullPath := resourceKey + "." + path
 	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
-		!keepSkippedRunAsChange(fullPath, changeDesc) {
+		!keepSkippedChange(fullPath, changeDesc) {
 		return nil, nil
 	}
-	// Runs before applyLifecycle, which lets every whole run_as through.
-	if skipJobRunAs(fullPath, changeDesc, owner) {
+	// Runs before applyLifecycle, which lets through every field a hook syncs as a backend default.
+	if skip != nil && skip(resourceKey, fullPath, changeDesc) {
 		return nil, nil
 	}
 	synced, err := applyLifecycle(resourceKey, path, changeDesc)

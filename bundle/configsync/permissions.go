@@ -94,7 +94,7 @@ func addDeclaredPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKe
 		}
 
 		fieldPath := "permissions" + path
-		change, err := convertPlanChange(parentKey, fieldPath, changeDesc, "", b.Config.Presets.NamePrefix)
+		change, err := convertPlanChange(parentKey, fieldPath, changeDesc, nil, b.Config.Presets.NamePrefix)
 		if err != nil {
 			return fmt.Errorf("failed to compute config change for path %s: %w", resourceKey+"."+path, err)
 		}
