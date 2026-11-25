@@ -15,6 +15,8 @@ import (
 // fails with status while status is non-zero.
 func newMeCountingServer(t *testing.T) (*testserver.Server, *atomic.Int32, *atomic.Int32) {
 	t.Helper()
+	// A fresh cache dir per test, so an entry from an earlier run or test can't serve Me.
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	var calls, failStatus atomic.Int32
