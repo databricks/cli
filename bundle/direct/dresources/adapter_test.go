@@ -32,7 +32,7 @@ func TestValidateRejectsFieldOfWrongKind(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			adapter, err := NewAdapter(SupportedResources["jobs"], "jobs", nil)
+			adapter, err := NewAdapter(SupportedResources()["jobs"], "jobs", nil)
 			require.NoError(t, err)
 
 			rc := *adapter.resourceConfig
