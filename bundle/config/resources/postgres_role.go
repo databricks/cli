@@ -62,6 +62,10 @@ func (r *PostgresRole) Exists(ctx context.Context, w *databricks.WorkspaceClient
 	return true, nil
 }
 
+func (*PostgresRole) Approval() Approval {
+	return Approval{}
+}
+
 func (r *PostgresRole) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_role",

@@ -57,6 +57,10 @@ func (e *PostgresEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+func (*PostgresEndpoint) Approval() Approval {
+	return Approval{}
+}
+
 func (e *PostgresEndpoint) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_endpoint",

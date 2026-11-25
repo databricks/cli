@@ -1,26 +1,27 @@
 package phases
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
-	"github.com/databricks/cli/libs/cmdio"
 )
 
-// logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
-// a note that datasets will be deleted as well.
-func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, quiet bool) error {
-	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
+func init() {
+	registerDestroyApprovalHook("pipelines", pipelineDestroyApproval)
+}
 
+// pipelineDestroyApproval splits the pipeline deletions by cascade_on_destroy, so that the
+// message says whether the datasets of a pipeline are deleted as well.
+func pipelineDestroyApproval(b *bundle.Bundle, deletes []deployplan.Action) ([]approvalListing, error) {
 	var cascading, retaining []deployplan.Action
-	for _, a := range pipelineDeletes {
+	for _, a := range deletes {
 		cascade, err := pipelineDeletionCascades(b, a)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if cascade {
 			cascading = append(cascading, a)
@@ -29,23 +30,10 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 		}
 	}
 
-	for _, grp := range []struct {
-		message string
-		actions []deployplan.Action
-	}{
-		{deletePipelineWithCascadeMessage, cascading},
-		{deletePipelineNoCascadeMessage, retaining},
-	} {
-		if len(grp.actions) == 0 || quiet {
-			continue
-		}
-		cmdio.LogString(ctx, grp.message)
-		for _, a := range grp.actions {
-			cmdio.Log(ctx, a)
-		}
-		cmdio.LogString(ctx, "")
-	}
-	return nil
+	return []approvalListing{
+		{resources.PipelineDestroyWithCascadeMessage, cascading},
+		{resources.PipelineDestroyNoCascadeMessage, retaining},
+	}, nil
 }
 
 // pipelineDeletionCascades reports whether deleting the pipeline referenced by a delete action

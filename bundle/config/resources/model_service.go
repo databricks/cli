@@ -87,6 +87,10 @@ func (m *ModelService) Exists(ctx context.Context, w *databricks.WorkspaceClient
 	return true, nil
 }
 
+func (*ModelService) Approval() Approval {
+	return Approval{}
+}
+
 func (*ModelService) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model_service",

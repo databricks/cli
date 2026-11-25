@@ -57,6 +57,17 @@ func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+func (*PostgresProject) Approval() Approval {
+	return Approval{
+		Order: 70,
+		Deploy: `
+This action will result in the deletion or recreation of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:`,
+		Destroy: `This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:`,
+	}
+}
+
 func (p *PostgresProject) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_project",

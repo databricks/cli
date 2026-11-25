@@ -43,6 +43,19 @@ func (e *VectorSearchIndex) Exists(ctx context.Context, w *databricks.WorkspaceC
 	return true, nil
 }
 
+func (*VectorSearchIndex) Approval() Approval {
+	return Approval{
+		Order: 100,
+		Deploy: `
+This action will result in the deletion or recreation of the following Vector Search indexes.
+Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
+index drops all upserted vectors. Both can be expensive to rebuild:`,
+		Destroy: `This action will result in the deletion of the following Vector Search indexes.
+For Delta Sync indexes, the source Delta Table is preserved but the embedding pipeline is removed.
+For Direct Access indexes, all upserted vectors are permanently lost:`,
+	}
+}
+
 func (e *VectorSearchIndex) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "vector_search_index",

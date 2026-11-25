@@ -86,6 +86,18 @@ func (s *MaterializationSet) Exists(ctx context.Context, w *databricks.Workspace
 	return true, nil
 }
 
+func (*MaterializationSet) Approval() Approval {
+	return Approval{
+		Order: 120,
+		Deploy: `
+This action will result in the deletion or recreation of the following materialization sets.
+Every materialized feature in a recreated set is dropped and recomputed from scratch, including
+the members whose configuration did not change:`,
+		// No destroy message: the deploy message warns that a recreated set recomputes every
+		// member, and destroy recreates nothing.
+	}
+}
+
 func (*MaterializationSet) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "materialization_set",

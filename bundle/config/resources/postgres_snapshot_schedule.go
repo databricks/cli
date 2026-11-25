@@ -58,6 +58,10 @@ func (b *PostgresSnapshotSchedule) Exists(ctx context.Context, w *databricks.Wor
 	return true, nil
 }
 
+func (*PostgresSnapshotSchedule) Approval() Approval {
+	return Approval{}
+}
+
 func (b *PostgresSnapshotSchedule) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_snapshot_schedule",

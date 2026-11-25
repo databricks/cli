@@ -38,6 +38,10 @@ func (s *MlflowModel) Exists(ctx context.Context, w *databricks.WorkspaceClient,
 	return true, nil
 }
 
+func (*MlflowModel) Approval() Approval {
+	return Approval{}
+}
+
 func (s *MlflowModel) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "model",

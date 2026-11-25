@@ -89,6 +89,10 @@ func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 	return false, nil
 }
 
+func (*SecretScope) Approval() Approval {
+	return Approval{}
+}
+
 func (s SecretScope) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "secret_scope",

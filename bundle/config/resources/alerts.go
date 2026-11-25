@@ -41,6 +41,10 @@ func (a *Alert) Exists(ctx context.Context, w *databricks.WorkspaceClient, id st
 	return true, nil
 }
 
+func (*Alert) Approval() Approval {
+	return Approval{}
+}
+
 func (a *Alert) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "alert",

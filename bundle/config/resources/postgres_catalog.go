@@ -50,6 +50,10 @@ func (c *PostgresCatalog) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+func (*PostgresCatalog) Approval() Approval {
+	return Approval{}
+}
+
 func (c *PostgresCatalog) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_catalog",

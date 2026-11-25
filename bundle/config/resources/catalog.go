@@ -40,6 +40,10 @@ func (c *Catalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, nam
 	return true, nil
 }
 
+func (*Catalog) Approval() Approval {
+	return Approval{}
+}
+
 func (*Catalog) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "catalog",

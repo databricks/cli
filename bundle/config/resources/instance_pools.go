@@ -35,6 +35,10 @@ func (s *InstancePool) Exists(ctx context.Context, w *databricks.WorkspaceClient
 	return true, nil
 }
 
+func (*InstancePool) Approval() Approval {
+	return Approval{}
+}
+
 func (*InstancePool) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "instance_pool",
