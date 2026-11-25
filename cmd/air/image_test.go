@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/common/environment"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +58,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 				_, err := io.WriteString(out, "image-id\n")
 				return err
 			case "image inspect":
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, fakeImageInspect("7140000000"))
 				return err
 			}
 			return nil
@@ -74,9 +76,10 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	target := "123.container.us-west-2.cloud.databricks.test/main.training.cuda:13.4.1"
 	assert.Equal(t, []recordedImageCommand{
 		{executable: "/usr/bin/docker", args: []string{"image", "ls", "--quiet", "nvidia/cuda:13.4.1"}},
-		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", "nvidia/cuda:13.4.1"}},
+		{executable: "/usr/bin/docker", args: []string{"image", "inspect", "--format", "{{.Os}}/{{.Architecture}}|{{.Size}}|{{with .Config}}{{.WorkingDir}}{{end}}", "nvidia/cuda:13.4.1"}},
 		{executable: "/usr/bin/docker", args: []string{"tag", "nvidia/cuda:13.4.1", target}},
 		{executable: "/usr/bin/docker", args: []string{"push", target}},
+		{executable: "/usr/bin/docker", args: []string{"manifest", "inspect", "--verbose", target}},
 	}, commands)
 	assert.Equal(t,
 		"Now you can set `environment.unity_catalog_image = main.training.cuda:13.4.1` in your YAML config and create a workload with `databricks air run -f config.yaml`.\n",
@@ -85,6 +88,87 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 	stderrLines := strings.Split(stderr.String(), "\n")
 	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
 	assert.Contains(t, stderr.String(), "Pushed image")
+}
+
+// fakeImageInspect answers the docker image inspect format runImagePush uses for a linux/amd64 image.
+func fakeImageInspect(sizeBytes string) string {
+	return "linux/amd64|" + sizeBytes + "|\n"
+}
+
+func TestFormatImageSize(t *testing.T) {
+	assert.Equal(t, "7.6 MB", formatImageSize(7_600_000))
+	assert.Equal(t, "999.0 MB", formatImageSize(999_000_000))
+	assert.Equal(t, "7.1 GB", formatImageSize(7_140_000_000))
+}
+
+func TestCompressedImageSize(t *testing.T) {
+	tests := []struct {
+		name     string
+		output   string
+		size     int64
+		layers   int
+		platform string
+		wantErr  string
+	}{
+		{
+			name:   "image manifest",
+			output: `{"Descriptor":{"platform":{"architecture":"amd64","os":"linux"}},"OCIManifest":{"layers":[{"size":2900000000},{"size":240000000}]}}`,
+			size:   3_140_000_000, layers: 2,
+		},
+		{
+			name:   "schema2 manifest without platform",
+			output: `{"Descriptor":{},"SchemaV2Manifest":{"layers":[{"size":7600000}]}}`,
+			size:   7_600_000, layers: 1,
+		},
+		{
+			name: "index uses the linux/amd64 entry",
+			output: `[{"Descriptor":{"platform":{"architecture":"arm64","os":"linux"}},"OCIManifest":{"layers":[{"size":1}]}},
+				{"Descriptor":{"platform":{"architecture":"amd64","os":"linux"}},"OCIManifest":{"layers":[{"size":5},{"size":6},{"size":7}]}},
+				{"Descriptor":{"platform":{"architecture":"unknown","os":"unknown"}},"OCIManifest":{"layers":[{"size":9}]}}]`,
+			size: 18, layers: 3,
+		},
+		{
+			name: "index uses the requested platform",
+			output: `[{"Descriptor":{"platform":{"architecture":"amd64","os":"linux"}},"OCIManifest":{"layers":[{"size":5}]}},
+				{"Descriptor":{"platform":{"architecture":"arm64","os":"linux"}},"OCIManifest":{"layers":[{"size":1},{"size":2}]}}]`,
+			platform: "linux/arm64",
+			size:     3, layers: 2,
+		},
+		{
+			name:    "index without linux/amd64",
+			output:  `[{"Descriptor":{"platform":{"architecture":"arm64","os":"linux"}},"OCIManifest":{"layers":[{"size":1}]}}]`,
+			wantErr: "no linux/amd64 image manifest with layers",
+		},
+		{name: "not JSON", output: "no such manifest", wantErr: "invalid character"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			size, layers, err := compressedImageSize([]byte(tt.output), cmp.Or(tt.platform, "linux/amd64"))
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.size, size)
+			assert.Equal(t, tt.layers, layers)
+		})
+	}
+}
+
+func TestDARLimitationsURL(t *testing.T) {
+	tests := []struct {
+		cloud environment.Cloud
+		want  string
+	}{
+		{cloud: environment.CloudAWS, want: "https://docs.databricks.com/aws/en/artifact-registry/#limitations"},
+		{cloud: environment.CloudAzure, want: "https://learn.microsoft.com/azure/databricks/artifact-registry/#limitations"},
+		{cloud: environment.CloudGCP, want: "https://docs.databricks.com/gcp/en/artifact-registry/#limitations"},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.cloud), func(t *testing.T) {
+			assert.Equal(t, tt.want, darLimitationsURL(&config.Config{Cloud: tt.cloud}))
+		})
+	}
 }
 
 func TestRegistryHostFromDockerConfigureOutput(t *testing.T) {
@@ -111,7 +195,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 		runCommand: func(_ context.Context, _ io.Reader, out, _ io.Writer, executable string, args ...string) error {
 			commands = append(commands, recordedImageCommand{executable: executable, args: args})
 			if args[0] == "image" && args[1] == "inspect" {
-				_, err := io.WriteString(out, "linux/amd64\n")
+				_, err := io.WriteString(out, fakeImageInspect("7140000000"))
 				return err
 			}
 			return nil
@@ -126,7 +210,7 @@ func TestRunImagePushPullsMissingImage(t *testing.T) {
 	}, deps)
 	require.NoError(t, err)
 
-	require.Len(t, commands, 5)
+	require.Len(t, commands, 6)
 	assert.Equal(t, []string{"pull", "--platform", "linux/amd64", "example/image:v1"}, commands[1].args)
 }
 

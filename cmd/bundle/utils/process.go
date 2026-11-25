@@ -139,18 +139,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// the direct state.
 	needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
 
-	// A command that reads and operates on the state can only run on the direct engine: a
-	// Terraform state is migrated first, and a failed migration is fatal. Tag the user agent
-	// before the bundle is loaded, so every request of the command carries the engine,
-	// including those of runs that fail early (a bad --var, a rejected engine setting). A
-	// run that fails its migration is therefore tagged engine/direct while its deploy
-	// telemetry reports the terraform state it started from.
-	engineTaggedUpfront := shouldReadState && needsState
-	if engineTaggedUpfront {
-		ctx = useragent.InContext(ctx, "engine", string(engine.EngineDirect))
-		cmd.SetContext(ctx)
-	}
-
 	// Load bundle config and apply target
 	b = root.MustConfigureBundle(cmd)
 
@@ -269,11 +257,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		b.MigratingToDirect = !stateDesc.Engine.IsDirect()
 
-		// Pull-only commands were not tagged up front and never migrate, so the pulled
-		// state's engine is the one they use.
-		if !engineTaggedUpfront {
-			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
-		}
 		ctx = WithLineage(ctx, stateDesc)
 		cmd.SetContext(ctx)
 

@@ -21,10 +21,10 @@ resolves no auth (e.g. `databricks bundle schema`), no event for that line is up
 text line prints again, even though the agent saw the hint.
 
 `databricks feedback` sends one `fast_feedback_log` entry, the event the in-product feedback widget
-records, instead of a `databricks_cli_log`. The user asked for it to be sent, so it is uploaded
-immediately in a single attempt even when `DATABRICKS_CLI_DISABLE_TELEMETRY` is set. When an AI
-agent is detected, the user must first confirm the message. Agent and run context ride in the
-entry's `user_agent`.
+records, instead of a `databricks_cli_log`. This command explicitly submits feedback, so it uploads
+immediately in a single attempt even when `DATABRICKS_CLI_DISABLE_TELEMETRY` is set. AI agents can
+submit directly without user confirmation. A successful submission prints a receipt. Agent and
+run context ride in the entry's `user_agent`.
 
 `databricks aitools` install, update, list, version and uninstall log an `aitools_command_event`
 funnel per run: STARTED, one STEP_COMPLETED per install step reached (install only), and FINISHED

@@ -1,3 +1,5 @@
+Badness = "Without deployment-history recording, destroy swallows a delete error it cannot classify (DeploymentUnit.Delete in bundle/direct/apply.go logs nothing and drops the state): it prints 'Destroy: 3 deleted' while the materialization set is still in the workspace. Destroy should fail with the delete error, as it does with recording on."
+
 # Pinned to the leg without deployment-history recording, where the engine's destroy step forgives
 # a delete error it cannot classify. With recording on it takes the branch that records the failure
 # and returns it, so the destroy fails instead and the two legs cannot share one golden.

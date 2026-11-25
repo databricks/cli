@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/appdeploy"
@@ -79,7 +78,7 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 
 	// If the app is starting, we need to wait for it to be active before we can deploy it.
 	if isAppComputeStarting(createdApp) {
-		_, err := w.Apps.WaitGetAppActive(ctx, app.Name, 20*time.Minute, nil)
+		_, err := w.Apps.WaitGetAppActive(ctx, app.Name, appdeploy.StartTimeout, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -105,17 +104,12 @@ func (a *appRunner) start(ctx context.Context) error {
 	w := b.WorkspaceClient(ctx)
 
 	logProgress(ctx, "Starting the app "+app.Name)
-	wait, err := w.Apps.Start(ctx, apps.StartAppRequest{Name: app.Name})
-	if err != nil {
-		return err
-	}
-
-	startedApp, err := wait.OnProgress(func(p *apps.App) {
+	startedApp, err := appdeploy.Start(ctx, w, app.Name, func(p *apps.App) {
 		if p.AppStatus == nil {
 			return
 		}
 		logProgress(ctx, "App is starting...")
-	}).Get()
+	})
 	if err != nil {
 		return err
 	}

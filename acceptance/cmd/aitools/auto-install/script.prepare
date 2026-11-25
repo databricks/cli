@@ -10,6 +10,12 @@ unset CI DATABRICKS_AITOOLS_AUTO_INSTALL GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF
 # Telemetry is printed by print_telemetry.
 unset DATABRICKS_CLI_DISABLE_TELEMETRY DATABRICKS_CLI_TELEMETRY_TIMEOUT
 
+# Without a terminal, only a coding agent's call installs: any other run cannot
+# ask first, so it skips (see no-terminal). The cases have no terminal, so they
+# run as a coding agent's call. AGENT is the generic marker; this name gets no
+# agent hint.
+export AGENT=test-agent
+
 # Test binaries are development builds, which never auto-install. Each case
 # names the released version it simulates.
 export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.30.0
@@ -51,11 +57,12 @@ use_home() {
     echo "{\"id\": \"${2:-treatment-machine}\"}" > "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
 }
 
-# gate true|false writes a compatibility manifest into the CLI cache with that
-# auto_install flag. A fresh cache file replaces the remote manifest.
+# gate true|false [SKILLS] writes a compatibility manifest into the CLI cache
+# with that auto_install flag and skills version SKILLS (default: latest). A
+# fresh cache file replaces the remote manifest.
 gate() {
     "$mkdir_bin" -p "$DATABRICKS_CACHE_DIR"
-    echo "{\"0.0.0\": {\"appkit\": \"0.84.0\", \"skills\": \"latest\", \"auto_install\": $1}}" > "$DATABRICKS_CACHE_DIR/compat-manifest.json"
+    echo "{\"0.0.0\": {\"appkit\": \"0.84.0\", \"skills\": \"${2:-latest}\", \"auto_install\": $1}}" > "$DATABRICKS_CACHE_DIR/compat-manifest.json"
 }
 
 # cursor_skills lists the skills installed for Cursor.

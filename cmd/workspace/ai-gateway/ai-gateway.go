@@ -458,7 +458,7 @@ func newCreateSkill() *cobra.Command {
 
 	cmd.Flags().Var(&createSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSkillReq.Skill.Comment, "comment", createSkillReq.Skill.Comment, `User-provided comment for the skill.`)
+	cmd.Flags().StringVar(&createSkillReq.Skill.Comment, "comment", createSkillReq.Skill.Comment, `User-provided comment for the skill, which you can change with UpdateSkill.`)
 	cmd.Flags().StringVar(&createSkillReq.Skill.Name, "name", createSkillReq.Skill.Name, `Resource name of the skill.`)
 
 	cmd.Use = "create-skill PARENT SKILL_ID"
@@ -487,9 +487,10 @@ Create a skill.
   Arguments:
     PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
       {...} component is capped at 255 characters individually.
-    SKILL_ID: Name for the skill, e.g. "basic-math". The server normalizes this
-      identifier to lowercase. It is independent of the bundle name read from
-      SKILL.md.`
+    SKILL_ID: Name of the skill within the parent schema. The name must not contain
+      periods, spaces, forward slashes, percent signs, or control characters,
+      and it is stored in lowercase. It is independent of the bundle name read
+      from SKILL.md.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1867,10 +1868,10 @@ func newUpdateModelService() *cobra.Command {
       component is capped at 255 characters individually. The server derives the
       name on Create from parent and model_service_id; it is required and
       immutable on Update, Get, and Delete.
-    UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
-      replacement must include every required field; any optional field you omit
-      is cleared. To preserve sibling fields, use one or more granular paths:
-      comment, config.routing.destinations,
+    UPDATE_MASK: Fields to update. Use config for a broad configuration replacement. The
+      replacement must include every required field; optional fields in its
+      replacement scope are cleared when omitted. To preserve sibling fields,
+      use one or more granular paths: comment, config.routing.destinations,
       config.routing.fallback.destinations, config.rate_limits, or
       config.inference_table. Intermediate paths such as config.routing and
       config.routing.fallback are not supported.`
@@ -1946,7 +1947,7 @@ func newUpdateSkill() *cobra.Command {
 	cmd.Flags().Var(&updateSkillJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateSkillReq.Etag, "etag", updateSkillReq.Etag, `Optimistic concurrency token from the most recent read.`)
-	cmd.Flags().StringVar(&updateSkillReq.Skill.Comment, "comment", updateSkillReq.Skill.Comment, `User-provided comment for the skill.`)
+	cmd.Flags().StringVar(&updateSkillReq.Skill.Comment, "comment", updateSkillReq.Skill.Comment, `User-provided comment for the skill, which you can change with UpdateSkill.`)
 	cmd.Flags().StringVar(&updateSkillReq.Skill.Name, "name", updateSkillReq.Skill.Name, `Resource name of the skill.`)
 
 	cmd.Use = "update-skill NAME UPDATE_MASK"
@@ -1972,11 +1973,11 @@ Update a skill.
 
   Arguments:
     NAME: Resource name of the skill. Format: skills/{catalog}.{schema}.{skill}.
-      Each {...} component is capped at 255 characters individually.
-      Server-derived on Create from parent + skill_id; required and
-      immutable on Update/Get/Delete.
-    UPDATE_MASK: Fields to update; validated against skill. REQUIRED, matching the
-      sibling Update RPCs. comment is the only mutable field.`
+      Each {...} component is capped at 255 characters individually. The
+      server derives the name on Create from parent and skill_id; it is
+      required and immutable on Update, Get, and Delete.
+    UPDATE_MASK: Comma-separated list of skill fields to update. comment is the only
+      field that can be updated.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

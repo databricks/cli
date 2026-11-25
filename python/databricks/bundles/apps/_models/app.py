@@ -70,7 +70,8 @@ class App(Resource):
     compute_size: VariableOrOptional[ComputeSize] = None
     """
     Size of the compute instances the app runs on. Defaults to MEDIUM. Larger sizes provide more
-    CPU and memory at a higher hourly cost. See
+    CPU and memory at a higher hourly cost. Leave unset for an app in a space: apps in a space always
+    run on space compute and reject any other size. See
     https://docs.databricks.com/aws/en/dev-tools/databricks-apps/compute-size.
     """
 
@@ -139,6 +140,11 @@ class App(Resource):
     effect when the app is next deployed.
     """
 
+    thumbnail_path: VariableOrOptional[str] = None
+    """
+    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
+    """
+
     usage_policy_id: VariableOrOptional[str] = None
     """
     [Public Preview] ID of the usage policy that the app's compute usage is attributed to. Alternative to
@@ -191,7 +197,8 @@ class AppDict(TypedDict, total=False):
     compute_size: VariableOrOptional[ComputeSizeParam]
     """
     Size of the compute instances the app runs on. Defaults to MEDIUM. Larger sizes provide more
-    CPU and memory at a higher hourly cost. See
+    CPU and memory at a higher hourly cost. Leave unset for an app in a space: apps in a space always
+    run on space compute and reject any other size. See
     https://docs.databricks.com/aws/en/dev-tools/databricks-apps/compute-size.
     """
 
@@ -256,6 +263,11 @@ class AppDict(TypedDict, total=False):
     """
     Destinations that receive the app's OpenTelemetry logs, metrics and traces. Changes take
     effect when the app is next deployed.
+    """
+
+    thumbnail_path: VariableOrOptional[str]
+    """
+    The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
     """
 
     usage_policy_id: VariableOrOptional[str]

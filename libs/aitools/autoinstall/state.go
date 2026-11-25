@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync/atomic"
+	"time"
 
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
@@ -34,6 +35,12 @@ type State struct {
 	// Attempts counts the failed attempts for LastVersion. It is 0 once a run
 	// for LastVersion succeeded or was skipped for good.
 	Attempts int `json:"attempts,omitempty"`
+
+	// LastAttempt is when the last of Attempts started. The next attempt
+	// waits until a delay after it has passed (see Decide). It is zero once
+	// LastVersion is settled, and when no install started (a failed gate
+	// lookup uses up the attempts of LastVersion without one).
+	LastAttempt time.Time `json:"last_attempt,omitzero"`
 
 	// OptedOut turns auto-install off for every later version. It is set by
 	// `databricks aitools auto-install disable`, by a global-scope
@@ -95,6 +102,10 @@ func load(ctx context.Context) (State, error) {
 	var s State
 	if err := json.Unmarshal(data, &s); err != nil {
 		return State{}, fmt.Errorf("parse %s: %w", filepath.ToSlash(path), err)
+	}
+	// The retry wait shifts by the count, which panics when it is negative.
+	if s.Attempts < 0 {
+		return State{}, fmt.Errorf("parse %s: negative attempts %d", filepath.ToSlash(path), s.Attempts)
 	}
 	return s, nil
 }

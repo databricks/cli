@@ -15,6 +15,8 @@ import (
 	"github.com/databricks/cli/libs/aitools/mcp/agentconfig"
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -34,6 +36,14 @@ type removeOutput struct {
 	Skipped       []removeSkipped             `json:"skipped"`
 	Error         string                      `json:"error,omitempty"`
 	ErrorCategory protos.AitoolsErrorCategory `json:"error_category,omitempty"`
+
+	// results is one telemetry result per (service, agent) attempted. It is not in the JSON.
+	results []protos.AitoolsMcpServerResult
+	// stateBefore is the state as it was read before the removal. It is not in the JSON.
+	stateBefore *mcp.State
+	// profile is the profile and config file that the selected servers are bound to, when they all are bound to one. It is
+	// the zero key otherwise. It is not in the JSON.
+	profile profileKey
 }
 
 type removeRemoved struct {
@@ -74,7 +84,7 @@ type recordDrop struct {
 	agent string
 }
 
-// NewMcpRemoveCmd returns `aitools mcp remove`. It needs no network.
+// NewMcpRemoveCmd returns `aitools mcp remove`. The edit needs no network; the telemetry upload after it is best-effort.
 func NewMcpRemoveCmd() *cobra.Command {
 	var f mcpRemoveFlags
 	cmd := &cobra.Command{
@@ -107,22 +117,12 @@ removes one.`,
 
 			out := &removeOutput{Removed: []removeRemoved{}, Skipped: []removeSkipped{}}
 			runErr := runMcpRemove(ctx, cmd, f, jsonMode, out)
-			if !jsonMode {
-				return runErr
+			err := runErr
+			if jsonMode {
+				err = writeRemoveJSON(cmd, out, runErr)
 			}
-
-			// The document carries a top-level failure; per-agent failures are already in skipped.
-			if top := topLevelFailure(runErr); top != nil {
-				out.Error = top.Error()
-				out.ErrorCategory = errorCategory(top)
-			}
-			if err := renderJSON(cmd.OutOrStdout(), out); err != nil {
-				return errors.Join(runErr, err)
-			}
-			if runErr != nil {
-				return root.ErrAlreadyPrinted
-			}
-			return nil
+			logRemoveEvent(ctx, out)
+			return err
 		},
 	}
 
@@ -130,6 +130,48 @@ removes one.`,
 	cmd.Flags().StringVar(&f.agents, "agents", "", "Agents to remove from, comma-separated (default: every agent the server is installed for)")
 	cmd.Flags().BoolVar(&f.all, "all", false, "Remove every server this CLI installed")
 	return cmd
+}
+
+// writeRemoveJSON writes the JSON document of a run that ended with runErr and returns the command's error.
+func writeRemoveJSON(cmd *cobra.Command, out *removeOutput, runErr error) error {
+	// The document carries a top-level failure; per-agent failures are already in skipped.
+	if top := topLevelFailure(runErr); top != nil {
+		out.Error = top.Error()
+		out.ErrorCategory = errorCategory(top)
+	}
+	if err := renderJSON(cmd.OutOrStdout(), out); err != nil {
+		return errors.Join(runErr, err)
+	}
+	if runErr != nil {
+		return root.ErrAlreadyPrinted
+	}
+	return nil
+}
+
+// logRemoveEvent buffers the REMOVE event and sets the config its exit-time upload authenticates with. It runs after the
+// output is written. A run that logged no event touched no server, so it has nothing to upload and sets no config.
+func logRemoveEvent(ctx context.Context, out *removeOutput) {
+	if !logMcpEvent(ctx, protos.AitoolsMcpEvent{
+		CallingAgent: callingAgentType(),
+		Operation:    protos.AitoolsMcpOperationRemove,
+		Servers:      out.results,
+	}) {
+		return
+	}
+	if out.profile.profile == "" {
+		// The servers are bound to several profiles, so no one profile's token may stand in for the upload.
+		telemetry.SkipUpload(ctx)
+		return
+	}
+	// The upload sends the profile's token to the profile's host, so a profile whose recorded servers no longer match it
+	// uploads nothing. The records are the ones read before the removal.
+	targets := recordedUploadTargets(ctx, out.stateBefore, out.profile)
+	if len(targets) == 0 {
+		log.Debugf(ctx, "telemetry: profile %s no longer matches an MCP server recorded for it; not uploading telemetry", out.profile.profile)
+		telemetry.SkipUpload(ctx)
+		return
+	}
+	setUploadConfig(ctx, out.profile.profile, out.profile.path, nil, "", targets...)
 }
 
 // runMcpRemove removes the chosen servers from the agent configs and records the result. Results are printed
@@ -146,7 +188,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	if cmd.Flags().Changed("agents") && len(agentNames) == 0 {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--agents names no agent; pass one or more of: %s", strings.Join(mcpAgentNames(), ", "))
 	}
-	interactive := !jsonMode && installPromptsSupported(ctx)
+	interactive := !jsonMode && promptsSupported(ctx)
 	if err := validateMCPRemoveFlags(f.all, names, profileName, interactive); err != nil {
 		return err
 	}
@@ -165,6 +207,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	if err != nil {
 		return err
 	}
+	out.stateBefore = state
 	var selected []mcp.Entry
 	if interactive && !f.all && len(names) == 0 && profileName == "" {
 		// An agent with no installed server is refused as it is without a terminal, before the picker offers nothing for it.
@@ -210,6 +253,7 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 		// --agents chooses the servers installed for those agents, so a server with no agent left is not chosen.
 		selected = slices.DeleteFunc(selected, func(e mcp.Entry) bool { return len(e.Agents) == 0 })
 	}
+	out.profile = sharedProfile(selected, mcp.CheckEntries(ctx, &mcp.State{Servers: selected}))
 
 	// Each agent config file is read once per command, and each server's config file is resolved once.
 	files := newAgentFiles()
@@ -221,12 +265,14 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 			if !jsonMode {
 				printRemoveResults(ctx, out)
 			}
-			return failure(categoryNameConflict, "nothing was removed: named MCP servers are left in place: %s", refusedNames(refused))
+			return failure(protos.AitoolsErrorCategoryMCPNameConflict, "nothing was removed: named MCP servers are left in place: %s", refusedNames(refused))
 		}
 	}
 
 	var drops []recordDrop
 	var agentErrs []error
+	// recordOnly are the indexes of out.results whose removal only drops a state record.
+	var recordOnly []int
 	for _, e := range selected {
 		removed := removeRemoved{Name: e.Name, Service: e.Service, Profile: e.Profile, Agents: []string{}}
 		pin := resolveBinding(ctx, e)
@@ -246,10 +292,17 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 				// There is no config this CLI can edit for the agent, so only the record can go.
 				removed.Agents = append(removed.Agents, agentName)
 				removed.RecordOnly = append(removed.RecordOnly, agentName)
+				recordOnly = append(recordOnly, len(out.results))
+				out.results = append(out.results, removeServerResult(e.Service, agentName, removeDeleted, nil))
 				drops = append(drops, recordDrop{name: e.Name, agent: agentName})
 				continue
 			}
 			plan, err := removeFromAgent(ctx, files, e, a, pin, len(agentNames) > 0)
+			// A pruned entry changes the state only, so a save that fails undoes it, as for a record-only removal.
+			if plan.outcome == removePruned && err == nil {
+				recordOnly = append(recordOnly, len(out.results))
+			}
+			out.results = append(out.results, removeServerResult(e.Service, agentName, plan.outcome, err))
 			if err != nil {
 				errs = append(errs, err)
 				out.Skipped = append(out.Skipped, removeSkipped{Name: e.Name, Agent: agentName, Reason: fmt.Sprintf("could not update %s: %s", agentDisplayName(agentName), err)})
@@ -265,7 +318,12 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 				out.Skipped = append(out.Skipped, removeSkipped{Name: e.Name, Agent: agentName, Reason: reason})
 			}
 		}
-		// A server with no agent left in state is removed from state too, so it is reported as removed.
+		// A server with no agent left in state is removed from state too, so it is reported as removed. Only its
+		// record goes, which is a change to the state.
+		if len(e.Agents) == 0 {
+			recordOnly = append(recordOnly, len(out.results))
+			out.results = append(out.results, protos.AitoolsMcpServerResult{Service: mcpServiceType(e.Service), Outcome: protos.AitoolsTargetOutcomeChanged})
+		}
 		if len(removed.Agents) > 0 || len(e.Agents) == 0 {
 			out.Removed = append(out.Removed, removed)
 		}
@@ -280,6 +338,13 @@ func runMcpRemove(ctx context.Context, cmd *cobra.Command, f mcpRemoveFlags, jso
 	var saveErr error
 	if len(drops) > 0 || slices.ContainsFunc(selected, func(e mcp.Entry) bool { return len(e.Agents) == 0 }) {
 		saveErr = dropRecords(ctx, drops, selected)
+	}
+	if saveErr != nil {
+		// A record-only removal changes nothing but the state, so the save that failed undid it.
+		for _, i := range recordOnly {
+			out.results[i].Outcome = protos.AitoolsTargetOutcomeFailed
+			out.results[i].ErrorCategory = errorCategory(saveErr)
+		}
 	}
 	if !jsonMode {
 		printRemoveResults(ctx, out)
@@ -327,7 +392,7 @@ func selectInstalls(state *mcp.State, names []string, profileName string) ([]mcp
 			return nil, err
 		}
 		if len(matched) == 0 {
-			return nil, &noRecordError{name: name, err: failure(categoryServiceNotFound, "no installed MCP server named %s%s", name, where)}
+			return nil, &noRecordError{name: name, err: failure(protos.AitoolsErrorCategoryMCPServiceNotFound, "no installed MCP server named %s%s", name, where)}
 		}
 		for _, i := range matched {
 			chosen[i] = true
@@ -375,7 +440,7 @@ func withAdoptHint(ctx context.Context, err error, state *mcp.State) error {
 		if u.fix != "" {
 			hint += ". To adopt it, so that remove works, run `" + u.fix + "`"
 		}
-		return withCategory(fmt.Errorf("%w; %s", err, hint), categoryServiceNotFound)
+		return withCategory(fmt.Errorf("%w; %s", err, hint), protos.AitoolsErrorCategoryMCPServiceNotFound)
 	}
 	return err
 }
@@ -454,7 +519,7 @@ func checkNamedInstalled(selected []mcp.Entry, targets []*agents.Agent) error {
 	for _, a := range targets {
 		agentNames = append(agentNames, a.Name)
 	}
-	return failure(categoryServiceNotFound, "nothing was removed: named MCP servers are not installed for %s: %s",
+	return failure(protos.AitoolsErrorCategoryMCPServiceNotFound, "nothing was removed: named MCP servers are not installed for %s: %s",
 		mcpAgentList(agentNames), strings.Join(servers, ", "))
 }
 
@@ -469,7 +534,7 @@ func checkTargetsInstalled(selected []mcp.Entry, targets []*agents.Agent) error 
 			_, ok := e.Agents[a.Name]
 			return ok
 		}) {
-			return failure(categoryServiceNotFound, "no selected MCP server is installed for %s", agentDisplayName(a.Name))
+			return failure(protos.AitoolsErrorCategoryMCPServiceNotFound, "no selected MCP server is installed for %s", agentDisplayName(a.Name))
 		}
 	}
 	return nil

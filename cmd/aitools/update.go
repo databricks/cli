@@ -79,7 +79,8 @@ type updateFlags struct {
 	project, global              bool
 	// keepModified is not a flag: auto-install sets it (see
 	// installer.UpdateOptions.KeepModified). It also keeps the raw skills of
-	// agents that have, or could get, the plugin.
+	// agents that have, or could get, the plugin, and refuses a downgrade
+	// (installer.UpdateOptions.NoDowngrade).
 	keepModified bool
 }
 
@@ -219,6 +220,7 @@ func runUpdate(ctx context.Context, f updateFlags) error {
 				Scope:   scope,
 
 				KeepModified: f.keepModified,
+				NoDowngrade:  f.keepModified,
 			}
 			opts.Skills = skills
 
@@ -297,6 +299,10 @@ func pluginMigrationCandidatesForScope(ctx context.Context, scope string, state 
 		}
 		if state != nil {
 			if _, alreadyPlugin := state.Plugins[agent.Name]; alreadyPlugin {
+				continue
+			}
+			// The user chose raw skills over the plugin (install --skills-only).
+			if slices.Contains(state.SkillsOnlyAgents, agent.Name) {
 				continue
 			}
 		}
@@ -394,11 +400,12 @@ func mergeAgents(installed, project []*agents.Agent) []*agents.Agent {
 // excludePluginAgents splits off agents that have the plugin in this scope, so
 // the file-skills reconcile never drops duplicate skill files onto a plugin
 // agent. That is an agent the CLI recorded a plugin install for, or one whose
-// own manifest shows a plugin serving the scope (see manifestPluginActive) while
-// its CLI is missing: install keeps such a plugin, without recording it. With
-// the CLI on PATH, raw skills next to the plugin are the user's choice (install
-// --skills-only), so they are refreshed as before. manifestPlugins lists the
-// agents excluded for their manifest.
+// own records show a plugin serving the scope (see agentRecordsPlugin) while its
+// CLI is missing: install keeps such a plugin, without recording it. With
+// the CLI on PATH, raw skills next to the plugin are the user's choice (an
+// install --skills-only from before it skipped an agent with the plugin, or
+// one run before the plugin was added), so they are refreshed as before.
+// manifestPlugins lists the agents excluded for their own records.
 func excludePluginAgents(ctx context.Context, scope string, installed []*agents.Agent, state *installer.InstallState) (fileAgents, manifestPlugins []*agents.Agent) {
 	fileAgents = make([]*agents.Agent, 0, len(installed))
 	for _, a := range installed {
@@ -407,11 +414,9 @@ func excludePluginAgents(ctx context.Context, scope string, installed []*agents.
 				continue
 			}
 		}
-		if !a.HasBinary(ctx) {
-			if active, err := manifestPluginActive(ctx, a, scope); err == nil && active {
-				manifestPlugins = append(manifestPlugins, a)
-				continue
-			}
+		if !a.HasBinary(ctx) && agentRecordsPlugin(ctx, a, scope) {
+			manifestPlugins = append(manifestPlugins, a)
+			continue
 		}
 		fileAgents = append(fileAgents, a)
 	}

@@ -199,7 +199,8 @@ func TestSaveAndLoadStateWithOptionalFields(t *testing.T) {
 			"databricks": stableSkillsRepoPath,
 			"sql-tools":  experimentalRepoPath,
 		},
-		Scope: "project",
+		Scope:            "project",
+		SkillsOnlyAgents: []string{"claude-code", "codex"},
 	}
 
 	err := SaveState(dir, original)

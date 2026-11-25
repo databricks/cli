@@ -385,12 +385,12 @@ func newDeleteMonitor() *cobra.Command {
 	cmd.Short = `Delete a monitor.`
 	cmd.Long = `Delete a monitor.
 
-  Delete a data quality monitor on Unity Catalog object.
+  Delete a data quality monitor on a Unity Catalog object.
 
   For the table object_type, the caller must have either of the following
-  sets of permissions: **MANAGE** and **USE_CATALOG** on the table's parent
-  catalog. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
-  **USE_SCHEMA** on the table's parent schema. **USE_CATALOG** on the table's
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog. 2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
   parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on
   the table.
 
@@ -738,7 +738,7 @@ func newListMonitor() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listMonitorLimit int
 
-	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, ``)
+	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, `The maximum number of monitors to return in one page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMonitorLimit, "limit", 0, `Maximum number of results to return.`)
@@ -919,7 +919,8 @@ func newUpdateMonitor() *cobra.Command {
 	cmd.Short = `Update a monitor.`
 	cmd.Long = `Update a monitor.
 
-  Update a data quality monitor on Unity Catalog object.
+  Update a data quality monitor on a Unity Catalog object. Only the fields named
+  in update_mask are changed.
 
   For the table object_type, the caller must have either of the following
   sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent

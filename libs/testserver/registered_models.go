@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -25,8 +26,13 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		}
 	}
 
-	// Build full name from catalog.schema.name
+	// UC normalizes model names to lowercase.
+	createRequest.Name = strings.ToLower(createRequest.Name)
 	fullName := createRequest.CatalogName + "." + createRequest.SchemaName + "." + createRequest.Name
+
+	if _, ok := s.RegisteredModels[modelKey(fullName)]; ok {
+		return registeredModelAlreadyExists(createRequest.Name)
+	}
 
 	registeredModel := catalog.RegisteredModelInfo{
 		CatalogName:     createRequest.CatalogName,
@@ -47,7 +53,7 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		registeredModel.BrowseOnly = true
 	}
 
-	s.RegisteredModels[fullName] = registeredModel
+	s.RegisteredModels[modelKey(fullName)] = registeredModel
 	return Response{
 		Body: registeredModel,
 	}
@@ -56,12 +62,9 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.RegisteredModels[fullName]
+	existing, ok := s.RegisteredModels[modelKey(fullName)]
 	if !ok {
-		return Response{
-			StatusCode: http.StatusNotFound,
-			Body:       fmt.Sprintf("registered model %s not found", fullName),
-		}
+		return registeredModelNotFound(fullName)
 	}
 
 	fields, errResponse := parseUpdateFields(req.Body)
@@ -87,12 +90,19 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		}
 	}
 
+	if updateRequest.NewName != "" {
+		newFullName := existing.CatalogName + "." + existing.SchemaName + "." + strings.ToLower(updateRequest.NewName)
+		if _, taken := s.RegisteredModels[modelKey(newFullName)]; taken && modelKey(newFullName) != modelKey(fullName) {
+			return registeredModelAlreadyExists(updateRequest.NewName)
+		}
+	}
+
 	// The update API ignores aliases; they are set through the alias endpoints.
 	delete(fields, "aliases")
 	applyUpdatedFields(&existing, updateRequest, fields)
 
 	if updateRequest.NewName != "" {
-		existing.Name = updateRequest.NewName
+		existing.Name = strings.ToLower(updateRequest.NewName)
 	}
 
 	existing.UpdatedAt = nowMilli()
@@ -105,14 +115,14 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 // moveRegisteredModel stores the model under the full name its catalog, schema and name now give it,
 // keeping its versions, as UC does when the model or its parent is renamed.
 func (s *FakeWorkspace) moveRegisteredModel(oldFullName string, model catalog.RegisteredModelInfo) catalog.RegisteredModelInfo {
-	delete(s.RegisteredModels, oldFullName)
+	delete(s.RegisteredModels, modelKey(oldFullName))
 	model.FullName = model.CatalogName + "." + model.SchemaName + "." + model.Name
-	s.RegisteredModels[model.FullName] = model
+	s.RegisteredModels[modelKey(model.FullName)] = model
 
-	versions, ok := s.RegisteredModelVersions[oldFullName]
+	versions, ok := s.RegisteredModelVersions[modelKey(oldFullName)]
 	if ok {
-		delete(s.RegisteredModelVersions, oldFullName)
-		s.RegisteredModelVersions[model.FullName] = versions
+		delete(s.RegisteredModelVersions, modelKey(oldFullName))
+		s.RegisteredModelVersions[modelKey(model.FullName)] = versions
 	}
 	return model
 }
@@ -121,7 +131,7 @@ func (s *FakeWorkspace) moveRegisteredModel(oldFullName string, model catalog.Re
 func (s *FakeWorkspace) RegisteredModelsGet(req Request, fullName string) Response {
 	defer s.LockUnlock()()
 
-	model, ok := s.RegisteredModels[fullName]
+	model, ok := s.RegisteredModels[modelKey(fullName)]
 	if !ok {
 		return registeredModelNotFound(fullName)
 	}
@@ -136,12 +146,12 @@ func (s *FakeWorkspace) RegisteredModelsGet(req Request, fullName string) Respon
 func (s *FakeWorkspace) RegisteredModelsDelete(fullName string) Response {
 	defer s.LockUnlock()()
 
-	if _, ok := s.RegisteredModels[fullName]; !ok {
+	if _, ok := s.RegisteredModels[modelKey(fullName)]; !ok {
 		return registeredModelNotFound(fullName)
 	}
-	delete(s.RegisteredModels, fullName)
+	delete(s.RegisteredModels, modelKey(fullName))
 	// The model's versions are deleted with it, so a model created later under the same name starts with none.
-	delete(s.RegisteredModelVersions, fullName)
+	delete(s.RegisteredModelVersions, modelKey(fullName))
 	return Response{}
 }
 
@@ -159,16 +169,16 @@ func (s *FakeWorkspace) RegisteredModelsCreateVersion(req Request) Response {
 			StatusCode: http.StatusInternalServerError,
 		}
 	}
-	if _, ok := s.RegisteredModels[request.Name]; !ok {
+	if _, ok := s.RegisteredModels[modelKey(request.Name)]; !ok {
 		return registeredModelNotFound(request.Name)
 	}
 
-	s.RegisteredModelVersions[request.Name]++
+	s.RegisteredModelVersions[modelKey(request.Name)]++
 	return Response{
 		Body: map[string]any{
 			"model_version": map[string]string{
 				"name":    request.Name,
-				"version": strconv.Itoa(s.RegisteredModelVersions[request.Name]),
+				"version": strconv.Itoa(s.RegisteredModelVersions[modelKey(request.Name)]),
 			},
 		},
 	}
@@ -177,7 +187,7 @@ func (s *FakeWorkspace) RegisteredModelsCreateVersion(req Request) Response {
 func (s *FakeWorkspace) RegisteredModelsSetAlias(req Request, fullName, aliasName string) Response {
 	defer s.LockUnlock()()
 
-	model, ok := s.RegisteredModels[fullName]
+	model, ok := s.RegisteredModels[modelKey(fullName)]
 	if !ok {
 		return registeredModelNotFound(fullName)
 	}
@@ -191,7 +201,7 @@ func (s *FakeWorkspace) RegisteredModelsSetAlias(req Request, fullName, aliasNam
 	}
 
 	// An alias can only point at a registered version.
-	if request.VersionNum < 1 || request.VersionNum > s.RegisteredModelVersions[fullName] {
+	if request.VersionNum < 1 || request.VersionNum > s.RegisteredModelVersions[modelKey(fullName)] {
 		return Response{
 			StatusCode: http.StatusNotFound,
 			Body: map[string]string{
@@ -218,7 +228,7 @@ func (s *FakeWorkspace) RegisteredModelsSetAlias(req Request, fullName, aliasNam
 		aliases = append(aliases, alias)
 	}
 	model.Aliases = aliases
-	s.RegisteredModels[fullName] = model
+	s.RegisteredModels[modelKey(fullName)] = model
 	return Response{
 		Body: alias,
 	}
@@ -227,7 +237,7 @@ func (s *FakeWorkspace) RegisteredModelsSetAlias(req Request, fullName, aliasNam
 func (s *FakeWorkspace) RegisteredModelsDeleteAlias(fullName, aliasName string) Response {
 	defer s.LockUnlock()()
 
-	model, ok := s.RegisteredModels[fullName]
+	model, ok := s.RegisteredModels[modelKey(fullName)]
 	if !ok {
 		return registeredModelNotFound(fullName)
 	}
@@ -235,8 +245,26 @@ func (s *FakeWorkspace) RegisteredModelsDeleteAlias(fullName, aliasName string) 
 	model.Aliases = slices.DeleteFunc(slices.Clone(model.Aliases), func(a catalog.RegisteredModelAlias) bool {
 		return a.AliasName == aliasName
 	})
-	s.RegisteredModels[fullName] = model
+	s.RegisteredModels[modelKey(fullName)] = model
 	return Response{}
+}
+
+// modelKey is the key a model is stored under. UC looks a full name up case-insensitively
+// (checked on AWS: a model re-keyed as main.s.MyModel is still read at that path).
+func modelKey(fullName string) string {
+	return strings.ToLower(fullName)
+}
+
+// registeredModelAlreadyExists is UC's answer to a create or rename onto a taken name; it names the
+// model by its short name (verified on AWS).
+func registeredModelAlreadyExists(name string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "RESOURCE_ALREADY_EXISTS",
+			"message":    fmt.Sprintf("Routine or Model '%s' already exists", name),
+		},
+	}
 }
 
 func registeredModelNotFound(fullName string) Response {
@@ -244,7 +272,7 @@ func registeredModelNotFound(fullName string) Response {
 		StatusCode: http.StatusNotFound,
 		Body: map[string]string{
 			"error_code": "RESOURCE_DOES_NOT_EXIST",
-			"message":    fmt.Sprintf("Registered model '%s' does not exist.", fullName),
+			"message":    fmt.Sprintf("Routine or Model '%s' does not exist.", fullName),
 		},
 	}
 }

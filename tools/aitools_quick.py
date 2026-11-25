@@ -41,11 +41,14 @@ from concurrent.futures import ThreadPoolExecutor
 
 from lintdiff import changed_go_dirs, go_dirs
 
-PACKAGES = ["./cmd/aitools/...", "./libs/aitools/...", "./experimental/aitools/..."]
+# hostenv's tests check that every aitools test package calls hostenv.Isolate.
+PACKAGES = ["./cmd/aitools/...", "./libs/aitools/...", "./experimental/aitools/...", "./internal/testutil/hostenv/..."]
 
 # Packages outside aitools that import it. cmd/root calls aitools from the root
 # command's pre-run, so a change there can break every command. The fake agent
-# CLIs of the acceptance tests write agent config through aitools.
+# CLIs of the acceptance tests write agent config through aitools. The
+# test-exp-aitools task in Taskfile.yml runs a subset of IMPORTERS and ACCEPTANCE
+# in CI. A new aitools importer goes in both places.
 IMPORTERS = [
     ".",
     "./acceptance/internal/fakeagent",
@@ -72,12 +75,14 @@ ACCEPTANCE = [
 
 # The agent variables aitools reads beyond the detection list in
 # acceptance/acceptance_test.go: Claude Code's child-session marker, which gates
-# the native hint, and the agent config-dir overrides.
+# the native hint, the agent session ids that scope the hint throttle, and the
+# agent config-dir overrides.
 AGENT_EXTRA_ENV = {
     "CLAUDE_CODE_CHILD_SESSION",
     "CLAUDE_CODE_SESSION_ID",
     "CLAUDE_CONFIG_DIR",
     "CODEX_HOME",
+    "CODEX_THREAD_ID",
     "COPILOT_HOME",
     "GEMINI_CLI_HOME",
     "GOOSE_PATH_ROOT",
