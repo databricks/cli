@@ -7,17 +7,23 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 type BindOptions struct {
@@ -26,6 +32,23 @@ type BindOptions struct {
 	Group       string
 	ResourceKey string
 	ResourceId  string
+}
+
+// createBindingDeployment creates a deployment record for the first recorded bind, without a deployed file path.
+func createBindingDeployment(ctx context.Context, b *bundle.Bundle) (string, error) {
+	// Bind does not upload bundle files, so it cannot report a deployed file path.
+	metadata := bundleMetadata(b)
+	deployment := metadata.Deployment()
+	deployment.InitialParentPath = b.Config.Workspace.StatePath
+	created, err := b.WorkspaceClient(ctx).BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: deployment})
+	if err != nil {
+		return "", fmt.Errorf("failed to create deployment: %w", err)
+	}
+	deploymentID, err := dms.DeploymentIDFromName(created.Name)
+	if err != nil {
+		return "", fmt.Errorf("failed to create deployment: %w", err)
+	}
+	return deploymentID, nil
 }
 
 func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *statemgmt.StateDesc) {
@@ -37,10 +60,16 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+	}
 	db := &b.DeploymentBundle.StateDB
 	defer func() {
 		if _, err := db.Finalize(ctx); err != nil {
 			logdiag.LogError(ctx, err)
+		}
+		if _, err := db.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			log.Warnf(ctx, "Failed to complete deployment history version: %s", err)
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
@@ -108,9 +137,24 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		}
 	}
 
+	var configured *bool
+	if b.Config.Experimental != nil {
+		configured = b.Config.Experimental.DeploymentHistory
+	}
+	if db.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured) {
+		if db.Data.Features == nil {
+			db.Data.Features = make(map[string]struct{})
+		}
+		db.Data.Features[dstate.FeatureDeploymentHistoryShadow] = struct{}{}
+	}
 	if err := db.UpgradeToWrite(); err != nil {
 		logdiag.LogError(ctx, err)
 		return
+	}
+	if db.RecordsHistory() {
+		if err := prepareBindHistory(ctx, b, resourceKey); err != nil {
+			log.Warnf(ctx, "Failed to record bind history: %s", err)
+		}
 	}
 	resource := result.Resource
 	if err := db.SaveState(ctx, resourceKey, resource.ID, resource.State, resource.DependsOn); err != nil {
@@ -121,7 +165,6 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		logdiag.LogError(ctx, err)
 		return
 	}
-
 	statemgmt.PushResourcesState(ctx, b)
 }
 
@@ -162,4 +205,29 @@ func Unbind(ctx context.Context, b *bundle.Bundle, group, resourceKey string, en
 	}
 
 	statemgmt.PushResourcesState(ctx, b)
+}
+
+// prepareBindHistory stages only the approved binding, preserving deployed file metadata.
+func prepareBindHistory(ctx context.Context, b *bundle.Bundle, resourceKey string) error {
+	deploymentID, current, err := dms.FetchDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	if err != nil {
+		return err
+	}
+	previous, err := dms.ParseLastVersionID(current)
+	if err != nil {
+		return err
+	}
+	// Existing metadata is refreshed by deploy, which applies the current configuration.
+	if current == nil {
+		deploymentID, err = createBindingDeployment(ctx, b)
+		if err != nil {
+			return err
+		}
+	}
+	db := &b.DeploymentBundle.StateDB
+	db.DeploymentID, db.VersionID = deploymentID, previous
+	return startVersion(ctx, b, dms.VersionTypeDeploy, []bundledeployments.StagedOperation{{
+		ResourceKey: strings.TrimPrefix(resourceKey, dms.StatePrefix),
+		ActionType:  bundledeployments.OperationActionTypeOperationActionTypeUpdate,
+	}})
 }

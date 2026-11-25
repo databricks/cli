@@ -16,10 +16,6 @@
   "name": "main.fspec_[UNIQUE_NAME].boundspec"
 }
 
->>> [CLI] bundle deployment bind spec1 main.fspec_[UNIQUE_NAME].boundspec --auto-approve
-Successfully bound feature_spec with an id 'main.fspec_[UNIQUE_NAME].boundspec'
-Run 'bundle deploy' to deploy changes to your workspace
-
 >>> [CLI] bundle summary
 Name: test-bind-feature-spec-[UNIQUE_NAME]
 Target: default
@@ -36,8 +32,6 @@ Resources:
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
->>> [CLI] bundle deployment unbind spec1
 
 >>> [CLI] bundle summary
 Name: test-bind-feature-spec-[UNIQUE_NAME]
