@@ -1,0 +1,6 @@
+Badness = "Only keep is left remotely, so the sync should remove a, b, c and d from databricks.yml. It removes keep, a, b and c and leaves d, so the next deploy would delete keep from the job and recreate d. In rename_job it renames keep to y instead of z."
+
+RecordRequests = false
+Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]
+
+Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
