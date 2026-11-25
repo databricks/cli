@@ -96,14 +96,16 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 		cmd.SetContext(ctx)
 
 		// Recommend installing Databricks AI tooling to the calling coding agent
-		// when it drives the CLI without the tooling installed (best-effort: a
-		// stderr line and a telemetry event that is uploaded at exit). Only the
-		// global install state is read, as for the calling-agent User-Agent.
+		// when it drives the CLI without the tooling installed, or updating it
+		// when it is outdated (best-effort: a stderr line and a telemetry event
+		// that is uploaded at exit). Only the global install state is read, as
+		// for the calling-agent User-Agent.
 		deferred := agents.MaybeHint(ctx, cmd, func(ctx context.Context, agentName string) bool {
 			return installer.PluginRecorded(ctx, installer.ScopeGlobal, agentName)
-		})
-		// A hint withheld for auto-install prints once the command has ended.
-		// Commands run without execute have no slot, and then it is dropped.
+		}, installer.OutdatedTooling)
+		// A hint withheld for auto-install prints once the command has ended,
+		// and the update check runs then. Commands run without execute have no
+		// slot, and then it is dropped.
 		if slot, ok := ctx.Value(deferredHintKey{}).(*func()); ok {
 			*slot = deferred
 		}
@@ -137,8 +139,8 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 type caughtSignalKey struct{}
 
 // deferredHintKey is the context key of the *func() that execute puts in the
-// context. It holds the agent hint withheld for auto-install, if one was (see
-// agents.MaybeHint).
+// context. It holds the function agents.MaybeHint returned for the end of the
+// command, if any.
 type deferredHintKey struct{}
 
 // raise is process.Raise; tests replace it.

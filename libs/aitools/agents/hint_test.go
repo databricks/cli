@@ -82,7 +82,7 @@ func TestMaybeHint_HumanCallerSilent(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	ctx = env.WithUserHomeDir(ctx, t.TempDir())
 	ctx = telemetry.WithNewLogger(ctx)
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr.String())
 	assert.Empty(t, hintKinds(t, ctx))
 }
@@ -91,7 +91,7 @@ func TestMaybeHint_ClaudeNotInstalledHints(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := claudeCtx(t, t.TempDir())
 	ctx = telemetry.WithNewLogger(ctx)
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 	assert.Contains(t, stderr.String(), hintText)
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx))
 }
@@ -105,7 +105,7 @@ func TestMaybeHint_PluginInstalledSilent(t *testing.T) {
 	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user"}]}}`)
 	ctx = telemetry.WithNewLogger(ctx)
 
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr.String())
 	assert.Empty(t, hintKinds(t, ctx))
 }
@@ -133,7 +133,7 @@ func TestMaybeHint_ProjectPluginCountsOnlyInItsProject(t *testing.T) {
 			writePluginManifest(t, home, string(manifest))
 			t.Chdir(project)
 
-			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 			if tc.wantHint {
 				assert.Contains(t, stderr.String(), hintText)
 			} else {
@@ -186,7 +186,7 @@ func TestMaybeHint_CustomClaudeConfigDir(t *testing.T) {
 				writePluginManifest(t, home, manifest)
 			}
 
-			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 			if tc.wantHint {
 				assert.Contains(t, stderr.String(), hintText)
 			} else {
@@ -202,7 +202,7 @@ func TestMaybeHint_SkillsInstalledSilent(t *testing.T) {
 	ctx, stderr := claudeCtx(t, home)
 	writeClaudeSkill(t, home, "databricks")
 
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr.String())
 }
 
@@ -216,7 +216,7 @@ func TestMaybeHint_SharedStoreOnlyStillHints(t *testing.T) {
 			ctx, stderr := claudeCtx(t, home)
 			require.NoError(t, os.MkdirAll(filepath.Join(home, dir, "databricks"), 0o755))
 
-			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 			assert.Equal(t, hintText+"\n", stderr.String())
 		})
 	}
@@ -228,7 +228,7 @@ func TestMaybeHint_NonDatabricksSkillStillHints(t *testing.T) {
 	ctx, stderr := claudeCtx(t, home)
 	writeClaudeSkill(t, home, "some-other-skill")
 
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 	assert.Contains(t, stderr.String(), hintText)
 }
 
@@ -237,7 +237,7 @@ func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	ctx, stderr := claudeCtx(t, t.TempDir())
 	ctx = telemetry.WithNewLogger(ctx)
 
-	MaybeHint(ctx, commandAt("aitools install"), noPluginRecorded)
+	MaybeHint(ctx, commandAt("aitools install"), noPluginRecorded, nil)
 	assert.Empty(t, stderr.String())
 	assert.Empty(t, hintKinds(t, ctx))
 }
@@ -289,7 +289,7 @@ func TestMaybeHint_NoIONoPanic(t *testing.T) {
 	// invocations before PersistentPreRunE runs, so HasIO can be false here.
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 	ctx = telemetry.WithNewLogger(ctx)
-	assert.NotPanics(t, func() { MaybeHint(ctx, regularCmd(), noPluginRecorded) })
+	assert.NotPanics(t, func() { MaybeHint(ctx, regularCmd(), noPluginRecorded, nil) })
 	assert.Empty(t, hintKinds(t, ctx))
 }
 
@@ -315,13 +315,13 @@ func TestMaybeHint_ThrottledPerSession(t *testing.T) {
 	home, cacheDir := t.TempDir(), t.TempDir()
 
 	ctx1, stderr1 := sessionCtx(t, home, cacheDir, false)
-	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 	assert.Contains(t, stderr1.String(), hintText)
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx1))
 
 	// Same session id, second command: must stay quiet and log nothing.
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, false)
-	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr2.String())
 	assert.Empty(t, hintKinds(t, ctx2))
 }
@@ -476,7 +476,7 @@ func TestMaybeHint_NativeHint(t *testing.T) {
 				cmd = tc.cmd()
 			}
 
-			MaybeHint(ctx, cmd, noPluginRecorded)
+			MaybeHint(ctx, cmd, noPluginRecorded, nil)
 			assert.Equal(t, tc.wantStderr, stderr.String())
 		})
 	}
@@ -490,7 +490,7 @@ func TestMaybeHint_NativeHintSilentForOtherCallers(t *testing.T) {
 	}{
 		{"human", nil, ""},
 		// Other agents get only their own text hint.
-		{"other agent", []string{"CURSOR_AGENT", "1"}, agentInstallHint(ByName(NameCursor), noPluginRecorded).text + "\n"},
+		{"other agent", []string{"CURSOR_AGENT", "1"}, agentInstallHint(ByName(NameCursor), noPluginRecorded, nil).text + "\n"},
 		{"multiple agents", []string{"CLAUDECODE", "1", "CURSOR_AGENT", "1"}, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -500,7 +500,7 @@ func TestMaybeHint_NativeHintSilentForOtherCallers(t *testing.T) {
 			// Claude Code caller gets the native hint.
 			ctx = env.Set(ctx, claudeChildSessionEnv, "1")
 
-			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 			assert.Equal(t, tc.wantText, stderr.String())
 		})
 	}
@@ -511,19 +511,19 @@ func TestMaybeHint_NativeHintThrottledPerSession(t *testing.T) {
 	home, cacheDir := t.TempDir(), t.TempDir()
 
 	ctx1, stderr1 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, wantNativeHint+"\n"+hintText+"\n", stderr1.String())
 
 	// Same session, second command: both lines stay quiet, so the tag doesn't
 	// reach a downstream reader such as `2>&1 | jq` on every command.
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr2.String())
 
 	// Another session: both lines print again.
 	ctx3, stderr3 := sessionCtx(t, home, cacheDir, true)
 	ctx3 = env.Set(ctx3, claudeSessionEnv, "session-def")
-	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, wantNativeHint+"\n"+hintText+"\n", stderr3.String())
 }
 
@@ -562,12 +562,12 @@ func TestMaybeHint_WithheldNativeLineKeepsItsThrottle(t *testing.T) {
 			if tc.ci {
 				ctx1 = env.Set(ctx1, ciEnv, "true")
 			}
-			MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 			assert.Equal(t, hintText+"\n", stderr1.String())
 			assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx1))
 
 			ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
-			MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil)
 			assert.Equal(t, wantNativeHint+"\n", stderr2.String())
 			assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindClaudeCodeNative}, hintKinds(t, ctx2))
 		})
@@ -583,7 +583,7 @@ func TestMaybeHint_NativeOnlyRepeatLogsNoEvent(t *testing.T) {
 	home, cacheDir := t.TempDir(), t.TempDir()
 
 	ctx1, stderr1 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, wantNativeHint+"\n"+hintText+"\n", stderr1.String())
 	assert.Equal(t, []protos.AitoolsHintKind{
 		protos.AitoolsHintKindClaudeCodeNative,
@@ -593,13 +593,13 @@ func TestMaybeHint_NativeOnlyRepeatLogsNoEvent(t *testing.T) {
 	// Past the native TTL but not the text's: only the native line prints.
 	ageHintMarkers(t, cacheDir, nativeHintThrottle, nativeHintThrottle.ttl+time.Minute)
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, wantNativeHint+"\n", stderr2.String())
 	assert.Empty(t, telemetry.BufferedEvents(ctx2))
 
 	// Both markers fresh again: nothing prints.
 	ctx3, stderr3 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr3.String())
 	assert.Empty(t, telemetry.BufferedEvents(ctx3))
 
@@ -608,7 +608,7 @@ func TestMaybeHint_NativeOnlyRepeatLogsNoEvent(t *testing.T) {
 		ageHintMarkers(t, cacheDir, throttle, textHintThrottle.ttl+time.Minute)
 	}
 	ctx4, stderr4 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx4, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx4, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, wantNativeHint+"\n"+hintText+"\n", stderr4.String())
 	assert.Equal(t, []protos.AitoolsHintKind{
 		protos.AitoolsHintKindClaudeCodeNative,
@@ -624,7 +624,7 @@ func TestMaybeHint_TextPrintStartsNewNativeEventWindow(t *testing.T) {
 	home, cacheDir := t.TempDir(), t.TempDir()
 
 	ctx1, _ := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 	require.Len(t, hintKinds(t, ctx1), 2)
 
 	// The text window expires, but not the native event marker; the next
@@ -632,12 +632,12 @@ func TestMaybeHint_TextPrintStartsNewNativeEventWindow(t *testing.T) {
 	ageHintMarkers(t, cacheDir, textHintThrottle, textHintThrottle.ttl+time.Minute)
 	ageHintMarkers(t, cacheDir, nativeHintThrottle, nativeHintThrottle.ttl+time.Minute)
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, false)
-	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, hintText+"\n", stderr2.String())
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindInstallText}, hintKinds(t, ctx2))
 
 	ctx3, stderr3 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, wantNativeHint+"\n", stderr3.String())
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindClaudeCodeNative}, hintKinds(t, ctx3))
 }
@@ -650,13 +650,13 @@ func TestMaybeHint_TextAndNativePrintStartsNewNativeEventWindow(t *testing.T) {
 	home, cacheDir := t.TempDir(), t.TempDir()
 
 	ctx1, stderr1 := sessionCtx(t, home, cacheDir, false)
-	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, hintText+"\n", stderr1.String())
 
 	// Late in the text window, the first native line prints and logs its event.
 	ageHintMarkers(t, cacheDir, textHintThrottle, 55*time.Minute)
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, wantNativeHint+"\n", stderr2.String())
 	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindClaudeCodeNative}, hintKinds(t, ctx2))
 
@@ -664,7 +664,7 @@ func TestMaybeHint_TextAndNativePrintStartsNewNativeEventWindow(t *testing.T) {
 	ageHintMarkers(t, cacheDir, textHintThrottle, textHintThrottle.ttl+time.Minute)
 	ageHintMarkers(t, cacheDir, nativeHintThrottle, nativeHintThrottle.ttl+time.Minute)
 	ctx3, stderr3 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, wantNativeHint+"\n"+hintText+"\n", stderr3.String())
 	assert.Equal(t, []protos.AitoolsHintKind{
 		protos.AitoolsHintKindClaudeCodeNative,
@@ -705,7 +705,7 @@ func TestMaybeHint_NativeHintSilentOnTerminal(t *testing.T) {
 			ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", t.TempDir())
 			ctx = env.Set(ctx, claudeChildSessionEnv, "1")
 
-			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 			assert.Equal(t, hintText+"\n", stderr.String())
 		})
 	}
@@ -717,16 +717,16 @@ func TestAgentHint_NativeLineNilIsEmpty(t *testing.T) {
 }
 
 func TestHintForAgent(t *testing.T) {
-	claude := hintForAgent(claudeAgentProvider, noPluginRecorded)
+	claude := hintForAgent(claudeAgentProvider, noPluginRecorded, nil)
 	require.NotNil(t, claude)
 	assert.Equal(t, hintText, claude.text)
 	assert.Equal(t, claudeSessionEnv, claude.sessionEnv)
 
-	assert.Nil(t, hintForAgent("", noPluginRecorded))
-	assert.Nil(t, hintForAgent("multiple", noPluginRecorded))
-	assert.Nil(t, hintForAgent("windsurf", noPluginRecorded))
+	assert.Nil(t, hintForAgent("", noPluginRecorded, nil))
+	assert.Nil(t, hintForAgent("multiple", noPluginRecorded, nil))
+	assert.Nil(t, hintForAgent("windsurf", noPluginRecorded, nil))
 
-	cursor := hintForAgent("cursor", noPluginRecorded)
+	cursor := hintForAgent("cursor", noPluginRecorded, nil)
 	require.NotNil(t, cursor)
 	assert.Equal(t, protos.AitoolsHintKindAgentInstallText, cursor.textKind)
 	assert.Nil(t, cursor.native)
@@ -737,7 +737,7 @@ func TestMaybeHint_LogsEventsOncePerSession(t *testing.T) {
 	home, cacheDir := t.TempDir(), t.TempDir()
 
 	ctx1, _ := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 	assert.Equal(t, []protos.AitoolsHintKind{
 		protos.AitoolsHintKindClaudeCodeNative,
 		protos.AitoolsHintKindInstallText,
@@ -748,13 +748,13 @@ func TestMaybeHint_LogsEventsOncePerSession(t *testing.T) {
 	// Throttled for the session: nothing prints and nothing logs, so the
 	// command doesn't pay for a telemetry upload at exit.
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
-	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr2.String())
 	assert.Empty(t, telemetry.BufferedEvents(ctx2))
 
 	// Throttled and not a Claude Code subprocess: nothing prints, nothing logs.
 	ctx3, stderr3 := sessionCtx(t, home, cacheDir, false)
-	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr3.String())
 	assert.Empty(t, telemetry.BufferedEvents(ctx3))
 }
@@ -767,7 +767,7 @@ func TestMaybeHint_InstalledLogsNothing(t *testing.T) {
 	ctx = env.Set(ctx, claudeChildSessionEnv, "1")
 	writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user"}]}}`)
 
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, telemetry.BufferedEvents(ctx))
 }
 
@@ -802,7 +802,7 @@ func TestMaybeHint_ProjectSkillsInstalledSilent(t *testing.T) {
 			require.NoError(t, os.MkdirAll(cwd, 0o755))
 			t.Chdir(cwd)
 
-			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 			assert.Empty(t, stderr.String())
 		})
 	}
@@ -829,7 +829,7 @@ func TestMaybeHint_WithheldWhileAutoInstallInstallsForTheAgent(t *testing.T) {
 	// The run installs: both lines are withheld, and no event or throttle
 	// marker is written.
 	ctx1, stderr1 := sessionCtx(t, home, cacheDir, true)
-	deferred := MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	deferred := MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 	require.NotNil(t, deferred)
 	assert.Equal(t, []string{NameClaudeCode}, *asked)
 	writeClaudeSkill(t, home, "databricks-core")
@@ -846,7 +846,7 @@ func TestMaybeHint_WithheldHintPrintsWhenTheRunDidNotInstall(t *testing.T) {
 	// Nothing prints before the command; once it ended without the tools
 	// (it failed, the gate was off or the install failed), both lines do.
 	ctx1, stderr1 := sessionCtx(t, home, cacheDir, true)
-	deferred := MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	deferred := MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 	require.NotNil(t, deferred)
 	assert.Empty(t, stderr1.String())
 	deferred()
@@ -856,7 +856,7 @@ func TestMaybeHint_WithheldHintPrintsWhenTheRunDidNotInstall(t *testing.T) {
 
 	// The markers were written then: the session's next command is throttled.
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
-	assert.Nil(t, MaybeHint(ctx2, regularCmd(), noPluginRecorded))
+	assert.Nil(t, MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil))
 	assert.Empty(t, stderr2.String())
 }
 
@@ -864,7 +864,7 @@ func TestMaybeHint_NotWithheldWithoutAutoInstall(t *testing.T) {
 	setClaudeAgent(t)
 	setInstallsFor(t, false)
 	ctx, stderr := sessionCtx(t, t.TempDir(), t.TempDir(), true)
-	assert.Nil(t, MaybeHint(ctx, regularCmd(), noPluginRecorded))
+	assert.Nil(t, MaybeHint(ctx, regularCmd(), noPluginRecorded, nil))
 	assert.Contains(t, stderr.String(), hintText)
 }
 
@@ -876,7 +876,7 @@ func TestMaybeHint_RegistryAgentAskedByItsName(t *testing.T) {
 	asked := setInstallsFor(t, true)
 	ctx, stderr := claudeCtx(t, t.TempDir())
 	ctx = telemetry.WithNewLogger(ctx)
-	assert.NotNil(t, MaybeHint(ctx, regularCmd(), noPluginRecorded))
+	assert.NotNil(t, MaybeHint(ctx, regularCmd(), noPluginRecorded, nil))
 	assert.Empty(t, stderr.String())
 	assert.Empty(t, hintKinds(t, ctx))
 	assert.Equal(t, []string{NameCursor}, *asked)
@@ -888,6 +888,6 @@ func TestMaybeHint_InstalledToolingSkipsTheAutoInstallCheck(t *testing.T) {
 	writeClaudeSkill(t, home, "databricks-core")
 	asked := setInstallsFor(t, true)
 	ctx, _ := claudeCtx(t, home)
-	assert.Nil(t, MaybeHint(ctx, regularCmd(), noPluginRecorded))
+	assert.Nil(t, MaybeHint(ctx, regularCmd(), noPluginRecorded, nil))
 	assert.Empty(t, *asked)
 }

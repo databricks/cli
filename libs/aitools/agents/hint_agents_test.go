@@ -36,14 +36,14 @@ func TestAgentHintText(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			a := ByName(name)
 			require.NotNil(t, a)
-			assert.Equal(t, prefix+command, agentInstallHint(a, noPluginRecorded).text)
+			assert.Equal(t, prefix+command, agentInstallHint(a, noPluginRecorded, nil).text)
 		})
 	}
 }
 
 func TestAgentInstallHintThrottleKey(t *testing.T) {
-	codex := agentInstallHint(ByName(NameCodex), noPluginRecorded)
-	cursor := agentInstallHint(ByName(NameCursor), noPluginRecorded)
+	codex := agentInstallHint(ByName(NameCodex), noPluginRecorded, nil)
+	cursor := agentInstallHint(ByName(NameCursor), noPluginRecorded, nil)
 
 	ctx := env.Set(t.Context(), "CODEX_THREAD_ID", "thread-1")
 	assert.Equal(t, "codex:session:thread-1", codex.throttleKey(ctx))
@@ -118,8 +118,8 @@ func TestAgentCtxIgnoresProjectSkillsAroundTheTest(t *testing.T) {
 
 	setAgentEnv(t, agentDetectEnv[NameGemini])
 	ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
-	assert.Equal(t, agentInstallHint(gemini, noPluginRecorded).text+"\n", stderr.String())
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
+	assert.Equal(t, agentInstallHint(gemini, noPluginRecorded, nil).text+"\n", stderr.String())
 }
 
 func writeAgentSkill(t *testing.T, ctx context.Context, home string, a *Agent) {
@@ -142,8 +142,8 @@ func TestMaybeHint_PerAgent(t *testing.T) {
 			t.Run("not installed hints", func(t *testing.T) {
 				ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
 				ctx = telemetry.WithNewLogger(ctx)
-				MaybeHint(ctx, regularCmd(), noPluginRecorded)
-				assert.Equal(t, agentInstallHint(a, noPluginRecorded).text+"\n", stderr.String())
+				MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
+				assert.Equal(t, agentInstallHint(a, noPluginRecorded, nil).text+"\n", stderr.String())
 
 				events := telemetry.BufferedEvents(ctx)
 				require.Len(t, events, 1)
@@ -157,7 +157,7 @@ func TestMaybeHint_PerAgent(t *testing.T) {
 				ctx, stderr := agentCtx(t, home, t.TempDir())
 				ctx = telemetry.WithNewLogger(ctx)
 				writeAgentSkill(t, ctx, home, a)
-				MaybeHint(ctx, regularCmd(), noPluginRecorded)
+				MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 				assert.Empty(t, stderr.String())
 				assert.Empty(t, telemetry.BufferedEvents(ctx))
 			})
@@ -168,18 +168,18 @@ func TestMaybeHint_PerAgent(t *testing.T) {
 				home := t.TempDir()
 				ctx, stderr := agentCtx(t, home, t.TempDir())
 				writeCanonicalSkill(t, home, "databricks")
-				MaybeHint(ctx, regularCmd(), noPluginRecorded)
-				assert.Equal(t, agentInstallHint(a, noPluginRecorded).text+"\n", stderr.String())
+				MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
+				assert.Equal(t, agentInstallHint(a, noPluginRecorded, nil).text+"\n", stderr.String())
 			})
 
 			t.Run("throttled per machine without session id", func(t *testing.T) {
 				home, cacheDir := t.TempDir(), t.TempDir()
 				ctx1, stderr1 := agentCtx(t, home, cacheDir)
-				MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+				MaybeHint(ctx1, regularCmd(), noPluginRecorded, nil)
 				assert.NotEmpty(t, stderr1.String())
 
 				ctx2, stderr2 := agentCtx(t, home, cacheDir)
-				MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+				MaybeHint(ctx2, regularCmd(), noPluginRecorded, nil)
 				assert.Empty(t, stderr2.String())
 			})
 		})
@@ -203,7 +203,7 @@ func TestMaybeHint_RecordedPluginSilent(t *testing.T) {
 			}
 			ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
 			ctx = telemetry.WithNewLogger(ctx)
-			MaybeHint(ctx, regularCmd(), recorded)
+			MaybeHint(ctx, regularCmd(), recorded, nil)
 			assert.Empty(t, stderr.String())
 			assert.Empty(t, telemetry.BufferedEvents(ctx))
 			assert.Equal(t, []string{name}, asked)
@@ -217,7 +217,7 @@ func TestMaybeHint_CodexThrottledPerThread(t *testing.T) {
 	run := func(thread string) string {
 		ctx, stderr := agentCtx(t, home, cacheDir)
 		ctx = env.Set(ctx, "CODEX_THREAD_ID", thread)
-		MaybeHint(ctx, regularCmd(), noPluginRecorded)
+		MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 		return stderr.String()
 	}
 
@@ -232,7 +232,7 @@ func TestMaybeHint_NoInstallTargetSilent(t *testing.T) {
 		t.Run(envVar, func(t *testing.T) {
 			setAgentEnv(t, envVar)
 			ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 			assert.Empty(t, stderr.String())
 		})
 	}
@@ -242,7 +242,7 @@ func TestMaybeHint_MultipleAgentsSilent(t *testing.T) {
 	setAgentEnv(t, "CODEX_CI")
 	t.Setenv("CURSOR_AGENT", "1")
 	ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 	assert.Empty(t, stderr.String())
 }
 
@@ -252,14 +252,14 @@ func TestMaybeHint_AgentAuthTokenSilent(t *testing.T) {
 	parent := &cobra.Command{Use: authCommandName}
 	child := &cobra.Command{Use: tokenCommandName}
 	parent.AddCommand(child)
-	MaybeHint(ctx, child, noPluginRecorded)
+	MaybeHint(ctx, child, noPluginRecorded, nil)
 	assert.Empty(t, stderr.String())
 }
 
 func TestMaybeHint_AgentAIToolsCommandSilent(t *testing.T) {
 	setAgentEnv(t, "CODEX_CI")
 	ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
-	MaybeHint(ctx, commandAt("aitools install"), noPluginRecorded)
+	MaybeHint(ctx, commandAt("aitools install"), noPluginRecorded, nil)
 	assert.Empty(t, stderr.String())
 }
 
@@ -271,14 +271,14 @@ func TestMaybeHint_SessionMarkersAreIsolatedPerAgent(t *testing.T) {
 	setClaudeAgent(t)
 	ctx, stderr := agentCtx(t, home, cacheDir)
 	ctx = env.Set(ctx, claudeSessionEnv, "shared-id")
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 	require.Contains(t, stderr.String(), hintText)
 
 	setAgentEnv(t, "CODEX_CI")
 	ctx, stderr = agentCtx(t, home, cacheDir)
 	ctx = env.Set(ctx, "CODEX_THREAD_ID", "shared-id")
-	MaybeHint(ctx, regularCmd(), noPluginRecorded)
-	assert.Equal(t, agentInstallHint(ByName(NameCodex), noPluginRecorded).text+"\n", stderr.String())
+	MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
+	assert.Equal(t, agentInstallHint(ByName(NameCodex), noPluginRecorded, nil).text+"\n", stderr.String())
 }
 
 func TestMaybeHint_UnwritableCacheSkipsHint(t *testing.T) {
@@ -301,7 +301,7 @@ func TestMaybeHint_UnwritableCacheSkipsHint(t *testing.T) {
 		ctx, stderr := agentCtx(t, t.TempDir(), readOnly)
 		ctx = telemetry.WithNewLogger(ctx)
 		ctx = env.Set(ctx, "CODEX_THREAD_ID", "thread-1")
-		MaybeHint(ctx, regularCmd(), noPluginRecorded)
+		MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 		assert.Empty(t, stderr.String())
 		assert.Empty(t, telemetry.BufferedEvents(ctx))
 	}
@@ -321,8 +321,142 @@ func TestMaybeHint_DisabledCacheSkipsHint(t *testing.T) {
 		ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")
 		ctx = telemetry.WithNewLogger(ctx)
 		ctx = env.Set(ctx, "CODEX_THREAD_ID", "thread-1")
-		MaybeHint(ctx, regularCmd(), noPluginRecorded)
+		MaybeHint(ctx, regularCmd(), noPluginRecorded, nil)
 		assert.Empty(t, stderr.String())
 		assert.Empty(t, telemetry.BufferedEvents(ctx))
 	}
+}
+
+// wantUpdateHint is the update line for the releases outdatedTooling reports.
+const wantUpdateHint = "Databricks skills are outdated and might contain incorrect guidances (0.2.10 installed, 0.2.47 available). To work with Databricks reliably, run: databricks aitools update\n"
+
+// outdatedTooling returns an OutdatedToolingFunc that reports every agent's
+// tooling as release 0.2.10 while 0.2.47 is available, or as current, and the
+// agent names it was asked about.
+func outdatedTooling(outdated bool) (OutdatedToolingFunc, *[]string) {
+	var asked []string
+	return func(_ context.Context, agentName string) (string, string, bool) {
+		asked = append(asked, agentName)
+		if !outdated {
+			return "", "", false
+		}
+		return "0.2.10", "0.2.47", true
+	}, &asked
+}
+
+func TestMaybeHint_UpdateCheck(t *testing.T) {
+	tests := []struct {
+		name      string
+		outdated  bool
+		wantLine  string
+		wantKinds []protos.AitoolsHintKind
+	}{
+		{
+			name:      "outdated tooling gets the update line",
+			outdated:  true,
+			wantLine:  wantUpdateHint,
+			wantKinds: []protos.AitoolsHintKind{protos.AitoolsHintKindUpdateCheckText},
+		},
+		{
+			name: "current tooling gets nothing",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			setAgentEnv(t, agentDetectEnv[NameCursor])
+			home, cacheDir := t.TempDir(), t.TempDir()
+			outdated, asked := outdatedTooling(tc.outdated)
+
+			ctx, stderr := agentCtx(t, home, cacheDir)
+			ctx = telemetry.WithNewLogger(ctx)
+			writeAgentSkill(t, ctx, home, ByName(NameCursor))
+
+			// The check waits for the end of the command: nothing is asked or
+			// printed before it.
+			deferred := MaybeHint(ctx, regularCmd(), noPluginRecorded, outdated)
+			require.NotNil(t, deferred)
+			assert.Empty(t, *asked)
+			assert.Empty(t, stderr.String())
+
+			deferred()
+			assert.Equal(t, tc.wantLine, stderr.String())
+			assert.Equal(t, tc.wantKinds, hintKinds(t, ctx))
+
+			// The check claimed the install text's throttle window whatever it
+			// found, so the release lookup behind it does not repeat on the
+			// next command.
+			ctx2, stderr2 := agentCtx(t, home, cacheDir)
+			assert.Nil(t, MaybeHint(ctx2, regularCmd(), noPluginRecorded, outdated))
+			assert.Empty(t, stderr2.String())
+			assert.Equal(t, []string{NameCursor}, *asked)
+		})
+	}
+}
+
+func TestMaybeHint_UpdateCheckOptOut(t *testing.T) {
+	// The name is spelled out: users set it, so it must not change.
+	const optOutEnv = "DATABRICKS_CLI_DISABLE_AITOOLS_UPDATE_CMD_HINTS"
+	tests := []struct {
+		value   string
+		wantOff bool
+	}{
+		{value: "1", wantOff: true},
+		{value: "true", wantOff: true},
+		{value: "0"},
+		{value: "false"},
+		{value: ""},
+	}
+	for _, tc := range tests {
+		t.Run(optOutEnv+"="+tc.value, func(t *testing.T) {
+			setAgentEnv(t, agentDetectEnv[NameCursor])
+			home, cacheDir := t.TempDir(), t.TempDir()
+			outdated, asked := outdatedTooling(true)
+			ctx, stderr := agentCtx(t, home, cacheDir)
+			writeAgentSkill(t, ctx, home, ByName(NameCursor))
+
+			deferred := MaybeHint(env.Set(ctx, optOutEnv, tc.value), regularCmd(), noPluginRecorded, outdated)
+			if !tc.wantOff {
+				require.NotNil(t, deferred)
+				deferred()
+				assert.Equal(t, wantUpdateHint, stderr.String())
+				return
+			}
+			assert.Nil(t, deferred)
+			assert.Empty(t, *asked)
+
+			// The opt-out claimed no throttle window, so the line is due on the
+			// first command without it.
+			deferred = MaybeHint(ctx, regularCmd(), noPluginRecorded, outdated)
+			require.NotNil(t, deferred)
+			deferred()
+			assert.Equal(t, wantUpdateHint, stderr.String())
+		})
+	}
+}
+
+func TestMaybeHint_ClaudeCodeIsNotCheckedForUpdates(t *testing.T) {
+	setClaudeAgent(t)
+	home := t.TempDir()
+	writeClaudeSkill(t, home, "databricks-core")
+	outdated, _ := outdatedTooling(true)
+	ctx, stderr := claudeCtx(t, home)
+	assert.Nil(t, MaybeHint(ctx, regularCmd(), noPluginRecorded, outdated))
+	assert.Empty(t, stderr.String())
+}
+
+func TestMaybeHint_UnpersistedMarkerSkipsTheUpdateCheck(t *testing.T) {
+	// With caching off no marker reads back, so nothing would stop the check,
+	// and the release lookup behind it, from repeating on every command.
+	setAgentEnv(t, agentDetectEnv[NameCursor])
+	home := t.TempDir()
+	outdated, asked := outdatedTooling(true)
+	ctx, stderr := agentCtx(t, home, t.TempDir())
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")
+	writeAgentSkill(t, ctx, home, ByName(NameCursor))
+
+	deferred := MaybeHint(ctx, regularCmd(), noPluginRecorded, outdated)
+	require.NotNil(t, deferred)
+	deferred()
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, *asked)
 }

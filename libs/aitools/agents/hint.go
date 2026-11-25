@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -21,6 +22,16 @@ const (
 	// is deliberately chosen to be effective at helping agents; change it only
 	// after thorough testing.
 	hintText = "Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install"
+
+	// updateHintText tells an agent that its Databricks AI tooling is older
+	// than the release `databricks aitools update` installs; it names the
+	// installed and the available release. Change its wording only after
+	// thorough testing, as for hintText.
+	updateHintText = "Databricks skills are outdated and might contain incorrect guidances (%s installed, %s available). To work with Databricks reliably, run: databricks aitools update"
+
+	// updateHintDisableEnv, set to a true value, turns the update line off, for
+	// a user who keeps an older release on purpose. The install lines stay.
+	updateHintDisableEnv = "DATABRICKS_CLI_DISABLE_AITOOLS_UPDATE_CMD_HINTS"
 
 	// claudeAgentProvider is the useragent.AgentProvider() value for Claude Code.
 	// The SDK maps the CLAUDECODE env var to this product name.
@@ -108,14 +119,20 @@ var (
 )
 
 // agentHint describes how one calling agent is nudged to install the
-// Databricks AI tooling.
+// Databricks AI tooling, or to update it.
 type agentHint struct {
 	// agentName is the registry name of the hinted agent.
 	agentName string
 
 	// installed reports whether the agent already has the tooling; when it
-	// does, nothing is printed.
+	// does, the install lines are not printed.
 	installed func(ctx context.Context) bool
+
+	// outdated reports whether the tooling the CLI installed for the agent is
+	// older than the release `databricks aitools update` installs. It is asked
+	// only once installed reports true (see showUpdate). Nil for Claude Code,
+	// whose plugin updates itself.
+	outdated OutdatedToolingFunc
 
 	// text is the model-facing recommendation, printed at most once per
 	// textHintThrottle per session (see sessionEnv), or per agent on this
@@ -159,7 +176,7 @@ type agentHint struct {
 
 // hintForAgent returns the hint for an agent, keyed by its
 // useragent.AgentProvider() value, or nil when that agent is not hinted.
-func hintForAgent(provider string, pluginRecorded PluginRecordedFunc) *agentHint {
+func hintForAgent(provider string, pluginRecorded PluginRecordedFunc, outdated OutdatedToolingFunc) *agentHint {
 	switch provider {
 	case claudeAgentProvider:
 		return &agentHint{
@@ -173,7 +190,7 @@ func hintForAgent(provider string, pluginRecorded PluginRecordedFunc) *agentHint
 		}
 	default:
 		if a := AgentForProvider(provider); a != nil {
-			return agentInstallHint(a, pluginRecorded)
+			return agentInstallHint(a, pluginRecorded, outdated)
 		}
 		return nil
 	}
@@ -181,10 +198,10 @@ func hintForAgent(provider string, pluginRecorded PluginRecordedFunc) *agentHint
 
 // isHintedAgent reports whether MaybeHint hints the agent with this
 // useragent.AgentProvider() value. It defers to hintForAgent so both follow
-// the same dispatch; pluginRecorded is only read when the hint's installed
-// check runs, so none is needed here.
+// the same dispatch; pluginRecorded and outdated are only read when the hint's
+// checks run, so none is needed here.
 func isHintedAgent(provider string) bool {
-	return hintForAgent(provider, nil) != nil
+	return hintForAgent(provider, nil, nil) != nil
 }
 
 // nativeLine returns the agent-native line due for this invocation, or "".
@@ -196,17 +213,19 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 }
 
 // MaybeHint recommends installing the Databricks AI tooling when a supported
-// agent drives the CLI without it installed. It is a no-op for human callers,
-// unsupported agents, hint-exempt commands (isHintExemptCommand), the `auth
-// token` and `auth docker token` credential helpers, a CLI process the CLI
-// started itself, when there is no output stream, and once the tooling is
-// present.
+// agent drives the CLI without it installed, and updating it when an agent
+// other than Claude Code has an outdated installation. It is a no-op for human
+// callers, unsupported agents, hint-exempt commands (isHintExemptCommand), the
+// `auth token` and `auth docker token` credential helpers, a CLI process the
+// CLI started itself, when there is no output stream, and once the tooling is
+// present and current.
 // The agent-native line (if any) and the model-facing text are throttled
 // independently, per session or, for agents without a session id, per agent
 // on this machine (fallbackKey). Both hint-shown events follow the text's
 // clock (see nativeEventThrottle).
 // pluginRecorded reads the CLI install record for agents whose plugin has no
-// manifest reader here (see Agent.DatabricksTooling).
+// manifest reader here (see Agent.DatabricksTooling). outdated decides the
+// update line (see OutdatedToolingFunc), which updateHintDisableEnv turns off.
 // Best-effort: it never fails the command. Besides the stderr lines, it logs a
 // telemetry event for each hint line shown, which makes a command that resolved
 // auth upload telemetry at exit.
@@ -215,9 +234,10 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 // autoinstall.InstallsFor), the hint is withheld: MaybeHint returns a function
 // to call once the command has ended, which prints the hint unless the tooling
 // is installed by then. A failed command, a gate that turns out off or a
-// failed install then still gets the hint. Otherwise it returns nil.
-func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRecordedFunc) (deferred func()) {
-	hint := hintForAgent(useragent.AgentProvider(), pluginRecorded)
+// failed install then still gets the hint. The update check always waits for
+// that call (see showUpdate). Otherwise it returns nil.
+func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRecordedFunc, outdated OutdatedToolingFunc) (deferred func()) {
+	hint := hintForAgent(useragent.AgentProvider(), pluginRecorded, outdated)
 	if hint == nil {
 		return nil
 	}
@@ -235,8 +255,9 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	}
 	// Check the throttles before the filesystem probe, so a throttled session
 	// skips the plugin/skills detection. A marker is written only once its
-	// line is due, so an already-installed environment never burns one, and
-	// neither does a native line withheld from this invocation.
+	// line is due, so a Claude Code that has the tooling never burns one, and
+	// neither does a native line withheld from this invocation. The update
+	// check of the other agents claims one per window (see showUpdate).
 	key := hint.throttleKey(ctx)
 	native := hint.nativeLine(ctx)
 	if native != "" && nativeHintThrottle.seen(ctx, key) {
@@ -247,7 +268,16 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 		return nil
 	}
 	if hint.installed(ctx) {
-		return nil
+		if hint.outdated == nil {
+			return nil
+		}
+		if disabled, _ := env.GetBool(ctx, updateHintDisableEnv); disabled {
+			return nil
+		}
+		// The check can wait on a release lookup, and the auto-install after
+		// the command may update the tooling, so it runs once the command has
+		// ended.
+		return func() { hint.showUpdate(ctx, key) }
 	}
 	// The auto-install after this command prints its own notice; neither line
 	// may tell the agent to install what it installs. No marker is written
@@ -298,6 +328,23 @@ func (h *agentHint) claim(ctx context.Context, key string) bool {
 	}
 	textHintThrottle.record(ctx, key)
 	return true
+}
+
+// showUpdate tells the agent to update its tooling when it is outdated, and
+// logs the line's hint-shown event. It runs once the command has ended. The
+// text's throttle key is claimed before the check: the check can look a
+// release up, so a throttle window gets one lookup whatever it finds, and none
+// where the marker cannot persist (see claimHintMarker).
+func (h *agentHint) showUpdate(ctx context.Context, key string) {
+	if !h.claim(ctx, key) {
+		return
+	}
+	installed, available, outdated := h.outdated(ctx, h.agentName)
+	if !outdated {
+		return
+	}
+	cmdio.LogString(ctx, fmt.Sprintf(updateHintText, installed, available))
+	logHintShown(ctx, protos.AitoolsHintKindUpdateCheckText)
 }
 
 // claudeNativeHintLine returns claudeNativeHint when Claude Code itself spawned
@@ -468,9 +515,9 @@ func SelfExecEnv(environ []string) []string {
 	return append(environ, selfExecEnv+"=1")
 }
 
-// logHintShown records that a recommendation to install Databricks AI tools of
-// the given kind was shown. Call it once per hint shown; for a prompt, call it
-// before asking so a declined prompt still counts. The upload's
+// logHintShown records that a recommendation to install or update Databricks AI
+// tools of the given kind was shown. Call it once per hint shown; for a prompt,
+// call it before asking so a declined prompt still counts. The upload's
 // ExecutionContext.Command names the command the hint was shown on.
 //
 // The event is buffered and uploaded by cmd/root at exit, which needs resolved
