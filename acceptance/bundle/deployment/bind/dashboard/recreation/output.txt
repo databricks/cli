@@ -21,8 +21,6 @@ To proceed, use --auto-approve after reviewing the plan above.
 
 Files: 5 uploaded, 0 deleted
 
-Exit code: 1
-
 >>> [CLI] bundle deployment unbind dashboard1
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created dashboards.dashboard1

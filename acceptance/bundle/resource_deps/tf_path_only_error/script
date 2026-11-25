@@ -1,6 +1,6 @@
-errcode $CLI bundle validate > out.validate.txt 2>&1
-errcode $CLI bundle plan > out.plan.txt 2>&1
-errcode $CLI bundle deploy > out.deploy.txt 2>&1
+musterr $CLI bundle validate > out.validate.txt 2>&1
+musterr $CLI bundle plan > out.plan.txt 2>&1
+musterr $CLI bundle deploy > out.deploy.txt 2>&1
 print_telemetry_bool_values > out.telemetry.txt
 rm "$OUT_REQUESTS"
 

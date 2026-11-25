@@ -5,7 +5,7 @@
 
 === Change immutable storage. Without --auto-approve the recreate is refused
 
->>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
+>>> DATABRICKS_BUNDLE_ENGINE=direct musterr [CLI] bundle deploy
 Warning: The "development" property of pipelines is deprecated. Use "mode: development" in your databricks.yml instead. See https://docs.databricks.com/dev-tools/bundles/deployment-modes.
   at resources.pipelines.my_pipeline.development
   in databricks.yml:15:20
@@ -24,8 +24,6 @@ Deleting data assets such as schemas, pipelines, or volumes may cause permanent 
 To proceed, use --auto-approve after reviewing the plan above.
 
 Files: 3 uploaded, 0 deleted
-
-Exit code: 1
 
 >>> print_migration_telemetry
 direct_migrate_recreate_planned true

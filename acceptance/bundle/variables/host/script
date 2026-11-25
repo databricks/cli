@@ -1,3 +1,3 @@
-trace errcode $CLI bundle validate -o json
-trace errcode $CLI bundle validate
-trace errcode $CLI bundle summary
+trace musterr $CLI bundle validate -o json
+trace musterr $CLI bundle validate
+trace musterr $CLI bundle summary

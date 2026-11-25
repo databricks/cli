@@ -4,7 +4,7 @@ rm "$OUT_REQUESTS"
 $CLI bundle plan -o json | nostamp > out.plan.json
 
 rm "$OUT_REQUESTS"
-trace errcode $CLI bundle deploy &> out.deploy.txt
+trace $CLI bundle deploy &> out.deploy.txt
 
 # Register the model's numeric ID for output replacement.
 # The permissions API uses the numeric ID, not the model name.

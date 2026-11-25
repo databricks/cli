@@ -1,2 +1,2 @@
 # A scalar targets section is an error.
-errcode trace $CLI bundle validate
+musterr trace $CLI bundle validate

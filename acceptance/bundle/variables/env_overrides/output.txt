@@ -8,7 +8,7 @@
 >>> BUNDLE_VAR_b=env-var-b [CLI] bundle validate -t env-with-two-variable-overrides -o json
 "prod-a env-var-b"
 
->>> errcode [CLI] bundle validate -t env-missing-a-required-variable-assignment
+>>> musterr [CLI] bundle validate -t env-missing-a-required-variable-assignment
 Error: no value assigned to required variable b. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_b environment variable, or .databricks/bundle/<target>/variable-overrides.json
 
 Name: test bundle
@@ -19,16 +19,12 @@ Workspace:
 
 Found 1 error
 
-Exit code: 1
-
->>> errcode [CLI] bundle validate -t env-using-an-undefined-variable
+>>> musterr [CLI] bundle validate -t env-using-an-undefined-variable
 Error: failed to perform target override for target=env-using-an-undefined-variable: variable c is not defined but is assigned a value
 
 Name: test bundle
 
 Found 1 error
-
-Exit code: 1
 
 >>> [CLI] bundle validate -t env-overrides-lookup -o json
 {

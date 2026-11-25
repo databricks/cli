@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
 Created schemas.my
 Created volumes.bar

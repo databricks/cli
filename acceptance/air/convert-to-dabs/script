@@ -15,7 +15,7 @@ title "the emitted bundle validates"
 trace $CLI bundle validate
 
 title "re-converting refuses to clobber the generated bundle"
-errcode trace $CLI air convert-to-dabs train.yaml
+musterr trace $CLI air convert-to-dabs train.yaml
 
 title "--force overwrites it"
 trace $CLI air convert-to-dabs train.yaml --force

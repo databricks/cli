@@ -51,4 +51,4 @@ trace $CLI bundle deploy
 trace $CLI bundle destroy --auto-approve
 
 title "Check that job is bound and does not exist after bundle is destroyed:"
-trace errcode $CLI jobs get "${JOB_ID}" --output json
+trace musterr $CLI jobs get "${JOB_ID}" --output json

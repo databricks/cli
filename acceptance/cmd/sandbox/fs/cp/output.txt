@@ -66,8 +66,6 @@ local.txt
 >>> [CLI] sandbox fs cp local.txt [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing/file.txt
 Error: no such directory: /tmp/sandbox-fs-[UNIQUE_NAME]/missing
 
-Exit code: 1
-
 === Copy a directory recursively, and back
 
 >>> [CLI] sandbox fs cp -r localdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/dir

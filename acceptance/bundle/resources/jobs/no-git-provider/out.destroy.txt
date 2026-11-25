@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --auto-approve
 Warning: required field "git_provider" is not set
   at resources.jobs.foo.git_source
   in databricks.yml:12:9

@@ -21,7 +21,7 @@ json_in_json_normalize.py out.state_after_bind.json
 
 trace $CLI bundle plan
 $CLI bundle plan -o json > tmp.plan.json
-errcode $CLI bundle deploy $(readplanarg tmp.plan.json)
+musterr $CLI bundle deploy $(readplanarg tmp.plan.json)
 
 trace $CLI bundle deployment unbind dashboard1
 

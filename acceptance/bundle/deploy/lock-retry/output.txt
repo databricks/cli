@@ -55,8 +55,6 @@ Another deployment may be in progress. Use --force-lock to override, but this ma
 conflict with the other deployment if it is still active
 
 
-Exit code: 1
-
 === Lock is held by another deployer and every attempt returns a 504: reading the lock back names the holder
 
 >>> [CLI] bundle deploy
@@ -69,8 +67,6 @@ Error: deploy lock acquired by someone-else at [TIMESTAMP] +0000 UTC.
 Another deployment may be in progress. Use --force-lock to override, but this may
 conflict with the other deployment if it is still active
 
-
-Exit code: 1
 ["POST","false"]
 ["POST","false"]
 ["POST","false"]
@@ -100,8 +96,6 @@ HTTP Status: 504 Gateway Timeout
 API error_code: INJECTED
 API message: Fault injected by test.
 
-
-Exit code: 1
 ["POST","true"]
 ["POST","true"]
 ["POST","true"]

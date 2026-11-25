@@ -10,7 +10,7 @@ trap cleanup EXIT
 fault.py "GET /api/2.2/jobs/runs/get" 403 0 1
 
 title "the deploy stops waiting before the run finishes"
-trace errcode $CLI bundle deploy
+trace musterr $CLI bundle deploy
 
 title "the abandoned run is still tracked"
 trace read_id.py my_job

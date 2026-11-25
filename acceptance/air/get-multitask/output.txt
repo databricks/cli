@@ -123,8 +123,6 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 >>> [CLI] air get 123 --task-key prep
 Error: run 123 has no AI Runtime task "prep"; its AI Runtime tasks are: train, eval
 
-Exit code: 1
-
 === get --task-key prep (json)
 
 >>> [CLI] air get 123 --task-key prep -o json
@@ -138,5 +136,3 @@ Exit code: 1
     "retryable": false
   }
 }
-
-Exit code: 1

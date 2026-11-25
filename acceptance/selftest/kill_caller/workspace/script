@@ -1,4 +1,5 @@
 # Kill the CLI when it calls workspace list endpoint (once, then allow)
 kill_after.py "GET /api/2.0/workspace/list" 0 1
-trace errcode $CLI workspace list /
+trace musterr $CLI workspace list /
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 echo "Script continued after kill"

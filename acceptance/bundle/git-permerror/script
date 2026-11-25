@@ -6,21 +6,21 @@ mkdir -p subdir/a/b
 
 printf "=== No permission to access .git\n"
 trace chmod 000 .git
-errcode trace $CLI bundle validate
-errcode trace $CLI bundle validate -o json | jq .bundle.git
-errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
+musterr trace $CLI bundle validate
+musterr trace $CLI bundle validate -o json | jq .bundle.git
+musterr trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
 
 printf "\n\n=== No permissions to read .git/HEAD\n"
 chmod 700 .git
 trace chmod 000 .git/HEAD
-errcode trace $CLI bundle validate -o json | jq .bundle.git
-errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
+trace $CLI bundle validate -o json | jq .bundle.git
+trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
 
 printf "\n\n=== No permissions to read .git/config\n"
 chmod 666 .git/HEAD
 trace chmod 000 .git/config
-errcode trace $CLI bundle validate -o json | jq .bundle.git
-errcode trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
+musterr trace $CLI bundle validate -o json | jq .bundle.git
+musterr trace withdir subdir/a/b $CLI bundle validate -o json | jq .bundle.git
 
 cd ..
 rm -fr myrepo

@@ -15,5 +15,5 @@ rm -f "$OUT_REQUESTS"
 
 title "Change volume_type (immutable); without --auto-approve the recreate is refused"
 update_file.py databricks.yml "volume_type: MANAGED" "volume_type: EXTERNAL"
-trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle deploy
 trace print_migration_telemetry

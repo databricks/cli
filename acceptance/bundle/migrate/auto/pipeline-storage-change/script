@@ -16,7 +16,7 @@ title "Change immutable storage. Without --auto-approve the recreate is refused"
 # in the destructive-approval group, so without --auto-approve the deploy refuses it (exit 1)
 # and the migration is not committed.
 update_file.py databricks.yml "$UNIQUE_NAME-init" "$UNIQUE_NAME-changed"
-trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle deploy
 trace print_migration_telemetry
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 

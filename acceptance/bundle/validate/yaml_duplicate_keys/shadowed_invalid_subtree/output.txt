@@ -4,5 +4,3 @@ Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml ([TEST_TMP_DIR]/databr
 
 
 Found 1 error
-
-Exit code: 1

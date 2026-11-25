@@ -44,7 +44,7 @@ trace $CLI workspace delete /Users/$username/$UNIQUE_NAME/hello.txt
 trace print_requests
 
 title "stat the file again"
-errcode trace $CLI workspace get-status /Users/$username/$UNIQUE_NAME/hello.txt
+musterr trace $CLI workspace get-status /Users/$username/$UNIQUE_NAME/hello.txt
 
 trace print_requests
 
@@ -57,6 +57,6 @@ trace $CLI workspace delete /Users/$username/$UNIQUE_NAME
 trace print_requests
 
 title "list the folder again"
-errcode trace $CLI workspace list /Users/$username/$UNIQUE_NAME
+musterr trace $CLI workspace list /Users/$username/$UNIQUE_NAME
 
 trace print_requests

@@ -5,5 +5,3 @@ Error: cannot merge map with string
 Name: test-bundle
 
 Found 1 error
-
-Exit code: 1

@@ -109,7 +109,5 @@ Error: failed to perform target override for target=other: variable undefined_va
 Error: cannot resolve bundle auth configuration: validate: more than one authorization method configured: oauth and pat. Config: host=[DATABRICKS_URL], token=***, profile=myprofile, config_file=[TEST_TMP_DIR]/.databrickscfg, client_id=x, databricks_cli_path=[CLI]. Env: DATABRICKS_HOST, DATABRICKS_TOKEN, DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
 
 
->>> errcode print_requests.py //telemetry-ext
+>>> musterr print_requests.py //telemetry-ext
 File [OUTPUT_DIR]/out.requests.txt not found
-
-Exit code: 1

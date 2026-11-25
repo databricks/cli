@@ -8,7 +8,7 @@ git add proj src
 git commit -qm 'Add bundle'
 
 cd proj
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
 
 for name in from_git from_git_include from_worktree; do
     title "Contents of $name.tgz"

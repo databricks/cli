@@ -5,5 +5,3 @@ Error: duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, u
 
 
 Found 1 error
-
-Exit code: 1

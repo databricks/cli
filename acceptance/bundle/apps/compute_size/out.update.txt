@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-compute-size-[UNIQUE_NAME]/files...
 Updated apps.my_app
 Files: 3 uploaded, 0 deleted

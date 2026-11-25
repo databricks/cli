@@ -8,5 +8,3 @@ HTTP Status: 500 Internal Server Error
 API error_code: INTERNAL_ERROR
 API message: Internal error
 
-
-Exit code: 1

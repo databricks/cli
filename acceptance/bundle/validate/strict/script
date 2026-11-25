@@ -2,6 +2,6 @@
 trace $CLI bundle validate
 
 # With --strict, warnings cause exit code 1
-errcode trace $CLI bundle validate --strict
+musterr trace $CLI bundle validate --strict
 
-errcode trace $CLI bundle validate --strict -t bar
+musterr trace $CLI bundle validate --strict -t bar

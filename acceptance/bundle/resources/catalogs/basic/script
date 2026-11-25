@@ -7,7 +7,7 @@ cleanup() {
   trace $CLI bundle destroy --auto-approve
 
   title "Assert the catalog is deleted"
-  trace errcode $CLI catalogs get "${CATALOG_NAME}" 2>/dev/null
+  trace musterr $CLI catalogs get "${CATALOG_NAME}" 2>/dev/null
 }
 trap cleanup EXIT
 

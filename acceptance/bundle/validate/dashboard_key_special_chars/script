@@ -5,5 +5,5 @@
 #
 # Each key is in its own target: with both in one config the errors are reported in
 # a nondeterministic order.
-errcode trace $CLI bundle validate -t bracket
-errcode trace $CLI bundle validate -t comma
+musterr trace $CLI bundle validate -t bracket
+musterr trace $CLI bundle validate -t comma

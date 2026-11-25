@@ -1,6 +1,6 @@
 export DATA_SECURITY_MODE=USER_ISOLATION
 envsubst < databricks.yml.tmpl > databricks.yml
-trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
+trap "trace '$CLI' bundle destroy --auto-approve || true" EXIT
 
 # Show the cluster's pypi library plan entries; build/plan noise and the noisy wheel path go to LOG.
 plan_pypi_libs() {

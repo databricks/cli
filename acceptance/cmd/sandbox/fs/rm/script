@@ -7,12 +7,12 @@ $CLI sandbox fs cp hello.txt $SANDBOX_ROOT/dir/hello.txt > /dev/null
 
 title "Remove a file"
 trace $CLI sandbox fs rm $SANDBOX_ROOT/hello.txt
-errcode trace $CLI sandbox fs cat $SANDBOX_ROOT/hello.txt
+musterr trace $CLI sandbox fs cat $SANDBOX_ROOT/hello.txt
 
 title "Removing a non-empty directory needs -r"
-errcode trace $CLI sandbox fs rm $SANDBOX_ROOT/dir
+musterr trace $CLI sandbox fs rm $SANDBOX_ROOT/dir
 trace $CLI sandbox fs rm -r $SANDBOX_ROOT/dir
-errcode trace $CLI sandbox fs ls $SANDBOX_ROOT/dir
+musterr trace $CLI sandbox fs ls $SANDBOX_ROOT/dir
 
 title "Removing a missing path fails"
-errcode trace $CLI sandbox fs rm $SANDBOX_ROOT/missing
+musterr trace $CLI sandbox fs rm $SANDBOX_ROOT/missing

@@ -3,10 +3,10 @@ rm "$OUT_REQUESTS"
 
 # A dry run must never execute anything. A job has no dry-run mode.
 title "Dry running a job KEY"
-errcode trace $CLI pipelines dry-run my_job
+musterr trace $CLI pipelines dry-run my_job
 
 title "Completion only offers pipelines"
-errcode trace $CLI __complete pipelines dry-run , &> complete.txt
+trace $CLI __complete pipelines dry-run , &> complete.txt
 # Drop the machine-specific stack trace if completion panics.
 sed '/^Stack Trace:/,$d' complete.txt
 rm complete.txt

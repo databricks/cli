@@ -23,7 +23,7 @@ EOF
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --save
+$CLI bundle config-remote-sync -t dev --save
 
 title "Only omega changes; shared is untouched in both blocks"
 trace diff.py databricks.yml.backup databricks.yml
@@ -46,7 +46,7 @@ EOF
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --save
+$CLI bundle config-remote-sync -t dev --save
 
 title "Each edit lands on the definition that was deployed"
 trace diff.py databricks.yml.backup databricks.yml

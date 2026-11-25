@@ -134,8 +134,6 @@ hello, world
 >>> [CLI] volumes read main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
 Error: Volume 'main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]' does not exist.
 
-Exit code: 1
-
 >>> print_requests
 {
   "method": "GET",
@@ -152,8 +150,6 @@ Exit code: 1
 
 >>> [CLI] schemas get main.schema-[UNIQUE_NAME]
 Error: Schema 'main.schema-[UNIQUE_NAME]' does not exist.
-
-Exit code: 1
 
 >>> print_requests
 {

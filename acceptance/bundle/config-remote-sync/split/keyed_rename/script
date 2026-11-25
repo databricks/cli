@@ -27,12 +27,12 @@ EOF
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --save
+$CLI bundle config-remote-sync -t dev --save
 
 title "Both blocks get the new key; each field keeps its own scope"
 trace diff.py databricks.yml.backup databricks.yml
-errcode trace grep -c "task_key: a_shared" databricks.yml
-errcode trace grep -c "task_key: z_solo" databricks.yml
+trace grep -c "task_key: a_shared" databricks.yml
+trace grep -c "task_key: z_solo" databricks.yml
 rm databricks.yml.backup
 
 
@@ -49,11 +49,11 @@ EOF
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$shift_job_id" --save
+$CLI bundle config-remote-sync -t dev --select-ids "jobs:$shift_job_id" --save
 
 title "aaa is gone, mmm became mmm2, zzz keeps its name and its max_retries"
 trace diff.py databricks.yml.backup databricks.yml
-errcode trace grep -c "task_key: zzz" databricks.yml
+trace grep -c "task_key: zzz" databricks.yml
 rm databricks.yml.backup
 
 
@@ -71,10 +71,10 @@ EOF
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$job_id" --save
+$CLI bundle config-remote-sync -t dev --select-ids "jobs:$job_id" --save
 
 title "Left unapplied: the split is intact and timeout_seconds stays target-scoped"
 trace diff.py databricks.yml.backup databricks.yml
-errcode trace grep -c "task_key: a_shared" databricks.yml
-errcode trace grep -c "timeout_seconds: 45" databricks.yml
+trace grep -c "task_key: a_shared" databricks.yml
+trace grep -c "timeout_seconds: 45" databricks.yml
 rm databricks.yml.backup

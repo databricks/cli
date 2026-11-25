@@ -6,4 +6,4 @@ echo "=== WAL content ==="
 cat .databricks/bundle/default/resources.json.wal
 
 echo "=== Deploy (should fail with corruption error) ==="
-trace errcode $CLI bundle deploy
+trace musterr $CLI bundle deploy

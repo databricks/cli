@@ -8,13 +8,9 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Found 1 error
-
-Exit code: 1
 Error: "resources.jobs.foo.url": Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine
   in databricks.yml:11:12
 
-
-Exit code: 1
 {
   "jobs": {
     "bar": {

@@ -29,8 +29,6 @@ from "content" with $NAME:
       content: echo "$MY_VAR"
 
 
-Exit code: 1
-
 >>> [CLI] bundle run foo
 Error: Found ${FOO} in script one.content. Interpolation syntax ${...} is not supported in script content
   at scripts.one.content
@@ -60,5 +58,3 @@ from "content" with $NAME:
         MY_VAR: ${var.foo}
       content: echo "$MY_VAR"
 
-
-Exit code: 1

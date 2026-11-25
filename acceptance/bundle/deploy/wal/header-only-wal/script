@@ -8,15 +8,17 @@
 kill_after.py "POST /api/2.2/jobs/create" 0 2
 
 title "First deploy (killed before recording the job, leaves a header-only WAL)"
-trace errcode $CLI bundle deploy
+trace musterr $CLI bundle deploy
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 trace cat .databricks/bundle/default/resources.json.wal
 
 title "Second deploy (killed again, leaves another header-only WAL)"
-trace errcode $CLI bundle deploy --force-lock
+trace musterr $CLI bundle deploy --force-lock
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 trace cat .databricks/bundle/default/resources.json.wal
 
 title "Third deploy (must recover and succeed, not blocked by the leftover WAL)"
-trace errcode $CLI bundle deploy --force-lock
+trace $CLI bundle deploy --force-lock
 
-trace errcode assert_not_exists.py .databricks/bundle/default/resources.json.wal
-trace errcode print_state.py | jq -S '{serial: .serial, state_keys: (.state | keys)}'
+trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
+trace print_state.py | jq -S '{serial: .serial, state_keys: (.state | keys)}'

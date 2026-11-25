@@ -15,6 +15,6 @@ rm -f "$OUT_REQUESTS"
 title "The feature cannot be read after the create request times out: deploy fails with the create error"
 fault.py "POST /api/2.0/feature-engineering/features" 504 0 1 DEADLINE_EXCEEDED
 fault.py "GET /api/2.0/feature-engineering/features/*" 403 0 1 PERMISSION_DENIED
-errcode trace $CLI bundle deploy
+musterr trace $CLI bundle deploy
 trace print_requests.py --get //feature-engineering | jq -r '.method + " " + .path'
 $CLI bundle destroy --auto-approve > /dev/null 2>&1

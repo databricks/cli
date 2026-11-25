@@ -23,16 +23,16 @@ trace $CLI fs cp big.bin ${DBFS}/dir/big.bin
 trace $CLI fs cp --overwrite big.bin ${DBFS}/dir/big.bin
 
 title "Writing into a directory that does not exist fails"
-errcode trace $CLI fs cp big.bin ${DBFS}/missing/big.bin
+musterr trace $CLI fs cp big.bin ${DBFS}/missing/big.bin
 
 title "List a directory, then a file"
 trace $CLI fs ls ${DBFS}/dir
-errcode trace $CLI fs ls ${DBFS}/dir/big.bin
+musterr trace $CLI fs ls ${DBFS}/dir/big.bin
 
 title "cat a directory fails"
-errcode trace $CLI fs cat ${DBFS}/dir
+musterr trace $CLI fs cat ${DBFS}/dir
 
 title "rm a non-empty directory needs -r"
-errcode trace $CLI fs rm ${DBFS}/dir
+musterr trace $CLI fs rm ${DBFS}/dir
 trace $CLI fs rm -r ${DBFS}/dir
-errcode trace $CLI fs ls ${DBFS}/dir
+musterr trace $CLI fs ls ${DBFS}/dir

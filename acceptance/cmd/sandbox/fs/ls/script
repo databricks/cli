@@ -9,8 +9,8 @@ trace $CLI sandbox fs ls $SANDBOX_ROOT
 trace $CLI sandbox fs ls --absolute $SANDBOX_ROOT
 
 title "List a file, then a missing path"
-errcode trace $CLI sandbox fs ls $SANDBOX_ROOT/hello.txt
-errcode trace $CLI sandbox fs ls $SANDBOX_ROOT/missing
+musterr trace $CLI sandbox fs ls $SANDBOX_ROOT/hello.txt
+musterr trace $CLI sandbox fs ls $SANDBOX_ROOT/missing
 
 title "Complete the entries of a directory, then a partial name"
 trace $CLI __complete sandbox fs ls $SANDBOX_ROOT/

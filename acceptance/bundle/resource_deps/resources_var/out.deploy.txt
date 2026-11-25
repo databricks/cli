@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle deploy -t dev
+>>> [CLI] bundle deploy -t dev
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
 Created pipelines.mypipeline
 Created volumes.bar

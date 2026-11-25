@@ -39,8 +39,6 @@ API message: Fault injected by test.
 
 Files: 1 uploaded, 0 deleted
 
-Exit code: 1
-
 >>> print_requests.py --get //feature-engineering
 POST /api/2.0/feature-engineering/features
 GET /api/2.0/feature-engineering/features/main.myschema.myfeature

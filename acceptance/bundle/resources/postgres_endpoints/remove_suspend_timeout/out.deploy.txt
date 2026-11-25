@@ -7,5 +7,3 @@ API error_code: INVALID_PARAMETER_VALUE
 API message: Field 'spec.suspension' is in update_mask but not provided in request
 
 Files: 0 uploaded, 0 deleted
-
-Exit code: 1

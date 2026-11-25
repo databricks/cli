@@ -31,8 +31,6 @@ Resource: resources.jobs.two_removes_job
 >>> grep -c task_key: task_renamed databricks.yml
 0
 
-Exit code: 1
-
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
   delete resources.jobs.two_removes_job

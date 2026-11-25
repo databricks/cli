@@ -3,10 +3,10 @@
 # logs and exits non-zero — proving the try/catch routes to MLflow.
 
 title "logs falls back to mlflow (no logs)"
-errcode trace $CLI air logs 123
+trace $CLI air logs 123
 
 title "logs falls back to mlflow (json)"
-errcode trace $CLI air logs 123 -o json
+trace $CLI air logs 123 -o json
 
 title "logs falls back to mlflow for a specific node"
 trace $CLI air logs 123 --node 0

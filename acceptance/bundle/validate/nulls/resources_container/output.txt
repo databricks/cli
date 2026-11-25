@@ -5,5 +5,3 @@ Error: expected a map at "resources", found nil
 Name: test-bundle
 
 Found 1 error
-
-Exit code: 1

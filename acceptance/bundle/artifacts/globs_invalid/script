@@ -1,1 +1,1 @@
-errcode trace $CLI bundle validate -o json | jq .artifacts
+musterr trace $CLI bundle validate -o json | jq .artifacts

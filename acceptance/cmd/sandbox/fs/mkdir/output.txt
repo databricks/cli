@@ -37,5 +37,3 @@ c
 
 >>> [CLI] sandbox fs mkdir [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
 Error: file already exists: /tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
-
-Exit code: 1

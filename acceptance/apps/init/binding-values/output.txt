@@ -1,10 +1,8 @@
 
 === Service principal, genie space without name: fails before writing files
 
->>> errcode [CLI] apps init --template ./template --skip-install --name app-sp --features genie --set genie.genie-space.id=g123 --auth-mode sp
+>>> musterr [CLI] apps init --template ./template --skip-install --name app-sp --features genie --set genie.genie-space.id=g123 --auth-mode sp
 Error: missing value for genie.genie-space.name (needed by the genie_space binding); use --set genie.genie-space.name=value
-
-Exit code: 1
 app-sp was not created
 
 === Service principal with --set name: the binding variables have values

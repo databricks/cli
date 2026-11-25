@@ -27,8 +27,6 @@ API message: AI Search endpoint vs-endpoint-b-[UNIQUE_NAME] already exists. Plea
 
 Files: 0 uploaded, 0 deleted
 
-Exit code: 1
-
 === Subsequent plan recovers: my_endpoint state was dropped, replan as Create
 
 >>> [CLI] bundle plan

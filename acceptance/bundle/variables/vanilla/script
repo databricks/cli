@@ -1,3 +1,3 @@
 trace BUNDLE_VAR_b=def $CLI bundle validate -o json | jq .resources.jobs.one.name
 
-trace errcode $CLI bundle validate
+trace musterr $CLI bundle validate

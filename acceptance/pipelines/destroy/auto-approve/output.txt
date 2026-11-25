@@ -8,12 +8,10 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[WORKSPACE_ID]
 
->>> errcode [CLI] pipelines destroy
+>>> musterr [CLI] pipelines destroy
 Error: this command will destroy all resources deployed by this bundle, including workspace files in the deployment directory.
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve.
-
-Exit code: 1
 
 >>> [CLI] pipelines destroy --auto-approve
 The following resources will be deleted:

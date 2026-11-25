@@ -10,7 +10,7 @@ cleanup() {
   trace $CLI bundle destroy --auto-approve
 
   title "Assert the schema is deleted"
-  trace errcode $CLI schemas get "${CATALOG_NAME}.${SCHEMA_NAME}" 2>/dev/null
+  trace musterr $CLI schemas get "${CATALOG_NAME}.${SCHEMA_NAME}" 2>/dev/null
 }
 trap cleanup EXIT
 

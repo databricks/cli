@@ -19,7 +19,7 @@ Updated jobs.job_with_permissions.permissions
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> errcode [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.job_with_permissions
 

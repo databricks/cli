@@ -6,7 +6,7 @@ init() {
 }
 
 title "Service principal, genie space without name: fails before writing files"
-trace errcode $CLI apps init --template ./template --skip-install --name app-sp --features genie --set genie.genie-space.id=g123 --auth-mode sp
+trace musterr $CLI apps init --template ./template --skip-install --name app-sp --features genie --set genie.genie-space.id=g123 --auth-mode sp
 [ -d app-sp ] && echo "app-sp was created" || echo "app-sp was not created"
 
 title "Service principal with --set name: the binding variables have values"

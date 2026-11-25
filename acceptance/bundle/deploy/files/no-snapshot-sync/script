@@ -27,8 +27,8 @@ trace echo "print('Modified!')" > test_to_modify.py
 trace $CLI bundle deploy
 
 title "Check that removed files are not in the workspace anymore"
-trace errcode $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/test.py"
-trace errcode $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/notebook"
+trace musterr $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/test.py"
+trace musterr $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/notebook"
 
 title "Check the content of modified file"
 trace $CLI workspace export "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}/files/test_to_modify.py"

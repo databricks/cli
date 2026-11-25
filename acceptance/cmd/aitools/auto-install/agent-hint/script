@@ -7,7 +7,7 @@ use_home home
 gate true
 
 title "a failing command: no install, the hint once the command ends"
-errcode trace CLAUDECODE=1 $CLI jobs get abc
+musterr trace CLAUDECODE=1 $CLI jobs get abc
 trace print_telemetry
 
 title "first run of a new version: the install notice, no install hint"

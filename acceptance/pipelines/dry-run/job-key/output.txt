@@ -17,8 +17,6 @@ If you've made local changes, run 'databricks pipelines deploy' first to ensure 
 
 Error: resource my_job is not a pipeline
 
-Exit code: 1
-
 === Completion only offers pipelines
 
 >>> [CLI] __complete pipelines dry-run ,

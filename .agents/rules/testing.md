@@ -47,7 +47,7 @@ Ignore = ["databricks.yml"]
 
 **RULE: Wrap commands whose invocation should appear in `output.txt` with `trace`**, and label phases of a long script with `title "TEXT"`.
 
-**RULE: Assert an expected failure with `musterr CMD`; capture a tolerated non-zero exit with `errcode CMD`.** Not `! cmd` (passes silently on success) or `cmd || true` (hides the exit code).
+**RULE: Assert every expected failure with `musterr CMD`; run commands expected to succeed without a wrapper.** Not `! cmd` as a statement (passes silently on success). Use `cmd || true` only for best-effort cleanup inside cleanup functions and EXIT traps. `musterr` does not print the exit code; only when the exact code is what the test checks (a killed process, a passed-through script exit code), print it on the next line with `printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"`.
 
 **RULE: Use the `acceptance/bin/` helpers (on `PATH` during tests) instead of inline `jq`/`grep` pipelines.**
 

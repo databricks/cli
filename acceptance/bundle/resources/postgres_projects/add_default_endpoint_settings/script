@@ -19,4 +19,4 @@ $CLI bundle plan -o json | plan_filter.py > out.plan.json
 # The consequence shows up at deploy time: masking the whole message means the API
 # requires the suspension oneof in the body (see dresources/util.go), so the deploy
 # FAILS with a 400.
-errcode $CLI bundle deploy > out.deploy.txt 2>&1
+musterr $CLI bundle deploy > out.deploy.txt 2>&1

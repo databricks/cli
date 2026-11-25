@@ -22,7 +22,5 @@ Destroy: 1 deleted
 
 === Assert pipeline is deleted
 
->>> errcode [CLI] pipelines get [UUID]
+>>> musterr [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
-
-Exit code: 1

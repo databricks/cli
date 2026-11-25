@@ -35,7 +35,7 @@ cleanup() {
     # The local test server has no group delete; on cloud the group would otherwise leak.
     group_id=$(jq -r '.id // empty' LOG.group.json)
     if [ -n "$CLOUD_ENV" ] && [ -n "$group_id" ]; then
-        errcode $CLI groups-v2 delete "$group_id" &> LOG.group-delete
+        $CLI groups-v2 delete "$group_id" &> LOG.group-delete || true
     fi
 }
 trap cleanup EXIT

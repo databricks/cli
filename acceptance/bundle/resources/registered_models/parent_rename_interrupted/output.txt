@@ -14,7 +14,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> update_file.py databricks.yml comment: c1 comment: c2
 
->>> errcode [CLI] bundle deploy -q
+>>> musterr [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 [PROCESS_KILLED]
 

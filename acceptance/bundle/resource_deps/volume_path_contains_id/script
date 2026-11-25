@@ -8,7 +8,7 @@ trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan.json
 
 trap cleanup EXIT
-trace errcode $CLI bundle deploy &> out.deploy.txt
+trace $CLI bundle deploy &> out.deploy.txt
 
 # bar.name is created from baz.id (resolved during deploy), and foo.comment is
 # created with bar.volume_path, whose embedded baz.id reference also resolves

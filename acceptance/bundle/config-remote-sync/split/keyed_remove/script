@@ -22,7 +22,7 @@ EOF
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$remove_job_id" --save
+$CLI bundle config-remote-sync -t dev --select-ids "jobs:$remove_job_id" --save
 
 title "Exactly gamma and alpha are gone; beta survives"
 trace diff.py databricks.yml.backup databricks.yml
@@ -39,12 +39,12 @@ EOF
 
 title "Sync"
 cp databricks.yml databricks.yml.backup
-errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$twoblock_job_id" --save
+$CLI bundle config-remote-sync -t dev --select-ids "jobs:$twoblock_job_id" --save
 
 title "'both' is gone from both blocks; 'keep' survives"
 trace diff.py databricks.yml.backup databricks.yml
 # grep -c exits non-zero on a count of zero, which would abort the script under
 # bash -e before the second assertion runs.
-errcode trace grep -c "task_key: both" databricks.yml
-errcode trace grep -c "task_key: keep" databricks.yml
+musterr trace grep -c "task_key: both" databricks.yml
+trace grep -c "task_key: keep" databricks.yml
 rm databricks.yml.backup

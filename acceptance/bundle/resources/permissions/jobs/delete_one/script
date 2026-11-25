@@ -11,7 +11,7 @@ rm -f "$OUT_REQUESTS"
 trace $CLI bundle plan -o json | nostamp > out.plan_create.json
 
 cleanup() {
-    trace errcode $CLI bundle destroy --auto-approve
+    trace $CLI bundle destroy --auto-approve || true
     print_requests.py --nostamp //jobs/ > out.requests_destroy.json
 }
 trap cleanup EXIT

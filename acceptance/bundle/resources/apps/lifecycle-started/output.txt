@@ -1,7 +1,7 @@
 
 === Deploy with started=true: app created with compute running
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Created apps.myapp
 Files: 3 uploaded, 0 deleted
@@ -26,14 +26,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] apps get [UNIQUE_NAME]
+>>> [CLI] apps get [UNIQUE_NAME]
 "ACTIVE"
 
 === Re-deploy with description change: code deployed again
 
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
 Files: 1 uploaded, 0 deleted
@@ -51,7 +51,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Stop app externally while config says started=true: plan detects drift
 
->>> errcode [CLI] apps stop [UNIQUE_NAME]
+>>> [CLI] apps stop [UNIQUE_NAME]
 "STOPPED"
 
 >>> [CLI] bundle plan
@@ -61,7 +61,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Deploy fixes the drift: compute restarted
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
 Files: 0 uploaded, 0 deleted
@@ -69,14 +69,14 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Stop app externally, then deploy with started=false: app stays stopped
 
->>> errcode [CLI] apps stop [UNIQUE_NAME]
+>>> [CLI] apps stop [UNIQUE_NAME]
 "STOPPED"
 
 >>> update_file.py databricks.yml started: true started: false
 
 >>> update_file.py databricks.yml MY_APP_DESCRIPTION MY_APP_DESCRIPTION_2
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
 Files: 1 uploaded, 0 deleted
@@ -100,7 +100,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] apps get [UNIQUE_NAME]
+>>> [CLI] apps get [UNIQUE_NAME]
 "STOPPED"
 
 === Deploy with started=true: compute restarted and code deployed
@@ -109,7 +109,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> update_file.py databricks.yml MY_APP_DESCRIPTION_2 MY_APP_DESCRIPTION_3
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Updated apps.myapp
 Files: 1 uploaded, 0 deleted
@@ -141,7 +141,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] apps get [UNIQUE_NAME]
+>>> [CLI] apps get [UNIQUE_NAME]
 "ACTIVE"
 
 >>> [CLI] bundle destroy --auto-approve

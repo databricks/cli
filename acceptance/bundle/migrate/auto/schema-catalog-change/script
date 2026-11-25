@@ -9,7 +9,7 @@ TARGET_CATALOG="othercat_$UNIQUE_NAME"
 cleanup() {
   title "Cleanup"
   trace $CLI bundle destroy --auto-approve
-  trace errcode $CLI catalogs delete "$TARGET_CATALOG" --force
+  trace $CLI catalogs delete "$TARGET_CATALOG" --force || true
 }
 trap cleanup EXIT
 
@@ -22,7 +22,7 @@ title "Move the schema to another catalog. Without --auto-approve the recreate i
 # schemas recreate on it. Schemas are in the destructive-approval group, so without
 # --auto-approve the deploy refuses the recreate (exit 1) and the migration is not committed.
 update_file.py databricks.yml "catalog_name: main" "catalog_name: $TARGET_CATALOG"
-trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle deploy
 trace print_migration_telemetry
 
 title "With --auto-approve the recreate moves the schema to the new catalog on direct"

@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-num-workers-absent/default/files...
 Created clusters.cluster1
 Created clusters.cluster2

@@ -36,7 +36,7 @@ Validation OK!
 
 === Recreation of the volume without --auto-approve should fail since prompting is not possible
 
->>> errcode [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name}
+>>> musterr [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name}
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following volumes.
@@ -49,8 +49,6 @@ Deleting data assets such as schemas, pipelines, or volumes may cause permanent 
 To proceed, use --auto-approve after reviewing the plan above.
 
 Files: 0 uploaded, 0 deleted
-
-Exit code: 1
 
 === Successfully recreate the volume with --auto-approve
 

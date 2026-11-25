@@ -7,8 +7,6 @@ Error: Script foo has no content
   at scripts.foo.content
 
 
-Exit code: 1
-
 >>> [CLI] bundle run bar
 Error: Script bar has no content
   at scripts.bar.content
@@ -16,5 +14,3 @@ Error: Script bar has no content
 Error: Script foo has no content
   at scripts.foo.content
 
-
-Exit code: 1

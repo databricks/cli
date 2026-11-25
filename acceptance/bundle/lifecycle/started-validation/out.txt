@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle plan
+>>> [CLI] bundle plan
 Warning: unknown field: started
   at resources.jobs.my_job.lifecycle
   in databricks.yml:9:9

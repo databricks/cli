@@ -1,1 +1,1 @@
-trace errcode $CLI bundle plan >> out.txt 2>&1
+trace $CLI bundle plan >> out.txt 2>&1

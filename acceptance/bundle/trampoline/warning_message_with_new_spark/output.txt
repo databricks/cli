@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle validate
+>>> [CLI] bundle validate
 Name: test-bundle
 Target: dev
 Workspace:

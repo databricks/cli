@@ -21,7 +21,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] apps get [UNIQUE_NAME]
+>>> [CLI] apps get [UNIQUE_NAME]
 "STOPPED"
 
 === Toggle started=false -> started=true: only Start should be called, no Update
@@ -49,7 +49,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] apps get [UNIQUE_NAME]
+>>> [CLI] apps get [UNIQUE_NAME]
 "ACTIVE"
 
 === Toggle started=true -> started=false: only Stop should be called, no Update
@@ -69,7 +69,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "body": {}
 }
 
->>> errcode [CLI] apps get [UNIQUE_NAME]
+>>> [CLI] apps get [UNIQUE_NAME]
 "STOPPED"
 
 >>> [CLI] bundle destroy --auto-approve

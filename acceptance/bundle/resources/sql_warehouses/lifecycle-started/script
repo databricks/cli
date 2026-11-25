@@ -7,35 +7,35 @@ cleanup() {
 trap cleanup EXIT
 
 title "Deploy with started=true: warehouse created and running"
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
 WAREHOUSE_ID=$($CLI bundle summary -o json | jq -r '.resources.sql_warehouses.mywarehouse.id')
 add_repl "$WAREHOUSE_ID" "WAREHOUSE_ID"
 
 trace print_requests.py //sql/warehouses
 rm -f "$OUT_REQUESTS"
-{ trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true
+trace $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'
 
 title "Stop warehouse externally while config says started=true: plan detects drift"
-{ trace errcode $CLI warehouses stop "$WAREHOUSE_ID" | jq '.state'; } || true
+trace $CLI warehouses stop "$WAREHOUSE_ID" | jq '.state'
 trace $CLI bundle plan
 
 title "Deploy fixes the drift: warehouse restarted"
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
 trace print_requests.py //sql/warehouses
 rm -f "$OUT_REQUESTS"
-{ trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true
+trace $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'
 
 title "Deploy with started=false while warehouse is stopped: warehouse stays stopped"
-{ trace errcode $CLI warehouses stop "$WAREHOUSE_ID" | jq '.state'; } || true
+trace $CLI warehouses stop "$WAREHOUSE_ID" | jq '.state'
 trace update_file.py databricks.yml "started: true" "started: false"
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
 trace print_requests.py //sql/warehouses
 rm -f "$OUT_REQUESTS"
-{ trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true
+trace $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'
 
 title "Deploy with started=true: warehouse restarted"
 trace update_file.py databricks.yml "started: false" "started: true"
-trace errcode $CLI bundle deploy
+trace $CLI bundle deploy
 trace print_requests.py //sql/warehouses
 rm -f "$OUT_REQUESTS"
-{ trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true
+trace $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'

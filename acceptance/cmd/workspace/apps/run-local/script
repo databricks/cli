@@ -7,7 +7,7 @@ read -r APP_PORT PROXY_PORT ENTRY_POINT_PORT <<< "$(free_port.py 3)"
 export RETRY_MAX_ATTEMPTS=30
 
 title "Env var with valueFrom cannot be resolved locally"
-trace errcode $CLI apps run-local --entry-point value-from.yml 2>&1
+trace musterr $CLI apps run-local --entry-point value-from.yml 2>&1
 
 title "Entry point overrides the command from app.yml"
 trace $CLI apps run-local --entry-point test.yml --port "$ENTRY_POINT_PORT" &> ../LOG.entry-point

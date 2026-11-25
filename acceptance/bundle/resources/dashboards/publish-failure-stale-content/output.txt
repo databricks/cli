@@ -34,8 +34,6 @@ API message: Fault injected by test.
 
 Files: 1 uploaded, 0 deleted
 
-Exit code: 1
-
 >>> print_requests.py //lakeview/dashboards
 {
   "method": "PATCH",
@@ -107,8 +105,6 @@ before proceeding with the deployment.
 To overwrite the remote changes with your local version, use --force.
 The remote modifications will be lost.
 
-
-Exit code: 1
 
 >>> print_requests.py //lakeview/dashboards
 

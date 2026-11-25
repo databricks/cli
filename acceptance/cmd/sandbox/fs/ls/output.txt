@@ -36,12 +36,8 @@ hello.txt
 >>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
 Error: not a directory: /tmp/sandbox-fs-[UNIQUE_NAME]/hello.txt
 
-Exit code: 1
-
 >>> [CLI] sandbox fs ls [TEST_SANDBOX_ID]:/tmp/sandbox-fs-[UNIQUE_NAME]/missing
 Error: no such directory: /tmp/sandbox-fs-[UNIQUE_NAME]/missing
-
-Exit code: 1
 
 === Complete the entries of a directory, then a partial name
 

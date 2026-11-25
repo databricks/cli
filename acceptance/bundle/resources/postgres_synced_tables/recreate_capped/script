@@ -10,7 +10,7 @@ trace $CLI bundle deploy
 title "The delete never completes; the capped wait times out and the recreate fails"
 # The testserver leaves the synced table in DELETING forever, so the post-delete poll
 # would wait indefinitely. Capping it to 1s makes the wait time out, which fails the
-# recreate. errcode keeps the script going so cleanup still runs.
+# recreate. musterr asserts the failure and keeps the script going so cleanup still runs.
 export TIMESERIES_KEY=tpep_dropoff_datetime
 envsubst < databricks.yml.tmpl > databricks.yml
-trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=1 errcode $CLI bundle deploy
+trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=1 musterr $CLI bundle deploy

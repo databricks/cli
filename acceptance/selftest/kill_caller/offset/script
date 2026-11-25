@@ -9,10 +9,12 @@ trace $CLI current-user me
 echo "Attempt 2 done - success (offset)"
 
 # Attempts 3-4 should be killed
-trace errcode $CLI current-user me
+trace musterr $CLI current-user me
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 echo "Attempt 3 done - killed"
 
-trace errcode $CLI current-user me
+trace musterr $CLI current-user me
+printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 echo "Attempt 4 done - killed"
 
 # Attempt 5 should succeed again

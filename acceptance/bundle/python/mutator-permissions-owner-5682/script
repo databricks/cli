@@ -13,7 +13,7 @@ cleanup() {
     uv run $UV_ARGS -q $CLI bundle destroy --auto-approve &> LOG.destroy
     # Otherwise the group stays until the nightly workspace sweep.
     if [ -n "${grantee_group_id:-}" ]; then
-        errcode $CLI groups delete "$grantee_group_id" &> LOG.group-delete
+        $CLI groups delete "$grantee_group_id" &> LOG.group-delete || true
     fi
     rm -fr .databricks __pycache__
 }

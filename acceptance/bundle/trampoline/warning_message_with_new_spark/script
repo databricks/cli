@@ -1,1 +1,1 @@
-trace errcode $CLI bundle validate
+trace $CLI bundle validate

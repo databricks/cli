@@ -1,7 +1,7 @@
 
 === Deploy with started=false: cluster created and then stopped
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created clusters.mycluster
 Files: 2 uploaded, 0 deleted
@@ -27,14 +27,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] clusters get [UUID]
+>>> [CLI] clusters get [UUID]
 "TERMINATED"
 
 === Toggle started=false -> started=true: only Start should be called, no Edit
 
 >>> update_file.py databricks.yml started: false started: true
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated clusters.mycluster
 Files: 1 uploaded, 0 deleted
@@ -49,14 +49,14 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] clusters get [UUID]
+>>> [CLI] clusters get [UUID]
 "RUNNING"
 
 === Toggle started=true -> started=false: only Stop should be called, no Edit
 
 >>> update_file.py databricks.yml started: true started: false
 
->>> errcode [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated clusters.mycluster
 Files: 1 uploaded, 0 deleted
@@ -71,7 +71,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> errcode [CLI] clusters get [UUID]
+>>> [CLI] clusters get [UUID]
 "TERMINATED"
 
 >>> [CLI] bundle destroy --auto-approve

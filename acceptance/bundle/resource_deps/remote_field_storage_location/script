@@ -8,7 +8,7 @@ trace $CLI bundle validate -o json | jq .resources
 trace $CLI bundle plan
 trace print_requests.py --get //unity
 trap cleanup EXIT
-trace errcode $CLI bundle deploy &> out.deploy.txt
+trace $CLI bundle deploy &> out.deploy.txt
 print_requests.py --get //unity &> out.deploy.requests.json
 
 # Terraform could not deploy, so it still shows up here; direct shows no drift:

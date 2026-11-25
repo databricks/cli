@@ -11,11 +11,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Bind must refuse: the state cannot be read, so we cannot tell if job_1 is already managed
 
->>> errcode [CLI] bundle deployment bind job_1 [EXTERNAL_JOB_ID] --auto-approve
+>>> musterr [CLI] bundle deployment bind job_1 [EXTERNAL_JOB_ID] --auto-approve
 Error: cannot check whether resources.jobs.job_1 is already bound: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage ("wal-lineage-bbb") does not match state lineage ("[UUID]")
 
-
-Exit code: 1
 
 === Nothing was bound: the WAL is untouched and no bind state was written
 

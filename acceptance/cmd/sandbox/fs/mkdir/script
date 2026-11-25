@@ -10,4 +10,4 @@ trace $CLI sandbox fs mkdir $SANDBOX_ROOT/a/b/c
 
 title "Creating a directory over a file fails"
 $CLI sandbox fs cp hello.txt $SANDBOX_ROOT/hello.txt > /dev/null
-errcode trace $CLI sandbox fs mkdir $SANDBOX_ROOT/hello.txt
+musterr trace $CLI sandbox fs mkdir $SANDBOX_ROOT/hello.txt

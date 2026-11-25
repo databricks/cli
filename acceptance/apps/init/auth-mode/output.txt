@@ -392,20 +392,14 @@ targets:
 
 === Errors
 
->>> errcode [CLI] apps init --template ./template --skip-install --name app-err --features jobs --set jobs.job.authMode=obo
+>>> musterr [CLI] apps init --template ./template --skip-install --name app-err --features jobs --set jobs.job.authMode=obo
 Error: resource "job" of plugin "jobs" cannot be accessed on behalf of the user; use jobs.job.authMode=sp
 
-Exit code: 1
-
->>> errcode [CLI] apps init --template ./template --skip-install --name app-err --features jobs --set jobs.secret.authMode=sp
+>>> musterr [CLI] apps init --template ./template --skip-install --name app-err --features jobs --set jobs.secret.authMode=sp
 Error: resource "secret" of plugin "jobs" is always accessed by the app's service principal; remove --set jobs.secret.authMode=sp
 
-Exit code: 1
-
->>> errcode [CLI] apps init --template ./template --skip-install --name app-err --features jobs --auth-mode both
+>>> musterr [CLI] apps init --template ./template --skip-install --name app-err --features jobs --auth-mode both
 Error: invalid --auth-mode value: "both" (must be obo or sp; use --set <plugin>.<resourceKey>.authMode=both for a single resource)
-
-Exit code: 1
 
 === Validate: OBO resource whose scope was removed from user_api_scopes
 
@@ -418,7 +412,5 @@ Exit code: 1
   Files: 3
 
 
->>> errcode [CLI] apps validate --path app-val
+>>> musterr [CLI] apps validate --path app-val
 Error: resource "sql-warehouse" is accessed on behalf of the user but its scope "sql" is missing from user_api_scopes in databricks.yml
-
-Exit code: 1

@@ -47,6 +47,6 @@ print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id
 
 title "Old project is gone after recreate"
 # Local testserver returns not found; the cloud soft-deletes and returns the project with delete_time set.
-errcode retry $CLI postgres get-project $project_id_1 &> old_project.tmp
+musterr retry $CLI postgres get-project $project_id_1 &> old_project.tmp
 grep -q -e 'not found' -e '"delete_time"' old_project.tmp && echo "Old project is deleted" || echo "Old project still exists"
 rm old_project.tmp

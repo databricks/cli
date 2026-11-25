@@ -10,6 +10,6 @@ for uv_path in $(which -a uv 2>/dev/null); do
 done
 
 # Try to deploy, expect failure due to missing uv
-errcode trace $CLI bundle deploy
+musterr trace $CLI bundle deploy
 
 cd ../.. && rm -fr tmp

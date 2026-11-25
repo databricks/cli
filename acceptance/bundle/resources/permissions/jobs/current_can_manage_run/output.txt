@@ -24,7 +24,7 @@
   }
 }
 
->>> errcode [CLI] bundle deploy -t green
+>>> [CLI] bundle deploy -t green
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/files...
 Created jobs.interim_gold_layer_job
 Created jobs.interim_gold_layer_job.permissions
@@ -33,7 +33,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -o json -t green
 
->>> errcode [CLI] bundle destroy -t green --auto-approve
+>>> [CLI] bundle destroy -t green --auto-approve
 The following resources will be deleted:
   delete resources.jobs.interim_gold_layer_job
 

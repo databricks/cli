@@ -5,8 +5,6 @@ hello, world
 >>> [CLI] bundle run -- --help
 Error: looking up "--help" failed: exec: "--help": executable file not found in PATH
 
-Exit code: 1
-
 >>> [CLI] bundle run -- bash -c exit 5
 
 Exit code: 5

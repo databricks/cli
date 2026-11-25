@@ -9,7 +9,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === destroy without --force-lock (lock write hits the node limit: aborts)
 
->>> errcode [CLI] bundle destroy --auto-approve
+>>> musterr [CLI] bundle destroy --auto-approve
 Error: Failed to acquire deployment lock: access denied: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
 Error: Failed to update, encountered possible permission error: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 Error: unable to deploy to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state as [USERNAME].
@@ -18,8 +18,6 @@ For assistance, contact the owners of this project.
 They may need to redeploy the bundle to apply the new permissions.
 Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions.
 
-
-Exit code: 1
 
 === destroy with --force-lock (tolerates the node limit: proceeds and completes)
 

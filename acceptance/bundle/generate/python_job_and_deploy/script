@@ -32,8 +32,8 @@ add_repl "$JOB_ID" JOB_ID
 
 cleanup() {
     title "Cleanup: delete the original job and notebook"
-    trace errcode $CLI jobs delete "$JOB_ID"
-    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook-${UNIQUE_NAME}"
+    trace $CLI jobs delete "$JOB_ID" || true
+    trace $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook-${UNIQUE_NAME}" || true
 }
 trap cleanup EXIT
 

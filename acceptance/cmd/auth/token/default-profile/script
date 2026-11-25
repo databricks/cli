@@ -20,7 +20,7 @@ default_profile = myprofile
 ENDCFG
 
 title "default_profile is honored when no args, --profile, or env var"
-trace errcode $CLI auth token
+trace musterr $CLI auth token
 
 title "default_profile pointing at a missing profile falls through to picker"
 cat > "./home/.databrickscfg" <<'ENDCFG'
@@ -31,4 +31,4 @@ auth_type = databricks-cli
 [__settings__]
 default_profile = does-not-exist
 ENDCFG
-trace errcode $CLI auth token
+trace musterr $CLI auth token
