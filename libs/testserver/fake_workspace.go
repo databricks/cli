@@ -213,6 +213,9 @@ type FakeWorkspace struct {
 	// dbfs is the DBFS namespace, created on first use (see dbfs.go).
 	dbfs *fakeDbfs
 
+	// sandboxFiles holds the filesystem of each sandbox, created on first use (see sandbox_files.go).
+	sandboxFiles map[string]*fakeSandboxFs
+
 	// snapshots records immutable-snapshot content paths. Breaking the glass on a
 	// recorded path flips it dirty for good, as in the real API.
 	snapshots map[string]*snapshotRecord
@@ -222,7 +225,7 @@ type FakeWorkspace struct {
 	JobRunOutputs         map[int64]jobs.RunOutput
 	JobRunIdempotency     map[string]int64
 	Pipelines             map[string]pipelines.GetPipelineResponse
-	PipelineUpdates       map[string]bool
+	PipelineUpdates       map[string]pipelines.UpdateInfo
 	Monitors              map[string]catalog.MonitorInfo
 	DataQualityMonitors   map[string]dataquality.Monitor
 	Apps                  map[string]apps.App
@@ -234,6 +237,7 @@ type FakeWorkspace struct {
 	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
 	Alerts                map[string]sql.AlertV2
+	PurgedAlertIDs        map[string]bool
 	Experiments           map[string]ml.GetExperimentResponse
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
@@ -246,6 +250,9 @@ type FakeWorkspace struct {
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ModelServices         map[string]catalog.ModelService
 	McpServices           map[string]catalog.McpService
+	// McpUserCredentials holds the caller's sign-in to each MCP service, keyed by the service full name. The fake has one
+	// caller.
+	McpUserCredentials    map[string]catalog.McpServiceUserMappedCredential
 	ModelProviderServices map[string]catalog.ModelProviderService
 
 	// RegisteredModelVersions counts the versions registered on each model, keyed by its full name.
@@ -533,7 +540,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		JobRunIdempotency:     map[string]int64{},
 		Grants:                map[string][]catalog.PrivilegeAssignment{},
 		Pipelines:             map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:       map[string]bool{},
+		PipelineUpdates:       map[string]pipelines.UpdateInfo{},
 		Monitors:              map[string]catalog.MonitorInfo{},
 		DataQualityMonitors:   map[string]dataquality.Monitor{},
 		Apps:                  map[string]apps.App{},
@@ -543,6 +550,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
 		ModelServices:         map[string]catalog.ModelService{},
 		McpServices:           map[string]catalog.McpService{},
+		McpUserCredentials:    map[string]catalog.McpServiceUserMappedCredential{},
 		ModelProviderServices: map[string]catalog.ModelProviderService{},
 		Features:              map[string]ml.Feature{},
 		MaterializationSets:   map[string]ml.MaterializationSet{},
@@ -588,6 +596,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DmsDeployments:            map[string]*DmsDeployment{},
 		DmsDeploymentNodes:        map[string]string{},
 		Alerts:                    map[string]sql.AlertV2{},
+		PurgedAlertIDs:            map[string]bool{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},
 		ModelRegistryModelIDs:     map[string]string{},

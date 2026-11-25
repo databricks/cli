@@ -3,6 +3,7 @@
 package esm_enablement_account
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,23 +18,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "esm-enablement-account",
-		Short: `*Public Preview* The enhanced security monitoring setting at the account level controls whether to enable the feature on new workspaces.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "esm-enablement-account",
+	Short: `*Public Preview* The enhanced security monitoring setting at the account level controls whether to enable the feature on new workspaces.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 The enhanced security monitoring setting at the account level controls whether
   to enable the feature on new workspaces. By default, this account-level
   setting is disabled for new workspaces. After workspace creation, account
   admins can enable enhanced security monitoring individually for each
-  workspace.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  workspace.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -43,8 +48,6 @@ The enhanced security monitoring setting at the account level controls whether
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

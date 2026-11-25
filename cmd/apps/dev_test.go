@@ -20,12 +20,11 @@ func TestIsViteReady(t *testing.T) {
 	})
 
 	t.Run("vite is running", func(t *testing.T) {
-		// Start a mock server on the Vite port
-		listener, err := net.Listen("tcp", "localhost:5173")
+		// Use a free port so the check cannot collide with anything else bound to 5173.
+		listener, err := net.Listen("tcp", "localhost:0")
 		require.NoError(t, err)
 		defer listener.Close()
 
-		// Accept connections in the background
 		go func() {
 			for {
 				conn, err := listener.Accept()
@@ -36,11 +35,12 @@ func TestIsViteReady(t *testing.T) {
 			}
 		}()
 
-		// Give the listener a moment to start
-		time.Sleep(50 * time.Millisecond)
-
-		ready := isViteReady(5173)
-		assert.True(t, ready)
+		// A single dial has only viteReadyCheckInterval (100ms) to succeed. On loaded
+		// CI runners, and on Windows where dialing "localhost" may first try an
+		// unbound ::1 before 127.0.0.1, one attempt can time out. Poll like the
+		// production wait loop does.
+		port := listener.Addr().(*net.TCPAddr).Port
+		assert.Eventually(t, func() bool { return isViteReady(port) }, 10*time.Second, 50*time.Millisecond)
 	})
 }
 

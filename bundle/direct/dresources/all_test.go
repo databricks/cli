@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -22,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -153,15 +155,28 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	// The fake accepts a declarative feature alongside lookups and functions, which the real API
+	// rejects.
 	"feature_specs": &resources.FeatureSpec{
 		Name: "main.default.my_feature_spec",
-		Features: []ml.Features{{
-			FeatureLookup: &ml.FeatureLookup{
-				Table:        "main.default.my_table",
-				LookupKeys:   []string{"id"},
-				FeatureNames: []string{"amount"},
-			},
-		}},
+		Features: []ml.Features{
+			{FeatureLookup: &ml.FeatureLookup{
+				Table:               "main.default.my_table",
+				LookupKeys:          []string{"id"},
+				TimestampLookupKeys: []string{"ts"},
+				LookbackWindow:      duration.New(time.Hour),
+				FeatureNames:        []string{"amount", "country"},
+				RenameOutputs:       []ml.RenameOutput{{Feature: "amount", Output: "total_amount"}},
+				DefaultValues:       []ml.DefaultValue{{Feature: "country", DefaultValue: "unknown"}},
+			}},
+			{FeatureFunction: &ml.FeatureFunction{
+				Udf:           "main.default.my_udf",
+				Output:        "score",
+				InputBindings: []ml.FeatureFunctionInputBinding{{Parameter: "x", BoundFeature: "amount"}},
+			}},
+			{DeclarativeFeature: &ml.DeclarativeFeature{Feature: "main.default.my_feature"}},
+		},
+		ExcludeColumns:       []string{"country"},
 		ExtraPipRequirements: &ml.PipRequirements{Requirements: []string{"numpy==2.1.0"}},
 	},
 
@@ -1136,7 +1151,9 @@ func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgA
 	require.Empty(t, relevantChanges, msgAndArgs...)
 }
 
-func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+// prepareTestState creates the resources group depends on and returns the state DoCreate takes,
+// built from the group's fixture in testDeps or testConfig.
+func prepareTestState(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) any {
 	var inputConfig any
 	var err error
 
@@ -1176,6 +1193,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		ss.RelativePath = ss.BundleID + "/" + hash
 		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath + "/" + snapshot.ContentSubdir
 	}
+
+	return newState
+}
+
+func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
+	newState := prepareTestState(t, group, adapter, client)
 
 	ctx := t.Context()
 
@@ -1379,6 +1402,9 @@ func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cf
 	}
 	for _, p := range cfg.UpdatableIDFields {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdatableIDFields: %s", p.Field)
+	}
+	for _, p := range cfg.ParentIDFields {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "ParentIDFields: %s", p.Field)
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)

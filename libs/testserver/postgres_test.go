@@ -108,7 +108,7 @@ func TestPostgresProjectDuplicate(t *testing.T) {
 	createReq2.Header.Set("Authorization", "Bearer test-token")
 	createResp2, err := client.Do(createReq2)
 	require.NoError(t, err)
-	assert.Equal(t, 409, createResp2.StatusCode)
+	assert.Equal(t, 400, createResp2.StatusCode)
 	createResp2.Body.Close()
 }
 

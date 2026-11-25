@@ -160,9 +160,8 @@ func tarballFromInclude(ctx context.Context, b *bundle.Bundle, a *config.Artifac
 }
 
 // tarballFromGit snapshots a git ref via `git archive`, so the archive reflects the
-// committed tree at that ref. Entries are named relative to `path` (the tree at
-// `<ref>:<path>`); `include`, when set, scopes the archived pathspecs. Commit wins over
-// Branch.
+// committed tree at that ref. Entries are named relative to `path`; `include`, when
+// set, scopes the archived pathspecs. Commit wins over Branch.
 func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w io.Writer) error {
 	ref := a.Git.Commit
 	if ref == "" {
@@ -171,18 +170,20 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	if ref == "" {
 		return errors.New("git artifact: specify git.commit or git.branch")
 	}
-	relBase, err := codeRel(b, a)
-	if err != nil {
-		return err
-	}
-	treeish := ref
-	if relBase != "." {
-		// The tree at <ref>:<path>, so entries come out relative to `path`.
-		treeish = ref + ":" + relBase
+	// Run from `path`: git archive then keeps only that directory, with entries and
+	// include pathspecs relative to it, wherever it sits in the repository. Archiving a
+	// commit (not a <ref>:<path> tree) also stamps entries with the commit time, which
+	// keeps the tarball reproducible.
+	// git archive run from a directory the ref doesn't have (uncommitted, or added
+	// after an older ref) succeeds with an empty archive, so check that it exists.
+	// Only once the ref resolves: otherwise git archive below reports git's own error
+	// (unknown ref, not a git repository).
+	if gitVerify(ctx, a.Path, ref+"^{commit}") && !gitVerify(ctx, a.Path, ref+":./") {
+		return fmt.Errorf("git artifact: %s is not in the tree of %s; commit it or pick a ref that contains it", a.Path, ref)
 	}
 	// Ask git for an uncompressed tar and gzip it ourselves with pgzip: git's
 	// --format=tar.gz gzip is single-threaded, whereas pgzip spreads it across cores.
-	args := []string{"-C", b.SyncRootPath, "archive", "--format=tar", treeish}
+	args := []string{"-C", a.Path, "archive", "--format=tar", ref}
 	if len(a.Include) > 0 {
 		args = append(args, "--")
 		args = append(args, a.Include...)
@@ -197,9 +198,14 @@ func tarballFromGit(ctx context.Context, b *bundle.Bundle, a *config.Artifact, w
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		gzw.Close()
-		return fmt.Errorf("git archive %s: %w: %s", treeish, err, stderr.String())
+		return fmt.Errorf("git archive %s in %s: %w: %s", ref, a.Path, err, stderr.String())
 	}
 	return gzw.Close()
+}
+
+// gitVerify reports whether rev resolves when git runs in dir.
+func gitVerify(ctx context.Context, dir, rev string) bool {
+	return exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "--verify", "--quiet", rev).Run() == nil
 }
 
 // addFileToTarball writes f (a sync-root-relative file) to the archive under a name

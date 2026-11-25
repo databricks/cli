@@ -31,7 +31,7 @@ Resources: 1 created, 0 changed, 0 deleted, 3 unchanged
 
 === Confirm the database is under management again
 
->>> [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
+>>> retry [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
 {
   "database_id": "my-database",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database",

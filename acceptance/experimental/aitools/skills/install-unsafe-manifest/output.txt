@@ -1,0 +1,40 @@
+
+=== a manifest listing a file outside its skill directory fails before any file is written
+
+>>> DATABRICKS_SKILLS_REF=unsafe-ref [CLI] aitools install --skills-only --scope=global --agents=claude-code
+Installing Databricks skills for Claude Code...
+Using skills version unsafe-ref
+Fetching skills manifest...
+Error: skills manifest names a path outside the skills directory: skill "test-stable" lists file "../../.bashrc"
+No skill files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from https://github.com/databricks/databricks-agent-skills/releases and re-run 'databricks aitools install --scope=global --agents=claude-code --skills-only', and report the manifest from [DATABRICKS_HOST] at https://github.com/databricks/cli/issues
+
+>>> DATABRICKS_SKILLS_REF=unsafe-ref [CLI] aitools install --skills-only --scope=global --agents=claude-code --output json
+{
+  "scope": "global",
+  "agents": [],
+  "error": "skills manifest names a path outside the skills directory: skill \"test-stable\" lists file \"../../.bashrc\"",
+  "error_category": "MANIFEST_INVALID",
+  "recovery": "No skill files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from https://github.com/databricks/databricks-agent-skills/releases and re-run 'databricks aitools install --scope=global --agents=claude-code --skills-only --output json', and report the manifest from [DATABRICKS_HOST] at https://github.com/databricks/cli/issues."
+}
+no skill files were written
+
+=== a skill with an unportable name is skipped and the others install
+
+>>> DATABRICKS_SKILLS_REF=unportable-ref [CLI] aitools install --skills-only --scope=global --agents=claude-code
+Installing Databricks skills for Claude Code...
+Using skills version unportable-ref
+Fetching skills manifest...
+Warn: Skipping skill "Test_Unportable": the name is not at most 64 lowercase letters, digits and single hyphens
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
+test-stable
+
+=== naming the unportable skill with --skills fails
+
+>>> DATABRICKS_SKILLS_REF=unportable-ref [CLI] aitools install --skills-only --scope=global --agents=claude-code --skills=Test_Unportable --output json
+{
+  "scope": "global",
+  "agents": [],
+  "error": "skill \"Test_Unportable\" cannot be installed: the name is not at most 64 lowercase letters, digits and single hyphens",
+  "error_category": "MANIFEST_INVALID",
+  "recovery": "No skill files were written. Set DATABRICKS_SKILLS_REF to an earlier release tag from https://github.com/databricks/databricks-agent-skills/releases and re-run 'databricks aitools install --scope=global --agents=claude-code --skills-only --skills=Test_Unportable --output json', and report the manifest from [DATABRICKS_HOST] at https://github.com/databricks/cli/issues."
+}

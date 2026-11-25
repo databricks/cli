@@ -3,6 +3,7 @@
 package repos
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "repos",
-		Short: `The Repos API allows users to manage their git repos.`,
-		Long: `The Repos API allows users to manage their git repos. Users can use the API to
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "repos",
+	Short:   `The Repos API allows users to manage their git repos.`,
+	GroupID: "workspace",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Repos API allows users to manage their git repos. Users can use the API to
   access all repos that they have manage permissions on.
 
   Databricks Repos is a visual Git client in Databricks. It supports common Git
@@ -31,14 +37,13 @@ func New() *cobra.Command {
 
   Within Repos you can develop code in notebooks or other files and follow data
   science and engineering code development best practices using Git for version
-  control, collaboration, and CI/CD.`,
-		GroupID: "workspace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  control, collaboration, and CI/CD.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -89,7 +92,7 @@ func newCreate() *cobra.Command {
   unlike repos created in the browser.
 
   Arguments:
-    URL: URL of the Git repository to be linked.
+    URL: HTTPS URL of the Git repository to be linked. SSH URLs are not supported.
     PROVIDER: Git provider. This field is case-insensitive. The available Git providers
       are gitHub, bitbucketCloud, gitLab, azureDevOpsServices (Azure
       DevOps Services, including Microsoft Entra ID authentication),
@@ -174,10 +177,11 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a repo.`
 	cmd.Long = `Delete a repo.
 
-  Deletes the specified repo.
+  Deletes the Git folder (repo) and its contents from the workspace. The remote
+  Git repository is not affected.
 
   Arguments:
-    REPO_ID: The ID for the corresponding repo to delete.`
+    REPO_ID: ID of the Git folder (repo) to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -196,14 +200,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to delete")
+			id, err := cmdio.Select(ctx, names, "ID of the Git folder (repo) to delete")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the id for the corresponding repo to delete")
+			return errors.New("expected to have id of the git folder (repo) to delete")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
@@ -482,8 +486,10 @@ func newList() *cobra.Command {
 
   Deprecated: This operation does not return a complete list of the repos in the
   workspace, because repos with the Git CLI enabled are not included in its
-  results. Instead, use the Repos and Workspace APIs to find repos and their
-  associated metadata in the workspace.`
+  results. Instead, find Git folders with GET /api/2.0/workspace/get-status
+  (for one path) or GET /api/2.0/workspace/list (keep objects with
+  object_type == "REPO" or directory_info.is_git_folder == true), then call
+  GET /api/2.0/repos/{object_id} for Git metadata.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -629,7 +635,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
+	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch to check out.`)
 	cmd.Flags().BoolVar(&updateReq.DangerouslyForceDiscardAll, "dangerously-force-discard-all", updateReq.DangerouslyForceDiscardAll, `WARNING: DESTRUCTIVE AND IRREVERSIBLE.`)
 	cmd.Flags().Int64Var(&updateReq.GitCredentialId, "git-credential-id", updateReq.GitCredentialId, `Git credential ID to use for this update operation.`)
 	// TODO: complex arg: sparse_checkout
@@ -640,7 +646,8 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a repo.
 
   Updates the repo to a different branch or tag, or updates the repo to the
-  latest commit on the same branch.
+  latest commit on the same branch. Exactly one of branch or tag must be
+  specified.
 
   Arguments:
     REPO_ID: ID of the Git folder (repo) object in the workspace.`

@@ -24,3 +24,22 @@ Cloud = false
 >>> selection
 Selected 1 changed tests (limit=50, 0 not selected)
     5  ^bundle$/^invariant$/^migrate$
+
+=== Tests named in the last commit message are listed after the changed ones
+
+>>> selection
+Selected 1 changed tests (limit=50, 0 not selected)
+    5  ^bundle$/^invariant$/^migrate$
+Selected 2 test dirs named in the last commit message (local)
+       ^bundle$/^invariant$/^migrate$/^INPUT_CONFIG=new\.yml\.tmpl$
+       ^bundle$/^invariant$/^no_drift$
+WARNING: "TestAccept/nope" in the last commit message matches no acceptance test
+WARNING: ignoring "gcp: `TestAccept/bundle`" in the last commit message: every word after the cloud prefix must be a test name such as TestAccept/<path>
+
+>>> [SELECTION] -root acceptance -cloud gcp
+Selected 1 changed tests (limit=50, 0 not selected)
+    5  ^bundle$/^invariant$/^migrate$
+Selected 1 test dirs named in the last commit message (gcp)
+       ^bundle$/^invariant$/^migrate$/^INPUT_CONFIG=new\.yml\.tmpl$
+WARNING: "TestAccept/nope" in the last commit message matches no acceptance test
+WARNING: ignoring "gcp: `TestAccept/bundle`" in the last commit message: every word after the cloud prefix must be a test name such as TestAccept/<path>

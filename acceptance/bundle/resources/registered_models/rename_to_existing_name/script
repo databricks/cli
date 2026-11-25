@@ -1,0 +1,24 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+SCHEMA="main.test-schema-${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a schema with two registered models"
+trace $CLI bundle deploy
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "Rename the first model to the second one's name: UC rejects the rename"
+trace update_file.py databricks.yml "name: model_a" "name: model_b"
+trace musterr $CLI bundle deploy
+trace print_requests.py //unity-catalog
+
+title "Both models are still there under their names"
+trace $CLI registered-models get "$SCHEMA.model_a" | jq '{full_name}'
+trace $CLI registered-models get "$SCHEMA.model_b" | jq '{full_name}'

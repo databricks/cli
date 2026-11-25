@@ -31,7 +31,7 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-database [MY_DATABASE_ID]
+>>> retry [CLI] postgres get-database [MY_DATABASE_ID]
 {
   "database_id": "my-database",
   "name": "[MY_DATABASE_ID]",
@@ -110,7 +110,7 @@ Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-database [MY_DATABASE_ID]
+>>> retry [CLI] postgres get-database [MY_DATABASE_ID]
 {
   "database_id": "my-database",
   "name": "[MY_DATABASE_ID]",
@@ -141,7 +141,7 @@ Resources: 0 created, 1 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-database [MY_DATABASE_ID]
+>>> retry [CLI] postgres get-database [MY_DATABASE_ID]
 {
   "database_id": "my-database",
   "name": "[MY_DATABASE_ID]",

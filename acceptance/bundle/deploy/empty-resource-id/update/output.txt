@@ -26,6 +26,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
       "catalog_name": "main",
       "name": "myvolume",
       "schema_name": "myschema",
+      "volume_id": "[UUID]",
       "volume_type": "MANAGED"
     }
   }

@@ -3,6 +3,7 @@
 package data_quality
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,19 +19,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "data-quality",
-		Short: `Manage the data quality of Unity Catalog objects (currently support schema and table).`,
-		Long: `Manage the data quality of Unity Catalog objects (currently support schema
-  and table)`,
-		GroupID: "dataquality",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "data-quality",
+	Short:   `Manage the data quality of Unity Catalog objects (currently support schema and table).`,
+	GroupID: "dataquality",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage the data quality of Unity Catalog objects (currently support schema
+  and table)`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCancelRefresh())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start cancel-refresh command
@@ -382,12 +385,12 @@ func newDeleteMonitor() *cobra.Command {
 	cmd.Short = `Delete a monitor.`
 	cmd.Long = `Delete a monitor.
 
-  Delete a data quality monitor on Unity Catalog object.
+  Delete a data quality monitor on a Unity Catalog object.
 
   For the table object_type, the caller must have either of the following
-  sets of permissions: **MANAGE** and **USE_CATALOG** on the table's parent
-  catalog. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
-  **USE_SCHEMA** on the table's parent schema. **USE_CATALOG** on the table's
+  sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent
+  catalog. 2. **USE_CATALOG** on the table's parent catalog, and **MANAGE** and
+  **USE_SCHEMA** on the table's parent schema. 3. **USE_CATALOG** on the table's
   parent catalog, **USE_SCHEMA** on the table's parent schema, and **MANAGE** on
   the table.
 
@@ -735,7 +738,7 @@ func newListMonitor() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listMonitorLimit int
 
-	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, ``)
+	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, `The maximum number of monitors to return in one page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMonitorLimit, "limit", 0, `Maximum number of results to return.`)
@@ -916,7 +919,8 @@ func newUpdateMonitor() *cobra.Command {
 	cmd.Short = `Update a monitor.`
 	cmd.Long = `Update a monitor.
 
-  Update a data quality monitor on Unity Catalog object.
+  Update a data quality monitor on a Unity Catalog object. Only the fields named
+  in update_mask are changed.
 
   For the table object_type, the caller must have either of the following
   sets of permissions: 1. **MANAGE** and **USE_CATALOG** on the table's parent

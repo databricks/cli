@@ -64,8 +64,13 @@ func (c *BasicOAuthEndpointSupplier) GetAccountOAuthEndpoints(ctx context.Contex
 
 // GetUnifiedOAuthEndpoints returns the OAuth2 endpoints for the unified host
 func (c *BasicOAuthEndpointSupplier) GetUnifiedOAuthEndpoints(ctx context.Context, host, accountId string) (*OAuthAuthorizationServer, error) {
-	oidc := fmt.Sprintf("%s/oidc/accounts/%s/.well-known/oauth-authorization-server", host, accountId)
-	return c.GetEndpointsFromURL(ctx, oidc)
+	return c.GetEndpointsFromURL(ctx, accountDiscoveryURL(host, accountId))
+}
+
+// accountDiscoveryURL returns the URL of the OIDC discovery document of the
+// account on host, which is either a classic account host or a unified host.
+func accountDiscoveryURL(host, accountId string) string {
+	return fmt.Sprintf("%s/oidc/accounts/%s/.well-known/oauth-authorization-server", host, accountId)
 }
 
 // OAuthAuthorizationServer contains the OAuth endpoints for a Databricks account
@@ -80,6 +85,7 @@ type OAuthAuthorizationServer struct {
 	TokenEndpoint string `json:"token_endpoint"`
 
 	// DeviceAuthorizationEndpoint is the RFC 8628 device authorization endpoint.
-	// Workspaces only advertise it when device code login is enabled for them.
+	// Workspaces and accounts only advertise it when device code login is
+	// enabled for them.
 	DeviceAuthorizationEndpoint string `json:"device_authorization_endpoint"`
 }

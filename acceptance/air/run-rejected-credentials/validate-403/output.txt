@@ -1,0 +1,14 @@
+
+=== a 403 from config:validate is a missing permission (json)
+
+>>> [CLI] air run -f [TESTROOT]/air/run-rejected-credentials/validate-403/../valid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "PERMISSION_DENIED",
+    "kind": "PERMANENT",
+    "message": "failed to validate config: User does not have access to the accelerator pool.",
+    "retryable": false
+  }
+}

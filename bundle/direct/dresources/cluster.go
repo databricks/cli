@@ -634,6 +634,7 @@ func libraryWaitKey(l compute.Library) (string, string) {
 		return "whl", l.Whl
 	case l.Jar != "":
 		return "jar", l.Jar
+	//nolint:staticcheck // SA1019: egg libraries are deprecated in the SDK but remain a supported bundle config field
 	case l.Egg != "":
 		return "egg", l.Egg
 	case l.Requirements != "":

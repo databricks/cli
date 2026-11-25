@@ -1,0 +1,35 @@
+
+=== A generated name that an entry this CLI did not write holds gets a suffix, and the output says who holds the base name
+
+>>> [CLI] aitools mcp add --profile dogfood --names genie_one_mcp --agents cursor
+Profile dogfood ([DATABRICKS_URL])
+Agents (named with --agents): cursor
+
+genie_one_mcp-dogfood-2  system.ai.genie_one_mcp
+  genie_one_mcp-dogfood is taken in Cursor; using genie_one_mcp-dogfood-2
+  cursor       installed  [TEST_TMP_DIR]/home/.cursor/mcp.json
+
+Cursor may ask you to approve genie_one_mcp-dogfood-2. Run: cursor-agent mcp enable genie_one_mcp-dogfood-2 (`agent` in the Cursor docs), or approve it in Cursor's MCP settings.
+
+=== --force replaces the user's own entry, and the output says so
+
+>>> [CLI] aitools mcp add --profile dogfood --names dbsql --name user-server --agents cursor --force
+Profile dogfood ([DATABRICKS_URL])
+Agents (named with --agents): cursor
+
+user-server  system.ai.dbsql
+  replaced user-server in Cursor (not written by this CLI)
+  cursor       installed  [TEST_TMP_DIR]/home/.cursor/mcp.json
+  Needs an account admin to turn on the Enhanced Unity Gateway preview.
+
+Cursor may ask you to approve user-server. Run: cursor-agent mcp enable user-server (`agent` in the Cursor docs), or approve it in Cursor's MCP settings.
+
+=== The user's entry that was not replaced is intact
+
+>>> jq .mcpServers["genie_one_mcp-dogfood"] home/.cursor/mcp.json
+{
+  "command": "users-own",
+  "args": [
+    "users-own"
+  ]
+}

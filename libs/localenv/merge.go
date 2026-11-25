@@ -89,7 +89,7 @@ func planDBConnect(target []byte, c Constraints, opts MergeOptions) dbconnectPla
 		return dbconnectPlan{}
 	}
 	// Mirror MergeManaged's own preprocessing so the same lines are inspected.
-	protected, _, err := protectMultilineStrings(strings.ReplaceAll(string(target), "\r\n", "\n"))
+	protected, _, err := ProtectMultilineStrings(strings.ReplaceAll(string(target), "\r\n", "\n"))
 	if err != nil {
 		return dbconnectPlan{}
 	}
@@ -303,7 +303,7 @@ func transformLines(target []byte, fn func([]string) ([]string, error)) ([]byte,
 		s = strings.ReplaceAll(s, "\r\n", "\n")
 	}
 
-	protected, restore, err := protectMultilineStrings(s)
+	protected, restore, err := ProtectMultilineStrings(s)
 	if err != nil {
 		return nil, err
 	}
@@ -1144,12 +1144,12 @@ func markerAttachedToToolUv(lines []string, start int) bool {
 // [tool.uv] table, capturing its leading whitespace.
 var constraintDepsRe = regexp.MustCompile(`^\s*constraint-dependencies\s*=`)
 
-// protectMultilineStrings replaces TOML multi-line strings with unique ordinary
+// ProtectMultilineStrings replaces TOML multi-line strings with unique ordinary
 // string values while the line-based merge runs. This prevents string contents
 // that resemble tables, assignments, brackets, comments, or managed markers
 // from affecting the merge. The returned restore function puts each original
 // string back byte-for-byte after the managed edits are complete.
-func protectMultilineStrings(s string) (protected string, restore func(string) string, err error) {
+func ProtectMultilineStrings(s string) (protected string, restore func(string) string, err error) {
 	type replacement struct {
 		placeholder string
 		original    string

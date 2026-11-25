@@ -18,7 +18,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 {
   "git_source": {
     "action": "skip",
-    "reason": "no active deployment",
+    "reason": "spec:input_only",
     "old": {
       "branch": "main"
     },

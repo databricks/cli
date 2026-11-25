@@ -41,3 +41,12 @@ cp ../fixtures/base.toml acceptance/bundle/invariant/migrate/test.toml
 cp ../fixtures/new_matrix.toml acceptance/bundle/invariant/migrate/out.test.toml
 trace cat acceptance/bundle/invariant/migrate/test.toml
 trace selection
+
+title "Tests named in the last commit message are listed after the changed ones"
+git commit -q --allow-empty -m 'Run tests
+
+aws: TestAccept/bundle/invariant/no_drift
+cloud: TestAccept/bundle/invariant/migrate/INPUT_CONFIG=new.yml.tmpl TestAccept/nope
+gcp: `TestAccept/bundle`'
+trace selection
+trace "$SELECTION" -root acceptance -cloud gcp

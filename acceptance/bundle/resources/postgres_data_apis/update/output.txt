@@ -28,7 +28,7 @@ Updated postgres_data_apis.my_data_api
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 4 unchanged
 
->>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
+>>> retry [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database",
@@ -56,7 +56,7 @@ Updated postgres_data_apis.my_data_api
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 4 unchanged
 
->>> [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
+>>> retry [CLI] postgres get-data-api projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database/data-api",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production/databases/my-database",

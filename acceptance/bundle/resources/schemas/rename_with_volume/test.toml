@@ -1,0 +1,14 @@
+Cloud = true
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]
+
+# When READPLAN=1, "bundle deploy" is called as "bundle deploy --plan .databricks/plan.json".
+# Normalize so both variants produce identical output.
+[[Repls]]
+Old = ' --plan .databricks/plan.json'
+New = ''

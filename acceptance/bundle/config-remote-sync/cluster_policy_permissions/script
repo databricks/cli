@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+policy_id=$(read_id.py policy)
+
+title "The creator's CAN_USE is not a remote change"
+trace $CLI bundle config-remote-sync
+
+title "Grant a group CAN_USE in the UI"
+# The UI keeps the existing direct entries, including the creator's.
+$CLI permissions get cluster-policies "$policy_id" | jq '{access_control_list: (
+  [.access_control_list[] | select(.all_permissions[0].inherited | not)
+   | {user_name, service_principal_name, group_name, permission_level: .all_permissions[0].permission_level}
+   | with_entries(select(.value != null))]
+  + [{group_name: "users", permission_level: "CAN_USE"}])}' > acl.json
+$CLI permissions set cluster-policies "$policy_id" --json @acl.json > /dev/null
+rm acl.json
+
+trace $CLI bundle config-remote-sync --save
+# The deployer is a user locally and a service principal on cloud, so print principals only.
+trace $CLI bundle validate -o json | jq -c '[.resources.cluster_policies.policy.permissions[] | {principal: (.user_name // .service_principal_name // .group_name), level}] | sort_by(.principal)'
+
+title "Sync again before deploy"
+trace $CLI bundle config-remote-sync
+
+title "Deploy applies the synced ACL"
+trace $CLI bundle deploy
+trace $CLI permissions get cluster-policies "$policy_id" | jq -c '[.access_control_list[] | select(.all_permissions[0].inherited | not) | {principal: (.user_name // .service_principal_name // .group_name), level: .all_permissions[0].permission_level}] | sort_by(.principal)'
+trace $CLI bundle plan
