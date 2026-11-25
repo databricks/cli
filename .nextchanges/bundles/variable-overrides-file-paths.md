@@ -1,1 +1,1 @@
-* Resolve relative paths in `.databricks/bundle/<target>/variable-overrides.json` against the bundle root instead of the overrides file's directory.
+* Resolve relative paths in `.databricks/bundle/<target>/variable-overrides.json` against the bundle root instead of the overrides file's directory; a workaround such as `../../../src/main.py` should become `./src/main.py`. ([#7984](https://github.com/databricks/cli/pull/7984))
