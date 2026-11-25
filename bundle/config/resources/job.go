@@ -62,3 +62,10 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 func (j *Job) GetName() string {
 	return j.Name
 }
+
+func (j *Job) BundleDeploymentIDs() (deploymentID, versionID string) {
+	if j.Deployment == nil {
+		return "", ""
+	}
+	return j.Deployment.DeploymentId, j.Deployment.VersionId
+}

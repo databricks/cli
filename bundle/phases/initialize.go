@@ -186,7 +186,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that all fields with enum values specified are set to a valid value.
 		validate.Enum(),
 
-		// Validate that deployment_id / version_id are not set on jobs or pipelines.
+		// Validate that deployment_id / version_id are not set on resources that declare them.
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
 

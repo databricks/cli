@@ -62,3 +62,10 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 func (p *Pipeline) GetName() string {
 	return p.Name
 }
+
+func (p *Pipeline) BundleDeploymentIDs() (deploymentID, versionID string) {
+	if p.Deployment == nil {
+		return "", ""
+	}
+	return p.Deployment.DeploymentId, p.Deployment.VersionId
+}
