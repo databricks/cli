@@ -1,0 +1,5 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = '''
+Lakebase v1 (database instances/catalogs/synced tables) is not available on GCP,
+so exclude these from all cloud runs (same as the postgres resources).'''

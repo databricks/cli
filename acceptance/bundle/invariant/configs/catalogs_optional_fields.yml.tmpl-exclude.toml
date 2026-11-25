@@ -1,0 +1,9 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = '''
+managed_encryption_settings needs a CMK registered with the workspace, so this
+config only runs against the mock server'''
+
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Error: Catalog resources are only supported with direct deployment mode"

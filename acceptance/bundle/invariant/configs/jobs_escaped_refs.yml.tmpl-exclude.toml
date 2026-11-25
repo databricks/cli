@@ -1,0 +1,5 @@
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = '''
+$${...} escaping is not supported on v0.293.0: the seed deploy fails with
+'invalid dependency "${batch_id}", no such node ""' (issue #6480).'''

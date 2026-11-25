@@ -1,0 +1,5 @@
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = '''
+Computed volume_path is not supported on v0.293.0, so the seed deploy cannot
+resolve ${resources.volumes.*.volume_path}. Covered by no_drift on direct.'''

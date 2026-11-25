@@ -1,0 +1,7 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = "Telemetry requires a real model, which cloud invariant tests do not provision."
+
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Terraform types sampling_fraction as an integer and truncates 0.5; covered by no_drift."

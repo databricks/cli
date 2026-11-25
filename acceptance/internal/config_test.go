@@ -281,3 +281,204 @@ func TestLoadConfigPhaseIsNotInherited(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadConfigEnvMatrixFiles(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	files := map[string]string{
+		"suite/test.toml":       "EnvMatrixFiles.VALUE = \"values/*.txt\"\n",
+		"suite/values/b.txt":    "",
+		"suite/values/a.txt":    "",
+		"suite/values/c.txt":    "",
+		"suite/values/d.md":     "",
+		"suite/one/script":      "",
+		"suite/two/script":      "",
+		"suite/three/script":    "",
+		"suite/three/test.toml": "EnvMatrix.VALUE = [\"x\"]\n",
+		"suite/values/b.txt-exclude.toml": `
+[[Exclude]]
+Tests = ["one"]
+Reason = "b does not apply to one"
+
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = "b is local-only"
+`,
+	}
+	for path, contents := range files {
+		absPath := filepath.Join(root, filepath.FromSlash(path))
+		require.NoError(t, os.MkdirAll(filepath.Dir(absPath), 0o755))
+		require.NoError(t, os.WriteFile(absPath, []byte(contents), 0o644))
+	}
+
+	assert.Equal(t, []string{"VALUE=a.txt", "VALUE=c.txt"}, loadVariants(t, "suite/one"))
+	assert.Equal(t, []string{"VALUE=a.txt", "VALUE=b.txt", "VALUE=c.txt"}, loadVariants(t, "suite/two"))
+	assert.Equal(t, []string{"VALUE=a.txt", "VALUE=c.txt"}, loadVariants(t, "suite/two", "CONFIG_Cloud=true"))
+	assert.Equal(t, []string{"VALUE=x"}, loadVariants(t, "suite/three"))
+
+	// Exclusions without conditions apply to the materialized config, as EnvMatrixExclude does.
+	config, _ := LoadConfig(t, "suite/one")
+	assert.Equal(t, "EnvMatrix.VALUE = [\"a.txt\", \"c.txt\"]\n", GenerateMaterializedConfig(&config))
+}
+
+func TestExpandEnvMatrixFilesSortsValuesByName(t *testing.T) {
+	root := t.TempDir()
+	writeFiles(t, root, map[string]string{
+		"b/a.txt": "",
+		"a/c.txt": "",
+	})
+
+	config := TestConfig{EnvMatrixFiles: map[string]string{"VALUE": "*/*.txt"}}
+	require.NoError(t, expandEnvMatrixFiles(&config, filepath.Join(root, ConfigFilename), root))
+	assert.Equal(t, []string{"a.txt", "c.txt"}, config.EnvMatrix["VALUE"])
+}
+
+func TestExpandEnvMatrixFilesErrors(t *testing.T) {
+	tests := []struct {
+		name      string
+		files     map[string]string
+		envMatrix map[string][]string
+		pattern   string
+		wantErr   string
+	}{
+		{
+			name:    "glob matches nothing",
+			pattern: "values/*.txt",
+			wantErr: `EnvMatrixFiles.VALUE = "values/*.txt" matches no files`,
+		},
+		{
+			name:      "key set in both EnvMatrix and EnvMatrixFiles",
+			files:     map[string]string{"values/a.txt": ""},
+			envMatrix: map[string][]string{"VALUE": {"x"}},
+			wantErr:   "VALUE is set in both EnvMatrix and EnvMatrixFiles",
+		},
+		{
+			name: "duplicate base name",
+			files: map[string]string{
+				"one/a.txt": "",
+				"two/a.txt": "",
+			},
+			pattern: "*/a.txt",
+			wantErr: `matches several files named "a.txt"`,
+		},
+		{
+			name: "sidecar matched as a value",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "[[Exclude]]\nReason = \"r\"\n",
+			},
+			pattern: "values/*",
+			wantErr: "matches sidecar",
+		},
+		{
+			name: "orphan sidecar",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/b.txt-exclude.toml": "[[Exclude]]\nReason = \"r\"\n",
+			},
+			wantErr: "values/b.txt-exclude.toml has no matching file",
+		},
+		{
+			name: "malformed sidecar",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "[[Exclude]\n",
+			},
+			wantErr: "failed to parse",
+		},
+		{
+			name: "unknown key in sidecar",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "[[Exclude]]\nReason = \"r\"\nTest = [\"one\"]\n",
+			},
+			wantErr: "undecoded keys",
+		},
+		{
+			name: "empty sidecar",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "# nothing\n",
+			},
+			wantErr: "has no [[Exclude]] entries",
+		},
+		{
+			name: "missing Reason",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "[[Exclude]]\nWhen = [\"DMS=true\"]\n",
+			},
+			wantErr: "Exclude[0] has no Reason",
+		},
+		{
+			name: "blank Reason",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "[[Exclude]]\nReason = \"r\"\n\n[[Exclude]]\nReason = \"  \"\n",
+			},
+			wantErr: "Exclude[1] has no Reason",
+		},
+		{
+			name: "Tests entry that does not exist",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "[[Exclude]]\nTests = [\"missing\"]\nReason = \"r\"\n",
+			},
+			wantErr: `names test "missing", which is not a directory`,
+		},
+		{
+			name: "Tests entry that is a file",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "[[Exclude]]\nTests = [\"values/a.txt\"]\nReason = \"r\"\n",
+			},
+			wantErr: `names test "values/a.txt", which is not a directory`,
+		},
+		{
+			name: "malformed When",
+			files: map[string]string{
+				"values/a.txt":              "",
+				"values/a.txt-exclude.toml": "[[Exclude]]\nWhen = [\"DMS\"]\nReason = \"r\"\n",
+			},
+			wantErr: `has condition "DMS", expected KEY=value`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			writeFiles(t, root, tt.files)
+
+			pattern := tt.pattern
+			if pattern == "" {
+				pattern = "values/*.txt"
+			}
+			config := TestConfig{
+				EnvMatrix:      tt.envMatrix,
+				EnvMatrixFiles: map[string]string{"VALUE": pattern},
+			}
+			err := expandEnvMatrixFiles(&config, filepath.Join(root, ConfigFilename), root)
+			require.Error(t, err)
+			assert.Contains(t, filepath.ToSlash(err.Error()), tt.wantErr)
+		})
+	}
+}
+
+func writeFiles(t *testing.T, root string, files map[string]string) {
+	for path, contents := range files {
+		absPath := filepath.Join(root, filepath.FromSlash(path))
+		require.NoError(t, os.MkdirAll(filepath.Dir(absPath), 0o755))
+		require.NoError(t, os.WriteFile(absPath, []byte(contents), 0o644))
+	}
+}
+
+// loadVariants returns the variants the harness runs for dir, as their subtest names.
+func loadVariants(t *testing.T, dir string, extraVars ...string) []string {
+	config, _ := LoadConfig(t, dir)
+	var result []string
+	for _, envset := range ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars) {
+		result = append(result, strings.Join(envset, "/"))
+	}
+	return result
+}

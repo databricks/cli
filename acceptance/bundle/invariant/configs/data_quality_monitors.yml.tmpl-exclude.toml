@@ -1,0 +1,9 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = '''
+Cloud coverage for data quality monitors comes from
+resources/data_quality_monitors/lifecycle; the invariant matrix runs locally.'''
+
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Data quality monitors are direct-only; the terraform deploy that seeds the migration fails for them."

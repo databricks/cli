@@ -1,0 +1,9 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = '''
+job_runs is a direct-only resource with no terraform converter, so the
+terraform deploy that seeds the migration fails for it.'''
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "job_runs resource is not supported on v0.293.0"

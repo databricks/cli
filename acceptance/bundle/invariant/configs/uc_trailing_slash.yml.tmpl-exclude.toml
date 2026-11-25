@@ -1,0 +1,9 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = '''
+Trailing-slash config uses fake storage paths (and an external volume, see volumes_external),
+so it only runs against the mock server that mimics UC's slash stripping.'''
+
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "uc_trailing_slash includes a catalog, which is direct-only (see catalogs)."

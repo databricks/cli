@@ -1,6 +1,6 @@
 # Deploys the same config the invariant suite uses, and records the plan and the
 # job payload so both engines are shown to send "${...}" (single $) to the API.
-envsubst < "$TESTDIR/../invariant/configs/job_escaped_refs.yml.tmpl" > databricks.yml
+envsubst < "$TESTDIR/../invariant/configs/jobs_escaped_refs.yml.tmpl" > databricks.yml
 # The raw plan the replay reads goes under .databricks, which sync skips, so it stays out of the
 # uploaded file count.
 mkdir -p .databricks

@@ -1,0 +1,10 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = '''
+AI Gateway securables (direct-only) need a real routing target / provider config /
+UC connection to create on cloud, which the invariant tests don't provision; the
+local mock server accepts them, so these run locally only.'''
+
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "AI Gateway securables are direct-only; the terraform deploy that seeds the migration fails for them."

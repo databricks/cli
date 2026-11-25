@@ -105,7 +105,7 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *SchemaState) (str
 // custom_max_retention_hours is force-sent so the direct engine can clear it. The terraform
 // databricks_schema resource cannot set this field at all, so a schema config that uses it deploys
 // differently under terraform (which drops it) than under direct; such configs are kept out of the
-// migrate invariant (schema.yml is excluded there, and schema_tf_compat.yml covers migrate instead).
+// migrate invariant (schemas.yml is excluded there, and schemas_tf_compat.yml covers migrate instead).
 var schemaForceSend = []string{"Comment", "CustomMaxRetentionHours"}
 
 func makeUpdateSchema(id, newName string, config *catalog.CreateSchema) catalog.UpdateSchema {

@@ -1,0 +1,3 @@
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "Model permissions did not work until 0.297.0 https://github.com/databricks/cli/pull/4941"

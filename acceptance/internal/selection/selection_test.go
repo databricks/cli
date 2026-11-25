@@ -129,7 +129,7 @@ func TestFromDiffInvariantConfigRanksAsFixture(t *testing.T) {
 	// a dir whose output was regenerated.
 	diff := diffLines(
 		"M\tacceptance/bundle/regenerated/output.txt",
-		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl",
 	)
 	result := fromDiff(t, diff, 2)
 	assert.NotContains(t, result.Tests(), "bundle/regenerated")
@@ -141,11 +141,11 @@ func TestFromDiffNewInvariantConfig(t *testing.T) {
 	// test on top of the fixture change. Changing an existing config, or adding one of its
 	// -init.sh companions, only changes how an existing variant runs.
 	for status, want := range map[string]int{"A": 10, "M": 5} {
-		result := fromDiff(t, diffLines(status+"\tacceptance/bundle/invariant/configs/job.yml.tmpl"), 10)
+		result := fromDiff(t, diffLines(status+"\tacceptance/bundle/invariant/configs/jobs.yml.tmpl"), 10)
 		assert.Equal(t, want, result.Selected[0].Score, "status=%s", status)
 	}
 
-	result := fromDiff(t, diffLines("A\tacceptance/bundle/invariant/configs/job.yml.tmpl-init.sh"), 10)
+	result := fromDiff(t, diffLines("A\tacceptance/bundle/invariant/configs/jobs.yml.tmpl-init.sh"), 10)
 	assert.Equal(t, 5, result.Selected[0].Score)
 }
 
@@ -153,11 +153,11 @@ func TestFromDiffTwoInvariantConfigs(t *testing.T) {
 	// Two changed configs restrict the invariant dirs to the variants of both, as filters
 	// naming the same key are alternatives.
 	diff := diffLines(
-		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
-		"M\tacceptance/bundle/invariant/configs/pipeline.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/pipelines.yml.tmpl",
 	)
 	result := fromDiff(t, diff, 10)
-	both := []string{"INPUT_CONFIG=job.yml.tmpl", "INPUT_CONFIG=pipeline.yml.tmpl"}
+	both := []string{"INPUT_CONFIG=jobs.yml.tmpl", "INPUT_CONFIG=pipelines.yml.tmpl"}
 	assert.Equal(t, map[string][]string{
 		"bundle/invariant/jobs": both,
 		"bundle/invariant/apps": both,
@@ -167,14 +167,26 @@ func TestFromDiffTwoInvariantConfigs(t *testing.T) {
 func TestFromDiffConfigAndItsInitScript(t *testing.T) {
 	// A config and its setup script name the same variant, so the filter is kept.
 	diff := diffLines(
-		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
-		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl-init.sh",
+		"M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl-init.sh",
 	)
 	result := fromDiff(t, diff, 10)
 	assert.Equal(t, map[string][]string{
-		"bundle/invariant/jobs": {"INPUT_CONFIG=job.yml.tmpl"},
-		"bundle/invariant/apps": {"INPUT_CONFIG=job.yml.tmpl"},
+		"bundle/invariant/jobs": {"INPUT_CONFIG=jobs.yml.tmpl"},
+		"bundle/invariant/apps": {"INPUT_CONFIG=jobs.yml.tmpl"},
 	}, result.Tests())
+}
+
+func TestFromDiffConfigExclusions(t *testing.T) {
+	// A config's exclusions sidecar changes which of its variants run, so it selects that
+	// config's variants and scores as a fixture change, not as a new config.
+	diff := diffLines("A\tacceptance/bundle/invariant/configs/jobs.yml.tmpl-exclude.toml")
+	result := fromDiff(t, diff, 10)
+	assert.Equal(t, map[string][]string{
+		"bundle/invariant/jobs": {"INPUT_CONFIG=jobs.yml.tmpl"},
+		"bundle/invariant/apps": {"INPUT_CONFIG=jobs.yml.tmpl"},
+	}, result.Tests())
+	assert.Equal(t, 5, result.Selected[0].Score)
 }
 
 func TestFromDiffHyphenatedConfigName(t *testing.T) {
@@ -192,7 +204,7 @@ func TestFromDiffMovedDirWithNewConfig(t *testing.T) {
 	// The move is a change to the dir itself, so it runs every variant, including the one
 	// the new config adds, and scores the move.
 	diff := diffLines(
-		"A\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"A\tacceptance/bundle/invariant/configs/jobs.yml.tmpl",
 		"R100\tacceptance/bundle/invariant/old/script\tacceptance/bundle/invariant/jobs/script",
 	)
 	result := fromDiff(t, diff, 10)
@@ -208,8 +220,8 @@ func TestFromDiffNewConfigScoresOnlyItsVariant(t *testing.T) {
 	// Each variant is scored on its own: adding one config makes that config's variant new
 	// without making the variant of a config that was merely changed look new too.
 	diff := diffLines(
-		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
-		"A\tacceptance/bundle/invariant/configs/pipeline.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl",
+		"A\tacceptance/bundle/invariant/configs/pipelines.yml.tmpl",
 	)
 	result := fromDiff(t, diff, 10)
 	scores := map[string]int{}
@@ -217,10 +229,10 @@ func TestFromDiffNewConfigScoresOnlyItsVariant(t *testing.T) {
 		scores[test.Name()] = test.Score
 	}
 	assert.Equal(t, map[string]int{
-		"bundle/invariant/apps/INPUT_CONFIG=job.yml.tmpl":      5,
-		"bundle/invariant/apps/INPUT_CONFIG=pipeline.yml.tmpl": 10,
-		"bundle/invariant/jobs/INPUT_CONFIG=job.yml.tmpl":      5,
-		"bundle/invariant/jobs/INPUT_CONFIG=pipeline.yml.tmpl": 10,
+		"bundle/invariant/apps/INPUT_CONFIG=jobs.yml.tmpl":      5,
+		"bundle/invariant/apps/INPUT_CONFIG=pipelines.yml.tmpl": 10,
+		"bundle/invariant/jobs/INPUT_CONFIG=jobs.yml.tmpl":      5,
+		"bundle/invariant/jobs/INPUT_CONFIG=pipelines.yml.tmpl": 10,
 	}, scores)
 }
 
@@ -233,11 +245,11 @@ func TestFromDiffNestedDir(t *testing.T) {
 
 func TestFromDiffInvariantConfig(t *testing.T) {
 	// A changed invariant config re-enables every invariant dir, restricted to that config.
-	diff := diffLines("M\tacceptance/bundle/invariant/configs/job.yml.tmpl")
+	diff := diffLines("M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl")
 	result := fromDiff(t, diff, 10)
 	assert.Equal(t, map[string][]string{
-		"bundle/invariant/jobs": {"INPUT_CONFIG=job.yml.tmpl"},
-		"bundle/invariant/apps": {"INPUT_CONFIG=job.yml.tmpl"},
+		"bundle/invariant/jobs": {"INPUT_CONFIG=jobs.yml.tmpl"},
+		"bundle/invariant/apps": {"INPUT_CONFIG=jobs.yml.tmpl"},
 	}, result.Tests())
 }
 
@@ -245,14 +257,14 @@ func TestFromDiffInvariantConfigAndDir(t *testing.T) {
 	// A non-config change to an invariant dir unlocks all of its variants; the
 	// regenerated test.toml files are ignored.
 	diff := diffLines(
-		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl",
 		"M\tacceptance/bundle/invariant/jobs/script",
 		"M\tacceptance/bundle/invariant/apps/out.test.toml",
 	)
 	result := fromDiff(t, diff, 10)
 	assert.Equal(t, map[string][]string{
 		"bundle/invariant/jobs": nil,
-		"bundle/invariant/apps": {"INPUT_CONFIG=job.yml.tmpl"},
+		"bundle/invariant/apps": {"INPUT_CONFIG=jobs.yml.tmpl"},
 	}, result.Tests())
 }
 
@@ -277,18 +289,18 @@ func TestFromDiffSkipsConfigNotInMatrix(t *testing.T) {
 	// variant skipped, spending the limit on a test that runs nothing.
 	root := t.TempDir()
 	for dir, configs := range map[string]string{
-		"bundle/invariant/jobs": `["job.yml.tmpl", "app.yml.tmpl"]`,
-		"bundle/invariant/apps": `["app.yml.tmpl"]`,
+		"bundle/invariant/jobs": `["jobs.yml.tmpl", "apps.yml.tmpl"]`,
+		"bundle/invariant/apps": `["apps.yml.tmpl"]`,
 	} {
 		require.NoError(t, os.MkdirAll(filepath.Join(root, dir), 0o755))
 		contents := "EnvMatrix.INPUT_CONFIG = " + configs + "\n"
 		require.NoError(t, os.WriteFile(filepath.Join(root, dir, "out.test.toml"), []byte(contents), 0o644))
 	}
 
-	diff := diffLines("M\tacceptance/bundle/invariant/configs/job.yml.tmpl")
+	diff := diffLines("M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl")
 	result := selection.FromDiff(root, diff, testDirs, 10)
 	assert.Equal(t, map[string][]string{
-		"bundle/invariant/jobs": {"INPUT_CONFIG=job.yml.tmpl"},
+		"bundle/invariant/jobs": {"INPUT_CONFIG=jobs.yml.tmpl"},
 	}, result.Tests())
 }
 
@@ -329,12 +341,12 @@ func TestFromDiffTiesAreAlphabetical(t *testing.T) {
 	// Tests that score the same are ordered by name, so the limit cuts the same set whatever
 	// order the diff lists the changed files in.
 	lines := []string{
-		"M\tacceptance/bundle/invariant/configs/pipeline.yml.tmpl",
-		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/pipelines.yml.tmpl",
+		"M\tacceptance/bundle/invariant/configs/jobs.yml.tmpl",
 	}
 	expected := []string{
-		"bundle/invariant/apps/INPUT_CONFIG=job.yml.tmpl",
-		"bundle/invariant/apps/INPUT_CONFIG=pipeline.yml.tmpl",
+		"bundle/invariant/apps/INPUT_CONFIG=jobs.yml.tmpl",
+		"bundle/invariant/apps/INPUT_CONFIG=pipelines.yml.tmpl",
 	}
 
 	for _, diff := range []string{diffLines(lines...), diffLines(lines[1], lines[0])} {

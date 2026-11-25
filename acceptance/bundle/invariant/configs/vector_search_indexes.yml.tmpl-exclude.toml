@@ -1,0 +1,7 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "vector_search_endpoints and vector_search_indexes have no terraform converter"
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "Vector Search resources are not supported on v0.293.0"

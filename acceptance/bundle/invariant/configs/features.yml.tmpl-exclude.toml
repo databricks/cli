@@ -1,0 +1,3 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Features are direct-only; the terraform deploy that seeds the migration fails for them."
