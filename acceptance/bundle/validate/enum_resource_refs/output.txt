@@ -1,9 +1,15 @@
 
 >>> [CLI] bundle validate
+Error: cycle detected: resources.jobs.my_job refers to itself via ${resources.jobs.my_job.id}
+  at resources.jobs.my_job
+  in databricks.yml:11:7
+
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Validation OK!
+Found 1 error
+
+Exit code: 1

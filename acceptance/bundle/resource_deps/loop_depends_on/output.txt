@@ -1,0 +1,19 @@
+
+>>> musterr [CLI] bundle validate
+Error: cycle detected: resources.jobs.foo refers to resources.jobs.bar via depends_on which refers to resources.jobs.foo via ${resources.jobs.foo.id}
+  at resources.jobs.foo
+  in databricks.yml:7:7
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+>>> musterr [CLI] bundle deploy
+Error: cycle detected: resources.jobs.foo refers to resources.jobs.bar via depends_on which refers to resources.jobs.foo via ${resources.jobs.foo.id}
+  at resources.jobs.foo
+  in databricks.yml:7:7
+

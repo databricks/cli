@@ -1,2 +1,4 @@
 Error: cycle detected: resources.jobs.foo refers to itself via ${resources.jobs.foo.id}
+  at resources.jobs.foo
+  in databricks.yml:7:7
 

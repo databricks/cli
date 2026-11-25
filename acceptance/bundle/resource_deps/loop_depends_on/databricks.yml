@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      name: foo
+      lifecycle:
+        depends_on:
+          - resource: jobs.bar
+    bar:
+      name: bar ${resources.jobs.foo.id}

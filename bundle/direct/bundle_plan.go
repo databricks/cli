@@ -1556,45 +1556,13 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	p.Lineage = db.Lineage
 	p.Serial = db.Serial
 
-	// Collect and sort nodes first, because MapByPattern gives them in randomized order
-	var nodes []string
-
 	existingKeys := maps.Clone(db.State)
 
-	patterns := []dyn.Pattern{
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
+	nodes, err := configNodes(configRoot)
+	if err != nil {
+		return nil, err
 	}
 
-	// Walk?
-	if configRoot != nil {
-		for _, pat := range patterns {
-			_, err := dyn.MapByPattern(
-				configRoot.Value(),
-				pat,
-				func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-					s := p.String()
-					resourceType := config.GetResourceTypeFromKey(s)
-					if resourceType == "" {
-						return v, fmt.Errorf("cannot parse resource key: %q", s)
-					}
-					_, ok := dresources.SupportedResources[resourceType]
-					if !ok {
-						return v, fmt.Errorf("unsupported resource type: %s", resourceType)
-					}
-
-					nodes = append(nodes, s)
-					return dyn.InvalidValue, nil
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	slices.Sort(nodes)
 	for _, node := range nodes {
 		delete(existingKeys, node)
 
@@ -1652,56 +1620,10 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 		maps.Copy(refs, inputStructVar.Refs)
 
-		var dependsOn []deployplan.DependsOnEntry
-		for _, reference := range refs {
-			ref, ok := dynvar.NewRef(dyn.V(reference))
-			if !ok {
-				continue
-			}
-
-			for _, targetPath := range ref.References() {
-				targetPathParsed, err := dyn.NewPathFromString(targetPath)
-				if err != nil {
-					return nil, fmt.Errorf("parsing %q: %w", targetPath, err)
-				}
-
-				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
-				targetNode := targetNodeDP.String()
-
-				fullRef := "${" + targetPath + "}"
-
-				found := false
-				for _, dep := range dependsOn {
-					if dep.Node == targetNode && dep.Label == fullRef {
-						found = true
-						break
-					}
-				}
-				if !found {
-					dependsOn = append(dependsOn, deployplan.DependsOnEntry{
-						Node:  targetNode,
-						Label: fullRef,
-					})
-				}
-			}
-		}
-
-		lifecycleDeps, err := LifecycleDependsOn(configRoot, inputConfig)
+		dependsOn, err := nodeDependsOn(configRoot, inputConfig, refs)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
-		for _, dep := range lifecycleDeps {
-			if !slices.Contains(dependsOn, dep) {
-				dependsOn = append(dependsOn, dep)
-			}
-		}
-
-		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
-			if a.Node != b.Node {
-				return strings.Compare(a.Node, b.Node)
-			}
-			return strings.Compare(a.Label, b.Label)
-		})
 
 		// Store an unredacted copy in the cache so Apply can deploy with the
 		// actual values. The original newStateConfig is redacted below and used
