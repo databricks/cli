@@ -47,6 +47,12 @@ identity may be declared on the field or in the file-level resource option
 (`databricks.api.resource` with `identifier_field_names`). Read the Get request's path parameters.
 The identifier is not visible in `cli.json`.
 
+Distinguish the bundle's read-only `ID` (the deployed identity used by summary, bind and destroy)
+from an optional create-time `<resource>_id`. The latter can be omitted before create and supplied
+later; it does not replace `ID`. A proto `name` annotated `IDENTIFIER` is not a missing
+`OUTPUT_ONLY` annotation: Update may use it to identify the resource. Check the proto before
+requesting an annotation change that would contradict its role.
+
 **Verdicts.**
 - One field, returned on GET: **NOTE**. Declare it in `provided_id_fields` (recreate when the user
   changes it) or `updatable_id_fields` (rename in place, needs `DoUpdateWithID`).
@@ -100,6 +106,10 @@ list each non-echoed field under `ignore_remote_changes` with `spec:input_only`.
 
 **Verdicts.**
 - All inputs echoed, or non-echoed ones annotated: **NOTE**.
+- An echoed input is only the last submitted intent, while a different field reports the current
+  value (for example `parent_path` versus `effective_parent_path`): **ASK** how out-of-band edits
+  are detected. Echo equality alone does not prove drift detection. Compare the observed value in
+  `DoRead`, with documented normalization, and test an external edit followed by plan and deploy.
 - A field is not echoed and not annotated: **ASK** for the annotation (or for the field to be
   echoed). Until then a hand-written `ignore_remote_changes` rule with a comment is acceptable for
   a setting, never for the resource's main content: ignoring a content field disables drift
@@ -262,6 +272,11 @@ now: **NOTE**, no override. It is not: **NOTE**, add it to `launchStageOverrides
 a one-line reason, regenerate, and confirm the Python package is gone. Fields with no `stage` while
 the API is in preview: **ASK** for the field annotation so the schema tags them.
 
+Do not add an override solely to repeat the API's stage. Its purpose is an intentional difference
+in bundle availability, as with Postgres. If upstream preview status should determine resource
+availability, trace the parser and PyDABs registration first: missing type-stage propagation is a
+generator gap, not evidence that the new resource needs its own permanent policy override.
+
 ### 2.11 ETag
 
 **Check.** If the resource is edited concurrently by people and automation, it has `string etag`
@@ -273,6 +288,13 @@ the API is in preview: **ASK** for the field annotation so the schema tags them.
 schedule (content migrations, re-keying): **ASK** for a content-stable etag or a documented rule, and
 note that the adapter omits it on update. Absent: **NOTE**; drift detection falls back to full read
 comparison.
+
+Separate drift detection from optimistic concurrency. A token sent on Update must describe the
+remote version the plan read; the authored config has no current server token, and the last
+deployment's token would reject an intentional correction of later remote drift. Check saved-plan
+rehydration preserves the token. A request mock only proves it is sent: acceptance coverage should
+save a plan, edit the remote content, reject the stale deploy, then re-plan and succeed. Read which
+fields the etag covers; metadata-only updates may leave a content etag unchanged.
 
 ### 2.12 References from existing resources
 

@@ -1,6 +1,6 @@
 ---
 name: review-new-resource
-description: Review a branch or PR that adds a new bundle resource type to the direct engine, as a maintainer would. Checks scope, API shape and plan semantics first, then adapter contract, wiring completeness, fake server scope, test coverage and whether the tests actually ran, generated-file hygiene and user-facing text. Use when asked to review a change that adds a resources.<plural> type, or when a review of such a PR should start from the design rather than from line comments.
+description: Review a branch or PR that adds a new bundle resource type to the direct engine, as a maintainer would. Checks scope, API shape and plan semantics first, then adapter contract, wiring completeness, fake server scope, test coverage and whether the tests actually ran, generated-file hygiene and user-facing text. Use when asked to review a change that adds a type to the resources map, or when a review of such a PR should start from the design rather than from line comments.
 ---
 
 # Review a new resource PR
@@ -26,6 +26,10 @@ git diff "$BASE" "$TARGET" -- . ':!*.generated.yml' ':!bundle/schema/jsonschema.
 Read every changed non-generated file in full at `TARGET` (`git show "$TARGET":path`). Skim
 generated files only to confirm they follow from the source. Do not read existing review comments
 before forming your view; read the PR description for intent if you have it.
+
+If the user asks you to consider their earlier feedback, include resolved and outdated threads
+from the requested reviewers when checking follow-ups. Exclude any reviewers the user asks you to
+ignore. Judge the current code and the replies before repeating an earlier ask.
 
 Identify the resource: its plural, the config type under `bundle/config/resources/`, the adapter
 under `bundle/direct/dresources/`, its `configs/<plural>.yml` and `.generated.yml`, the fake under
@@ -81,6 +85,12 @@ Apply the readiness gate to the result. For each row, cite the file and line.
 - Every ignore rule, hand-written or generated: what does ignoring this field cost the user, and
   how do they restore intended state if it drifts? An `ignore_remote_changes` on a field the user
   sets, or an `ignore_local_changes` anywhere, needs that answer in a comment.
+- Check observed state as well as echoed input: a stored last-submitted path can stay unchanged
+  after an external move while an ignored effective-path field reports the drift. Trace how the
+  adapter restores each configured value after an out-of-band edit.
+- For etags, distinguish a plan-time concurrency precondition from saved-state drift detection.
+  Check the token's source, saved-plan rehydration, and the fields it covers; do not suggest using
+  the config's empty token or a stale token from the last deployment instead of the remote read.
 - Sibling resources: if another resource manages the same kind of object or the same service
   (an older API generation, a related type in the same package), list where this one behaves
   differently (approvals, presets, URL, fix-ups) and ask whether each difference is intended.
@@ -142,6 +152,9 @@ Table: `behaviour modelled | needed by the CLI? | evidence (server ref or cloud 
 - Bundle-wide behaviour the resource opted into (a dev-mode preset such as a prefix or a paused
   schedule, run_as rejection, UC dependency capture, approval prompts) has an acceptance test that
   shows it; a unit test alone is a comment.
+- Content coverage: a description-only update does not verify replacing the main nested payload.
+  Check a content edit, optional-field removal, remote drift repair, and a subsequent clean plan;
+  when etags are sent, check a saved plan rejects a concurrent edit and a fresh plan succeeds.
 - Any claim in this review that a test exists, or that a file does something, cites `path:line`
   you read. Verify counts with a command before stating them.
 Table: `expected test | present? | ran? (out.test.toml / CI check) | note`
@@ -155,6 +168,12 @@ resource-level `x-databricks-launch-stage` comes only from `launchStageOverrides
 `bundle/internal/annotation/preview.go`, so a resource without an entry ships in PyDABs whatever
 its fields' stages, like every non-Postgres resource today. Whether that is intended is a question
 to the author, not an upstream ask.
+
+Check the reason for a launch-stage override: repeating the API's field stage alone does not
+justify a separate bundle availability policy. Trace field labels, the resource type's stage, and
+PyDABs registration separately. Likewise, a planner ignore rule does not hide an input from schema;
+read the proto's `IDENTIFIER` annotation and existing field tags before asking for `OUTPUT_ONLY` or
+another schema transform.
 Table: `generated file | consistent with source? | note`
 
 ### P8. User-facing text

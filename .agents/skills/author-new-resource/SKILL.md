@@ -1,6 +1,6 @@
 ---
 name: author-new-resource
-description: Add a new resource type to Declarative Automation Bundles (resources.<plural> in databricks.yml) on the direct deployment engine, for engineers who own an API but do not know the CLI codebase. Starts with an API readiness gate that sends API-shape problems back to the proto, then walks the wiring, generators, tests and PR in fixed phases with a verification command at each step. Use when asked to add, onboard or support a new bundle resource, or when an API team asks what DABs needs from their API.
+description: Add a new resource type to Declarative Automation Bundles (the resources map in databricks.yml) on the direct deployment engine, for engineers who own an API but do not know the CLI codebase. Starts with an API readiness gate that sends API-shape problems back to the proto, then walks the wiring, generators, tests and PR in fixed phases with a verification command at each step. Use when asked to add, onboard or support a new bundle resource, or when an API team asks what DABs needs from their API.
 ---
 
 # Author a new bundle resource

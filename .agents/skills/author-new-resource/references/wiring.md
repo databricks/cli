@@ -32,6 +32,12 @@ Use `<singular>` and `<plural>` for the resource names, `<Type>` for the Go iden
 
 ## 3. Generated files
 
+Planning rules and the user-facing schema are separate. `configs/<plural>.yml` controls plan
+classification; `ignore_remote_changes` does not hide a field from JSON schema or Python models.
+Trace proto annotations and existing `bundle:"readonly"` field tags before adding a resource-specific
+schema transform. An `IDENTIFIER` field may legitimately remain part of the SDK resource even when
+the bundle exposes a separate create-time ID.
+
 Run in this order after the Go types compile; `./task generate` runs all of them.
 
 | Command | Writes | Check |
