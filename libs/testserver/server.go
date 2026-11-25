@@ -310,6 +310,9 @@ Response.Body = '<response body here>'
 	// Register test-only endpoints for setting up kill and fault rules from scripts.
 	s.Handle("POST", "/__testserver/kill", killEndpointHandler(s.kills))
 	s.Handle("POST", "/__testserver/fault", faultEndpointHandler(s.faults))
+	s.Handle("POST", "/__testserver/genie/agents/{genie_agent_id}/move", func(req Request) any {
+		return req.Workspace.GenieAgentMove(req)
+	})
 
 	// Register a default handler for the SDK's host metadata discovery endpoint.
 	// The SDK resolves this during config initialization (as of v0.126.0) to

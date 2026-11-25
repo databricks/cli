@@ -189,3 +189,22 @@ func genieAgentInvalidRequest(err error) Response {
 		},
 	}
 }
+
+// GenieAgentMove simulates a browser move, which does not change the echoed parent_path.
+func (s *FakeWorkspace) GenieAgentMove(req Request) Response {
+	defer s.LockUnlock()()
+
+	agent, resp := s.getGenieAgent(req.Vars["genie_agent_id"])
+	if resp != nil {
+		return *resp
+	}
+	var body struct {
+		ParentPath string `json:"parent_path"`
+	}
+	if err := json.Unmarshal(req.Body, &body); err != nil {
+		return genieAgentInvalidRequest(err)
+	}
+	agent.EffectiveParentPath = strings.TrimPrefix(body.ParentPath, "/Workspace")
+	s.GenieAgents[req.Vars["genie_agent_id"]] = agent
+	return Response{Body: map[string]any{}}
+}

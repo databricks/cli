@@ -44,17 +44,24 @@ func (*ResourceGenieAgent) PrepareState(input *resources.GenieAgent) *resources.
 	state.CreateTime = nil
 	state.UpdateTime = nil
 	state.EffectiveParentPath = ""
+	if state.ParentPath != "" {
+		state.ParentPath = ensureWorkspacePrefix(state.ParentPath)
+	}
 	return &state
 }
 
 // responseToGenieAgentConfig converts a returned GenieAgent into remote state.
-// The API returns parent_path exactly as submitted; effective_parent_path may
-// omit /Workspace.
+// Browser moves only change effective_parent_path. Preserve an empty echoed
+// parent_path so explicitly clearing it stops managing placement.
 func responseToGenieAgentConfig(agent *genieagents.GenieAgent) *resources.GenieAgentConfig {
-	return &resources.GenieAgentConfig{
+	config := &resources.GenieAgentConfig{
 		GenieAgent:   *agent,
 		GenieAgentId: strings.TrimPrefix(agent.Name, genieAgentNamePrefix),
 	}
+	if config.ParentPath != "" && config.EffectiveParentPath != "" {
+		config.ParentPath = ensureWorkspacePrefix(config.EffectiveParentPath)
+	}
+	return config
 }
 
 func (r *ResourceGenieAgent) DoRead(ctx context.Context, id string) (*resources.GenieAgentConfig, error) {

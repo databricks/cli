@@ -83,3 +83,34 @@ func TestGenieAgentPrepareStateZeroesServerDerivedFields(t *testing.T) {
 	require.Equal(t, "name", state.DisplayName)
 	require.Equal(t, "agent-id", state.GenieAgentId)
 }
+
+func TestResponseToGenieAgentConfigParentPath(t *testing.T) {
+	for _, tc := range []struct {
+		name, echoed, effective, want string
+	}{
+		{"unmanaged", "", "/Users/moved", ""},
+		{"moved", "/Workspace/Users/original", "/Users/moved", "/Workspace/Users/moved"},
+		{"prefixed", "/Workspace/Users/original", "/Workspace/Users/moved", "/Workspace/Users/moved"},
+		{"no effective path", "/Workspace/Users/original", "", "/Workspace/Users/original"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			agent := &genieagents.GenieAgent{ParentPath: tc.echoed, EffectiveParentPath: tc.effective}
+			config := responseToGenieAgentConfig(agent)
+			require.Equal(t, tc.want, config.ParentPath)
+			require.Equal(t, tc.echoed, agent.ParentPath)
+		})
+	}
+}
+
+func TestGenieAgentPrepareStateParentPath(t *testing.T) {
+	for _, parentPath := range []string{"", "/Users/someone", "/Workspace/Users/someone"} {
+		t.Run(parentPath, func(t *testing.T) {
+			state := (&ResourceGenieAgent{}).PrepareState(&resources.GenieAgent{ParentPath: parentPath})
+			if parentPath == "" {
+				require.Empty(t, state.ParentPath)
+			} else {
+				require.Equal(t, "/Workspace/Users/someone", state.ParentPath)
+			}
+		})
+	}
+}

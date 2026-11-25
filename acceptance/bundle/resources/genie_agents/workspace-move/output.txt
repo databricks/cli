@@ -1,0 +1,105 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created genie_agents.agent
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Move in the workspace browser without changing the echoed parent_path
+
+>>> [CLI] api post /__testserver/genie/agents/[AGENT_ID]/move --json {"parent_path":"/Shared/moved"}
+{}
+
+>>> [CLI] genie-agents get-genie-agent agents/[AGENT_ID]
+{
+  "parent_path": "/Workspace/Shared/configured",
+  "effective_parent_path": "/Shared/moved"
+}
+
+>>> [CLI] bundle plan -o json
+{
+  "action": "update",
+  "new_state": {
+    "value": {
+      "definition": {
+        "resources": {
+          "tables": [
+            {
+              "identifier": "samples.nyctaxi.trips"
+            }
+          ]
+        }
+      },
+      "display_name": "my-agent",
+      "parent_path": "/Workspace/Shared/configured",
+      "warehouse_id": "test-warehouse-id"
+    }
+  },
+  "changes": {
+    "create_time": {
+      "action": "skip",
+      "reason": "spec:output_only",
+      "remote": "[TIMESTAMP]"
+    },
+    "effective_parent_path": {
+      "action": "skip",
+      "reason": "spec:output_only",
+      "remote": "/Shared/moved"
+    },
+    "etag": {
+      "action": "skip",
+      "reason": "spec:output_only",
+      "remote": "1"
+    },
+    "genie_agent_id": {
+      "action": "skip",
+      "reason": "id_field",
+      "remote": "[AGENT_ID]"
+    },
+    "name": {
+      "action": "skip",
+      "reason": "output_only",
+      "remote": "agents/[AGENT_ID]"
+    },
+    "parent_path": {
+      "action": "update",
+      "old": "/Workspace/Shared/configured",
+      "new": "/Workspace/Shared/configured",
+      "remote": "/Workspace/Shared/moved"
+    },
+    "update_time": {
+      "action": "skip",
+      "reason": "spec:output_only",
+      "remote": "[TIMESTAMP]"
+    }
+  }
+}
+
+=== Deploy restores the configured folder
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated genie_agents.agent
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] genie-agents get-genie-agent agents/[AGENT_ID]
+{
+  "parent_path": "/Workspace/Shared/configured",
+  "effective_parent_path": "/Shared/configured"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_agents.agent
+
+This action will result in the deletion of the following Genie agents.
+The conversation history attached to them is permanently lost:
+  delete resources.genie_agents.agent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

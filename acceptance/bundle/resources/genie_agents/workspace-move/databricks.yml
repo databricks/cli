@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  genie_agents:
+    agent:
+      display_name: my-agent
+      warehouse_id: test-warehouse-id
+      parent_path: /Shared/configured
+      definition:
+        resources:
+          tables:
+            - identifier: samples.nyctaxi.trips
