@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -38,6 +39,10 @@ func (s *RegisteredModel) Exists(ctx context.Context, w *databricks.WorkspaceCli
 		return false, err
 	}
 	return true, nil
+}
+
+func (*RegisteredModel) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceRegisteredModelCount
 }
 
 func (*RegisteredModel) ResourceDescription() ResourceDescription {

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -61,4 +62,16 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 
 func (j *Job) GetName() string {
 	return j.Name
+}
+
+func (j *Job) GetID() string {
+	return j.ID
+}
+
+func (*Job) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
+	return &event.ResourceJobIDs
+}
+
+func (*Job) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceJobCount
 }

@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -31,6 +32,10 @@ func (s *Cluster) GetLifecycle() LifecycleConfig {
 		return LifecycleWithStarted{}
 	}
 	return *s.Lifecycle
+}
+
+func (*Cluster) LifecycleStartedTelemetryKey() string {
+	return "cluster_lifecycle_started"
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {
@@ -68,4 +73,16 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 
 func (s *Cluster) GetName() string {
 	return s.ClusterName
+}
+
+func (s *Cluster) GetID() string {
+	return s.ID
+}
+
+func (*Cluster) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
+	return &event.ResourceClusterIDs
+}
+
+func (*Cluster) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceClusterCount
 }

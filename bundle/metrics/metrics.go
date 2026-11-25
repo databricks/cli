@@ -6,11 +6,11 @@ const (
 	ArtifactBuildCommandIsSet           = "artifact_build_command_is_set"
 	ArtifactFilesIsSet                  = "artifact_files_is_set"
 	PresetsNamePrefixIsSet              = "presets_name_prefix_is_set"
-	AppLifecycleStarted                 = "app_lifecycle_started"
-	ClusterLifecycleStarted             = "cluster_lifecycle_started"
 	DeploymentHistoryEnabled            = "deployment_history_enabled"
-	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
+
+	// The keys that report lifecycle.started are declared by the resource types that
+	// support it; see resources.LifecycleStartedTelemetry.
 
 	// Whether the deploy registered an immutable snapshot. Derived from the snapshot
 	// resource, not from experimental.immutable_folder: the flag may change, and the
@@ -122,7 +122,7 @@ const (
 
 	// Task-type usage is recorded generically at deploy as one "has_<task_type>" key
 	// per task type present in the bundle (e.g. has_notebook_task, has_ai_runtime_task);
-	// see collectTaskTypes in bundle/phases. The two keys below are extra
+	// see collectTaskTypes. The two keys below are extra
 	// ai_runtime_task-specific dimensions, emitted only when the bundle declares an
 	// ai_runtime_task, so a false value means "has an ai_runtime_task, but it is not
 	// scheduled / not multi-task". GPU type and count are intentionally not recorded here.

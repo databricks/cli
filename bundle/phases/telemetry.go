@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
@@ -115,89 +114,6 @@ func uploadFileSizeHistogram(files []sizer) []int64 {
 	return hist
 }
 
-// addTaskTypeKeys records a "has_<task_type>" key in out for each task-type field
-// set on the task. A Jobs task carries its type as one of several optional pointer
-// fields (notebook_task, spark_python_task, ai_runtime_task, ...); we reflect over
-// the fields whose JSON name ends in "_task" so every task type is captured,
-// including ones added later, without changing this code.
-func addTaskTypeKeys(task jobs.Task, out map[string]bool) {
-	v := reflect.ValueOf(task)
-	t := v.Type()
-	for i := range t.NumField() {
-		field := v.Field(i)
-		if field.Kind() != reflect.Pointer || field.IsNil() {
-			continue
-		}
-		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
-		if strings.HasSuffix(name, "_task") {
-			out["has_"+name] = true
-		}
-	}
-}
-
-// collectTaskTypes returns the sorted "has_<task_type>" telemetry keys for every
-// task type used across the bundle's jobs. A for_each_task is unwrapped so the
-// wrapped task's type is recorded too. Sorted for deterministic telemetry output.
-func collectTaskTypes(jobs map[string]*resources.Job) []string {
-	seen := map[string]bool{}
-	for _, job := range jobs {
-		if job == nil {
-			continue
-		}
-		for _, task := range job.Tasks {
-			addTaskTypeKeys(task, seen)
-			if task.ForEachTask != nil {
-				addTaskTypeKeys(task.ForEachTask.Task, seen)
-			}
-		}
-	}
-	keys := make([]string, 0, len(seen))
-	for k := range seen {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return keys
-}
-
-// aiRuntimeTaskMetrics computes the ai_runtime_task-specific deploy dimensions.
-// present is true when any job declares an ai_runtime_task (including one nested in
-// a for_each_task); scheduled and multitask describe those jobs and are meaningful
-// only when present is true. Task-type presence itself (has_ai_runtime_task and the
-// other has_*_task keys) is recorded generically by collectTaskTypes.
-//
-// code_source_path is deliberately not inspected: it is rewritten to its uploaded
-// remote path before this runs, so it would always read as remote. GPU type and
-// count are likewise not recorded here.
-func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, multitask bool) {
-	for _, job := range jobs {
-		if job == nil {
-			continue
-		}
-		jobHasAiRuntimeTask := false
-		for _, task := range job.Tasks {
-			rt := task.AiRuntimeTask
-			if rt == nil && task.ForEachTask != nil {
-				rt = task.ForEachTask.Task.AiRuntimeTask
-			}
-			if rt != nil {
-				jobHasAiRuntimeTask = true
-				break
-			}
-		}
-		if !jobHasAiRuntimeTask {
-			continue
-		}
-		present = true
-		if job.Schedule != nil || job.Trigger != nil || job.Continuous != nil {
-			scheduled = true
-		}
-		if len(job.Tasks) > 1 {
-			multitask = true
-		}
-	}
-	return present, scheduled, multitask
-}
-
 // pydabsMetrics reports usage of Python support. Loaders and mutators are read from
 // 'experimental/python' only: the Python mutator copies 'python' there.
 func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
@@ -254,6 +170,97 @@ func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
 	return dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 }
 
+// isNilResource reports whether r is a nil pointer, which a null in the configuration
+// leaves in place of a resource.
+func isNilResource(r config.ConfigResource) bool {
+	return reflect.ValueOf(r).IsNil()
+}
+
+// recordLifecycleStarted records lifecycle.started for every resource type that reports
+// it, taken from a resource of that type that sets it. Types are recorded in the order
+// of their telemetry keys.
+func recordLifecycleStarted(b *bundle.Bundle) {
+	type typeResources struct {
+		key       string
+		resources map[string]config.ConfigResource
+	}
+	var types []typeResources
+	for _, group := range b.Config.Resources.AllResources() {
+		if d, ok := config.ResourceTypeAs[resources.LifecycleStartedTelemetry](group.Description.PluralName); ok {
+			types = append(types, typeResources{key: d.LifecycleStartedTelemetryKey(), resources: group.Resources})
+		}
+	}
+	slices.SortFunc(types, func(a, b typeResources) int {
+		return cmp.Compare(a.key, b.key)
+	})
+
+	for _, t := range types {
+		for _, r := range t.resources {
+			if isNilResource(r) {
+				continue
+			}
+			if lifecycle, ok := r.GetLifecycle().(resources.LifecycleWithStarted); ok && lifecycle.Started != nil {
+				b.Metrics.SetBoolValue(t.key, *lifecycle.Started)
+				break
+			}
+		}
+	}
+}
+
+// recordResourceBoolValues records the boolean values that resource types report about
+// their resources, type by type in canonical order.
+func recordResourceBoolValues(b *bundle.Bundle) {
+	for _, values := range metrics.DeployBoolValues.All() {
+		for _, v := range values(b) {
+			b.Metrics.SetBoolValue(v.Key, v.Value)
+		}
+	}
+}
+
+// recordResourceCounts fills the field of event that each resource type declares for its
+// number of resources.
+func recordResourceCounts(r *config.Resources, event *protos.BundleDeployEvent) {
+	for _, group := range r.AllResources() {
+		if d, ok := config.ResourceTypeAs[resources.DeployTelemetryCount](group.Description.PluralName); ok {
+			*d.DeployTelemetryCountField(event) = int64(len(group.Resources))
+		}
+	}
+}
+
+// recordResourceIDs fills the field of event that each resource type declares for its
+// IDs, with the IDs of up to ResourceIdLimit of its resources.
+func recordResourceIDs(r *config.Resources, event *protos.BundleDeployEvent) {
+	for _, group := range r.AllResources() {
+		d, ok := config.ResourceTypeAs[resources.DeployTelemetryIDs](group.Description.PluralName)
+		if !ok {
+			continue
+		}
+
+		var ids []string
+		for _, res := range group.Resources {
+			if len(ids) >= ResourceIdLimit {
+				break
+			}
+
+			// Do not include missing IDs in telemetry. We can still detect them
+			// by comparing against the resource count.
+			if isNilResource(res) {
+				continue
+			}
+			id := res.(resources.DeployTelemetryIDs).GetID()
+			if id == "" {
+				continue
+			}
+			ids = append(ids, id)
+		}
+
+		// sort the IDs to make the record generated deterministic
+		// this is important for testing purposes
+		slices.Sort(ids)
+		*d.DeployTelemetryIDsField(event) = ids
+	}
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
@@ -275,96 +282,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		log.Debugf(ctx, "failed to count resources: %s", err)
 	}
 
-	var jobsIds []string
-	for _, job := range b.Config.Resources.Jobs {
-		if len(jobsIds) >= ResourceIdLimit {
-			break
-		}
-
-		// Do not include missing IDs in telemetry. We can still detect them
-		// by comparing against the resource count.
-		if job == nil || job.ID == "" {
-			continue
-		}
-		jobsIds = append(jobsIds, job.ID)
-	}
-	var pipelineIds []string
-	for _, pipeline := range b.Config.Resources.Pipelines {
-		if len(pipelineIds) >= ResourceIdLimit {
-			break
-		}
-
-		// Do not include missing IDs in telemetry. We can still detect them
-		// by comparing against the resource count.
-		if pipeline == nil || pipeline.ID == "" {
-			continue
-		}
-		pipelineIds = append(pipelineIds, pipeline.ID)
-	}
-	var clusterIds []string
-	for _, cluster := range b.Config.Resources.Clusters {
-		if len(clusterIds) >= ResourceIdLimit {
-			break
-		}
-
-		// Do not include missing IDs in telemetry. We can still detect them
-		// by comparing against the resource count.
-		if cluster == nil || cluster.ID == "" {
-			continue
-		}
-		clusterIds = append(clusterIds, cluster.ID)
-	}
-	var dashboardIds []string
-	for _, dashboard := range b.Config.Resources.Dashboards {
-		if len(dashboardIds) >= ResourceIdLimit {
-			break
-		}
-
-		// Do not include missing IDs in telemetry. We can still detect them
-		// by comparing against the resource count.
-		if dashboard == nil || dashboard.ID == "" {
-			continue
-		}
-		dashboardIds = append(dashboardIds, dashboard.ID)
-	}
-
-	// sort the IDs to make the record generated deterministic
-	// this is important for testing purposes
-	slices.Sort(jobsIds)
-	slices.Sort(pipelineIds)
-	slices.Sort(clusterIds)
-	slices.Sort(dashboardIds)
-
-	for _, app := range b.Config.Resources.Apps {
-		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
-			break
-		}
-	}
-
-	for _, cluster := range b.Config.Resources.Clusters {
-		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
-			break
-		}
-	}
-
-	for _, warehouse := range b.Config.Resources.SqlWarehouses {
-		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
-			break
-		}
-	}
-
-	// Record which task types the bundle uses (has_<task_type> per type present),
-	// plus the ai_runtime_task-specific scheduling / multi-task dimensions.
-	for _, key := range collectTaskTypes(b.Config.Resources.Jobs) {
-		b.Metrics.SetBoolValue(key, true)
-	}
-	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs); airPresent {
-		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskScheduled, airScheduled)
-		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
-	}
+	recordLifecycleStarted(b)
+	recordResourceBoolValues(b)
 
 	// Record whether the removed terraform engine was still requested (the command
 	// then fails with the removal error), separately per source. Only emitted when
@@ -442,54 +361,41 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		}
 	}
 
-	telemetry.Log(ctx, protos.DatabricksCliLog{
-		BundleDeployEvent: &protos.BundleDeployEvent{
-			BundleUuid:   bundleUuid,
-			DeploymentId: b.Metrics.DeploymentId.String(),
-			ErrorMessage: errMsg,
+	event := &protos.BundleDeployEvent{
+		BundleUuid:   bundleUuid,
+		DeploymentId: b.Metrics.DeploymentId.String(),
+		ErrorMessage: errMsg,
 
-			ResourceCount:                     resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
-			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
-			ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
-			ResourceModelCount:                int64(len(b.Config.Resources.Models)),
-			ResourceExperimentCount:           int64(len(b.Config.Resources.Experiments)),
-			ResourceModelServingEndpointCount: int64(len(b.Config.Resources.ModelServingEndpoints)),
-			ResourceRegisteredModelCount:      int64(len(b.Config.Resources.RegisteredModels)),
-			ResourceQualityMonitorCount:       int64(len(b.Config.Resources.QualityMonitors)),
-			ResourceSchemaCount:               int64(len(b.Config.Resources.Schemas)),
-			ResourceVolumeCount:               int64(len(b.Config.Resources.Volumes)),
-			ResourceClusterCount:              int64(len(b.Config.Resources.Clusters)),
-			ResourceDashboardCount:            int64(len(b.Config.Resources.Dashboards)),
-			ResourceAppCount:                  int64(len(b.Config.Resources.Apps)),
+		ResourceCount: resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
 
-			ResourceJobIDs:       jobsIds,
-			ResourcePipelineIDs:  pipelineIds,
-			ResourceClusterIDs:   clusterIds,
-			ResourceDashboardIDs: dashboardIds,
+		ResourcesMetadata: collectResourcesMetadata(ctx, b),
+		DeploymentHistory: deploymentHistory,
 
-			ResourcesMetadata: collectResourcesMetadata(ctx, b),
-			DeploymentHistory: deploymentHistory,
+		Pydabs: pydabsSection,
 
-			Pydabs: pydabsSection,
+		Git:                 bundleGitInfo(b),
+		FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
+		InGitRepo:           b.InGitRepo,
 
-			Git:                 bundleGitInfo(b),
-			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
-			InGitRepo:           b.InGitRepo,
-
-			Experimental: &protos.BundleDeployExperimental{
-				BundleMode:                   mode,
-				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
-				UploadFileCount:              int64(len(b.Files)),
-				UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
-				TargetCount:                  b.Metrics.TargetCount,
-				WorkspaceArtifactPathType:    artifactPathType,
-				BoolValues:                   b.Metrics.BoolValues,
-				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
-				VariableCount:                int64(variableCount),
-				ComplexVariableCount:         complexVariableCount,
-				LookupVariableCount:          lookupVariableCount,
-				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
-			},
+		Experimental: &protos.BundleDeployExperimental{
+			BundleMode:                   mode,
+			ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
+			UploadFileCount:              int64(len(b.Files)),
+			UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
+			TargetCount:                  b.Metrics.TargetCount,
+			WorkspaceArtifactPathType:    artifactPathType,
+			BoolValues:                   b.Metrics.BoolValues,
+			LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
+			VariableCount:                int64(variableCount),
+			ComplexVariableCount:         complexVariableCount,
+			LookupVariableCount:          lookupVariableCount,
+			BundleMutatorExecutionTimeMs: getExecutionTimes(b),
 		},
+	}
+	recordResourceCounts(&b.Config.Resources, event)
+	recordResourceIDs(&b.Config.Resources, event)
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		BundleDeployEvent: event,
 	})
 }

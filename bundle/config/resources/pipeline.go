@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -61,4 +62,16 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 
 func (p *Pipeline) GetName() string {
 	return p.Name
+}
+
+func (p *Pipeline) GetID() string {
+	return p.ID
+}
+
+func (*Pipeline) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
+	return &event.ResourcePipelineIDs
+}
+
+func (*Pipeline) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourcePipelineCount
 }
