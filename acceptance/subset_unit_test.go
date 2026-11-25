@@ -40,10 +40,10 @@ func TestSubsetChangedVariantFilter(t *testing.T) {
 		enabled: true,
 		pct:     0,
 		seed:    "seed",
-		changed: map[string][]string{"bundle/invariant/x": {"INPUT_CONFIG=job.yml.tmpl"}},
+		changed: map[string][]string{"bundle/invariant/x": {"INPUT_CONFIG=jobs.yml.tmpl"}},
 	}
-	assert.Empty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=job.yml.tmpl"}))
-	assert.NotEmpty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=pipeline.yml.tmpl"}))
+	assert.Empty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=jobs.yml.tmpl"}))
+	assert.NotEmpty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=pipelines.yml.tmpl"}))
 }
 
 func TestSubsetChangedVariantFilterAlternatives(t *testing.T) {
@@ -53,10 +53,10 @@ func TestSubsetChangedVariantFilterAlternatives(t *testing.T) {
 		enabled: true,
 		pct:     0,
 		seed:    "seed",
-		changed: map[string][]string{"bundle/invariant/x": {"INPUT_CONFIG=job.yml.tmpl", "INPUT_CONFIG=pipeline.yml.tmpl"}},
+		changed: map[string][]string{"bundle/invariant/x": {"INPUT_CONFIG=jobs.yml.tmpl", "INPUT_CONFIG=pipelines.yml.tmpl"}},
 	}
-	assert.Empty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=job.yml.tmpl"}))
-	assert.Empty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=pipeline.yml.tmpl"}))
+	assert.Empty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=jobs.yml.tmpl"}))
+	assert.Empty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=pipelines.yml.tmpl"}))
 	assert.NotEmpty(t, s.skipReason("bundle/invariant/x", []string{"INPUT_CONFIG=other.yml.tmpl"}))
 }
 

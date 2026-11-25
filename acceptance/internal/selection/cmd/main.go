@@ -6,7 +6,7 @@
 //	go run ./acceptance/internal/selection/cmd
 //	go run ./acceptance/internal/selection/cmd -limit 5
 //	go run ./acceptance/internal/selection/cmd -cloud aws
-//	go run ./acceptance/internal/selection/cmd acceptance/bundle/invariant/configs/job.yml.tmpl
+//	go run ./acceptance/internal/selection/cmd acceptance/bundle/invariant/configs/jobs.yml.tmpl
 //
 // With no arguments the selection comes from git, exactly as the test runner gets it, and
 // also lists the tests the last commit message names (see acceptance/README.md) for the run
@@ -16,7 +16,7 @@
 //
 // Each line is a `go test -run` pattern, so a selected test can be run as printed:
 //
-//	go test ./acceptance -run 'TestAccept/^bundle$/^invariant$/^no_drift$/^INPUT_CONFIG=job.yml.tmpl$'
+//	go test ./acceptance -run 'TestAccept/^bundle$/^invariant$/^no_drift$/^INPUT_CONFIG=jobs.yml.tmpl$'
 //
 // Every element is anchored, because a -run element is a regexp matched against one level of
 // the test name: unanchored, `no_drift` would also run no_drift_extra, and `DMS=` would also
@@ -155,7 +155,7 @@ func variantNames(root string, test selection.Test) []string {
 // runPattern renders test name elements as a `go test -run` pattern. Each element of such a
 // pattern is a regexp matched against one level of the test name, so every element is escaped
 // and anchored: otherwise `bundle/deploy/immutable` would also run immutable-no-artifacts, and
-// the dots in job.yml.tmpl would match any character. The pattern is left open at the end, so
+// the dots in jobs.yml.tmpl would match any character. The pattern is left open at the end, so
 // the variants below its last element still run.
 func runPattern(elements []string) string {
 	anchored := make([]string, 0, len(elements))

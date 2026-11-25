@@ -1,6 +1,6 @@
 [[Exclude]]
 Tests = ["migrate", "auto-migrate"]
 Reason = '''
-schema.yml sets custom_max_retention_hours, which the terraform databricks_schema resource cannot
-set (only direct does), so a terraform-first migrate would drift. schema_tf_compat.yml keeps migrate
+schemas.yml sets custom_max_retention_hours, which the terraform databricks_schema resource cannot
+set (only direct does), so a terraform-first migrate would drift. schemas_tf_compat.yml keeps migrate
 coverage for schemas.'''

@@ -64,9 +64,9 @@ func TestConfigRuleMatches(t *testing.T) {
 		// Interior "*" spans any number of path segments. This is the DMS=true
 		// use case: match every permutation that carries a DMS=true segment,
 		// regardless of the test name or engine segments preceding it.
-		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true/INPUT_CONFIG=job.yml.tmpl", true},
+		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true/INPUT_CONFIG=jobs.yml.tmpl", true},
 		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept/bundle/invariant/migrate/DATABRICKS_BUNDLE_ENGINE=terraform/DMS=true", true},
-		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/DMS=/INPUT_CONFIG=job.yml.tmpl", false},
+		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/DMS=/INPUT_CONFIG=jobs.yml.tmpl", false},
 		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept", false},
 
 		// Interior "*" matching zero segments.
