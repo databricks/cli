@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	_ "embed"
 	"encoding/base64"
 	"encoding/hex"
@@ -172,7 +173,7 @@ func (o *ClientOptions) Validate() error {
 	if o.UsagePolicyID != "" && o.ClusterID != "" {
 		return errors.New("--usage-policy-id flag can only be used with serverless compute (--name flag)")
 	}
-	// The accelerator is interpolated into the ProxyCommand and connection name. Enforce
+	// The accelerator is interpolated into the ProxyCommand. Enforce
 	// a safe shape; the backend validates available GPU types and environment versions,
 	// so new GPU types need no CLI change.
 	if o.Accelerator != "" && !acceleratorNameRegex.MatchString(o.Accelerator) {
@@ -238,13 +239,22 @@ func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, en
 		version := cmp.Or(environmentVersion, defaultEnvironmentVersion(accelerator))
 		hashInput = host + "\x00environment_version=" + strconv.Itoa(version)
 	}
-	h := md5.Sum([]byte(hashInput))
-	hashStr := hex.EncodeToString(h[:4])
-	if accelerator != "" {
-		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
-		return fmt.Sprintf("databricks-%s-%s", acc, hashStr)
+	// Keep the original CPU and GPU names so reconnects find existing servers.
+	var label string
+	switch accelerator {
+	case "":
+		label = "cpu"
+	case "GPU_1xA10":
+		label = "gpu-1xa10"
+	case "GPU_8xH100":
+		label = "gpu-8xh100"
+	default:
+		// Hash the exact spelling and keep the user-prefixed secret scope short.
+		h := sha256.Sum256([]byte(hashInput + "\x00" + accelerator))
+		return "databricks-gpu-" + hex.EncodeToString(h[:8])
 	}
-	return "databricks-cpu-" + hashStr
+	h := md5.Sum([]byte(hashInput))
+	return "databricks-" + label + "-" + hex.EncodeToString(h[:4])
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {

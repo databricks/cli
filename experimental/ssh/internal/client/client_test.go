@@ -385,6 +385,25 @@ func TestGenerateDefaultConnectionNameMatchesRegex(t *testing.T) {
 	}
 }
 
+func TestGenerateDefaultConnectionNameDistinguishesAccelerators(t *testing.T) {
+	const host = "https://workspace.test"
+	seen := map[string]string{}
+	for _, env := range []string{"", "my-env"} {
+		for _, acc := range []string{
+			"GPU_1x_A10", "GPU_1x-A10",
+			"GPU_1xA10", "GPU_1XA10",
+			"GPU_1xRTX6000", "GPU_1XRTX6000",
+			"GPU_" + strings.Repeat("A", 64),
+		} {
+			name := client.GenerateDefaultConnectionName(host, acc, env, 0)
+			assert.NotContains(t, seen, name, "%s and %s must not share a connection", acc, seen[name])
+			seen[name] = acc
+			// The secret scope must also fit the username and "-ssh-tunnel-keys".
+			assert.LessOrEqual(t, len(name), 31)
+		}
+	}
+}
+
 func TestToProxyCommand(t *testing.T) {
 	exe, err := os.Executable()
 	require.NoError(t, err)
