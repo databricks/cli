@@ -2,7 +2,7 @@
 === An app created outside the bundle has no thumbnail
 
 >>> [CLI] apps create app-[UNIQUE_NAME] --no-compute --no-wait
-null
+false
 
 === Bind it to a bundle app that sets thumbnail_path
 
@@ -28,7 +28,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> print_requests.py //apps ^//api/2.0/bundle
 
 >>> [CLI] apps get app-[UNIQUE_NAME]
-null
+false
 
 === Removing thumbnail_path then deletes a thumbnail the app never had
 
