@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
@@ -447,25 +448,26 @@ func (a *Adapter) validate() error {
 		if err != nil {
 			return fmt.Errorf("deployment_id_field: %w", err)
 		}
-		if err := structaccess.ValidatePath(stateType, path); err != nil {
-			return fmt.Errorf("deployment_id_field: %w", err)
+		if err := validateFieldKind(stateType, "deployment_id_field", path, stringKinds); err != nil {
+			return err
 		}
 		a.deploymentIDPath = path
 	}
 
 	if a.resourceConfig != nil && a.resourceConfig.EtagField != "" {
 		path := structpath.NewStringKey(nil, a.resourceConfig.EtagField)
-		if err := structaccess.ValidatePath(stateType, path); err != nil {
-			return fmt.Errorf("etag_field: %w", err)
+		if err := validateFieldKind(stateType, "etag_field", path, stringKinds); err != nil {
+			return err
 		}
-		if err := structaccess.ValidatePath(remoteType, path); err != nil {
-			return fmt.Errorf("etag_field: %w", err)
+		if err := validateFieldKind(remoteType, "etag_field", path, stringKinds); err != nil {
+			return err
 		}
 	}
 
 	if a.resourceConfig != nil && a.resourceConfig.JobIDField != "" {
-		if err := structaccess.ValidatePath(stateType, structpath.NewStringKey(nil, a.resourceConfig.JobIDField)); err != nil {
-			return fmt.Errorf("job_id_field: %w", err)
+		path := structpath.NewStringKey(nil, a.resourceConfig.JobIDField)
+		if err := validateFieldKind(stateType, "job_id_field", path, integerKinds); err != nil {
+			return err
 		}
 	}
 
@@ -863,6 +865,11 @@ func (a *Adapter) StampDeploymentID(state any, deploymentID string) (bool, error
 	if id, _ := current.(string); id != "" {
 		return false, nil
 	}
+	// Setting an empty value would add the field to ForceSendFields and serialize it as "".
+	// The value stays empty, but the state is reported as changed so the caller still syncs it.
+	if deploymentID == "" {
+		return true, nil
+	}
 	if err := structaccess.Set(state, a.deploymentIDPath, deploymentID); err != nil {
 		return false, err
 	}
@@ -879,6 +886,34 @@ func prepareCallRequired(resource any, methodName string) (*calladapt.BoundCalle
 		return nil, fmt.Errorf("%s method not found", methodName)
 	}
 	return caller, nil
+}
+
+// fieldKinds names a set of reflect kinds for the error validateFieldKind returns.
+type fieldKinds struct {
+	name  string
+	kinds []reflect.Kind
+}
+
+var (
+	stringKinds  = fieldKinds{name: "a string", kinds: []reflect.Kind{reflect.String}}
+	integerKinds = fieldKinds{name: "an integer", kinds: []reflect.Kind{
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+	}}
+)
+
+// validateFieldKind checks that the field a config key names exists in t and has one of the
+// wanted kinds. The engine reads these fields as a fixed Go type, so a field of another kind
+// would otherwise read as the zero value without any error.
+func validateFieldKind(t reflect.Type, key string, path *structpath.PathNode, want fieldKinds) error {
+	fieldType, err := structaccess.PathType(t, path)
+	if err != nil {
+		return fmt.Errorf("%s: %w", key, err)
+	}
+	if !slices.Contains(want.kinds, fieldType.Kind()) {
+		return fmt.Errorf("%s: field %q in %s is %s, must be %s", key, path.String(), t, fieldType, want.name)
+	}
+	return nil
 }
 
 // validatePointerToStruct checks if the type is a pointer to a struct.

@@ -1026,3 +1026,26 @@ func TestStampDeploymentIdForFirstVersion(t *testing.T) {
 	assert.Contains(t, string(plan.Plan["resources.jobs.stamped"].NewState.Value), `"deployment_id":"other"`)
 	assert.Equal(t, schemaJSON, plan.Plan["resources.schemas.new"].NewState.Value)
 }
+
+func TestStampDeploymentIdForFirstVersionEmptyID(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	job := &jobs.JobSettings{Name: "new", Deployment: &jobs.JobDeployment{Kind: jobs.JobDeploymentKindBundle}}
+	sv := structvar.NewStructVar(job, nil)
+	svj := &structvar.StructVarJSON{}
+	require.NoError(t, sv.SyncToJSON(svj))
+	planJSON := slices.Clone(svj.Value)
+
+	plan := deployplan.NewPlanDirect()
+	plan.Plan["resources.jobs.new"] = &deployplan.PlanEntry{Action: deployplan.Create, NewState: svj}
+	b := &DeploymentBundle{Adapters: adapters, Plan: plan}
+	b.StateCache.Store("resources.jobs.new", sv)
+
+	require.NoError(t, b.StampDeploymentIdForFirstVersion(""))
+
+	assert.Empty(t, job.Deployment.DeploymentId)
+	assert.Empty(t, job.Deployment.ForceSendFields)
+	assert.Equal(t, planJSON, plan.Plan["resources.jobs.new"].NewState.Value)
+	assert.NotContains(t, string(plan.Plan["resources.jobs.new"].NewState.Value), "deployment_id")
+}
