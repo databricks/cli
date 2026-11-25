@@ -2,12 +2,12 @@ package resources
 
 import (
 	"context"
-	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -101,11 +101,8 @@ func (s *MaterializationSet) GetName() string {
 	return ""
 }
 
-// GetURL reports that this type has no workspace URL: a set has no standalone page, and its
+// WorkspaceURL reports that this type has no workspace URL: a set has no standalone page, and its
 // members surface under their own features.
-func (s *MaterializationSet) GetURL() (string, bool) {
-	return "", false
+func (*MaterializationSet) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{}, false
 }
-
-// InitializeURL leaves URL unset. See GetURL.
-func (s *MaterializationSet) InitializeURL(_ url.URL) {}

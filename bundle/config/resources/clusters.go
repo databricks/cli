@@ -59,11 +59,15 @@ func (*Cluster) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Cluster) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "compute/clusters/%s"}, true
+}
+
 func (s *Cluster) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "clusters", s.ID)
+	s.URL = workspaceURL(s, baseURL, s.ID)
 }
 
 func (s *Cluster) GetName() string {

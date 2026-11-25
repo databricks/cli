@@ -8,25 +8,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNormalizeDotSeparatedID(t *testing.T) {
+// testPatterns stands in for the patterns that callers pass in.
+var testPatterns = map[string]Pattern{
+	"jobs":              {Path: "jobs/%s"},
+	"registered_models": {Path: "explore/data/models/%s", DotSeparatedID: true},
+	"sql_warehouses":    {Path: "sql/warehouses/%s"},
+}
+
+func TestPatternURL(t *testing.T) {
+	dotted := Pattern{Path: "explore/data/models/%s", DotSeparatedID: true}
+	plain := Pattern{Path: "jobs/%s"}
+	fragment := Pattern{Path: "#notebook/%s"}
+
 	tests := []struct {
-		name         string
-		resourceType string
-		id           string
-		expected     string
+		name     string
+		pattern  Pattern
+		id       string
+		expected string
 	}{
-		{"registered_models converts dots to slashes", "registered_models", "catalog.schema.model", "catalog/schema/model"},
-		{"registered_models preserves slashes", "registered_models", "catalog/schema/model", "catalog/schema/model"},
-		{"registered_models single part", "registered_models", "model", "model"},
-		{"jobs ID unchanged", "jobs", "123", "123"},
-		{"pipelines ID unchanged", "pipelines", "abc-def", "abc-def"},
-		{"notebooks path unchanged", "notebooks", "/Users/user@example.com/nb", "/Users/user@example.com/nb"},
+		{"dot-separated converts dots to slashes", dotted, "catalog.schema.model", "https://host.com/explore/data/models/catalog/schema/model"},
+		{"dot-separated preserves slashes", dotted, "catalog/schema/model", "https://host.com/explore/data/models/catalog/schema/model"},
+		{"dot-separated single part", dotted, "model", "https://host.com/explore/data/models/model"},
+		{"plain ID unchanged", plain, "1.2", "https://host.com/jobs/1.2"},
+		{"fragment path unchanged", fragment, "/Users/user@example.com/nb", "https://host.com/#notebook//Users/user@example.com/nb"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := normalizeDotSeparatedID(tt.resourceType, tt.id)
-			assert.Equal(t, tt.expected, got)
+			base := url.URL{Scheme: "https", Host: "host.com"}
+			assert.Equal(t, tt.expected, tt.pattern.URL(base, tt.id))
 		})
 	}
 }
@@ -44,13 +54,8 @@ func TestJobRunURL(t *testing.T) {
 }
 
 func TestResourceTypes(t *testing.T) {
-	types := ResourceTypes()
-	assert.NotEmpty(t, types)
-
-	// Verify the list is sorted.
-	for i := range len(types) - 1 {
-		assert.Less(t, types[i], types[i+1])
-	}
+	// Aliases are accepted but not listed.
+	assert.Equal(t, []string{"jobs", "notebooks", "queries", "registered_models", "warehouses"}, ResourceTypes(testPatterns))
 }
 
 func TestWorkspaceBaseURL(t *testing.T) {
@@ -101,7 +106,7 @@ func TestBuildResourceURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := BuildResourceURL(tt.host, tt.resourceType, tt.id, tt.workspaceID)
+			got, err := BuildResourceURL(testPatterns, tt.host, tt.resourceType, tt.id, tt.workspaceID)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -109,33 +114,28 @@ func TestBuildResourceURL(t *testing.T) {
 }
 
 func TestBuildResourceURLUnknownType(t *testing.T) {
-	_, err := BuildResourceURL("https://host.com", "unknown", "123", "")
-	assert.ErrorContains(t, err, "unknown resource type")
+	_, err := BuildResourceURL(testPatterns, "https://host.com", "unknown", "123", "")
+	assert.EqualError(t, err, `unknown resource type "unknown", must be one of: jobs, notebooks, queries, registered_models, warehouses`)
 }
 
-func TestResourceURL(t *testing.T) {
+func TestBuildResourceURLResolvesTypes(t *testing.T) {
 	tests := []struct {
 		name         string
 		resourceType string
 		id           string
 		expected     string
 	}{
-		{"jobs", "jobs", "123", "https://host.com/jobs/123"},
-		{"experiments", "experiments", "exp-1", "https://host.com/ml/experiments/exp-1"},
-		{"dashboards", "dashboards", "d-1", "https://host.com/dashboardsv3/d-1/published"},
-		{"genie_spaces", "genie_spaces", "space-1", "https://host.com/genie/rooms/space-1"},
-		{"notebooks", "notebooks", "12345", "https://host.com/#notebook/12345"},
+		{"passed-in type", "jobs", "123", "https://host.com/jobs/123"},
+		{"own type", "queries", "q-1", "https://host.com/sql/editor/q-1"},
 		{"notebooks with path", "notebooks", "/Users/u/nb", "https://host.com/#notebook//Users/u/nb"},
-		{"registered_models normalizes dots", "registered_models", "cat.sch.model", "https://host.com/explore/data/models/cat/sch/model"},
 		{"sql_warehouses alias resolves to warehouses", "sql_warehouses", "wh-1", "https://host.com/sql/warehouses/wh-1"},
 		{"warehouses canonical still works", "warehouses", "wh-1", "https://host.com/sql/warehouses/wh-1"},
-		{"unknown returns empty", "nonexistent", "123", ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			base := url.URL{Scheme: "https", Host: "host.com"}
-			got := ResourceURL(base, tt.resourceType, tt.id)
+			got, err := BuildResourceURL(testPatterns, "https://host.com", tt.resourceType, tt.id, "")
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}

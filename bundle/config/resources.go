@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"reflect"
 	"strings"
 
@@ -72,14 +71,6 @@ type ConfigResource interface {
 
 	// GetName returns the in-product name of the resource.
 	GetName() string
-
-	// GetURL returns the resource's workspace URL and whether this resource type
-	// has one at all. A supported type that is not deployed yet returns ("", true);
-	// a type that never has a URL returns ("", false).
-	GetURL() (string, bool)
-
-	// InitializeURL initializes the URL field of the resource.
-	InitializeURL(baseURL url.URL)
 
 	// GetLifecycle returns the lifecycle settings for the resource.
 	GetLifecycle() resources.LifecycleConfig

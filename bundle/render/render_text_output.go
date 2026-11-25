@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -152,7 +153,7 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 	for _, group := range b.Config.Resources.AllResources() {
 		resources := make([]ResourceInfo, 0, len(group.Resources))
 		for key, resource := range group.Resources {
-			url, supportsURL := resource.GetURL()
+			url, supportsURL := config.ResourceURL(resource)
 			resources = append(resources, ResourceInfo{
 				Key:         key,
 				Name:        resource.GetName(),

@@ -63,9 +63,13 @@ func (c *PostgresCatalog) GetName() string {
 	return c.CatalogId
 }
 
+func (*PostgresCatalog) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s"}, true
+}
+
 func (c *PostgresCatalog) InitializeURL(baseURL url.URL) {
 	if c.CatalogId == "" {
 		return
 	}
-	c.URL = workspaceurls.ResourceURL(baseURL, "postgres_catalogs", c.CatalogId)
+	c.URL = workspaceURL(c, baseURL, c.CatalogId)
 }

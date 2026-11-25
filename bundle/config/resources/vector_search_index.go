@@ -52,6 +52,10 @@ func (e *VectorSearchIndex) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*VectorSearchIndex) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/%s", DotSeparatedID: true}, true
+}
+
 func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
 	// UC explore expects /{catalog}/{schema}/{name}, so bail if the name isn't
 	// a fully resolved three-part identifier; an unresolved ${...} reference
@@ -59,7 +63,7 @@ func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
 	if strings.Count(e.Name, ".") != 2 {
 		return
 	}
-	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_indexes", e.Name)
+	e.URL = workspaceURL(e, baseURL, e.Name)
 }
 
 func (e *VectorSearchIndex) GetName() string {

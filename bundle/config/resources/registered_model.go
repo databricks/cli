@@ -49,11 +49,15 @@ func (*RegisteredModel) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*RegisteredModel) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "explore/data/models/%s", DotSeparatedID: true}, true
+}
+
 func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, "registered_models", s.ID)
+	s.URL = workspaceURL(s, baseURL, s.ID)
 }
 
 func (s *RegisteredModel) GetName() string {

@@ -49,11 +49,15 @@ func (e *VectorSearchEndpoint) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*VectorSearchEndpoint) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "compute/vector-search/%s"}, true
+}
+
 func (e *VectorSearchEndpoint) InitializeURL(baseURL url.URL) {
 	if e.Name == "" {
 		return
 	}
-	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_endpoints", e.Name)
+	e.URL = workspaceURL(e, baseURL, e.Name)
 }
 
 func (e *VectorSearchEndpoint) GetName() string {

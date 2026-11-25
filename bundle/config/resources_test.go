@@ -2,8 +2,8 @@ package config
 
 import (
 	"encoding/json"
-	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
-	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -116,52 +115,27 @@ func TestSupportedResources(t *testing.T) {
 	}
 }
 
-// All bundle resources must have a workspace URL, except those listed in noURL.
-// When a pattern key or a bundle plural name drifts, ResourceURL returns "" and
-// this test fails loudly instead of silently producing empty URLs in bundle summary.
-// When adding a new resource, add a URL pattern in libs/workspaceurls or add the
-// plural name to noURL with a comment explaining why no URL exists.
-func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
-	// Resources that intentionally have no workspace URL.
-	noURL := map[string]bool{
-		// A monitor is addressed by the UUID of the object it monitors, which has
-		// no Catalog Explorer URL.
-		"data_quality_monitors": true,
-		"external_locations":    true,
-		// A materialization set has no standalone workspace page; its members
-		// surface under their own features.
-		"materialization_sets": true,
-		// A job run does have a workspace URL, but it's addressed by two IDs
-		// (job + run) so it can't be expressed as a single-ID pattern here; it's
-		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
-		"job_runs":                     true,
-		"postgres_branches":            true,
-		"postgres_data_apis":           true,
-		"postgres_databases":           true,
-		"postgres_endpoints":           true,
-		"postgres_projects":            true,
-		"postgres_roles":               true,
-		"postgres_snapshot_schedules":  true,
-		"secret_scopes":                true,
-		"internal_immutable_snapshots": true,
+// Every resource type declares in its own file either the URL pattern of its
+// page in the workspace UI or that it has no page.
+func TestEveryResourceTypeDeclaresWorkspaceURL(t *testing.T) {
+	AssertResourceTypesImplement[resources.WorkspaceURLDeclarer](t)
+}
+
+// A type that declares a page initializes the URL of its resources, and a type
+// that declares none does not.
+func TestResourceTypesWithWorkspacePageInitializeURL(t *testing.T) {
+	for key, d := range ResourceTypesImplementing[resources.WorkspaceURLDeclarer]() {
+		_, hasPage := d.WorkspaceURL()
+		_, initializesURL := d.(resources.URLInitializer)
+		assert.Equalf(t, hasPage, initializesURL, "resource type %q declares a workspace page: %v, implements resources.URLInitializer: %v", key, hasPage, initializesURL)
 	}
+}
 
-	supported := SupportedResources()
-
-	// Catch stale noURL entries when a resource is removed from SupportedResources.
-	for name := range noURL {
-		_, ok := supported[name]
-		require.Truef(t, ok, "%q is in the noURL list but is not a supported bundle resource; remove it from noURL", name)
-	}
-
-	base := url.URL{Scheme: "https", Host: "example.com"}
-	for name := range supported {
-		got := workspaceurls.ResourceURL(base, name, "test-id")
-		if noURL[name] {
-			assert.Emptyf(t, got, "workspaceurls.ResourceURL(%q) returned non-empty; remove %q from noURL or remove its URL pattern", name, name)
-		} else {
-			assert.NotEmptyf(t, got, "workspaceurls.ResourceURL(%q) returned empty; add a URL pattern in libs/workspaceurls or add %q to noURL", name, name)
-		}
+func TestWorkspaceURLPatternsHaveOneID(t *testing.T) {
+	patterns := WorkspaceURLPatterns()
+	assert.NotEmpty(t, patterns)
+	for key, p := range patterns {
+		assert.Equalf(t, 1, strings.Count(p.Path, "%s"), "URL pattern %q of resource type %q must hold exactly one %%s", p.Path, key)
 	}
 }
 

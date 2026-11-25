@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -76,7 +77,7 @@ func deployCommand() *cobra.Command {
 				resource := group.Resources[resourceKey]
 				// Skip resource types that never have a URL; otherwise we'd print
 				// "View your <resource> here:" with a blank URL.
-				url, supported := resource.GetURL()
+				url, supported := config.ResourceURL(resource)
 				if !supported {
 					continue
 				}

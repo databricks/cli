@@ -118,12 +118,16 @@ func (*Dashboard) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Dashboard) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "dashboardsv3/%s/published"}, true
+}
+
 func (r *Dashboard) InitializeURL(baseURL url.URL) {
 	if r.ID == "" {
 		return
 	}
 
-	r.URL = workspaceurls.ResourceURL(baseURL, "dashboards", r.ID)
+	r.URL = workspaceURL(r, baseURL, r.ID)
 }
 
 func (r *Dashboard) GetName() string {

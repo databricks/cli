@@ -5,8 +5,10 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"testing"
 
+	bundleconfig "github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -40,7 +42,7 @@ func TestBuildWorkspaceURLPathBasedResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.resourceType+"/"+tt.id, func(t *testing.T) {
-			got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, "")
+			got, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://myworkspace.databricks.com", tt.resourceType, tt.id, "")
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -59,7 +61,7 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, "")
+			got, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://myworkspace.databricks.com", tt.resourceType, tt.id, "")
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -67,40 +69,68 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 }
 
 func TestBuildWorkspaceURLUnknownResourceType(t *testing.T) {
-	_, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "unknown", "123", "")
+	_, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://myworkspace.databricks.com", "unknown", "123", "")
 	assert.ErrorContains(t, err, "unknown resource type \"unknown\"")
-	assert.ErrorContains(t, err, "alerts, apps, catalogs, cluster_policies, clusters, dashboards, database_catalogs, database_instances, experiments, feature_specs, features, genie_spaces, instance_pools, jobs, mcp_services, model_provider_services, model_services, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, secrets, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses")
+	assert.ErrorContains(t, err, strings.Join(workspaceOpenResourceTypes(), ", "))
 }
 
 func TestBuildWorkspaceURLHostWithTrailingSlash(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com/", "jobs", "123", "")
+	got, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://myworkspace.databricks.com/", "jobs", "123", "")
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceID(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "jobs", "123", "123456")
+	got, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://myworkspace.databricks.com", "jobs", "123", "123456")
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?w=123456", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceIDInHostname(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://adb-123456.azuredatabricks.net", "jobs", "123", "123456")
+	got, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://adb-123456.azuredatabricks.net", "jobs", "123", "123456")
 	require.NoError(t, err)
 	// Workspace ID is already in the hostname, so ?w= should not be appended.
 	assert.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/123", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceIDInVanityHostname(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://workspace-123456.example.com", "jobs", "123", "123456")
+	got, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://workspace-123456.example.com", "jobs", "123", "123456")
 	require.NoError(t, err)
 	assert.Equal(t, "https://workspace-123456.example.com/jobs/123?w=123456", got)
 }
 
 func TestBuildWorkspaceURLFragmentWithWorkspaceID(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "notebooks", "12345", "789")
+	got, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://myworkspace.databricks.com", "notebooks", "12345", "789")
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/?w=789#notebook/12345", got)
+}
+
+// workspaceOpenResourceTypes returns the resource types the command accepts. The
+// full list is pinned by the acceptance test of the command.
+func workspaceOpenResourceTypes() []string {
+	return workspaceurls.ResourceTypes(bundleconfig.WorkspaceURLPatterns())
+}
+
+func TestWorkspaceOpenResourceTypes(t *testing.T) {
+	types := workspaceOpenResourceTypes()
+
+	// Every bundle resource type with a single-ID page is listed, except
+	// sql_warehouses, which is accepted as an alias of warehouses.
+	for key := range bundleconfig.WorkspaceURLPatterns() {
+		if key == "sql_warehouses" {
+			assert.NotContains(t, types, key)
+			continue
+		}
+		assert.Contains(t, types, key)
+	}
+	for _, key := range []string{"notebooks", "queries", "warehouses"} {
+		assert.Contains(t, types, key)
+	}
+
+	// The alias builds the same URL as the type it stands for.
+	viaAlias, err := workspaceurls.BuildResourceURL(bundleconfig.WorkspaceURLPatterns(), "https://myworkspace.databricks.com", "sql_warehouses", "wh-1", "")
+	require.NoError(t, err)
+	assert.Equal(t, "https://myworkspace.databricks.com/sql/warehouses/wh-1", viaAlias)
 }
 
 func TestWorkspaceOpenCommandCompletion(t *testing.T) {
@@ -108,41 +138,7 @@ func TestWorkspaceOpenCommandCompletion(t *testing.T) {
 
 	completions, directive := cmd.ValidArgsFunction(cmd, []string{}, "")
 	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
-	assert.Equal(t, []string{
-		"alerts",
-		"apps",
-		"catalogs",
-		"cluster_policies",
-		"clusters",
-		"dashboards",
-		"database_catalogs",
-		"database_instances",
-		"experiments",
-		"feature_specs",
-		"features",
-		"genie_spaces",
-		"instance_pools",
-		"jobs",
-		"mcp_services",
-		"model_provider_services",
-		"model_services",
-		"model_serving_endpoints",
-		"models",
-		"notebooks",
-		"pipelines",
-		"postgres_catalogs",
-		"postgres_synced_tables",
-		"quality_monitors",
-		"queries",
-		"registered_models",
-		"schemas",
-		"secrets",
-		"synced_database_tables",
-		"vector_search_endpoints",
-		"vector_search_indexes",
-		"volumes",
-		"warehouses",
-	}, completions)
+	assert.Equal(t, workspaceOpenResourceTypes(), completions)
 }
 
 func TestWorkspaceOpenCommandCompletionSecondArg(t *testing.T) {
@@ -156,7 +152,7 @@ func TestWorkspaceOpenCommandCompletionSecondArg(t *testing.T) {
 func TestWorkspaceOpenCommandHelpText(t *testing.T) {
 	cmd := newWorkspaceOpenCommand()
 
-	assert.Contains(t, cmd.Long, "Supported resource types: alerts, apps, catalogs, cluster_policies, clusters, dashboards, database_catalogs, database_instances, experiments, feature_specs, features, genie_spaces, instance_pools, jobs, mcp_services, model_provider_services, model_services, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, secrets, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses.")
+	assert.Contains(t, cmd.Long, "Supported resource types: "+strings.Join(workspaceOpenResourceTypes(), ", ")+".")
 	assert.Contains(t, cmd.Long, "databricks experimental open jobs 123456789")
 	assert.Contains(t, cmd.Long, "databricks experimental open notebooks /Users/user@example.com/my-notebook")
 	assert.Contains(t, cmd.Long, "databricks experimental open registered_models catalog.schema.my_model")

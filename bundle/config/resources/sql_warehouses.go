@@ -56,11 +56,15 @@ func (*SqlWarehouse) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*SqlWarehouse) WorkspaceURL() (workspaceurls.Pattern, bool) {
+	return workspaceurls.Pattern{Path: "sql/warehouses/%s"}, true
+}
+
 func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 	if sw.ID == "" {
 		return
 	}
-	sw.URL = workspaceurls.ResourceURL(baseURL, "warehouses", sw.ID)
+	sw.URL = workspaceURL(sw, baseURL, sw.ID)
 }
 
 func (sw *SqlWarehouse) GetName() string {
