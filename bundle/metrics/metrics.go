@@ -6,11 +6,11 @@ const (
 	ArtifactBuildCommandIsSet           = "artifact_build_command_is_set"
 	ArtifactFilesIsSet                  = "artifact_files_is_set"
 	PresetsNamePrefixIsSet              = "presets_name_prefix_is_set"
-	AppLifecycleStarted                 = "app_lifecycle_started"
-	ClusterLifecycleStarted             = "cluster_lifecycle_started"
 	DeploymentHistoryEnabled            = "deployment_history_enabled"
-	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
+
+	// The keys that report lifecycle.started are declared by the resource types that
+	// support it; see resources.LifecycleStartedTelemetry.
 
 	// Whether the deploy registered an immutable snapshot. Derived from the snapshot
 	// resource, not from experimental.immutable_folder: the flag may change, and the

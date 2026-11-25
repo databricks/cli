@@ -74,6 +74,10 @@ func (a *App) GetLifecycle() LifecycleConfig {
 	return *a.Lifecycle
 }
 
+func (*App) LifecycleStartedTelemetryKey() string {
+	return "app_lifecycle_started"
+}
+
 // FieldsSentWhenEmpty keeps an empty description instead of dropping it: an app update
 // without the field leaves the remote description unchanged, so removing description
 // from config would never converge. Force-sending "" clears it.

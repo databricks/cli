@@ -33,6 +33,10 @@ func (s *Cluster) GetLifecycle() LifecycleConfig {
 	return *s.Lifecycle
 }
 
+func (*Cluster) LifecycleStartedTelemetryKey() string {
+	return "cluster_lifecycle_started"
+}
+
 func (s *Cluster) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }

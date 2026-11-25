@@ -254,6 +254,43 @@ func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
 	return dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 }
 
+// isNilResource reports whether r is a nil pointer, which a null in the configuration
+// leaves in place of a resource.
+func isNilResource(r config.ConfigResource) bool {
+	return reflect.ValueOf(r).IsNil()
+}
+
+// recordLifecycleStarted records lifecycle.started for every resource type that reports
+// it, taken from a resource of that type that sets it. Types are recorded in the order
+// of their telemetry keys.
+func recordLifecycleStarted(b *bundle.Bundle) {
+	type typeResources struct {
+		key       string
+		resources map[string]config.ConfigResource
+	}
+	var types []typeResources
+	for _, group := range b.Config.Resources.AllResources() {
+		if d, ok := config.ResourceTypeAs[resources.LifecycleStartedTelemetry](group.Description.PluralName); ok {
+			types = append(types, typeResources{key: d.LifecycleStartedTelemetryKey(), resources: group.Resources})
+		}
+	}
+	slices.SortFunc(types, func(a, b typeResources) int {
+		return cmp.Compare(a.key, b.key)
+	})
+
+	for _, t := range types {
+		for _, r := range t.resources {
+			if isNilResource(r) {
+				continue
+			}
+			if lifecycle, ok := r.GetLifecycle().(resources.LifecycleWithStarted); ok && lifecycle.Started != nil {
+				b.Metrics.SetBoolValue(t.key, *lifecycle.Started)
+				break
+			}
+		}
+	}
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
@@ -335,26 +372,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	slices.Sort(clusterIds)
 	slices.Sort(dashboardIds)
 
-	for _, app := range b.Config.Resources.Apps {
-		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
-			break
-		}
-	}
-
-	for _, cluster := range b.Config.Resources.Clusters {
-		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
-			break
-		}
-	}
-
-	for _, warehouse := range b.Config.Resources.SqlWarehouses {
-		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
-			break
-		}
-	}
+	recordLifecycleStarted(b)
 
 	// Record which task types the bundle uses (has_<task_type> per type present),
 	// plus the ai_runtime_task-specific scheduling / multi-task dimensions.

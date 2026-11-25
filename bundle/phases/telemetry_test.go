@@ -178,6 +178,33 @@ func TestAiRuntimeTaskMetrics(t *testing.T) {
 	}
 }
 
+// Every type that supports lifecycle.started declares the key that reports it, and only those.
+func TestLifecycleStartedTelemetryIsDeclaredByTypesWithStarted(t *testing.T) {
+	for _, rt := range config.AllResourceTypes() {
+		_, hasStarted := rt.New().GetLifecycle().(resources.LifecycleWithStarted)
+		_, declares := rt.New().(resources.LifecycleStartedTelemetry)
+		assert.Equal(t, hasStarted, declares, "resource type %q supports lifecycle.started: %v, declares LifecycleStartedTelemetry: %v", rt.Key, hasStarted, declares)
+	}
+}
+
+func TestRecordLifecycleStarted(t *testing.T) {
+	started := true
+	stopped := false
+	b := &bundle.Bundle{Config: config.Root{Resources: config.Resources{
+		SqlWarehouses: map[string]*resources.SqlWarehouse{"w": {Lifecycle: &resources.LifecycleWithStarted{Started: &stopped}}},
+		Clusters:      map[string]*resources.Cluster{"nil": nil, "unset": {}, "c": {Lifecycle: &resources.LifecycleWithStarted{Started: &started}}},
+		Apps:          map[string]*resources.App{"a": {Lifecycle: &resources.LifecycleWithStarted{Started: &started}}},
+		Jobs:          map[string]*resources.Job{"j": {}},
+	}}}
+
+	recordLifecycleStarted(b)
+	assert.Equal(t, []protos.BoolMapEntry{
+		{Key: "app_lifecycle_started", Value: true},
+		{Key: "cluster_lifecycle_started", Value: true},
+		{Key: "sql_warehouse_lifecycle_started", Value: false},
+	}, b.Metrics.BoolValues)
+}
+
 func TestPydabsMetrics(t *testing.T) {
 	pythonConfig := config.Python{
 		Resources: []string{"resources:load_resources"},
