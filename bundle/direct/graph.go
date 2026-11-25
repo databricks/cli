@@ -19,7 +19,9 @@ func makeGraph(plan *deployplan.Plan) (*dagrun.Graph, error) {
 
 	// Add edges based on depends_on field.
 	// For deletions, reverse direction so children are deleted before parents.
-	for resourceKey, entry := range plan.Plan {
+	// In sorted order, so that a config with several cycles always reports the same one.
+	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
+		entry := plan.Plan[resourceKey]
 		if entry.DependsOn == nil {
 			continue
 		}

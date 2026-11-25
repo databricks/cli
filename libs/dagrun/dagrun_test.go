@@ -230,6 +230,11 @@ func TestDetectCycleReachedFromAnotherNode(t *testing.T) {
 			edges: []edge{{"A", "B", "${A.id}"}, {"B", "C", "${B.id}"}, {"C", "B", "${C.id}"}},
 			cycle: "cycle detected: C refers to B via ${B.id} which refers to C via ${C.id}",
 		},
+		{
+			name:  "unlabeled edges",
+			edges: []edge{{"A", "B", "entry"}, {"B", "C", ""}, {"C", "B", "close"}},
+			cycle: "cycle detected: C refers to B via  which refers to C via close",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

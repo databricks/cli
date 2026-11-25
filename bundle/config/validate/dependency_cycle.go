@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -21,8 +22,8 @@ func DependencyCycle() bundle.ReadOnlyMutator {
 	return &dependencyCycle{}
 }
 
-// DependencyCycleAfterBuild is [DependencyCycle] for plan and deploy, run after the build
-// phase and the config fixups the plan sees, so it checks the same config as the plan.
+// DependencyCycleAfterBuild is [DependencyCycle] for plan and deploy, run after every step that
+// changes the config before the plan, so it checks the same config as the plan.
 func DependencyCycleAfterBuild() bundle.ReadOnlyMutator {
 	return &dependencyCycle{afterBuild: true}
 }
@@ -39,7 +40,13 @@ func (m *dependencyCycle) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		return nil
 	}
 
-	cycle := direct.DetectDependencyCycle(ctx, &b.Config)
+	// After the build, plan and deploy have the state open: planning against it also covers
+	// resources kept only because they are in state.
+	var db *dstate.Database
+	if m.afterBuild && b.DeploymentBundle.StateDB.IsOpen() {
+		db = &b.DeploymentBundle.StateDB.Data
+	}
+	cycle := direct.DetectDependencyCycle(ctx, &b.Config, db)
 	if cycle == nil {
 		return nil
 	}

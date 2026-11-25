@@ -1,0 +1,10 @@
+trace $CLI bundle deploy
+
+# Emptied grants stay in the plan while they are in state, to remove the deployed grant; with the
+# schema depending on them, that is a cycle only the state shows.
+update_file.py databricks.yml '        - principal: deco-test-user@databricks.com
+          privileges: [USE_SCHEMA]' '        []
+      lifecycle:
+        depends_on:
+          - resource: schemas.s.grants'
+trace musterr $CLI bundle deploy

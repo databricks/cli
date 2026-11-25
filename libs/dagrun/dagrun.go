@@ -123,9 +123,7 @@ func (g *Graph) DetectCycle() error {
 						if st.data[i].node == edge.To {
 							break
 						}
-						if lbl := st.data[i].inLbl; lbl != "" {
-							edges = append(edges, lbl)
-						}
+						edges = append(edges, st.data[i].inLbl)
 					}
 					slices.Reverse(nodes)
 					slices.Reverse(edges)

@@ -61,6 +61,26 @@ resources:
 `,
 		},
 		{
+			// makePlan cannot read a resource whose key has a dot; the check leaves it to the plan.
+			name: "dotted_resource_key",
+			yaml: `
+resources:
+  jobs:
+    "foo.bar": {name: "x"}
+`,
+		},
+		{
+			// A reference the plan resolves later does not hide a cycle elsewhere.
+			name: "cycle_next_to_non_resource_reference",
+			yaml: `
+resources:
+  jobs:
+    a: {name: "${artifacts.x.path}"}
+    b: {name: "${resources.jobs.b.id}"}
+`,
+			cycle: "cycle detected: resources.jobs.b refers to itself via ${resources.jobs.b.id}",
+		},
+		{
 			name: "self",
 			yaml: `
 resources:
@@ -86,7 +106,7 @@ resources:
 			root, diags := config.LoadFromBytes("databricks.yml", []byte(tc.yaml))
 			require.Empty(t, diags)
 
-			cycle := DetectDependencyCycle(t.Context(), root)
+			cycle := DetectDependencyCycle(t.Context(), root, nil)
 			if tc.cycle == "" {
 				assert.Nil(t, cycle)
 				return
