@@ -359,3 +359,25 @@ resources:
 	)
 	assert.Contains(t, string(state["resources.jobs.my_job"].State), `"name": "hello"`)
 }
+
+// A reference in a secret scope name is not resolved into the state (the state field is
+// "scope", not "name"), so there is nothing to compare: keep the config value instead of
+// recording a recreate of an unchanged scope.
+func TestBuildStateFromTFSecretScopeNameWithReferenceIsKept(t *testing.T) {
+	state := runBuildStateFromTF(t, `
+resources:
+  jobs:
+    j:
+      name: job
+  secret_scopes:
+    s:
+      name: scope-${resources.jobs.j.id}
+`,
+		migrate.TFStateAttrs{
+			"databricks_job":          {"j": json.RawMessage(`{"id": "42", "name": "job"}`)},
+			"databricks_secret_scope": {"s": json.RawMessage(`{"id": "scope-42", "name": "scope-42", "backend_type": "DATABRICKS"}`)},
+		},
+		map[string]string{"resources.jobs.j": "42", "resources.secret_scopes.s": "scope-42"},
+	)
+	assert.Contains(t, string(state["resources.secret_scopes.s"].State), `"scope": "scope-${resources.jobs.j.id}"`)
+}
