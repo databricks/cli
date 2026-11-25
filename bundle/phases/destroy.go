@@ -54,43 +54,6 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "feature_specs", message: deleteFeatureSpecMessage},
 }
 
-// logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
-// a note that datasets will be deleted as well.
-func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, quiet bool) error {
-	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
-
-	var cascading, retaining []deployplan.Action
-	for _, a := range pipelineDeletes {
-		cascade, err := pipelineDeletionCascades(b, a)
-		if err != nil {
-			return err
-		}
-		if cascade {
-			cascading = append(cascading, a)
-		} else {
-			retaining = append(retaining, a)
-		}
-	}
-
-	for _, grp := range []struct {
-		message string
-		actions []deployplan.Action
-	}{
-		{deletePipelineWithCascadeMessage, cascading},
-		{deletePipelineNoCascadeMessage, retaining},
-	} {
-		if len(grp.actions) == 0 || quiet {
-			continue
-		}
-		cmdio.LogString(ctx, grp.message)
-		for _, a := range grp.actions {
-			cmdio.Log(ctx, a)
-		}
-		cmdio.LogString(ctx, "")
-	}
-	return nil
-}
-
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	deleteActions := plan.GetActions()
 
