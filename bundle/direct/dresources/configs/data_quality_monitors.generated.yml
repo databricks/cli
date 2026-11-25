@@ -1,5 +1,9 @@
 # Generated, do not edit.
 
+recreate_on_changes:
+  - field: data_profiling_config.assets_dir
+    reason: spec:immutable
+
 ignore_remote_changes:
   - field: data_profiling_config.skip_builtin_dashboard
     reason: spec:input_only

@@ -17,11 +17,9 @@ for task in r["tasks"]:
 PYEDIT
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 title "Neither rename is applied, and both blocks keep their own task"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 errcode trace grep -c "task_key: alpha" databricks.yml
 errcode trace grep -c "task_key: beta" databricks.yml

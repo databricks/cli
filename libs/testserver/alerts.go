@@ -150,6 +150,37 @@ func (s *FakeWorkspace) writeAlertFile(alert sql.AlertV2) error {
 	return nil
 }
 
+// alertNotFound mirrors the cloud's 404 for an alert that is not in the
+// workspace: a purged alert is reported by its tree node, an id that never
+// existed gets a per-method message.
+func (s *FakeWorkspace) alertNotFound(alertId, unknownMessage string) Response {
+	message := unknownMessage
+	if s.PurgedAlertIDs[alertId] {
+		message = fmt.Sprintf("Tree node with id %s does not exist", alertId)
+	}
+	return Response{
+		StatusCode: http.StatusNotFound,
+		Body: map[string]string{
+			"error_code": "NOT_FOUND",
+			"message":    message,
+		},
+	}
+}
+
+func (s *FakeWorkspace) AlertsGet(alertId string) Response {
+	defer s.LockUnlock()()
+
+	// A trashed (not purged) alert is still readable, with lifecycle_state DELETED.
+	alert, ok := s.Alerts[alertId]
+	if !ok {
+		return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found or has no folder node internal name", alertId))
+	}
+
+	return Response{
+		Body: alert,
+	}
+}
+
 func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 	var alert sql.AlertV2
 
@@ -163,10 +194,17 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 	defer s.LockUnlock()()
 
 	if alertId != "" {
-		_, ok := s.Alerts[alertId]
+		existing, ok := s.Alerts[alertId]
 		if !ok {
+			return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found or has no folder node internal name", alertId))
+		}
+		if existing.LifecycleState == sql.AlertLifecycleStateDeleted {
 			return Response{
-				StatusCode: 404,
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    fmt.Sprintf("Cannot move node '%s' (ID: %s) because it is in trash folder", path.Base(alertFilePath(existing)), alertId),
+				},
 			}
 		}
 	} else {
@@ -195,8 +233,15 @@ func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {
 
 	alert, ok := s.Alerts[alertId]
 	if !ok {
+		return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found", alertId))
+	}
+	if alert.LifecycleState == sql.AlertLifecycleStateDeleted && !purge {
 		return Response{
-			StatusCode: 404,
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "BAD_REQUEST",
+				"message":    fmt.Sprintf("Alert %s is already trashed", alertId),
+			},
 		}
 	}
 
@@ -204,6 +249,7 @@ func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {
 
 	if purge {
 		delete(s.Alerts, alertId)
+		s.PurgedAlertIDs[alertId] = true
 	} else {
 		alert.LifecycleState = sql.AlertLifecycleStateDeleted
 		s.Alerts[alertId] = alert

@@ -1,5 +1,6 @@
 
 === Deploy with started=true: cluster created and running
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created clusters.mycluster
@@ -23,6 +24,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "RUNNING"
 
 === Stop cluster externally while config says started=true: plan detects drift
+
 >>> errcode [CLI] clusters delete [UUID]
 "TERMINATED"
 
@@ -32,6 +34,7 @@ update clusters.mycluster
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Deploy fixes the drift: cluster restarted
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated clusters.mycluster
@@ -58,6 +61,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 "RUNNING"
 
 === Deploy with started=false while cluster is stopped: cluster stays terminated
+
 >>> errcode [CLI] clusters delete [UUID]
 "TERMINATED"
 
@@ -81,6 +85,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 "TERMINATED"
 
 === Deploy with started=true: cluster restarted
+
 >>> update_file.py databricks.yml started: false started: true
 
 >>> errcode [CLI] bundle deploy

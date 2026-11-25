@@ -5,6 +5,10 @@ inputs:
   cache-key:
     description: 'Cache key identifier for Go cache'
     required: true
+  save-cache:
+    description: 'Whether a run on main saves the Go cache; off for builds whose objects other runs cannot reuse'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -40,7 +44,7 @@ runs:
     # unified action's post-step (which fires at the calling job's
     # end, even when invoked from a composite).
     - name: Restore and save Go cache (main)
-      if: github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/main' && inputs.save-cache == 'true'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
@@ -55,7 +59,7 @@ runs:
     # main still restore main's most recent cache and rebuild only
     # the delta.
     - name: Restore Go cache (non-main)
-      if: github.ref != 'refs/heads/main'
+      if: github.ref != 'refs/heads/main' || inputs.save-cache != 'true'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |

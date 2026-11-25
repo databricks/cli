@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class VolumeSource:
     """
-    :meta private: [EXPERIMENTAL]
-
     A Unity Catalog volume input source. The function is applied to each file.
     """
 
@@ -23,7 +21,7 @@ class VolumeSource:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog volume path to the input files
+    [Beta] Unity Catalog volume path to the input files
     (e.g. `/Volumes/<catalog>/<schema>/<volume>/...`).
     """
 
@@ -42,7 +40,7 @@ class VolumeSourceDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Unity Catalog volume path to the input files
+    [Beta] Unity Catalog volume path to the input files
     (e.g. `/Volumes/<catalog>/<schema>/<volume>/...`).
     """
 

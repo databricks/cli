@@ -61,11 +61,11 @@ func TestSetForceLock(t *testing.T) {
 			require.NoError(t, cmd.ParseFlags(tc.args))
 
 			b := &bundle.Bundle{Config: config.Root{}}
-			b.Config.Bundle.Deployment.Lock.Force = tc.configured
+			b.Config.Bundle.Deployment.Lock.Force = new(tc.configured)
 
 			SetForceLock(cmd, b, tc.forceLock)
 
-			assert.Equal(t, tc.expected, b.Config.Bundle.Deployment.Lock.Force)
+			assert.Equal(t, tc.expected, config.IsExplicitlyEnabled(b.Config.Bundle.Deployment.Lock.Force))
 		})
 	}
 }

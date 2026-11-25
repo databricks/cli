@@ -1,0 +1,9 @@
+git-repo-init
+
+trace $CLI bundle deploy
+
+trace $CLI bundle config-remote-sync
+
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | {in_git_repo}'
+
+rm "$OUT_REQUESTS"

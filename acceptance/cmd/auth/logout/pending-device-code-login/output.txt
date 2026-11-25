@@ -1,5 +1,6 @@
 
 === Logout and delete dev
+
 >>> [CLI] auth logout --profile dev --auto-approve --delete
 Logged out of and deleted profile "dev".
 
@@ -13,6 +14,7 @@ Logged out of and deleted profile "dev".
 ]
 
 === Logout staging
+
 >>> [CLI] auth logout --profile staging --auto-approve
 Logged out of profile "staging". Use --delete to also remove it from the config file.
 
@@ -22,6 +24,7 @@ Logged out of profile "staging". Use --delete to also remove it from the config 
 ]
 
 === Logout pat, a profile that auth login did not create
+
 >>> [CLI] auth logout --profile pat --auto-approve
 No tokens to clear for profile "pat". Use --delete to remove it from the config file.
 

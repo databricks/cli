@@ -24,22 +24,18 @@ for task in r["tasks"]:
 EOF
 
 title "Sync"
-echo
 cp databricks.yml databricks.yml.backup
 cp overrides/10-first.yml overrides/10-first.yml.backup
 cp overrides/20-second.yml overrides/20-second.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "databricks.yml is untouched"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 
 title "overrides/10-first.yml is untouched"
-echo
 trace diff.py overrides/10-first.yml.backup overrides/10-first.yml
 
 title "overrides/20-second.yml gains timeout_seconds: 777"
-echo
 trace diff.py overrides/20-second.yml.backup overrides/20-second.yml
 
 rm databricks.yml.backup overrides/10-first.yml.backup overrides/20-second.yml.backup
@@ -58,13 +54,11 @@ for task in r["tasks"]:
 EOF
 
 title "Sync"
-echo
 cp overrides/10-first.yml overrides/10-first.yml.backup
 cp overrides/20-second.yml overrides/20-second.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "max_retries updates the first file, timeout_seconds the second"
-echo
 trace diff.py overrides/10-first.yml.backup overrides/10-first.yml
 trace diff.py overrides/20-second.yml.backup overrides/20-second.yml
 rm overrides/10-first.yml.backup overrides/20-second.yml.backup
@@ -80,13 +74,11 @@ for task in r["tasks"]:
 PYEDIT
 
 title "Sync"
-echo
 cp overrides/10-first.yml overrides/10-first.yml.backup
 cp overrides/20-second.yml overrides/20-second.yml.backup
 errcode $CLI bundle config-remote-sync -t dev --save
 
 title "The winning file is updated; the shadowed copy is left alone"
-echo
 trace diff.py overrides/10-first.yml.backup overrides/10-first.yml
 trace diff.py overrides/20-second.yml.backup overrides/20-second.yml
 rm overrides/10-first.yml.backup overrides/20-second.yml.backup

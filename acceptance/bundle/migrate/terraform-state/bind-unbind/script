@@ -1,0 +1,16 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py "$TESTDIR/../terraform-requests.json" "$TESTDIR/../terraform.tfstate"
+replace_ids.py
+rm -f "$OUT_REQUESTS"
+JOB_ID=$(read_id.py test_job)
+
+# bind and unbind only pull the state, so a terraform state is not migrated and they reject it.
+title "bind on a terraform state"
+trace musterr $CLI bundle deployment bind test_job "$JOB_ID" --auto-approve
+trace print_request_paths
+
+title "unbind on a terraform state"
+trace musterr $CLI bundle deployment unbind test_job
+trace print_request_paths

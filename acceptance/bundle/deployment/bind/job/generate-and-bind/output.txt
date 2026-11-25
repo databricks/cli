@@ -35,12 +35,14 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === Check that job is bound and does not exist after bundle is destroyed:
+
 >>> errcode [CLI] jobs get [JOB_ID] --output json
 Error: Job [JOB_ID] does not exist.
 
 Exit code: 1
 
 === Delete the tmp folder:
+
 >>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test
 
 >>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]

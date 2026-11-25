@@ -1,7 +1,7 @@
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID]",
+  "lineage": "[UUID][0]",
   "serial": 1,
   "plan": {
     "resources.jobs.sample_job": {
@@ -105,7 +105,7 @@
             ],
             "email_notifications": {},
             "pipeline_task": {
-              "pipeline_id": "[UUID]"
+              "pipeline_id": "[UUID][1]"
             },
             "run_if": "ALL_SUCCESS",
             "task_key": "refresh_pipeline",
@@ -224,7 +224,7 @@
             "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files"
           ]
         },
-        "id": "[UUID]",
+        "id": "[UUID][1]",
         "last_modified": [UNIX_TIME_MILLIS][1],
         "libraries": [
           {
@@ -234,18 +234,18 @@
           }
         ],
         "name": "my_default_python_etl",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[UUID][1]",
         "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl",
         "run_as_user_name": "[USERNAME]",
         "schema": "prod",
         "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
+        "storage": "dbfs:/pipelines/[UUID][1]"
       },
       "changes": {
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",
-          "remote": "dbfs:/pipelines/[UUID]"
+          "remote": "dbfs:/pipelines/[UUID][1]"
         }
       }
     },
@@ -258,7 +258,7 @@
       ],
       "action": "skip",
       "remote_state": {
-        "object_id": "/pipelines/[UUID]",
+        "object_id": "/pipelines/[UUID][1]",
         "__embed__": [
           {
             "level": "IS_OWNER",

@@ -29,6 +29,7 @@ def main(output: str):
     schemas = openapi_patch.add_extra_required_fields(schemas)
     schemas = openapi_patch.remove_unsupported_fields(schemas)
     schemas = openapi_patch.drop_field_descriptions(schemas)
+    schemas["jobs.SqlConditionTriggerMode"].description = None
 
     schemas = _transitively_mark_deprecated_and_private(
         packages.RESOURCE_TYPES, schemas

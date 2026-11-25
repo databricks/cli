@@ -1,0 +1,30 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  clusters:
+    # No spark_conf at all: the backend adds the whole map from is_single_node.
+    implicit:
+      cluster_name: test-cluster-implicit-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      is_single_node: true
+      kind: CLASSIC_PREVIEW
+      data_security_mode: SINGLE_USER
+      autotermination_minutes: 10
+
+    # An explicit spark_conf key next to the backend-added ones: it must still be
+    # compared against the remote.
+    explicit:
+      cluster_name: test-cluster-explicit-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      is_single_node: true
+      kind: CLASSIC_PREVIEW
+      data_security_mode: SINGLE_USER
+      autotermination_minutes: 10
+      spark_conf:
+        spark.sql.shuffle.partitions: "8"

@@ -1,0 +1,3 @@
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"
+# Assert the retry warning, which acceptance/test.toml suppresses by default.
+SuppressLines.warn_retry = ""

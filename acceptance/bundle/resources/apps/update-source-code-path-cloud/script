@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy: create the app with source_code_path"
+trace errcode $CLI bundle deploy
+trace print_requests.py //apps
+rm -f out.requests.txt
+
+title "Change source_code_path on an existing app: no UpdateApp request is sent"
+trace update_file.py databricks.yml "source_code_path: ./app" "source_code_path: ./app2"
+trace errcode $CLI bundle deploy
+trace print_requests.py //apps

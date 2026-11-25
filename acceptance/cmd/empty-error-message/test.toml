@@ -1,0 +1,18 @@
+Cloud = false
+
+# Error responses without a "message" field: the CLI must still say which request failed.
+
+[[Server]]
+Pattern = "POST /api/2.0/lakeview/dashboards"
+Response.Body = '{"error_code": "INTERNAL_ERROR"}'
+Response.StatusCode = 500
+
+[[Server]]
+Pattern = "GET /api/2.0/lakeview/dashboards/{dashboard_id}"
+Response.Body = '{}'
+Response.StatusCode = 404
+
+[[Server]]
+Pattern = "GET /api/2.0/secrets/scopes/list"
+Response.Body = '{"error_code": "PERMISSION_DENIED", "message": "no access"}'
+Response.StatusCode = 400

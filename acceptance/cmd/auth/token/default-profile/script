@@ -19,10 +19,10 @@ auth_type = databricks-cli
 default_profile = myprofile
 ENDCFG
 
-title "default_profile is honored when no args, --profile, or env var\n"
+title "default_profile is honored when no args, --profile, or env var"
 trace errcode $CLI auth token
 
-title "default_profile pointing at a missing profile falls through to picker\n"
+title "default_profile pointing at a missing profile falls through to picker"
 cat > "./home/.databrickscfg" <<'ENDCFG'
 [myprofile]
 host = https://myworkspace.test

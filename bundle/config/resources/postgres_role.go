@@ -25,7 +25,7 @@ type PostgresRoleConfig struct {
 	// instead of returning ALREADY_EXISTS. Used to manage a role that already
 	// exists on the branch (e.g. inherited from the parent branch). Input-only:
 	// not returned by the GET API.
-	ReplaceExisting bool `json:"replace_existing,omitempty"`
+	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
 func (c *PostgresRoleConfig) UnmarshalJSON(b []byte) error {

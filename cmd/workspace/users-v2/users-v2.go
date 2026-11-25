@@ -3,6 +3,7 @@
 package users_v2
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "users-v2",
-		Short: `*Public Preview* User identities recognized by Databricks and represented by email addresses.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "users-v2",
+	Short:   `*Public Preview* User identities recognized by Databricks and represented by email addresses.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 User identities recognized by Databricks and represented by email addresses.
 
@@ -33,14 +39,13 @@ User identities recognized by Databricks and represented by email addresses.
   access to Databricks workspace, admins can terminate the user in your identity
   provider and that user’s account will also be removed from Databricks
   workspace. This ensures a consistent offboarding process and prevents
-  unauthorized users from accessing sensitive data.`,
-		GroupID: "iam",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  unauthorized users from accessing sensitive data.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -58,8 +63,6 @@ User identities recognized by Databricks and represented by email addresses.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

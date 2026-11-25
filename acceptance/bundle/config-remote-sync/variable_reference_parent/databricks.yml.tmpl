@@ -7,6 +7,21 @@ variables:
     default:
       spark.speculation: "true"
 
+  init_scripts:
+    type: complex
+    default:
+      - workspace:
+          destination: /Workspace/init.sh
+  new_cluster:
+    type: complex
+    default:
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      num_workers: 1
+      custom_tags:
+        changed: original
+        removed: original
+
 targets:
   default:
     mode: development
@@ -22,6 +37,9 @@ resources:
             node_type_id: $NODE_TYPE_ID
             num_workers: 1
             spark_conf: ${var.spark_conf}
+            init_scripts: ${var.init_scripts}
+        - job_cluster_key: variable_cluster
+          new_cluster: ${var.new_cluster}
       tasks:
         - task_key: main
           job_cluster_key: shared

@@ -3,6 +3,7 @@
 package custom_app_integration
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,20 +18,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "custom-app-integration",
-		Short: `These APIs enable administrators to manage custom OAuth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.`,
-		Long: `These APIs enable administrators to manage custom OAuth app integrations,
-  which is required for adding/using Custom OAuth App Integration like Tableau
-  Cloud for Databricks in AWS cloud.`,
-		GroupID: "oauth2",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "custom-app-integration",
+	Short:   `These APIs enable administrators to manage custom OAuth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.`,
+	GroupID: "oauth2",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs enable administrators to manage custom OAuth app integrations,
+  which is required for adding/using Custom OAuth App Integration like Tableau
+  Cloud for Databricks in AWS cloud.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -43,8 +48,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -64,7 +67,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `This field indicates whether an OAuth client secret is required to authenticate this client.`)
+	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `Whether to create a confidential client that authenticates with a client secret.`)
 	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the custom OAuth app.`)
 	// TODO: array: redirect_urls
 	// TODO: array: scopes
@@ -150,7 +153,10 @@ func newDelete() *cobra.Command {
   Delete an existing Custom OAuth App Integration. You can retrieve the custom
   OAuth app integration via [CustomAppIntegration/get].
 
-  [CustomAppIntegration/get]: https://docs.databricks.com/api/account/customappintegration/get`
+  [CustomAppIntegration/get]: https://docs.databricks.com/api/account/customappintegration/get
+
+  Arguments:
+    INTEGRATION_ID: ID of the custom OAuth app integration to delete.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -264,8 +270,8 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().BoolVar(&listReq.IncludeCreatorUsername, "include-creator-username", listReq.IncludeCreatorUsername, ``)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().BoolVar(&listReq.IncludeCreatorUsername, "include-creator-username", listReq.IncludeCreatorUsername, `When true, each returned integration includes creator_username.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of integrations to return in one page, at most 1000.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -279,7 +285,7 @@ func newList() *cobra.Command {
 	cmd.Long = `Get custom oauth app integrations.
 
   Get the list of custom OAuth app integrations for the specified Databricks
-  account`
+  account.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -347,7 +353,10 @@ func newUpdate() *cobra.Command {
   Updates an existing custom OAuth App Integration. You can retrieve the custom
   OAuth app integration via [CustomAppIntegration/get].
 
-  [CustomAppIntegration/get]: https://docs.databricks.com/api/account/customappintegration/get`
+  [CustomAppIntegration/get]: https://docs.databricks.com/api/account/customappintegration/get
+
+  Arguments:
+    INTEGRATION_ID: ID of the custom OAuth app integration to update.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

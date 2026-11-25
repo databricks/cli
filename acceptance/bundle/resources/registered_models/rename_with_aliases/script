@@ -1,0 +1,42 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a model and register two versions of it out of band"
+trace $CLI bundle deploy
+trace register_model_version "main.default.model-$UNIQUE_NAME"
+trace register_model_version "main.default.model-$UNIQUE_NAME"
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+title "Rename the model and point 'champion' at version 2 in one deploy. The alias is set first, under the current name"
+trace update_file.py databricks.yml "name: model-" "name: model2-"
+trace update_file.py databricks.yml "aliases: []" "aliases: [{alias_name: champion, version_num: 2}]"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "main.default.model2-$UNIQUE_NAME" --include-aliases | alias_fields
+
+title "The versions moved with the model: the next one registered is version 3"
+trace register_model_version "main.default.model2-$UNIQUE_NAME"
+print_requests.py //unity-catalog &> LOG.register_requests
+
+title "Rename it again and point 'champion' at version 9, which does not exist. The alias fails first, so the model keeps its name"
+trace update_file.py databricks.yml "name: model2-" "name: model3-"
+trace update_file.py databricks.yml "version_num: 2" "version_num: 9"
+trace musterr $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "main.default.model2-$UNIQUE_NAME" | jq '{full_name}'
+
+title "With the alias fixed, the next deploy renames the model"
+trace update_file.py databricks.yml "version_num: 9" "version_num: 1"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI registered-models get "main.default.model3-$UNIQUE_NAME" --include-aliases | alias_fields
+
+title "Redeploy is a no-op"
+trace $CLI bundle plan

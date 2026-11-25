@@ -1,0 +1,15 @@
+bundle:
+  name: config-remote-sync-telemetry-host-conflict
+
+workspace:
+  host: https://other.test
+
+targets:
+  bad:
+    variables:
+      undefined_var: value
+  own-host:
+    workspace:
+      host: $DATABRICKS_HOST
+    variables:
+      undefined_var: value

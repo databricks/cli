@@ -1,0 +1,44 @@
+bundle:
+  name: permissions-target
+
+variables:
+  group:
+    default: developers
+  acl:
+    type: complex
+    default: &target_permissions
+      - {group_name: "${var.group}", level: CAN_VIEW}
+      - {user_name: reader@example.test, level: CAN_VIEW}
+      - {service_principal_name: reader-sp, level: CAN_VIEW}
+      - {group_name: inherited, level: CAN_VIEW,}
+
+resources:
+  jobs:
+    root_job: &job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/notebook
+            source: WORKSPACE
+      permissions:
+        - {group_name: "${var.group}", level: CAN_MANAGE_RUN}
+        - {user_name: reader@example.test, level: CAN_MANAGE_RUN}
+        - {service_principal_name: reader-sp, level: CAN_MANAGE_RUN}
+  pipelines:
+    root_pipeline: &pipeline
+      permissions:
+        - {group_name: "${var.group}", level: CAN_RUN}
+        - {user_name: reader@example.test, level: CAN_RUN}
+        - {service_principal_name: reader-sp, level: CAN_RUN,}
+
+targets:
+  literal:
+    permissions: *target_permissions
+    resources: &target_resources
+      jobs:
+        target_job: *job
+      pipelines:
+        target_pipeline: *pipeline
+  complex:
+    permissions: ${var.acl}
+    resources: *target_resources

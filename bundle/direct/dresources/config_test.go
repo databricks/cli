@@ -43,12 +43,24 @@ func TestGetResourceConfig(t *testing.T) {
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
 }
 
-// TestSubResourceConfig checks that grants.yml applies to the grants of every parent.
+// TestSubResourceConfig checks that grants.yml and permissions.yml apply to the grants and
+// permissions of every parent, except where a parent has its own file.
 func TestSubResourceConfig(t *testing.T) {
 	for resourceType := range SupportedResources {
-		if strings.HasSuffix(resourceType, ".grants") {
-			assert.NotEmptyf(t, GetResourceConfig(resourceType).UpdatableIDFields, "%s: grants.yml does not apply", resourceType)
+		var field string
+		switch {
+		case resourceType == "secret_scopes.permissions":
+			field = "scope_name" // secret_scopes.permissions.yml
+		case strings.HasSuffix(resourceType, ".grants"):
+			field = "full_name" // grants.yml
+		case strings.HasSuffix(resourceType, ".permissions"):
+			field = "object_id" // permissions.yml
+		default:
+			continue
 		}
+		rules := GetResourceConfig(resourceType).UpdatableIDFields
+		require.Lenf(t, rules, 1, "%s", resourceType)
+		assert.Equalf(t, field, rules[0].Field.String(), "%s", resourceType)
 	}
 }
 
@@ -155,7 +167,9 @@ func TestResourcesYMLNoRedundantMissingInRemote(t *testing.T) {
 // before recreate_on_changes in the ladder and short-circuits, so a field listed
 // in more than one would have all but the first entry silently dead — and the
 // categories disagree (e.g. provided_id_fields skips a remote-only diff that
-// recreate_on_changes would recreate).
+// recreate_on_changes would recreate). parent_id_fields counts as one: a parent ID
+// field is a provided ID field too, so listing it under provided_id_fields as well
+// only repeats it.
 func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
 	cfg := MustLoadConfig()
 	for resourceType, rc := range cfg.Resources {
@@ -166,6 +180,7 @@ func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
 			{"recreate_on_changes", rc.RecreateOnChanges},
 			{"provided_id_fields", rc.ProvidedIDFields},
 			{"updatable_id_fields", rc.UpdatableIDFields},
+			{"parent_id_fields", rc.ParentIDFields},
 		}
 		firstCat := map[string]string{}
 		for _, c := range actionCats {
@@ -211,4 +226,12 @@ func joinPattern(prefix *structpath.PatternNode, field string) string {
 		return field
 	}
 	return prefix.String() + "." + field
+}
+
+func TestProvidedIDRulesIncludeParentIDFields(t *testing.T) {
+	var fields []string
+	for _, rule := range GetResourceConfig("volumes").ProvidedIDRules() {
+		fields = append(fields, rule.Field.String())
+	}
+	assert.ElementsMatch(t, []string{"catalog_name", "schema_name"}, fields)
 }

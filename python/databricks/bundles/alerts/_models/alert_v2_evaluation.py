@@ -37,7 +37,7 @@ class AlertV2Evaluation:
 
     comparison_operator: VariableOr[ComparisonOperator]
     """
-    Operator used for comparison in alert evaluation.
+    Operator used for comparison in alert evaluation. The alert is triggered when the comparison of the source value with the threshold is true. `IS_NULL` and `IS_NOT_NULL` take no threshold.
     """
 
     source: VariableOr[AlertV2OperandColumn]
@@ -47,7 +47,7 @@ class AlertV2Evaluation:
 
     empty_result_state: VariableOrOptional[AlertEvaluationState] = None
     """
-    Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
+    Alert state if result is empty. If not set, an empty result sets the state to `ERROR`. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
     """
 
     notification: VariableOrOptional[AlertV2Notification] = None
@@ -57,7 +57,7 @@ class AlertV2Evaluation:
 
     threshold: VariableOrOptional[AlertV2Operand] = None
     """
-    Threshold to user for alert evaluation, can be a column or a value.
+    Threshold to compare the source column against, either another column or a fixed value. Not needed when `comparison_operator` is `IS_NULL` or `IS_NOT_NULL`.
     """
 
     @classmethod
@@ -73,7 +73,7 @@ class AlertV2EvaluationDict(TypedDict, total=False):
 
     comparison_operator: VariableOr[ComparisonOperatorParam]
     """
-    Operator used for comparison in alert evaluation.
+    Operator used for comparison in alert evaluation. The alert is triggered when the comparison of the source value with the threshold is true. `IS_NULL` and `IS_NOT_NULL` take no threshold.
     """
 
     source: VariableOr[AlertV2OperandColumnParam]
@@ -83,7 +83,7 @@ class AlertV2EvaluationDict(TypedDict, total=False):
 
     empty_result_state: VariableOrOptional[AlertEvaluationStateParam]
     """
-    Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
+    Alert state if result is empty. If not set, an empty result sets the state to `ERROR`. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
     """
 
     notification: VariableOrOptional[AlertV2NotificationParam]
@@ -93,7 +93,7 @@ class AlertV2EvaluationDict(TypedDict, total=False):
 
     threshold: VariableOrOptional[AlertV2OperandParam]
     """
-    Threshold to user for alert evaluation, can be a column or a value.
+    Threshold to compare the source column against, either another column or a fixed value. Not needed when `comparison_operator` is `IS_NULL` or `IS_NOT_NULL`.
     """
 
 

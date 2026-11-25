@@ -3,6 +3,7 @@
 package genie_agents
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,25 +21,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "genie-agents",
-		Short: `Genie provides a no-code experience for business users, powered by AI/BI.`,
-		Long: `Genie provides a no-code experience for business users, powered by AI/BI.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "genie-agents",
+	Short:   `Genie provides a no-code experience for business users, powered by AI/BI.`,
+	GroupID: "dashboards",
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	Build:  buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Genie provides a no-code experience for business users, powered by AI/BI.
   Analysts set up Genie Agents that business users can use to ask questions
   using natural language. Genie uses data registered to Unity Catalog and
   requires at least CAN USE permission on a Pro or Serverless SQL warehouse.
-  Also, Databricks Assistant must be enabled.`,
-		GroupID: "dashboards",
+  Also, Databricks Assistant must be enabled.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PRIVATE_PREVIEW",
+		"launch_stage_display": "Private Preview",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateGenieAgent())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-genie-agent command
@@ -93,12 +96,12 @@ func newCreateGenieAgent() *cobra.Command {
       The maximum length is 63 characters. Requests with a longer value are
       rejected with INVALID_PARAMETER_VALUE.
     DEFINITION: The definition of the Genie Agent: its sample questions, data sources,
-      instructions, and benchmarks. Must set at least one field. Returned on get
-      and on list with GENIE_AGENT_VIEW_FULL. Create and update return a
-      submitted definition unchanged; one the service would store differently,
-      or with a column config the workspace can't keep (unknown column, or a
-      display name while those are disabled), is rejected with
-      INVALID_PARAMETER_VALUE.
+      instructions, and benchmarks. Create requires at least one table, volume,
+      MCP connection, or sub-agent in data_sources. Returned on get and on
+      list with GENIE_AGENT_VIEW_FULL. Create and update return a submitted
+      definition unchanged; one the service would store differently, or with a
+      column config the workspace can't keep (unknown column, or a display name
+      while those are disabled), is rejected with INVALID_PARAMETER_VALUE.
     WAREHOUSE_ID: Warehouse associated with the Genie Agent.`
 
 	cmd.Annotations = make(map[string]string)
@@ -401,8 +404,12 @@ func newUpdateGenieAgent() *cobra.Command {
       is unset there: an unset description is cleared; an unset
       display_name, warehouse_id, or definition is rejected with
       INVALID_PARAMETER_VALUE; an unset parent_path is cleared without moving
-      the Genie Agent. definition is replaced as a whole; paths within it are
-      not supported.
+      the Genie Agent. definition is replaced as a whole.
+
+      The one supported path inside definition is
+      definition.data_sources.sub_agents, and only alongside definition.
+      Naming it makes the sub-agent list exact, so an empty list detaches every
+      sub-agent. Without it, including with *, an empty list keeps them.
 
       The special value * replaces the whole Genie Agent, as if every
       updatable field were named. It must be the only path in the mask. Prefer
@@ -416,12 +423,12 @@ func newUpdateGenieAgent() *cobra.Command {
       The maximum length is 63 characters. Requests with a longer value are
       rejected with INVALID_PARAMETER_VALUE.
     DEFINITION: The definition of the Genie Agent: its sample questions, data sources,
-      instructions, and benchmarks. Must set at least one field. Returned on get
-      and on list with GENIE_AGENT_VIEW_FULL. Create and update return a
-      submitted definition unchanged; one the service would store differently,
-      or with a column config the workspace can't keep (unknown column, or a
-      display name while those are disabled), is rejected with
-      INVALID_PARAMETER_VALUE.
+      instructions, and benchmarks. Create requires at least one table, volume,
+      MCP connection, or sub-agent in data_sources. Returned on get and on
+      list with GENIE_AGENT_VIEW_FULL. Create and update return a submitted
+      definition unchanged; one the service would store differently, or with a
+      column config the workspace can't keep (unknown column, or a display name
+      while those are disabled), is rejected with INVALID_PARAMETER_VALUE.
     WAREHOUSE_ID: Warehouse associated with the Genie Agent.`
 
 	cmd.Annotations = make(map[string]string)

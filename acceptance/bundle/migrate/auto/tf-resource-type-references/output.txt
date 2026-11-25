@@ -1,8 +1,10 @@
 
 === Replay a prior terraform deployment
+
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Validation does not flag the reference
+
 >>> [CLI] bundle validate
 Name: test-bundle
 Target: default
@@ -13,12 +15,14 @@ Workspace:
 Validation OK!
 
 === Plan after auto-migration
+
 >>> musterr [CLI] bundle plan
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Error: invalid dependency "${databricks_pipeline.src_pipeline.id}", no such node ""
 
 
 === Deploy after auto-migration
+
 >>> musterr [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...

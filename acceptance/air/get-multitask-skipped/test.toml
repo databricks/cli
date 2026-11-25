@@ -1,0 +1,53 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# The notebook-first DAB shape where the prep notebook fails, so the
+# ai_runtime_task that depends on it is skipped (UPSTREAM_FAILED) and never
+# starts. `air get` must report the task's own UPSTREAM_FAILED, not the run's
+# FAILED, and no start time or duration rather than the run's.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+  "creator_user_name": "user@example.com",
+  "start_time": 1700000000000,
+  "end_time": 1700000005000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "Task prep failed"},
+  "tasks": [
+    {
+      "task_key": "prep",
+      "run_id": 455,
+      "attempt_number": 0,
+      "start_time": 1700000000000,
+      "end_time": 1700000005000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED", "state_message": "prep: table not found"},
+      "notebook_task": {"notebook_path": "/Workspace/Users/user@example.com/prep"}
+    },
+    {
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "max_retries": 0,
+      "state": {"life_cycle_state": "SKIPPED", "result_state": "UPSTREAM_FAILED", "state_message": "Upstream task(s) failed."},
+      "depends_on": [{"task_key": "prep"}],
+      "ai_runtime_task": {
+        "experiment": "air-byot-multitask-dag",
+        "deployments": [
+          {"compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}}
+        ]
+      }
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{}
+'''

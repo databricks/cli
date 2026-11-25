@@ -29,7 +29,7 @@ Update end time: {{ .LastEventTime }}
 Pipeline configurations for this update:
 {{- if .Update.FullRefresh }}
 • All tables are fully refreshed
-{{- else if and (eq (len .Update.RefreshSelection) 0) (eq (len .Update.FullRefreshSelection) 0) }}
+{{- else if and (eq (len .Update.RefreshSelection) 0) (eq (len .Update.FullRefreshSelection) 0) (eq (len .Update.RefreshSelectionByPath) 0) (eq (len .Update.FullRefreshSelectionByPath) 0) }}
 • All tables are refreshed
 {{- else }}
 {{- if gt (len .Update.RefreshSelection) 0 }}
@@ -37,6 +37,12 @@ Pipeline configurations for this update:
 {{- end }}
 {{- if gt (len .Update.FullRefreshSelection) 0 }}
 • Full refreshed [{{ join .Update.FullRefreshSelection ", " }}]
+{{- end }}
+{{- if gt (len .Update.RefreshSelectionByPath) 0 }}
+• Refreshed tables defined in [{{ join .Update.RefreshSelectionByPath ", " }}]
+{{- end }}
+{{- if gt (len .Update.FullRefreshSelectionByPath) 0 }}
+• Full refreshed tables defined in [{{ join .Update.FullRefreshSelectionByPath ", " }}]
 {{- end }}
 {{- end }}
 {{- if .Update.Cause }}

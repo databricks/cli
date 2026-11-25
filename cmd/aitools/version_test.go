@@ -157,3 +157,23 @@ func TestVersionAlwaysLabelsScope(t *testing.T) {
 	assert.Contains(t, output, "Skills (global): v0.1.0")
 	assert.NotContains(t, output, "Skills (project)")
 }
+
+// TestVersionMCPOnlyStateReportsNothingInstalled checks that a state file holding only MCP records
+// is reported as having no skills or plugins.
+func TestVersionMCPOnlyStateReportsNothingInstalled(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	t.Chdir(tmp)
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, installer.SaveMCPState(globalDir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}))
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	cmd := NewVersionCmd()
+	cmd.SetContext(ctx)
+	require.NoError(t, cmd.RunE(cmd, nil))
+
+	assert.Contains(t, stderr.String(), "No Databricks skills or plugins installed.")
+	assert.NotContains(t, stderr.String(), "Databricks skills and plugins:")
+}

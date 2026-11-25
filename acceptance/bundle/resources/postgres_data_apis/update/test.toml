@@ -1,0 +1,3 @@
+# A leaf update mask would reset a removed field, but resetting db_max_rows or
+# jwt_role_claim_key currently breaks serving, so DoUpdate masks spec instead.
+Badness = "Removing a previously set field is not applied: update_mask=spec merges, so the server keeps the last value; the plan shows an update and the next plan is clean"

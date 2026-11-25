@@ -3,6 +3,7 @@
 package csp_enablement_account
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,15 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "csp-enablement-account",
-		Short: `*Public Preview* The compliance security profile settings at the account level control whether to enable it for new workspaces.`,
-		Long: `This command is in Public Preview and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:   "csp-enablement-account",
+	Short: `*Public Preview* The compliance security profile settings at the account level control whether to enable it for new workspaces.`,
+	Build: buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 The compliance security profile settings at the account level control whether
   to enable it for new workspaces. By default, this account-level setting is
@@ -29,13 +34,13 @@ The compliance security profile settings at the account level control whether
   enable the compliance security profile individually for each workspace.
 
   This settings can be disabled so that new workspaces do not have compliance
-  security profile enabled by default.`,
-		RunE: root.ReportUnknownSubcommand,
-	}
+  security profile enabled by default.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_PREVIEW",
+		"launch_stage_display": "Public Preview",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -45,8 +50,6 @@ The compliance security profile settings at the account level control whether
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command

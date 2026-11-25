@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/patchwheel"
@@ -50,7 +51,7 @@ func LocalLibraryPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) 
 	if cacheDir != "" {
 		patches := make(map[string]string) // original → patched
 		for artifactName, artifact := range b.Config.Artifacts {
-			if artifact == nil || artifact.Type != "whl" || !artifact.DynamicVersion {
+			if artifact == nil || artifact.Type != "whl" || !config.IsExplicitlyEnabled(artifact.DynamicVersion) {
 				continue
 			}
 			for _, f := range artifact.Files {
@@ -143,6 +144,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, err
 		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 		envDepsPattern.Append(dyn.AnyIndex()),
 		pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
+		pipelineTestingEnvDepsPattern.Append(dyn.AnyIndex()),
 		// The AI Runtime task's code_source_path is a local archive (typically an
 		// artifact-built .tar.gz) that must be uploaded and referenced by its remote
 		// path, exactly like a wheel or jar library.

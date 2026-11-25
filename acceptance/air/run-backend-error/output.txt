@@ -1,5 +1,6 @@
 
 === backend field errors fail dry-run
+
 >>> [CLI] air run -f valid.yaml --dry-run
 Error: config validation failed:
   deployments[0].compute.accelerator_count: accelerator_count must be at most 1024, but was 1032.
@@ -7,3 +8,17 @@ Error: config validation failed:
 
 Tip: use the --debug flag to see more details and a trace of this error:
   databricks --debug air run …
+
+=== backend field errors fail dry-run (json)
+
+>>> [CLI] air run -f valid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "config validation failed:\n  deployments[0].compute.accelerator_count: accelerator_count must be at most 1024, but was 1032.\n  env_variables[1INVALID]: env_variables[1INVALID] contains characters that are not allowed.",
+    "retryable": false
+  }
+}

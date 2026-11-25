@@ -3,6 +3,7 @@
 package lakeview
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,20 +19,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "lakeview",
-		Short: `These APIs provide specific management operations for Lakeview dashboards.`,
-		Long: `These APIs provide specific management operations for Lakeview dashboards.
-  Generic resource management can be done with Workspace API (import, export,
-  get-status, list, delete).`,
-		GroupID: "dashboards",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "lakeview",
+	Short:   `These APIs provide specific management operations for Lakeview dashboards.`,
+	GroupID: "dashboards",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `These APIs provide specific management operations for Lakeview dashboards.
+  Generic resource management can be done with Workspace API (import, export,
+  get-status, list, delete).`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -58,8 +63,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -83,19 +86,14 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.DatasetCatalog, "dataset-catalog", createReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&createReq.DatasetSchema, "dataset-schema", createReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
+	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The dashboard definition (datasets, pages and widgets) as a JSON string, in the same format as a dashboard file exported from the workspace (.lvdash.json).`)
 	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create dashboard.`
 	cmd.Long = `Create dashboard.
 
-  Create a draft dashboard.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements`
+  Create a draft dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -162,15 +160,16 @@ func newCreateSchedule() *cobra.Command {
 
 	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
+	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The name of the schedule, as shown in the dashboard's list of schedules.`)
+	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `Whether the schedule is paused. Supported values: [PAUSED, UNPAUSED]`)
+	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The ID of the SQL warehouse that runs the dashboard's queries during scheduled refreshes.`)
 
 	cmd.Use = "create-schedule DASHBOARD_ID CRON_SCHEDULE"
 	cmd.Short = `Create dashboard schedule.`
 	cmd.Long = `Create dashboard schedule.
 
-  Create dashboard schedule.
+  Creates a schedule for a dashboard. The dashboard must be published before a
+  schedule can be created for it.
 
   Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
   in addition to Workspace access.
@@ -179,8 +178,7 @@ func newCreateSchedule() *cobra.Command {
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
-    CRON_SCHEDULE: The cron expression describing the frequency of the periodic refresh for
-      this schedule.`
+    CRON_SCHEDULE: The cron expression and time zone that define when the schedule runs.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -262,13 +260,19 @@ func newCreateSubscription() *cobra.Command {
 
 	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createSubscriptionReq.Subscription.SkipNotify, "skip-notify", createSubscriptionReq.Subscription.SkipNotify, `Controls whether notifications are sent to the subscriber for scheduled dashboard refreshes.`)
+	cmd.Flags().BoolVar(&createSubscriptionReq.Subscription.SkipNotify, "skip-notify", createSubscriptionReq.Subscription.SkipNotify, `Whether the subscription is refresh-only.`)
 
 	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIBER"
 	cmd.Short = `Create schedule subscription.`
 	cmd.Long = `Create schedule subscription.
 
-  Create schedule subscription.
+  Create schedule subscription. Subscribes a workspace user or a notification
+  destination to the schedule, so that it receives a snapshot of the dashboard
+  each time the schedule runs. Subscribing yourself requires CAN VIEW permission
+  on the dashboard; subscribing another user or a notification destination
+  requires CAN EDIT. On dashboards published without embedded credentials, you
+  can only subscribe yourself. If the subscriber is already subscribed to the
+  schedule, the existing subscription is returned.
 
   The caller must be a workspace user with one of the following [entitlements]:
   Workspace access, Databricks SQL access, or Consumer access.
@@ -281,8 +285,8 @@ func newCreateSubscription() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
     SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.
-    SUBSCRIBER: Subscriber details for users and destinations to be added as subscribers
-      to the schedule.`
+    SUBSCRIBER: The subscriber that receives the dashboard snapshot. Exactly one of
+      user_subscriber and destination_subscriber must be set.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -367,7 +371,7 @@ func newDeleteSchedule() *cobra.Command {
 	cmd.Short = `Delete dashboard schedule.`
 	cmd.Long = `Delete dashboard schedule.
 
-  Delete dashboard schedule.
+  Deletes a schedule together with all of its subscriptions.
 
   Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
   in addition to Workspace access.
@@ -428,13 +432,16 @@ func newDeleteSubscription() *cobra.Command {
 
 	var deleteSubscriptionReq dashboards.DeleteSubscriptionRequest
 
-	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription.`)
+	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag of the subscription, as returned when it was read.`)
 
 	cmd.Use = "delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Delete schedule subscription.`
 	cmd.Long = `Delete schedule subscription.
 
-  Delete schedule subscription.
+  Delete schedule subscription. The subscriber receives no further snapshots
+  from the schedule. Deleting your own subscription requires CAN VIEW permission
+  on the dashboard; deleting another user's or a notification destination's
+  subscription requires CAN EDIT.
 
   The caller must be a workspace user with one of the following [entitlements]:
   Workspace access, Databricks SQL access, or Consumer access.
@@ -445,8 +452,8 @@ func newDeleteSubscription() *cobra.Command {
   [entitlements]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
-    SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
+    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.
     SUBSCRIPTION_ID: UUID identifying the subscription.`
 
 	cmd.Annotations = make(map[string]string)
@@ -506,11 +513,6 @@ func newGet() *cobra.Command {
 
   Get a draft dashboard.
 
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
-
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -568,7 +570,8 @@ func newGetPublished() *cobra.Command {
 	cmd.Short = `Get published dashboard.`
 	cmd.Long = `Get published dashboard.
 
-  Get the current published dashboard.
+  Get the current published dashboard. The request fails with NOT_FOUND if the
+  dashboard has never been published or has been unpublished.
 
   The caller must be a workspace user with one of the following entitlements:
   Workspace access, Databricks SQL access, or Consumer access.
@@ -713,8 +716,8 @@ func newGetSubscription() *cobra.Command {
   [entitlements]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
-    SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
+    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.
     SUBSCRIPTION_ID: UUID identifying the subscription.`
 
 	cmd.Annotations = make(map[string]string)
@@ -788,12 +791,8 @@ func newList() *cobra.Command {
 	cmd.Short = `List dashboards.`
 	cmd.Long = `List dashboards.
 
-  List dashboards.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements`
+  List the dashboards that the caller can view. Each entry carries summary
+  metadata only; use Get dashboard to retrieve a dashboard's full definition.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -874,7 +873,7 @@ func newListSchedules() *cobra.Command {
   [entitlements]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the schedules belongs.`
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedules belong.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -957,8 +956,8 @@ func newListSubscriptions() *cobra.Command {
   [entitlements]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard which the subscriptions belongs.
-    SCHEDULE_ID: UUID identifying the schedule which the subscriptions belongs.`
+    DASHBOARD_ID: UUID identifying the dashboard to which the subscriptions belong.
+    SCHEDULE_ID: UUID identifying the schedule to which the subscriptions belong.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1114,11 +1113,6 @@ func newPublish() *cobra.Command {
 
   Publish the current draft dashboard.
 
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
-
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to be published.`
 
@@ -1192,11 +1186,9 @@ func newRevert() *cobra.Command {
 	cmd.Long = `Revert dashboard.
 
   Revert a dashboard's definition in draft mode to the last published version.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
+  The draft's datasets, pages and widgets are replaced with those of the current
+  published version, and the updated draft is returned. The dashboard must have
+  been published at least once; the published version itself is not changed.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
@@ -1269,11 +1261,6 @@ func newTrash() *cobra.Command {
 
   Trash a dashboard.
 
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
-
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1330,12 +1317,9 @@ func newUnpublish() *cobra.Command {
 	cmd.Short = `Unpublish dashboard.`
 	cmd.Long = `Unpublish dashboard.
 
-  Unpublish the dashboard.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
+  Unpublish the dashboard. This deletes the published version, so viewers can no
+  longer open it, and pauses the dashboard's schedules. The draft is not
+  changed; publish it again to make the dashboard available to viewers.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
@@ -1396,7 +1380,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.DatasetCatalog, "dataset-catalog", updateReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&updateReq.DatasetSchema, "dataset-schema", updateReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
+	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The dashboard definition (datasets, pages and widgets) as a JSON string, in the same format as a dashboard file exported from the workspace (.lvdash.json).`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
 	cmd.Use = "update DASHBOARD_ID"
@@ -1404,11 +1388,6 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update dashboard.
 
   Update a draft dashboard.
-
-  Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
-  in addition to Workspace access.
-
-  [Databricks SQL access]: https://docs.databricks.com/security/auth/entitlements
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
@@ -1479,15 +1458,16 @@ func newUpdateSchedule() *cobra.Command {
 
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
+	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The name of the schedule, as shown in the dashboard's list of schedules.`)
+	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `Whether the schedule is paused. Supported values: [PAUSED, UNPAUSED]`)
+	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The ID of the SQL warehouse that runs the dashboard's queries during scheduled refreshes.`)
 
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE"
 	cmd.Short = `Update dashboard schedule.`
 	cmd.Long = `Update dashboard schedule.
 
-  Update dashboard schedule.
+  Updates a schedule. The request body replaces the stored schedule, so fields
+  omitted from the body are reset to their defaults.
 
   Requires the [Databricks SQL access] entitlement. Grant Databricks SQL access
   in addition to Workspace access.
@@ -1497,8 +1477,7 @@ func newUpdateSchedule() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
     SCHEDULE_ID: UUID identifying the schedule.
-    CRON_SCHEDULE: The cron expression describing the frequency of the periodic refresh for
-      this schedule.`
+    CRON_SCHEDULE: The cron expression and time zone that define when the schedule runs.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

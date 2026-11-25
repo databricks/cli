@@ -41,29 +41,18 @@ var deviceCodeIncompatibleFlags = []string{
 	// Resource indicators are sent on the browser authorization request,
 	// which the device code flow does not make.
 	"resource",
-	// Device code login is only supported for workspace hosts.
-	"skip-workspace",
 }
 
 var (
-	errDeviceCodeNeedsHost     = errors.New("--use-device-code requires a workspace host. Pass it as an argument or with --host")
-	errDeviceCodeWorkspaceOnly = errors.New("--use-device-code is only supported for workspace hosts")
+	errDeviceCodeNeedsHost = errors.New("--use-device-code requires a host. Pass it as an argument or with --host")
 	// The cluster picker is interactive.
 	errDeviceCodeNonInteractiveCluster = errors.New("--configure-cluster is not supported by the non-interactive device code login. Set cluster_id on the profile after the login")
 )
 
-// isDeviceCodeSupportedForHost reports whether host is a workspace host. A
-// unified host is only recognized by its account-scoped discoveryURL, so with
-// an empty discoveryURL only classic account hosts are rejected.
-func isDeviceCodeSupportedForHost(host, discoveryURL string) bool {
-	return !isAccountOrUnifiedHost(host, discoveryURL)
-}
-
-// matchDeviceCodeProfiles matches the profiles that device code login does not
-// always reject. Profiles on unified hosts still match, because the discovery
-// URL that identifies them is not saved on the profile.
+// matchDeviceCodeProfiles matches the profiles that device code login can
+// use: those whose login is not scoped to resources.
 func matchDeviceCodeProfiles(p profile.Profile) bool {
-	return isDeviceCodeSupportedForHost(p.Host, "") && len(u2mResourcesFromProfile(&p)) == 0
+	return len(u2mResourcesFromProfile(&p)) == 0
 }
 
 // validateDeviceCodeLogin returns an error if device code login is not enabled
@@ -73,9 +62,7 @@ func validateDeviceCodeLogin(ctx context.Context, cmd *cobra.Command) error {
 		return fmt.Errorf("--use-device-code is experimental. Set %s=true to enable it", deviceCodeEnvVar)
 	}
 	for _, name := range deviceCodeIncompatibleFlags {
-		// Compare with the default so that, e.g., --skip-workspace=false is
-		// accepted.
-		if f := cmd.Flag(name); f.Changed && f.Value.String() != f.DefValue {
+		if cmd.Flag(name).Changed {
 			return fmt.Errorf("--use-device-code cannot be combined with --%s", name)
 		}
 	}
@@ -155,8 +142,21 @@ type nonInteractiveDeviceCodeLogin struct {
 	key            string
 	profile        string
 	host           string
+	accountID      string
 	clientID       string
 	scopes         []string
+}
+
+// oauthAccountID returns the ID of the account whose OIDC endpoints arg logs
+// in with, or "" for a workspace host.
+func oauthAccountID(arg u2m.OAuthArgument) string {
+	switch a := arg.(type) {
+	case u2m.AccountOAuthArgument:
+		return a.GetAccountId()
+	case u2m.UnifiedOAuthArgument:
+		return a.GetAccountId()
+	}
+	return ""
 }
 
 // pendingLoginKey returns the token store key of the pending login for the
@@ -167,9 +167,17 @@ func pendingLoginKey(cacheKey string) string {
 
 // validateLoginProfileName returns an error if the token of profile name would
 // share its token store key with the pending login of another profile.
+// It also rejects a name that would share a key with a part of another
+// profile's access token.
 func validateLoginProfileName(name string) error {
 	if strings.HasSuffix(name, pendingLoginKeySuffix) {
 		return fmt.Errorf("profile name %q must not end with %s, which marks pending device code logins", name, pendingLoginKeySuffix)
+	}
+	// Windows Credential Manager ignores case in credential names, so a
+	// profile named "dev#Access-Token-0" would share the item of a part of dev.
+	// https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentialw
+	if strings.Contains(strings.ToLower(name), storage.AccessTokenPartMarker) {
+		return fmt.Errorf("profile name %q must not contain %s, which marks the parts of large access tokens", name, storage.AccessTokenPartMarker)
 	}
 	return nil
 }
@@ -198,6 +206,7 @@ func (l nonInteractiveDeviceCodeLogin) start(ctx context.Context) error {
 		DeviceCode: da.DeviceCode,
 		UserCode:   da.UserCode,
 		Host:       l.host,
+		AccountID:  l.accountID,
 		ClientID:   l.clientID,
 		Scopes:     l.scopes,
 	}})
@@ -285,6 +294,8 @@ func (l nonInteractiveDeviceCodeLogin) changedSetting(pending storage.PendingLog
 	switch {
 	case pending.Host != l.host:
 		return "a different host"
+	case pending.AccountID != l.accountID:
+		return "a different account ID"
 	case pending.ClientID != l.clientID:
 		return "a different client ID"
 	case !slices.Equal(pending.Scopes, l.scopes):

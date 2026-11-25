@@ -3,6 +3,7 @@
 package tables
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "tables",
-		Short: `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
-		Long: `A table resides in the third layer of Unity Catalog’s three-level namespace.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "tables",
+	Short:   `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A table resides in the third layer of Unity Catalog’s three-level namespace.
   It contains rows of data. To create a table, users must have CREATE_TABLE and
   USE_SCHEMA permissions on the schema, and they must have the USE_CATALOG
   permission on its parent catalog. To query a table, users must have the SELECT
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   parent catalog and the USE_SCHEMA permission on its parent schema.
 
   A table can be managed or external. From an API perspective, a __VIEW__ is a
-  particular kind of table (rather than a managed or external table).`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  particular kind of table (rather than a managed or external table).`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -52,8 +57,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -109,9 +112,18 @@ Create a table.
 
   Arguments:
     NAME: Name of table, relative to parent schema.
-    CATALOG_NAME: Name of parent catalog.
-    SCHEMA_NAME: Name of parent schema relative to its parent catalog.
-    TABLE_TYPE:
+    CATALOG_NAME: Name of parent catalog. Required for creation using catalog and schema
+      names.
+    SCHEMA_NAME: Name of parent schema relative to its parent catalog. Required for
+      creation using catalog and schema names.
+    TABLE_TYPE: The type of the table. MANAGED tables store their data in storage that
+      Unity Catalog manages, EXTERNAL tables store it in a registered external
+      location, FOREIGN tables mirror objects of an external database through a
+      connection, and the shallow clone types reference the data files of a base
+      table. VIEW, MATERIALIZED_VIEW, STREAMING_TABLE and METRIC_VIEW are
+      defined by a view definition. See
+      https://docs.databricks.com/aws/en/tables/ for an overview of the table
+      types.
       Supported values: [
         EXTERNAL,
         EXTERNAL_SHALLOW_CLONE,
@@ -123,7 +135,9 @@ Create a table.
         STREAMING_TABLE,
         VIEW,
       ]
-    DATA_SOURCE_FORMAT:
+    DATA_SOURCE_FORMAT: The format of the data that backs the table, such as DELTA, PARQUET, CSV
+      or JSON. Foreign tables report the external system that holds them, for
+      example SNOWFLAKE_FORMAT or MYSQL_FORMAT.
       Supported values: [
         AVRO,
         BIGQUERY_FORMAT,
@@ -156,7 +170,11 @@ Create a table.
         VECTOR_INDEX_FORMAT,
         WORKDAY_RAAS_FORMAT,
       ]
-    STORAGE_LOCATION: Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).`
+    STORAGE_LOCATION: The cloud storage URL under which the data files of the table are stored.
+      For an EXTERNAL table, it must be set on creation to a path within an
+      existing external location. For a MANAGED table, the server assigns a path
+      under the managed storage location of the parent schema, catalog or
+      metastore and returns it in this field. Views have no storage location.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -644,7 +662,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of table.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The user or group that owns the table.`)
 
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a table owner.`

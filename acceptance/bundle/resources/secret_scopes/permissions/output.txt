@@ -3,6 +3,7 @@
 "scopes-permissions-group-[UNIQUE_NAME]"
 
 === create secret scope with permissions
+
 >>> [CLI] bundle plan
 
 >>> [CLI] bundle deploy -qq
@@ -20,6 +21,7 @@
 {"permission":"WRITE","principal":"scopes-permissions-group-[UNIQUE_NAME]"}
 
 === update permissions (remove sp, change permission for user, add users and remove deco-test-group)
+
 >>> [CLI] bundle plan
 
 >>> [CLI] bundle deploy -qq
@@ -30,6 +32,7 @@
 {"permission":"WRITE","principal":"deco-test-user@databricks.com"}
 
 === change scope name (should recreate scope and update permissions)
+
 >>> [CLI] bundle plan
 
 >>> [CLI] bundle deploy -qq

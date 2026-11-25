@@ -3,7 +3,7 @@ sethome "./home"
 # Initial profile with cluster_id to be cleared out.
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
-title "Initial profile with cluster_id\n"
+title "Initial profile with cluster_id"
 cat "./home/.databrickscfg"
 
 # Use a fake browser that performs a GET on the authorization URL
@@ -13,7 +13,7 @@ export BROWSER="browser.py"
 title "Run auth login with --configure-serverless"
 trace $CLI auth login --host $DATABRICKS_HOST --profile DEFAULT --configure-serverless
 
-title "Profile after auth login with --configure-serverless\n"
+title "Profile after auth login with --configure-serverless"
 cat "./home/.databrickscfg"
 
 # Track the .databrickscfg file that was created to surface changes.

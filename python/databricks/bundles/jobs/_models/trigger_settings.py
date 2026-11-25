@@ -73,11 +73,14 @@ class TriggerSettings:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
+    [Beta] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
     runs *after* other trigger types conditions are evaluated.
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
+    """
+    Table update trigger settings.
+    """
 
     @classmethod
     def from_dict(cls, value: "TriggerSettingsDict") -> "Self":
@@ -123,11 +126,14 @@ class TriggerSettingsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
+    [Beta] SQL condition that must be satisfied for the trigger to fire. Can be used in combination with other trigger types and
     runs *after* other trigger types conditions are evaluated.
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]
+    """
+    Table update trigger settings.
+    """
 
 
 TriggerSettingsParam = TriggerSettingsDict | TriggerSettings

@@ -23,8 +23,7 @@ class JobEnvironment:
 
     spec: VariableOrOptional[Environment] = None
     """
-    The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and SDP's environment for classic and serverless pipelines.
-    In this minimal environment spec, only pip and java dependencies are supported.
+    The environment specification, including the environment version and the dependencies to install before a task runs.
     """
 
     @classmethod
@@ -45,8 +44,7 @@ class JobEnvironmentDict(TypedDict, total=False):
 
     spec: VariableOrOptional[EnvironmentParam]
     """
-    The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and SDP's environment for classic and serverless pipelines.
-    In this minimal environment spec, only pip and java dependencies are supported.
+    The environment specification, including the environment version and the dependencies to install before a task runs.
     """
 
 

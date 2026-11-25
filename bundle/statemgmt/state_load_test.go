@@ -34,6 +34,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.experiments.test_mlflow_experiment":                          {ID: "1"},
 		"resources.features.test_feature":                                       {ID: "main.default.test_feature"},
 		"resources.materialization_sets.test_materialization_set":               {ID: "set1"},
+		"resources.feature_specs.test_feature_spec":                             {ID: "main.default.test_feature_spec"},
 		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
 		"resources.model_services.test_model_service":                           {ID: "main.default.test_model_service"},
 		"resources.data_quality_monitors.test_data_quality_monitor":             {ID: "table,uuid-1"},
@@ -63,6 +64,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_roles.test_postgres_role":                           {ID: "projects/test-project/branches/main/roles/test-role"},
 		"resources.postgres_synced_tables.test_postgres_synced_table":           {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.postgres_snapshot_schedules.test_postgres_snapshot_schedule": {ID: "projects/test-project/branches/main/snapshot-schedule"},
+		"resources.postgres_data_apis.test_postgres_data_api":                   {ID: "projects/test-project/branches/main/databases/test-db/data-api"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":         {ID: "vs-endpoint-1"},
 		"resources.vector_search_indexes.test_vector_search_index":              {ID: "vs-index-1"},
 		"resources.instance_pools.test_instance_pool":                           {ID: "1"},
@@ -157,6 +159,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "projects/test-project/branches/main/snapshot-schedule", config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
 
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db/data-api", config.Resources.PostgresDataApis["test_postgres_data_api"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDataApis["test_postgres_data_api"].ModifiedStatus)
+
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
@@ -237,6 +242,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 						MaterializedFeatures: []ml.MaterializedFeature{
 							{FeatureName: "main.default.test_feature"},
 						},
+					},
+				},
+			},
+			FeatureSpecs: map[string]*resources.FeatureSpec{
+				"test_feature_spec": {
+					FeatureSpec: ml.FeatureSpec{
+						Name: "main.default.test_feature_spec",
 					},
 				},
 			},
@@ -430,6 +442,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDataApis: map[string]*resources.PostgresDataApi{
+				"test_postgres_data_api": {
+					PostgresDataApiConfig: resources.PostgresDataApiConfig{
+						Parent: "projects/test-project/branches/main/databases/test-db",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -586,6 +605,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.PostgresDataApis["test_postgres_data_api"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDataApis["test_postgres_data_api"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
@@ -693,6 +715,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 						MaterializedFeatures: []ml.MaterializedFeature{
 							{FeatureName: "main.default.test_feature"},
 						},
+					},
+				},
+			},
+			FeatureSpecs: map[string]*resources.FeatureSpec{
+				"test_feature_spec": {
+					FeatureSpec: ml.FeatureSpec{
+						Name: "main.default.test_feature_spec",
+					},
+				},
+				"test_feature_spec_new": {
+					FeatureSpec: ml.FeatureSpec{
+						Name: "main.default.test_feature_spec_new",
 					},
 				},
 			},
@@ -1008,6 +1042,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDataApis: map[string]*resources.PostgresDataApi{
+				"test_postgres_data_api": {
+					PostgresDataApiConfig: resources.PostgresDataApiConfig{
+						Parent: "projects/test-project/branches/main/databases/test-db",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -1121,6 +1162,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.experiments.test_mlflow_experiment_old":                  {ID: "2"},
 		"resources.features.test_feature":                                   {ID: "main.default.test_feature"},
 		"resources.features.test_feature_old":                               {ID: "main.default.test_feature_old"},
+		"resources.feature_specs.test_feature_spec":                         {ID: "main.default.test_feature_spec"},
+		"resources.feature_specs.test_feature_spec_old":                     {ID: "main.default.test_feature_spec_old"},
 		"resources.model_serving_endpoints.test_model_serving":              {ID: "1"},
 		"resources.model_serving_endpoints.test_model_serving_old":          {ID: "2"},
 		"resources.registered_models.test_registered_model":                 {ID: "1"},
@@ -1231,6 +1274,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Features["test_feature_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.Features["test_feature_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Features["test_feature_new"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_feature_spec", config.Resources.FeatureSpecs["test_feature_spec"].ID)
+	assert.Empty(t, config.Resources.FeatureSpecs["test_feature_spec"].ModifiedStatus)
+	assert.Equal(t, "main.default.test_feature_spec_old", config.Resources.FeatureSpecs["test_feature_spec_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.FeatureSpecs["test_feature_spec_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.FeatureSpecs["test_feature_spec_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.FeatureSpecs["test_feature_spec_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.ModelServingEndpoints["test_model_serving"].ID)
 	assert.Empty(t, config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)

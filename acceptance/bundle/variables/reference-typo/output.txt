@@ -97,3 +97,28 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-double-nested-typo-multiple/default
 
 Found 1 error
+
+=== Volume schema and catalog references missing resources
+
+>>> [CLI] bundle validate
+Error: volume "ingest" field "schema_name": reference does not exist: ${schemas.test.name}
+  at resources.volumes.ingest.schema_name
+  in databricks.yml:12:20
+
+did you mean:
+  ${resources.schemas.test.name}
+
+Error: volume "ingest" field "catalog_name": reference does not exist: ${schemas.test.catalog_name}
+  at resources.volumes.ingest.catalog_name
+  in databricks.yml:13:21
+
+did you mean:
+  ${resources.schemas.test.catalog_name}
+
+Name: reference-typo-volume-missing-resources
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/reference-typo-volume-missing-resources/default
+
+Found 2 errors
