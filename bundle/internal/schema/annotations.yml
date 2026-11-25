@@ -20,7 +20,10 @@
 #
 # Running "task generate-schema" keeps this file in sync with the
 # configuration structure: it adds placeholders for new undocumented fields
-# and drops entries for fields that no longer exist.
+# and drops entries for fields that no longer exist. For a new resource type
+# it writes the standard description of the entry under "resources" and of
+# the "lifecycle" field instead of a placeholder; edit them like any other
+# entry.
 artifacts:
   "description": |-
     Defines the attributes to build an artifact
@@ -868,7 +871,7 @@ resources:
             PLACEHOLDER
     "genie_spaces":
       "description": |-
-        The genie space definitions for the bundle, where each key is the name of the genie space.
+        The Genie space definitions for the bundle, where each key is the name of the Genie space.
       "$fields":
         "description":
           "description": |-
@@ -1148,7 +1151,7 @@ resources:
                 Deprecated: setting this field is rejected. Use `cron_schedule_trigger` instead.
     "mcp_services":
       "description": |-
-        The mcp service definitions for the bundle, where each key is the name of the mcp service.
+        The MCP service definitions for the bundle, where each key is the name of the MCP service.
       "$fields":
         "comment":
           "description": |-

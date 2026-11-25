@@ -4450,7 +4450,7 @@
                       "markdownDescription": "The feature definitions for the bundle, where each key is the name of the feature."
                     },
                     "genie_spaces": {
-                      "description": "The genie space definitions for the bundle, where each key is the name of the genie space.",
+                      "description": "The Genie space definitions for the bundle, where each key is the name of the Genie space.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                     },
                     "instance_pools": {
@@ -4473,7 +4473,7 @@
                       "markdownDescription": "The materialization set definitions for the bundle, where each key is the name of the materialization set."
                     },
                     "mcp_services": {
-                      "description": "The mcp service definitions for the bundle, where each key is the name of the mcp service.",
+                      "description": "The MCP service definitions for the bundle, where each key is the name of the MCP service.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.McpService"
                     },
                     "model_provider_services": {

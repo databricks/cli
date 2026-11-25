@@ -130,18 +130,27 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 
 const resourceLifecycleDescription = "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed."
 
-// boilerplateDescription returns the text that every resource type repeats for
-// field k of typ, or "". Callers apply it only to undocumented or placeholder
-// fields, so hand-written text is never replaced.
+// boilerplateDescription returns the description that reads the same for every
+// resource type: that of its entry under "resources" and that of its
+// "lifecycle" field. It returns "" for every other field.
+//
+// The generator writes the text to the annotations file where the field has no
+// description or a placeholder. From then on it is an entry like any other:
+// hand edits are kept, and changing the text here does not update it. The entry
+// under "resources" spells the resource name in lower case, so an acronym or
+// product name ("MCP", "Genie") needs such an edit.
 func boilerplateDescription(typ reflect.Type, k string) string {
 	switch {
 	case typ == reflect.TypeFor[config.Resources]():
 		desc, ok := config.SupportedResources()[k]
 		if !ok {
+			// Not in SupportedResources yet: the field gets a placeholder, which
+			// a run after the type is added there replaces.
 			return ""
 		}
 		name := strings.ReplaceAll(desc.SingularName, "_", " ")
 		return fmt.Sprintf("The %s definitions for the bundle, where each key is the name of the %s.", name, name)
+	// In the resources package only resource types have a lifecycle field.
 	case k == "lifecycle" && typ.PkgPath() == reflect.TypeFor[resources.Job]().PkgPath():
 		return resourceLifecycleDescription
 	default:
@@ -149,8 +158,9 @@ func boilerplateDescription(typ reflect.Type, k string) string {
 	}
 }
 
-// Writes the annotations file back in canonical form, adding placeholder
-// descriptions for fields that have no documentation anywhere. Entries for
+// Writes the annotations file back in canonical form, adding a description for
+// fields that have no documentation anywhere: the boilerplate text where there
+// is one (see boilerplateDescription), a placeholder otherwise. Entries for
 // fields that no longer exist in the config are dropped with a warning.
 func (d *annotationHandler) syncWithMissingAnnotations(outputPath string, g *typeGraph) error {
 	updated, err := mergeAnnotationFiles(d.fileAnnotations, d.missingAnnotations)
