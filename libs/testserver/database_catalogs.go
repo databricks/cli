@@ -8,6 +8,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
+func init() {
+	registerRoutes("database_catalogs", addDatabaseCatalogsRoutes)
+}
+
+func addDatabaseCatalogsRoutes(server *Server) {
+	// Database Catalogs:
+
+	server.Handle("POST", "/api/2.0/database/catalogs", func(req Request) any {
+		return req.Workspace.DatabaseCatalogCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/database/catalogs/{name}", func(req Request) any {
+		return req.Workspace.DatabaseCatalogGet(req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/database/catalogs/{name}", func(req Request) any {
+		return req.Workspace.DatabaseCatalogUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
+		return req.Workspace.DatabaseCatalogDelete(req.Vars["name"])
+	})
+}
+
 func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 	defer s.LockUnlock()()
 

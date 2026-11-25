@@ -9,6 +9,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("secrets", addSecretsRoutes)
+}
+
+func addSecretsRoutes(server *Server) {
+	// Secrets:
+	server.Handle("POST", "/api/2.0/secrets/put", func(req Request) any {
+		return req.Workspace.SecretsPut(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/get", func(req Request) any {
+		return req.Workspace.SecretsGet(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/list", func(req Request) any {
+		return req.Workspace.SecretsList(req)
+	})
+}
+
 func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	defer s.LockUnlock()()
 

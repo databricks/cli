@@ -8,6 +8,38 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
+func init() {
+	registerRoutes("vector_search_endpoints", addVectorSearchEndpointsRoutes)
+}
+
+func addVectorSearchEndpointsRoutes(server *Server) {
+	// Vector Search Endpoints:
+
+	server.Handle("POST", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.VectorSearchEndpoints, "endpoints")
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointUpdate(req, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}/budget-policy", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointUpdateBudgetPolicy(req, req.Vars["endpoint_name"])
+	})
+}
+
 func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
 

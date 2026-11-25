@@ -7,6 +7,20 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/settingsv2"
 )
 
+func init() {
+	registerRoutes("settings", addSettingsRoutes)
+}
+
+func addSettingsRoutes(server *Server) {
+	server.Handle("GET", "/api/2.1/settings/{name}", func(req Request) any {
+		return req.Workspace.WorkspaceSettingGet(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/settings/{name}", func(req Request) any {
+		return req.Workspace.WorkspaceSettingPatch(req)
+	})
+}
+
 // portFwdServerlessSetting lets an administrator disable port forwarding to serverless compute,
 // which the driver proxy enforces for the SSH tunnel.
 const portFwdServerlessSetting = "port_fwd_serverless_enabled"

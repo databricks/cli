@@ -9,6 +9,45 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
+func init() {
+	registerRoutes("serving_endpoints", addServingEndpointsRoutes)
+}
+
+func addServingEndpointsRoutes(server *Server) {
+	// Serving Endpoints:
+	server.Handle("GET", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
+		return req.Workspace.ServingEndpointGet(req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/serving-endpoints", func(req Request) any {
+		return req.Workspace.ServingEndpointCreate(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/config", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+	})
+
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/ai-gateway", func(req Request) any {
+		return req.Workspace.ServingEndpointPutAiGateway(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/notifications", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdateNotifications(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/telemetry-config", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTelemetryConfig(req, req.Vars["name"])
+	})
+}
+
 func servedEntitiesInputToOutput(input []serving.ServedEntityInput) []serving.ServedEntityOutput {
 	entities := make([]serving.ServedEntityOutput, len(input))
 	for i, entity := range input {

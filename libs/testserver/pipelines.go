@@ -8,6 +8,46 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+func init() {
+	registerRoutes("pipelines", addPipelinesRoutes)
+}
+
+func addPipelinesRoutes(server *Server) {
+	// Pipelines:
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {
+		return req.Workspace.PipelineGet(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines", func(req Request) any {
+		return req.Workspace.PipelineCreate(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {
+		return req.Workspace.PipelineUpdate(req, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Pipelines, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/updates", func(req Request) any {
+		return req.Workspace.PipelineStartUpdate(req, req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req Request) any {
+		return req.Workspace.PipelineEvents(req.Vars["pipeline_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/updates/{update_id}", func(req Request) any {
+		return req.Workspace.PipelineGetUpdate(req.Vars["pipeline_id"], req.Vars["update_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/stop", func(req Request) any {
+		return req.Workspace.PipelineStop(req.Vars["pipeline_id"])
+	})
+}
+
 func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
 	defer s.LockUnlock()()
 

@@ -14,6 +14,37 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("dashboards", addDashboardsRoutes)
+}
+
+func addDashboardsRoutes(server *Server) {
+	// Dashboards:
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
+		return req.Workspace.DashboardGet(req)
+	})
+	server.Handle("POST", "/api/2.0/lakeview/dashboards", func(req Request) any {
+		return req.Workspace.DashboardCreate(req)
+	})
+	server.Handle("POST", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return req.Workspace.DashboardPublish(req)
+	})
+	server.Handle("PATCH", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
+		return req.Workspace.DashboardUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
+		// Calling DELETE on a dashboard does not delete the record immediately. Instead, the dashboard
+		// is marked as trashed and moved to the trash.
+		return req.Workspace.DashboardTrash(req)
+	})
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return req.Workspace.DashboardGetPublished(req)
+	})
+	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return req.Workspace.DashboardUnpublish(req)
+	})
+}
+
 // Generate 32 character hex string for dashboard ID
 func generateDashboardId() (string, error) {
 	randomBytes := make([]byte, 16)

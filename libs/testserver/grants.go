@@ -10,6 +10,22 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("grants", addGrantsRoutes)
+}
+
+func addGrantsRoutes(server *Server) {
+	// Grants:
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsUpdate(req, req.Vars["securable_type"], req.Vars["full_name"])
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsGet(req, req.Vars["securable_type"], req.Vars["full_name"])
+	})
+}
+
 // notImpliedByAllPrivileges are the privileges UC does not include in
 // ALL_PRIVILEGES, so granting or revoking ALL_PRIVILEGES never affects them.
 var notImpliedByAllPrivileges = map[catalog.Privilege]bool{

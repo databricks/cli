@@ -9,6 +9,57 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+func init() {
+	registerRoutes("clusters", addClustersRoutes)
+}
+
+func addClustersRoutes(server *Server) {
+	server.Handle("GET", "/api/2.1/clusters/list", func(req Request) any {
+		return compute.ListClustersResponse{
+			Clusters: []compute.ClusterDetails{
+				{
+					ClusterName: "some-test-cluster",
+					ClusterId:   "4321",
+				},
+				{
+					ClusterName: "some-other-cluster",
+					ClusterId:   "9876",
+				},
+			},
+		}
+	})
+
+	// Clusters:
+	server.Handle("POST", "/api/2.1/clusters/resize", func(req Request) any {
+		return req.Workspace.ClustersResize(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/edit", func(req Request) any {
+		return req.Workspace.ClustersEdit(req)
+	})
+
+	server.Handle("GET", "/api/2.1/clusters/get", func(req Request) any {
+		clusterId := req.URL.Query().Get("cluster_id")
+		return req.Workspace.ClustersGet(req, clusterId)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/create", func(req Request) any {
+		return req.Workspace.ClustersCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/delete", func(req Request) any {
+		return req.Workspace.ClustersDelete(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/start", func(req Request) any {
+		return req.Workspace.ClustersStart(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
+		return req.Workspace.ClustersPermanentDelete(req)
+	})
+}
+
 func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	var request compute.ClusterDetails
 	if err := json.Unmarshal(req.Body, &request); err != nil {

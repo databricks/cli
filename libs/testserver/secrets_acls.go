@@ -7,6 +7,29 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("secrets_acls", addSecretsAclsRoutes)
+}
+
+func addSecretsAclsRoutes(server *Server) {
+	// Secrets ACLs:
+	server.Handle("GET", "/api/2.0/secrets/acls/get", func(req Request) any {
+		return req.Workspace.SecretsAclsGet(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/acls/list", func(req Request) any {
+		return req.Workspace.SecretsListAcls(req)
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req Request) any {
+		return req.Workspace.SecretsAclsPut(req)
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
+		return req.Workspace.SecretsAclsDelete(req)
+	})
+}
+
 func (s *FakeWorkspace) SecretsAclsGet(req Request) Response {
 	defer s.LockUnlock()()
 

@@ -14,6 +14,273 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
+func init() {
+	registerRoutes("postgres", addPostgresRoutes)
+}
+
+func addPostgresRoutes(server *Server) {
+	// Postgres Operations:
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	// Postgres Projects:
+	server.Handle("POST", "/api/2.0/postgres/projects", func(req Request) any {
+		projectID := req.URL.Query().Get("project_id")
+		return req.Workspace.PostgresProjectCreate(req, projectID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects", func(req Request) any {
+		return req.Workspace.PostgresProjectList()
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectDelete(name)
+	})
+
+	// Postgres Branches:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"]
+		branchID := req.URL.Query().Get("branch_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresBranchCreate(req, parent, branchID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresBranchList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchDelete(name)
+	})
+
+	// Postgres Snapshot Schedules (a per-branch singleton; no create/delete):
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule"
+		return req.Workspace.PostgresSnapshotScheduleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule"
+		return req.Workspace.PostgresSnapshotScheduleUpdate(req, name)
+	})
+
+	// Postgres Endpoints:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		endpointID := req.URL.Query().Get("endpoint_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresEndpointCreate(req, parent, endpointID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresEndpointList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointDelete(name)
+	})
+
+	// Postgres Catalogs:
+	server.Handle("POST", "/api/2.0/postgres/catalogs", func(req Request) any {
+		catalogID := req.URL.Query().Get("catalog_id")
+		return req.Workspace.PostgresCatalogCreate(req, catalogID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/catalogs/{id}", func(req Request) any {
+		return req.Workspace.PostgresCatalogGet("catalogs/" + req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/catalogs/{id}", func(req Request) any {
+		return req.Workspace.PostgresCatalogDelete("catalogs/" + req.Vars["id"])
+	})
+
+	// Operations for catalogs are nested under the resource. Matches the real
+	// API and what the SDK polls based on the operation.Name we return.
+	server.Handle("GET", "/api/2.0/postgres/catalogs/{id}/operations/{operation_id}", func(req Request) any {
+		name := "catalogs/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	// Postgres Databases:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		databaseID := req.URL.Query().Get("database_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresDatabaseCreate(req, parent, databaseID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresDatabaseList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseDelete(name)
+	})
+
+	// Postgres Data API (a per-database singleton):
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDataApiCreate(req, parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiDelete(name)
+	})
+
+	// Postgres Roles:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		roleID := req.URL.Query().Get("role_id")
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresRoleList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleDelete(name)
+	})
+
+	// Postgres Synced Tables:
+	server.Handle("POST", "/api/2.0/postgres/synced_tables", func(req Request) any {
+		syncedTableID := req.URL.Query().Get("synced_table_id")
+		return req.Workspace.PostgresSyncedTableCreate(req, syncedTableID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}", func(req Request) any {
+		return req.Workspace.PostgresSyncedTableGet("synced_tables/" + req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/synced_tables/{id}", func(req Request) any {
+		return req.Workspace.PostgresSyncedTableDelete("synced_tables/" + req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}/operations/{operation_id}", func(req Request) any {
+		name := "synced_tables/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
+	})
+
+	// Catch-all handler for invalid postgres resource names.
+	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.
+	server.Handle("GET", "/api/2.0/postgres/{name}", func(req Request) any {
+		return Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"error_code": "NOT_FOUND",
+				"message":    "resource not found",
+			},
+		}
+	})
+}
+
 func nowTime() *sdktime.Time {
 	return sdktime.New(time.Now().UTC())
 }

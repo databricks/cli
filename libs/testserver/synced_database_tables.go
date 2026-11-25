@@ -7,6 +7,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
+func init() {
+	registerRoutes("synced_database_tables", addSyncedDatabaseTablesRoutes)
+}
+
+func addSyncedDatabaseTablesRoutes(server *Server) {
+	// Synced Database Tables:
+
+	server.Handle("POST", "/api/2.0/database/synced_tables", func(req Request) any {
+		return req.Workspace.SyncedDatabaseTableCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return req.Workspace.SyncedDatabaseTableUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("GET", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
+	})
+}
+
 func (s *FakeWorkspace) SyncedDatabaseTableCreate(req Request) Response {
 	defer s.LockUnlock()()
 

@@ -10,6 +10,29 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("uc_secrets", addUcSecretsRoutes)
+}
+
+func addUcSecretsRoutes(server *Server) {
+	// Unity Catalog Secrets:
+	server.Handle("POST", "/api/2.1/unity-catalog/secrets", func(req Request) any {
+		return req.Workspace.SecretsUcCreateSecret(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcGetSecret(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcUpdateSecret(req)
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/secrets/{full_name}", func(req Request) any {
+		return req.Workspace.SecretsUcDeleteSecret(req)
+	})
+}
+
 // SecretsUcCreateSecret handles POST /api/2.1/unity-catalog/secrets
 func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 	defer s.LockUnlock()()

@@ -10,6 +10,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("volumes", addVolumesRoutes)
+}
+
+func addVolumesRoutes(server *Server) {
+	// Volumes: looked up case-insensitively, see volumeKey.
+
+	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
+		return MapGetUC(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]), "Volume")
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req Request) any {
+		return req.Workspace.VolumesCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
+		return req.Workspace.VolumesUpdate(req, volumeKey(req.Vars["full_name"]))
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]))
+	})
+}
+
 func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 	var volume catalog.VolumeInfo
 

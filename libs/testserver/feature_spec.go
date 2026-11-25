@@ -9,6 +9,23 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerRoutes("feature_spec", addFeatureSpecRoutes)
+}
+
+func addFeatureSpecRoutes(server *Server) {
+	// Feature Engineering feature specs:
+	server.Handle("POST", "/api/2.0/feature-engineering/feature-specs", func(req Request) any {
+		return req.Workspace.FeatureSpecsCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.FeatureSpecs, req.Vars["name"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
+		return req.Workspace.FeatureSpecsDelete(req.Vars["name"])
+	})
+}
+
 // FeatureSpecsCreate fakes POST /api/2.0/feature-engineering/feature-specs. The FeatureSpec body is
 // sent directly, keyed by name, which is also the resource id. Like the real endpoint, it returns
 // the feature spec it was sent, with the name lowercased.

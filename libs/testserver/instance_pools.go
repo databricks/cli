@@ -7,6 +7,33 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+func init() {
+	registerRoutes("instance_pools", addInstancePoolsRoutes)
+}
+
+func addInstancePoolsRoutes(server *Server) {
+	server.Handle("GET", "/api/2.0/instance-pools/list", func(req Request) any {
+		return compute.ListInstancePools{
+			InstancePools: []compute.InstancePoolAndStats{
+				{
+					InstancePoolName: "DEFAULT Test Instance Pool",
+					InstancePoolId:   TestDefaultInstancePoolId,
+				},
+				{
+					InstancePoolName: "some-test-instance-pool",
+					InstancePoolId:   "1234",
+				},
+			},
+		}
+	})
+	server.Handle("POST", "/api/2.0/instance-pools/create", func(req Request) any { return req.Workspace.InstancePoolsCreate(req) })
+	server.Handle("POST", "/api/2.0/instance-pools/edit", func(req Request) any { return req.Workspace.InstancePoolsEdit(req) })
+	server.Handle("POST", "/api/2.0/instance-pools/delete", func(req Request) any { return req.Workspace.InstancePoolsDelete(req) })
+	server.Handle("GET", "/api/2.0/instance-pools/get", func(req Request) any {
+		return req.Workspace.InstancePoolsGet(req, req.URL.Query().Get("instance_pool_id"))
+	})
+}
+
 func (s *FakeWorkspace) InstancePoolsCreate(req Request) any {
 	// Unmarshal into the stored (GET) type directly: CreateInstancePool and
 	// GetInstancePool share JSON field names, so every config field is carried over.

@@ -10,6 +10,29 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerRoutes("materialization_set", addMaterializationSetRoutes)
+}
+
+func addMaterializationSetRoutes(server *Server) {
+	// Feature Engineering materialization sets:
+	server.Handle("POST", "/api/2.0/feature-engineering/materialization-sets", func(req Request) any {
+		return req.Workspace.MaterializationSetsCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.OperationsGet(req.Vars["operation_id"])
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.MaterializationSets, req.Vars["materialization_set_id"])
+	})
+	server.Handle("PATCH", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return req.Workspace.MaterializationSetsUpdate(req, req.Vars["materialization_set_id"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/materialization-sets/{materialization_set_id}", func(req Request) any {
+		return req.Workspace.MaterializationSetsDelete(req.Vars["materialization_set_id"])
+	})
+}
+
 // This fake mirrors UpdateMaterializationSet closely enough that one set of acceptance goldens
 // serves both the local run and a run against a real workspace. Where it rejects, it returns the
 // backend's own message text, so a golden recorded locally is a claim about the real API that the

@@ -8,6 +8,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("mcp_endpoint", addMcpEndpointRoutes)
+}
+
+func addMcpEndpointRoutes(server *Server) {
+	server.Handle("POST", "/ai-gateway/mcp-services/{name}", func(req Request) any {
+		return req.Workspace.McpEndpoint(req, req.Vars["name"])
+	})
+}
+
 // JSON-RPC codes the fake endpoint answers with.
 const (
 	rpcCodeParseError     = -32700

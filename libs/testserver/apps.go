@@ -12,6 +12,62 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+func init() {
+	registerRoutes("apps", addAppsRoutes)
+}
+
+func addAppsRoutes(server *Server) {
+	// Apps:
+
+	server.Handle("POST", "/api/2.0/apps/{name}/deployments", func(req Request) any {
+		return req.Workspace.AppsCreateDeployment(req, req.Vars["name"])
+	})
+
+	server.Handle("GET", "/api/2.0/apps/{name}/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.AppsGetDeployment(req, req.Vars["name"], req.Vars["deployment_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps/{name}/start", func(req Request) any {
+		return req.Workspace.AppsStart(req, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps/{name}/stop", func(req Request) any {
+		return req.Workspace.AppsStop(req, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps/{name}/update", func(req Request) any {
+		return req.Workspace.AppsCreateUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("GET", "/api/2.0/apps/{name}/update", func(req Request) any {
+		return req.Workspace.AppsGetUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/apps/{name}/thumbnail", func(req Request) any {
+		return req.Workspace.AppsUpdateThumbnail(req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/apps/{name}/thumbnail", func(req Request) any {
+		return req.Workspace.AppsDeleteThumbnail(req.Vars["name"])
+	})
+
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req Request) any {
+		return req.Workspace.AppsGet(req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps", func(req Request) any {
+		return req.Workspace.AppsUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/apps/{name}", func(req Request) any {
+		return req.Workspace.AppsUpsert(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/apps/{name}", func(req Request) any {
+		return req.Workspace.AppsDelete(req.Vars["name"])
+	})
+}
+
 const (
 	appStatusRunningMessage     = "App has status: App is running"
 	appStatusUnavailableMessage = "App status is unavailable."

@@ -9,6 +9,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+func init() {
+	registerRoutes("libraries", addLibrariesRoutes)
+}
+
+func addLibrariesRoutes(server *Server) {
+	// Cluster libraries:
+	server.Handle("POST", "/api/2.0/libraries/install", func(req Request) any {
+		return req.Workspace.LibrariesInstall(req)
+	})
+
+	server.Handle("POST", "/api/2.0/libraries/uninstall", func(req Request) any {
+		return req.Workspace.LibrariesUninstall(req)
+	})
+
+	server.Handle("GET", "/api/2.0/libraries/cluster-status", func(req Request) any {
+		return req.Workspace.LibrariesClusterStatus(req, req.URL.Query().Get("cluster_id"))
+	})
+}
+
 func (s *FakeWorkspace) LibrariesInstall(req Request) any {
 	var request compute.InstallLibraries
 	if err := json.Unmarshal(req.Body, &request); err != nil {

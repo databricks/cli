@@ -10,6 +10,29 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+func init() {
+	registerRoutes("permissions", addPermissionsRoutes)
+}
+
+func addPermissionsRoutes(server *Server) {
+	// Generic permissions endpoints
+	server.Handle("GET", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.GetPermissions(req)
+	})
+
+	server.Handle("GET", "/api/2.0/permissions/{prefix}/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.GetPermissions(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.SetPermissions(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/{prefix}/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.SetPermissions(req)
+	})
+}
+
 // source: https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go
 
 var requestObjectTypeToObjectType = map[string]string{

@@ -11,6 +11,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
+func init() {
+	registerRoutes("vector_search_indexes", addVectorSearchIndexesRoutes)
+}
+
+func addVectorSearchIndexesRoutes(server *Server) {
+	// Vector Search Indexes:
+
+	server.Handle("POST", "/api/2.0/vector-search/indexes", func(req Request) any {
+		return req.Workspace.VectorSearchIndexCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/indexes", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.VectorSearchIndexes, "vector_indexes")
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
+		return req.Workspace.VectorSearchIndexDelete(req.Vars["index_name"])
+	})
+}
+
 // indexNamePart matches each catalog.schema.table component the real backend
 // accepts: only alphanumerics and underscores.
 var indexNamePart = regexp.MustCompile(`^[A-Za-z0-9_]+$`)

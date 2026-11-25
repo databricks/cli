@@ -11,6 +11,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+func init() {
+	registerRoutes("model_services", addModelServicesRoutes)
+}
+
+func addModelServicesRoutes(server *Server) {
+	// Model Services (AI Gateway):
+
+	server.Handle("POST", "/api/2.1/unity-catalog/model-services", func(req Request) any {
+		return req.Workspace.ModelServicesCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/model-services/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.ModelServices, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/model-services/{name}", func(req Request) any {
+		return req.Workspace.ModelServicesUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/model-services/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ModelServices, req.Vars["name"])
+	})
+}
+
 // ModelServicesCreate fakes POST /api/2.1/unity-catalog/model-services.
 //
 // `parent` (schemas/{catalog}.{schema}) and `model_service_id` arrive as query

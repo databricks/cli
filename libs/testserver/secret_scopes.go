@@ -7,6 +7,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+func init() {
+	registerRoutes("secret_scopes", addSecretScopesRoutes)
+}
+
+func addSecretScopesRoutes(server *Server) {
+	// Secret Scopes:
+	server.Handle("POST", "/api/2.0/secrets/scopes/create", func(req Request) any {
+		return req.Workspace.SecretsCreateScope(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/scopes/list", func(req Request) any {
+		return req.Workspace.SecretsListScopes(req)
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/scopes/delete", func(req Request) any {
+		return req.Workspace.SecretsDeleteScope(req)
+	})
+}
+
 func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 	defer s.LockUnlock()()
 
