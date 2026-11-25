@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
@@ -15,6 +16,8 @@ import (
 )
 
 type annotationHandler struct {
+	// Annotations from cli.json only.
+	extracted annotation.File
 	// Annotations from cli.json merged with the annotations file.
 	parsedAnnotations annotation.File
 	// Annotations from the annotations file only: the content the CLI owns
@@ -32,27 +35,24 @@ func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandl
 		return nil, err
 	}
 	return &annotationHandler{
+		extracted:          extracted,
 		parsedAnnotations:  merged,
 		fileAnnotations:    fromFile,
 		missingAnnotations: annotation.File{},
 	}, nil
 }
 
-// dropShadowingPlaceholders removes PLACEHOLDER descriptions from fromFile for
-// fields that cli.json documents. A PLACEHOLDER marks a field with no
-// documentation anywhere, so once upstream gains a description the marker is
-// stale and would otherwise shadow it in the merge, leaving the schema with no
-// description at all. fromFile is mutated in place: the sync step then rewrites
-// the annotations file without the stale markers. Entries that carry other
-// hand-authored fields (e.g. deprecation_message) lose only the placeholder.
-func dropShadowingPlaceholders(fromFile, extracted annotation.File) {
+// dropPlaceholders removes PLACEHOLDER descriptions from fromFile. Placeholders
+// belong in the generated files (see syncAnnotationFiles); one added to a
+// hand-written file would otherwise shadow an upstream description in the
+// merge and hide the field from the undocumented list. fromFile is mutated in
+// place so the sync step rewrites the hand-written files without the markers.
+// Entries that carry other hand-authored fields (e.g. deprecation_message)
+// lose only the placeholder.
+func dropPlaceholders(fromFile annotation.File) {
 	for typePath, ta := range fromFile {
 		for key, d := range ta.Fields {
 			if d.Description != annotation.Placeholder {
-				continue
-			}
-			if extracted[typePath].Fields[key].Description == "" {
-				// Genuinely undocumented: keep the TODO marker.
 				continue
 			}
 			d.Description = ""
@@ -69,11 +69,53 @@ func dropShadowingPlaceholders(fromFile, extracted annotation.File) {
 }
 
 // isEmptyDescriptor reports whether d carries no annotation data. It runs after
-// a stale placeholder is cleared, to decide whether the whole entry can be
-// dropped. Comparing against the zero value stays correct as new Descriptor
-// fields are added.
+// a placeholder is cleared, to decide whether the whole entry can be dropped.
+// Comparing against the zero value stays correct as new Descriptor fields are
+// added.
 func isEmptyDescriptor(d annotation.Descriptor) bool {
 	return reflect.DeepEqual(d, annotation.Descriptor{})
+}
+
+// splitOverrides partitions the hand-written annotations into the entries for
+// fields the CLI alone defines and the entries that override or complete a
+// field cli.json already carries. An entry counts as an override when upstream
+// knows the node (the field exists in the spec, or the type has upstream docs)
+// and the entry sets a key upstream could supply itself; docs-site-only keys
+// like markdown_description never make a node an override.
+func splitOverrides(fromFile, extracted annotation.File) (cliOnly, overrides annotation.File) {
+	cliOnly = annotation.File{}
+	overrides = annotation.File{}
+	for typePath, ta := range fromFile {
+		for name, d := range ta.Fields {
+			_, upstream := extracted[typePath].Fields[name]
+			if upstream && hasUpstreamKeys(d) {
+				overrides.SetField(typePath, name, d)
+			} else {
+				cliOnly.SetField(typePath, name, d)
+			}
+		}
+		if isEmptyDescriptor(ta.Self) {
+			continue
+		}
+		if !isEmptyDescriptor(extracted[typePath].Self) && hasUpstreamKeys(ta.Self) {
+			overrides.SetSelf(typePath, ta.Self)
+		} else {
+			cliOnly.SetSelf(typePath, ta.Self)
+		}
+	}
+	return cliOnly, overrides
+}
+
+// hasUpstreamKeys reports whether d sets any key that cli.json can carry for a
+// node, i.e. anything a fix to the upstream spec could make redundant.
+func hasUpstreamKeys(d annotation.Descriptor) bool {
+	return d.Description != "" ||
+		len(d.Enum) > 0 ||
+		d.DeprecationMessage != "" ||
+		d.LaunchStage != "" ||
+		len(d.EnumLaunchStages) > 0 ||
+		len(d.EnumDescriptions) > 0 ||
+		d.OutputOnly != nil
 }
 
 // mergeAnnotationFiles merges later layers over earlier ones with the same
@@ -121,23 +163,32 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 	return s
 }
 
-// Writes the annotations file back in canonical form, adding placeholder
-// descriptions for fields that have no documentation anywhere. Entries for
-// fields that no longer exist in the config are dropped with a warning.
-func (d *annotationHandler) syncWithMissingAnnotations(outputPath string, g *typeGraph) error {
-	updated, err := mergeAnnotationFiles(d.fileAnnotations, d.missingAnnotations)
-	if err != nil {
-		return err
+// syncAnnotationFiles writes the three layers of the annotations directory
+// back in canonical form. The hand-written entries are normalized and routed
+// between the plain and the ".overrides" files by whether the field exists
+// upstream; the ".generated" files receive a placeholder entry for every field
+// that has no documentation anywhere, so new undocumented fields show up as a
+// diff in files that are visibly generated. Entries for fields that no longer
+// exist in the config are dropped with a warning.
+func (d *annotationHandler) syncAnnotationFiles(dir string, g *typeGraph) error {
+	cliOnly, overrides := splitOverrides(d.fileAnnotations, d.extracted)
+	var detached []string
+	for suffix, data := range map[string]annotation.File{handSuffix: cliOnly, overridesSuffix: overrides} {
+		dropped, err := saveAnnotationsDir(dir, suffix, data, g)
+		if err != nil {
+			return err
+		}
+		detached = append(detached, dropped...)
 	}
-
-	detached, err := saveAnnotationsFile(outputPath, updated, g)
-	if err != nil {
-		return err
-	}
+	slices.Sort(detached)
 	for _, k := range detached {
 		fmt.Printf("Dropping annotation for `%s`: no matching field in the bundle configuration\n", k)
 	}
-	return nil
+
+	// Missing annotations are computed from the current config, so nothing can
+	// be detached here.
+	_, err := saveAnnotationsDir(dir, generatedSuffix, d.missingAnnotations, g)
+	return err
 }
 
 func getPath(typ reflect.Type) string {

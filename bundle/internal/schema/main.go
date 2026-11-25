@@ -230,6 +230,10 @@ func main() {
 	generateSchema(workdir, outputFile, cliJSONFile, docsMode)
 }
 
+// annotationsDirName is the directory of annotation files in the generator's
+// work directory; see annotations_file.go for its layout.
+const annotationsDirName = "annotations"
+
 // configTypeGraph builds the type graph for the bundle config root with the
 // schema generator's structural field prunes applied, so the annotations file
 // only documents fields the generated schema actually contains. Both the
@@ -239,7 +243,7 @@ func configTypeGraph() (*typeGraph, error) {
 }
 
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
-	annotationsPath := filepath.Join(workdir, "annotations.yml")
+	annotationsDir := filepath.Join(workdir, annotationsDirName)
 
 	// The cli.json schema graph is keyed by SDK type name (e.g.
 	// "jobs.JobSettings"); the annotation parser matches Go SDK types against
@@ -262,19 +266,29 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
-	fromFile, unknown, err := loadAnnotationsFile(annotationsPath, graph)
+	// Both hand-written layers share one format and are merged into one set;
+	// the split between them is recomputed on save.
+	fromFile, unknown, err := loadAnnotationsDir(annotationsDir, handSuffix, graph)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, k := range unknown {
+	overrides, unknownOverrides, err := loadAnnotationsDir(annotationsDir, overridesSuffix, graph)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, k := range append(unknown, unknownOverrides...) {
 		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
+	}
+	fromFile, err = mergeAnnotationFiles(fromFile, overrides)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// fromFile feeds both the merge in newAnnotationHandler and the
-	// annotations-file rewrite in syncWithMissingAnnotations, so drop stale
-	// placeholders first: a marker upstream now documents would otherwise
-	// shadow the real description.
-	dropShadowingPlaceholders(fromFile, extracted)
+	// annotations-file rewrite in syncAnnotationFiles, so strip placeholders
+	// first: they belong in the generated file and would otherwise shadow an
+	// upstream description.
+	dropPlaceholders(fromFile)
 
 	a, err := newAnnotationHandler(extracted, fromFile)
 	if err != nil {
@@ -308,8 +322,9 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
-	// Overwrite the input annotation file, adding missing annotations
-	err = a.syncWithMissingAnnotations(annotationsPath, graph)
+	// Rewrite the hand-written files in canonical form and the generated
+	// files with the fields that still lack documentation.
+	err = a.syncAnnotationFiles(annotationsDir, graph)
 	if err != nil {
 		log.Fatal(err)
 	}

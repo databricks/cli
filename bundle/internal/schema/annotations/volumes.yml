@@ -1,0 +1,49 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The volume definitions for the bundle, where each key is the name of the volume.
+markdown_description: |-
+  The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
+$type:
+  "markdown_description": |-
+    The volume resource type allows you to define and create Unity Catalog [volumes](/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:
+
+    - A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Declarative Automation Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.
+
+    - Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [_](/dev-tools/bundles/deployment-modes.md#custom-presets).
+  "markdown_examples": |-
+    The following example creates a Unity Catalog volume with the key `my_volume`:
+
+    ```yaml
+    resources:
+      volumes:
+        my_volume:
+          catalog_name: main
+          name: my_volume
+          schema_name: my_schema
+    ```
+
+    For an example bundle that runs a job that writes to a file in Unity Catalog volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
+$fields:
+  "grants":
+    "description": |-
+      The Unity Catalog privileges to grant to principals on this securable.
+    "markdown_description": |-
+      A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+      See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
+    "markdown_examples": |-
+      ```yaml
+      grants:
+        - principal: account users
+          privileges:
+            - SELECT
+        - principal: data-engineers
+          privileges:
+            - ALL_PRIVILEGES
+      ```
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

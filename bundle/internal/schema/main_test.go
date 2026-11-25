@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -55,52 +57,117 @@ func copyFile(src, dst string) error {
 	return out.Close()
 }
 
-// Checks whether descriptions are added for new config fields in the annotations.yml file
-// If this test fails:
-//  1. run `./task generate-schema` from the repository root to add placeholder descriptions
-//  2. replace all "PLACEHOLDER" values with the actual descriptions if possible
-//  3. run `./task generate-schema` again to regenerate the schema with actual descriptions
-func TestRequiredAnnotationsForNewFields(t *testing.T) {
+// copyDir copies the regular files of src into dst.
+func copyDir(src, dst string) error {
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		err = copyFile(filepath.Join(src, e.Name()), filepath.Join(dst, e.Name()))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// regenerateAnnotationFiles regenerates the annotations directory from the
+// committed one into a temp dir and returns, per file, the tree paths that
+// were added and the paths that were changed or removed. Files present on only
+// one side are reported as a whole.
+func regenerateAnnotationFiles(t *testing.T) (added, changed map[string][]string) {
 	workdir := t.TempDir()
-	annotationsPath := path.Join(workdir, "annotations.yml")
+	dir := filepath.Join(workdir, annotationsDirName)
+	require.NoError(t, os.Mkdir(dir, 0o755))
+	require.NoError(t, copyDir(annotationsDirName, dir))
 
-	err := copyFile("annotations.yml", annotationsPath)
-	require.NoError(t, err)
+	generateSchema(workdir, filepath.Join(t.TempDir(), "schema.json"), cliJSONPath, false)
 
-	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"), cliJSONPath, false)
+	added = map[string][]string{}
+	changed = map[string][]string{}
+	names := map[string]bool{}
+	for _, d := range []string{annotationsDirName, dir} {
+		entries, err := os.ReadDir(d)
+		require.NoError(t, err)
+		for _, e := range entries {
+			names[e.Name()] = true
+		}
+	}
+	for name := range names {
+		originalFile, err := os.ReadFile(filepath.Join(annotationsDirName, name))
+		if errors.Is(err, os.ErrNotExist) {
+			added[name] = append(added[name], "(new file)")
+			continue
+		}
+		require.NoError(t, err)
+		currentFile, err := os.ReadFile(filepath.Join(dir, name))
+		if errors.Is(err, os.ErrNotExist) {
+			changed[name] = append(changed[name], "(file removed)")
+			continue
+		}
+		require.NoError(t, err)
+		if name == "README.md" {
+			continue
+		}
+		original, err := yamlloader.LoadYAML("", bytes.NewBuffer(originalFile))
+		require.NoError(t, err)
+		current, err := yamlloader.LoadYAML("", bytes.NewBuffer(currentFile))
+		require.NoError(t, err)
 
-	originalFile, err := os.ReadFile("annotations.yml")
-	require.NoError(t, err)
-	currentFile, err := os.ReadFile(annotationsPath)
-	require.NoError(t, err)
-	original, err := yamlloader.LoadYAML("", bytes.NewBuffer(originalFile))
-	require.NoError(t, err)
-	current, err := yamlloader.LoadYAML("", bytes.NewBuffer(currentFile))
-	require.NoError(t, err)
+		// VisitDelete/VisitUpdate must be set or Override panics on any change.
+		_, err = merge.Override(original, current, merge.OverrideVisitor{
+			VisitInsert: func(basePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+				added[name] = append(added[name], basePath.String())
+				return right, nil
+			},
+			VisitDelete: func(basePath dyn.Path, left dyn.Value) error {
+				changed[name] = append(changed[name], basePath.String())
+				return nil
+			},
+			VisitUpdate: func(basePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
+				changed[name] = append(changed[name], basePath.String())
+				return right, nil
+			},
+		})
+		require.NoError(t, err)
+	}
+	return added, changed
+}
 
-	// Regenerating from the committed file must be a no-op: no new placeholders
-	// (a new undocumented config field) and no deletes/updates (stale
-	// placeholders not yet pruned). VisitDelete/VisitUpdate must be set or
-	// Override panics on any change.
-	var addedFieldPaths []string
-	var changedFieldPaths []string
-	_, err = merge.Override(original, current, merge.OverrideVisitor{
-		VisitInsert: func(basePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			addedFieldPaths = append(addedFieldPaths, basePath.String())
-			return right, nil
-		},
-		VisitDelete: func(basePath dyn.Path, left dyn.Value) error {
-			changedFieldPaths = append(changedFieldPaths, basePath.String())
-			return nil
-		},
-		VisitUpdate: func(basePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
-			changedFieldPaths = append(changedFieldPaths, basePath.String())
-			return right, nil
-		},
-	})
-	assert.NoError(t, err)
-	assert.Empty(t, addedFieldPaths, "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(addedFieldPaths, "\n"))
-	assert.Empty(t, changedFieldPaths, "annotations.yml is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(changedFieldPaths, "\n"))
+// Checks whether descriptions are added for new config fields.
+// If this test fails:
+//  1. run `./task generate-schema` from the repository root; new undocumented
+//     fields appear as PLACEHOLDER entries in annotations/*.generated.yml
+//  2. document them in the matching annotations/*.yml at the same tree
+//     position if possible
+//  3. run `./task generate-schema` again to regenerate the schema with the
+//     new descriptions and drop the entries from the generated files
+func TestRequiredAnnotationsForNewFields(t *testing.T) {
+	added, changed := regenerateAnnotationFiles(t)
+
+	var missing, stale []string
+	for name, paths := range added {
+		for _, p := range paths {
+			if strings.HasSuffix(name, generatedSuffix+yamlExt) {
+				missing = append(missing, name+": "+p)
+			} else {
+				stale = append(stale, name+": "+p)
+			}
+		}
+	}
+	for name, paths := range changed {
+		for _, p := range paths {
+			stale = append(stale, name+": "+p)
+		}
+	}
+	slices.Sort(missing)
+	slices.Sort(stale)
+	assert.Empty(t, missing, "Missing JSON-schema descriptions for new config fields; run `./task generate-schema` and document them in bundle/internal/schema/annotations/:\n%s", strings.Join(missing, "\n"))
+	assert.Empty(t, stale, "bundle/internal/schema/annotations/ is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(stale, "\n"))
 }
 
 // Checks that the annotations file only contains entries that match the
@@ -109,7 +176,9 @@ func TestNoDetachedAnnotations(t *testing.T) {
 	g, err := configTypeGraph()
 	require.NoError(t, err)
 
-	_, unknown, err := loadAnnotationsFile("annotations.yml", g)
-	require.NoError(t, err)
-	assert.Empty(t, unknown, "Detached annotations found; run `./task generate-schema` to drop them")
+	for _, suffix := range []string{handSuffix, overridesSuffix, generatedSuffix} {
+		_, unknown, err := loadAnnotationsDir(annotationsDirName, suffix, g)
+		require.NoError(t, err)
+		assert.Empty(t, unknown, "Detached annotations found in *%s.yml; run `./task generate-schema` to drop them", suffix)
+	}
 }
