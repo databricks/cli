@@ -24,10 +24,8 @@ func (m *resourcePathMkdir) Name() string {
 // needsResourcePath reports whether r declares a resource of a type that needs
 // ${workspace.resource_path} to exist.
 func needsResourcePath(r *config.Resources) bool {
-	// AllResources has one group per resource type, in the order of AllResourceTypes.
-	groups := r.AllResources()
-	for i, rt := range config.AllResourceTypes() {
-		if _, ok := rt.New().(resources.ResourcePathUser); ok && len(groups[i].Resources) > 0 {
+	for _, group := range r.AllResources() {
+		if _, ok := config.ResourceTypeAs[resources.ResourcePathUser](group.Description.PluralName); ok && len(group.Resources) > 0 {
 			return true
 		}
 	}
