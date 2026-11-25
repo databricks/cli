@@ -1,0 +1,8 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The feature definitions for the bundle, where each key is the name of the feature.
+markdown_description: |-
+  The feature definitions for the bundle, where each key is the name of the feature.

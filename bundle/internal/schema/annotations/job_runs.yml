@@ -1,0 +1,29 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The job run definitions for the bundle, where each key is the name of the job run. Each job run triggers a run of an existing job as part of bundle deployment.
+
+  The deployment waits for the run to finish and fails if it does not succeed, so other resources can reference the run's outcome, for example `${resources.job_runs.<name>.state.result_state}`. A run that did not succeed is run again on the next deployment.
+$fields:
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
+    "$fields":
+      "depends_on":
+        "description": |-
+          Resources that must be deployed before this resource and deleted after it. Unlike variable references, this only affects ordering.
+      "prevent_destroy":
+        "description": |-
+          Lifecycle setting to prevent the resource from being destroyed.
+      "triggers":
+        "description": |-
+          Conditions that re-fire this job run (in addition to configuration changes).
+        "$fields":
+          "on_bundle_deploy":
+            "description": |-
+              If true, re-fire the run on every bundle deploy.
+          "on_file_change":
+            "description": |-
+              Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported.

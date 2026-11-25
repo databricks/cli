@@ -1,0 +1,48 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.
+markdown_description: |-
+  The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [\_](/dev-tools/bundles/resources.md#registered_models)
+$type:
+  "markdown_description": |-
+    The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](/api/workspace/registeredmodels/create), see [_](/machine-learning/manage-model-lifecycle/index.md).
+  "markdown_examples": |-
+    The following example defines a registered model in Unity Catalog:
+
+    ```yaml
+    resources:
+      registered_models:
+          model:
+            name: my_model
+            catalog_name: ${bundle.target}
+            schema_name: mlops_schema
+            comment: Registered model in Unity Catalog for ${bundle.target} deployment target
+            grants:
+              - privileges:
+                  - EXECUTE
+                principal: account users
+    ```
+$fields:
+  "grants":
+    "description": |-
+      The Unity Catalog privileges to grant to principals on this securable.
+    "markdown_description": |-
+      A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+      See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
+    "markdown_examples": |-
+      ```yaml
+      grants:
+        - principal: account users
+          privileges:
+            - SELECT
+        - principal: data-engineers
+          privileges:
+            - ALL_PRIVILEGES
+      ```
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

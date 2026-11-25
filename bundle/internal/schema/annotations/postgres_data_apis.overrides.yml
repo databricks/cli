@@ -1,0 +1,15 @@
+# Hand-written documentation for fields that the upstream API spec
+# (.codegen/cli.json) already defines: description overrides, gap fills for
+# undocumented upstream fields, and deprecations the spec does not carry. Every
+# entry here is a candidate to move upstream (fix the proto / OpenAPI docs) and
+# then delete. "task generate-schema" routes entries between the .overrides
+# files and the other hand-written files by whether the field exists upstream,
+# so an entry added elsewhere lands here on the next run.
+$type:
+  "description": |-
+    The Data API (a PostgREST-compatible REST interface) of a Postgres database on a Lakebase Autoscaling branch. A database has at most one Data API. At least one setting besides `parent` is required, such as `db_schemas`. Its serving URL is available as `status.url`; reference it as `${resources.postgres_data_apis.<key>.status.url}`. Durations use the protobuf seconds format, such as `300s`.
+$fields:
+  "openapi_mode":
+    "$type":
+      "description": |-
+        Controls how the Data API exposes the OpenAPI documentation endpoint. `OPEN_API_MODE_IGNORE_PRIVILEGES` serves the OpenAPI document without filtering it by the caller's privileges; `OPEN_API_MODE_DISABLED` turns the endpoint off.

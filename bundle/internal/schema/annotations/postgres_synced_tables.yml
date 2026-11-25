@@ -1,0 +1,15 @@
+# Hand-written documentation the CLI owns for the bundle configuration JSON
+# schema. See README.md in this directory for the format. "task generate-schema"
+# normalizes this file and drops entries for fields that no longer exist; it
+# never adds content here.
+description: |-
+  The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
+$fields:
+  "lifecycle":
+    "description": |-
+      Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+  "synced_table_id":
+    "description": |-
+      The ID to use for the synced table; becomes the final component of the synced table's resource name. It is the synced table name, a `{catalog}.{schema}.{table}` tuple of Unity Catalog entity names.
+
+      It names both an online view in Unity Catalog, accessible through Lakehouse Federation, and a Postgres table named `{table}` in schema `{schema}` in the connected Postgres database.
