@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -306,4 +307,16 @@ func (j *Job) BundleDeploymentIDs() (deploymentID, versionID string) {
 		return "", ""
 	}
 	return j.Deployment.DeploymentId, j.Deployment.VersionId
+}
+
+func (j *Job) GetID() string {
+	return j.ID
+}
+
+func (*Job) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
+	return &event.ResourceJobIDs
+}
+
+func (*Job) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceJobCount
 }

@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -47,6 +48,10 @@ func (*ModelServingEndpoint) RunAsSupport() RunAsSupport {
 
 func (*ModelServingEndpoint) Approval() Approval {
 	return Approval{}
+}
+
+func (*ModelServingEndpoint) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceModelServingEndpointCount
 }
 
 func (s *ModelServingEndpoint) ResourceDescription() ResourceDescription {

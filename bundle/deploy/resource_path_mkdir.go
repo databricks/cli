@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
@@ -19,9 +21,19 @@ func (m *resourcePathMkdir) Name() string {
 	return "deploy:resource_path_mkdir"
 }
 
+// needsResourcePath reports whether r declares a resource of a type that needs
+// ${workspace.resource_path} to exist.
+func needsResourcePath(r *config.Resources) bool {
+	for _, group := range r.AllResources() {
+		if _, ok := config.ResourceTypeAs[resources.ResourcePathUser](group.Description.PluralName); ok && len(group.Resources) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *resourcePathMkdir) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Only dashboards and alerts need ${workspace.resource_path} to exist.
-	if len(b.Config.Resources.Alerts) == 0 && len(b.Config.Resources.Dashboards) == 0 {
+	if !needsResourcePath(&b.Config.Resources) {
 		return nil
 	}
 

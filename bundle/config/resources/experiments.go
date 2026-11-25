@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -45,6 +46,10 @@ func (*MlflowExperiment) RunAsSupport() RunAsSupport {
 
 func (*MlflowExperiment) Approval() Approval {
 	return Approval{}
+}
+
+func (*MlflowExperiment) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceExperimentCount
 }
 
 func (s *MlflowExperiment) ResourceDescription() ResourceDescription {

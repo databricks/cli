@@ -30,6 +30,10 @@ func (sw *SqlWarehouse) GetLifecycle() LifecycleConfig {
 	return *sw.Lifecycle
 }
 
+func (*SqlWarehouse) LifecycleStartedTelemetryKey() string {
+	return "sql_warehouse_lifecycle_started"
+}
+
 func (sw *SqlWarehouse) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, sw)
 }

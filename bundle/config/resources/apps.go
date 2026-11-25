@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -73,6 +74,21 @@ func (a *App) GetLifecycle() LifecycleConfig {
 		return LifecycleWithStarted{}
 	}
 	return *a.Lifecycle
+}
+
+func (*App) LifecycleStartedTelemetryKey() string {
+	return "app_lifecycle_started"
+}
+
+func (*App) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceAppCount
+}
+
+// FieldsSentWhenEmpty keeps an empty description instead of dropping it: an app update
+// without the field leaves the remote description unchanged, so removing description
+// from config would never converge. Force-sending "" clears it.
+func (*App) FieldsSentWhenEmpty() []string {
+	return []string{"description"}
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {

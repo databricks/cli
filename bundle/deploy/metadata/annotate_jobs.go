@@ -12,8 +12,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+func init() {
+	annotations.Register("jobs", AnnotateJobs)
+}
+
 type annotateJobs struct{}
 
+// AnnotateJobs sets the bundle deployment metadata of every job, whether the job can be
+// edited in the UI, and its format to multi-task.
 func AnnotateJobs() bundle.Mutator {
 	return &annotateJobs{}
 }

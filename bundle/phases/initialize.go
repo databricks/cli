@@ -240,15 +240,8 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// not part of the bundle schema, and they are not meant to be specified or overridden by the user.
 		// For example, PythonMutator reports that "deployment" is not a valid field.
 		//
-		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
-		// Updates (typed): b.Config.Resources.Jobs[].JobSettings.{Deployment,EditMode,Format} (sets deployment metadata, locks UI editing, and sets format to multi-task)
-		// Annotates jobs with bundle deployment metadata and configures job settings for bundle deployments
-		metadata.AnnotateJobs(),
-
-		// Reads (typed): b.Config.Resources.Pipelines (checks pipeline configurations)
-		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
-		// Annotates pipelines with bundle deployment metadata
-		metadata.AnnotatePipelines(),
+		// Applies the annotation mutators that resource types register in package metadata.
+		metadata.AnnotateResources(),
 
 		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
 		// Executes the post_init script hook defined in the bundle configuration

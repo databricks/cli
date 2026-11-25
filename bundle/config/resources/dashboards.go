@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -147,6 +148,8 @@ func (*Dashboard) WorkspaceURL() (workspaceurls.Pattern, bool) {
 	return workspaceurls.Pattern{Path: "dashboardsv3/%s/published"}, true
 }
 
+func (*Dashboard) UsesResourcePath() {}
+
 func (r *Dashboard) InitializeURL(baseURL url.URL) {
 	if r.ID == "" {
 		return
@@ -196,4 +199,16 @@ func (r *Dashboard) LocalPaths() []LocalPath {
 			When:    TranslateOnLoad,
 		},
 	}
+}
+
+func (r *Dashboard) GetID() string {
+	return r.ID
+}
+
+func (*Dashboard) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
+	return &event.ResourceDashboardIDs
+}
+
+func (*Dashboard) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceDashboardCount
 }

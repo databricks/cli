@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -88,6 +89,10 @@ func (*Volume) SchemaTransforms() map[reflect.Type]func(jsonschema.Schema) jsons
 			return s
 		},
 	}
+}
+
+func (*Volume) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceVolumeCount
 }
 
 func (*Volume) ResourceDescription() ResourceDescription {

@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -50,6 +51,10 @@ This action will result in the deletion or recreation of the following UC schema
 		DeploySkipChildren: true,
 		Destroy:            `This action will result in the deletion of the following UC schemas. Any underlying data may be lost:`,
 	}
+}
+
+func (*Schema) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceSchemaCount
 }
 
 func (*Schema) ResourceDescription() ResourceDescription {

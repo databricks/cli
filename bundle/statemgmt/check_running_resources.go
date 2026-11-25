@@ -3,15 +3,11 @@ package statemgmt
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -47,6 +43,15 @@ func CheckRunningResource() bundle.Mutator {
 	return &checkRunningResources{}
 }
 
+// isRunningFunc reports whether the deployed resource with the given ID is running.
+type isRunningFunc func(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
+
+// runningChecks holds, per resource type, the check whether a deployed resource of that
+// type is running. Deploy fails if one is and bundle.deployment.fail_on_active_runs is
+// set. The checks of all resources run concurrently and the first failure is returned,
+// so their order does not matter.
+var runningChecks = config.NewResourceTypeRegistry[isRunningFunc]("running check")
+
 func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state ExportedResourcesMap) error {
 	errs, errCtx := errgroup.WithContext(ctx)
 
@@ -57,66 +62,24 @@ func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient,
 		}
 
 		resourceType := config.GetResourceTypeFromKey(resourceKey)
-
-		if resourceType == "jobs" {
-			errs.Go(func() error {
-				isRunning, err := IsJobRunning(errCtx, w, id)
-				if err != nil {
-					return err
-				}
-				if isRunning {
-					return &ErrResourceIsRunning{resourceType: "job", resourceId: id}
-				}
-				return nil
-			})
+		isRunning, ok := runningChecks.Get(resourceType)
+		if !ok {
+			continue
 		}
+		d, _ := config.ResourceTypeAs[config.ConfigResource](resourceType)
+		singularName := d.ResourceDescription().SingularName
 
-		if resourceType == "pipelines" {
-			errs.Go(func() error {
-				isRunning, err := IsPipelineRunning(errCtx, w, id)
-				if err != nil {
-					return err
-				}
-				if isRunning {
-					return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}
-				}
-				return nil
-			})
-		}
+		errs.Go(func() error {
+			running, err := isRunning(errCtx, w, id)
+			if err != nil {
+				return err
+			}
+			if running {
+				return &ErrResourceIsRunning{resourceType: singularName, resourceId: id}
+			}
+			return nil
+		})
 	}
 
 	return errs.Wait()
-}
-
-func IsJobRunning(ctx context.Context, w *databricks.WorkspaceClient, jobId string) (bool, error) {
-	id, err := strconv.Atoi(jobId)
-	if err != nil {
-		return false, err
-	}
-
-	runs, err := w.Jobs.ListRunsAll(ctx, jobs.ListRunsRequest{JobId: int64(id), ActiveOnly: true})
-	if apierr.IsMissing(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-
-	return len(runs) > 0, nil
-}
-
-func IsPipelineRunning(ctx context.Context, w *databricks.WorkspaceClient, pipelineId string) (bool, error) {
-	resp, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineId})
-	if apierr.IsMissing(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	switch resp.State {
-	case pipelines.PipelineStateIdle, pipelines.PipelineStateFailed, pipelines.PipelineStateDeleted:
-		return false, nil
-	default:
-		return true, nil
-	}
 }

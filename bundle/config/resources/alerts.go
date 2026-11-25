@@ -74,6 +74,8 @@ func (*Alert) WorkspaceURL() (workspaceurls.Pattern, bool) {
 	return workspaceurls.Pattern{Path: "sql/alerts-v2/%s"}, true
 }
 
+func (*Alert) UsesResourcePath() {}
+
 func (a *Alert) InitializeURL(baseURL url.URL) {
 	if a.ID == "" {
 		return
