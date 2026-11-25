@@ -31,6 +31,95 @@ func TestResourcesTypesMap(t *testing.T) {
 	assert.Equal(t, reflect.TypeFor[[]resources.JobPermission](), typ, "resources type for 'jobs.permissions' mismatch")
 }
 
+func TestResourcesFieldsAreConfigResourceMaps(t *testing.T) {
+	configResource := reflect.TypeFor[ConfigResource]()
+	for field := range reflect.TypeFor[Resources]().Fields() {
+		require.Equal(t, reflect.Map, field.Type.Kind(), "field %s is not a map", field.Name)
+		assert.Equal(t, reflect.String, field.Type.Key().Kind(), "field %s is not a map with string keys", field.Name)
+		require.Equal(t, reflect.Pointer, field.Type.Elem().Kind(), "field %s is not a map with pointer values", field.Name)
+		assert.True(t, field.Type.Elem().Implements(configResource), "field %s: %s does not implement ConfigResource", field.Name, field.Type.Elem())
+	}
+}
+
+func TestAllResourceTypesFollowResourcesFields(t *testing.T) {
+	rt := reflect.TypeFor[Resources]()
+	types := AllResourceTypes()
+	require.Len(t, types, rt.NumField())
+	for i, typ := range types {
+		field := rt.Field(i)
+		assert.Equal(t, structtag.JSONTag(field.Tag.Get("json")).Name(), typ.Key)
+		assert.Equal(t, field.Type.Elem().Elem(), typ.Type)
+		assert.Equal(t, reflect.PointerTo(typ.Type), reflect.TypeOf(typ.Zero))
+	}
+}
+
+func TestResourceDescriptionPluralNameMatchesKey(t *testing.T) {
+	for _, rt := range AllResourceTypes() {
+		assert.Equal(t, rt.Key, rt.Zero.ResourceDescription().PluralName, "%s", rt.Type)
+	}
+}
+
+func TestResourceTypesImplementing(t *testing.T) {
+	var keys []string
+	for key, v := range ResourceTypesImplementing[ConfigResource]() {
+		keys = append(keys, key)
+		assert.Equal(t, key, v.ResourceDescription().PluralName)
+	}
+	require.Len(t, keys, len(AllResourceTypes()))
+	for i, rt := range AllResourceTypes() {
+		assert.Equal(t, rt.Key, keys[i])
+	}
+
+	keys = nil
+	for key, v := range ResourceTypesImplementing[*resources.Job]() {
+		keys = append(keys, key)
+		assert.NotNil(t, v)
+	}
+	assert.Equal(t, []string{"jobs"}, keys)
+}
+
+func TestResourceTypeAs(t *testing.T) {
+	job, ok := ResourceTypeAs[*resources.Job]("jobs")
+	assert.True(t, ok)
+	assert.Equal(t, &resources.Job{}, job)
+
+	_, ok = ResourceTypeAs[*resources.Job]("pipelines")
+	assert.False(t, ok)
+
+	_, ok = ResourceTypeAs[ConfigResource]("no_such_type")
+	assert.False(t, ok)
+}
+
+type recordingT struct {
+	errors []string
+}
+
+func (r *recordingT) Helper() {}
+
+func (r *recordingT) Errorf(format string, args ...any) {
+	r.errors = append(r.errors, fmt.Sprintf(format, args...))
+}
+
+func TestAssertResourceTypesImplement(t *testing.T) {
+	AssertResourceTypesImplement[ConfigResource](t)
+
+	var others []string
+	for _, rt := range AllResourceTypes() {
+		if rt.Key != "jobs" && rt.Key != "pipelines" {
+			others = append(others, rt.Key)
+		}
+	}
+	AssertResourceTypesImplement[*resources.Job](t, slices.Concat(others, []string{"pipelines"})...)
+
+	r := &recordingT{}
+	AssertResourceTypesImplement[*resources.Job](r, slices.Concat(others, []string{"jobs", "no_such_type"})...)
+	assert.Equal(t, []string{
+		`"no_such_type" is listed as not implementing *resources.Job but is not a resource type`,
+		`resource type "jobs" (resources.Job) implements *resources.Job but is listed as not implementing it`,
+		`resource type "pipelines" (resources.Pipeline) does not implement *resources.Job`,
+	}, r.errors)
+}
+
 // TestResourceTypesZeroValueFieldsSerialize guards against the ForceSendFields
 // routing bug fixed in libs/dyn/convert: a field declared in a struct embedded
 // more than one level deep (e.g. PostgresProject -> PostgresProjectConfig ->

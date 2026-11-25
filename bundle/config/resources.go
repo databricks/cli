@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -91,74 +92,24 @@ type ResourceGroup struct {
 	Resources   map[string]ConfigResource
 }
 
-// collectResourceMap collects resources of a specific type into a ResourceGroup.
-func collectResourceMap[T ConfigResource](
-	description resources.ResourceDescription,
-	input map[string]T,
-) ResourceGroup {
-	if description.PluralName == "" {
-		panic("description of a resource group cannot be empty")
-	}
-
-	r := make(map[string]ConfigResource)
-	for key, resource := range input {
-		r[key] = resource
-	}
-	return ResourceGroup{
-		Description: description,
-		Resources:   r,
-	}
-}
-
-// AllResources returns all resources in the bundle grouped by their resource type.
+// AllResources returns all resources in the bundle grouped by their resource type,
+// with one group per resource type in the order of [AllResourceTypes].
 func (r *Resources) AllResources() []ResourceGroup {
-	descriptions := SupportedResources()
-	return []ResourceGroup{
-		collectResourceMap(descriptions["jobs"], r.Jobs),
-		collectResourceMap(descriptions["job_runs"], r.JobRuns),
-		collectResourceMap(descriptions["pipelines"], r.Pipelines),
-		collectResourceMap(descriptions["models"], r.Models),
-		collectResourceMap(descriptions["experiments"], r.Experiments),
-		collectResourceMap(descriptions["features"], r.Features),
-		collectResourceMap(descriptions["materialization_sets"], r.MaterializationSets),
-		collectResourceMap(descriptions["feature_specs"], r.FeatureSpecs),
-		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
-		collectResourceMap(descriptions["model_services"], r.ModelServices),
-		collectResourceMap(descriptions["mcp_services"], r.McpServices),
-		collectResourceMap(descriptions["model_provider_services"], r.ModelProviderServices),
-		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
-		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
-		collectResourceMap(descriptions["data_quality_monitors"], r.DataQualityMonitors),
-		collectResourceMap(descriptions["catalogs"], r.Catalogs),
-		collectResourceMap(descriptions["schemas"], r.Schemas),
-		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
-		collectResourceMap(descriptions["clusters"], r.Clusters),
-		collectResourceMap(descriptions["dashboards"], r.Dashboards),
-		collectResourceMap(descriptions["genie_spaces"], r.GenieSpaces),
-		collectResourceMap(descriptions["volumes"], r.Volumes),
-		collectResourceMap(descriptions["apps"], r.Apps),
-		collectResourceMap(descriptions["alerts"], r.Alerts),
-		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
-		collectResourceMap(descriptions["sql_warehouses"], r.SqlWarehouses),
-		collectResourceMap(descriptions["database_instances"], r.DatabaseInstances),
-		collectResourceMap(descriptions["database_catalogs"], r.DatabaseCatalogs),
-		collectResourceMap(descriptions["synced_database_tables"], r.SyncedDatabaseTables),
-		collectResourceMap(descriptions["postgres_projects"], r.PostgresProjects),
-		collectResourceMap(descriptions["postgres_branches"], r.PostgresBranches),
-		collectResourceMap(descriptions["postgres_endpoints"], r.PostgresEndpoints),
-		collectResourceMap(descriptions["postgres_catalogs"], r.PostgresCatalogs),
-		collectResourceMap(descriptions["postgres_databases"], r.PostgresDatabases),
-		collectResourceMap(descriptions["postgres_roles"], r.PostgresRoles),
-		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
-		collectResourceMap(descriptions["postgres_snapshot_schedules"], r.PostgresSnapshotSchedules),
-		collectResourceMap(descriptions["postgres_data_apis"], r.PostgresDataApis),
-		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
-		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
-		collectResourceMap(descriptions["instance_pools"], r.InstancePools),
-		collectResourceMap(descriptions["internal_immutable_snapshots"], r.Snapshots),
-		collectResourceMap(descriptions["secrets"], r.Secrets),
-		collectResourceMap(descriptions["cluster_policies"], r.ClusterPolicies),
+	rv := reflect.ValueOf(r).Elem()
+	types := AllResourceTypes()
+	groups := make([]ResourceGroup, 0, len(types))
+	for _, rt := range types {
+		field := rv.Field(rt.fieldIndex)
+		group := make(map[string]ConfigResource, field.Len())
+		for it := field.MapRange(); it.Next(); {
+			group[it.Key().String()] = it.Value().Interface().(ConfigResource)
+		}
+		groups = append(groups, ResourceGroup{
+			Description: rt.Zero.ResourceDescription(),
+			Resources:   group,
+		})
 	}
+	return groups
 }
 
 // ResolveKey finds a resource by "key" or "type.key", e.g. "foo" or "jobs.foo", and returns it
@@ -223,50 +174,9 @@ func (r *Resources) HasInternalResources() bool {
 
 // SupportedResources returns a map which keys correspond to the resource key in the bundle configuration.
 func SupportedResources() map[string]resources.ResourceDescription {
-	return map[string]resources.ResourceDescription{
-		"jobs":                         (&resources.Job{}).ResourceDescription(),
-		"job_runs":                     (&resources.JobRun{}).ResourceDescription(),
-		"pipelines":                    (&resources.Pipeline{}).ResourceDescription(),
-		"models":                       (&resources.MlflowModel{}).ResourceDescription(),
-		"experiments":                  (&resources.MlflowExperiment{}).ResourceDescription(),
-		"features":                     (&resources.Feature{}).ResourceDescription(),
-		"materialization_sets":         (&resources.MaterializationSet{}).ResourceDescription(),
-		"feature_specs":                (&resources.FeatureSpec{}).ResourceDescription(),
-		"instance_pools":               (&resources.InstancePool{}).ResourceDescription(),
-		"model_serving_endpoints":      (&resources.ModelServingEndpoint{}).ResourceDescription(),
-		"model_services":               (&resources.ModelService{}).ResourceDescription(),
-		"mcp_services":                 (&resources.McpService{}).ResourceDescription(),
-		"model_provider_services":      (&resources.ModelProviderService{}).ResourceDescription(),
-		"registered_models":            (&resources.RegisteredModel{}).ResourceDescription(),
-		"quality_monitors":             (&resources.QualityMonitor{}).ResourceDescription(),
-		"data_quality_monitors":        (&resources.DataQualityMonitor{}).ResourceDescription(),
-		"catalogs":                     (&resources.Catalog{}).ResourceDescription(),
-		"schemas":                      (&resources.Schema{}).ResourceDescription(),
-		"external_locations":           (&resources.ExternalLocation{}).ResourceDescription(),
-		"clusters":                     (&resources.Cluster{}).ResourceDescription(),
-		"dashboards":                   (&resources.Dashboard{}).ResourceDescription(),
-		"genie_spaces":                 (&resources.GenieSpace{}).ResourceDescription(),
-		"volumes":                      (&resources.Volume{}).ResourceDescription(),
-		"apps":                         (&resources.App{}).ResourceDescription(),
-		"secret_scopes":                (&resources.SecretScope{}).ResourceDescription(),
-		"alerts":                       (&resources.Alert{}).ResourceDescription(),
-		"sql_warehouses":               (&resources.SqlWarehouse{}).ResourceDescription(),
-		"database_instances":           (&resources.DatabaseInstance{}).ResourceDescription(),
-		"database_catalogs":            (&resources.DatabaseCatalog{}).ResourceDescription(),
-		"synced_database_tables":       (&resources.SyncedDatabaseTable{}).ResourceDescription(),
-		"postgres_projects":            (&resources.PostgresProject{}).ResourceDescription(),
-		"postgres_branches":            (&resources.PostgresBranch{}).ResourceDescription(),
-		"postgres_endpoints":           (&resources.PostgresEndpoint{}).ResourceDescription(),
-		"postgres_catalogs":            (&resources.PostgresCatalog{}).ResourceDescription(),
-		"postgres_databases":           (&resources.PostgresDatabase{}).ResourceDescription(),
-		"postgres_roles":               (&resources.PostgresRole{}).ResourceDescription(),
-		"postgres_synced_tables":       (&resources.PostgresSyncedTable{}).ResourceDescription(),
-		"postgres_snapshot_schedules":  (&resources.PostgresSnapshotSchedule{}).ResourceDescription(),
-		"postgres_data_apis":           (&resources.PostgresDataApi{}).ResourceDescription(),
-		"vector_search_endpoints":      (&resources.VectorSearchEndpoint{}).ResourceDescription(),
-		"vector_search_indexes":        (&resources.VectorSearchIndex{}).ResourceDescription(),
-		"internal_immutable_snapshots": (&resources.Snapshot{}).ResourceDescription(),
-		"secrets":                      (&resources.Secret{}).ResourceDescription(),
-		"cluster_policies":             (&resources.ClusterPolicy{}).ResourceDescription(),
+	res := make(map[string]resources.ResourceDescription, len(AllResourceTypes()))
+	for _, rt := range AllResourceTypes() {
+		res[rt.Key] = rt.Zero.ResourceDescription()
 	}
+	return res
 }
