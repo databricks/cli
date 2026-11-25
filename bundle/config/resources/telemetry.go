@@ -4,7 +4,8 @@ import "github.com/databricks/cli/libs/telemetry/protos"
 
 // LifecycleStartedTelemetry is implemented by resource types that support
 // lifecycle.started. Deploy telemetry reports lifecycle.started of a resource of the
-// type that sets it, under the key the type declares.
+// type that sets it, under the key the type declares. The values of all such types are
+// reported in the order of their keys, not in the canonical order of resource types.
 type LifecycleStartedTelemetry interface {
 	// LifecycleStartedTelemetryKey returns the key of the deploy telemetry value that
 	// reports lifecycle.started for this type.
