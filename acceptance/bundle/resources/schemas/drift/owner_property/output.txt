@@ -1,9 +1,9 @@
 
-=== Create a schema carrying the owner property that SQL's CREATE SCHEMA leaves on it
+=== Create a schema with SQL's CREATE SCHEMA
 
->>> [CLI] schemas create --json {"name": "schema_sql_owner", "catalog_name": "main", "properties": {"owner": "root"}}
+>>> [CLI] schemas get main.schema_sql_owner_[UNIQUE_NAME]
 {
-  "full_name": "main.schema_sql_owner",
+  "full_name": "main.schema_sql_owner_[UNIQUE_NAME]",
   "properties": {
     "owner": "root"
   }
@@ -11,8 +11,8 @@
 
 === Bind it: the config matches, so there is nothing to confirm
 
->>> [CLI] bundle deployment bind schema1 main.schema_sql_owner
-Successfully bound schema with an id 'main.schema_sql_owner'
+>>> [CLI] bundle deployment bind schema1 main.schema_sql_owner_[UNIQUE_NAME]
+Successfully bound schema with an id 'main.schema_sql_owner_[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 === Plan is a no-op
@@ -29,7 +29,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "new_state": {
     "value": {
       "catalog_name": "main",
-      "name": "schema_sql_owner"
+      "name": "schema_sql_owner_[UNIQUE_NAME]"
     }
   },
   "changes": {
@@ -51,12 +51,12 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Deploying twice changes nothing
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 1 uploaded, 0 deleted
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
@@ -74,7 +74,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   "new_state": {
     "value": {
       "catalog_name": "main",
-      "name": "schema_sql_owner",
+      "name": "schema_sql_owner_[UNIQUE_NAME]",
       "properties": {
         "team": "data"
       }
@@ -109,7 +109,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 }
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
@@ -117,7 +117,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> print_requests.py --method PATCH //unity-catalog/schemas
 {
   "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/schemas/main.schema_sql_owner",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_sql_owner_[UNIQUE_NAME]",
   "body": {
     "comment": "",
     "custom_max_retention_hours": 0,
@@ -129,3 +129,14 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

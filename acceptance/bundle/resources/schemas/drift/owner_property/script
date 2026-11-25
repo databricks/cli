@@ -1,8 +1,34 @@
-title "Create a schema carrying the owner property that SQL's CREATE SCHEMA leaves on it"
-trace $CLI schemas create --json '{"name": "schema_sql_owner", "catalog_name": "main", "properties": {"owner": "root"}}' | jq '{full_name, properties}'
+envsubst < databricks.yml.tmpl > databricks.yml
+
+SCHEMA="main.schema_sql_owner_$UNIQUE_NAME"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog/schemas &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Create a schema with SQL's CREATE SCHEMA"
+# On cloud the test warehouse runs the statement, so the golden records what it leaves on the schema.
+# The fake server does not run CREATE SCHEMA, so locally the schema is created through the API with
+# the owner property the issue reports (#6986). Both write LOG.create_schema, which bundle deploy
+# uploads, so the file counts match.
+if [ -n "$CLOUD_ENV" ]; then
+    # MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from converting /api/... to a filesystem path.
+    MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/sql/statements/" --json "{
+        \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\",
+        \"statement\": \"CREATE SCHEMA $SCHEMA\",
+        \"wait_timeout\": \"50s\"
+      }" > LOG.create_schema
+else
+    $CLI schemas create --json "{\"name\": \"schema_sql_owner_$UNIQUE_NAME\", \"catalog_name\": \"main\", \"properties\": {\"owner\": \"root\"}}" > LOG.create_schema
+fi
+trace $CLI schemas get $SCHEMA | jq '{full_name, properties}'
 
 title "Bind it: the config matches, so there is nothing to confirm"
-trace $CLI bundle deployment bind schema1 main.schema_sql_owner
+trace $CLI bundle deployment bind schema1 $SCHEMA
 
 title "Plan is a no-op"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"

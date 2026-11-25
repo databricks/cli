@@ -1,0 +1,3 @@
+# On cloud the schema is created with CREATE SCHEMA on the test SQL warehouse, so the cloud run
+# checks the owner property this test expects against what a real warehouse writes (#6986).
+Cloud = true
