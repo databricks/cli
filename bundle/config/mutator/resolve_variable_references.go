@@ -61,6 +61,11 @@ type resolveVariableReferences struct {
 
 	artifactsReferenceUsed bool
 
+	// excludePaths lists variable reference paths (e.g. "workspace.file_path") whose
+	// resolution should be skipped. References to these paths remain unresolved so a
+	// later mutator can set the value and re-run resolution.
+	excludePaths []string
+
 	// includePaths limits resolution to these configuration values when set.
 	includePaths []string
 }
@@ -89,7 +94,8 @@ func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutato
 	}
 }
 
-// ResolveVariableReferencesInWorkspacePaths resolves paths before prefixing them.
+// ResolveVariableReferencesInWorkspacePaths resolves only workspace path fields.
+// Aliases elsewhere are resolved after these paths receive their prefixes.
 func ResolveVariableReferencesInWorkspacePaths() bundle.Mutator {
 	return &resolveVariableReferences{
 		prefixes:    defaultPrefixes,
@@ -265,6 +271,9 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				if slices.ContainsFunc(prefixes, path.HasPrefix) {
+					if slices.Contains(m.excludePaths, path.String()) {
+						return dyn.InvalidValue, dynvar.ErrSkipResolution
+					}
 					if m.allowPathFn != nil && !m.allowPathFn(path) {
 						return dyn.InvalidValue, dynvar.ErrSkipResolution
 					}

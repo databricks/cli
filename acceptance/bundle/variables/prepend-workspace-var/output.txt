@@ -1,22 +1,24 @@
 
 >>> [CLI] bundle validate -t dev -o json
-{
-  "target": "dev",
-  "root_path": "/Workspace/Users/[USERNAME]/path/to/root",
-  "file_path": "/Workspace/Users/[USERNAME]/path/to/root/files",
-  "conf_file": "/Workspace/Users/[USERNAME]/path/to/root/files/path/to/config.yaml",
-  "alias_file": "/Workspace/Users/[USERNAME]/path/to/root/files/path/to/config.yaml"
-}
+json.resources.jobs.my_job.deployment.metadata_file_path = "/Workspace/Users/[USERNAME]/path/to/root/state/metadata.json";
+json.resources.jobs.my_job.tasks[0].python_wheel_task.named_parameters.alias-file = "/Workspace/Users/[USERNAME]/path/to/root/files/path/to/config.yaml";
+json.resources.jobs.my_job.tasks[0].python_wheel_task.named_parameters.conf-file = "/Workspace/Users/[USERNAME]/path/to/root/files/path/to/config.yaml";
+json.workspace.artifact_path = "/Workspace/Users/[USERNAME]/path/to/root/artifacts";
+json.workspace.file_path = "/Workspace/Users/[USERNAME]/path/to/root/files";
+json.workspace.resource_path = "/Workspace/Users/[USERNAME]/path/to/root/resources";
+json.workspace.root_path = "/Workspace/Users/[USERNAME]/path/to/root";
+json.workspace.state_path = "/Workspace/Users/[USERNAME]/path/to/root/state";
 
 >>> [CLI] bundle validate -t prod -o json
 Warning: the bundle root path /Workspace/Shared/path/to/root is writable by all workspace users
 
 The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
 
-{
-  "target": "prod",
-  "root_path": "/Workspace/Shared/path/to/root",
-  "file_path": "/Workspace/Shared/path/to/root/files",
-  "conf_file": "/Workspace/Shared/path/to/root/files/path/to/config.yaml",
-  "alias_file": "/Workspace/Shared/path/to/root/files/path/to/config.yaml"
-}
+json.resources.jobs.my_job.deployment.metadata_file_path = "/Workspace/Shared/path/to/root/state/metadata.json";
+json.resources.jobs.my_job.tasks[0].python_wheel_task.named_parameters.alias-file = "/Workspace/Shared/path/to/root/files/path/to/config.yaml";
+json.resources.jobs.my_job.tasks[0].python_wheel_task.named_parameters.conf-file = "/Workspace/Shared/path/to/root/files/path/to/config.yaml";
+json.workspace.artifact_path = "/Workspace/Shared/path/to/root/artifacts";
+json.workspace.file_path = "/Workspace/Shared/path/to/root/files";
+json.workspace.resource_path = "/Workspace/Shared/path/to/root/resources";
+json.workspace.root_path = "/Workspace/Shared/path/to/root";
+json.workspace.state_path = "/Workspace/Shared/path/to/root/state";

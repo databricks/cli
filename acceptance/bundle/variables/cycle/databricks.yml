@@ -6,3 +6,10 @@ variables:
     default: ${var.b}
   b:
     default: ${var.a}
+
+targets:
+  default:
+    default: true
+  workspace:
+    workspace:
+      root_path: ${var.a}

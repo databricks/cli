@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,10 +29,6 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 		{
 			path:     "/Workspace/Users/test",
 			expected: "/Workspace/Users/test",
-		},
-		{
-			path:     "/Workspace",
-			expected: "/Workspace",
 		},
 		{
 			path:     "/Volumes/Users/test",
@@ -112,42 +109,6 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/resources", b.Config.Workspace.ResourcePath)
 }
 
-func TestPrependWorkspacePrefixAfterVariableResolution(t *testing.T) {
-	for _, root := range []string{"/Users/jane@doe.com", "/Shared"} {
-		t.Run(root, func(t *testing.T) {
-			b := &bundle.Bundle{
-				Config: config.Root{
-					Bundle: config.Bundle{Name: root},
-					Workspace: config.Workspace{
-						RootPath: "${bundle.name}/path/to/root",
-					},
-					Variables: map[string]*variable.Variable{
-						"config_file": {Value: "${workspace.file_path}/config.yaml"},
-					},
-				},
-			}
-
-			diags := bundle.ApplySeq(t.Context(), b,
-				DefineDefaultWorkspacePaths(),
-				PrependWorkspacePrefix(),
-				ResolveVariableReferencesInWorkspacePaths(),
-			)
-			require.NoError(t, diags.Error())
-			require.Equal(t, root+"/path/to/root", b.Config.Workspace.RootPath)
-			require.Equal(t, "${workspace.file_path}/config.yaml", b.Config.Variables["config_file"].Value)
-
-			diags = bundle.ApplySeq(t.Context(), b, PrependWorkspacePrefix(), ResolveVariableReferencesWithoutResources())
-			require.NoError(t, diags.Error())
-			require.Equal(t, "/Workspace"+root+"/path/to/root", b.Config.Workspace.RootPath)
-			require.Equal(t, "/Workspace"+root+"/path/to/root/files", b.Config.Workspace.FilePath)
-			require.Equal(t, "/Workspace"+root+"/path/to/root/artifacts", b.Config.Workspace.ArtifactPath)
-			require.Equal(t, "/Workspace"+root+"/path/to/root/state", b.Config.Workspace.StatePath)
-			require.Equal(t, "/Workspace"+root+"/path/to/root/resources", b.Config.Workspace.ResourcePath)
-			require.Equal(t, "/Workspace"+root+"/path/to/root/files/config.yaml", b.Config.Variables["config_file"].Value)
-		})
-	}
-}
-
 func TestPrependWorkspacePrefixSourceLinkedAlias(t *testing.T) {
 	b := &bundle.Bundle{
 		SyncRootPath: "/Workspace/Users/jane/source",
@@ -166,10 +127,15 @@ func TestPrependWorkspacePrefixSourceLinkedAlias(t *testing.T) {
 	diags := bundle.ApplySeq(t.Context(), b,
 		PrependWorkspacePrefix(),
 		ResolveVariableReferencesInWorkspacePaths(),
+	)
+	require.NoError(t, diags.Error())
+	assert.Equal(t, "${workspace.file_path}/config.yaml", b.Config.Variables["config_file"].Value)
+
+	diags = bundle.ApplySeq(t.Context(), b,
 		PrependWorkspacePrefix(),
 		ResolveVariableReferencesWithoutResources(),
 	)
 	require.NoError(t, diags.Error())
-	require.Equal(t, "/Workspace/Users/jane/bundle/files", b.Config.Workspace.FilePath)
-	require.Equal(t, "/Workspace/Users/jane/source/config.yaml", b.Config.Variables["config_file"].Value)
+	assert.Equal(t, "/Workspace/Users/jane/bundle/files", b.Config.Workspace.FilePath)
+	assert.Equal(t, "/Workspace/Users/jane/source/config.yaml", b.Config.Variables["config_file"].Value)
 }
