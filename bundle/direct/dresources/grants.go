@@ -18,6 +18,7 @@ var grantResourceToSecurableType = map[string]string{
 	"external_locations":      "external_location",
 	"volumes":                 "volume",
 	"registered_models":       "function",
+	"feature_specs":           "function",
 	"secrets":                 "secret",
 	"vector_search_indexes":   "table",
 	"model_services":          "model_service",

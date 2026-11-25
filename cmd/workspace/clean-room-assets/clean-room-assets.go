@@ -3,6 +3,7 @@
 package clean_room_assets
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,19 +19,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "clean-room-assets",
-		Short: `Clean room assets are data and code objects — Tables, volumes, and notebooks that are shared with the clean room.`,
-		Long: `Clean room assets are data and code objects — Tables, volumes, and notebooks
-  that are shared with the clean room.`,
-		GroupID: "cleanrooms",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "clean-room-assets",
+	Short:   `Clean room assets are data and code objects — Tables, volumes, and notebooks that are shared with the clean room.`,
+	GroupID: "cleanrooms",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Clean room assets are data and code objects — Tables, volumes, and notebooks
+  that are shared with the clean room.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -44,8 +49,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -448,6 +451,10 @@ func newList() *cobra.Command {
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List assets.`
 	cmd.Long = `List assets.
+
+  List the assets in a clean room. Listed assets do not include their asset-type
+  specific details, such as table columns or notebook content; use the get
+  method to retrieve them.
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.`

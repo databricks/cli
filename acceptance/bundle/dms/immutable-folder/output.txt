@@ -1,5 +1,6 @@
 
 === Deploying with an immutable folder records the resolved snapshot path as the deployment's file_path
+
 >>> [CLI] bundle deploy
 Created internal_immutable_snapshots.immutable
 Created jobs.foo
@@ -10,11 +11,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 {
   "workspace_info": {
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-immutable-folder-[UNIQUE_NAME]/default",
-    "file_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files"
+    "file_path": "/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][1]/snapshot/files"
   }
 }
 
 === A new snapshot moves file_path, which is then updated on the deployment
+
 >>> [CLI] bundle deploy
 Recreated internal_immutable_snapshots.immutable
 Updated jobs.foo
@@ -25,11 +27,12 @@ Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
 {
   "workspace_info": {
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-immutable-folder-[UNIQUE_NAME]/default",
-    "file_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files"
+    "file_path": "/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][2]/snapshot/files"
   }
 }
 
 === An unchanged snapshot keeps the recorded file_path
+
 >>> [CLI] bundle deploy
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
@@ -38,6 +41,6 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 {
   "workspace_info": {
     "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-immutable-folder-[UNIQUE_NAME]/default",
-    "file_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID]/snapshot/files"
+    "file_path": "/Workspace/Users/[UUID][0]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]-[UUID][2]/snapshot/files"
   }
 }

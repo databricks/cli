@@ -1,5 +1,6 @@
 
 === Deploy with started=true so the app has an active deployment
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-stopped-[UNIQUE_NAME]/default/files...
 ✓ Deployment succeeded
@@ -8,6 +9,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change config while running: drift is detected (active deployment present)
+
 >>> update_file.py databricks.yml original_value changed_value
 
 >>> [CLI] bundle plan -o json
@@ -20,10 +22,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Stop the app: the backend clears the active deployment
+
 >>> [CLI] apps stop [UNIQUE_NAME]
 "STOPPED"
 
 === Same config change is now skipped: no active deployment to compare against
+
 >>> [CLI] bundle plan -o json
 {
   "config": {

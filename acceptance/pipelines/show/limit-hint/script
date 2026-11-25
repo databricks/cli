@@ -1,5 +1,5 @@
-title "default limit shows a hint when more rows are available\n"
+title "default limit shows a hint when more rows are available"
 trace $CLI pipelines show main.default.people
 
-title "wire SQL fetches one extra row\n"
+title "wire SQL fetches one extra row"
 trace print_requests.py //api/2.0/sql/statements

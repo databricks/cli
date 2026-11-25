@@ -30,7 +30,8 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Transformer:
     """
-    Specifies how to transform binary data into structured data.
+    One step that transforms a column: either decodes data into structured data (`format`) or
+    reshapes an already-decoded column (`operation`).
     """
 
     avro_options: VariableOrOptional[AvroTransformerOptions] = None
@@ -44,7 +45,7 @@ class Transformer:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Beta] Required: the wire format of the data.
+    [Beta] The format to decode the input column from.
     """
 
     input_column: VariableOrOptional[str] = None
@@ -99,7 +100,7 @@ class TransformerDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Beta] Required: the wire format of the data.
+    [Beta] The format to decode the input column from.
     """
 
     input_column: VariableOrOptional[str]

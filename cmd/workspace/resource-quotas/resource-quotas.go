@@ -3,6 +3,7 @@
 package resource_quotas
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -16,25 +17,29 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "resource-quotas",
-		Short: `Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created.`,
-		Long: `Unity Catalog enforces resource quotas on all securable objects, which limits
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "resource-quotas",
+	Short:   `Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Unity Catalog enforces resource quotas on all securable objects, which limits
   the number of resources that can be created. Quotas are expressed in terms of
   a resource type and a parent (for example, tables per metastore or schemas per
   catalog). The resource quota APIs enable you to monitor your current usage and
   limits. For more information on resource quotas see the [Unity Catalog
   documentation].
 
-  [Unity Catalog documentation]: https://docs.databricks.com/en/data-governance/unity-catalog/index.html#resource-quotas`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Unity Catalog documentation]: https://docs.databricks.com/en/data-governance/unity-catalog/index.html#resource-quotas`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGetQuota())
@@ -44,8 +49,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get-quota command

@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AiExtractFunction:
     """
-    :meta private: [EXPERIMENTAL]
-
     Configuration for a task that runs the `ai_extract` function.
 
     The fields to extract come from exactly one of two places: an existing AI
@@ -31,14 +29,14 @@ class AiExtractFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The ai_extract function version to invoke (for example, `2.1`).
+    [Beta] The ai_extract function version to invoke (for example, `2.1`).
     """
 
     enable_citations: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, includes citation metadata locating each extracted value in the
+    [Beta] When true, includes citation metadata locating each extracted value in the
     source.
     """
 
@@ -46,14 +44,14 @@ class AiExtractFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, includes a per-field confidence score in the response.
+    [Beta] When true, includes a per-field confidence score in the response.
     """
 
     instructions: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Global description of the task and domain, passed to the model to improve
+    [Beta] Global description of the task and domain, passed to the model to improve
     extraction quality.
     """
 
@@ -61,14 +59,14 @@ class AiExtractFunction:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The extraction mode. Defaults to standard extraction when unspecified.
+    [Beta] The extraction mode. Defaults to standard extraction when unspecified.
     """
 
     schema: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The extraction schema defining the fields to extract, as a JSON string.
+    [Beta] The extraction schema defining the fields to extract, as a JSON string.
     Either an array of field names (e.g. ["company", "valuation"]) or an object
     mapping each field name to a type and an optional description. Supported
     types are string, integer, number, boolean, enum, object, and array; all
@@ -90,14 +88,14 @@ class AiExtractFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The ai_extract function version to invoke (for example, `2.1`).
+    [Beta] The ai_extract function version to invoke (for example, `2.1`).
     """
 
     enable_citations: VariableOrOptional[bool]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, includes citation metadata locating each extracted value in the
+    [Beta] When true, includes citation metadata locating each extracted value in the
     source.
     """
 
@@ -105,14 +103,14 @@ class AiExtractFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] When true, includes a per-field confidence score in the response.
+    [Beta] When true, includes a per-field confidence score in the response.
     """
 
     instructions: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Global description of the task and domain, passed to the model to improve
+    [Beta] Global description of the task and domain, passed to the model to improve
     extraction quality.
     """
 
@@ -120,14 +118,14 @@ class AiExtractFunctionDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The extraction mode. Defaults to standard extraction when unspecified.
+    [Beta] The extraction mode. Defaults to standard extraction when unspecified.
     """
 
     schema: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The extraction schema defining the fields to extract, as a JSON string.
+    [Beta] The extraction schema defining the fields to extract, as a JSON string.
     Either an array of field names (e.g. ["company", "valuation"]) or an object
     mapping each field name to a type and an optional description. Supported
     types are string, integer, number, boolean, enum, object, and array; all

@@ -10,49 +10,60 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/filer/completer"
+	"github.com/databricks/cli/libs/retry"
 	"github.com/spf13/cobra"
 )
 
-func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+// SplitPath separates a remote prefix from a path, preserving local Windows drive paths.
+func SplitPath(fullPath string) (scheme, name string) {
 	// Split path at : to detect any file schemes
 	parts := strings.SplitN(fullPath, ":", 2)
 
 	// If no scheme is specified, then local path
 	if len(parts) < 2 {
-		f, err := filer.NewLocalClient("")
-		return f, fullPath, err
+		return "", fullPath
 	}
 
 	// On windows systems, paths start with a drive letter. If the scheme
 	// is a single letter and the OS is windows, then we conclude the path
 	// is meant to be a local path.
 	if runtime.GOOS == "windows" && len(parts[0]) == 1 {
+		return "", fullPath
+	}
+	return parts[0], parts[1]
+}
+
+func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+	scheme, path := SplitPath(fullPath)
+	if scheme == "" && path == fullPath {
 		f, err := filer.NewLocalClient("")
-		return f, fullPath, err
-	}
-
-	if parts[0] != "dbfs" {
-		return nil, "", fmt.Errorf("invalid scheme: %s", parts[0])
-	}
-
-	path := parts[1]
-	w := cmdctx.WorkspaceClient(ctx)
-
-	// If the specified path has the "Volumes" or "Skills" prefix, use the Files API.
-	if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
-		f, err := filer.NewFilesClient(ctx, w, "/")
 		return f, path, err
 	}
 
-	// The file is a dbfs file, and uses the DBFS APIs
-	f, err := filer.NewDbfsClient(w, "/")
-	return f, path, err
-}
+	if scheme != "dbfs" {
+		return nil, "", fmt.Errorf("invalid scheme: %s", scheme)
+	}
 
-const dbfsPrefix string = "dbfs:"
+	w := cmdctx.WorkspaceClient(ctx)
 
-func isDbfsPath(path string) bool {
-	return strings.HasPrefix(path, dbfsPrefix)
+	// If the specified path has the "Volumes" or "Skills" prefix, use the Files API.
+	// Otherwise the file is a dbfs file, and uses the DBFS APIs.
+	var f filer.Filer
+	var err error
+	if strings.HasPrefix(path, "/Volumes/") || strings.HasPrefix(path, "/Skills/") {
+		f, err = filer.NewFilesClient(ctx, w, "/")
+	} else {
+		f, err = filer.NewDbfsClient(w, "/")
+	}
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Writes are not retried here: a write without overwrite may fail on the file its own
+	// earlier attempt created, and replaying a streamed source needs buffering. The Files API
+	// filer (Volumes) retries its own uploads when the source is seekable or small enough
+	// to buffer; DBFS writes get one attempt.
+	return retry.FilerExceptWrites(f), path, nil
 }
 
 type validArgs struct {
@@ -91,9 +102,9 @@ func (v *validArgs) Validate(cmd *cobra.Command, args []string, toComplete strin
 	completer := completer.New(cmd.Context(), filer, v.onlyDirs)
 
 	// Dbfs should have a prefix and always use the "/" separator
-	isDbfsPath := isDbfsPath(toComplete)
-	if isDbfsPath {
-		completer.SetPrefix(dbfsPrefix)
+	scheme, _ := SplitPath(toComplete)
+	if scheme != "" {
+		completer.SetPrefix(scheme + ":")
 		completer.SetIsLocalPath(false)
 	}
 

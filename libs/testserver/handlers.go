@@ -11,14 +11,15 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/notebook"
+	"github.com/databricks/cli/libs/testserver/testsql"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -465,6 +466,30 @@ func AddDefaultHandlers(server *Server) {
 		return data
 	})
 
+	// Sandbox file APIs:
+	sandboxFiles := "/api/2.0/sandbox-files/sandboxes/{sandbox_id}"
+	server.Handle("PUT", sandboxFiles+"/content", func(req Request) any {
+		return req.Workspace.SandboxFilesUpload(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/content", func(req Request) any {
+		return req.Workspace.SandboxFilesDownload(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/paths:describe", func(req Request) any {
+		return req.Workspace.SandboxFilesGetMetadata(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("GET", sandboxFiles+"/directory-entries", func(req Request) any {
+		return req.Workspace.SandboxFilesList(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/directories:make", func(req Request) any {
+		return req.Workspace.SandboxFilesMkdir(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/paths:remove", func(req Request) any {
+		return req.Workspace.SandboxFilesDelete(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", sandboxFiles+"/paths:rename", func(req Request) any {
+		return req.Workspace.SandboxFilesRename(req, req.Vars["sandbox_id"])
+	})
+
 	// DBFS (dbfs:/ paths):
 	server.Handle("GET", "/api/2.0/dbfs/get-status", func(req Request) any {
 		return req.Workspace.DbfsGetStatus(req)
@@ -536,6 +561,9 @@ func AddDefaultHandlers(server *Server) {
 	})
 	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations", func(req Request) any {
 		return req.Workspace.ListOperations(req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+	server.Handle("GET", "/api/2.0/bundle/enrollments:check", func(req Request) any {
+		return dmsCheckEnrollments(req.URL.Query()["features"])
 	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
@@ -609,10 +637,36 @@ func AddDefaultHandlers(server *Server) {
 		return server.fakeOidc.OidcDeviceAuth(req)
 	})
 
-	server.Handle("POST", "/telemetry-ext", func(_ Request) any {
+	server.Handle("GET", "/oidc/accounts/{account_id}/.well-known/oauth-authorization-server", func(req Request) any {
+		return server.fakeOidc.AccountOidcEndpoints(req.Vars["account_id"])
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+
+	server.Handle("POST", "/telemetry-ext", func(req Request) any {
+		var request struct {
+			ProtoLogs []string `json:"protoLogs"`
+		}
+		if err := json.Unmarshal(req.Body, &request); err != nil {
+			return Response{
+				Body:       fmt.Sprintf("invalid request body: %s", err),
+				StatusCode: http.StatusBadRequest,
+			}
+		}
+		// Accept every log in the request, as the real endpoint does.
 		return map[string]any{
 			"errors":          []string{},
-			"numProtoSuccess": 1,
+			"numProtoSuccess": len(request.ProtoLogs),
 		}
 	})
 
@@ -674,7 +728,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/pipelines/{pipeline_id}/updates", func(req Request) any {
-		return req.Workspace.PipelineStartUpdate(req.Vars["pipeline_id"])
+		return req.Workspace.PipelineStartUpdate(req, req.Vars["pipeline_id"])
 	})
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}/events", func(req Request) any {
@@ -767,6 +821,14 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.AppsGetUpdate(req, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/apps/{name}/thumbnail", func(req Request) any {
+		return req.Workspace.AppsUpdateThumbnail(req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/apps/{name}/thumbnail", func(req Request) any {
+		return req.Workspace.AppsDeleteThumbnail(req.Vars["name"])
+	})
+
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req Request) any {
 		return req.Workspace.AppsGet(req.Vars["name"])
 	})
@@ -798,7 +860,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+		return req.Workspace.SchemasDelete(req, req.Vars["full_name"])
 	})
 
 	// Grants:
@@ -826,7 +888,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+		return req.Workspace.CatalogsDelete(req, req.Vars["name"])
 	})
 
 	// External Locations:
@@ -914,6 +976,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesCreate(req)
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services", func(req Request) any {
+		return req.Workspace.McpServicesList(req)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
 	})
@@ -922,8 +988,24 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesUpdate(req, req.Vars["name"])
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return req.Workspace.McpUserCredentialCreate(req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/ai-gateway/mcp-services/{name}", func(req Request) any {
+		return req.Workspace.McpEndpoint(req, req.Vars["name"])
 	})
 
 	// Feature Engineering features:
@@ -931,7 +1013,8 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.FeaturesCreate(req)
 	})
 	server.Handle("GET", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+		// Features are stored lowercased, and the cloud GET matches the name case-insensitively.
+		return MapGet(req.Workspace, req.Workspace.Features, strings.ToLower(req.Vars["full_name"]))
 	})
 	server.Handle("PATCH", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
 		return req.Workspace.FeaturesUpdate(req, req.Vars["full_name"])
@@ -957,6 +1040,17 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.MaterializationSetsDelete(req.Vars["materialization_set_id"])
 	})
 
+	// Feature Engineering feature specs:
+	server.Handle("POST", "/api/2.0/feature-engineering/feature-specs", func(req Request) any {
+		return req.Workspace.FeatureSpecsCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.FeatureSpecs, req.Vars["name"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/feature-specs/{name}", func(req Request) any {
+		return req.Workspace.FeatureSpecsDelete(req.Vars["name"])
+	})
+
 	// Model Provider Services (AI Gateway):
 
 	server.Handle("POST", "/api/2.1/unity-catalog/model-provider-services", func(req Request) any {
@@ -975,10 +1069,10 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.ModelProviderServices, req.Vars["name"])
 	})
 
-	// Volumes:
+	// Volumes: looked up case-insensitively, see volumeKey.
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapGetUC(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"], "Volume")
+		return MapGetUC(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]), "Volume")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/volumes", func(req Request) any {
@@ -986,11 +1080,11 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
+		return req.Workspace.VolumesUpdate(req, volumeKey(req.Vars["full_name"]))
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+		return MapDelete(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]))
 	})
 
 	// Repos:
@@ -1157,9 +1251,18 @@ func AddDefaultHandlers(server *Server) {
 	// error, custom status) can register its own handler for the same pattern
 	// before calling AddDefaultHandlers, or stub it via test.toml in acceptance.
 	server.Handle("POST", "/api/2.0/sql/statements", server.sqlExecuteStatement)
+	// The API also accepts a trailing slash, which acceptance scripts send.
+	server.Handle("POST", "/api/2.0/sql/statements/", server.sqlExecuteStatement)
 	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}", server.sqlGetStatement)
 	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}", server.sqlGetStatementResultChunk)
 	server.Handle("POST", "/api/2.0/sql/statements/{statement_id}/cancel", server.sqlCancelStatement)
+
+	// The fake keeps no tables or functions, so the statements acceptance scripts
+	// run to set them up succeed without effect.
+	fixtureStatement := regexp.MustCompile(`(?i)^(CREATE\s+(TABLE|FUNCTION)|INSERT\s+INTO)\s`)
+	server.sqlHandler.HandleFallbackPattern(fixtureStatement, func(testsql.Request) testsql.Result {
+		return testsql.Result{}
+	})
 
 	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req Request) any {
 		return req.Workspace.SqlDataSourcesList(req)
@@ -1167,21 +1270,7 @@ func AddDefaultHandlers(server *Server) {
 
 	// Alerts v2:
 	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
-		defer req.Workspace.LockUnlock()()
-
-		id := req.Vars["id"]
-
-		value, ok := req.Workspace.Alerts[id]
-		if !ok || value.LifecycleState == sql.AlertLifecycleStateDeleted {
-			return Response{
-				StatusCode: 404,
-				Body:       map[string]string{"message": "Alert with ID '" + id + "' does not exist."},
-			}
-		}
-
-		return Response{
-			Body: value,
-		}
+		return req.Workspace.AlertsGet(req.Vars["id"])
 	})
 
 	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
@@ -1344,7 +1433,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+		return req.Workspace.DatabaseCatalogDelete(req.Vars["name"])
 	})
 
 	// Synced Database Tables:
@@ -1565,6 +1654,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}/operations/{operation_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"] + "/operations/" + req.Vars["operation_id"]
 		return req.Workspace.PostgresOperationGet(name)
@@ -1714,6 +1808,27 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
 		return req.Workspace.PostgresDatabaseDelete(name)
+	})
+
+	// Postgres Data API (a per-database singleton):
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDataApiCreate(req, parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"] + "/data-api"
+		return req.Workspace.PostgresDataApiDelete(name)
 	})
 
 	// Postgres Roles:

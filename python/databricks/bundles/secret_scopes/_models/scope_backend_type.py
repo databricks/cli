@@ -6,8 +6,7 @@ from typing import Literal
 
 class ScopeBackendType(Enum):
     """
-    The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes
-    will be supported in a later release.
+    The types of secret scope backends in the Secret Manager.
     """
 
     DATABRICKS = "DATABRICKS"

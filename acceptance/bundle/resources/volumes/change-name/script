@@ -2,7 +2,7 @@ trace $CLI bundle deploy
 
 trace print_requests.py //unity
 
-title "Summary should now show id and url\n"
+title "Summary should now show id and url"
 $CLI bundle summary -o json | jq .resources
 
 title "Update name"

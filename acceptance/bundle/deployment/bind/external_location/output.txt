@@ -11,6 +11,7 @@ Successfully bound external_location with an id 'test-location-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 === Deploy bundle
+
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated external_locations.test_location
@@ -25,15 +26,18 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 }
 
 === Unbind external location
+
 >>> [CLI] bundle deployment unbind test_location
 
 === Destroy bundle
+
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 0 deleted
 
 === Read the pre-defined external location again (expecting it still exists): 
+
 >>> [CLI] external-locations get test-location-[UNIQUE_NAME]
 {
   "name": "test-location-[UNIQUE_NAME]",
@@ -42,5 +46,6 @@ Destroy: 0 deleted
 }
 
 === Test cleanup
+
 >>> [CLI] external-locations delete test-location-[UNIQUE_NAME]
 0

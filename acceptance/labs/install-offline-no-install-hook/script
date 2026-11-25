@@ -1,0 +1,19 @@
+# Offline install of a project whose labs.yml has no "install:" section,
+# with a non-string SDK config attribute set via the environment.
+export DATABRICKS_DEBUG_HEADERS=true
+
+sethome ./home
+LABS=home/.databricks/labs/foo
+mkdir -p $LABS/lib $LABS/cache
+cat > $LABS/lib/labs.yml <<'YML'
+name: foo
+description: project without an install hook
+YML
+echo '{"data":[{"tag_name":"v0.1.0"}]}' > $LABS/cache/databrickslabs-foo-releases.json
+
+# The stack trace (if any) is cut off because it depends on the local Go setup.
+errcode trace $CLI labs install foo --offline 2>&1 | sed '/^goroutine /,/^$/d'
+
+trace find $LABS -type f | sort
+
+rm -rf home

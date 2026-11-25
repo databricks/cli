@@ -1,0 +1,58 @@
+use_home home
+gate true
+
+title "CI: not installed, reported once for the version"
+trace CI=true $CLI jobs list
+trace print_telemetry
+trace CI=true $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+
+export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0
+title "DATABRICKS_AITOOLS_AUTO_INSTALL=false: not installed"
+trace DATABRICKS_AITOOLS_AUTO_INSTALL=false $CLI jobs list
+trace print_telemetry
+
+export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.32.0
+title "auto-install disable: not installed"
+trace $CLI aitools auto-install disable
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+trace $CLI aitools auto-install enable
+
+export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.33.0
+title "commands that never trigger it"
+trace $CLI version
+trace $CLI aitools auto-install enable
+$CLI completion bash &> LOG.completion
+$CLI __complete jobs &> LOG.complete
+$CLI help jobs &> LOG.help
+trace print_telemetry
+trace DATABRICKS_CACHE_ENABLED=false $CLI jobs list
+trace print_telemetry
+trace auto_install_state
+trace cursor_skills
+
+title "the gate is off: nothing printed or reported, and the version is settled"
+gate false
+trace $CLI jobs list
+trace print_telemetry
+trace auto_install_state
+# Turning the gate on reaches this machine on its next new version.
+gate true
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+
+title "a machine in the holdout: not installed"
+use_home holdout-home holdout-machine
+trace $CLI jobs list
+trace print_telemetry
+trace cursor_skills
+
+title "no agent config directory: nothing to install"
+use_home no-agents-home
+"$rm_bin" -r "${USERPROFILE:-$HOME}/.cursor"
+trace $CLI jobs list
+trace print_telemetry

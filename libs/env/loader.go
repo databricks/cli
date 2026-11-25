@@ -2,6 +2,7 @@ package env
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/databricks-sdk-go/config"
 )
@@ -43,9 +44,11 @@ func (le *configLoader) Configure(cfg *config.Config) error {
 			if v == "" {
 				continue
 			}
-			if err := a.Set(cfg, v); err != nil {
-				return err
+			// SetS parses the string for non-string attributes; Set would panic.
+			if err := a.SetS(cfg, v); err != nil {
+				return fmt.Errorf("%s: %w", k, err)
 			}
+			break
 		}
 	}
 	return nil

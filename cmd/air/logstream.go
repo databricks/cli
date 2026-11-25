@@ -38,6 +38,9 @@ const (
 	bricklensLogLookback = 30 * time.Second
 	// A terminal job can have records that are not searchable yet.
 	bricklensTerminalEmptyPolls = 3
+	// Bricklens keeps indexing a run's records for a short while after it ends, so
+	// a tail read right after the end can miss lines from the middle of the log.
+	bricklensIndexSettleWindow = 2 * time.Minute
 )
 
 // statusMessageType tags a client-facing message packed into
@@ -45,9 +48,12 @@ const (
 // messages are surfaced.
 const statusMessageType = "STATUS"
 
-// waitingForComputeStatus is the fallback shown while a PENDING run waits for
-// accelerator compute.
+// waitingForComputeStatus is the normalized form of AIR's capacity status.
 const waitingForComputeStatus = "Waiting for accelerator compute capacity to become available..."
+
+// waitingForWorkloadStatus avoids inferring why a Jobs run or task appears
+// pending when AIR does not provide a current status message.
+const waitingForWorkloadStatus = "Waiting for the latest workload status..."
 
 // normalizeStatusMessage returns the payload of a "STATUS:<payload>" message,
 // normalized for display (trailing "." stripped, "..." suffix added), or "" for
@@ -87,6 +93,8 @@ var errBricklensFeatureDisabled = errors.New("bricklens logs unavailable; fallin
 // same flags. windowMinutes and tailLines are mutually exclusive.
 type logRequest struct {
 	runID int64
+	// runURL preserves the URL already shown by air run --watch.
+	runURL string
 	// node is the node index to fetch; node 0 always exists.
 	node int
 	// nodeSet distinguishes an explicit --node 0 from the default, so a download
@@ -101,10 +109,11 @@ type logRequest struct {
 	tailLines int
 	// downloadTo, when set, writes logs to that directory instead of stdout.
 	downloadTo string
-	// staticView renders a one-shot tail instead of following the run. Set for a
-	// past retry of an active run: that attempt's logs are immutable, so streaming
-	// would poll forever waiting for the run (not the attempt) to finish.
+	// staticView renders snapshots and immutable past retries without following an active run.
 	staticView bool
+	// printOnce prints an active run's available logs and exits instead of
+	// following it (air logs without --follow).
+	printOnce bool
 	// boundInitialLogs limits existing output before following an active run.
 	boundInitialLogs bool
 	jsonOutput       bool
@@ -127,6 +136,8 @@ type logRunStatus struct {
 	endTimeMs                int64
 	// latestAttempt is the highest attempt_number across the run's tasks.
 	latestAttempt int
+	// attemptEndTimeMs maps each finished attempt_number to its task's end time.
+	attemptEndTimeMs map[int]int64
 }
 
 // retryTracker reports each retry once across either Jobs transition:
@@ -198,11 +209,25 @@ func (s logRunStatus) terminal() bool {
 	return terminalLifeCycleStates[s.lifeCycleState] || terminalResultStates[s.resultState]
 }
 
+// attemptEndedWithin reports whether the given attempt (-1 for the latest) of a
+// terminal run ended less than d before now. A past attempt uses its own task's
+// end time: it may have ended long before the run did.
+func (s logRunStatus) attemptEndedWithin(attempt int, now time.Time, d time.Duration) bool {
+	if !s.terminal() {
+		return false
+	}
+	endMs := s.endTimeMs
+	if attempt >= 0 && attempt != s.latestAttempt {
+		endMs = s.attemptEndTimeMs[attempt]
+	}
+	return endMs > 0 && now.Sub(time.UnixMilli(endMs)) < d
+}
+
 func (s logRunStatus) succeeded() bool {
 	return s.resultState == "SUCCESS"
 }
 
-func (s logRunStatus) waitingForCompute() bool {
+func (s logRunStatus) appearsPending() bool {
 	if s.resultState != "" {
 		return false
 	}
@@ -252,6 +277,12 @@ func projectRunStatus(run *jobs.Run) logRunStatus {
 	}
 	for i := range run.Tasks {
 		task := &run.Tasks[i]
+		if task.EndTime > 0 {
+			if s.attemptEndTimeMs == nil {
+				s.attemptEndTimeMs = map[int]int64{}
+			}
+			s.attemptEndTimeMs[task.AttemptNumber] = max(s.attemptEndTimeMs[task.AttemptNumber], task.EndTime)
+		}
 		if i > 0 && task.AttemptNumber <= s.latestAttempt {
 			continue
 		}
@@ -313,10 +344,17 @@ func (req logRequest) toSeconds(status logRunStatus) int64 {
 // completion. It returns whether the run finished with SUCCESS;
 // errBricklensFeatureDisabled means the caller should fall back to MLflow.
 func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	success, _, err := streamBricklensLogsWithLatestStatus(ctx, w, out, req, status)
+	return success, err
+}
+
+// streamBricklensLogsWithLatestStatus is streamBricklensLogs that also returns
+// the most recent run status the stream observed.
+func streamBricklensLogsWithLatestStatus(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, logRunStatus, error) {
 	// Build the API client once and reuse it for every page fetch in the loop.
 	apiClient, err := client.New(w.Config)
 	if err != nil {
-		return false, fmt.Errorf("failed to create API client: %w", err)
+		return false, status, fmt.Errorf("failed to create API client: %w", err)
 	}
 	st := &bricklensStreamer{
 		ctx:       ctx,
@@ -328,7 +366,8 @@ func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out
 		status:    status,
 		seen:      newSeenSet(seenRecordsCap),
 	}
-	return st.run()
+	success, err := st.run()
+	return success, st.status, err
 }
 
 // bricklensStreamer holds the poll-loop state: the from-second cursor, the
@@ -358,14 +397,14 @@ type bricklensStreamer struct {
 }
 
 // waitingSpinnerText returns the waiting-spinner text: the server-set STATUS
-// message if present, else the compute-capacity message for a PENDING run, else
-// the default "waiting for run to start".
+// message if present, else a neutral message for a run or task that appears
+// pending, else the default "waiting for run to start".
 func (st *bricklensStreamer) waitingSpinnerText() string {
 	if msg := st.serverStatusMessage(); msg != "" {
 		return msg
 	}
-	if st.status.waitingForCompute() {
-		return waitingForComputeStatus
+	if st.status.appearsPending() {
+		return waitingForWorkloadStatus
 	}
 	return fmt.Sprintf("Waiting for run to start (node %d)...", st.req.node)
 }
@@ -391,6 +430,18 @@ func (st *bricklensStreamer) serverStatusMessage() string {
 	return normalizeStatusMessage(out.AiRuntimeTaskOutput.StatusMessage)
 }
 
+// logWaitingStatus prints a waiting status as a plain stderr line, for terminals
+// that can't show the spinner.
+func (st *bricklensStreamer) logWaitingStatus(msg string) {
+	cmdio.LogProgress(st.ctx, msg)
+}
+
+// printWaitingEvent reports a waiting status as a WAITING JSONL event in place of
+// the spinner, which -o json never shows.
+func (st *bricklensStreamer) printWaitingEvent(msg string) {
+	printWaitingEvent(st.out, msg)
+}
+
 // reportStatusChange fires onStatusChange when the run's display state differs
 // from the last reported one.
 func (st *bricklensStreamer) reportStatusChange() {
@@ -410,21 +461,28 @@ func (st *bricklensStreamer) run() (bool, error) {
 	st.fromSec = st.req.fromSeconds(st.status, now)
 	st.streamStartSec = st.fromSec
 
-	// A past retry's logs are immutable: render a one-shot tail rather than
-	// following the still-active run, which would poll forever.
 	if st.req.staticView {
 		return st.drainStatic(st.req.toSeconds(st.status))
 	}
 
-	// Show a "waiting for run to start" spinner on stderr while the run has not
-	// yet produced logs, so a provisioning run doesn't look hung. Suppressed in
-	// --json mode and auto-degraded to nothing on a non-interactive terminal.
-	// The first emitted log line stops it via onFirstLog (before any stdout write).
-	if !st.req.jsonOutput {
+	// Report the waiting status while the run has not yet produced logs, so a
+	// provisioning run doesn't look hung: a spinner on an interactive stderr, one
+	// line per status change on a non-interactive stderr, and WAITING events in
+	// --json mode. The first emitted log line stops the spinner via onFirstLog
+	// (before any stdout write).
+	if st.req.jsonOutput {
+		st.updateSpinner = st.printWaitingEvent
+	} else {
 		sp := cmdio.NewSpinner(st.ctx)
 		defer sp.Close()
 		st.onFirstLog = sp.Close
 		st.updateSpinner = sp.Update
+		// A non-interactive stderr (agents, CI, pipes) gets no spinner, which made
+		// a provisioning run look hung. Print each new waiting status as one line
+		// instead; the caller only calls updateSpinner when the text changes.
+		if cmdio.GetInteractiveMode(st.ctx) == cmdio.InteractiveModeNone {
+			st.updateSpinner = st.logWaitingStatus
+		}
 	}
 
 	firstIteration := true
@@ -464,21 +522,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)
 
-		// While waiting on a still-active run with no logs yet, refresh the spinner
-		// with the server-set status (throttled), so a run stuck waiting for compute
-		// shows why rather than a generic "waiting" message.
-		if !terminal && !st.firstLogSeen && st.updateSpinner != nil {
-			if statusRefreshCounter%statusMessageRefreshEveryNPolls == 0 {
-				if desired := st.waitingSpinnerText(); desired != lastSpinnerText {
-					st.updateSpinner(desired)
-					lastSpinnerText = desired
-				}
-			}
-			statusRefreshCounter++
-		}
-
-		// `air logs` starts an active attachment with a bounded tail; subsequent
-		// polls follow live with dedup so the overlap does not re-print it.
+		// Remember an active attachment's initial tail so overlapping polls do not reprint records.
 		var emitted int
 		var err error
 		if firstIteration && (terminal || st.req.boundInitialLogs) {
@@ -519,6 +563,20 @@ func (st *bricklensStreamer) run() (bool, error) {
 			return st.status.succeeded(), nil
 		}
 		if !st.firstLogSeen {
+			// The fetch above found no logs for this still-active run, so refresh the
+			// waiting status with the server-set message (throttled): a waiting run
+			// shows any AIR-provided detail rather than a generic message. Doing this
+			// after the fetch means attaching to a run that already has logs never
+			// reports it as waiting.
+			if st.updateSpinner != nil {
+				if statusRefreshCounter%statusMessageRefreshEveryNPolls == 0 {
+					if desired := st.waitingSpinnerText(); desired != lastSpinnerText {
+						st.updateSpinner(desired)
+						lastSpinnerText = desired
+					}
+				}
+				statusRefreshCounter++
+			}
 			emptyStreamPolls++
 			if emptyStreamPolls%bricklensEmptyMLflowProbeEveryNPolls == 0 && mlflowLogsExist(st.ctx, st.w, st.req) {
 				log.Debugf(st.ctx, "air logs: MLflow artifacts exist for run %d; falling back to MLflow log stream", st.req.runID)
@@ -579,29 +637,18 @@ func (req logRequest) tailTarget() int {
 // returns records newest-first, so it pages until it has `target`, keeps the
 // newest `target`, and reverses to chronological order.
 func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
-	target := st.req.tailTarget()
-	if target <= 0 {
-		return nil
+	collected, err := st.fetchTail(toSec)
+	if err != nil {
+		return err
 	}
-
-	var collected []logRecord
-	var pageToken string
-	for len(collected) < target {
-		resp, err := st.requestPage(pageToken, toSec, target, false)
+	if st.status.attemptEndedWithin(st.req.attempt, time.Now(), bricklensIndexSettleWindow) {
+		collected, err = st.settleTail(toSec, collected)
 		if err != nil {
 			return err
 		}
-		collected = append(collected, resp.LogRecords...)
-		pageToken = resp.NextPageToken
-		if pageToken == "" {
-			break
-		}
 	}
 
-	// Keep the newest `target`, then reverse to print oldest -> newest.
-	if len(collected) > target {
-		collected = collected[:target]
-	}
+	// collected is newest first; print oldest -> newest.
 	for _, c := range slices.Backward(collected) {
 		st.emit(c.Body)
 		if remember {
@@ -613,6 +660,53 @@ func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
 		st.fromSec = max(st.streamStartSec, st.lastNano/1_000_000_000-int64(bricklensLogLookback/time.Second))
 	}
 	return nil
+}
+
+// settleTail re-reads the tail of a run that just ended until two reads return
+// the same records, so lines Bricklens indexes late are not dropped. Comparing
+// identities rather than counts matters once the tail is full: a late record
+// then shifts the window without changing its length.
+func (st *bricklensStreamer) settleTail(toSec int64, collected []logRecord) ([]logRecord, error) {
+	for range bricklensTerminalEmptyPolls {
+		if err := sleepOrCancel(st.ctx, bricklensPollInterval); err != nil {
+			return nil, err
+		}
+		next, err := st.fetchTail(toSec)
+		if err != nil {
+			return nil, err
+		}
+		if slices.EqualFunc(next, collected, func(a, b logRecord) bool { return seenRecordKey(a) == seenRecordKey(b) }) {
+			return next, nil
+		}
+		collected = next
+	}
+	return collected, nil
+}
+
+// fetchTail returns up to the tail target's newest records, newest first.
+func (st *bricklensStreamer) fetchTail(toSec int64) ([]logRecord, error) {
+	target := st.req.tailTarget()
+	if target <= 0 {
+		return nil, nil
+	}
+
+	var collected []logRecord
+	var pageToken string
+	for len(collected) < target {
+		resp, err := st.requestPage(pageToken, toSec, target, false)
+		if err != nil {
+			return nil, err
+		}
+		collected = append(collected, resp.LogRecords...)
+		pageToken = resp.NextPageToken
+		if pageToken == "" {
+			break
+		}
+	}
+	if len(collected) > target {
+		collected = collected[:target]
+	}
+	return collected, nil
 }
 
 // drainPages exhausts all pages from the current from-second in ascending order.

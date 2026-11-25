@@ -14,9 +14,11 @@ from databricks.bundles.features._models.column_selection import (
     ColumnSelection,
     ColumnSelectionParam,
 )
-from databricks.bundles.features._models.custom_udf import (
-    CustomUdf,
-    CustomUdfParam,
+from databricks.bundles.features._models.custom_udf import CustomUdf, CustomUdfParam
+from databricks.bundles.features._models.lookup import Lookup, LookupParam
+from databricks.bundles.features._models.secondary_keys import (
+    SecondaryKeys,
+    SecondaryKeysParam,
 )
 
 if TYPE_CHECKING:
@@ -42,6 +44,20 @@ class Function:
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Applies a registered Unity Catalog function row-wise to source columns.
+    """
+
+    lookup: VariableOrOptional[Lookup] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Looks up an upstream Feature using entity values from other Features or the request.
+    """
+
+    secondary_keys: VariableOrOptional[SecondaryKeys] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Selects the secondary key values an upstream Feature has stored for the request's entity.
     """
 
     @classmethod
@@ -70,6 +86,20 @@ class FunctionDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Applies a registered Unity Catalog function row-wise to source columns.
+    """
+
+    lookup: VariableOrOptional[LookupParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Looks up an upstream Feature using entity values from other Features or the request.
+    """
+
+    secondary_keys: VariableOrOptional[SecondaryKeysParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Selects the secondary key values an upstream Feature has stored for the request's entity.
     """
 
 

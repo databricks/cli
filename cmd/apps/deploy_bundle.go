@@ -60,7 +60,7 @@ func applyDeployFlags(cmd *cobra.Command, b *bundle.Bundle, opts bundleDeployOpt
 		b.Config.Bundle.ClusterId = opts.clusterId
 	}
 	if cmd.Flag("fail-on-active-runs").Changed {
-		b.Config.Bundle.Deployment.FailOnActiveRuns = opts.failOnActiveRuns
+		b.Config.Bundle.Deployment.FailOnActiveRuns = new(opts.failOnActiveRuns)
 	}
 }
 

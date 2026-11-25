@@ -105,7 +105,8 @@ type DeploymentState struct {
 
 	// operationBuffer records each state write with DMS. Nil unless the bundle records deployment
 	// history, in which case InitializeOperationBuffer installs it once the version exists.
-	operationBuffer *dms.OperationBuffer
+	operationBuffer      *dms.OperationBuffer
+	operationBufferStats *dms.OperationBufferStats
 
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
@@ -184,8 +185,8 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	options := dms.BufferOptions{
-		BestEffort:     db.mode == WritingDeploymentHistoryShadow,
-		OperationCount: operationCount,
+		BestEffort:           db.mode == WritingDeploymentHistoryShadow,
+		StagedOperationCount: operationCount,
 	}
 	db.operationBuffer = dms.StartOperationBuffer(ctx, deploymentID, versionID, options)
 	db.DeploymentID = deploymentID
@@ -197,6 +198,17 @@ func (db *DeploymentState) getOperationBuffer() *dms.OperationBuffer {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	return db.operationBuffer
+}
+
+// OperationBufferStats returns history measurements, including after version completion.
+func (db *DeploymentState) OperationBufferStats() *dms.OperationBufferStats {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if db.operationBuffer != nil {
+		stats := db.operationBuffer.Stats()
+		return &stats
+	}
+	return db.operationBufferStats
 }
 
 // RecordingError reports whether recording state writes to the service has failed, so the apply
@@ -235,6 +247,9 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	deploymentID, versionID := db.DeploymentID, db.VersionID
 	db.reset()
 	db.mu.Unlock()
+
+	// Stopped first: a heartbeat racing the completion would be rejected for nothing.
+	buf.Stop()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
 	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
@@ -562,6 +577,8 @@ func (db *DeploymentState) reset() {
 	// Telemetry and destroy still need the mode and IDs after version completion.
 	// Clear the recording buffer once CompleteVersion has copied it.
 	if db.versionCompleted {
+		stats := db.operationBuffer.Stats()
+		db.operationBufferStats = &stats
 		db.operationBuffer = nil
 		db.versionCompleted = false
 	}
@@ -569,6 +586,7 @@ func (db *DeploymentState) reset() {
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, mode Mode, withRecovery WithRecovery, dmsDeployment OpenDmsArgs) error {
 	db.Path = path
+	db.operationBufferStats = nil
 	db.mode = mode
 	db.DeploymentID = dmsDeployment.DeploymentID
 	db.VersionID = dmsDeployment.LastVersionID

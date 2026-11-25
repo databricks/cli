@@ -6,6 +6,7 @@
 package users
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,11 +21,19 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "users",
-		Short: `User identities recognized by Databricks and represented by email addresses.`,
-		Long: `User identities recognized by Databricks and represented by email addresses.
+// Spec declares the users command.
+var Spec = root.CommandSpec{
+	Use:     "users",
+	Short:   `User identities recognized by Databricks and represented by email addresses.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Annotations = map[string]string{
+		"package": "iam",
+	}
+	cmd.Long = `User identities recognized by Databricks and represented by email addresses.
 
   Databricks recommends using SCIM provisioning to sync users and groups
   automatically from your identity provider to your Databricks account. SCIM
@@ -34,13 +43,8 @@ func New() *cobra.Command {
   access to Databricks account, admins can terminate the user in your identity
   provider and that user’s account will also be removed from Databricks
   account. This ensures a consistent offboarding process and prevents
-  unauthorized users from accessing sensitive data.`,
-		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
-	}
+  unauthorized users from accessing sensitive data.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -54,8 +58,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

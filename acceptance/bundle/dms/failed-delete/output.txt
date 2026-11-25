@@ -1,5 +1,6 @@
 
 === Deploy: the job is recorded
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/files...
 Created jobs.stuck
@@ -60,6 +61,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The plan is a no-op now and records the deployment_history feature
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -75,6 +77,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === After deploy, the service lists the resource at version 1
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
@@ -85,6 +88,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === The raw state after successful deploy
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -117,6 +121,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 }
 
 === A resource that fails to delete is recorded as a failed operation carrying the error, so the history says why rather than showing the resource gone
+
 >>> fault.py POST /api/2.2/jobs/delete 400 0 1 INVALID_PARAMETER_VALUE
 
 >>> musterr [CLI] bundle destroy --auto-approve
@@ -175,6 +180,7 @@ API message: Fault injected by test.
 }
 
 === After failure, the service shows the operation failed
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[DEPLOYMENT_ID] -o json
 [
   {
@@ -185,6 +191,7 @@ API message: Fault injected by test.
 ]
 
 === The failed operation records the error message
+
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[DEPLOYMENT_ID]/versions/2 -o json
 [
   {
@@ -196,6 +203,7 @@ API message: Fault injected by test.
 ]
 
 === The local state file keeps the resource and its serial after the failed delete
+
 >>> print_state.py --no-dms
 {
  "state_version": 3,
@@ -228,6 +236,7 @@ API message: Fault injected by test.
 }
 
 === The remote checkpoint stays at serial 1 while DMS advances to version 2
+
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/dms-failed-delete-[UNIQUE_NAME]/default/state/resources.json --format RAW
 {"serial":1}
 

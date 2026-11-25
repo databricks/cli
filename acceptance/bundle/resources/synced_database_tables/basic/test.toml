@@ -1,5 +1,5 @@
 Cloud = true
-Badness = "post deployment, bundle summary should print actual name that is fully resolved"
+Badness = "After deploy, bundle summary prints the synced table's name unresolved, as '${resources.database_catalogs.my_catalog.name}.${resources.database_catalogs.my_catalog.database_name}.my_synced_table', and builds its URL from that string. It should print the resolved name (my_catalog_<name>.my_database.my_synced_table) and a working URL."
 
 RecordRequests = false
 
@@ -12,11 +12,6 @@ RunsOnDbr = false
 Old = '\?[ow]=\[(WORKSPACE_ID|ALPHANUMID)\]'
 New = ''
 Order = 1000
-
-# Fake SQL endpoint for local tests
-[[Server]]
-Pattern = "POST /api/2.0/sql/statements/"
-Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
 
 [[Server]]
 Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"

@@ -17,7 +17,6 @@ job_id="$(read_id.py my_job)"
 
 
 title "Modify job fields remotely"
-echo
 edit_resource.py jobs $job_id <<EOF
 # Rename the job remotely; config-remote-sync should strip the dev prefix
 r["name"] = r["name"].replace("test-job-$UNIQUE_NAME", "renamed-job-$UNIQUE_NAME")
@@ -41,33 +40,15 @@ if "tags" not in r:
 r["tags"]["team"] = "data"
 EOF
 
-# TODO add support for permissions
-# title "Modify job permissions remotely"
-# current_user=$($CLI current-user me --output json | jq -r .userName)
-# cat > permissions.json <<EOF
-# {
-#   "access_control_list": [
-#     {"permission_level": "IS_OWNER", "user_name": "$current_user"},
-#     {"permission_level": "CAN_MANAGE", "user_name": "viewer@example.com"},
-#     {"permission_level": "CAN_MANAGE_RUN", "user_name": "admin@example.com"}
-#   ]
-# }
-# EOF
-# $CLI permissions set jobs $job_id --json @permissions.json
-# rm permissions.json
-
 title "Detect and save changes"
-echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
-echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
 
 title "Telemetry"
-echo
 # The engine name is dropped because both EnvMatrix variants share this output;
 # every other counter is engine-agnostic. This run exercises add_count and
 # remove_count (the remote edits add and remove keyed fields).

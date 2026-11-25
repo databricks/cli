@@ -1,5 +1,6 @@
 
 === Initial view of resources without id and modified_status=created
+
 >>> [CLI] bundle summary -o json
 Error: file intentionally-missing.py not found
 

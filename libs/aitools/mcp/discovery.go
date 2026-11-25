@@ -1,0 +1,210 @@
+// Package mcp holds the logic behind `databricks aitools mcp`: discovery of Databricks managed
+// MCP services, server naming, and service and sign-in URLs.
+package mcp
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/url"
+	"slices"
+	"strings"
+	"unicode"
+
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+)
+
+// mcpServicePrefix is the resource-name prefix of an MCP service.
+const mcpServicePrefix = "mcp-services/"
+
+// PathSafeName reports whether fullName has no "/" and no control character, so the commands refuse such a name before
+// any request. "/" separates the segments of a resource name, and a control character is never part of a name. Other
+// URL syntax ("?", "#", "%") is escaped when the request is built, so it is allowed.
+func PathSafeName(fullName string) bool {
+	return !strings.Contains(fullName, "/") && !strings.ContainsFunc(fullName, unicode.IsControl)
+}
+
+// serviceResourceName returns the resource name of the service fullName for a request. The SDK puts the name into the
+// request path as it is, so the name is escaped here: an unescaped "#" or "?" would cut the path short, and "/" or "%"
+// would name another resource.
+func serviceResourceName(fullName string) string {
+	return mcpServicePrefix + url.PathEscape(fullName)
+}
+
+// oauthProviderOption is the source connection option that marks a service as needing sign-in.
+const oauthProviderOption = "oauth_provider"
+
+// schemaParentPrefix is the resource-name prefix of a schema, the parent of MCP services.
+const schemaParentPrefix = "schemas/"
+
+// Service is an MCP service in a schema, as the API reports it.
+type Service struct {
+	// FullName is catalog.schema.leaf.
+	FullName string
+	Leaf     string
+	// Comment is the user-provided description from the API.
+	Comment string
+	// OAuthProvider is the connection's oauth_provider option. A non-empty provider means each
+	// user signs in to it once, so the service needs sign-in (see SignInRequired).
+	OAuthProvider string
+	// Known is the CLI's description of the service. It is nil outside system.ai and for
+	// system.ai services missing from the table.
+	Known *KnownService
+}
+
+// SignInRequired reports whether each user must sign in before the service is usable.
+func (s Service) SignInRequired() bool {
+	return s.OAuthProvider != ""
+}
+
+// Discover lists the MCP services in location (catalog.schema). Services whose source
+// connection was deleted are dropped. Listing failures the CLI names are returned as *ListError.
+func Discover(ctx context.Context, w *databricks.WorkspaceClient, location string) ([]Service, error) {
+	catalogName, schemaName, ok := strings.Cut(location, ".")
+	if !ok || catalogName == "" || schemaName == "" || strings.Contains(schemaName, ".") {
+		return nil, fmt.Errorf("location must be catalog.schema, got %q", location)
+	}
+	list, err := listServices(ctx, w, location)
+	if err != nil {
+		return nil, mapListError(location, err)
+	}
+
+	services := make([]Service, 0, len(list))
+	for i := range list {
+		if isDeletedSource(&list[i]) {
+			continue
+		}
+		services = append(services, newService(&list[i]))
+	}
+	return services, nil
+}
+
+// GetService returns one MCP service by full name, with its sign-in requirement. The API
+// answers NOT_FOUND (apierr.ErrNotFound) for a service the profile cannot see, and so does a
+// service whose source connection was deleted, which Discover drops.
+func GetService(ctx context.Context, w *databricks.WorkspaceClient, fullName string) (Service, error) {
+	svc, err := w.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: serviceResourceName(fullName)})
+	if err != nil {
+		return Service{}, err
+	}
+	if isDeletedSource(svc) {
+		return Service{}, fmt.Errorf("%s has no source connection: %w", fullName, apierr.ErrNotFound)
+	}
+	return newService(svc), nil
+}
+
+// ListErrorKind names a listing failure.
+type ListErrorKind string
+
+const (
+	ListErrLocationNotFound ListErrorKind = "MCP_LOCATION_NOT_FOUND"
+	ListErrPermissionDenied ListErrorKind = "MCP_PERMISSION_DENIED"
+	ListErrRateLimited      ListErrorKind = "RATE_LIMITED"
+)
+
+// ListError is a classified failure to list MCP services. It wraps the SDK error, so
+// errors.Is(err, apierr.ErrNotFound) and similar still work.
+type ListError struct {
+	Kind     ListErrorKind
+	Location string
+	Err      error
+}
+
+// Error names the likely cause and keeps the server's message, because the SDK maps
+// different failures to the same sentinel (any 404, or a private link 403).
+func (e *ListError) Error() string {
+	switch e.Kind {
+	case ListErrLocationNotFound:
+		return fmt.Sprintf("%s is not a schema visible to this profile: %v", e.Location, e.Err)
+	case ListErrPermissionDenied:
+		// Listing needs these two grants. Services the caller has no privilege on are
+		// left out of the result instead of failing it.
+		return fmt.Sprintf("cannot list MCP services in %s (listing needs USE_CATALOG on the catalog and USE_SCHEMA on the schema; an invalid access token gets the same error): %v", e.Location, e.Err)
+	case ListErrRateLimited:
+		return fmt.Sprintf("MCP service listing in %s was rate limited; try again later: %v", e.Location, e.Err)
+	}
+	return fmt.Sprintf("cannot list MCP services in %s: %v", e.Location, e.Err)
+}
+
+// Unwrap returns the SDK error.
+func (e *ListError) Unwrap() error {
+	return e.Err
+}
+
+// listServices reads every page of the services in location, with source connections.
+func listServices(ctx context.Context, w *databricks.WorkspaceClient, location string) ([]catalog.McpService, error) {
+	return w.AiGateway.ListMcpServicesAll(ctx, catalog.ListMcpServicesRequest{
+		Parent: schemaParentPrefix + location,
+		View:   catalog.ListMcpServicesRequestViewFull,
+	})
+}
+
+// unrelatedErrorCodes are failures that look like a missing schema (404) or missing grants
+// (403) but are about the workspace or network: the API is not available, or private link
+// blocked the request. They keep the server's message and get no location or grants hint.
+var unrelatedErrorCodes = []string{"ENDPOINT_NOT_FOUND", "FEATURE_DISABLED", "PRIVATE_LINK_VALIDATION_ERROR"}
+
+// isUnrelatedError reports whether err is one of the unrelatedErrorCodes.
+func isUnrelatedError(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && slices.Contains(unrelatedErrorCodes, apiErr.ErrorCode)
+}
+
+// IsNotFound reports whether err is the API's answer that the resource does not exist. An unrelated 404, such as
+// ENDPOINT_NOT_FOUND, is not: the API did not answer about the resource.
+func IsNotFound(err error) bool {
+	return errors.Is(err, apierr.ErrNotFound) && !isUnrelatedError(err)
+}
+
+// mapListError classifies a listing failure. Other errors are returned with context only.
+func mapListError(location string, err error) error {
+	var kind ListErrorKind
+	switch {
+	case isUnrelatedError(err):
+		// Not about the schema or grants: leave it unclassified.
+	case errors.Is(err, apierr.ErrNotFound):
+		kind = ListErrLocationNotFound
+	case errors.Is(err, apierr.ErrPermissionDenied):
+		kind = ListErrPermissionDenied
+	case errors.Is(err, apierr.ErrTooManyRequests):
+		kind = ListErrRateLimited
+	}
+	if kind == "" {
+		return fmt.Errorf("cannot list MCP services in %s: %w", location, err)
+	}
+	return &ListError{Kind: kind, Location: location, Err: err}
+}
+
+// isDeletedSource reports whether the service's source connection was deleted.
+func isDeletedSource(svc *catalog.McpService) bool {
+	return svc.Config != nil && svc.Config.SourceConnection != nil && svc.Config.SourceConnection.IsDeleted
+}
+
+// oauthProvider returns the OAuth provider of a service's source connection, or "" when it
+// has none. A non-empty provider means the user must sign in before the service is usable.
+func oauthProvider(svc *catalog.McpService) string {
+	if svc.Config == nil || svc.Config.SourceConnection == nil {
+		return ""
+	}
+	return svc.Config.SourceConnection.Options[oauthProviderOption]
+}
+
+// newService builds a Service from an API service. The API returns lowercase names whatever
+// casing the caller used for the location, so the leaf and the system.ai check use the
+// returned name.
+func newService(svc *catalog.McpService) Service {
+	fullName := strings.TrimPrefix(svc.Name, mcpServicePrefix)
+	leaf := LeafOf(fullName)
+	provider := oauthProvider(svc)
+
+	s := Service{
+		FullName:      fullName,
+		Leaf:          leaf,
+		Comment:       svc.Comment,
+		OAuthProvider: provider,
+	}
+	s.Known = KnownOf(fullName)
+	return s
+}

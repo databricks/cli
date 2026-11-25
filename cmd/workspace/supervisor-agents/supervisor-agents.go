@@ -3,6 +3,7 @@
 package supervisor_agents
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,20 +21,24 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "supervisor-agents",
-		Short: `*Beta* Manage legacy Supervisor Agents and related resources.`,
-		Long: `This command is in Beta and may change without notice.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "supervisor-agents",
+	Short:   `*Beta* Manage legacy Supervisor Agents and related resources.`,
+	GroupID: "agentbricks",
+	Build:   buildCommand,
+}
 
-Manage legacy Supervisor Agents and related resources.`,
-		GroupID: "agentbricks",
-		RunE:    root.ReportUnknownSubcommand,
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Manage legacy Supervisor Agents and related resources.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "PUBLIC_BETA",
+		"launch_stage_display": "Beta",
 	}
-
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newCreateExample())
@@ -60,8 +65,6 @@ Manage legacy Supervisor Agents and related resources.`,
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-example command
@@ -181,9 +184,9 @@ func newCreateSupervisorAgent() *cobra.Command {
 
 	cmd.Flags().Var(&createSupervisorAgentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Description, "description", createSupervisorAgentReq.SupervisorAgent.Description, `Description of what this agent can do (user-facing).`)
-	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Instructions, "instructions", createSupervisorAgentReq.SupervisorAgent.Instructions, `Optional natural-language instructions for the supervisor agent.`)
-	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Name, "name", createSupervisorAgentReq.SupervisorAgent.Name, `The resource name of the SupervisorAgent.`)
+	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Description, "description", createSupervisorAgentReq.SupervisorAgent.Description, `A summary of what the agent does.`)
+	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Instructions, "instructions", createSupervisorAgentReq.SupervisorAgent.Instructions, `Natural-language guidelines for how the supervisor should respond and how it should delegate requests to its tools and subagents.`)
+	cmd.Flags().StringVar(&createSupervisorAgentReq.SupervisorAgent.Name, "name", createSupervisorAgentReq.SupervisorAgent.Name, `The resource name of the Supervisor Agent.`)
 
 	cmd.Use = "create-supervisor-agent DISPLAY_NAME"
 	cmd.Short = `*Beta* Create a Supervisor Agent.`
@@ -191,10 +194,14 @@ func newCreateSupervisorAgent() *cobra.Command {
 
 Create a Supervisor Agent.
 
-  Creates a new Supervisor Agent.
+  Creates a Supervisor Agent together with its serving endpoint and MLflow
+  experiment. Tools and subagents are added to the agent afterwards with the
+  Tool methods.
 
   Arguments:
-    DISPLAY_NAME: The display name of the Supervisor Agent, unique at workspace level.`
+    DISPLAY_NAME: The display name of the Supervisor Agent. It must be unique among the
+      agents in the workspace. Creating an agent with a display name that is
+      already in use fails with ALREADY_EXISTS.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -449,7 +456,8 @@ func newDeleteSupervisorAgent() *cobra.Command {
 
 Delete a Supervisor Agent.
 
-  Deletes a Supervisor Agent.
+  Deletes a Supervisor Agent together with the resources created for it,
+  including its tools, examples, serving endpoint and MLflow experiment.
 
   Arguments:
     NAME: The resource name of the Supervisor Agent. Format:
@@ -971,7 +979,8 @@ func newListSupervisorAgents() *cobra.Command {
 
 List Supervisor Agents.
 
-  Lists Supervisor Agents.`
+  Lists the Supervisor Agents in the workspace that the caller has permission to
+  view.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1370,9 +1379,9 @@ func newUpdateSupervisorAgent() *cobra.Command {
 
 	cmd.Flags().Var(&updateSupervisorAgentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Description, "description", updateSupervisorAgentReq.SupervisorAgent.Description, `Description of what this agent can do (user-facing).`)
-	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Instructions, "instructions", updateSupervisorAgentReq.SupervisorAgent.Instructions, `Optional natural-language instructions for the supervisor agent.`)
-	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Name, "name", updateSupervisorAgentReq.SupervisorAgent.Name, `The resource name of the SupervisorAgent.`)
+	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Description, "description", updateSupervisorAgentReq.SupervisorAgent.Description, `A summary of what the agent does.`)
+	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Instructions, "instructions", updateSupervisorAgentReq.SupervisorAgent.Instructions, `Natural-language guidelines for how the supervisor should respond and how it should delegate requests to its tools and subagents.`)
+	cmd.Flags().StringVar(&updateSupervisorAgentReq.SupervisorAgent.Name, "name", updateSupervisorAgentReq.SupervisorAgent.Name, `The resource name of the Supervisor Agent.`)
 
 	cmd.Use = "update-supervisor-agent NAME UPDATE_MASK DISPLAY_NAME"
 	cmd.Short = `*Beta* Update a Supervisor Agent.`
@@ -1380,14 +1389,19 @@ func newUpdateSupervisorAgent() *cobra.Command {
 
 Update a Supervisor Agent.
 
-  Updates a Supervisor Agent. The fields that are required depend on the paths
-  specified in update_mask. Only fields included in the mask will be updated.
+  Updates a Supervisor Agent. Only the fields listed in update_mask are
+  changed. All other fields keep their current values.
 
   Arguments:
-    NAME: The resource name of the SupervisorAgent. Format:
-      supervisor-agents/{supervisor_agent_id}
-    UPDATE_MASK: Field mask for fields to be updated.
-    DISPLAY_NAME: The display name of the Supervisor Agent, unique at workspace level.`
+    NAME: The resource name of the Supervisor Agent. Format:
+      supervisor-agents/{supervisor_agent_id} The server assigns the name when
+      the agent is created.
+    UPDATE_MASK: Comma-separated list of the fields to update. Supported values are
+      display_name, description and instructions. The request fails if the
+      mask is empty or names any other field.
+    DISPLAY_NAME: The display name of the Supervisor Agent. It must be unique among the
+      agents in the workspace. Creating an agent with a display name that is
+      already in use fails with ALREADY_EXISTS.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

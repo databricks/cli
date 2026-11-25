@@ -3,10 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.apps._models.depends_on import (
-    DependsOn,
-    DependsOnParam,
-)
+from databricks.bundles.apps._models.depends_on import DependsOn, DependsOnParam
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional

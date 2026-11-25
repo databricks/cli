@@ -1,9 +1,11 @@
 
 === dry-run (text)
+
 >>> [CLI] air run -f valid.yaml --dry-run
 Dry run: configuration for "smoke-test" is valid; not submitting.
 
 === dry-run (json)
+
 >>> [CLI] air run -f valid.yaml --dry-run -o json
 {
   "v": 1,
@@ -15,12 +17,14 @@ Dry run: configuration for "smoke-test" is valid; not submitting.
 }
 
 === override applies and logs the change
+
 >>> [CLI] air run -f valid.yaml --dry-run --override compute.num_accelerators=2 --override timeout_minutes=45
 Override: changing compute.num_accelerators from 1 to 2
 Override: setting timeout_minutes to 45
 Dry run: configuration for "smoke-test" is valid; not submitting.
 
 === override of an unknown field is rejected
+
 >>> [CLI] air run -f valid.yaml --dry-run --override bogus=1
 Error: invalid --override "bogus": "bogus" is not a known field; available fields are: code_source, command, compute, containers, env_variables, environment, experiment_name, idempotency_token, max_retries, mlflow_artifact_location, mlflow_experiment_directory, mlflow_run_name, parameters, permissions, secrets, timeout_minutes, usage_policy_id, usage_policy_name
 
@@ -30,6 +34,7 @@ Tip: use the --debug flag to see more details and a trace of this error:
 Exit code: 1
 
 === override still runs schema validation
+
 >>> [CLI] air run -f valid.yaml --dry-run --override compute.num_accelerators=0
 Override: changing compute.num_accelerators from 1 to 0
 Error: compute.num_accelerators must be positive, got 0
@@ -40,14 +45,77 @@ Tip: use the --debug flag to see more details and a trace of this error:
 Exit code: 1
 
 === watch is ignored with dry-run (nothing is submitted)
+
 >>> [CLI] air run -f valid.yaml --dry-run --watch
 Dry run: configuration for "smoke-test" is valid; not submitting.
 
-=== code_source config passes validation
+=== code_source config passes validation and reports the selected files
+
 >>> [CLI] air run -f with-code-source.yaml --dry-run
+Dry run: code_source snapshot would include 1 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
+=== include_paths entry that selects no files is rejected
+
+>>> [CLI] air run -f include-unmatched.yaml --dry-run
+Error: code_source include_paths select no files under [TEST_TMP_DIR]: data. Check that these paths exist under root_path and hold files git does not ignore (`git check-ignore -v <file>` shows the rule for a file); empty directories, nested git repositories and submodules add no files
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== include_paths entry that selects no files is rejected (json)
+
+>>> [CLI] air run -f include-unmatched.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "code_source include_paths select no files under [TEST_TMP_DIR]: data. Check that these paths exist under root_path and hold files git does not ignore (`git check-ignore -v \u003cfile\u003e` shows the rule for a file); empty directories, nested git repositories and submodules add no files",
+    "retryable": false
+  }
+}
+
+=== include_paths pathspec that selects files outside root_path is rejected
+
+>>> [CLI] air run -f include-outside-root.yaml --dry-run
+Error: code_source include_paths select "../valid.yaml", which is outside root_path [TEST_TMP_DIR]/src
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== git-ignored root_path is rejected instead of selecting no files
+
+>>> [CLI] air run -f ignored-root.yaml --dry-run
+Error: code_source snapshot of [TEST_TMP_DIR]/.scratch/proj contains no files; refusing to upload an empty snapshot: root_path is ignored by git (.gitignore:1:.scratch/), and the snapshot only includes files git does not ignore. Move the project out of the ignored directory, un-ignore it, or change code_source.root_path. Inspect the rule with `git -C [TEST_TMP_DIR]/.scratch/proj check-ignore -v .`
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+Exit code: 1
+
+=== a non-git root_path selects the same files when run from its subdirectory
+
+>>> [CLI] air run -f workload.yaml --dry-run
+Dry run: code_source snapshot would include 2 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
+=== torch import on the Standard environment warns before submitting
+
+>>> [CLI] air run -f torch-standard.yaml --dry-run
+Warning: train.py contains a torch import, but Standard environment 6 does not include PyTorch and no torch dependency was detected, so this code path may fail. Consider using databricks_ai_v6 or adding torch to dependencies.
+Dry run: code_source snapshot would include 1 file(s).
+Dry run: configuration for "smoke-test" is valid; not submitting.
+
+=== the Databricks AI environment provides torch, so no warning
+
+>>> [CLI] air run -f torch-databricks-ai.yaml --dry-run
+Dry run: code_source snapshot would include 1 file(s).
 Dry run: configuration for "smoke-test" is valid; not submitting.
 
 === git.remote is rejected
+
 >>> [CLI] air run -f git-remote.yaml --dry-run
 Error: git.remote is no longer supported: the snapshot archives your local copy, so a branch resolves to its local HEAD. To deploy a specific committed revision, use git.commit
 
@@ -57,6 +125,7 @@ Tip: use the --debug flag to see more details and a trace of this error:
 Exit code: 1
 
 === invalid config is rejected
+
 >>> [CLI] air run -f invalid.yaml --dry-run
 Error: invalid experiment_name "bad.name": only alphanumeric characters, hyphens (-), and underscores (_) are allowed
 
@@ -65,14 +134,162 @@ Tip: use the --debug flag to see more details and a trace of this error:
 
 Exit code: 1
 
+=== invalid config is rejected (json)
+
+>>> [CLI] air run -f invalid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "invalid experiment_name \"bad.name\": only alphanumeric characters, hyphens (-), and underscores (_) are allowed",
+    "retryable": false
+  }
+}
+
+=== dry-run without credentials reports an authentication error (json)
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] air run -f valid.yaml --dry-run -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "kind": "PERMANENT",
+    "message": "no default profile is set: pass --profile (-p) or configure a default profile in your .databrickscfg",
+    "retryable": false
+  }
+}
+
+=== dry-run without credentials keeps the original error in text mode
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] air run -f valid.yaml --dry-run
+Error: default auth: cannot configure default credentials, please check https://docs.databricks.com/en/dev-tools/auth.html#databricks-client-unified-authentication to configure credentials for your preferred authentication method. Config: databricks_cli_path=[CLI]. Env: DATABRICKS_CLI_PATH
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== submit without credentials reports an authentication error (json)
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] air run -f valid.yaml -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "UNAUTHENTICATED",
+    "kind": "PERMANENT",
+    "message": "no default profile is set: pass --profile (-p) or configure a default profile in your .databrickscfg",
+    "retryable": false
+  }
+}
+
+=== dry-run reports an over-long idempotency key before missing credentials (json)
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN [CLI] air run -f valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "idempotency token must be 64 characters or less, got 65",
+    "retryable": false
+  }
+}
+
+=== dry-run with an unknown profile is a permanent config error (json)
+
+>>> env -u DATABRICKS_HOST -u DATABRICKS_TOKEN DATABRICKS_CONFIG_FILE=profiles.databrickscfg [CLI] air run -f valid.yaml --dry-run -o json -p does-not-exist
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "resolve: profiles.databrickscfg has no does-not-exist profile configured. Config: profile=does-not-exist, config_file=profiles.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH",
+    "retryable": false
+  }
+}
+
+=== bundle diagnostics are reported once (json)
+
+>>> [CLI] air run -f ../valid.yaml --dry-run -o json
+Error: multiple targets are marked as default ([TARGETS])
+
+
+>>> [CLI] air run -f ../valid.yaml -o json
+Error: multiple targets are marked as default ([TARGETS])
+
+
+=== bundle diagnostics come before the idempotency key error
+
+>>> [CLI] air run -f ../valid.yaml --dry-run --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Error: multiple targets are marked as default ([TARGETS])
+
+Error: idempotency token must be 64 characters or less, got 65
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+>>> [CLI] air run -f ../valid.yaml --dry-run -o json --idempotency-key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Error: multiple targets are marked as default ([TARGETS])
+
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "idempotency token must be 64 characters or less, got 65",
+    "retryable": false
+  }
+}
+
+=== unknown field suggests the near match
+
+>>> [CLI] air run -f unknown-field.yaml --dry-run
+Error: invalid config unknown-field.yaml: line 6: unknown field "enviroment"; did you mean "environment"? Run "databricks air run -h config" for the list of fields
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+Exit code: 1
+
 === missing --file
+
 >>> [CLI] air run --dry-run
 Error: required flag(s) "file" not set
 
 Exit code: 1
 
 === experimental path directs users to the top-level command
+
 >>> [CLI] experimental air run -f valid.yaml --dry-run
 Error: the AIR commands have moved out of experimental; use "databricks air" instead
 
 Exit code: 1
+
+=== removed pool field is rejected
+
+>>> [CLI] air run -f removed-pool.yaml --dry-run
+Error: invalid config removed-pool.yaml: line 6: unknown field "compute.pool_id"; did you mean "accelerator_pool_id"? Run "databricks air run -h config.compute" for the list of fields
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== unsupported priority is rejected
+
+>>> [CLI] air run -f invalid-priority.yaml --dry-run
+Error: compute.priority_class: invalid priority_class "HIGH": valid values are: NORMAL
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …
+
+=== priority without a pool is rejected
+
+>>> [CLI] air run -f priority-without-pool.yaml --dry-run
+Error: compute.priority_class requires compute.accelerator_pool_id — priority applies only within a GPU Pool
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug air run …

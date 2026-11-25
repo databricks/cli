@@ -4,6 +4,7 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Edit alpha, defined only in the target block
+
 === Sync
 Detected changes in 1 resource(s):
 
@@ -23,6 +24,7 @@ Resource: resources.jobs.split_job
 +              timeout_seconds: 111
 
 === Edit mu, a top-level task that is not first after the merge sort
+
 === Sync
 Detected changes in 1 resource(s):
 

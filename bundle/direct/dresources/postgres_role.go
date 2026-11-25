@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -32,7 +33,7 @@ type PostgresRoleState struct {
 
 	// ReplaceExisting takes over an existing role with the same ID on create
 	// instead of returning ALREADY_EXISTS. Input-only: not returned by the GET API.
-	ReplaceExisting bool `json:"replace_existing,omitempty"`
+	ReplaceExisting *bool `json:"replace_existing,omitempty"`
 }
 
 // PostgresRoleRemote is the return type for DoRead. It embeds RoleRoleSpec so that
@@ -87,17 +88,17 @@ func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRol
 		Parent: remote.Parent,
 
 		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
+		// it, so RemapState leaves it unset.
+		ReplaceExisting: nil,
 
 		RoleRoleSpec: remote.RoleRoleSpec,
 	}
 }
 
 // makePostgresRoleRemote converts the SDK Role into the embedded remote shape.
-// GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and postgres_roles.yml suppresses phantom drift via
-// ignore_remote_changes with reason spec:input_only.
+// Since 2026-11 GET echoes spec. Fields still marked spec:input_only in
+// postgres_roles.generated.yml keep remote changes ignored until the OpenAPI
+// annotations, and the config generated from them, catch up.
 func makePostgresRoleRemote(role *postgres.Role) *PostgresRoleRemote {
 	var spec postgres.RoleRoleSpec
 	if role.Spec != nil {
@@ -123,7 +124,7 @@ func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*Postgres
 }
 
 func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRoleState) (string, *PostgresRoleRemote, error) {
-	waiter, err := r.client.Postgres.CreateRole(ctx, postgres.CreateRoleRequest{
+	req := postgres.CreateRoleRequest{
 		RoleId: config.RoleId,
 		Parent: config.Parent,
 		Role: postgres.Role{
@@ -138,19 +139,66 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: config.ReplaceExisting,
+		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateRole(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
+	return remote.Name, remote, nil
+}
 
-	result, err := waiter.Wait(ctx)
+// waitCreated waits for the create operation of a role that a create request returned.
+func (r *ResourcePostgresRole) waitCreated(ctx context.Context, waiter postgres.CreateRoleOperationInterface) (*PostgresRoleRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresRoleRemote(result), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate. Role
+// creates on a just-created branch are answered with 500 INTERNAL_ERROR now and then, and the
+// request may have created the role anyway, so look for it before repeating the request.
+func (r *ResourcePostgresRole) recoverFailedCreate(ctx context.Context, req postgres.CreateRoleRequest, start time.Time, createErr error) (string, *PostgresRoleRemote, error) {
+	if req.RoleId == "" {
+		return "", nil, createErr
+	}
+	// A role found after a replace may predate it, and repeating a replace is safe.
+	if req.ReplaceExisting {
+		return "", nil, retrySafe(createErr)
+	}
+
+	name := req.Parent + "/roles/" + req.RoleId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Role, *PostgresRoleRemote]{
+		name:  "role " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Role, error) {
+			return r.client.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
+		},
+		createTime:      func(found *postgres.Role) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
+		use: func(_ context.Context, found *postgres.Role) (*PostgresRoleRemote, error) {
+			return makePostgresRoleRemote(found), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresRoleRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateRole(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresRoleRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
 	if err != nil {
 		return "", nil, err
 	}
-
-	remote := makePostgresRoleRemote(result)
 	return remote.Name, remote, nil
 }
 

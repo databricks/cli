@@ -1,0 +1,9 @@
+experiment_name: smoke-test
+command: python "$CODE_SOURCE_PATH/train.py"
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 1
+environment:
+  version: databricks_ai_v6
+code_source:
+  root_path: torch-src

@@ -179,3 +179,15 @@ func TestNormalizeMaterializationSetMaterializedFeatureMembersNamesAFeatureOnceF
 	require.Len(t, diags, 1)
 	assert.Equal(t, duplicateMemberKeyError("'"+memberFeatureName+"'"), diags[0].Summary)
 }
+
+func TestNormalizeMaterializationSetMaterializedFeatureMembersRejectsTheSameMemberSpelledInOtherCase(t *testing.T) {
+	_, diags := normalizeSetDiags(t, &resources.MaterializationSet{
+		MaterializedFeatures: []ml.MaterializedFeature{
+			offlineMember(memberFeatureName),
+			offlineMember("main.MySchema.Feat"),
+		},
+	})
+
+	require.Len(t, diags, 1)
+	assert.Equal(t, duplicateMemberKeyError("'main.MySchema.Feat', '"+memberFeatureName+"'"), diags[0].Summary)
+}

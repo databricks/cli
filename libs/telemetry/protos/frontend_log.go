@@ -9,8 +9,11 @@ type FrontendLog struct {
 	Entry FrontendLogEntry `json:"entry,omitempty"`
 }
 
+// FrontendLogEntry mirrors a oneof in the proto, so set only one field. omitzero
+// keeps an unset DatabricksCliLog, a value field, out of the JSON.
 type FrontendLogEntry struct {
-	DatabricksCliLog DatabricksCliLog `json:"databricks_cli_log,omitempty"`
+	DatabricksCliLog DatabricksCliLog `json:"databricks_cli_log,omitzero"`
+	FastFeedbackLog  *FastFeedbackLog `json:"fast_feedback_log,omitempty"`
 }
 
 type DatabricksCliLog struct {
@@ -24,6 +27,10 @@ type DatabricksCliLog struct {
 	SshAgentShimEvent           *SshAgentShimEvent           `json:"ssh_agent_shim_event,omitempty"`
 	BundleConfigRemoteSyncEvent *BundleConfigRemoteSyncEvent `json:"bundle_config_remote_sync_event,omitempty"`
 	AitoolsInstallEvent         *AitoolsInstallEvent         `json:"aitools_install_event,omitempty"`
+	AitoolsMcpEvent             *AitoolsMcpEvent             `json:"aitools_mcp_event,omitempty"`
 	SetupLocalEvent             *SetupLocalEvent             `json:"setup_local_event,omitempty"`
 	AirRunEvent                 *AirRunEvent                 `json:"air_run_event,omitempty"`
+	AitoolsHintEvent            *AitoolsHintEvent            `json:"aitools_hint_event,omitempty"`
+	AitoolsCommandEvent         *AitoolsCommandEvent         `json:"aitools_command_event,omitempty"`
+	AitoolsAutoInstallEvent     *AitoolsAutoInstallEvent     `json:"aitools_auto_install_event,omitempty"`
 }

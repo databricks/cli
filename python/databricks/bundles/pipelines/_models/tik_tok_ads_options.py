@@ -35,7 +35,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    [Beta] (Optional) Custom report definition. When set, the table is treated as a
     user-defined TikTok Ads custom report: the connector synthesizes a report
     request from the dimensions, metrics, report type, and data level specified
     here. Supersedes the deprecated top-level dimensions/metrics/report_type/
@@ -44,52 +44,38 @@ class TikTokAdsOptions:
 
     data_level: VariableOrOptional[TikTokAdsOptionsTikTokDataLevel] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.data_level instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.data_level instead.
     """
 
     dimensions: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.dimensions instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.dimensions instead.
     """
 
     lookback_window_days: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] (Optional) Number of days to look back for report tables during incremental sync
+    [Public Preview] (Optional) Number of days to look back for report tables during incremental sync
     to capture late-arriving conversions and attribution data.
     """
 
     metrics: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.metrics instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.metrics instead.
     """
 
     query_lifetime: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.query_lifetime instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.query_lifetime instead.
     """
 
     report_type: VariableOrOptional[TikTokAdsOptionsTikTokReportType] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.report_type instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.report_type instead.
     """
 
     sync_start_date: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    [Public Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     """
 
@@ -110,7 +96,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] (Optional) Custom report definition. When set, the table is treated as a
+    [Beta] (Optional) Custom report definition. When set, the table is treated as a
     user-defined TikTok Ads custom report: the connector synthesizes a report
     request from the dimensions, metrics, report type, and data level specified
     here. Supersedes the deprecated top-level dimensions/metrics/report_type/
@@ -119,52 +105,38 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
 
     data_level: VariableOrOptional[TikTokAdsOptionsTikTokDataLevelParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.data_level instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.data_level instead.
     """
 
     dimensions: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.dimensions instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.dimensions instead.
     """
 
     lookback_window_days: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] (Optional) Number of days to look back for report tables during incremental sync
+    [Public Preview] (Optional) Number of days to look back for report tables during incremental sync
     to capture late-arriving conversions and attribution data.
     """
 
     metrics: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.metrics instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.metrics instead.
     """
 
     query_lifetime: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.query_lifetime instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.query_lifetime instead.
     """
 
     report_type: VariableOrOptional[TikTokAdsOptionsTikTokReportTypeParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [DEPRECATED] [Beta] Deprecated. Use custom_report_options.report_type instead.
+    [DEPRECATED] [Public Preview] Deprecated. Use custom_report_options.report_type instead.
     """
 
     sync_start_date: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    [Public Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     """
 

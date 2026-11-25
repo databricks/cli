@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
@@ -1913,10 +1914,10 @@ func runCreate(ctx context.Context, opts createOptions) (runErr error) {
 	// Recommend skills installation if coding agents are detected without skills.
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
-		if !agents.HasDatabricksSkillsInstalled(ctx) {
-			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.")
+		if !agents.HasDatabricksToolingInstalled(ctx, installer.InstalledPluginAgents) {
+			agents.PrintSkillsTip(ctx)
 		}
-	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
+	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstalledPluginAgents, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
 	}
 
@@ -1964,10 +1965,18 @@ func runPostCreateDeploy(ctx context.Context, profile string) error {
 		args = append(args, "--profile", profile)
 	}
 	cmd := exec.CommandContext(ctx, executable, args...)
+	cmd.Env = selfExecEnv(os.Environ())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	return cmd.Run()
+}
+
+// selfExecEnv returns environ for a CLI process apps init starts: it prints no
+// coding-agent hint (the parent's output already has one), and it does not
+// auto-install when the user turned the tools down in this process.
+func selfExecEnv(environ []string) []string {
+	return agents.SelfExecEnv(autoinstall.ChildEnv(environ))
 }
 
 // runPostCreateDev runs the dev or dev-remote command in the current directory.
@@ -1992,6 +2001,7 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 			args = append(args, "--profile", profile)
 		}
 		cmd := exec.CommandContext(ctx, executable, args...)
+		cmd.Env = selfExecEnv(os.Environ())
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin

@@ -10,7 +10,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from print_state import get_resources
+from print_state import get_resources_for_lookup
 
 
 def print_resource_direct(group, name, *attrs):
@@ -36,7 +36,7 @@ def print_resource_direct(group, name, *attrs):
 
 
 def print_resource_recorded(group, name, *attrs):
-    result = get_resources(None).get(f"{group}.{name}")
+    result = get_resources_for_lookup(None).get(f"{group}.{name}")
     if result is None:
         # Recorded state lives in deployment history, not on disk, so name that rather than a
         # file (the Repl normalizes it to match the file-based variants).

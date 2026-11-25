@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.27.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -13,15 +13,15 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.9 // MIT
-	github.com/databricks/databricks-sdk-go v0.193.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.203.0 // Apache-2.0
 	github.com/databricks/sdk-go/auth v0.2.0 // Apache-2.0
 	github.com/databricks/sdk-go/core v0.1.0 // Apache-2.0
-	github.com/databricks/sdk-go/files v0.3.0 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.9.0 // Apache-2.0
 	github.com/databricks/sdk-go/options v0.3.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
-	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
+	github.com/gorilla/websocket v1.5.4-0.20240701034025-d67f41855da4 // BSD-2-Clause
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
-	github.com/jackc/pgx/v5 v5.11.0 // MIT
+	github.com/jackc/pgx/v5 v5.13.0 // MIT
 	github.com/klauspost/pgzip v1.3.0 // MIT
 	github.com/mattn/go-isatty v0.0.24 // MIT
 	github.com/muesli/termenv v0.16.0 // MIT
@@ -30,7 +30,7 @@ require (
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // BSD-3-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.10.2 // Apache-2.0
-	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
+	github.com/spf13/pflag v1.1.0 // BSD-3-Clause
 	github.com/stretchr/testify v1.12.1 // MIT
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
@@ -38,11 +38,13 @@ require (
 	golang.org/x/crypto v0.58.1-0.20261009181718-2f1f834330b2 // BSD-3-Clause
 	golang.org/x/mod v0.42.0 // BSD-3-Clause
 	golang.org/x/net v0.62.0 // BSD-3-Clause
-	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
-	golang.org/x/sync v0.24.0 // BSD-3-Clause
-	golang.org/x/sys v0.49.0 // BSD-3-Clause
+	golang.org/x/oauth2 v0.38.0 // BSD-3-Clause
+	golang.org/x/sync v0.25.0 // BSD-3-Clause
+	golang.org/x/sys v0.50.0 // BSD-3-Clause
 	golang.org/x/term v0.47.0 // BSD-3-Clause
 	golang.org/x/text v0.43.0 // BSD-3-Clause
+	google.golang.org/grpc v1.83.2 // Apache-2.0
+	google.golang.org/protobuf v1.36.12 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
@@ -79,7 +81,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.27 // indirect
+	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
@@ -97,7 +99,5 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/grpc v1.83.2 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

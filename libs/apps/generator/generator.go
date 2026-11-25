@@ -410,6 +410,12 @@ var appResourceSpecs = map[string]appResourceSpec{
 		staticFields: [][2]string{{"securable_type", "FUNCTION"}},
 		permission:   "EXECUTE",
 	},
+	"model_service": {
+		yamlKey:      "uc_securable",
+		varFields:    [][2]string{{"name", "securable_full_name"}},
+		staticFields: [][2]string{{"securable_type", "MODEL_SERVICE"}},
+		permission:   "EXECUTE",
+	},
 	"uc_connection": {
 		yamlKey:      "uc_securable",
 		varFields:    [][2]string{{"id", "securable_full_name"}},

@@ -121,7 +121,7 @@ func warnDeprecatedSyncMode(b *bundle.Bundle) diag.Diagnostics {
 		override = syncModePath
 	}
 
-	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
+	if b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.ImmutableFolder) {
 		diags = diags.Append(deprecatedSyncModeWarning(b, immutableFolderPath, override))
 		if override == nil {
 			override = immutableFolderPath

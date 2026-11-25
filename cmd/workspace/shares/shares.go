@@ -3,6 +3,7 @@
 package shares
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,22 +19,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "shares",
-		Short: `A share is a container instantiated with :method:shares/create.`,
-		Long: `A share is a container instantiated with :method:shares/create. Once created
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "shares",
+	Short:   `A share is a container instantiated with :method:shares/create.`,
+	GroupID: "sharing",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A share is a container instantiated with :method:shares/create. Once created
   you can iteratively register a collection of existing data assets defined
   within the metastore using :method:shares/update. You can register data assets
   under their original name, qualified by their original schema, or provide
-  alternate exposed names.`,
-		GroupID: "sharing",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  alternate exposed names.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -48,8 +53,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -70,7 +73,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for the share.`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Cloud storage path, within an external location, under which the share stores the notebook files added to it.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a share.`
@@ -213,7 +216,7 @@ func newGet() *cobra.Command {
 
 	var getReq sharing.GetShareRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
+	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Whether to include the share's data objects in the response.`)
 
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share.`
@@ -417,7 +420,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
-	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share.`)
+	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Cloud storage path, within an external location, under which the share stores the notebook files added to it.`)
 	// TODO: array: updates
 
 	cmd.Use = "update NAME"

@@ -3,12 +3,15 @@ package dockercredentials
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 )
+
+const selectProfileHint = "Select the profile for Docker with: databricks auth docker configure <profile-name>"
 
 // ValidateProfile verifies that p can be used by the Docker credential helper.
 func ValidateProfile(p profile.Profile) error {
@@ -50,33 +53,10 @@ func LoadProfile(ctx context.Context, profiler profile.Profiler, name string) (p
 	return profiles[0], nil
 }
 
-// EnsureUniqueProfile verifies that workspaceID resolves to only p.
-func EnsureUniqueProfile(ctx context.Context, profiler profile.Profiler, p profile.Profile, workspaceID string) error {
-	matches, err := profiler.LoadProfiles(ctx, func(candidate profile.Profile) bool {
-		return candidate.WorkspaceID == workspaceID
-	})
-	if err != nil {
-		return err
-	}
-
-	if p.WorkspaceID == "" || p.WorkspaceID == profile.WorkspaceIDNone {
-		matches = append(matches, p)
-	}
-	var names []string
-	for _, candidate := range matches {
-		if ValidateProfile(candidate) == nil {
-			names = append(names, candidate.Name)
-		}
-	}
-	if len(names) <= 1 {
-		return nil
-	}
-
-	return fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. Remove duplicate workspace_id entries before using Docker credential helper", workspaceID, strings.Join(names, " and "))
-}
-
 // ProfileForRegistry returns the Docker credential helper profile for registry.
-func ProfileForRegistry(ctx context.Context, profiler profile.Profiler, registry Registry) (profile.Profile, error) {
+// A non-empty recorded profile (see databrickscfg.GetDockerProfile) is never
+// replaced by another match.
+func ProfileForRegistry(ctx context.Context, profiler profile.Profiler, registry Registry, recorded string) (profile.Profile, error) {
 	workspaceProfiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
 		return p.WorkspaceID == registry.WorkspaceID && registry.ServesWorkspaceHost(p.Host)
 	})
@@ -85,6 +65,17 @@ func ProfileForRegistry(ctx context.Context, profiler profile.Profiler, registry
 	}
 	if len(workspaceProfiles) == 0 {
 		return profile.Profile{}, fmt.Errorf("no Databricks profile found for workspace ID %s from registry host %s. Run databricks auth login --host <workspace-url> and set workspace_id for that profile", registry.WorkspaceID, registry.Host)
+	}
+
+	if recorded != "" {
+		i := slices.IndexFunc(workspaceProfiles, func(p profile.Profile) bool { return p.Name == recorded })
+		if i < 0 {
+			return profile.Profile{}, fmt.Errorf("profile %q selected for Docker registry %s is missing or no longer targets workspace ID %s. %s", recorded, registry.Host, registry.WorkspaceID, selectProfileHint)
+		}
+		if err := ValidateProfile(workspaceProfiles[i]); err != nil {
+			return profile.Profile{}, err
+		}
+		return workspaceProfiles[i], nil
 	}
 
 	var matchingProfiles profile.Profiles
@@ -99,8 +90,12 @@ func ProfileForRegistry(ctx context.Context, profiler profile.Profiler, registry
 	case 1:
 		return matchingProfiles[0], nil
 	default:
-		return profile.Profile{}, fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. Remove duplicate workspace_id entries before using Docker credential helper", registry.WorkspaceID, strings.Join(matchingProfiles.Names(), " and "))
+		return profile.Profile{}, duplicateProfilesError(registry.WorkspaceID, matchingProfiles.Names())
 	}
+}
+
+func duplicateProfilesError(workspaceID string, names []string) error {
+	return fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. %s", workspaceID, strings.Join(names, " and "), selectProfileHint)
 }
 
 // RewriteProfileError adds Docker profile context to authentication errors.

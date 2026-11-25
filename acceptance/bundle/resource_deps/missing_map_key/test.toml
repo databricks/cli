@@ -1,2 +1,2 @@
-Badness = "Uploading files even though bundle is wrong; bundle validate does not detect the issue"
+Badness = "A reference to a custom_tags key that does not exist passes validate and plan; deploy uploads the files and creates jobs.test before failing with 'key \"missing_tag\" not found in map'. validate (or at least plan) should report it before anything is uploaded or created."
 RecordRequests = false

@@ -224,6 +224,43 @@ def del_path(body, field):
     body.pop(leaf, None)
 
 
+def fold_pending_operation_writes(requests):
+    """Drop a deployment-history PATCH that marks an operation PENDING when a later PATCH to
+    the same operation follows, and drop sequence_id from every operation PATCH.
+
+    A recreate writes an operation twice: the drop marks it PENDING, the save (or failure)
+    finishes it. The CLI uploads writes in the background and merges a write still waiting
+    to be sent into the next one for the same resource, so depending on timing the service
+    gets one PATCH at sequence_id 0 or two at 0 and 1. Folding makes both read the same.
+
+    >>> pending = {"method": "PATCH", "path": "/v/1/operations/a", "body": {"sequence_id": 0, "status": "OPERATION_STATUS_PENDING"}}
+    >>> done = {"method": "PATCH", "path": "/v/1/operations/a", "body": {"sequence_id": 1, "status": "OPERATION_STATUS_SUCCEEDED"}}
+    >>> merged = {"method": "PATCH", "path": "/v/1/operations/a", "body": {"sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
+    >>> fold_pending_operation_writes([pending, done]) == fold_pending_operation_writes([merged])
+    True
+    >>> fold_pending_operation_writes([pending, done])
+    [{'method': 'PATCH', 'path': '/v/1/operations/a', 'body': {'status': 'OPERATION_STATUS_SUCCEEDED'}}]
+    >>> fold_pending_operation_writes([pending])
+    [{'method': 'PATCH', 'path': '/v/1/operations/a', 'body': {'status': 'OPERATION_STATUS_PENDING'}}]
+    """
+
+    def is_operation_patch(req):
+        return req.get("method") == "PATCH" and "/operations/" in req.get("path", "")
+
+    result = []
+    for i, req in enumerate(requests):
+        if not is_operation_patch(req):
+            result.append(req)
+            continue
+        body = req.get("body") or {}
+        if body.get("status") == "OPERATION_STATUS_PENDING" and any(
+            is_operation_patch(r) and r["path"] == req["path"] for r in requests[i + 1 :]
+        ):
+            continue
+        result.append(dict(req, body={k: v for k, v in body.items() if k != "sequence_id"}))
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path_filters", nargs="*", help="Path substring filters")
@@ -274,6 +311,13 @@ def main():
         "bodies, so a test asserts the same requests whether or not deployment history "
         "recording is on. Shorthand for the --del-body fields it implies.",
     )
+    parser.add_argument(
+        "--fold-pending",
+        action="store_true",
+        help="Fold the PENDING write of a recreated resource into the write that finishes it, and "
+        "drop operation sequence_ids, so a test reads the same whether or not the CLI merged them. "
+        "See fold_pending_operation_writes.",
+    )
     parser.add_argument("--fname", default=os.environ["OUT_REQUESTS"])
     args = parser.parse_args()
 
@@ -302,6 +346,8 @@ def main():
     filtered_requests = filter_requests(
         requests, args.path_filters, args.get, args.sort, args.unique, args.method, args.dms
     )
+    if args.fold_pending:
+        filtered_requests = fold_pending_operation_writes(filtered_requests)
 
     for req in filtered_requests:
         body = req.get("body")

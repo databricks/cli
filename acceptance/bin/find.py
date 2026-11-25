@@ -4,6 +4,7 @@ Usage: find.py <regex>
 Finds all files within current directory matching regex. The output is sorted and slashes are always forward.
 
 If --expect N is provided, the number of matches must be N or error is printed.
+If --dirs is provided, directories are matched and printed too (default: files only).
 """
 
 import argparse
@@ -14,14 +15,16 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument("regex")
 parser.add_argument("--expect", type=int)
+parser.add_argument("--dirs", action="store_true")
 args = parser.parse_args()
 
 regex = re.compile(args.regex)
 result = []
 
-for root, _dirs, files in os.walk("."):
-    for filename in files:
-        path = os.path.join(root, filename).replace("\\", "/")
+for root, dirs, files in os.walk("."):
+    names = files + dirs if args.dirs else files
+    for name in names:
+        path = os.path.join(root, name).replace("\\", "/")
         path = path.removeprefix("./")
         if regex.search(path):
             result.append(path)

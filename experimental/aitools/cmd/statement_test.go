@@ -86,7 +86,7 @@ func TestGetStatementResultPolls(t *testing.T) {
 		Result:      &sql.ResultData{DataArray: [][]string{{"42"}}},
 	}, nil).Once()
 
-	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
+	info, err := getStatementResult(ctx, mockAPI, "stmt-1", fastPoll)
 	require.NoError(t, err)
 	assert.Equal(t, "stmt-1", info.StatementID)
 	assert.Equal(t, sql.StatementStateSucceeded, info.State)

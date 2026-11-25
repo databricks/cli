@@ -1,0 +1,20 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+mkdir -p "${USERPROFILE:-$HOME}/.cursor"
+
+# Install one skill to update and uninstall. Its funnel is pinned by ../install;
+# print_telemetry here only clears its upload.
+$CLI aitools install --skills-only --scope=global --agents=cursor &> LOG.install
+print_telemetry &> LOG.install-telemetry
+
+title "update: STARTED, FINISHED with SUCCESS"
+trace $CLI aitools update --scope=global
+trace print_telemetry
+
+# list, version, and update and uninstall with nothing installed upload their
+# events only if auth has already resolved when they finish, so whether they
+# upload here depends on timing; their funnels are covered by unit tests.
+
+title "uninstall: STARTED, FINISHED with SUCCESS"
+trace $CLI aitools uninstall --scope=global
+trace print_telemetry

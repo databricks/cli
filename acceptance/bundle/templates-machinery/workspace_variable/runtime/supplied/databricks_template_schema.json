@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "value": {
+            "type": "string",
+            "description": "Value",
+            "default": "{{ .workspace.ID }}"
+        }
+    }
+}

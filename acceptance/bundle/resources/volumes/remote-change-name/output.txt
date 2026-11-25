@@ -14,10 +14,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "name": "my_new_name",
   "owner": "[USERNAME]",
   "schema_name": "myschema",
-  "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+  "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][1]",
   "updated_at": [UNIX_TIME_MILLIS][1],
   "updated_by": "[USERNAME]",
-  "volume_id": "[UUID]",
+  "volume_id": "[UUID][1]",
   "volume_type": "MANAGED"
 }
 
@@ -30,10 +30,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "name": "my_new_name",
   "owner": "[USERNAME]",
   "schema_name": "myschema",
-  "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+  "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID][0]/volumes/[UUID][1]",
   "updated_at": [UNIX_TIME_MILLIS][1],
   "updated_by": "[USERNAME]",
-  "volume_id": "[UUID]",
+  "volume_id": "[UUID][1]",
   "volume_type": "MANAGED"
 }
 

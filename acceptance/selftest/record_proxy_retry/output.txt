@@ -1,0 +1,86 @@
+
+=== A request answered with a transient error and repeated by the CLI is recorded once
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Postgres Project",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj/operations/[UUID][0]"
+}
+
+=== A create answered with a transient error, looked up (404) and repeated by the CLI is recorded once
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Postgres Project",
+      "pg_version": 16
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj/operations/[UUID][1]"
+}
+
+=== A create that failed but created the resource stays recorded, and a later identical create is kept too
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get --oneline //postgres/projects ^//operations/ ^//branches
+{"method": "POST", "path": "/api/2.0/postgres/projects", "q": {"project_id": "test-pg-proj"}, "body": {"spec": {"display_name": "Test Postgres Project", "pg_version": 16}}}
+{"method": "GET", "path": "/api/2.0/postgres/projects/test-pg-proj"}
+{"method": "GET", "path": "/api/2.0/postgres/projects/test-pg-proj"}
+{"method": "DELETE", "path": "/api/2.0/postgres/projects/test-pg-proj"}
+{"method": "POST", "path": "/api/2.0/postgres/projects", "q": {"project_id": "test-pg-proj"}, "body": {"spec": {"display_name": "Test Postgres Project", "pg_version": 16}}}
+
+=== A request answered with a transient error and not repeated stays recorded
+
+>>> musterr [CLI] current-user me
+Error: Fault injected by test.
+
+>>> print_requests.py --get //scim
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}

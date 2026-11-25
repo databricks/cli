@@ -1,0 +1,68 @@
+
+=== Profile classic
+
+>>> [CLI] bundle init default-minimal --config-file ./input.json --profile classic
+Welcome to the minimal Declarative Automation Bundle template!
+
+This template creates a minimal project structure without sample code, ideal for advanced users.
+(For getting started with Python or SQL code, use the default-python or default-sql templates instead.)
+
+Your workspace at [DATABRICKS_URL] is used for initialization.
+(See https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile.)
+
+✨ Your new project has been created in the 'my_default_minimal' directory!
+
+To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> grep host: databricks.yml
+      host: [DATABRICKS_URL]
+      host: [DATABRICKS_URL]
+
+>>> DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH=1 [CLI] bundle validate -t dev
+Name: my_default_minimal
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_minimal/dev
+
+Validation OK!
+
+>>> [CLI] bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_minimal/dev/files...
+Files: 10 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Profile custom_host
+
+>>> [CLI] bundle init default-minimal --config-file ./input.json --profile custom_host
+Welcome to the minimal Declarative Automation Bundle template!
+
+This template creates a minimal project structure without sample code, ideal for advanced users.
+(For getting started with Python or SQL code, use the default-python or default-sql templates instead.)
+
+Your workspace at [CUSTOM_HOST]?w=[WORKSPACE_ID] is used for initialization.
+(See https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile.)
+
+✨ Your new project has been created in the 'my_default_minimal' directory!
+
+To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> grep host: databricks.yml
+      host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+      host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+
+>>> DATABRICKS_BUNDLE_STRICT_PROFILE_MATCH=1 [CLI] bundle validate -t dev
+Name: my_default_minimal
+Target: dev
+Workspace:
+  Host: [CUSTOM_HOST]?w=[WORKSPACE_ID]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_minimal/dev
+
+Validation OK!
+
+>>> [CLI] bundle deploy -t dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_minimal/dev/files...
+Files: 10 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged

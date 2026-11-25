@@ -37,27 +37,45 @@ const (
 	helpTextSearch = helpTextBase + "  and / toggles search"
 )
 
-// promptFuncMap is the pipeline-form template.FuncMap used by select-prompt
-// templates (`{{ . | bold }}`). It always emits SGR codes; color.go's
-// RenderFuncMap is printf-style and gates colors on ctx so the two cannot
-// share an implementation.
-var promptFuncMap = template.FuncMap{
-	"bold":      promptANSI(ansiBold),
-	"faint":     promptANSI(ansiFaint),
-	"italic":    promptANSI(ansiItalic),
-	"underline": promptANSI(ansiUnderline),
-	"red":       promptANSI(ansiRed),
-	"green":     promptANSI(ansiGreen),
-	"yellow":    promptANSI(ansiYellow),
-	"blue":      promptANSI(ansiBlue),
-	"magenta":   promptANSI(ansiMagenta),
-	"cyan":      promptANSI(ansiCyan),
+// promptFuncMap returns the pipeline-form template.FuncMap used by
+// select-prompt templates (`{{ . | bold }}`). color.go's RenderFuncMap is
+// printf-style, so the two cannot share an implementation. With color off
+// (NO_COLOR) the color helpers pass text through unchanged; bold, faint,
+// italic and underline are not colors and always apply.
+func promptFuncMap(color bool) template.FuncMap {
+	return template.FuncMap{
+		"bold":      promptANSI(ansiBold),
+		"faint":     promptANSI(ansiFaint),
+		"italic":    promptANSI(ansiItalic),
+		"underline": promptANSI(ansiUnderline),
+		"red":       promptANSI(colorCode(color, ansiRed)),
+		"green":     promptANSI(colorCode(color, ansiGreen)),
+		"yellow":    promptANSI(colorCode(color, ansiYellow)),
+		"blue":      promptANSI(colorCode(color, ansiBlue)),
+		"magenta":   promptANSI(colorCode(color, ansiMagenta)),
+		"cyan":      promptANSI(colorCode(color, ansiCyan)),
+	}
 }
 
+// promptANSI wraps a value in an SGR code. An empty code (a color with color
+// off) passes the value through unchanged.
 func promptANSI(prefix string) func(any) string {
+	if prefix == "" {
+		return func(v any) string { return fmt.Sprint(v) }
+	}
 	return func(v any) string {
 		return prefix + fmt.Sprint(v) + ansiReset
 	}
+}
+
+// colorCode returns code, or "" with color off. Prompts use it for colors
+// only: bold, faint, italic and underline are not colors, so NO_COLOR keeps
+// them.
+func colorCode(color bool, code string) string {
+	if !color {
+		return ""
+	}
+	return code
 }
 
 // SelectOptions configures an interactive single-choice picker shown by
@@ -105,7 +123,7 @@ func RunSelect(ctx context.Context, opts SelectOptions) (int, error) {
 	if !c.capabilities.SupportsPrompt() {
 		return 0, fmt.Errorf("expected to have %s", opts.Label)
 	}
-	m, err := newSelectModel(opts)
+	m, err := newSelectModel(opts, c.capabilities.SupportsStderrColor())
 	if err != nil {
 		return 0, err
 	}
@@ -173,24 +191,25 @@ type selectModel struct {
 	cancelled bool
 }
 
-func newSelectModel(opts SelectOptions) (*selectModel, error) {
+func newSelectModel(opts SelectOptions, color bool) (*selectModel, error) {
 	items, err := normalizeItems(opts.Items)
 	if err != nil {
 		return nil, err
 	}
-	labelTpl, err := parsePromptTemplate("label", defaultIfEmpty(opts.LabelTemplate, defaultLabelTemplate))
+	funcs := promptFuncMap(color)
+	labelTpl, err := parsePromptTemplate(funcs, "label", defaultIfEmpty(opts.LabelTemplate, defaultLabelTemplate))
 	if err != nil {
 		return nil, err
 	}
-	activeTpl, err := parsePromptTemplate("active", defaultIfEmpty(opts.Active, defaultActiveTemplate))
+	activeTpl, err := parsePromptTemplate(funcs, "active", defaultIfEmpty(opts.Active, defaultActiveTemplate))
 	if err != nil {
 		return nil, err
 	}
-	inactiveTpl, err := parsePromptTemplate("inactive", defaultIfEmpty(opts.Inactive, defaultInactiveTemplate))
+	inactiveTpl, err := parsePromptTemplate(funcs, "inactive", defaultIfEmpty(opts.Inactive, defaultInactiveTemplate))
 	if err != nil {
 		return nil, err
 	}
-	selectedTpl, err := parsePromptTemplate("selected", defaultIfEmpty(opts.Selected, defaultSelectedTemplate))
+	selectedTpl, err := parsePromptTemplate(funcs, "selected", defaultIfEmpty(opts.Selected, defaultSelectedTemplate))
 	if err != nil {
 		return nil, err
 	}
@@ -218,8 +237,8 @@ func defaultIfEmpty(s, fallback string) string {
 	return s
 }
 
-func parsePromptTemplate(name, src string) (*template.Template, error) {
-	t, err := template.New(name).Funcs(promptFuncMap).Parse(src)
+func parsePromptTemplate(funcs template.FuncMap, name, src string) (*template.Template, error) {
+	t, err := template.New(name).Funcs(funcs).Parse(src)
 	if err != nil {
 		return nil, fmt.Errorf("parse %s template: %w", name, err)
 	}
@@ -521,7 +540,7 @@ func (c *cmdIO) runSelectModel(m *selectModel) (int, error) {
 	}
 	sm := final.(*selectModel)
 	if sm.cancelled {
-		return 0, errCtrlC
+		return 0, ErrCtrlC
 	}
 	return sm.originalIndex(), nil
 }

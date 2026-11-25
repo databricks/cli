@@ -25,7 +25,7 @@ class AnomalyDetectionConfig:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Beta] List of fully qualified table names to exclude from anomaly detection.
+    [Beta] List of fully qualified table names to exclude from anomaly detection. Format: `catalog.schema.table_name`.
     """
 
     notification_settings: VariableOrOptional[NotificationSettings] = None
@@ -58,7 +58,7 @@ class AnomalyDetectionConfigDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Beta] List of fully qualified table names to exclude from anomaly detection.
+    [Beta] List of fully qualified table names to exclude from anomaly detection. Format: `catalog.schema.table_name`.
     """
 
     notification_settings: VariableOrOptional[NotificationSettingsParam]

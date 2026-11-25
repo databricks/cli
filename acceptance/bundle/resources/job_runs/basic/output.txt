@@ -1,5 +1,6 @@
 
 === deploy triggers exactly one run
+
 >>> [CLI] bundle validate
 Name: job-runs-basic
 Target: default
@@ -65,6 +66,7 @@ Resources:
       URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[WORKSPACE_ID]
 
 === exactly one run-now request was made
+
 >>> print_requests.py //jobs/run-now
 {
   "method": "POST",
@@ -76,6 +78,7 @@ Resources:
 }
 
 === the triggered run id is stored in state, without result_state
+
 >>> read_state.py job_runs my_run id result_state
 job_runs my_run id='[MY_RUN_ID]' result_state=None
 
