@@ -26,7 +26,7 @@ func TestVisitJobRunPaths(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobRunPaths)
+	actual := collectVisitedPaths(t, root)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.job_runs.run0.lifecycle.triggers[0].on_file_change"),
 	}

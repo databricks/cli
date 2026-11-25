@@ -20,7 +20,7 @@ func TestVisitDashboardPaths(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitDashboardPaths)
+	actual := collectVisitedPaths(t, root)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.dashboards.dashboard0.file_path"),
 	}

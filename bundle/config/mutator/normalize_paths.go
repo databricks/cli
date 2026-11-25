@@ -41,12 +41,11 @@ func NormalizePaths() bundle.Mutator {
 }
 
 func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Do not normalize job task paths if using git source
-	gitSourcePaths := collectGitSourcePaths(b)
+	skipped := resourcesWithSkippedLocalPaths(b)
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return paths.VisitPaths(v, func(path dyn.Path, kind resources.TranslateMode, v dyn.Value) (dyn.Value, error) {
-			if slices.ContainsFunc(gitSourcePaths, path.HasPrefix) {
+		return paths.VisitPaths(v, func(path dyn.Path, _ resources.LocalPath, v dyn.Value) (dyn.Value, error) {
+			if slices.ContainsFunc(skipped, path.HasPrefix) {
 				return v, nil
 			}
 
@@ -70,19 +69,19 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 	return diag.FromErr(err)
 }
 
-func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
-	var jobs []dyn.Path
-
-	for name, job := range b.Config.Resources.Jobs {
-		if job == nil {
-			continue
-		}
-		if job.GitSource != nil {
-			jobs = append(jobs, dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key(name)))
+// resourcesWithSkippedLocalPaths returns the configuration paths of the
+// resources whose declared local paths are left as they are, as reported by
+// [resources.LocalPathSkipper].
+func resourcesWithSkippedLocalPaths(b *bundle.Bundle) []dyn.Path {
+	var out []dyn.Path
+	for _, group := range b.Config.Resources.AllResources() {
+		for name, r := range group.Resources {
+			if s, ok := r.(resources.LocalPathSkipper); ok && s.SkipLocalPaths() {
+				out = append(out, dyn.NewPath(dyn.Key("resources"), dyn.Key(group.Description.PluralName), dyn.Key(name)))
+			}
 		}
 	}
-
-	return jobs
+	return out
 }
 
 func normalizePath(path string, location diag.Location, bundleRootPath string) (string, error) {

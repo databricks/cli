@@ -70,7 +70,7 @@ func TestVisitJobLibrariesPaths(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobLibrariesPaths)
+	actual := collectVisitedPathsOf(t, root, isLibraryPath)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.tasks[4].libraries[0].whl"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[5].libraries[0].jar"),
@@ -102,7 +102,7 @@ func TestVisitJobLibrariesPaths_environments(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobLibrariesPaths)
+	actual := collectVisitedPathsOf(t, root, isLibraryPath)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[0]"),
 		dyn.MustPathFromString("resources.jobs.job0.environments[0].spec.dependencies[1]"),

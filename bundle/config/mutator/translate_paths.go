@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
@@ -64,7 +65,8 @@ func TranslatePaths() bundle.Mutator {
 	return &translatePaths{}
 }
 
-// TranslatePathsDashboards converts paths to local dashboard files into paths in the workspace file system.
+// TranslatePathsDashboards converts the local paths declared with [resources.TranslateOnLoad]
+// into paths in the workspace file system.
 func TranslatePathsDashboards() bundle.Mutator {
 	return &translatePathsDashboards{}
 }
@@ -338,7 +340,8 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 	return dyn.NewValue(out, v.Locations()), nil
 }
 
-func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
+// applyTranslations translates the local paths that are declared to be translated at the point when.
+func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, when resources.TranslateWhen) diag.Diagnostics {
 	if b.IsImmutableFolder() {
 		// Reject an explicit workspace.file_path: immutable bundles set it
 		// automatically to the content-addressed snapshot location. A user-supplied
@@ -353,15 +356,22 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 	}
 	t.remoteRoot = b.RemoteFilePath()
 
+	skipped := resourcesWithSkippedLocalPaths(b)
+
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		var err error
-		for _, fn := range translations {
-			v, err = fn(ctx, v)
-			if err != nil {
-				return dyn.InvalidValue, err
+		return paths.VisitPaths(v, func(p dyn.Path, field resources.LocalPath, v dyn.Value) (dyn.Value, error) {
+			if field.When != when || slices.ContainsFunc(skipped, p.HasPrefix) {
+				return v, nil
 			}
-		}
-		return v, nil
+
+			opts := translateOptions{
+				Mode:                     field.Mode,
+				AllowPathOutsideSyncRoot: field.AllowOutsideSyncRoot,
+			}
+
+			// Handle path as if it's relative to the bundle root
+			return t.rewriteValue(ctx, p, v, t.b.BundleRootPath, opts)
+		})
 	})
 
 	return diag.FromErr(err)
@@ -374,14 +384,7 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
-	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
-		t.applyJobTranslations(paths.VisitJobPaths, false),
-		t.applyJobTranslations(paths.VisitJobLibrariesPaths, true),
-		t.applyPipelineTranslations(paths.VisitPipelinePaths, false),
-		t.applyPipelineTranslations(paths.VisitPipelineLibrariesPaths, true),
-		t.applyArtifactTranslations,
-		t.applyAppsTranslations,
-	})
+	return applyTranslations(ctx, b, t, resources.TranslateAfterLoad)
 }
 
 func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -391,8 +394,5 @@ func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) 
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
-	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
-		t.applyDashboardTranslations,
-		t.applyGenieSpaceTranslations,
-	})
+	return applyTranslations(ctx, b, t, resources.TranslateOnLoad)
 }

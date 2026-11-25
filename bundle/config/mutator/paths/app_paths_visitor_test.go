@@ -24,7 +24,7 @@ func TestAppPathsVisitor(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitAppPaths)
+	actual := collectVisitedPaths(t, root)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.apps.app0.source_code_path"),
 		dyn.MustPathFromString("resources.apps.app0.thumbnail_path"),
