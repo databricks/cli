@@ -233,10 +233,10 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 	})
 }
 
-// TestWorkspaceClientOrPromptTipsDefaultProfileAfterPick checks that picking
-// a profile interactively tells the user how to make it the default. Without
-// that, every command shows the picker again.
-func TestWorkspaceClientOrPromptTipsDefaultProfileAfterPick(t *testing.T) {
+// pickFirstWorkspaceProfile runs workspaceClientOrPrompt with two workspace
+// profiles and no default, picks the first one in the picker, and returns
+// everything written to stderr.
+func pickFirstWorkspaceProfile(t *testing.T, cfg *config.Config) string {
 	testutil.CleanupEnvironment(t)
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
 	require.NoError(t, os.WriteFile(configFile, []byte(`
@@ -251,6 +251,7 @@ token = foobar
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
 	t.Setenv("PATH", "")
+	cfg.HTTPTransport = noNetworkTransport
 
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -259,7 +260,7 @@ token = foobar
 	errch := make(chan error, 1)
 	go func() {
 		defer cancel()
-		_, err := workspaceClientOrPrompt(ctx, &config.Config{HTTPTransport: noNetworkTransport}, true)
+		_, err := workspaceClientOrPrompt(ctx, cfg, true)
 		errch <- err
 	}()
 
@@ -279,7 +280,36 @@ token = foobar
 		}
 	}
 	require.NoError(t, <-errch)
-	assert.Contains(t, stderr.String(), `Tip: run "databricks auth switch --profile workspace-1111"`)
+	require.True(t, sentEnter, "expected the profile picker")
+	return stderr.String()
+}
+
+// TestWorkspaceClientOrPromptTipsDefaultProfileAfterPick checks that picking
+// a profile interactively tells the user how to make it the default. Without
+// that, every command shows the picker again.
+func TestWorkspaceClientOrPromptTipsDefaultProfileAfterPick(t *testing.T) {
+	stderr := pickFirstWorkspaceProfile(t, &config.Config{})
+	assert.Contains(t, stderr, "databricks auth switch --profile workspace-1111")
+}
+
+// A host from DATABRICKS_HOST or a bundle wins over default_profile, so
+// suggesting auth switch would not stop the prompt.
+func TestWorkspaceClientOrPromptNoDefaultProfileTipWhenHostIsSet(t *testing.T) {
+	stderr := pickFirstWorkspaceProfile(t, &config.Config{Host: "https://other.test"})
+	assert.NotContains(t, stderr, "auth switch")
+}
+
+func TestDefaultProfileTipQuotesProfileName(t *testing.T) {
+	tip, ok := defaultProfileTip("linux", "my dev")
+	require.True(t, ok)
+	assert.Contains(t, tip, "databricks auth switch --profile 'my dev' (or pass --profile 'my dev')")
+
+	tip, ok = defaultProfileTip("windows", "my dev")
+	require.True(t, ok)
+	assert.Contains(t, tip, `databricks auth switch --profile "my dev"`)
+
+	_, ok = defaultProfileTip("linux", "bad\x1bname")
+	assert.False(t, ok)
 }
 
 // TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile drives the

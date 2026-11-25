@@ -5,8 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
+	"runtime"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -17,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/liteswap"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -459,11 +459,19 @@ func ResolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 // command shows the picker again, which users read as being asked to log in
 // again.
 func logDefaultProfileTip(ctx context.Context, profileName string) {
-	name := profileName
-	if strings.ContainsAny(name, " \t'\"") {
-		name = strconv.Quote(name)
+	if tip, ok := defaultProfileTip(runtime.GOOS, profileName); ok {
+		cmdio.LogString(ctx, tip)
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Tip: run \"databricks auth switch --profile %s\" to use this profile by default and skip this prompt, or pass --profile %s.", name, name))
+}
+
+// defaultProfileTip reports false when the profile name can't be quoted for
+// the user's shell, so the printed command is always safe to paste.
+func defaultProfileTip(goos, profileName string) (string, bool) {
+	name, ok := shellquote.Arg(goos, profileName)
+	if !ok {
+		return "", false
+	}
+	return fmt.Sprintf("Tip: to use this profile by default and skip this prompt, run: databricks auth switch --profile %s (or pass --profile %s)", name, name), true
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
