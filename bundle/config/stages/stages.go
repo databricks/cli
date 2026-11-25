@@ -54,56 +54,92 @@ const (
 	// enum values are validated.
 	StageAfterFieldValidation Stage = "after_field_validation"
 
-	// StageBeforeDirectEngine runs before the configuration is planned or deployed by the
-	// direct engine, and before state is migrated to it. Mutators here adapt the
-	// configuration to what the direct engine expects.
-	StageBeforeDirectEngine Stage = "before_direct_engine"
+	// StageBeforePlan runs before the configuration is planned or deployed, and before
+	// existing Terraform state is migrated to the direct engine.
+	StageBeforePlan Stage = "before_plan"
 
-	// StageAfterBuild runs after the steps that can produce files a deployment syncs
-	// (building artifacts and the predeploy script), for the commands that run them.
+	// StageAfterBuild runs at the point after which building artifacts and the predeploy
+	// script would run, also for commands that run neither of them. Mutators here see the
+	// files those steps produce.
 	StageAfterBuild Stage = "after_build"
 )
 
-type stageMutator struct {
+type registration struct {
 	stage       Stage
 	resourceKey string
-	newMutator  func() bundle.Mutator
+	newMutators []func() bundle.Mutator
 }
 
-var stageMutators []stageMutator
+var registrations []registration
 
-// Register registers newMutator to run in stage for the resource type under
-// resourceKey. Call it from init() in the file of that resource type.
-func Register(stage Stage, resourceKey string, newMutator func() bundle.Mutator) {
-	stageMutators = append(stageMutators, stageMutator{stage: stage, resourceKey: resourceKey, newMutator: newMutator})
+// Register registers newMutators to run in stage, in the given order, for the resource
+// type under resourceKey. Call it from init() in the file of that resource type.
+//
+// Within a stage, resource types run in their canonical order (the field order of
+// [config.Resources]). Several calls for the same type and stage run in the order of the
+// name of the first mutator of each call, so that the order depends neither on file
+// names nor on the order in which Go runs init functions. Mutators that must run in a
+// given order are therefore registered in one call.
+func Register(stage Stage, resourceKey string, newMutators ...func() bundle.Mutator) {
+	registrations = append(registrations, registration{stage: stage, resourceKey: resourceKey, newMutators: newMutators})
 }
 
-// stageMutatorsByStage groups the registered mutators by stage. Within a stage, resource
-// types run in their canonical order (the field order of [config.Resources]), so that the
-// order does not depend on file names. The mutators of one type keep their registration
-// order: the order of calls within a file, then the order in which Go runs init functions
-// of different files. Mutators of one type that depend on each other must therefore be
-// registered from one file, in the order they must run.
-var stageMutatorsByStage = sync.OnceValue(func() map[Stage][]stageMutator {
+var mutatorsByStage = sync.OnceValue(func() map[Stage][]func() bundle.Mutator {
+	var resourceKeys []string
+	for _, rt := range config.AllResourceTypes() {
+		resourceKeys = append(resourceKeys, rt.Key)
+	}
+	return groupByStage(registrations, resourceKeys)
+})
+
+// groupByStage orders registrations as [Register] documents, with resource types in the
+// order of resourceKeys, and returns their mutators per stage. It panics on a
+// registration for a key that is not in resourceKeys, on a registration without
+// mutators, and on a mutator name that is registered twice for one stage, because each
+// of these is a mistake in the code that registers.
+func groupByStage(registrations []registration, resourceKeys []string) map[Stage][]func() bundle.Mutator {
 	typeOrder := map[string]int{}
-	for key := range config.ResourceTypesImplementing[config.ConfigResource]() {
-		typeOrder[key] = len(typeOrder)
+	for i, key := range resourceKeys {
+		typeOrder[key] = i
 	}
 
-	byStage := map[Stage][]stageMutator{}
-	for _, m := range stageMutators {
-		if _, ok := typeOrder[m.resourceKey]; !ok {
-			panic(fmt.Sprintf("mutator registered for unknown resource type %q", m.resourceKey))
-		}
-		byStage[m.stage] = append(byStage[m.stage], m)
+	type ordered struct {
+		registration
+		typeIndex int
+		firstName string
 	}
-	for _, ms := range byStage {
-		slices.SortStableFunc(ms, func(a, b stageMutator) int {
-			return cmp.Compare(typeOrder[a.resourceKey], typeOrder[b.resourceKey])
-		})
+	var regs []ordered
+	for _, r := range registrations {
+		typeIndex, ok := typeOrder[r.resourceKey]
+		if !ok {
+			panic(fmt.Sprintf("mutator registered for unknown resource type %q", r.resourceKey))
+		}
+		if len(r.newMutators) == 0 {
+			panic(fmt.Sprintf("no mutators registered for resource type %q in stage %q", r.resourceKey, r.stage))
+		}
+		regs = append(regs, ordered{registration: r, typeIndex: typeIndex, firstName: r.newMutators[0]().Name()})
+	}
+	slices.SortStableFunc(regs, func(a, b ordered) int {
+		return cmp.Or(cmp.Compare(a.typeIndex, b.typeIndex), cmp.Compare(a.firstName, b.firstName))
+	})
+
+	byStage := map[Stage][]func() bundle.Mutator{}
+	seen := map[Stage]map[string]bool{}
+	for _, r := range regs {
+		if seen[r.stage] == nil {
+			seen[r.stage] = map[string]bool{}
+		}
+		for _, newMutator := range r.newMutators {
+			name := newMutator().Name()
+			if seen[r.stage][name] {
+				panic(fmt.Sprintf("mutator %q registered more than once for stage %q", name, r.stage))
+			}
+			seen[r.stage][name] = true
+			byStage[r.stage] = append(byStage[r.stage], newMutator)
+		}
 	}
 	return byStage
-})
+}
 
 type applyStage struct {
 	stage Stage
@@ -121,8 +157,8 @@ func (m *applyStage) Name() string {
 
 func (m *applyStage) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var mutators []bundle.Mutator
-	for _, sm := range stageMutatorsByStage()[m.stage] {
-		mutators = append(mutators, sm.newMutator())
+	for _, newMutator := range mutatorsByStage()[m.stage] {
+		mutators = append(mutators, newMutator())
 	}
 	bundle.ApplySeqContext(ctx, b, mutators...)
 	return nil

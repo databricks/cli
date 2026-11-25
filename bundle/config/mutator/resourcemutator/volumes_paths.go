@@ -19,8 +19,10 @@ func init() {
 	// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
 	// model, so exposing it to Python would fail resource loading (like the "deployment"
 	// metadata that the initialize phase annotates).
-	stages.Register(stages.StageAfterPython, "volumes", InitializeVolumePaths)
-	stages.Register(stages.StageAfterPython, "volumes", mutator.ResolveVolumePathReferencesOnlyResources)
+	stages.Register(stages.StageAfterPython, "volumes",
+		InitializeVolumePaths,
+		mutator.ResolveVolumePathReferencesOnlyResources,
+	)
 }
 
 type initializeVolumePaths struct{}

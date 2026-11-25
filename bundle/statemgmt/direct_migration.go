@@ -270,7 +270,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 
 	// Adapt the config to what the direct engine expects, so that the migrated
 	// state and the config agree (for example on default .permissions entries).
-	bundle.ApplyContext(ctx, b, stages.ApplyStage(stages.StageBeforeDirectEngine))
+	bundle.ApplyContext(ctx, b, stages.ApplyStage(stages.StageBeforePlan))
 	if logdiag.HasError(ctx) {
 		return tempStatePath, false, nil, errors.New("failed to apply secret scope fixups")
 	}

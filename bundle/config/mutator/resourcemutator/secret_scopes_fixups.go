@@ -18,7 +18,7 @@ import (
 func init() {
 	// Adds a MANAGE ACL for the current user to every secret scope, so that the
 	// configuration and the direct engine state agree on .permissions entries.
-	stages.Register(stages.StageBeforeDirectEngine, "secret_scopes", SecretScopeFixups)
+	stages.Register(stages.StageBeforePlan, "secret_scopes", SecretScopeFixups)
 }
 
 type secretScopeFixups struct{}
