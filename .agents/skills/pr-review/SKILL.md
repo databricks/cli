@@ -289,7 +289,7 @@ in the Evidence section.
 - State what you expected when the code contradicts it: "I thought this
   would fall back to Y."
 - Give an out on genuine judgment calls ("or is this not worth it?"), not on
-  bugs. A race that needs a fault and a second actor is a judgment call.
+  bugs. A race BASE already has is a judgment call.
 - No praise, no verdict, no summary of the change.
 
 **Order.** List inline comments by severity: wrong behavior users can hit
@@ -307,19 +307,22 @@ short list if there are several.
 4. Raise each class of problem once. Name the mechanism that makes the
    code wrong and look for every instance: the same request retried by
    another layer (our retry, the SDK's), the same race in another function
-   or command, the same pattern at BASE. Comment on the first instance and
-   name the others in that comment. Don't hold one back for a later round. The
-   review body doesn't repeat inline comments; use it for cross-cutting asks
-   (missing tests, a design question that spans files).
+   or command, the same pattern at BASE. Comment on the first instance the
+   change adds and name the others in that comment. An instance that exists
+   only at BASE is context, not an ask of its own. Don't hold one back for
+   a later round. The review body doesn't repeat inline comments; use it
+   for cross-cutting asks (missing tests, a design question that spans
+   files).
 5. If the PR already has review threads, yours or another reviewer's, read
    them now. Drop a comment that repeats a point already raised there or
    that the author already answered (verification evidence often lives in a
    thread, not in the description), and add a short one where an earlier
    ask was not addressed. If an earlier thread of yours asked for a fix and
    the new code shows the same hazard one layer down, your ask was
-   incomplete: reply in that thread with every remaining layer, say which
-   the design can close, and give your position. Don't open a new thread
-   per layer.
+   incomplete: write one follow-up with every remaining layer, say which
+   the design can close, and give your position. Print it under that
+   thread's `path:LINE`, marked as a reply to the thread. Don't open a new
+   thread per layer.
 
 ## 5. Output
 
