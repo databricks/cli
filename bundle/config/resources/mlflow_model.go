@@ -47,6 +47,18 @@ func (s *MlflowModel) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*MlflowModel) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+		},
+		RequestObjectType:  "registered-models",
+		ResponseObjectType: "registered-model",
+		ObjectIDField:      "model_id", // numeric model ID, not the model name used as CRUD state ID
+	}
+}
+
 func (s *MlflowModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

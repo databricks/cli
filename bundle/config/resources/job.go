@@ -52,6 +52,20 @@ func (j *Job) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Job) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_VIEW",
+			CanRun:    "CAN_MANAGE_RUN",
+		},
+		RequestObjectType:  "jobs",
+		ResponseObjectType: "job",
+		ObjectIDField:      "id",
+		HasIsOwner:         true,
+	}
+}
+
 func (j *Job) InitializeURL(baseURL url.URL) {
 	if j.ID == "" {
 		return

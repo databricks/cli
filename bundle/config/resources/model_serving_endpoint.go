@@ -50,6 +50,19 @@ func (s *ModelServingEndpoint) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*ModelServingEndpoint) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_VIEW",
+			CanRun:    "CAN_QUERY",
+		},
+		RequestObjectType:  "serving-endpoints",
+		ResponseObjectType: "serving-endpoint",
+		ObjectIDField:      "endpoint_id", // internal numeric ID, not the name used in CRUD APIs
+	}
+}
+
 func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

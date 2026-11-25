@@ -50,6 +50,19 @@ func (a *Alert) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Alert) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_READ",
+			CanRun:    "CAN_RUN",
+		},
+		RequestObjectType:  "alertsv2",
+		ResponseObjectType: "alertv2",
+		ObjectIDField:      "id",
+	}
+}
+
 func (a *Alert) InitializeURL(baseURL url.URL) {
 	if a.ID == "" {
 		return

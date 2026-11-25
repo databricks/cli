@@ -52,6 +52,20 @@ func (p *Pipeline) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Pipeline) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_VIEW",
+			CanRun:    "CAN_RUN",
+		},
+		RequestObjectType:  "pipelines",
+		ResponseObjectType: "pipelines",
+		ObjectIDField:      "id",
+		HasIsOwner:         true,
+	}
+}
+
 func (p *Pipeline) InitializeURL(baseURL url.URL) {
 	if p.ID == "" {
 		return

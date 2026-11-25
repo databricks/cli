@@ -44,6 +44,18 @@ func (*InstancePool) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*InstancePool) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_ATTACH_TO",
+		},
+		RequestObjectType:  "instance-pools",
+		ResponseObjectType: "instance-pool",
+		ObjectIDField:      "id",
+	}
+}
+
 func (s *InstancePool) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

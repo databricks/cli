@@ -49,6 +49,19 @@ func (e *VectorSearchEndpoint) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*VectorSearchEndpoint) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		// https://docs.databricks.com/aws/en/security/auth/access-control/#vector-search-endpoint-acls
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_USE",
+		},
+		RequestObjectType:  "vector-search-endpoints",
+		ResponseObjectType: "vector-search-endpoints",
+		ObjectIDField:      "endpoint_uuid", // endpoint UUID, not the endpoint name used as deployment ID
+	}
+}
+
 func (e *VectorSearchEndpoint) InitializeURL(baseURL url.URL) {
 	if e.Name == "" {
 		return

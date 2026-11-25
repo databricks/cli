@@ -46,6 +46,18 @@ func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*DatabaseInstance) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_USE",
+		},
+		RequestObjectType:  "database-instances",
+		ResponseObjectType: "database-instances",
+		ObjectIDField:      "id",
+	}
+}
+
 func (d *DatabaseInstance) GetName() string {
 	return d.Name
 }

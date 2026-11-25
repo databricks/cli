@@ -1,9 +1,13 @@
 package dresources
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,9 +51,61 @@ func TestPermissionsPrepareInputConfig(t *testing.T) {
 }
 
 // Configure resolves the parent type at init, so an unregistered parent fails before planning.
+// Secret scopes declare permissions but not the permissions API, so they are unsupported too.
 func TestPermissionsConfigureUnsupportedParent(t *testing.T) {
-	_, err := NewAdapter(SupportedResources["jobs.permissions"], "unregistered.permissions", nil)
-	assert.ErrorContains(t, err, "unsupported permissions resource type: unregistered")
+	for _, parent := range []string{"unregistered", "schemas", "secret_scopes"} {
+		_, err := NewAdapter(SupportedResources["jobs.permissions"], parent+".permissions", nil)
+		assert.ErrorContains(t, err, "unsupported permissions resource type: "+parent)
+	}
+}
+
+// The adapters are listed by hand, so check them against what the resource types declare.
+func TestPermissionsAdaptersMatchDeclarations(t *testing.T) {
+	declared := map[string]bool{}
+	for key, d := range config.ResourceTypesImplementing[resources.PermissionsDeclarer]() {
+		resourceType := key + ".permissions"
+		declared[resourceType] = true
+		adapter, ok := SupportedResources[resourceType]
+		if !assert.True(t, ok, "%s has no adapter", resourceType) {
+			continue
+		}
+		usesAPI := d.PermissionsSupport().RequestObjectType != ""
+		_, isPermissions := adapter.(*ResourcePermissions)
+		assert.Equal(t, usesAPI, isPermissions, "%s: the permissions API adapter must be used exactly when the type declares RequestObjectType", resourceType)
+	}
+	for resourceType := range SupportedResources {
+		if strings.HasSuffix(resourceType, ".permissions") {
+			assert.True(t, declared[resourceType], "%s has an adapter but its parent does not declare permissions", resourceType)
+		}
+	}
+}
+
+// The object ID reference reads ObjectIDField from the parent's remote state.
+// The deployment framework supplies "id" itself.
+func TestPermissionsObjectIDFieldIsReadable(t *testing.T) {
+	for key, d := range config.ResourceTypesImplementing[resources.PermissionsDeclarer]() {
+		field := d.PermissionsSupport().ObjectIDField
+		if field == "" || field == "id" {
+			continue
+		}
+		adapter, err := NewAdapter(SupportedResources[key], key, nil)
+		require.NoError(t, err)
+		assert.NoError(t, structaccess.ValidateByString(adapter.RemoteType(), field), key)
+	}
+}
+
+// The fake server keeps its own table of permissions object types, since it does not
+// depend on the bundle configuration.
+func TestPermissionsObjectTypesMatchTestServer(t *testing.T) {
+	for key, d := range config.ResourceTypesImplementing[resources.PermissionsDeclarer]() {
+		s := d.PermissionsSupport()
+		if s.RequestObjectType == "" {
+			continue
+		}
+		objectType, ok := testserver.PermissionsObjectType(s.RequestObjectType)
+		assert.True(t, ok, "%s: the test server does not serve permissions for %q", key, s.RequestObjectType)
+		assert.Equal(t, s.ResponseObjectType, objectType, key)
+	}
 }
 
 // Resources without PrepareInputConfig get their config through unchanged and add no references.

@@ -100,6 +100,18 @@ func (*App) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*App) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_USE",
+		},
+		RequestObjectType:  "apps",
+		ResponseObjectType: "apps",
+		ObjectIDField:      "id",
+	}
+}
+
 func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return

@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
@@ -273,20 +274,23 @@ func lookupDeployedField(b *bundle.Bundle, resourceKey, field string) (any, erro
 	return structaccess.Get(remote, path)
 }
 
-// withoutCurrentUserDefaults drops the current user's grants that exist without being declared.
-// For most resources these are IS_OWNER and CAN_MANAGE, one of which FixPermissions adds on
-// deploy; another principal's IS_OWNER is kept, so a transferred owner stays the owner after the
-// next deploy. For a cluster policy it is the CAN_USE the backend grants its creator: only admins
-// create policies and admins can use every policy, so the grant is never needed in the config.
+// withoutCurrentUserDefaults drops the current user's grants that exist without being declared:
+// IS_OWNER and CAN_MANAGE, one of which FixPermissions adds on deploy unless the resource type
+// skips that fix-up, and the creator level the resource type declares. Another principal's
+// IS_OWNER is kept, so a transferred owner stays the owner after the next deploy.
 func withoutCurrentUserDefaults(permissions []dresources.StatePermission, currentUser, resourceType string) []dresources.StatePermission {
+	var support resources.PermissionsSupport
+	if d, ok := config.ResourceTypeAs[resources.PermissionsDeclarer](resourceType); ok {
+		support = d.PermissionsSupport()
+	}
 	return slices.DeleteFunc(permissions, func(p dresources.StatePermission) bool {
 		if !isCurrentUserPermission(p, currentUser) {
 			return false
 		}
-		if resourceType == "cluster_policies" {
-			return p.Level == iam.PermissionLevelCanUse
+		if !support.SkipFixup && (p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage) {
+			return true
 		}
-		return p.Level == iam.PermissionLevelIsOwner || p.Level == iam.PermissionLevelCanManage
+		return support.CreatorLevel != "" && string(p.Level) == support.CreatorLevel
 	})
 }
 

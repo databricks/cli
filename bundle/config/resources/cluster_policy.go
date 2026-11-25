@@ -54,6 +54,20 @@ func (*ClusterPolicy) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*ClusterPolicy) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		RequestObjectType:  "cluster-policies",
+		ResponseObjectType: "cluster-policy",
+		ObjectIDField:      "id",
+		// Cluster policies only support CAN_USE; injecting the current user as
+		// CAN_MANAGE/IS_OWNER would be rejected by the permissions API.
+		SkipFixup: true,
+		// Only admins create policies and admins can use every policy, so the
+		// creator's grant is never needed in the configuration.
+		CreatorLevel: "CAN_USE",
+	}
+}
+
 func (s *ClusterPolicy) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return

@@ -59,6 +59,20 @@ func (*Cluster) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Cluster) PermissionsSupport() PermissionsSupport {
+	return PermissionsSupport{
+		// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
+		BundleLevels: BundlePermissionLevels{
+			CanManage: "CAN_MANAGE",
+			CanView:   "CAN_ATTACH_TO",
+			CanRun:    "CAN_RESTART",
+		},
+		RequestObjectType:  "clusters",
+		ResponseObjectType: "cluster",
+		ObjectIDField:      "id",
+	}
+}
+
 func (s *Cluster) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
