@@ -1,3 +1,7 @@
+# The config's job_id is a ${resources.jobs.*.id} reference, resolved only at
+# deploy; read-only commands build the run's URL from the exported value.
+job_id_field: job_id
+
 # Every jobs.RunNow field is listed, so nothing the request carries is drift.
 # TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
 # result_state is not in the list: comparing it against the remote is what

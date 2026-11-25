@@ -1037,7 +1037,7 @@ func (db *DeploymentState) AssertOpenedForWrite() {
 	}
 }
 
-// ExportStateFromData extracts resource IDs and ETags from a database snapshot.
+// ExportStateFromData extracts resource IDs, ETags and job IDs from a database snapshot.
 func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range data.State {
@@ -1054,16 +1054,11 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 			etag = stateField[string](entry.State, rc.EtagField)
 		}
 
-		// Persist a run's resolved job_id so read-only commands can build its
-		// URL; in config it is a deploy-time-only ${resources.jobs.*.id} reference.
+		// Export the resolved job id so read-only commands can use it; in config it is
+		// a deploy-time-only reference (see ResourceLifecycleConfig.JobIDField).
 		var jobID int64
-		if resourceType == "job_runs" && len(entry.State) > 0 {
-			var holder struct {
-				JobID int64 `json:"job_id"`
-			}
-			if err := json.Unmarshal(entry.State, &holder); err == nil {
-				jobID = holder.JobID
-			}
+		if rc.JobIDField != "" && len(entry.State) > 0 {
+			jobID = stateField[int64](entry.State, rc.JobIDField)
 		}
 
 		result[key] = resourcestate.ResourceState{

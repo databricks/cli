@@ -96,6 +96,8 @@ If the resource records the id of the deployment it belongs to (a job's `deploym
 
 If drift is detected by comparing the etag the last deploy recorded against the remote one (in `OverrideChangeDesc`), name the top-level etag field as `etag_field`. It must exist in both the state and the remote type. The config does not provide the etag, so bind copies it from the remote state, and the exported resource state carries it.
 
+Similarly, `job_id_field` names the top-level state field holding the id of the job a resource was launched against (a job run's `job_id`), which the config gives as a reference resolved only at deploy. The exported resource state carries it for read-only commands.
+
 ## RemapState is a dumb copy; DoRead owns all remapping
 
 `RemapState` converts `RemoteType` to `StateType` only because `StateType` is typically a

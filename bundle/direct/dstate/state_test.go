@@ -253,6 +253,11 @@ func TestExportStateFromDataJobRunJobID(t *testing.T) {
 				ID:    "456",
 				State: json.RawMessage(`{"job_id": 999}`),
 			},
+			// Only types that declare a job_id_field export one.
+			"resources.quality_monitors.my_monitor": {
+				ID:    "main.s.t",
+				State: json.RawMessage(`{"job_id": 777}`),
+			},
 		},
 	}
 
@@ -260,6 +265,7 @@ func TestExportStateFromDataJobRunJobID(t *testing.T) {
 
 	assert.Equal(t, int64(123), result["resources.job_runs.my_run"].JobID)
 	assert.Equal(t, int64(0), result["resources.job_runs.my_run.permissions"].JobID)
+	assert.Equal(t, int64(0), result["resources.quality_monitors.my_monitor"].JobID)
 }
 
 func TestExportStateFromDataDashboardEtag(t *testing.T) {

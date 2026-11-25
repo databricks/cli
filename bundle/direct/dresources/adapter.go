@@ -463,6 +463,12 @@ func (a *Adapter) validate() error {
 		}
 	}
 
+	if a.resourceConfig != nil && a.resourceConfig.JobIDField != "" {
+		if err := structaccess.ValidatePath(stateType, structpath.NewStringKey(nil, a.resourceConfig.JobIDField)); err != nil {
+			return fmt.Errorf("job_id_field: %w", err)
+		}
+	}
+
 	if a.resourceConfig != nil && len(a.resourceConfig.ParentIDFields) > 0 && a.idFromState == nil {
 		return errors.New("parent_id_fields requires IDFromState")
 	}

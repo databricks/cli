@@ -128,6 +128,12 @@ type ResourceLifecycleConfig struct {
 	// state, and the exported state carries it (resourcestate.ResourceState.ETag).
 	EtagField string `yaml:"etag_field,omitempty"`
 
+	// JobIDField: the top-level state field holding the id of the job the resource was launched
+	// against, when the config gives it as a reference that is resolved only at deploy. The
+	// exported state carries it (resourcestate.ResourceState.JobID), so read-only commands can
+	// use it without resolving the reference.
+	JobIDField string `yaml:"job_id_field,omitempty"`
+
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
@@ -228,6 +234,7 @@ var empty = ResourceLifecycleConfig{
 	InternalIDField:       "",
 	DeploymentIDField:     "",
 	EtagField:             "",
+	JobIDField:            "",
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,
