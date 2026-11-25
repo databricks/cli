@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate -o json
+Warning: required field "id" is not set
+  at resources.jobs.j.webhook_notifications.on_start[0]
+  in databricks.yml:10:12
+
+{
+  "webhook_notifications": {
+    "on_start": [
+      {}
+    ]
+  }
+}

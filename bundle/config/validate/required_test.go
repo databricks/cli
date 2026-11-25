@@ -37,7 +37,9 @@ resources:
       tasks:
         - task_key: a
           notebook_task:
-        -
+      webhook_notifications:
+        on_start:
+          -
 `))
 	require.Empty(t, diags)
 	b := &bundle.Bundle{Config: *root}
@@ -45,6 +47,6 @@ resources:
 	// A null sequence item is still a (zero-valued) element, so it is checked.
 	diags = Required().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
-	assert.Equal(t, `required field "task_key" is not set`, diags[0].Summary)
-	assert.Equal(t, "resources.jobs.j.tasks[1]", diags[0].Paths[0].String())
+	assert.Equal(t, `required field "id" is not set`, diags[0].Summary)
+	assert.Equal(t, "resources.jobs.j.webhook_notifications.on_start[0]", diags[0].Paths[0].String())
 }

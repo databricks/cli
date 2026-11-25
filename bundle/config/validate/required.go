@@ -57,9 +57,9 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 			return nil
 		}
 
-		// A null field (e.g. "schedule: null") converts to the same value as an absent one, so it
-		// has no required fields to check. Null map entries and sequence items (wildcard pattern
-		// components) are still checked: they become zero-valued elements.
+		// A null field (e.g. "schedule: null") converts to a nil or zero struct and nothing is sent
+		// for it, so it has no required fields to check. Null map entries and sequence items
+		// (wildcard pattern components) are still checked: they become zero-valued elements.
 		if v.Kind() == dyn.KindNil {
 			if _, key := pattern.SplitKey(); key != "" {
 				return nil
