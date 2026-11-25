@@ -10,5 +10,6 @@
         "whl": "./src/lib.whl"
       }
     ]
-  }
+  },
+  "script_path": "./src/main.py"
 }
