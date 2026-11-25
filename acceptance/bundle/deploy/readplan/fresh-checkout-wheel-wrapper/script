@@ -26,7 +26,8 @@ trace $CLI bundle deploy
 trace $CLI bundle plan -o json > tmp.plan.json
 trace rm -rf .databricks
 bundle_tmp="$(mktemp -d)"
-add_repl "$bundle_tmp" BUNDLE_TMP
-trace env DATABRICKS_BUNDLE_TMP="$bundle_tmp" $CLI bundle deploy --plan tmp.plan.json
+export DATABRICKS_BUNDLE_TMP="$bundle_tmp"
+trace $CLI bundle deploy --plan tmp.plan.json
+unset DATABRICKS_BUNDLE_TMP
 rm -rf "${bundle_tmp:?}"
 wrapper_status
