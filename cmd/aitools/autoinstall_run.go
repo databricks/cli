@@ -565,7 +565,11 @@ func (t toolsPlan) fresh() bool {
 // does instead, which keeps its downgrade guard, also keeps an installed
 // release newer than a pinned one, keeps the skills whose files the user
 // modified at their version, and does not migrate skills to plugins.
-// Planning reads only local state; prior is the auto-install state.
+// A first install of auto-install that did not finish is planned again as a
+// first install, even when it saved install state: update reinstalls only
+// the skills whose version changed, so it would never give the skills to an
+// agent that did not get them. Planning reads only local state; prior is the
+// auto-install state.
 func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) {
 	globalDir, err := installer.GlobalSkillsDir(ctx)
 	if err != nil {
@@ -575,7 +579,7 @@ func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) 
 	if err != nil {
 		return toolsPlan{}, err
 	}
-	if existing != nil {
+	if existing != nil && !prior.Installing {
 		// The update runs agent CLIs to update the recorded plugins.
 		if !agentCLIsStoppable && len(existing.Plugins) > 0 {
 			return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeSkippedPlatform, skipWhy: "the update would run agent CLIs"}, nil
