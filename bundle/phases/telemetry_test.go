@@ -105,12 +105,23 @@ func TestRecordResourceBoolValues(t *testing.T) {
 	}, b.Metrics.BoolValues)
 }
 
-// Every type that supports lifecycle.started declares the key that reports it, and only those.
+// Every type that supports lifecycle.started declares the key that reports it, only those
+// do, and no two declare the same key.
 func TestLifecycleStartedTelemetryIsDeclaredByTypesWithStarted(t *testing.T) {
+	declaredBy := map[string]string{}
 	for _, rt := range config.AllResourceTypes() {
 		_, hasStarted := rt.New().GetLifecycle().(resources.LifecycleWithStarted)
-		_, declares := rt.New().(resources.LifecycleStartedTelemetry)
+		d, declares := rt.New().(resources.LifecycleStartedTelemetry)
 		assert.Equal(t, hasStarted, declares, "resource type %q supports lifecycle.started: %v, declares LifecycleStartedTelemetry: %v", rt.Key, hasStarted, declares)
+		if !declares {
+			continue
+		}
+		key := d.LifecycleStartedTelemetryKey()
+		if other, ok := declaredBy[key]; ok {
+			t.Errorf("resource types %q and %q both declare lifecycle.started telemetry key %q", other, rt.Key, key)
+			continue
+		}
+		declaredBy[key] = rt.Key
 	}
 }
 
