@@ -1,5 +1,5 @@
 Cloud = true
-Badness = "The plan does not look for a model whose schema was renamed outside the bundle (a model has no recorded id to find it by), so it creates it again: the create fails with RESOURCE_ALREADY_EXISTS on every deploy. Same on main."
+Badness = "A registered model whose schema was renamed outside the bundle is not found by the plan (unlike the schema, it has no recorded id to look it up by), so the plan creates it again and deploy fails with RESOURCE_ALREADY_EXISTS. The plan should look for the model under the schema's new name and keep it instead of creating it again."
 
 Ignore = [
     ".databricks",
