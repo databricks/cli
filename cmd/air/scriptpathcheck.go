@@ -31,36 +31,32 @@ func relativeScriptWarning(cfg *runConfig, snapshotFiles []string) string {
 }
 
 // scriptLaunchers are the commands whose first non-flag argument this check reads
-// as a script path. It's the CLI's own heuristic for an advisory warning: other
-// first words (echo, env, uv, custom wrappers) may resolve paths themselves, so
-// they never warn.
+// as a script path. It's the CLI's own heuristic for an advisory warning: any
+// other first word (echo, env, uv, cd, a custom wrapper) may resolve paths
+// itself, so it never warns.
 var scriptLaunchers = [][]string{{"python"}, {"python3"}, {"torchrun"}, {"accelerate", "launch"}, {"deepspeed"}, {"bash"}, {"sh"}}
 
-// relativeScriptInCommand returns the script argument of the first simple
-// command (split on shell operators) that runs a script launcher on a file in
-// snapshotFiles by a relative path, or "". Scanning stops at a `#` comment and at
-// a `cd` or `pushd`: once the command changes directory, as in
-// `cd "$CODE_SOURCE_PATH" && python train.py`, later relative paths are resolved
-// against a directory this check can't know.
+// relativeScriptInCommand returns the script argument when the whole command is
+// one launcher invocation, such as `NCCL_DEBUG=INFO python train.py`, whose
+// script is a file in snapshotFiles given by a relative path, or "". It warns
+// only when the warning is almost certainly right: a command with more than one
+// line, a shell operator, a subshell or a command substitution may change
+// directory or resolve paths in ways this check can't see, so it never warns.
 func relativeScriptInCommand(command string, snapshotFiles []string) string {
-	for simple := range strings.FieldsFuncSeq(command, isShellOperator) {
-		words, comment := commandWords(simple)
-		if len(words) > 0 && (words[0] == "cd" || words[0] == "pushd") {
-			return ""
-		}
-		if rel := scriptArgument(words, snapshotFiles); rel != "" || comment {
-			return rel
-		}
+	command = strings.TrimSpace(command)
+	if strings.ContainsAny(command, "\n;&|()`") {
+		return ""
 	}
-	return ""
+	return scriptArgument(commandWords(command), snapshotFiles)
 }
 
-// commandWords returns the unquoted words of a simple command without its
-// leading NAME=value assignments, and whether a `#` comment ended it.
-func commandWords(simple string) (words []string, comment bool) {
-	for word := range strings.FieldsSeq(simple) {
+// commandWords returns the unquoted words of command before any `#` comment,
+// without its leading NAME=value assignments.
+func commandWords(command string) []string {
+	var words []string
+	for word := range strings.FieldsSeq(command) {
 		if strings.HasPrefix(word, "#") {
-			return words, true
+			break
 		}
 		word = strings.Trim(word, `"'`)
 		if len(words) == 0 && strings.Contains(word, "=") {
@@ -68,14 +64,15 @@ func commandWords(simple string) (words []string, comment bool) {
 		}
 		words = append(words, word)
 	}
-	return words, false
+	return words
 }
 
 // scriptArgument returns the script argument of words when they start with a
 // script launcher and the script is a snapshot file, or "". Flags are skipped,
 // and so are words that can't be a path (no `.`, `/` or `$`), such as the 8 in
-// `torchrun --nproc_per_node 8 train.py`. `-m` and `-c` run a module or inline
-// code, so there's no script.
+// `torchrun --nproc_per_node 8 train.py`. The first word that can be a path is
+// the only one checked. `-m` and `-c` run a module or inline code, so there's no
+// script.
 func scriptArgument(words, snapshotFiles []string) string {
 	args, ok := launcherArgs(words)
 	if !ok {
@@ -103,10 +100,6 @@ func launcherArgs(words []string) ([]string, bool) {
 		}
 	}
 	return nil, false
-}
-
-func isShellOperator(r rune) bool {
-	return strings.ContainsRune(";&|()", r)
 }
 
 func relativeScriptMessage(field, rel string) string {
