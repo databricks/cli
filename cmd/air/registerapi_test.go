@@ -394,6 +394,35 @@ func TestRegisterAndFinalizeStopsWhenCanceled(t *testing.T) {
 	assert.Empty(t, fake.finalizeRequests)
 }
 
+func TestRegistrationRequestForCommandJSON(t *testing.T) {
+	cfg, err := loadRegisterConfigText(t, commandRegisterConfig)
+	require.NoError(t, err)
+	raw, err := json.Marshal(cfg.registrationRequest("k"))
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"model_source": "/Volumes/main/models/weights/qwen3_8b",
+		"uc_model": "main.models.qwen",
+		"idempotency_key": "k",
+		"engine": {
+			"environment": {"version": "6", "dependencies": ["einops==0.8.0"]},
+			"command": "python -m vllm.entrypoints.openai.api_server --model qwen3_8b --port 8080",
+			"task": "llm/v1/chat"
+		}
+	}`, string(raw))
+}
+
+func TestRegistrationRequestForDedicatedJSON(t *testing.T) {
+	cfg, err := loadRegisterConfigText(t, dedicatedRegisterConfig)
+	require.NoError(t, err)
+	raw, err := json.Marshal(cfg.registrationRequest("k"))
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"model_source": "/Volumes/main/models/weights/qwen3_8b",
+		"uc_model": "main.models.qwen",
+		"idempotency_key": "k"
+	}`, string(raw))
+}
+
 func TestRegisterModelPackageRequestJSON(t *testing.T) {
 	raw, err := json.Marshal(checkpointRequest())
 	require.NoError(t, err)

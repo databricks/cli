@@ -29,6 +29,10 @@ const stagingStatusPath = "/api/2.0/serving-endpoints:checkModelDeploymentStagin
 // as it is.
 const finalizeModelPackagePath = "/api/2.0/serving-endpoints:finalizeModelPackage"
 
+// registrationPollInterval is how often air register checks on a checkpoint's
+// weights while they are staged.
+const registrationPollInterval = 15 * time.Second
+
 // ModelDeploymentStagingStatus states air register acts on.
 const (
 	// stagingStateNotStaged: no staging record exists for the version.

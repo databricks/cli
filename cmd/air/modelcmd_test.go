@@ -51,3 +51,10 @@ func TestModelErrorCode(t *testing.T) {
 		assert.Equal(t, tt.retryable, retryable, tt.name)
 	}
 }
+
+func TestValidateUCModelName(t *testing.T) {
+	assert.NoError(t, validateUCModelName("main.serving.defect-detector", "uc_model"))
+	for _, name := range []string{"", "qwen", "a.b", "a.b.c.d", "a.b/c.d", "a. b.c", "main.models.`qwen`"} {
+		assert.ErrorContains(t, validateUCModelName(name, "--uc-model"), "--uc-model must be a Unity Catalog model name", name)
+	}
+}

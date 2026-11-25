@@ -33,9 +33,9 @@ func stubValidateConfig(server *testserver.Server) {
 
 func TestEffectiveIdempotencyToken(t *testing.T) {
 	cfg := &runConfig{IdempotencyToken: new("from-config")}
-	assert.Equal(t, "from-flag", effectiveIdempotencyToken("from-flag", cfg))
-	assert.Equal(t, "from-config", effectiveIdempotencyToken("", cfg))
-	assert.NotEmpty(t, effectiveIdempotencyToken("", &runConfig{}))
+	assert.Equal(t, "from-flag", effectiveIdempotencyToken("from-flag", cfg.IdempotencyToken))
+	assert.Equal(t, "from-config", effectiveIdempotencyToken("", cfg.IdempotencyToken))
+	assert.NotEmpty(t, effectiveIdempotencyToken("", nil))
 }
 
 func TestDlRuntimeImage(t *testing.T) {

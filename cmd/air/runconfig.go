@@ -608,13 +608,16 @@ func (p *permission) validate() error {
 // or bare `compute`).
 const configHelpRoot = "config"
 
+// runCommandPath is the command whose -h documents runConfig.
+const runCommandPath = "databricks air run"
+
 // writeConfigFieldHelp resolves a dotted config path and writes its docs.
 func writeConfigFieldHelp(w io.Writer, path string) error {
 	field, err := resolveConfigField(path)
 	if err != nil {
 		return err
 	}
-	renderConfigField(w, field, nil)
+	renderConfigField(w, runCommandPath, field, nil)
 	return nil
 }
 
@@ -675,8 +678,13 @@ func configSchema() configField {
 // resolveConfigField resolves a dotted YAML path against the run config schema.
 // The leading "config." is optional; an empty path describes the whole schema.
 func resolveConfigField(path string) (configField, error) {
+	return resolveSchemaField(configSchema(), path)
+}
+
+// resolveSchemaField resolves a dotted YAML path against a config schema rooted
+// at root, as resolveConfigField does for the run config.
+func resolveSchemaField(root configField, path string) (configField, error) {
 	trimmed := strings.TrimPrefix(strings.TrimPrefix(path, configHelpRoot), ".")
-	root := configSchema()
 	if trimmed == "" {
 		return root, nil
 	}
@@ -834,11 +842,11 @@ func describeStruct(t reflect.Type, prefix string) []configField {
 
 // configTypeName renders a field's YAML-facing type.
 func configTypeName(t reflect.Type) string {
-	if name, ok := configTypeNames[t]; ok {
-		return name
-	}
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
+	}
+	if name, ok := configTypeNames[t]; ok {
+		return name
 	}
 	switch t.Kind() {
 	case reflect.String:
@@ -864,11 +872,11 @@ func configTypeName(t reflect.Type) string {
 // type a field decodes into, or nil if it is not a struct. The polymorphic unions
 // are excluded: they are structs, but their YAML shape is scalar or list.
 func underlyingConfigStruct(t reflect.Type) reflect.Type {
-	if _, ok := configTypeNames[t]; ok {
-		return nil
-	}
 	for t.Kind() == reflect.Pointer || t.Kind() == reflect.Slice {
 		t = t.Elem()
+	}
+	if _, ok := configTypeNames[t]; ok {
+		return nil
 	}
 	if t.Kind() == reflect.Struct {
 		return t
@@ -878,7 +886,8 @@ func underlyingConfigStruct(t reflect.Type) reflect.Type {
 
 // renderConfigField writes a resolved field's documentation. An object lists its
 // immediate children; a leaf gets its type, required-ness, and description.
-func renderConfigField(w io.Writer, f configField, computeOptions []computeOption) {
+// command is the command whose -h documents the schema.
+func renderConfigField(w io.Writer, command string, f configField, computeOptions []computeOption) {
 	fmt.Fprintf(w, "%s\n", f.path)
 	if f.help != "" {
 		fmt.Fprintf(w, "  %s\n", f.help)
@@ -927,8 +936,9 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 			fmt.Fprintf(w, "    %-*s  %s\n", width, configLeafName(c.path), configFieldSummary(c))
 		}
 	}
-	fmt.Fprintf(w, "\nFor details on a field, run \"databricks air run -h %s.<field>\".\n", f.path)
-	if f.path == configHelpRoot {
+	fmt.Fprintf(w, "\nFor details on a field, run \"%s -h %s.<field>\".\n", command, f.path)
+	// The runtime and skill notes are about run YAML, so only `air run -h config` shows them.
+	if f.path == configHelpRoot && command == runCommandPath {
 		fmt.Fprint(w, runtimeEnvHelp)
 		fmt.Fprint(w, agentSkillHelp)
 	}

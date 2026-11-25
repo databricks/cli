@@ -3,16 +3,19 @@ package aircmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"sync"
+	"unicode/utf16"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
+	"github.com/spf13/cobra"
 )
 
-// This file holds what `air register` and `air serve` share: their JSON error codes
-// and how they report a wait they stopped.
+// This file holds what `air register` and `air serve` share: their JSON error codes,
+// how they report a wait they stopped, and the names and numbers both files take.
 
 // Errors a model command wraps when it stops waiting, as "air register was
 // interrupted". The server keeps working, and the error says how to continue.
@@ -94,5 +97,88 @@ func modelErrorCode(err error) (code string, retryable bool) {
 	return codeInternalError, true
 }
 
+// serveCommandPath is the command air register's output points to for serving a
+// version, and whose -h documents serveConfig.
+const serveCommandPath = "databricks air serve"
+
+// Flags the model commands share.
+const (
+	ucModelFlag      = "uc-model"
+	endpointNameFlag = "endpoint-name"
+	modelVersionFlag = "model-version"
+	modelSourceFlag  = "model-source"
+)
+
+// changedFlags reports which of names were passed on the command line.
+func changedFlags(cmd *cobra.Command, names ...string) map[string]bool {
+	changed := map[string]bool{}
+	for _, name := range names {
+		changed[name] = cmd.Flags().Changed(name)
+	}
+	return changed
+}
+
+// renderModelError renders a model command's failure, if any, with its JSON error
+// code and whether retrying can help.
+func renderModelError(cmd *cobra.Command, err error) error {
+	if err == nil {
+		return nil
+	}
+	code, retryable := modelErrorCode(err)
+	kind := "PERMANENT"
+	if retryable {
+		kind = "TRANSIENT"
+	}
+	return renderError(cmd.Context(), cmd, code, kind, retryable, err)
+}
+
+// schemaHelp is the help of a model command whose YAML schema documents a field
+// given as a positional argument to -h, as in `-h config.compute`. cobra passes
+// -h's positional args to the help func before Args/required-flag validation, so
+// a field is documented without needing -f.
+func schemaHelp(schema func() configField, commandPath string) func(*cobra.Command, []string) {
+	return func(c *cobra.Command, args []string) {
+		fields := c.Flags().Args()
+		if len(fields) == 0 {
+			// Parent() is nil for a detached command (unit tests).
+			if parent := c.Parent(); parent != nil {
+				parent.HelpFunc()(c, args)
+				return
+			}
+			_ = c.Usage()
+			return
+		}
+		field, err := resolveSchemaField(schema(), fields[0])
+		if err != nil {
+			c.PrintErrln("Error:", err)
+			return
+		}
+		renderConfigField(c.OutOrStdout(), commandPath, field, nil)
+	}
+}
+
+// registeredModelRe matches <catalog>.<schema>.<model> with the characters the
+// server accepts in each part.
+var registeredModelRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile("^[^\\s./`]+\\.[^\\s./`]+\\.[^\\s./`]+$") })
+
 // modelVersionRe matches a Unity Catalog model version number.
 var modelVersionRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[1-9][0-9]*$`) })
+
+// validateUCModelName checks a Unity Catalog model name from source, the YAML field
+// or a flag.
+func validateUCModelName(name, source string) error {
+	if !registeredModelRe().MatchString(name) {
+		return fmt.Errorf("%s must be a Unity Catalog model name as <catalog>.<schema>.<model>, got %q", source, name)
+	}
+	return nil
+}
+
+// serverLength is the length of s as the server's limits count it, in UTF-16
+// code units.
+func serverLength(s string) int {
+	n := 0
+	for _, r := range s {
+		n += utf16.RuneLen(r)
+	}
+	return n
+}

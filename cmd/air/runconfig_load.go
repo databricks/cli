@@ -19,10 +19,16 @@ import (
 // decodeRunConfigReader decodes and unknown-key-checks a run YAML from r. path is
 // used only for error messages.
 func decodeRunConfigReader(r io.Reader, path string) (*runConfig, error) {
+	return decodeConfigReader[runConfig](r, path)
+}
+
+// decodeConfigReader decodes and unknown-key-checks a YAML config from r into a
+// T. path is used only for error messages.
+func decodeConfigReader[T any](r io.Reader, path string) (*T, error) {
 	dec := yaml.NewDecoder(r)
 	dec.KnownFields(true)
 
-	var cfg runConfig
+	var cfg T
 	if err := dec.Decode(&cfg); err != nil {
 		if errors.Is(err, io.EOF) {
 			return nil, fmt.Errorf("config %s is empty", path)
@@ -60,30 +66,41 @@ func loadRunConfigWithOverrides(ctx context.Context, path string, overrides []st
 	if len(overrides) == 0 {
 		return loadRunConfig(path)
 	}
-
-	entries, err := parseOverrides(overrides)
+	document, validationYAML, err := readConfigWithOverrides(ctx, path, overrides, configSchema())
 	if err != nil {
 		return nil, err
 	}
-	if err := validateOverridePaths(entries); err != nil {
-		return nil, err
+	return finishRunConfigLoad(path, document, validationYAML)
+}
+
+// readConfigWithOverrides reads a YAML config and applies --override KEY=VALUE
+// entries, checked against schema, to its ordered YAML tree. It returns the tree
+// and its serialization, which the caller decodes with unknown keys rejected.
+// ctx is used only to log applied overrides.
+func readConfigWithOverrides(ctx context.Context, path string, overrides []string, schema configField) (*yaml.Node, []byte, error) {
+	entries, err := parseOverrides(overrides)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := validateOverridePaths(entries, schema); err != nil {
+		return nil, nil, err
 	}
 	document, _, err := readRunConfigDocument(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(document.Content) == 0 {
 		document.Kind = yaml.DocumentNode
 		document.Content = []*yaml.Node{newMappingNode()}
 	}
 	if err := applyOverrides(ctx, document, entries); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	validationYAML, err := yaml.Marshal(document)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize config %s: %w", path, err)
+		return nil, nil, fmt.Errorf("failed to serialize config %s: %w", path, err)
 	}
-	return finishRunConfigLoad(path, document, validationYAML)
+	return document, validationYAML, nil
 }
 
 func readRunConfigDocument(path string) (*yaml.Node, []byte, error) {
@@ -133,8 +150,14 @@ func finishRunConfigLoad(path string, document *yaml.Node, validationYAML []byte
 // strict decode that follows rejects them too, but its error names the Go struct
 // rather than the field's path and offers no suggestion.
 func checkUnknownConfigFields(path string, root *yaml.Node) error {
-	schema := configSchema()
-	unknown := unknownConfigFields(root, schema, schema.path, nil)
+	return checkUnknownSchemaFields(path, root, configSchema(), runCommandPath)
+}
+
+// checkUnknownSchemaFields rejects keys absent from schema, as
+// checkUnknownConfigFields does for the run config. command is the command whose
+// -h lists schema's fields.
+func checkUnknownSchemaFields(path string, root *yaml.Node, schema configField, command string) error {
+	unknown := unknownConfigFields(root, schema, schema.path, nil, command)
 	switch len(unknown) {
 	case 0:
 		return nil
@@ -152,7 +175,7 @@ func checkUnknownConfigFields(path string, root *yaml.Node) error {
 //
 // Aliases are never followed: one may point at its own ancestor, and the strict
 // decode checks whatever they expand to.
-func unknownConfigFields(node *yaml.Node, field configField, helpPath string, keys []string) []string {
+func unknownConfigFields(node *yaml.Node, field configField, helpPath string, keys []string, command string) []string {
 	// Only objects have schema-defined keys; free-form maps and leaves do not.
 	if len(field.children) == 0 {
 		return nil
@@ -162,7 +185,7 @@ func unknownConfigFields(node *yaml.Node, field configField, helpPath string, ke
 	case yaml.SequenceNode:
 		for _, element := range node.Content {
 			if element.Kind == yaml.MappingNode {
-				unknown = append(unknown, unknownConfigFields(element, field, helpPath, keys)...)
+				unknown = append(unknown, unknownConfigFields(element, field, helpPath, keys, command)...)
 			}
 		}
 	case yaml.MappingNode:
@@ -181,14 +204,14 @@ func unknownConfigFields(node *yaml.Node, field configField, helpPath string, ke
 				} else {
 					msg += "; run"
 				}
-				unknown = append(unknown, fmt.Sprintf("%s \"databricks air run -h %s\" for the list of fields", msg, helpPath))
+				unknown = append(unknown, fmt.Sprintf("%s \"%s -h %s\" for the list of fields", msg, command, helpPath))
 				continue
 			}
 			childHelpPath := helpPath
 			if helpPath == field.path && !child.hidden {
 				childHelpPath = child.path
 			}
-			unknown = append(unknown, unknownConfigFields(value, child, childHelpPath, keyPath)...)
+			unknown = append(unknown, unknownConfigFields(value, child, childHelpPath, keyPath, command)...)
 		}
 	default:
 		// Scalars hold no keys, and aliases are left to the decoder.
