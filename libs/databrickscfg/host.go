@@ -21,7 +21,8 @@ func normalizeHost(host string) string {
 		Scheme: u.Scheme,
 		Host:   u.Host,
 	}
-	if port := u.Port(); (u.Scheme == "https" && port == "443") || (u.Scheme == "http" && port == "80") {
+	port := u.Port()
+	if (u.Scheme == "https" && port == "443") || (u.Scheme == "http" && port == "80") {
 		normalized.Host = strings.TrimSuffix(u.Host, ":"+port)
 	}
 
