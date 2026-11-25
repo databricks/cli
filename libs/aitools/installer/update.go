@@ -234,7 +234,13 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
 		sp.Update("Installing " + change.Name + "...")
-		// An agent that cannot get the skill stays a logged warning here.
+		// The update result has no per-agent entry to report a failed agent
+		// in, and update reinstalls only the skills whose version changed, so
+		// it cannot repair an agent that is missing other skills. An agent
+		// that cannot get the skill stays a logged warning: install, which
+		// reinstalls a skill for every agent that is missing it (see
+		// allAgentsHaveSkill), is the fix, and auto-install retries its first
+		// install with it (see planTools in cmd/aitools).
 		records, _, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
 		if err != nil {
 			return nil, err

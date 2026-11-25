@@ -870,6 +870,11 @@ const (
 // are printed above it, so the message only has to make the exit code non-zero.
 var errNoAgentSetUp = errors.New("nothing was installed; follow the steps above")
 
+// errAgentsPartlySetUp is returned instead of errNoAgentSetUp when an agent
+// that failed still got some of the skills, so the message does not claim that
+// nothing was installed.
+var errAgentsPartlySetUp = errors.New("some skills were not installed; follow the steps above")
+
 // agentErrors wraps failures that are already reported in the per-agent
 // outcomes: those of agents named via --agents, and errNoAgentSetUp when no
 // detected agent was set up. Wrapping lets the JSON and telemetry
@@ -918,8 +923,8 @@ func skillsBatchError(ctx context.Context, rerun installInvocation, skillsAgents
 }
 
 // forgetStalePluginRecords drops the CLI's plugin records of plugin agents
-// that just got skill files: those whose CLI is missing, and those under
-// --skills-only. They have no plugin (see pluginAlreadyInstalled and
+// that were just given skill files, whether or not every file could be
+// written: those whose CLI is missing, and those under --skills-only. They have no plugin (see pluginAlreadyInstalled and
 // planItemFor), so a record left by a removal with the agent's own CLI, or in
 // the agent itself, is stale, and list and update would keep treating them as
 // plugin agents and never refresh their skill files. The skills are already
@@ -969,6 +974,8 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 	var skillsAgents []*agents.Agent
 	var skillsItems, fallbackItems, staleRecordItems, keptItems, pluginItems, skipItems []agentPlanItem
 	skillsExplicit := false
+	// partlySetUp is set when a skills agent that failed got some skills.
+	partlySetUp := false
 	for _, it := range plan {
 		switch it.delivery {
 		case deliverySkills:
@@ -1068,14 +1075,11 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 				if it.explicit {
 					explicitErrs = append(explicitErrs, &displayError{msg: it.agent.DisplayName + ": " + reason, err: f.Err})
 				}
+				partlySetUp = partlySetUp || f.Partial()
 			}
-			var installedStale []agentPlanItem
-			for _, it := range staleRecordItems {
-				if _, ok := failed[it.agent]; !ok {
-					installedStale = append(installedStale, it)
-				}
-			}
-			forgetStalePluginRecords(ctx, opts.Scope, installedStale)
+			// A failed agent has no plugin either, and keeping its record would
+			// keep update from refreshing the skill files it did get.
+			forgetStalePluginRecords(ctx, opts.Scope, staleRecordItems)
 		}
 	}
 
@@ -1229,6 +1233,9 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		return outcomes, &agentErrors{err: errors.Join(explicitErrs...)}
 	}
 	if !anyInstalled(outcomes) {
+		if partlySetUp {
+			return outcomes, &agentErrors{err: errAgentsPartlySetUp}
+		}
 		return outcomes, &agentErrors{err: errNoAgentSetUp}
 	}
 	return outcomes, nil

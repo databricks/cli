@@ -158,16 +158,23 @@ type AgentSkillsError struct {
 	Failures []AgentSkillsFailure
 }
 
-// AgentSkillsFailure is one agent that did not get Skills of the skills, with
-// the first error.
+// AgentSkillsFailure is one agent that did not get some of the skills: Skills
+// is how many, Total is how many the install had, and Err is the first error.
 type AgentSkillsFailure struct {
 	Agent  *agents.Agent
 	Skills int
+	Total  int
 	Err    error
 }
 
+// Partial reports whether the agent got some of the skills.
+func (f AgentSkillsFailure) Partial() bool { return f.Skills < f.Total }
+
 // Reason describes the failure without naming the agent.
 func (f AgentSkillsFailure) Reason() string {
+	if f.Partial() {
+		return fmt.Sprintf("could not install %d of %d skills: %v", f.Skills, f.Total, f.Err)
+	}
 	noun := "skills"
 	if f.Skills == 1 {
 		noun = "skill"

@@ -1758,6 +1758,38 @@ func TestInstallAllSkillsWithNoSkillToInstall(t *testing.T) {
 	assert.Contains(t, stderr.String(), NoSkillsResolvedMessage)
 }
 
+// apps init prints each agent that did not get the skills with a step to fix
+// it, after the summary of the agents that got them, instead of a warning that
+// names neither.
+func TestInstallAllSkillsReportsAgentThatGotNoSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	clearAgentDirOverrides(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, ".cursor", "skills"), nil, 0o644))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/test-ref/manifest.json" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = io.WriteString(w, `{"version": "2", "skills": {"databricks-sql": {"version": "1.0.0", "files": ["SKILL.md"], "repo_dir": "skills"}}}`)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("DATABRICKS_SKILLS_REF", "test-ref")
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", srv.URL)
+	setupFetchMock(t)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	require.NoError(t, InstallAllSkills(ctx))
+
+	assert.FileExists(t, filepath.Join(tmp, ".claude", "skills", "databricks-sql", "SKILL.md"))
+	out := stderr.String()
+	assert.Contains(t, out, "Installed 1 skill in ")
+	assert.Contains(t, out, "Skipped Cursor: could not install 1 skill: ")
+	assert.Contains(t, out, "  Fix the error above, then run 'databricks aitools install --scope=global --agents=cursor --skills-only'.")
+	assert.Less(t, strings.Index(out, "Installed 1 skill in "), strings.Index(out, "Skipped Cursor: "))
+}
+
 // TestLegacyTargetedInstallBlockedWithMCPOnlyState checks that MCP records in the state file do not
 // count as tracked skills, so skills on disk without a skills record still block a targeted install.
 func TestLegacyTargetedInstallBlockedWithMCPOnlyState(t *testing.T) {
