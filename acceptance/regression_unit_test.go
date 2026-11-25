@@ -96,7 +96,8 @@ func TestRenderRegressionReportHeading(t *testing.T) {
 			}
 
 			report := renderRegressionReport("Selected 2", columns)
-			heading, _, _ := strings.Cut(report, "\n")
+			// The workflow that posts the report adds its links at the first blank line.
+			heading, _, _ := strings.Cut(report, "\n\n")
 			assert.Equal(t, "## Regression test report "+testCase.want, heading)
 		})
 	}

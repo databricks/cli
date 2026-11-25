@@ -223,12 +223,16 @@ func renderRegressionReport(selected string, columns []regrColumn) string {
 	branch, refs := columns[0], columns[1:]
 	tests := leafTests(branch.Results)
 	counts := countByCategory(tests, branch, refs)
+	// The heading reports the branch only: a test that pins new behavior is meant to fail on
+	// main or the latest release.
 	status := statusPass
 	if counts[catFailing] > 0 {
 		status = statusFail
 	}
 
 	var b strings.Builder
+	// The workflow that posts the report finds its comment by this heading, so the status comes
+	// last: the text before it never changes.
 	fmt.Fprintf(&b, "## Regression test report %s\n\n", statusMark(status))
 	fmt.Fprintf(&b, "%s\n\n", selected)
 
