@@ -12,7 +12,6 @@ import (
 	"path"
 	"reflect"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -173,24 +172,6 @@ func nextDashboardID() string {
 type FileEntry struct {
 	Info workspace.ObjectInfo
 	Data []byte
-}
-
-type fakeDashboard struct {
-	dashboards.Dashboard
-
-	// Input value of the serialized dashboard provided. This is used
-	// to detect if the etag needs to be updated.
-	InputSerializedDashboard string `json:"-"`
-}
-
-// snapshotRecord holds the create-request fields and the out-of-band modification flag for one
-// immutable snapshot. Its JSON tags match what the accept test's info endpoint returns so the
-// test script can call the endpoint and assert the fields with jq.
-type snapshotRecord struct {
-	Dirty     bool             `json:"dirty"`
-	RelPath   string           `json:"relative_path"`
-	ACL       []map[string]any `json:"access_control_list"`
-	CanManage []map[string]any `json:"can_manage_principals"`
 }
 
 // FakeWorkspace holds a state of a workspace for acceptance tests.
@@ -672,26 +653,6 @@ func withGitInfo(info workspace.ObjectInfo, gi gitInfoBlock) (any, error) {
 	return out, nil
 }
 
-// gitFolderFor returns the Git folder containing objectPath, which is the
-// longest registered Git folder path that is a prefix of it. get-status reports
-// the containing folder's metadata for paths inside a Git folder, not just for
-// its root.
-func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, bool) {
-	longest := ""
-	for repoPath := range s.repoIdByPath {
-		if objectPath != repoPath && !strings.HasPrefix(objectPath, repoPath+"/") {
-			continue
-		}
-		if len(repoPath) > len(longest) {
-			longest = repoPath
-		}
-	}
-	if longest == "" {
-		return workspace.RepoInfo{}, false
-	}
-	return s.Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
-}
-
 // isGitCliFolder reports whether a Git folder at this path has Git CLI access.
 // Those are materialized as plain DIRECTORY nodes outside /Repos, while a
 // standard Git folder under /Repos keeps the REPO object type. The /Workspace
@@ -909,48 +870,6 @@ func (s *FakeWorkspace) FsDeleteDirectory(dirPath string) Response {
 
 	delete(s.directories, dirPath)
 	return Response{}
-}
-
-// RecordSnapshot stores a create-request record for the snapshot at contentPath.
-func (s *FakeWorkspace) RecordSnapshot(contentPath, relPath string, acl, canManage []map[string]any) {
-	defer s.LockUnlock()()
-	s.snapshots[contentPath] = &snapshotRecord{
-		Dirty:     false,
-		RelPath:   relPath,
-		ACL:       acl,
-		CanManage: canManage,
-	}
-}
-
-// SnapshotDirty reports whether the immutable snapshot at contentPath was modified out of band,
-// and whether a snapshot is recorded there at all.
-func (s *FakeWorkspace) SnapshotDirty(contentPath string) (dirty, ok bool) {
-	defer s.LockUnlock()()
-	rec, ok := s.snapshots[contentPath]
-	if !ok {
-		return false, false
-	}
-	return rec.Dirty, true
-}
-
-// SnapshotInfo returns the stored create-request record for the snapshot at contentPath.
-// ok is false when no snapshot is recorded there.
-func (s *FakeWorkspace) SnapshotInfo(contentPath string) (*snapshotRecord, bool) {
-	defer s.LockUnlock()()
-	rec, ok := s.snapshots[contentPath]
-	return rec, ok
-}
-
-// BreakGlassSnapshot marks the snapshot at contentPath dirty. The real API flips the flag when
-// the glass is broken, not when a file changes: until then the content is read-only to callers.
-// ok is false when no snapshot is recorded there.
-func (s *FakeWorkspace) BreakGlassSnapshot(contentPath string) (ok bool) {
-	defer s.LockUnlock()()
-	rec, ok := s.snapshots[contentPath]
-	if ok {
-		rec.Dirty = true
-	}
-	return ok
 }
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
@@ -1476,13 +1395,6 @@ func (s *FakeWorkspace) DirectoryExists(path string) bool {
 
 	_, exists := s.directories[path]
 	return exists
-}
-
-// clusterEnv represents a cached Python venv for an existing cluster.
-type clusterEnv struct {
-	dir           string          // base temp directory containing the venv
-	venvDir       string          // path to .venv inside dir
-	installedLibs map[string]bool // workspace paths of already-installed wheels
 }
 
 // Cleanup removes all cached cluster venvs.

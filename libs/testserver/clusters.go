@@ -60,6 +60,13 @@ func addClustersRoutes(server *Server) {
 	})
 }
 
+// clusterEnv represents a cached Python venv for an existing cluster.
+type clusterEnv struct {
+	dir           string          // base temp directory containing the venv
+	venvDir       string          // path to .venv inside dir
+	installedLibs map[string]bool // workspace paths of already-installed wheels
+}
+
 func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	var request compute.ClusterDetails
 	if err := json.Unmarshal(req.Body, &request); err != nil {

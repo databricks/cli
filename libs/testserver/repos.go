@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -115,4 +116,24 @@ func (s *FakeWorkspace) ReposDelete(req Request) Response {
 	delete(s.Repos, req.Vars["repo_id"])
 	delete(s.repoIdByPath, repoInfo.Path)
 	return Response{}
+}
+
+// gitFolderFor returns the Git folder containing objectPath, which is the
+// longest registered Git folder path that is a prefix of it. get-status reports
+// the containing folder's metadata for paths inside a Git folder, not just for
+// its root.
+func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, bool) {
+	longest := ""
+	for repoPath := range s.repoIdByPath {
+		if objectPath != repoPath && !strings.HasPrefix(objectPath, repoPath+"/") {
+			continue
+		}
+		if len(repoPath) > len(longest) {
+			longest = repoPath
+		}
+	}
+	if longest == "" {
+		return workspace.RepoInfo{}, false
+	}
+	return s.Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
 }

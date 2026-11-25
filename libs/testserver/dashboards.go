@@ -45,6 +45,14 @@ func addDashboardsRoutes(server *Server) {
 	})
 }
 
+type fakeDashboard struct {
+	dashboards.Dashboard
+
+	// Input value of the serialized dashboard provided. This is used
+	// to detect if the etag needs to be updated.
+	InputSerializedDashboard string `json:"-"`
+}
+
 // Generate 32 character hex string for dashboard ID
 func generateDashboardId() (string, error) {
 	randomBytes := make([]byte, 16)
