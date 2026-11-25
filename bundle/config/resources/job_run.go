@@ -3,10 +3,12 @@ package resources
 import (
 	"context"
 	"net/url"
+	"reflect"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -122,6 +124,16 @@ func (*JobRun) RunAsSupport() RunAsSupport {
 
 func (*JobRun) Approval() Approval {
 	return Approval{}
+}
+
+func (*JobRun) SchemaTransforms() map[reflect.Type]func(jsonschema.Schema) jsonschema.Schema {
+	return map[reflect.Type]func(jsonschema.Schema) jsonschema.Schema{
+		reflect.TypeFor[JobRun](): func(s jsonschema.Schema) jsonschema.Schema {
+			// CLI-managed; not user-configurable.
+			delete(s.Properties, "idempotency_token")
+			return s
+		},
+	}
 }
 
 func (r *JobRun) ResourceDescription() ResourceDescription {

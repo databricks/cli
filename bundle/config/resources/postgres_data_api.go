@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -61,6 +62,11 @@ func (*PostgresDataApi) RunAsSupport() RunAsSupport {
 
 func (*PostgresDataApi) Approval() Approval {
 	return Approval{}
+}
+
+// The Data API is at Private Preview, below its siblings' Beta.
+func (*PostgresDataApi) SchemaLaunchStage() clijson.LaunchStage {
+	return clijson.LaunchStagePrivatePreview
 }
 
 func (d *PostgresDataApi) ResourceDescription() ResourceDescription {

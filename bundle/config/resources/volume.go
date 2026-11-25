@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -67,6 +69,24 @@ is removed from the catalog, but the underlying files are not deleted:`,
 For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:`,
+	}
+}
+
+func (*Volume) SchemaTransforms() map[reflect.Type]func(jsonschema.Schema) jsonschema.Schema {
+	return map[reflect.Type]func(jsonschema.Schema) jsonschema.Schema{
+		// While volume_type is required in the volume create API, DABs automatically sets
+		// it's value to "MANAGED" if it's not provided. Thus, we make it optional
+		// in the bundle schema.
+		reflect.TypeFor[Volume](): func(s jsonschema.Schema) jsonschema.Schema {
+			var res []string
+			for _, r := range s.Required {
+				if r != "volume_type" {
+					res = append(res, r)
+				}
+			}
+			s.Required = res
+			return s
+		},
 	}
 }
 

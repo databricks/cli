@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -56,6 +57,10 @@ func (*PostgresCatalog) RunAsSupport() RunAsSupport {
 
 func (*PostgresCatalog) Approval() Approval {
 	return Approval{}
+}
+
+func (*PostgresCatalog) SchemaLaunchStage() clijson.LaunchStage {
+	return clijson.LaunchStagePublicBeta
 }
 
 func (c *PostgresCatalog) ResourceDescription() ResourceDescription {

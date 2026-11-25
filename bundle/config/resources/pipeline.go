@@ -3,10 +3,12 @@ package resources
 import (
 	"context"
 	"net/url"
+	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -68,6 +70,32 @@ properties such as the 'catalog' or 'storage' are changed:`,
 		// Destroy reads cascade_on_destroy from the state rather than the configuration,
 		// because the state holds the value that the delete uses.
 		DestroyFromState: true,
+	}
+}
+
+func (*Pipeline) SchemaTransforms() map[reflect.Type]func(jsonschema.Schema) jsonschema.Schema {
+	return map[reflect.Type]func(jsonschema.Schema) jsonschema.Schema{
+		reflect.TypeFor[Pipeline](): func(s jsonschema.Schema) jsonschema.Schema {
+			// Even though DABs supports this field, TF provider does not. Thus, we
+			// should not expose it to the user.
+			delete(s.Properties, "dry_run")
+
+			// These fields are only meant to be set by the DABs client (ie the CLI)
+			// and thus should not be exposed to the user. These are used to annotate
+			// pipelines that were created by DABs.
+			delete(s.Properties, "deployment")
+			return s
+		},
+		// The CLI sets these to track the bundle deployment in the Deployment
+		// Metadata Service; they are not user-configurable, so they must not
+		// appear in the JSON schema or the generated annotation files. The
+		// parent "deployment" block is already removed from the Pipeline schema
+		// above; this removes the fields from the type definition itself.
+		reflect.TypeFor[pipelines.PipelineDeployment](): func(s jsonschema.Schema) jsonschema.Schema {
+			delete(s.Properties, "deployment_id")
+			delete(s.Properties, "version_id")
+			return s
+		},
 	}
 }
 

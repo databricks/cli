@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -63,6 +64,10 @@ func (*PostgresEndpoint) RunAsSupport() RunAsSupport {
 
 func (*PostgresEndpoint) Approval() Approval {
 	return Approval{}
+}
+
+func (*PostgresEndpoint) SchemaLaunchStage() clijson.LaunchStage {
+	return clijson.LaunchStagePublicBeta
 }
 
 func (e *PostgresEndpoint) ResourceDescription() ResourceDescription {

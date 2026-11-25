@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -76,6 +77,10 @@ All data stored in them will be permanently lost:`,
 		Destroy: `This action will result in the deletion of the following Lakebase branches.
 All data stored in them will be permanently lost:`,
 	}
+}
+
+func (*PostgresBranch) SchemaLaunchStage() clijson.LaunchStage {
+	return clijson.LaunchStagePublicBeta
 }
 
 func (b *PostgresBranch) ResourceDescription() ResourceDescription {

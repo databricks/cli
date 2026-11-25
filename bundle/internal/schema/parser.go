@@ -179,7 +179,7 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 			// overridden. Compute the override before findRef so it still applies to
 			// a resource with no spec type in cli.json (findRef miss) — e.g. the
 			// hand-written postgres_snapshot_schedules singleton — which would
-			// otherwise ship unlabelled despite its launchStageOverrides entry.
+			// otherwise ship unlabelled despite its declared launch stage.
 			typeLaunchStage := annotation.OverrideLaunchStage(basePath, "")
 
 			ref, ok := p.findRef(typ)

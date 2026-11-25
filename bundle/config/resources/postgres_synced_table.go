@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -58,6 +59,10 @@ func (*PostgresSyncedTable) RunAsSupport() RunAsSupport {
 
 func (*PostgresSyncedTable) Approval() Approval {
 	return Approval{}
+}
+
+func (*PostgresSyncedTable) SchemaLaunchStage() clijson.LaunchStage {
+	return clijson.LaunchStagePublicBeta
 }
 
 func (s *PostgresSyncedTable) ResourceDescription() ResourceDescription {
