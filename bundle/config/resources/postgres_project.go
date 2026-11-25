@@ -57,6 +57,10 @@ func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+func (*PostgresProject) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (p *PostgresProject) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_project",

@@ -89,6 +89,10 @@ func (s *Snapshot) Exists(ctx context.Context, w *databricks.WorkspaceClient, na
 	return true, nil
 }
 
+func (*Snapshot) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (s *Snapshot) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "internal_immutable_snapshot",

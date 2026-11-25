@@ -45,6 +45,10 @@ func (s *ClusterPolicy) Exists(ctx context.Context, w *databricks.WorkspaceClien
 	return true, nil
 }
 
+func (*ClusterPolicy) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*ClusterPolicy) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "cluster_policy",

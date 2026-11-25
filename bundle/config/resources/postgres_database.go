@@ -61,6 +61,10 @@ func (d *PostgresDatabase) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+func (*PostgresDatabase) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (d *PostgresDatabase) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_database",

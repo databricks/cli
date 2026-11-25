@@ -55,6 +55,10 @@ func (d *PostgresDataApi) Exists(ctx context.Context, w *databricks.WorkspaceCli
 	return true, nil
 }
 
+func (*PostgresDataApi) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (d *PostgresDataApi) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "postgres_data_api",

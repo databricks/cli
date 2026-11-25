@@ -40,6 +40,10 @@ func (c *Catalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, nam
 	return true, nil
 }
 
+func (*Catalog) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*Catalog) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "catalog",

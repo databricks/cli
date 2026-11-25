@@ -39,6 +39,10 @@ func (e *ExternalLocation) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+func (*ExternalLocation) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*ExternalLocation) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "external_location",

@@ -3,11 +3,13 @@ package resources
 import (
 	"context"
 	"net/url"
+	"slices"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
@@ -75,4 +77,40 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 
 func (p *Pipeline) GetName() string {
 	return p.Name
+}
+
+func (*Pipeline) RunAsSupport() RunAsSupport {
+	return RunAsApplied
+}
+
+func (p *Pipeline) ApplyRunAs(runAs *jobs.JobRunAs) {
+	if p.RunAs != nil {
+		return
+	}
+	p.RunAs = &pipelines.RunAs{
+		GroupName:            runAs.GroupName,
+		ServicePrincipalName: runAs.ServicePrincipalName,
+		UserName:             runAs.UserName,
+	}
+}
+
+// Legacy behavior of run_as for SDP pipelines. Available under the experimental.use_run_as_legacy flag.
+// Only available to unblock customers stuck due to breaking changes in https://github.com/databricks/cli/pull/1233
+func (p *Pipeline) ApplyLegacyRunAs(runAs *jobs.JobRunAs, currentUser string) {
+	// If user deploying the bundle and the one defined in run_as are the same
+	// Do not add IS_OWNER permission. Current user is implied to be an owner in this case.
+	// Otherwise, it will fail due to this bug https://github.com/databricks/terraform-provider-databricks/issues/2407
+	if runAs.UserName == currentUser || runAs.ServicePrincipalName == currentUser {
+		return
+	}
+
+	p.Permissions = slices.DeleteFunc(p.Permissions, func(perm PipelinePermission) bool {
+		return (runAs.ServicePrincipalName != "" && perm.ServicePrincipalName == runAs.ServicePrincipalName) ||
+			(runAs.UserName != "" && perm.UserName == runAs.UserName)
+	})
+	p.Permissions = append(p.Permissions, PipelinePermission{
+		Level:                pipelines.PipelinePermissionLevelIsOwner,
+		ServicePrincipalName: runAs.ServicePrincipalName,
+		UserName:             runAs.UserName,
+	})
 }

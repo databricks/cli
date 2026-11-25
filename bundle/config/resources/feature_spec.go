@@ -48,6 +48,10 @@ func (f *FeatureSpec) Exists(ctx context.Context, w *databricks.WorkspaceClient,
 	return true, nil
 }
 
+func (*FeatureSpec) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*FeatureSpec) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "feature_spec",

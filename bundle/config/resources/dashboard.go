@@ -147,3 +147,16 @@ func (r *Dashboard) GetName() string {
 func (r *Dashboard) LoadDeployedState(state resourcestate.ResourceState) {
 	r.Etag = state.ETag
 }
+
+// Only dashboards with embed_credentials set reject run_as.
+func (*Dashboard) RunAsSupport() RunAsSupport {
+	return RunAsRejected
+}
+
+func (*Dashboard) RunAsRejectedSubject() string {
+	return "dashboards with embed_credentials set to true"
+}
+
+func (r *Dashboard) RejectsRunAs() bool {
+	return r.EmbedCredentials
+}

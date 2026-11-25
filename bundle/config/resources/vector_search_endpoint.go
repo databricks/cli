@@ -40,6 +40,10 @@ func (e *VectorSearchEndpoint) Exists(ctx context.Context, w *databricks.Workspa
 	return true, nil
 }
 
+func (*VectorSearchEndpoint) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (e *VectorSearchEndpoint) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "vector_search_endpoint",

@@ -85,6 +85,10 @@ func (*GenieSpace) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	return true, nil
 }
 
+func (*GenieSpace) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*GenieSpace) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "genie_space",
