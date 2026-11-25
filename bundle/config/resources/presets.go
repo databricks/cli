@@ -3,7 +3,6 @@ package resources
 import (
 	"strings"
 
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/textutil"
 )
@@ -32,6 +31,8 @@ type PresetSettings struct {
 	// TriggerPauseStatus is TriggerPauseStatusPaused, TriggerPauseStatusUnpaused or empty.
 	TriggerPauseStatus string
 
+	// JobsMaxConcurrentRuns is presets.jobs_max_concurrent_runs, used for jobs that do not set
+	// max_concurrent_runs themselves. Zero leaves those jobs unchanged.
 	JobsMaxConcurrentRuns int
 
 	// PipelinesDevelopment is true if presets.pipelines_development is explicitly enabled.
@@ -45,6 +46,9 @@ type PresetSettings struct {
 }
 
 // PresetApplier is implemented by resource types that presets change.
+//
+// If embedded pointer is nil, initialize it with empty struct. The fact that we embed pointer struct is implementation detail.
+// It will remain nil if there are no fields in it that are provided by users, but that maybe ok, users could be relying on presets or defaults.
 type PresetApplier interface {
 	// ApplyPresets applies p to the resource. Values that the resource sets
 	// itself take precedence over the presets.
@@ -61,18 +65,6 @@ type NamePrefixExempt interface {
 // unityCatalogNamePrefixExemptReason is the NamePrefixExemptReason of Unity Catalog resources.
 const unityCatalogNamePrefixExemptReason = "Unity Catalog provides its own namespace hierarchy; " +
 	"use ${workspace.current_user.short_name} in the name to make it unique per user"
-
-// ProductionModeValidator is implemented by resource types with settings that
-// a target with 'mode: production' rejects.
-type ProductionModeValidator interface {
-	ValidateProductionMode() diag.Diagnostics
-}
-
-// ExplicitRunAsReporter is implemented by resource types that 'mode: production'
-// inspects to tell whether every resource sets the principal it runs as.
-type ExplicitRunAsReporter interface {
-	IsRunAsSet() bool
-}
 
 // normalizePrefix prefixes strings like '[dev lennart] ' to 'dev_lennart_'.
 // We leave unicode letters and numbers but remove all "special characters."

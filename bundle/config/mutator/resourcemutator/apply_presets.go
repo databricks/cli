@@ -58,10 +58,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 // resourcesImplementing yields every resource in r that implements I, grouped by
 // resource type in canonical order.
 //
-// Here and in the resource types we follow the same approach for nil checks:
 // If resource itself is nil, ignore it (It is currently allowed, but should have generic check with location-enriched diagnostics that disallows nils anywhere).
-// If embedded pointer is nil, initialize it with empty struct. The fact that we embed pointer struct is implementation detail.
-// It will remain nil if there are no fields in it that are provided by users, but that maybe ok, users could be relying on presets or defaults.
 func resourcesImplementing[I any](r *config.Resources) iter.Seq[I] {
 	return func(yield func(I) bool) {
 		for _, group := range r.AllResources() {

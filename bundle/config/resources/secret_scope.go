@@ -99,7 +99,7 @@ func (s SecretScope) ResourceDescription() ResourceDescription {
 }
 
 func (*SecretScope) NamePrefixExemptReason() string {
-	return "the scope name is its ID"
+	return "the scope name is its ID; it is not prefixed today and no rationale for that has been recorded"
 }
 
 func (s SecretScope) GetName() string {

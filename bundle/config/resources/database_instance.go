@@ -47,7 +47,7 @@ func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
 }
 
 func (*DatabaseInstance) NamePrefixExemptReason() string {
-	return "the instance name is its ID"
+	return "the instance name is its ID; it is not prefixed today and no rationale for that has been recorded"
 }
 
 func (d *DatabaseInstance) GetName() string {

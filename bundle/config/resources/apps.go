@@ -108,7 +108,7 @@ func (a *App) InitializeURL(baseURL url.URL) {
 }
 
 func (*App) NamePrefixExemptReason() string {
-	return "the app name is its ID"
+	return "the app name is its ID; it is not prefixed today and no rationale for that has been recorded"
 }
 
 func (*App) FieldDefaults(DefaultsContext) []FieldDefault {
