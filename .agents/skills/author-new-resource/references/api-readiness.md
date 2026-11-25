@@ -291,16 +291,27 @@ schedule (content migrations, re-keying): **ASK** for a content-stable etag or a
 note that the adapter omits it on update. Absent: **NOTE**; drift detection falls back to full read
 comparison.
 
-Separate drift detection from optimistic concurrency, and identify the comparison interval.
-Dashboards inject the last deployment's persisted token into config in `statemgmt/state_load.go`
-and send it on Update; Genie Spaces persist it for drift detection but omit the precondition.
-A guard against edits since planning instead uses the plan's remote read, which lets a fresh plan
-intentionally reconcile earlier drift. The authored config alone has no current server token.
-Check saved-plan rehydration preserves a plan-time token. A request mock only proves it is sent:
-acceptance coverage should save a plan, edit the remote content, reject the stale deploy, then
-re-plan and succeed. Read which fields the etag covers; metadata-only updates may leave a content
-etag unchanged. An unexpected remote-state type should not silently disable the guard; a checked
-assertion as in `ResourceRegisteredModel.DoUpdate` is an existing precedent.
+Trace the user-facing conflict policy separately from the Update precondition. For protection
+against edits since the last deployment, dashboards are the precedent:
+`CheckDashboardsModifiedRemotely` compares the persisted and current etags, warns on plan, and
+blocks deploy unless `--force` is supplied. Re-planning does not acknowledge the conflict.
+`acceptance/bundle/resources/dashboards/detect-change` exercises this flow. A token read during
+planning alone protects only the interval from that read to Update; it does not warn about or
+prevent overwriting earlier edits.
+
+Trace persistence through successful create/update, `dstate.ExportStateFromData`, state loading,
+and bind. Dashboards inject the persisted token into typed config in `statemgmt/state_load.go`
+and send `config.Etag` on Update. Genie Spaces persist it for drift detection but omit the
+precondition because backend migrations change it. Follow the intended sibling policy, including
+explicit overwrite handling; do not silently replace the last deployment's baseline during a GET
+or plan. Comparing old and remote etags in `OverrideChangeDesc` is an existing exception to the
+usual preference for YAML rules.
+
+A request mock only proves a token is sent. Test an external content edit before planning: plan
+warns, ordinary deploy preserves it and fails, re-planning still warns, and explicit `--force`
+overwrites it and records a new baseline. Also test edits after a saved plan and its JSON reload
+to verify concurrency protection. Read which fields the etag covers; metadata-only updates may
+leave a content etag unchanged. Keep any intentional difference from the dashboard policy explicit.
 
 ### 2.12 References from existing resources
 

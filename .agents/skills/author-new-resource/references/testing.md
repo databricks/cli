@@ -54,8 +54,9 @@ verify a nested definition's replacement, clearing, or drift repair. Where relev
 lifecycle with a content edit, removal of an optional nested value, and a clean subsequent plan;
 use at least two elements when testing list ordering. Distinguish a server that reorders accepted
 input from one that rejects noncanonical input, using API docs or cloud evidence before asserting
-permanent drift. Test saved-plan etag rejection as described in readiness check 2.11. Development
-presets need an acceptance case showing the resource's displayed name, not only a fixture entry.
+permanent drift. Test etag conflicts before planning, the warning/refusal/explicit-overwrite flow,
+and saved-plan rejection as described in readiness check 2.11. Development presets need an
+acceptance case showing the resource's displayed name, not only a fixture entry.
 
 Every `EnvMatrix` variant must produce the same `output.txt`. The bundle tree runs a `DMS=` and a
 `DMS=true` leg by default; a type absent from `dmsResourceTypes` in

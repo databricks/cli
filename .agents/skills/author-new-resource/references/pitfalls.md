@@ -17,7 +17,8 @@ element, in the API. Not a composite key, not an engine change.
 express. In a new resource it almost always means one of: the key problem above, an update endpoint
 that supports only part of the resource, or a rule that belongs in the proto. Each of those is an API
 conversation. If you still need it, the comment on the override must say which yml rule it replaces
-and why that rule could not be written.
+and why that rule could not be written. Comparing a persisted etag against the remote etag, as
+dashboards do, is an established exception; YAML ignore rules alone do not implement that check.
 
 **`DoUpdate` for an endpoint that cannot update.** If the API's update can only remove list members,
 or only touch two fields, do not implement `DoUpdate` and classify the rest; recreate on any change

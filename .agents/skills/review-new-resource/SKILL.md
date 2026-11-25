@@ -71,7 +71,8 @@ Apply the readiness gate to the result. For each row, cite the file and line.
 - `KeyedSlices`: every key function returns a real field of the element. A key built from several
   fields or from a value the client does not send is a redesign comment, pointing at the gate.
 - `OverrideChangeDesc`: present? For each branch, which yml rule it stands in for and why that rule
-  could not be written. Default position: it should not exist in a new resource.
+  could not be written. Default position: it should not exist in a new resource. Comparing a saved
+  etag with the remote etag, as dashboards do, is an existing justified exception.
 - `configs/<plural>.yml`: every hand-written rule has a comment naming the API behaviour; rules
   that mirror `IMMUTABLE`, `OUTPUT_ONLY` or `INPUT_ONLY` are bridges, so the comment also names
   the annotation the proto lacks. Whether the upstream request was filed is a question to the
@@ -89,9 +90,12 @@ Apply the readiness gate to the result. For each row, cite the file and line.
   after an external move while an ignored effective-path field reports the drift. Trace how the
   adapter restores each configured value after an out-of-band edit.
 - For etags, distinguish a plan-time concurrency precondition from saved-state drift detection.
-  Check the token's source, saved-plan rehydration, and the fields it covers. Compare the policy
-  with existing adapters: dashboards send a persisted token injected into config; Genie Spaces
-  omit the precondition. A guard against edits since planning needs the plan's remote read.
+  Check the token's source, persistence/export/load/bind, saved-plan rehydration, and covered fields.
+  Dashboards are the precedent for last-deployment protection: `CheckDashboardsModifiedRemotely`
+  warns on plan and blocks deploy unless `--force` is given. Re-planning must not adopt the remote
+  token as a new baseline. Sending a plan-read token alone misses this protection. Genie Spaces
+  omit the Update precondition for a documented backend reason; distinguish that from the warning
+  policy. Follow readiness check 2.11 for the full flow.
 - Sibling resources: if another resource manages the same kind of object or the same service
   (an older API generation, a related type in the same package), list where this one behaves
   differently (approvals, presets, URL, fix-ups) and ask whether each difference is intended.
@@ -155,7 +159,9 @@ Table: `behaviour modelled | needed by the CLI? | evidence (server ref or cloud 
   shows it; a unit test alone is a comment.
 - Content coverage: a description-only update does not verify replacing the main nested payload.
   Check a content edit, optional-field removal, remote drift repair, and a subsequent clean plan;
-  when etags are sent, check a saved plan rejects a concurrent edit and a fresh plan succeeds.
+  etag protection needs an edit before planning that warns on plan and blocks ordinary deploy,
+  plus explicit overwrite and a clean plan afterward. Re-planning alone must retain the warning.
+  Also check a saved plan rejects a concurrent edit after JSON reload.
 - Any claim in this review that a test exists, or that a file does something, cites `path:line`
   you read. Verify counts with a command before stating them.
 Table: `expected test | present? | ran? (out.test.toml / CI check) | note`
@@ -215,7 +221,7 @@ Any of these is a top-of-review comment and usually a redesign at the API:
 | Seen in the diff | Means |
 |---|---|
 | `KeyedSlices` key assembled from several fields or a non-field name | Elements have no client identity; ask the API for a key field |
-| `OverrideChangeDesc` in a new resource | A yml rule or an API annotation is missing |
+| `OverrideChangeDesc` in a new resource, apart from an established etag comparison | A yml rule or an API annotation is missing |
 | `DoUpdate` whose mask excludes most of the config, or whose endpoint only removes | API update semantics do not fit declarative config |
 | Hand-written `recreate_on_changes` or `ignore_remote_changes` without a comment and upstream ask | Annotation missing in the proto |
 | A mirror config struct rather than the embedded SDK type | Schema drifts from the API |
