@@ -655,6 +655,28 @@ func TestAutoInstallWaitsBeforeARetry(t *testing.T) {
 	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
 }
 
+// A first install that saved install state but did not give Cursor the skills
+// is retried as a first install, so Cursor gets them once its skills
+// directory can be written.
+func TestAutoInstallRetriesAnAgentThatGotNoSkills(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	skillsDir := filepath.Join(home, ".cursor", "skills")
+	require.NoError(t, os.WriteFile(skillsDir, nil, 0o644))
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
+	assert.Equal(t, failedAttempts(1, 0), state)
+	installState, err := installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	require.NotNil(t, installState, "the skills are recorded")
+
+	require.NoError(t, os.Remove(skillsDir))
+	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	assert.FileExists(t, filepath.Join(skillsDir, "databricks-test", "SKILL.md"))
+}
+
 // runAutoInstallAt runs the hook at autoInstallTestNow plus elapsed and returns
 // the reported outcomes and the stored state.
 func runAutoInstallAt(t *testing.T, elapsed time.Duration) ([]protos.AitoolsAutoInstallOutcome, autoinstall.State) {

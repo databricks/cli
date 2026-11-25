@@ -2,9 +2,14 @@
 === rm of a file whose DELETE is applied but answered with a 504
 
 >>> [CLI] fs rm dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir/one.txt
-Error: file does not exist: /Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir/one.txt
 
-Exit code: 1
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir
+empty
+sub
+
+=== rm of an empty directory whose DELETE is applied but answered with a 504
+
+>>> [CLI] fs rm dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir/empty
 
 >>> [CLI] fs ls dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir
 sub
@@ -12,11 +17,6 @@ sub
 === rm -r of a directory where the file DELETE is applied but answered with a 504
 
 >>> [CLI] fs rm -r dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir
-Error: file does not exist: /Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir/sub/two.txt
-
-Exit code: 1
 
 >>> [CLI] fs ls dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir
-sub
-
->>> [CLI] fs ls dbfs:/Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir/sub
+Error: no such directory: /Volumes/main/default/fs-rm-[UNIQUE_NAME]/dir

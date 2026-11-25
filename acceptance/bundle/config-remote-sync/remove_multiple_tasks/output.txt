@@ -38,30 +38,7 @@ Resource: resources.jobs.rename_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -8,39 +8,16 @@
-     my_job:
-       tasks:
--        - task_key: keep
--          notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/keep
--        - task_key: a
--          notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/a
--        - task_key: b
--          notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/b
-         - task_key: d
-           notebook_task:
-             notebook_path: /Users/{{workspace_user_name}}/d
--        - task_key: c
--          notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/c
--
-     # The same with a rename in place of the last removal.
-     rename_job:
-       tasks:
--        - task_key: keep
-+        - task_key: y
+@@ -11,17 +11,4 @@
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/keep
 -        - task_key: a
@@ -70,7 +47,26 @@ Resource: resources.jobs.rename_job
 -        - task_key: b
 -          notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/b
-         - task_key: z
+-        - task_key: d
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/d
+-        - task_key: c
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/c
+-
+     # The same with a rename in place of the last removal.
+     rename_job:
+@@ -30,17 +17,7 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/keep
+-        - task_key: a
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/a
+-        - task_key: b
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/b
+-        - task_key: z
++        - task_key: y
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/z
 -        - task_key: c
@@ -88,9 +84,9 @@ Resource: resources.jobs.rename_job
              notebook_path: /Users/{{workspace_user_name}}/k
 
 === Task keys after the sync
-my_job config: d
+my_job config: keep
 my_job remote: keep
-rename_job config: y z
+rename_job config: keep y
 rename_job remote: keep y
 
 === Without deploying, remove a and add m remotely in readd_job

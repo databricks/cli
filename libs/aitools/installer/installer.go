@@ -452,7 +452,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		for a, agentErr := range failed {
 			f := failures[a]
 			if f == nil {
-				f = &AgentSkillsFailure{Agent: a, Err: agentErr}
+				f = &AgentSkillsFailure{Agent: a, Total: len(targetSkills), Err: agentErr}
 				failures[a] = f
 			}
 			f.Skills++
@@ -624,6 +624,8 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 
 // InstallAllSkills fetches the manifest and installs all skills for detected agents.
 // The signature is func(context.Context) error to satisfy the callback in cmd/apps/init.go.
+// Agents that did not get the skills are printed with a step to fix them,
+// not returned.
 func InstallAllSkills(ctx context.Context) error {
 	installed := agents.DetectInstalled(ctx)
 	if len(installed) == 0 {
@@ -638,6 +640,15 @@ func InstallAllSkills(ctx context.Context) error {
 	// failure for it.
 	if errors.Is(err, ErrNoSkillsResolved) {
 		cmdio.LogString(ctx, NoSkillsResolvedMessage)
+		return nil
+	}
+	// The caller's warning would name no agent and no step, so each agent
+	// that did not get the skills is reported here with its own step.
+	if agentsErr, ok := errors.AsType[*AgentSkillsError](err); ok {
+		for _, f := range agentsErr.Failures {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %s", f.Agent.DisplayName, f.Reason())))
+			cmdio.LogString(ctx, fmt.Sprintf("  Fix the error above, then run 'databricks aitools install --scope=global --agents=%s --skills-only'.", f.Agent.Name))
+		}
 		return nil
 	}
 	return err

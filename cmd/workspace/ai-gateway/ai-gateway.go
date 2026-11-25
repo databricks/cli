@@ -1868,10 +1868,10 @@ func newUpdateModelService() *cobra.Command {
       component is capped at 255 characters individually. The server derives the
       name on Create from parent and model_service_id; it is required and
       immutable on Update, Get, and Delete.
-    UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
-      replacement must include every required field; any optional field you omit
-      is cleared. To preserve sibling fields, use one or more granular paths:
-      comment, config.routing.destinations,
+    UPDATE_MASK: Fields to update. Use config for a broad configuration replacement. The
+      replacement must include every required field; optional fields in its
+      replacement scope are cleared when omitted. To preserve sibling fields,
+      use one or more granular paths: comment, config.routing.destinations,
       config.routing.fallback.destinations, config.rate_limits, or
       config.inference_table. Intermediate paths such as config.routing and
       config.routing.fallback are not supported.`

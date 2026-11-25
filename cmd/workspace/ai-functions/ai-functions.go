@@ -143,20 +143,24 @@ func newAiDecide() *cobra.Command {
 	// TODO: complex arg: options
 
 	cmd.Use = "ai-decide"
-	cmd.Short = `*Beta* Get fast structured decisions.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get fast structured decisions.
+	cmd.Short = `Get fast structured decisions.`
+	cmd.Long = `Get fast structured decisions.
 
   Turn text and structured data into decisions your application can use. Define
   questions and criteria to choose an option, estimate a probability, or assign
   a score given a provided state. The AI Decide REST API has a default rate
   limit of 1,200 requests per minute per workspace. Contact your account team to
-  request a higher limit.`
+  request a higher limit.
+
+  > **Note:** The v1 AI Decide syntax supporting strings and objects in state
+  and objects and arrays in instructions will no longer be supported starting
+  February 1, 2027. To use AI Decide, you must set options.version to "2.0",
+  pass an array of typed content objects to state, and a nonblank string to
+  instructions.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
