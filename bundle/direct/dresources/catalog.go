@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -66,7 +67,28 @@ func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalog.Catal
 }
 
 func (r *ResourceCatalog) DoCreate(ctx context.Context, config *CatalogState) (string, *catalog.CatalogInfo, error) {
-	response, err := r.client.Catalogs.Create(ctx, config.CreateCatalog)
+	create := func(ctx context.Context) (*catalog.CatalogInfo, error) {
+		return r.client.Catalogs.Create(ctx, config.CreateCatalog)
+	}
+	start := time.Now()
+	response, err := create(ctx)
+	if err != nil {
+		// The name is chosen by the bundle and unique in the metastore.
+		response, err = recoverCreate(ctx, createRecovery[catalog.CatalogInfo, *catalog.CatalogInfo]{
+			name:  "catalog " + config.Name,
+			start: start,
+			get: func(ctx context.Context) (*catalog.CatalogInfo, error) {
+				return r.client.Catalogs.GetByName(ctx, config.Name)
+			},
+			createTime:    func(found *catalog.CatalogInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			createdByCaller: func(ctx context.Context, found *catalog.CatalogInfo) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.CatalogInfo],
+			create: repeatCreate(create),
+		}, err)
+	}
 	if err != nil || response == nil {
 		return "", nil, err
 	}

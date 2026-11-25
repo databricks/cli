@@ -1,4 +1,4 @@
-Badness = "inferred flag is set to true incorrect; bundle_root_path is not correct; Warn and Error talk about the same; Warn goes to stderr, Error goes to stdout (for backward compat); Warning about permissions repeated twice"
+Badness = "When .git or .git/config is unreadable, one problem is reported twice ('Warn: failed to read .git: ...' and 'Error: unable to load repository specific gitconfig: ...') and validate fails, while an unreadable .git/HEAD only warns. It should be reported once, with the same severity in all cases."
 
 # This test relies on chmod which does not work on Windows
 GOOS.windows = false

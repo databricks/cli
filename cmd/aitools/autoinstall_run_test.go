@@ -623,6 +623,79 @@ func runRootInUserHome(t *testing.T, rootInHome bool) (ctx context.Context, home
 	return ctx, home, lookups
 }
 
+// `databricks aitools auto-install disable` run in another terminal while the
+// run looks the gate up (or shows the prompt) stops the install.
+func TestAutoInstallStopsAtAnOptOutStoredWhileItDecides(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	t.Cleanup(func() { gateOn = autoinstall.GateOn })
+	gateOn = func(ctx context.Context, _ string) (bool, error) {
+		require.NoError(t, autoinstall.SetOptedOut(ctx, true))
+		return true, nil
+	}
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = telemetry.WithNewLogger(ctx)
+	runAutoInstallHook(ctx)
+
+	assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", OptedOut: true, ID: "treatment-machine"}, state)
+	var outcomes []protos.AitoolsAutoInstallOutcome
+	for _, e := range telemetry.BufferedEvents(ctx) {
+		if e := e.AitoolsAutoInstallEvent; e != nil {
+			outcomes = append(outcomes, e.Outcome)
+		}
+	}
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeSkippedOptOut}, outcomes)
+}
+
+// A global uninstall started while a run installs fails before it removes
+// anything, instead of the run putting the tools back after the uninstall
+// reported success. Once the run is done, it removes what the run installed.
+func TestUninstallFailsWhileAnAutoInstallRuns(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	noTelemetryAuth(t)
+	skill := filepath.Join(home, ".cursor", "skills", "databricks-test", "SKILL.md")
+
+	orig := uninstallSkillsFn
+	t.Cleanup(func() { uninstallSkillsFn = orig })
+	removals := 0
+	uninstallSkillsFn = func(context.Context, installer.UninstallOptions) (*installer.UninstallResult, error) {
+		removals++
+		assert.FileExists(t, skill, "the run finished installing before the uninstall removed anything")
+		return &installer.UninstallResult{SkillsChanged: 1}, nil
+	}
+	ctx := cmdio.MockDiscard(t.Context())
+	uninstall := func() error {
+		cmd := NewUninstallCmd()
+		cmd.SetContext(ctx)
+		cmd.SetArgs([]string{"--scope", "global"})
+		cmd.SilenceErrors = true
+		cmd.SilenceUsage = true
+		return cmd.Execute()
+	}
+
+	t.Cleanup(func() { gateOn = autoinstall.GateOn })
+	// The run holds the auto-install lock while it looks the gate up.
+	gateOn = func(context.Context, string) (bool, error) {
+		err := uninstall()
+		assert.ErrorContains(t, err, "an automatic installation of Databricks AI tools is running; run this command again when it finishes")
+		assert.Zero(t, removals)
+		return true, nil
+	}
+	runAutoInstallHook(telemetry.WithNewLogger(cmdio.MockDiscard(t.Context())))
+	require.FileExists(t, skill)
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.False(t, state.OptedOut, "the failed uninstall stores no opt-out")
+
+	require.NoError(t, uninstall())
+	assert.Equal(t, 1, removals)
+	state, err = autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", OptedOut: true, ID: "treatment-machine"}, state)
+}
+
 func TestToolsPlanNewAgents(t *testing.T) {
 	claude := &agents.Agent{DisplayName: "Claude Code"}
 	cursor := &agents.Agent{DisplayName: "Cursor"}

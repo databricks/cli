@@ -629,6 +629,42 @@ func TestExcludePluginAgentsReadsTheAgentsManifest(t *testing.T) {
 	assert.Equal(t, []*agents.Agent{claude}, fileAgents)
 }
 
+// Install keeps a Codex or Copilot plugin installed with the agent's own CLI
+// when that CLI is missing, so update must not write the raw skills back next
+// to it, and removes the ones an earlier install left. The plugin is the
+// user's own, so it does not exclude the agent from a project update.
+func TestExcludePluginAgentsReadsTheAgentsConfig(t *testing.T) {
+	for _, name := range []string{agents.NameCodex, agents.NameCopilot} {
+		t.Run(name, func(t *testing.T) {
+			isolateAgents(t)
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			t.Setenv("USERPROFILE", home)
+			t.Chdir(t.TempDir())
+			a := agents.ByName(name)
+			cursor := agents.ByName(agents.NameCursor)
+			all := []*agents.Agent{a, cursor}
+			writeAgentCLIPlugin(t, home, name)
+
+			fakeBinsOnPath(t)
+			fileAgents, manifestPlugins := excludePluginAgents(t.Context(), installer.ScopeGlobal, all, nil)
+			assert.Equal(t, []*agents.Agent{cursor}, fileAgents)
+			assert.Equal(t, []*agents.Agent{a}, manifestPlugins)
+
+			fileAgents, manifestPlugins = excludePluginAgents(t.Context(), installer.ScopeProject, all, nil)
+			assert.Equal(t, all, fileAgents)
+			assert.Empty(t, manifestPlugins)
+
+			// With the CLI on PATH, raw skills next to the plugin are the
+			// user's choice, as for Claude Code.
+			fakeBinsOnPath(t, a.Binary)
+			fileAgents, manifestPlugins = excludePluginAgents(t.Context(), installer.ScopeGlobal, all, nil)
+			assert.Equal(t, all, fileAgents)
+			assert.Empty(t, manifestPlugins)
+		})
+	}
+}
+
 // A project whose only project-capable agent has a project-scope plugin of its
 // own has no agent to reconcile file skills for. The update used to fail with
 // "no agents support project-scoped skills"; it now skips the reconcile and

@@ -109,14 +109,17 @@ func (r *ResourceModelService) DoCreate(ctx context.Context, config *resources.M
 	if err != nil {
 		// The bundle chooses the full name (parent and model_service_id), and it is unique in the metastore.
 		id := strings.TrimPrefix(config.Parent, "schemas/") + "." + config.ModelServiceId
-		resp, err = recoverCreate(ctx, createRecovery[catalog.ModelService]{
+		resp, err = recoverCreate(ctx, createRecovery[catalog.ModelService, *catalog.ModelService]{
 			name:  "model service " + id,
 			start: start,
 			get: func(ctx context.Context) (*catalog.ModelService, error) {
 				return r.client.AiGateway.GetModelService(ctx, catalog.GetModelServiceRequest{Name: modelServiceNamePrefix + id})
 			},
-			createTime: func(found *catalog.ModelService) (time.Time, bool) { return sdkTime(found.CreateTime) },
-			create:     create,
+			createTime:      func(found *catalog.ModelService) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[catalog.ModelService],
+			create:          repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

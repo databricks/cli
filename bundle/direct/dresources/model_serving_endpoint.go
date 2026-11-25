@@ -181,16 +181,19 @@ func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *ser
 	if err != nil {
 		// Endpoint names are chosen by the bundle and unique in the workspace. WaitAfterCreate waits
 		// for a recovered endpoint as it does for one the first request created.
-		endpoint, err = recoverCreate(ctx, createRecovery[serving.ServingEndpointDetailed]{
+		endpoint, err = recoverCreate(ctx, createRecovery[serving.ServingEndpointDetailed, *serving.ServingEndpointDetailed]{
 			name:  "serving endpoint " + config.Name,
 			start: start,
 			get: func(ctx context.Context) (*serving.ServingEndpointDetailed, error) {
 				return r.client.ServingEndpoints.Get(ctx, serving.GetServingEndpointRequest{Name: config.Name})
 			},
 			createTime: func(found *serving.ServingEndpointDetailed) (time.Time, bool) {
-				return time.UnixMilli(found.CreationTimestamp), found.CreationTimestamp != 0
+				return unixMilliTime(found.CreationTimestamp)
 			},
-			create: create,
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[serving.ServingEndpointDetailed],
+			create:          repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

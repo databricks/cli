@@ -1,4 +1,4 @@
-Badness = "The error message is not ideal: it reports a generic build failure or 'command not found' instead of a clear message that 'uv' is missing from the environment."
+Badness = "Without uv on PATH, deploy fails with the raw shell error 'build failed python_artifact, error: exit status 127, output: bash: uv: command not found'; it should say that uv is required to build the artifact and how to install it."
 
 Cloud = false
 
