@@ -118,6 +118,8 @@ func (*Dashboard) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Dashboard) UsesResourcePath() {}
+
 func (r *Dashboard) InitializeURL(baseURL url.URL) {
 	if r.ID == "" {
 		return

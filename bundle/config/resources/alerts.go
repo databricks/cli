@@ -50,6 +50,8 @@ func (a *Alert) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*Alert) UsesResourcePath() {}
+
 func (a *Alert) InitializeURL(baseURL url.URL) {
 	if a.ID == "" {
 		return
