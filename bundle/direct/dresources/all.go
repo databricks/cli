@@ -22,19 +22,31 @@ var adapterRegistrations []adapterRegistration
 // since computing them inspects every resource type.
 var derivedAdapterSources []iter.Seq2[string, any]
 
+// adaptersRead is set when the registrations are merged on first use. A registration
+// made after that would be dropped without notice, so it panics instead. This happens
+// when something reads the adapters from a package-level initialiser or an init().
+var adaptersRead bool
+
 // registerAdapter registers resource, a typed nil pointer to the adapter
 // implementation, under resourceType. Call it from the init() of the adapter's file.
 func registerAdapter(resourceType string, resource any) {
+	if adaptersRead {
+		panic(fmt.Sprintf("adapter for %q registered after the adapters were first read", resourceType))
+	}
 	adapterRegistrations = append(adapterRegistrations, adapterRegistration{resourceType: resourceType, resource: resource})
 }
 
 // registerDerivedAdapters registers a source of adapters in the form registerAdapter takes.
 // Call it from an init(); the source is not read until the adapters are first used.
 func registerDerivedAdapters(source iter.Seq2[string, any]) {
+	if adaptersRead {
+		panic("derived adapters registered after the adapters were first read")
+	}
 	derivedAdapterSources = append(derivedAdapterSources, source)
 }
 
 var supportedResources = sync.OnceValue(func() map[string]any {
+	adaptersRead = true
 	return mergeAdapters(adapterRegistrations, derivedAdapterSources)
 })
 

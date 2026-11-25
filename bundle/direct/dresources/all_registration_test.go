@@ -58,6 +58,17 @@ func TestMergeAdaptersRejectsTwoAdaptersForOneType(t *testing.T) {
 	})
 }
 
+func TestRegisterAdapterAfterFirstReadPanics(t *testing.T) {
+	SupportedResources()
+
+	assert.PanicsWithValue(t, `adapter for "jobs" registered after the adapters were first read`, func() {
+		registerAdapter("jobs", (*ResourceJob)(nil))
+	})
+	assert.PanicsWithValue(t, "derived adapters registered after the adapters were first read", func() {
+		registerDerivedAdapters(func(yield func(string, any) bool) {})
+	})
+}
+
 func TestSupportedResourcesReturnsCopy(t *testing.T) {
 	m := SupportedResources()
 	delete(m, "jobs")
