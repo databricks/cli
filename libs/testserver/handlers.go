@@ -33,7 +33,9 @@ func registerRoutes(key string, register func(server *Server)) {
 
 // sortedRouteRegistrations orders the registrations by key, so the order does not
 // depend on the order init functions run in. Registrations with the same key keep
-// the order they were made in.
+// the order they were made in. No two registrations share a route (see
+// TestDefaultRoutesDoNotOverlap), so the order never decides which handler serves
+// a request.
 var sortedRouteRegistrations = sync.OnceValue(func() []routeRegistration {
 	sorted := slices.Clone(routeRegistrations)
 	slices.SortStableFunc(sorted, func(a, b routeRegistration) int {
