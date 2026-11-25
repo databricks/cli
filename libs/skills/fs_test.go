@@ -133,3 +133,23 @@ func TestManifestWithoutCommandsOrCatalogRules(t *testing.T) {
 	require.Len(t, catalog.Skills, 1)
 	assert.Nil(t, catalog.Skills[0].Commands)
 }
+
+func TestCatalogRulesPathIsCleaned(t *testing.T) {
+	for _, rules := range []string{"./RULES.md", "docs/../RULES.md"} {
+		src := NewFSSource(fstest.MapFS{
+			"manifest.json": {Data: []byte(`{"catalog_rules": "` + rules + `", "skills": {}}`)},
+			"RULES.md":      {Data: []byte("rules")},
+		}, "map")
+
+		catalog, err := src.Catalog(t.Context())
+		require.NoError(t, err, rules)
+		assert.Equal(t, "rules", catalog.Rules, rules)
+	}
+}
+
+func TestManifestMinCLIVersionIsListed(t *testing.T) {
+	catalog, err := mapSource(`{"skills": {"alpha": {"files": ["SKILL.md"], "min_cli_version": "99.0.0"}}}`).Catalog(t.Context())
+	require.NoError(t, err)
+	require.Len(t, catalog.Skills, 1)
+	assert.Equal(t, "99.0.0", catalog.Skills[0].MinCLIVersion)
+}
