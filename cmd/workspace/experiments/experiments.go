@@ -431,9 +431,8 @@ func newCreateRun() *cobra.Command {
 	cmd.Long = `Create a run.
 
   Creates a new run within an experiment. A run is usually a single execution of
-  a machine learning or data ETL pipeline. MLflow uses runs to track the
-  mlflowParam, mlflowMetric, and mlflowRunTag associated with a single
-  execution.`
+  a machine learning or data ETL pipeline. MLflow uses runs to track the params,
+  metrics, and tags associated with a single execution.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -2913,7 +2912,7 @@ func newSearchRuns() *cobra.Command {
 
   Searches for runs that satisfy expressions.
 
-  Search expressions can use mlflowMetric and mlflowParam keys.`
+  Search expressions can use metric, param, and tag keys.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

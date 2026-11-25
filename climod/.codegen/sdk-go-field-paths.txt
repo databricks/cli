@@ -8301,11 +8301,6 @@ features/v1 CreateMaterializationSetRequest
   MaterializationSet.MaterializedFeatures[*].Notifications.OnFailure.FinalAttemptOnly        materialization_set.materialized_features[*].notifications.on_failure.final_attempt_only
   MaterializationSet.MaterializedFeatures[*].MaterializationSetId                            materialization_set.materialized_features[*].materialization_set_id
   MaterializationSet.MaterializedFeatures[*].Operations.LatestEntityPurgeOperation           materialization_set.materialized_features[*].operations.latest_entity_purge_operation
-  MaterializationSet.Notifications.OnSuccess.EmailAddresses                                  materialization_set.notifications.on_success.email_addresses
-  MaterializationSet.Notifications.OnSuccess.DestinationIds                                  materialization_set.notifications.on_success.destination_ids
-  MaterializationSet.Notifications.OnFailure.EmailAddresses                                  materialization_set.notifications.on_failure.email_addresses
-  MaterializationSet.Notifications.OnFailure.DestinationIds                                  materialization_set.notifications.on_failure.destination_ids
-  MaterializationSet.Notifications.OnFailure.FinalAttemptOnly                                materialization_set.notifications.on_failure.final_attempt_only
   RequestId                                                                                  request_id
 
 features/v1 CreateMaterializedFeatureRequest
@@ -8954,11 +8949,6 @@ features/v1 MaterializationSet
   MaterializedFeatures[*].Notifications.OnFailure.FinalAttemptOnly        materialized_features[*].notifications.on_failure.final_attempt_only
   MaterializedFeatures[*].MaterializationSetId                            materialized_features[*].materialization_set_id
   MaterializedFeatures[*].Operations.LatestEntityPurgeOperation           materialized_features[*].operations.latest_entity_purge_operation
-  Notifications.OnSuccess.EmailAddresses                                  notifications.on_success.email_addresses
-  Notifications.OnSuccess.DestinationIds                                  notifications.on_success.destination_ids
-  Notifications.OnFailure.EmailAddresses                                  notifications.on_failure.email_addresses
-  Notifications.OnFailure.DestinationIds                                  notifications.on_failure.destination_ids
-  Notifications.OnFailure.FinalAttemptOnly                                notifications.on_failure.final_attempt_only
 
 features/v1 MaterializationSetOperationMetadata
   FeatureFullNames                                                               feature_full_names
@@ -9336,11 +9326,6 @@ features/v1 UpdateMaterializationSetRequest
   MaterializationSet.MaterializedFeatures[*].Notifications.OnFailure.FinalAttemptOnly        materialization_set.materialized_features[*].notifications.on_failure.final_attempt_only
   MaterializationSet.MaterializedFeatures[*].MaterializationSetId                            materialization_set.materialized_features[*].materialization_set_id
   MaterializationSet.MaterializedFeatures[*].Operations.LatestEntityPurgeOperation           materialization_set.materialized_features[*].operations.latest_entity_purge_operation
-  MaterializationSet.Notifications.OnSuccess.EmailAddresses                                  materialization_set.notifications.on_success.email_addresses
-  MaterializationSet.Notifications.OnSuccess.DestinationIds                                  materialization_set.notifications.on_success.destination_ids
-  MaterializationSet.Notifications.OnFailure.EmailAddresses                                  materialization_set.notifications.on_failure.email_addresses
-  MaterializationSet.Notifications.OnFailure.DestinationIds                                  materialization_set.notifications.on_failure.destination_ids
-  MaterializationSet.Notifications.OnFailure.FinalAttemptOnly                                materialization_set.notifications.on_failure.final_attempt_only
   UpdateMask                                                                                 update_mask
   RequestId                                                                                  request_id
 
@@ -10227,20 +10212,22 @@ genieagents/v1 CreateGenieAgentRequest
   GenieAgent.Description                                                                               genie_agent.description
   GenieAgent.Definition.Config.SampleQuestions[*].Id                                                   genie_agent.definition.config.sample_questions[*].id
   GenieAgent.Definition.Config.SampleQuestions[*].Question                                             genie_agent.definition.config.sample_questions[*].question
-  GenieAgent.Definition.DataSources.Tables[*].Identifier                                               genie_agent.definition.data_sources.tables[*].identifier
-  GenieAgent.Definition.DataSources.Tables[*].Description                                              genie_agent.definition.data_sources.tables[*].description
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].Column                                  genie_agent.definition.data_sources.tables[*].column_configs[*].column
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].Description                             genie_agent.definition.data_sources.tables[*].column_configs[*].description
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].Synonyms                                genie_agent.definition.data_sources.tables[*].column_configs[*].synonyms
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].Exclude                                 genie_agent.definition.data_sources.tables[*].column_configs[*].exclude
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].EnableFormatAssistance                  genie_agent.definition.data_sources.tables[*].column_configs[*].enable_format_assistance
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].EnableEntityMatching                    genie_agent.definition.data_sources.tables[*].column_configs[*].enable_entity_matching
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].DisplayName                             genie_agent.definition.data_sources.tables[*].column_configs[*].display_name
-  GenieAgent.Definition.DataSources.Volumes[*].Path                                                    genie_agent.definition.data_sources.volumes[*].path
-  GenieAgent.Definition.DataSources.Volumes[*].Description                                             genie_agent.definition.data_sources.volumes[*].description
-  GenieAgent.Definition.DataSources.McpConnections[*].McpConnection                                    genie_agent.definition.data_sources.mcp_connections[*].mcp_connection
-  GenieAgent.Definition.Instructions.TextInstructions[*].Id                                            genie_agent.definition.instructions.text_instructions[*].id
-  GenieAgent.Definition.Instructions.TextInstructions[*].Content                                       genie_agent.definition.instructions.text_instructions[*].content
+  GenieAgent.Definition.Resources.Tables[*].Identifier                                                 genie_agent.definition.resources.tables[*].identifier
+  GenieAgent.Definition.Resources.Tables[*].Description                                                genie_agent.definition.resources.tables[*].description
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].Column                                    genie_agent.definition.resources.tables[*].column_configs[*].column
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].Description                               genie_agent.definition.resources.tables[*].column_configs[*].description
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].Synonyms                                  genie_agent.definition.resources.tables[*].column_configs[*].synonyms
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].Exclude                                   genie_agent.definition.resources.tables[*].column_configs[*].exclude
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].EnableFormatAssistance                    genie_agent.definition.resources.tables[*].column_configs[*].enable_format_assistance
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].EnableEntityMatching                      genie_agent.definition.resources.tables[*].column_configs[*].enable_entity_matching
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].DisplayName                               genie_agent.definition.resources.tables[*].column_configs[*].display_name
+  GenieAgent.Definition.Resources.Volumes[*].Path                                                      genie_agent.definition.resources.volumes[*].path
+  GenieAgent.Definition.Resources.Volumes[*].Description                                               genie_agent.definition.resources.volumes[*].description
+  GenieAgent.Definition.Resources.McpConnections[*].McpConnection                                      genie_agent.definition.resources.mcp_connections[*].mcp_connection
+  GenieAgent.Definition.Resources.SqlFunctions[*].Id                                                   genie_agent.definition.resources.sql_functions[*].id
+  GenieAgent.Definition.Resources.SqlFunctions[*].Identifier                                           genie_agent.definition.resources.sql_functions[*].identifier
+  GenieAgent.Definition.Instructions.TextInstruction.Id                                                genie_agent.definition.instructions.text_instruction.id
+  GenieAgent.Definition.Instructions.TextInstruction.Content                                           genie_agent.definition.instructions.text_instruction.content
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Id                                         genie_agent.definition.instructions.example_question_sqls[*].id
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Question                                   genie_agent.definition.instructions.example_question_sqls[*].question
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Sql                                        genie_agent.definition.instructions.example_question_sqls[*].sql
@@ -10251,8 +10238,6 @@ genieagents/v1 CreateGenieAgentRequest
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Parameters[*].DefaultValue.ValueRange.Min  genie_agent.definition.instructions.example_question_sqls[*].parameters[*].default_value.value_range.min
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Parameters[*].DefaultValue.ValueRange.Max  genie_agent.definition.instructions.example_question_sqls[*].parameters[*].default_value.value_range.max
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].UsageGuidance                              genie_agent.definition.instructions.example_question_sqls[*].usage_guidance
-  GenieAgent.Definition.Instructions.SqlFunctions[*].Id                                                genie_agent.definition.instructions.sql_functions[*].id
-  GenieAgent.Definition.Instructions.SqlFunctions[*].Identifier                                        genie_agent.definition.instructions.sql_functions[*].identifier
   GenieAgent.Definition.Instructions.JoinSpecs[*].Id                                                   genie_agent.definition.instructions.join_specs[*].id
   GenieAgent.Definition.Instructions.JoinSpecs[*].Left.Identifier                                      genie_agent.definition.instructions.join_specs[*].left.identifier
   GenieAgent.Definition.Instructions.JoinSpecs[*].Left.Alias                                           genie_agent.definition.instructions.join_specs[*].left.alias
@@ -10302,20 +10287,22 @@ genieagents/v1 GenieAgent
   Description                                                                               description
   Definition.Config.SampleQuestions[*].Id                                                   definition.config.sample_questions[*].id
   Definition.Config.SampleQuestions[*].Question                                             definition.config.sample_questions[*].question
-  Definition.DataSources.Tables[*].Identifier                                               definition.data_sources.tables[*].identifier
-  Definition.DataSources.Tables[*].Description                                              definition.data_sources.tables[*].description
-  Definition.DataSources.Tables[*].ColumnConfigs[*].Column                                  definition.data_sources.tables[*].column_configs[*].column
-  Definition.DataSources.Tables[*].ColumnConfigs[*].Description                             definition.data_sources.tables[*].column_configs[*].description
-  Definition.DataSources.Tables[*].ColumnConfigs[*].Synonyms                                definition.data_sources.tables[*].column_configs[*].synonyms
-  Definition.DataSources.Tables[*].ColumnConfigs[*].Exclude                                 definition.data_sources.tables[*].column_configs[*].exclude
-  Definition.DataSources.Tables[*].ColumnConfigs[*].EnableFormatAssistance                  definition.data_sources.tables[*].column_configs[*].enable_format_assistance
-  Definition.DataSources.Tables[*].ColumnConfigs[*].EnableEntityMatching                    definition.data_sources.tables[*].column_configs[*].enable_entity_matching
-  Definition.DataSources.Tables[*].ColumnConfigs[*].DisplayName                             definition.data_sources.tables[*].column_configs[*].display_name
-  Definition.DataSources.Volumes[*].Path                                                    definition.data_sources.volumes[*].path
-  Definition.DataSources.Volumes[*].Description                                             definition.data_sources.volumes[*].description
-  Definition.DataSources.McpConnections[*].McpConnection                                    definition.data_sources.mcp_connections[*].mcp_connection
-  Definition.Instructions.TextInstructions[*].Id                                            definition.instructions.text_instructions[*].id
-  Definition.Instructions.TextInstructions[*].Content                                       definition.instructions.text_instructions[*].content
+  Definition.Resources.Tables[*].Identifier                                                 definition.resources.tables[*].identifier
+  Definition.Resources.Tables[*].Description                                                definition.resources.tables[*].description
+  Definition.Resources.Tables[*].ColumnConfigs[*].Column                                    definition.resources.tables[*].column_configs[*].column
+  Definition.Resources.Tables[*].ColumnConfigs[*].Description                               definition.resources.tables[*].column_configs[*].description
+  Definition.Resources.Tables[*].ColumnConfigs[*].Synonyms                                  definition.resources.tables[*].column_configs[*].synonyms
+  Definition.Resources.Tables[*].ColumnConfigs[*].Exclude                                   definition.resources.tables[*].column_configs[*].exclude
+  Definition.Resources.Tables[*].ColumnConfigs[*].EnableFormatAssistance                    definition.resources.tables[*].column_configs[*].enable_format_assistance
+  Definition.Resources.Tables[*].ColumnConfigs[*].EnableEntityMatching                      definition.resources.tables[*].column_configs[*].enable_entity_matching
+  Definition.Resources.Tables[*].ColumnConfigs[*].DisplayName                               definition.resources.tables[*].column_configs[*].display_name
+  Definition.Resources.Volumes[*].Path                                                      definition.resources.volumes[*].path
+  Definition.Resources.Volumes[*].Description                                               definition.resources.volumes[*].description
+  Definition.Resources.McpConnections[*].McpConnection                                      definition.resources.mcp_connections[*].mcp_connection
+  Definition.Resources.SqlFunctions[*].Id                                                   definition.resources.sql_functions[*].id
+  Definition.Resources.SqlFunctions[*].Identifier                                           definition.resources.sql_functions[*].identifier
+  Definition.Instructions.TextInstruction.Id                                                definition.instructions.text_instruction.id
+  Definition.Instructions.TextInstruction.Content                                           definition.instructions.text_instruction.content
   Definition.Instructions.ExampleQuestionSqls[*].Id                                         definition.instructions.example_question_sqls[*].id
   Definition.Instructions.ExampleQuestionSqls[*].Question                                   definition.instructions.example_question_sqls[*].question
   Definition.Instructions.ExampleQuestionSqls[*].Sql                                        definition.instructions.example_question_sqls[*].sql
@@ -10326,8 +10313,6 @@ genieagents/v1 GenieAgent
   Definition.Instructions.ExampleQuestionSqls[*].Parameters[*].DefaultValue.ValueRange.Min  definition.instructions.example_question_sqls[*].parameters[*].default_value.value_range.min
   Definition.Instructions.ExampleQuestionSqls[*].Parameters[*].DefaultValue.ValueRange.Max  definition.instructions.example_question_sqls[*].parameters[*].default_value.value_range.max
   Definition.Instructions.ExampleQuestionSqls[*].UsageGuidance                              definition.instructions.example_question_sqls[*].usage_guidance
-  Definition.Instructions.SqlFunctions[*].Id                                                definition.instructions.sql_functions[*].id
-  Definition.Instructions.SqlFunctions[*].Identifier                                        definition.instructions.sql_functions[*].identifier
   Definition.Instructions.JoinSpecs[*].Id                                                   definition.instructions.join_specs[*].id
   Definition.Instructions.JoinSpecs[*].Left.Identifier                                      definition.instructions.join_specs[*].left.identifier
   Definition.Instructions.JoinSpecs[*].Left.Alias                                           definition.instructions.join_specs[*].left.alias
@@ -10380,20 +10365,22 @@ genieagents/v1 ListGenieAgentsResponse
   GenieAgents[*].Description                                                                               genie_agents[*].description
   GenieAgents[*].Definition.Config.SampleQuestions[*].Id                                                   genie_agents[*].definition.config.sample_questions[*].id
   GenieAgents[*].Definition.Config.SampleQuestions[*].Question                                             genie_agents[*].definition.config.sample_questions[*].question
-  GenieAgents[*].Definition.DataSources.Tables[*].Identifier                                               genie_agents[*].definition.data_sources.tables[*].identifier
-  GenieAgents[*].Definition.DataSources.Tables[*].Description                                              genie_agents[*].definition.data_sources.tables[*].description
-  GenieAgents[*].Definition.DataSources.Tables[*].ColumnConfigs[*].Column                                  genie_agents[*].definition.data_sources.tables[*].column_configs[*].column
-  GenieAgents[*].Definition.DataSources.Tables[*].ColumnConfigs[*].Description                             genie_agents[*].definition.data_sources.tables[*].column_configs[*].description
-  GenieAgents[*].Definition.DataSources.Tables[*].ColumnConfigs[*].Synonyms                                genie_agents[*].definition.data_sources.tables[*].column_configs[*].synonyms
-  GenieAgents[*].Definition.DataSources.Tables[*].ColumnConfigs[*].Exclude                                 genie_agents[*].definition.data_sources.tables[*].column_configs[*].exclude
-  GenieAgents[*].Definition.DataSources.Tables[*].ColumnConfigs[*].EnableFormatAssistance                  genie_agents[*].definition.data_sources.tables[*].column_configs[*].enable_format_assistance
-  GenieAgents[*].Definition.DataSources.Tables[*].ColumnConfigs[*].EnableEntityMatching                    genie_agents[*].definition.data_sources.tables[*].column_configs[*].enable_entity_matching
-  GenieAgents[*].Definition.DataSources.Tables[*].ColumnConfigs[*].DisplayName                             genie_agents[*].definition.data_sources.tables[*].column_configs[*].display_name
-  GenieAgents[*].Definition.DataSources.Volumes[*].Path                                                    genie_agents[*].definition.data_sources.volumes[*].path
-  GenieAgents[*].Definition.DataSources.Volumes[*].Description                                             genie_agents[*].definition.data_sources.volumes[*].description
-  GenieAgents[*].Definition.DataSources.McpConnections[*].McpConnection                                    genie_agents[*].definition.data_sources.mcp_connections[*].mcp_connection
-  GenieAgents[*].Definition.Instructions.TextInstructions[*].Id                                            genie_agents[*].definition.instructions.text_instructions[*].id
-  GenieAgents[*].Definition.Instructions.TextInstructions[*].Content                                       genie_agents[*].definition.instructions.text_instructions[*].content
+  GenieAgents[*].Definition.Resources.Tables[*].Identifier                                                 genie_agents[*].definition.resources.tables[*].identifier
+  GenieAgents[*].Definition.Resources.Tables[*].Description                                                genie_agents[*].definition.resources.tables[*].description
+  GenieAgents[*].Definition.Resources.Tables[*].ColumnConfigs[*].Column                                    genie_agents[*].definition.resources.tables[*].column_configs[*].column
+  GenieAgents[*].Definition.Resources.Tables[*].ColumnConfigs[*].Description                               genie_agents[*].definition.resources.tables[*].column_configs[*].description
+  GenieAgents[*].Definition.Resources.Tables[*].ColumnConfigs[*].Synonyms                                  genie_agents[*].definition.resources.tables[*].column_configs[*].synonyms
+  GenieAgents[*].Definition.Resources.Tables[*].ColumnConfigs[*].Exclude                                   genie_agents[*].definition.resources.tables[*].column_configs[*].exclude
+  GenieAgents[*].Definition.Resources.Tables[*].ColumnConfigs[*].EnableFormatAssistance                    genie_agents[*].definition.resources.tables[*].column_configs[*].enable_format_assistance
+  GenieAgents[*].Definition.Resources.Tables[*].ColumnConfigs[*].EnableEntityMatching                      genie_agents[*].definition.resources.tables[*].column_configs[*].enable_entity_matching
+  GenieAgents[*].Definition.Resources.Tables[*].ColumnConfigs[*].DisplayName                               genie_agents[*].definition.resources.tables[*].column_configs[*].display_name
+  GenieAgents[*].Definition.Resources.Volumes[*].Path                                                      genie_agents[*].definition.resources.volumes[*].path
+  GenieAgents[*].Definition.Resources.Volumes[*].Description                                               genie_agents[*].definition.resources.volumes[*].description
+  GenieAgents[*].Definition.Resources.McpConnections[*].McpConnection                                      genie_agents[*].definition.resources.mcp_connections[*].mcp_connection
+  GenieAgents[*].Definition.Resources.SqlFunctions[*].Id                                                   genie_agents[*].definition.resources.sql_functions[*].id
+  GenieAgents[*].Definition.Resources.SqlFunctions[*].Identifier                                           genie_agents[*].definition.resources.sql_functions[*].identifier
+  GenieAgents[*].Definition.Instructions.TextInstruction.Id                                                genie_agents[*].definition.instructions.text_instruction.id
+  GenieAgents[*].Definition.Instructions.TextInstruction.Content                                           genie_agents[*].definition.instructions.text_instruction.content
   GenieAgents[*].Definition.Instructions.ExampleQuestionSqls[*].Id                                         genie_agents[*].definition.instructions.example_question_sqls[*].id
   GenieAgents[*].Definition.Instructions.ExampleQuestionSqls[*].Question                                   genie_agents[*].definition.instructions.example_question_sqls[*].question
   GenieAgents[*].Definition.Instructions.ExampleQuestionSqls[*].Sql                                        genie_agents[*].definition.instructions.example_question_sqls[*].sql
@@ -10404,8 +10391,6 @@ genieagents/v1 ListGenieAgentsResponse
   GenieAgents[*].Definition.Instructions.ExampleQuestionSqls[*].Parameters[*].DefaultValue.ValueRange.Min  genie_agents[*].definition.instructions.example_question_sqls[*].parameters[*].default_value.value_range.min
   GenieAgents[*].Definition.Instructions.ExampleQuestionSqls[*].Parameters[*].DefaultValue.ValueRange.Max  genie_agents[*].definition.instructions.example_question_sqls[*].parameters[*].default_value.value_range.max
   GenieAgents[*].Definition.Instructions.ExampleQuestionSqls[*].UsageGuidance                              genie_agents[*].definition.instructions.example_question_sqls[*].usage_guidance
-  GenieAgents[*].Definition.Instructions.SqlFunctions[*].Id                                                genie_agents[*].definition.instructions.sql_functions[*].id
-  GenieAgents[*].Definition.Instructions.SqlFunctions[*].Identifier                                        genie_agents[*].definition.instructions.sql_functions[*].identifier
   GenieAgents[*].Definition.Instructions.JoinSpecs[*].Id                                                   genie_agents[*].definition.instructions.join_specs[*].id
   GenieAgents[*].Definition.Instructions.JoinSpecs[*].Left.Identifier                                      genie_agents[*].definition.instructions.join_specs[*].left.identifier
   GenieAgents[*].Definition.Instructions.JoinSpecs[*].Left.Alias                                           genie_agents[*].definition.instructions.join_specs[*].left.alias
@@ -10452,20 +10437,22 @@ genieagents/v1 UpdateGenieAgentRequest
   GenieAgent.Description                                                                               genie_agent.description
   GenieAgent.Definition.Config.SampleQuestions[*].Id                                                   genie_agent.definition.config.sample_questions[*].id
   GenieAgent.Definition.Config.SampleQuestions[*].Question                                             genie_agent.definition.config.sample_questions[*].question
-  GenieAgent.Definition.DataSources.Tables[*].Identifier                                               genie_agent.definition.data_sources.tables[*].identifier
-  GenieAgent.Definition.DataSources.Tables[*].Description                                              genie_agent.definition.data_sources.tables[*].description
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].Column                                  genie_agent.definition.data_sources.tables[*].column_configs[*].column
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].Description                             genie_agent.definition.data_sources.tables[*].column_configs[*].description
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].Synonyms                                genie_agent.definition.data_sources.tables[*].column_configs[*].synonyms
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].Exclude                                 genie_agent.definition.data_sources.tables[*].column_configs[*].exclude
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].EnableFormatAssistance                  genie_agent.definition.data_sources.tables[*].column_configs[*].enable_format_assistance
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].EnableEntityMatching                    genie_agent.definition.data_sources.tables[*].column_configs[*].enable_entity_matching
-  GenieAgent.Definition.DataSources.Tables[*].ColumnConfigs[*].DisplayName                             genie_agent.definition.data_sources.tables[*].column_configs[*].display_name
-  GenieAgent.Definition.DataSources.Volumes[*].Path                                                    genie_agent.definition.data_sources.volumes[*].path
-  GenieAgent.Definition.DataSources.Volumes[*].Description                                             genie_agent.definition.data_sources.volumes[*].description
-  GenieAgent.Definition.DataSources.McpConnections[*].McpConnection                                    genie_agent.definition.data_sources.mcp_connections[*].mcp_connection
-  GenieAgent.Definition.Instructions.TextInstructions[*].Id                                            genie_agent.definition.instructions.text_instructions[*].id
-  GenieAgent.Definition.Instructions.TextInstructions[*].Content                                       genie_agent.definition.instructions.text_instructions[*].content
+  GenieAgent.Definition.Resources.Tables[*].Identifier                                                 genie_agent.definition.resources.tables[*].identifier
+  GenieAgent.Definition.Resources.Tables[*].Description                                                genie_agent.definition.resources.tables[*].description
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].Column                                    genie_agent.definition.resources.tables[*].column_configs[*].column
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].Description                               genie_agent.definition.resources.tables[*].column_configs[*].description
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].Synonyms                                  genie_agent.definition.resources.tables[*].column_configs[*].synonyms
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].Exclude                                   genie_agent.definition.resources.tables[*].column_configs[*].exclude
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].EnableFormatAssistance                    genie_agent.definition.resources.tables[*].column_configs[*].enable_format_assistance
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].EnableEntityMatching                      genie_agent.definition.resources.tables[*].column_configs[*].enable_entity_matching
+  GenieAgent.Definition.Resources.Tables[*].ColumnConfigs[*].DisplayName                               genie_agent.definition.resources.tables[*].column_configs[*].display_name
+  GenieAgent.Definition.Resources.Volumes[*].Path                                                      genie_agent.definition.resources.volumes[*].path
+  GenieAgent.Definition.Resources.Volumes[*].Description                                               genie_agent.definition.resources.volumes[*].description
+  GenieAgent.Definition.Resources.McpConnections[*].McpConnection                                      genie_agent.definition.resources.mcp_connections[*].mcp_connection
+  GenieAgent.Definition.Resources.SqlFunctions[*].Id                                                   genie_agent.definition.resources.sql_functions[*].id
+  GenieAgent.Definition.Resources.SqlFunctions[*].Identifier                                           genie_agent.definition.resources.sql_functions[*].identifier
+  GenieAgent.Definition.Instructions.TextInstruction.Id                                                genie_agent.definition.instructions.text_instruction.id
+  GenieAgent.Definition.Instructions.TextInstruction.Content                                           genie_agent.definition.instructions.text_instruction.content
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Id                                         genie_agent.definition.instructions.example_question_sqls[*].id
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Question                                   genie_agent.definition.instructions.example_question_sqls[*].question
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Sql                                        genie_agent.definition.instructions.example_question_sqls[*].sql
@@ -10476,8 +10463,6 @@ genieagents/v1 UpdateGenieAgentRequest
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Parameters[*].DefaultValue.ValueRange.Min  genie_agent.definition.instructions.example_question_sqls[*].parameters[*].default_value.value_range.min
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].Parameters[*].DefaultValue.ValueRange.Max  genie_agent.definition.instructions.example_question_sqls[*].parameters[*].default_value.value_range.max
   GenieAgent.Definition.Instructions.ExampleQuestionSqls[*].UsageGuidance                              genie_agent.definition.instructions.example_question_sqls[*].usage_guidance
-  GenieAgent.Definition.Instructions.SqlFunctions[*].Id                                                genie_agent.definition.instructions.sql_functions[*].id
-  GenieAgent.Definition.Instructions.SqlFunctions[*].Identifier                                        genie_agent.definition.instructions.sql_functions[*].identifier
   GenieAgent.Definition.Instructions.JoinSpecs[*].Id                                                   genie_agent.definition.instructions.join_specs[*].id
   GenieAgent.Definition.Instructions.JoinSpecs[*].Left.Identifier                                      genie_agent.definition.instructions.join_specs[*].left.identifier
   GenieAgent.Definition.Instructions.JoinSpecs[*].Left.Alias                                           genie_agent.definition.instructions.join_specs[*].left.alias
@@ -10517,6 +10502,259 @@ genieagents/v1 UpdateGenieAgentRequest
   GenieAgent.EffectiveParentPath                                                                       genie_agent.effective_parent_path
   UpdateMask                                                                                           update_mask
   Etag                                                                                                 etag
+
+geniemigrate/v1 AddProjectFilesRequest
+  Name                                                name
+  Sources[*].Ref.Workspace.Path                       sources[*].workspace.path
+  Sources[*].Ref.Workspace.ObjectId                   sources[*].workspace.object_id
+  Sources[*].DerivedFrom.Location.Workspace.Path      sources[*].derived_from.workspace.path
+  Sources[*].DerivedFrom.Location.Workspace.ObjectId  sources[*].derived_from.workspace.object_id
+
+geniemigrate/v1 AddProjectFilesResponse
+  Files[*].Status                                   files[*].status
+  Files[*].DestinationKind                          files[*].destination_kind
+  Files[*].Changes                                  files[*].changes
+  Files[*].Todos                                    files[*].todos
+  Files[*].Blockers                                 files[*].blockers
+  Files[*].ErrorMessage                             files[*].error_message
+  Files[*].Name                                     files[*].name
+  Files[*].DestinationResource.JobId                files[*].destination_resource.job_id
+  Files[*].DestinationResource.PipelineId           files[*].destination_resource.pipeline_id
+  Files[*].Notes                                    files[*].notes
+  Files[*].HasNotes                                 files[*].has_notes
+  Files[*].Source.Location.Workspace.Path           files[*].source.workspace.path
+  Files[*].Source.Location.Workspace.ObjectId       files[*].source.workspace.object_id
+  Files[*].Destination.Location.Workspace.Path      files[*].destination.workspace.path
+  Files[*].Destination.Location.Workspace.ObjectId  files[*].destination.workspace.object_id
+  Files[*].DerivedFrom.Location.Workspace.Path      files[*].derived_from.workspace.path
+  Files[*].DerivedFrom.Location.Workspace.ObjectId  files[*].derived_from.workspace.object_id
+
+geniemigrate/v1 CancelOperationRequest
+  Name  name
+
+geniemigrate/v1 ConversionRun
+  Project          project
+  State            state
+  ErrorCode        error_code
+  Files[*].Name    files[*].name
+  Files[*].Status  files[*].status
+  CreateTime       create_time
+  EndTime          end_time
+  SkillPaths       skill_paths
+
+geniemigrate/v1 ConvertProjectFilesRequest
+  Parent      parent
+  StartOver   start_over
+  Names       names
+  SkillPaths  skill_paths
+
+geniemigrate/v1 ConvertProjectFilesResponse
+  Run.Project          run.project
+  Run.State            run.state
+  Run.ErrorCode        run.error_code
+  Run.Files[*].Name    run.files[*].name
+  Run.Files[*].Status  run.files[*].status
+  Run.CreateTime       run.create_time
+  Run.EndTime          run.end_time
+  Run.SkillPaths       run.skill_paths
+
+geniemigrate/v1 CreateProjectRequest
+  Project.Name                                                           project.name
+  Project.Folder                                                         project.folder
+  Project.ProjectConfig.SourceDialect                                    project.project_config.source_dialect
+  Project.ProjectConfig.TargetFramework                                  project.project_config.target_framework
+  Project.ProjectConfig.DestinationLocation.Location.Workspace.Path      project.project_config.destination_location.workspace.path
+  Project.ProjectConfig.DestinationLocation.Location.Workspace.ObjectId  project.project_config.destination_location.workspace.object_id
+  Project.ProjectConfig.LineageLocation.Location.Workspace.Path          project.project_config.lineage_location.workspace.path
+  Project.ProjectConfig.LineageLocation.Location.Workspace.ObjectId      project.project_config.lineage_location.workspace.object_id
+  Project.DisplayName                                                    project.display_name
+  Project.CreateTime                                                     project.create_time
+  Project.UpdateTime                                                     project.update_time
+  Project.ChangesLocked                                                  project.changes_locked
+
+geniemigrate/v1 DeleteProjectRequest
+  Name  name
+
+geniemigrate/v1 GetOperationRequest
+  Name  name
+
+geniemigrate/v1 GetProjectFileRequest
+  Name  name
+
+geniemigrate/v1 GetProjectRequest
+  Name  name
+
+geniemigrate/v1 ListProjectFilesRequest
+  Parent     parent
+  PageSize   page_size
+  PageToken  page_token
+
+geniemigrate/v1 ListProjectFilesResponse
+  ProjectFiles[*].Status                                   project_files[*].status
+  ProjectFiles[*].DestinationKind                          project_files[*].destination_kind
+  ProjectFiles[*].Changes                                  project_files[*].changes
+  ProjectFiles[*].Todos                                    project_files[*].todos
+  ProjectFiles[*].Blockers                                 project_files[*].blockers
+  ProjectFiles[*].ErrorMessage                             project_files[*].error_message
+  ProjectFiles[*].Name                                     project_files[*].name
+  ProjectFiles[*].DestinationResource.JobId                project_files[*].destination_resource.job_id
+  ProjectFiles[*].DestinationResource.PipelineId           project_files[*].destination_resource.pipeline_id
+  ProjectFiles[*].Notes                                    project_files[*].notes
+  ProjectFiles[*].HasNotes                                 project_files[*].has_notes
+  ProjectFiles[*].Source.Location.Workspace.Path           project_files[*].source.workspace.path
+  ProjectFiles[*].Source.Location.Workspace.ObjectId       project_files[*].source.workspace.object_id
+  ProjectFiles[*].Destination.Location.Workspace.Path      project_files[*].destination.workspace.path
+  ProjectFiles[*].Destination.Location.Workspace.ObjectId  project_files[*].destination.workspace.object_id
+  ProjectFiles[*].DerivedFrom.Location.Workspace.Path      project_files[*].derived_from.workspace.path
+  ProjectFiles[*].DerivedFrom.Location.Workspace.ObjectId  project_files[*].derived_from.workspace.object_id
+  NextPageToken                                            next_page_token
+
+geniemigrate/v1 ListProjectsRequest
+  PageSize   page_size
+  PageToken  page_token
+  Filter     filter
+
+geniemigrate/v1 ListProjectsResponse
+  Projects[*].Name                                                           projects[*].name
+  Projects[*].Folder                                                         projects[*].folder
+  Projects[*].ProjectConfig.SourceDialect                                    projects[*].project_config.source_dialect
+  Projects[*].ProjectConfig.TargetFramework                                  projects[*].project_config.target_framework
+  Projects[*].ProjectConfig.DestinationLocation.Location.Workspace.Path      projects[*].project_config.destination_location.workspace.path
+  Projects[*].ProjectConfig.DestinationLocation.Location.Workspace.ObjectId  projects[*].project_config.destination_location.workspace.object_id
+  Projects[*].ProjectConfig.LineageLocation.Location.Workspace.Path          projects[*].project_config.lineage_location.workspace.path
+  Projects[*].ProjectConfig.LineageLocation.Location.Workspace.ObjectId      projects[*].project_config.lineage_location.workspace.object_id
+  Projects[*].DisplayName                                                    projects[*].display_name
+  Projects[*].CreateTime                                                     projects[*].create_time
+  Projects[*].UpdateTime                                                     projects[*].update_time
+  Projects[*].ChangesLocked                                                  projects[*].changes_locked
+  NextPageToken                                                              next_page_token
+
+geniemigrate/v1 Operation
+  Name                     name
+  Metadata                 metadata
+  Done                     done
+  Result.Error.ErrorCode   error.error_code
+  Result.Error.Message     error.message
+  Result.Error.StackTrace  error.stack_trace
+  Result.Error.Details     error.details
+  Result.Response          response
+
+geniemigrate/v1 Project
+  Name                                                           name
+  Folder                                                         folder
+  ProjectConfig.SourceDialect                                    project_config.source_dialect
+  ProjectConfig.TargetFramework                                  project_config.target_framework
+  ProjectConfig.DestinationLocation.Location.Workspace.Path      project_config.destination_location.workspace.path
+  ProjectConfig.DestinationLocation.Location.Workspace.ObjectId  project_config.destination_location.workspace.object_id
+  ProjectConfig.LineageLocation.Location.Workspace.Path          project_config.lineage_location.workspace.path
+  ProjectConfig.LineageLocation.Location.Workspace.ObjectId      project_config.lineage_location.workspace.object_id
+  DisplayName                                                    display_name
+  CreateTime                                                     create_time
+  UpdateTime                                                     update_time
+  ChangesLocked                                                  changes_locked
+
+geniemigrate/v1 ProjectFile
+  Status                                   status
+  DestinationKind                          destination_kind
+  Changes                                  changes
+  Todos                                    todos
+  Blockers                                 blockers
+  ErrorMessage                             error_message
+  Name                                     name
+  DestinationResource.JobId                destination_resource.job_id
+  DestinationResource.PipelineId           destination_resource.pipeline_id
+  Notes                                    notes
+  HasNotes                                 has_notes
+  Source.Location.Workspace.Path           source.workspace.path
+  Source.Location.Workspace.ObjectId       source.workspace.object_id
+  Destination.Location.Workspace.Path      destination.workspace.path
+  Destination.Location.Workspace.ObjectId  destination.workspace.object_id
+  DerivedFrom.Location.Workspace.Path      derived_from.workspace.path
+  DerivedFrom.Location.Workspace.ObjectId  derived_from.workspace.object_id
+
+geniemigrate/v1 RemoveProjectFilesRequest
+  Name   name
+  Names  names
+
+geniemigrate/v1 RemoveProjectFilesResponse
+  Files[*].Status                                   files[*].status
+  Files[*].DestinationKind                          files[*].destination_kind
+  Files[*].Changes                                  files[*].changes
+  Files[*].Todos                                    files[*].todos
+  Files[*].Blockers                                 files[*].blockers
+  Files[*].ErrorMessage                             files[*].error_message
+  Files[*].Name                                     files[*].name
+  Files[*].DestinationResource.JobId                files[*].destination_resource.job_id
+  Files[*].DestinationResource.PipelineId           files[*].destination_resource.pipeline_id
+  Files[*].Notes                                    files[*].notes
+  Files[*].HasNotes                                 files[*].has_notes
+  Files[*].Source.Location.Workspace.Path           files[*].source.workspace.path
+  Files[*].Source.Location.Workspace.ObjectId       files[*].source.workspace.object_id
+  Files[*].Destination.Location.Workspace.Path      files[*].destination.workspace.path
+  Files[*].Destination.Location.Workspace.ObjectId  files[*].destination.workspace.object_id
+  Files[*].DerivedFrom.Location.Workspace.Path      files[*].derived_from.workspace.path
+  Files[*].DerivedFrom.Location.Workspace.ObjectId  files[*].derived_from.workspace.object_id
+
+geniemigrate/v1 ReviewProjectFilesRequest
+  Parent  parent
+  Names   names
+
+geniemigrate/v1 ReviewProjectFilesResponse
+  ProjectFiles[*].Status                                   project_files[*].status
+  ProjectFiles[*].DestinationKind                          project_files[*].destination_kind
+  ProjectFiles[*].Changes                                  project_files[*].changes
+  ProjectFiles[*].Todos                                    project_files[*].todos
+  ProjectFiles[*].Blockers                                 project_files[*].blockers
+  ProjectFiles[*].ErrorMessage                             project_files[*].error_message
+  ProjectFiles[*].Name                                     project_files[*].name
+  ProjectFiles[*].DestinationResource.JobId                project_files[*].destination_resource.job_id
+  ProjectFiles[*].DestinationResource.PipelineId           project_files[*].destination_resource.pipeline_id
+  ProjectFiles[*].Notes                                    project_files[*].notes
+  ProjectFiles[*].HasNotes                                 project_files[*].has_notes
+  ProjectFiles[*].Source.Location.Workspace.Path           project_files[*].source.workspace.path
+  ProjectFiles[*].Source.Location.Workspace.ObjectId       project_files[*].source.workspace.object_id
+  ProjectFiles[*].Destination.Location.Workspace.Path      project_files[*].destination.workspace.path
+  ProjectFiles[*].Destination.Location.Workspace.ObjectId  project_files[*].destination.workspace.object_id
+  ProjectFiles[*].DerivedFrom.Location.Workspace.Path      project_files[*].derived_from.workspace.path
+  ProjectFiles[*].DerivedFrom.Location.Workspace.ObjectId  project_files[*].derived_from.workspace.object_id
+
+geniemigrate/v1 UnreviewProjectFilesRequest
+  Parent  parent
+  Names   names
+
+geniemigrate/v1 UnreviewProjectFilesResponse
+  ProjectFiles[*].Status                                   project_files[*].status
+  ProjectFiles[*].DestinationKind                          project_files[*].destination_kind
+  ProjectFiles[*].Changes                                  project_files[*].changes
+  ProjectFiles[*].Todos                                    project_files[*].todos
+  ProjectFiles[*].Blockers                                 project_files[*].blockers
+  ProjectFiles[*].ErrorMessage                             project_files[*].error_message
+  ProjectFiles[*].Name                                     project_files[*].name
+  ProjectFiles[*].DestinationResource.JobId                project_files[*].destination_resource.job_id
+  ProjectFiles[*].DestinationResource.PipelineId           project_files[*].destination_resource.pipeline_id
+  ProjectFiles[*].Notes                                    project_files[*].notes
+  ProjectFiles[*].HasNotes                                 project_files[*].has_notes
+  ProjectFiles[*].Source.Location.Workspace.Path           project_files[*].source.workspace.path
+  ProjectFiles[*].Source.Location.Workspace.ObjectId       project_files[*].source.workspace.object_id
+  ProjectFiles[*].Destination.Location.Workspace.Path      project_files[*].destination.workspace.path
+  ProjectFiles[*].Destination.Location.Workspace.ObjectId  project_files[*].destination.workspace.object_id
+  ProjectFiles[*].DerivedFrom.Location.Workspace.Path      project_files[*].derived_from.workspace.path
+  ProjectFiles[*].DerivedFrom.Location.Workspace.ObjectId  project_files[*].derived_from.workspace.object_id
+
+geniemigrate/v1 UpdateProjectRequest
+  Project.Name                                                           project.name
+  Project.Folder                                                         project.folder
+  Project.ProjectConfig.SourceDialect                                    project.project_config.source_dialect
+  Project.ProjectConfig.TargetFramework                                  project.project_config.target_framework
+  Project.ProjectConfig.DestinationLocation.Location.Workspace.Path      project.project_config.destination_location.workspace.path
+  Project.ProjectConfig.DestinationLocation.Location.Workspace.ObjectId  project.project_config.destination_location.workspace.object_id
+  Project.ProjectConfig.LineageLocation.Location.Workspace.Path          project.project_config.lineage_location.workspace.path
+  Project.ProjectConfig.LineageLocation.Location.Workspace.ObjectId      project.project_config.lineage_location.workspace.object_id
+  Project.DisplayName                                                    project.display_name
+  Project.CreateTime                                                     project.create_time
+  Project.UpdateTime                                                     project.update_time
+  Project.ChangesLocked                                                  project.changes_locked
+  UpdateMask                                                             update_mask
 
 gitcredentials/v1 CreateCredentialsRequest
   GitProvider           git_provider

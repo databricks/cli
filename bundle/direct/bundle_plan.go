@@ -718,7 +718,7 @@ func classifyIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.P
 		return deployplan.Undefined, "", false
 	}
 	localChange := !structdiff.IsEqual(ch.Old, ch.New)
-	if reason, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
+	if reason, ok := findMatchingRule(path, cfg.ProvidedIDRules()); ok {
 		if localChange {
 			return deployplan.Recreate, reason, true
 		}
@@ -1066,7 +1066,7 @@ func hasUnresolvedIDField(adapter *dresources.Adapter, sv *structvar.StructVar) 
 			return true
 		}
 		for _, cfg := range []*dresources.ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
-			if _, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
+			if _, ok := findMatchingRule(path, cfg.ProvidedIDRules()); ok {
 				return true
 			}
 			if _, ok := findMatchingRule(path, cfg.UpdatableIDFields); ok {

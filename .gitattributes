@@ -108,6 +108,7 @@ cmd/workspace/feature-store/feature-store.go linguist-generated=true
 cmd/workspace/forecasting/forecasting.go linguist-generated=true
 cmd/workspace/functions/functions.go linguist-generated=true
 cmd/workspace/genie-agents/genie-agents.go linguist-generated=true
+cmd/workspace/genie-migrate/genie-migrate.go linguist-generated=true
 cmd/workspace/genie/genie.go linguist-generated=true
 cmd/workspace/git-credentials/git-credentials.go linguist-generated=true
 cmd/workspace/global-init-scripts/global-init-scripts.go linguist-generated=true
