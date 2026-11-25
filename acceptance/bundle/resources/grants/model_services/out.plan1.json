@@ -28,7 +28,8 @@
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [
-                "APPLY_TAG"
+                "APPLY_TAG",
+                "EXECUTE"
               ]
             }
           ]

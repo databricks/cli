@@ -11,13 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMergeGrantsSkippedTypesDeclareGrants(t *testing.T) {
-	for _, key := range mergeGrantsSkippedTypes {
-		_, ok := config.ResourceTypeAs[resources.GrantsDeclarer](key)
-		assert.True(t, ok, "%q is skipped by MergeGrants but does not declare grants", key)
-	}
-}
-
 func TestMergeGrants(t *testing.T) {
 	grants := func() []catalog.PrivilegeAssignment {
 		return []catalog.PrivilegeAssignment{
@@ -29,8 +22,11 @@ func TestMergeGrants(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
-				Schemas:      map[string]*resources.Schema{"s": {Grants: grants()}},
-				FeatureSpecs: map[string]*resources.FeatureSpec{"f": {Grants: grants()}},
+				Schemas:               map[string]*resources.Schema{"s": {Grants: grants()}},
+				FeatureSpecs:          map[string]*resources.FeatureSpec{"f": {Grants: grants()}},
+				ModelServices:         map[string]*resources.ModelService{"m": {Grants: grants()}},
+				McpServices:           map[string]*resources.McpService{"m": {Grants: grants()}},
+				ModelProviderServices: map[string]*resources.ModelProviderService{"m": {Grants: grants()}},
 			},
 		},
 	}
@@ -38,11 +34,13 @@ func TestMergeGrants(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, MergeGrants())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, []catalog.PrivilegeAssignment{
+	merged := []catalog.PrivilegeAssignment{
 		{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeUseSchema, catalog.PrivilegeSelect, catalog.PrivilegeModify}},
 		{Principal: "bob", Privileges: []catalog.Privilege{catalog.PrivilegeSelect}},
-	}, b.Config.Resources.Schemas["s"].Grants)
-
-	// See mergeGrantsSkippedTypes.
-	assert.Equal(t, grants(), b.Config.Resources.FeatureSpecs["f"].Grants)
+	}
+	assert.Equal(t, merged, b.Config.Resources.Schemas["s"].Grants)
+	assert.Equal(t, merged, b.Config.Resources.FeatureSpecs["f"].Grants)
+	assert.Equal(t, merged, b.Config.Resources.ModelServices["m"].Grants)
+	assert.Equal(t, merged, b.Config.Resources.McpServices["m"].Grants)
+	assert.Equal(t, merged, b.Config.Resources.ModelProviderServices["m"].Grants)
 }

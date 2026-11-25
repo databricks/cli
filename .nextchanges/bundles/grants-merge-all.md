@@ -1,0 +1,1 @@
+* Merge `grants` entries that name the same principal for `feature_specs`, `model_services`, `mcp_services` and `model_provider_services`, as for other resources, so every listed privilege is applied and `bundle plan` no longer reports a change after each deploy. ([#8012](https://github.com/databricks/cli/pull/8012))
