@@ -24,10 +24,6 @@ provided_id_fields:
   # to match TF implementation.
   - field: name
     reason: terraform_compat
-  - field: catalog_name
-    reason: id_field
-  - field: schema_name
-    reason: id_field
 parent_id_fields:
   - field: catalog_name
     reason: parent
