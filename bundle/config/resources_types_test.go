@@ -49,13 +49,54 @@ func TestAllResourceTypesFollowResourcesFields(t *testing.T) {
 		field := rt.Field(i)
 		assert.Equal(t, structtag.JSONTag(field.Tag.Get("json")).Name(), typ.Key)
 		assert.Equal(t, field.Type.Elem().Elem(), typ.Type)
-		assert.Equal(t, reflect.PointerTo(typ.Type), reflect.TypeOf(typ.Zero))
+		assert.Equal(t, reflect.PointerTo(typ.Type), reflect.TypeOf(typ.New()))
+		assert.Equal(t, typ.New().ResourceDescription(), typ.Description)
+	}
+}
+
+func TestResourceTypesOfMalformedField(t *testing.T) {
+	assert.PanicsWithValue(t, "Resources.Foo must be a map with string keys, got []string", func() {
+		resourceTypesOf(reflect.TypeFor[struct {
+			Foo []string `json:"foo"`
+		}]())
+	})
+	assert.PanicsWithValue(t, "Resources.Foo must map to a pointer type that implements ConfigResource, got resources.Job", func() {
+		resourceTypesOf(reflect.TypeFor[struct {
+			Foo map[string]resources.Job `json:"foo"`
+		}]())
+	})
+	assert.PanicsWithValue(t, "Resources.Foo must map to a pointer type that implements ConfigResource, got *string", func() {
+		resourceTypesOf(reflect.TypeFor[struct {
+			Foo map[string]*string `json:"foo"`
+		}]())
+	})
+}
+
+func TestResourceTypeValuesAreNotShared(t *testing.T) {
+	types := AllResourceTypes()
+	types[0] = ResourceType{}
+	assert.NotEqual(t, ResourceType{}, AllResourceTypes()[0])
+
+	rt := AllResourceTypes()[0]
+	first, second := rt.New(), rt.New()
+	assert.NotSame(t, first, second)
+
+	a, _ := ResourceTypeAs[*resources.Job]("jobs")
+	b, _ := ResourceTypeAs[*resources.Job]("jobs")
+	assert.NotSame(t, a, b)
+
+	var yielded *resources.Job
+	for _, v := range ResourceTypesImplementing[*resources.Job]() {
+		yielded = v
+	}
+	for _, v := range ResourceTypesImplementing[*resources.Job]() {
+		assert.NotSame(t, yielded, v)
 	}
 }
 
 func TestResourceDescriptionPluralNameMatchesKey(t *testing.T) {
 	for _, rt := range AllResourceTypes() {
-		assert.Equal(t, rt.Key, rt.Zero.ResourceDescription().PluralName, "%s", rt.Type)
+		assert.Equal(t, rt.Key, rt.Description.PluralName, "%s", rt.Type)
 	}
 }
 
