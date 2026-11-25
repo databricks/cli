@@ -15,6 +15,25 @@ import (
 
 func init() {
 	registerRoutes("mcp_services", addMcpServicesRoutes)
+	registerStore("mcp_services", newMcpServicesStore)
+}
+
+type mcpServicesStore struct {
+	McpServices map[string]catalog.McpService
+	// McpUserCredentials holds the caller's sign-in to each MCP service, keyed by the service full name. The fake has one
+	// caller.
+	McpUserCredentials map[string]catalog.McpServiceUserMappedCredential
+}
+
+func newMcpServicesStore(*FakeWorkspace) *mcpServicesStore {
+	return &mcpServicesStore{
+		McpServices:        map[string]catalog.McpService{},
+		McpUserCredentials: map[string]catalog.McpServiceUserMappedCredential{},
+	}
+}
+
+func (s *FakeWorkspace) mcpServices() *mcpServicesStore {
+	return stateOf[mcpServicesStore](s)
 }
 
 func addMcpServicesRoutes(server *Server) {
@@ -27,7 +46,7 @@ func addMcpServicesRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+		return MapGet(req.Workspace, req.Workspace.mcpServices().McpServices, req.Vars["name"])
 	})
 
 	server.Handle("PATCH", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
@@ -35,7 +54,7 @@ func addMcpServicesRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+		return MapGet(req.Workspace, req.Workspace.mcpServices().McpUserCredentials, req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
@@ -43,11 +62,11 @@ func addMcpServicesRoutes(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+		return MapDelete(req.Workspace, req.Workspace.mcpServices().McpUserCredentials, req.Vars["name"])
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+		return MapDelete(req.Workspace, req.Workspace.mcpServices().McpServices, req.Vars["name"])
 	})
 }
 
@@ -72,7 +91,7 @@ func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), mcpSchemaParentPrefix)
 	key := schema + "." + req.URL.Query().Get("mcp_service_id")
 
-	if _, exists := s.McpServices[key]; exists {
+	if _, exists := s.mcpServices().McpServices[key]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
 			Body: map[string]string{
@@ -89,7 +108,7 @@ func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 	ms.MetastoreId = nextUUID()
 	ms.CreateTime = sdktime.New(time.Unix(0, nowNano()).UTC())
 
-	s.McpServices[key] = ms
+	s.mcpServices().McpServices[key] = ms
 	return Response{
 		Body: ms,
 	}
@@ -98,7 +117,7 @@ func (s *FakeWorkspace) McpServicesCreate(req Request) Response {
 func (s *FakeWorkspace) McpServicesUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	existing, ok := s.McpServices[name]
+	existing, ok := s.mcpServices().McpServices[name]
 	if !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -118,7 +137,7 @@ func (s *FakeWorkspace) McpServicesUpdate(req Request, name string) Response {
 	existing.Config = incoming.Config
 	existing.UpdatedBy = s.CurrentUser().UserName
 
-	s.McpServices[name] = existing
+	s.mcpServices().McpServices[name] = existing
 	return Response{
 		Body: existing,
 	}
@@ -136,11 +155,11 @@ func (s *FakeWorkspace) McpServicesList(req Request) Response {
 	full := query.Get("view") == string(catalog.ListMcpServicesRequestViewFull)
 
 	var services []catalog.McpService
-	for _, key := range slices.Sorted(maps.Keys(s.McpServices)) {
+	for _, key := range slices.Sorted(maps.Keys(s.mcpServices().McpServices)) {
 		if !strings.HasPrefix(strings.ToLower(key), prefix) {
 			continue
 		}
-		ms := s.McpServices[key]
+		ms := s.mcpServices().McpServices[key]
 		if !full && ms.Config != nil {
 			// Copy so the stored service keeps its source connection for later FULL reads.
 			config := *ms.Config
@@ -161,7 +180,7 @@ func (s *FakeWorkspace) McpServicesList(req Request) Response {
 func (s *FakeWorkspace) McpUserCredentialCreate(service string) Response {
 	defer s.LockUnlock()()
 
-	if _, ok := s.McpServices[service]; !ok {
+	if _, ok := s.mcpServices().McpServices[service]; !ok {
 		return Response{
 			StatusCode: http.StatusNotFound,
 			Body:       fmt.Sprintf("mcp service %s not found", service),
@@ -170,7 +189,7 @@ func (s *FakeWorkspace) McpUserCredentialCreate(service string) Response {
 	cred := catalog.McpServiceUserMappedCredential{
 		ProvisioningInfo: &catalog.ProvisioningInfo{State: catalog.ProvisioningInfoStateActive},
 	}
-	s.McpUserCredentials[service] = cred
+	s.mcpServices().McpUserCredentials[service] = cred
 	return Response{
 		Body: cred,
 	}

@@ -12,6 +12,22 @@ import (
 
 func init() {
 	registerRoutes("permissions", addPermissionsRoutes)
+	registerStore("permissions", newPermissionsStore)
+}
+
+type permissionsStore struct {
+	// Generic permissions storage: key is "{object_type}:{object_id}"
+	Permissions map[string]iam.ObjectPermissions
+}
+
+func newPermissionsStore(*FakeWorkspace) *permissionsStore {
+	return &permissionsStore{
+		Permissions: map[string]iam.ObjectPermissions{},
+	}
+}
+
+func (s *FakeWorkspace) permissions() *permissionsStore {
+	return stateOf[permissionsStore](s)
 }
 
 func addPermissionsRoutes(server *Server) {
@@ -95,9 +111,9 @@ func upsertACL(perms *iam.ObjectPermissions, entry iam.AccessControlResponse) {
 // upsertPermission adds or replaces an ACL entry on the given object.
 // Must be called with s.mu held.
 func (s *FakeWorkspace) upsertPermission(objectKey string, entry iam.AccessControlResponse) {
-	perms := s.Permissions[objectKey]
+	perms := s.permissions().Permissions[objectKey]
 	upsertACL(&perms, entry)
-	s.Permissions[objectKey] = perms
+	s.permissions().Permissions[objectKey] = perms
 }
 
 // jobPrincipalHasAccess reports whether the principal has a direct ACL entry
@@ -120,13 +136,13 @@ func jobPrincipalHasAccess(perms iam.ObjectPermissions, principal string) (hasAc
 // guestHasJobAccess reports whether a guest may access a job: via a direct ACL
 // entry, or as the creator while no explicit owner is set. Call with s.mu held.
 func (s *FakeWorkspace) guestHasJobAccess(jobId int64, principal string) bool {
-	perms := s.Permissions[fmt.Sprintf("/jobs/%d", jobId)]
+	perms := s.permissions().Permissions[fmt.Sprintf("/jobs/%d", jobId)]
 	hasAccess, hasOwner := jobPrincipalHasAccess(perms, principal)
 	if hasAccess {
 		return true
 	}
 	if !hasOwner {
-		if job, ok := s.Jobs[jobId]; ok && job.CreatorUserName == principal {
+		if job, ok := s.jobs().Jobs[jobId]; ok && job.CreatorUserName == principal {
 			return true
 		}
 	}
@@ -188,7 +204,7 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		}
 	}
 
-	permissions, exists := s.Permissions[responseObjectID]
+	permissions, exists := s.permissions().Permissions[responseObjectID]
 
 	if !exists {
 		// Return empty permissions structure if not found
@@ -211,7 +227,7 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 func (s *FakeWorkspace) permissionsParentExists(requestObjectType, objectId string) bool {
 	switch requestObjectType {
 	case "vector-search-endpoints":
-		for _, ep := range s.VectorSearchEndpoints {
+		for _, ep := range s.vectorSearchEndpoints().VectorSearchEndpoints {
 			if ep.Id == objectId {
 				return true
 			}
@@ -280,7 +296,7 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 	responseObjectID := fmt.Sprintf("/%s/%s", requestObjectType, objectId)
 
 	// Get existing permissions or create new ones
-	existingPermissions, exists := s.Permissions[responseObjectID]
+	existingPermissions, exists := s.permissions().Permissions[responseObjectID]
 	if !exists {
 		existingPermissions = iam.ObjectPermissions{
 			ObjectId:          responseObjectID,
@@ -378,7 +394,7 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		}
 	}
 
-	s.Permissions[responseObjectID] = existingPermissions
+	s.permissions().Permissions[responseObjectID] = existingPermissions
 
 	// A directory under /Workspace/Users/<owner> grants the owner CAN_MANAGE
 	// (inherited), mirroring real workspaces where a user manages everything in their

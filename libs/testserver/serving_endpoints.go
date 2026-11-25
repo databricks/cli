@@ -11,6 +11,21 @@ import (
 
 func init() {
 	registerRoutes("serving_endpoints", addServingEndpointsRoutes)
+	registerStore("serving_endpoints", newServingEndpointsStore)
+}
+
+type servingEndpointsStore struct {
+	ServingEndpoints map[string]serving.ServingEndpointDetailed
+}
+
+func newServingEndpointsStore(*FakeWorkspace) *servingEndpointsStore {
+	return &servingEndpointsStore{
+		ServingEndpoints: map[string]serving.ServingEndpointDetailed{},
+	}
+}
+
+func (s *FakeWorkspace) servingEndpoints() *servingEndpointsStore {
+	return stateOf[servingEndpointsStore](s)
 }
 
 func addServingEndpointsRoutes(server *Server) {
@@ -28,7 +43,7 @@ func addServingEndpointsRoutes(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+		return MapDelete(req.Workspace, req.Workspace.servingEndpoints().ServingEndpoints, req.Vars["name"])
 	})
 
 	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/ai-gateway", func(req Request) any {
@@ -256,7 +271,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	}
 
 	// Check if endpoint with this name already exists
-	if _, exists := s.ServingEndpoints[createReq.Name]; exists {
+	if _, exists := s.servingEndpoints().ServingEndpoints[createReq.Name]; exists {
 		return Response{
 			StatusCode: 409,
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Serving endpoint with name %s already exists", createReq.Name)},
@@ -318,7 +333,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		endpoint.TelemetryConfig = nil
 	}
 
-	s.ServingEndpoints[createReq.Name] = endpoint
+	s.servingEndpoints().ServingEndpoints[createReq.Name] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -329,7 +344,7 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	defer s.LockUnlock()()
 
-	endpoint, exists := s.ServingEndpoints[name]
+	endpoint, exists := s.servingEndpoints().ServingEndpoints[name]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -344,7 +359,7 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 			Ready:        endpoint.State.Ready,
 		}
-		s.ServingEndpoints[name] = settled
+		s.servingEndpoints().ServingEndpoints[name] = settled
 	}
 
 	return Response{Body: endpoint}
@@ -367,7 +382,7 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 		}
 	}
 
-	endpoint, exists := s.ServingEndpoints[name]
+	endpoint, exists := s.servingEndpoints().ServingEndpoints[name]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -408,7 +423,7 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 		Ready:        serving.EndpointStateReadyNotReady,
 	}
 
-	s.ServingEndpoints[name] = endpoint
+	s.servingEndpoints().ServingEndpoints[name] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -427,7 +442,7 @@ func (s *FakeWorkspace) ServingEndpointPutAiGateway(req Request, name string) Re
 		}
 	}
 
-	endpoint, exists := s.ServingEndpoints[name]
+	endpoint, exists := s.servingEndpoints().ServingEndpoints[name]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -449,7 +464,7 @@ func (s *FakeWorkspace) ServingEndpointPutAiGateway(req Request, name string) Re
 		endpoint.AiGateway = nil
 	}
 
-	s.ServingEndpoints[name] = endpoint
+	s.servingEndpoints().ServingEndpoints[name] = endpoint
 
 	return Response{
 		Body: endpoint.AiGateway,
@@ -468,7 +483,7 @@ func (s *FakeWorkspace) ServingEndpointUpdateNotifications(req Request, name str
 		}
 	}
 
-	endpoint, exists := s.ServingEndpoints[name]
+	endpoint, exists := s.servingEndpoints().ServingEndpoints[name]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -477,7 +492,7 @@ func (s *FakeWorkspace) ServingEndpointUpdateNotifications(req Request, name str
 	}
 
 	endpoint.EmailNotifications = updateReq.EmailNotifications
-	s.ServingEndpoints[name] = endpoint
+	s.servingEndpoints().ServingEndpoints[name] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -497,7 +512,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 		}
 	}
 
-	endpoint, exists := s.ServingEndpoints[name]
+	endpoint, exists := s.servingEndpoints().ServingEndpoints[name]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -529,7 +544,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTelemetryConfig(req Request, name st
 	// An omitted telemetry_config removes the configuration from the endpoint.
 	endpoint.TelemetryConfig = applyTelemetryConfig(endpoint.TelemetryConfig, patchReq.TelemetryConfig)
 	endpoint.LastUpdatedTimestamp = nowMilli()
-	s.ServingEndpoints[name] = endpoint
+	s.servingEndpoints().ServingEndpoints[name] = endpoint
 
 	return Response{
 		Body: endpoint,
@@ -548,7 +563,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 		}
 	}
 
-	endpoint, exists := s.ServingEndpoints[name]
+	endpoint, exists := s.servingEndpoints().ServingEndpoints[name]
 	if !exists {
 		return Response{
 			StatusCode: 404,
@@ -580,7 +595,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 	}
 
 	endpoint.Tags = tags
-	s.ServingEndpoints[name] = endpoint
+	s.servingEndpoints().ServingEndpoints[name] = endpoint
 
 	// Return the tags as EndpointTags struct, not as array
 	return Response{

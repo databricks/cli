@@ -11,6 +11,21 @@ import (
 
 func init() {
 	registerRoutes("quality_monitors", addQualityMonitorsRoutes)
+	registerStore("quality_monitors", newQualityMonitorsStore)
+}
+
+type qualityMonitorsStore struct {
+	Monitors map[string]catalog.MonitorInfo
+}
+
+func newQualityMonitorsStore(*FakeWorkspace) *qualityMonitorsStore {
+	return &qualityMonitorsStore{
+		Monitors: map[string]catalog.MonitorInfo{},
+	}
+}
+
+func (s *FakeWorkspace) qualityMonitors() *qualityMonitorsStore {
+	return stateOf[qualityMonitorsStore](s)
 }
 
 func addQualityMonitorsRoutes(server *Server) {
@@ -33,7 +48,7 @@ func addQualityMonitorsRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])
+		return MapGet(req.Workspace, req.Workspace.qualityMonitors().Monitors, req.Vars["table_name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req Request) any {
@@ -45,7 +60,7 @@ func addQualityMonitorsRoutes(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])
+		return MapDelete(req.Workspace, req.Workspace.qualityMonitors().Monitors, req.Vars["table_name"])
 	})
 }
 
@@ -71,7 +86,7 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 	defer s.LockUnlock()()
 
 	if checkExists {
-		existing, ok := s.Monitors[tableName]
+		existing, ok := s.qualityMonitors().Monitors[tableName]
 		if !ok {
 			return Response{
 				StatusCode: 404,
@@ -101,7 +116,7 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 		info.DashboardId = nextDashboardID()
 	}
 
-	s.Monitors[tableName] = info
+	s.qualityMonitors().Monitors[tableName] = info
 	return Response{
 		Body: info,
 	}

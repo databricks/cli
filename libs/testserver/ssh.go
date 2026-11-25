@@ -21,6 +21,24 @@ import (
 
 func init() {
 	registerRoutes("ssh", addSshRoutes)
+	registerStore("ssh", newSshTunnelStore)
+}
+
+type sshTunnelStore struct {
+	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
+	// serves, generated on first use. See sshTunnelHostKey.
+	sshTunnelHostKeyPEM []byte
+	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
+	// to the tunnel's secret scope so a client can pin it.
+	sshTunnelHostPublicKey []byte
+}
+
+func newSshTunnelStore(*FakeWorkspace) *sshTunnelStore {
+	return &sshTunnelStore{}
+}
+
+func (s *FakeWorkspace) sshTunnel() *sshTunnelStore {
+	return stateOf[sshTunnelStore](s)
 }
 
 func addSshRoutes(server *Server) {
@@ -92,7 +110,7 @@ func findSSHD() string {
 // Scans all scopes since the scope name embeds the session and current user.
 func (s *FakeWorkspace) sshClientAuthorizedKey() []byte {
 	defer s.LockUnlock()()
-	for _, scope := range s.Secrets {
+	for _, scope := range s.secrets().Secrets {
 		if v, ok := scope[sshClientPublicKeySecretKey]; ok {
 			return []byte(v)
 		}
@@ -112,8 +130,8 @@ func (s *FakeWorkspace) sshTunnelHostKey() ([]byte, error) {
 // ensureSSHTunnelHostKey generates the workspace's tunnel host key if it has none.
 // Callers must hold the workspace lock.
 func (s *FakeWorkspace) ensureSSHTunnelHostKey() ([]byte, error) {
-	if s.sshTunnelHostKeyPEM != nil {
-		return s.sshTunnelHostKeyPEM, nil
+	if s.sshTunnel().sshTunnelHostKeyPEM != nil {
+		return s.sshTunnel().sshTunnelHostKeyPEM, nil
 	}
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -127,9 +145,9 @@ func (s *FakeWorkspace) ensureSSHTunnelHostKey() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.sshTunnelHostKeyPEM = pem.EncodeToMemory(block)
-	s.sshTunnelHostPublicKey = ssh.MarshalAuthorizedKey(sshPub)
-	return s.sshTunnelHostKeyPEM, nil
+	s.sshTunnel().sshTunnelHostKeyPEM = pem.EncodeToMemory(block)
+	s.sshTunnel().sshTunnelHostPublicKey = ssh.MarshalAuthorizedKey(sshPub)
+	return s.sshTunnel().sshTunnelHostKeyPEM, nil
 }
 
 // sshTunnelHandler stands in for a cluster's tunnel server: it upgrades /ssh to a

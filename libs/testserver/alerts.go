@@ -15,6 +15,23 @@ import (
 
 func init() {
 	registerRoutes("alerts", addAlertsRoutes)
+	registerStore("alerts", newAlertsStore)
+}
+
+type alertsStore struct {
+	Alerts         map[string]sql.AlertV2
+	PurgedAlertIDs map[string]bool
+}
+
+func newAlertsStore(*FakeWorkspace) *alertsStore {
+	return &alertsStore{
+		Alerts:         map[string]sql.AlertV2{},
+		PurgedAlertIDs: map[string]bool{},
+	}
+}
+
+func (s *FakeWorkspace) alerts() *alertsStore {
+	return stateOf[alertsStore](s)
 }
 
 func addAlertsRoutes(server *Server) {
@@ -24,7 +41,7 @@ func addAlertsRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
-		return MapList(req.Workspace, req.Workspace.Alerts, "alerts")
+		return MapList(req.Workspace, req.Workspace.alerts().Alerts, "alerts")
 	})
 
 	server.Handle("POST", "/api/2.0/alerts", func(req Request) any {
@@ -183,7 +200,7 @@ func (s *FakeWorkspace) writeAlertFile(alert sql.AlertV2) error {
 // existed gets a per-method message.
 func (s *FakeWorkspace) alertNotFound(alertId, unknownMessage string) Response {
 	message := unknownMessage
-	if s.PurgedAlertIDs[alertId] {
+	if s.alerts().PurgedAlertIDs[alertId] {
 		message = fmt.Sprintf("Tree node with id %s does not exist", alertId)
 	}
 	return Response{
@@ -199,7 +216,7 @@ func (s *FakeWorkspace) AlertsGet(alertId string) Response {
 	defer s.LockUnlock()()
 
 	// A trashed (not purged) alert is still readable, with lifecycle_state DELETED.
-	alert, ok := s.Alerts[alertId]
+	alert, ok := s.alerts().Alerts[alertId]
 	if !ok {
 		return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found or has no folder node internal name", alertId))
 	}
@@ -222,7 +239,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 	defer s.LockUnlock()()
 
 	if alertId != "" {
-		existing, ok := s.Alerts[alertId]
+		existing, ok := s.alerts().Alerts[alertId]
 		if !ok {
 			return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found or has no folder node internal name", alertId))
 		}
@@ -241,7 +258,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 
 	alert.Id = alertId
 	alert.LifecycleState = sql.AlertLifecycleStateActive
-	s.Alerts[alertId] = alert
+	s.alerts().Alerts[alertId] = alert
 
 	if err := s.writeAlertFile(alert); err != nil {
 		return Response{
@@ -259,7 +276,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {
 	defer s.LockUnlock()()
 
-	alert, ok := s.Alerts[alertId]
+	alert, ok := s.alerts().Alerts[alertId]
 	if !ok {
 		return s.alertNotFound(alertId, fmt.Sprintf("Alert with id %s not found", alertId))
 	}
@@ -276,11 +293,11 @@ func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {
 	delete(s.files, alertFilePath(alert))
 
 	if purge {
-		delete(s.Alerts, alertId)
-		s.PurgedAlertIDs[alertId] = true
+		delete(s.alerts().Alerts, alertId)
+		s.alerts().PurgedAlertIDs[alertId] = true
 	} else {
 		alert.LifecycleState = sql.AlertLifecycleStateDeleted
-		s.Alerts[alertId] = alert
+		s.alerts().Alerts[alertId] = alert
 	}
 
 	return Response{

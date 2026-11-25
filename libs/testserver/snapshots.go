@@ -21,6 +21,23 @@ const SnapshotRootUUID = "3f9d2c1b-7a6e-4b5d-8c4f-0e1a2b3c4d5e"
 
 func init() {
 	registerRoutes("snapshots", addSnapshotsRoutes)
+	registerStore("snapshots", newSnapshotsStore)
+}
+
+type snapshotsStore struct {
+	// snapshots records immutable-snapshot content paths. Breaking the glass on a
+	// recorded path flips it dirty for good, as in the real API.
+	snapshots map[string]*snapshotRecord
+}
+
+func newSnapshotsStore(*FakeWorkspace) *snapshotsStore {
+	return &snapshotsStore{
+		snapshots: make(map[string]*snapshotRecord),
+	}
+}
+
+func (s *FakeWorkspace) snapshots() *snapshotsStore {
+	return stateOf[snapshotsStore](s)
 }
 
 func addSnapshotsRoutes(server *Server) {
@@ -147,7 +164,7 @@ type snapshotRecord struct {
 // RecordSnapshot stores a create-request record for the snapshot at contentPath.
 func (s *FakeWorkspace) RecordSnapshot(contentPath, relPath string, acl, canManage []map[string]any) {
 	defer s.LockUnlock()()
-	s.snapshots[contentPath] = &snapshotRecord{
+	s.snapshots().snapshots[contentPath] = &snapshotRecord{
 		Dirty:     false,
 		RelPath:   relPath,
 		ACL:       acl,
@@ -159,7 +176,7 @@ func (s *FakeWorkspace) RecordSnapshot(contentPath, relPath string, acl, canMana
 // and whether a snapshot is recorded there at all.
 func (s *FakeWorkspace) SnapshotDirty(contentPath string) (dirty, ok bool) {
 	defer s.LockUnlock()()
-	rec, ok := s.snapshots[contentPath]
+	rec, ok := s.snapshots().snapshots[contentPath]
 	if !ok {
 		return false, false
 	}
@@ -170,7 +187,7 @@ func (s *FakeWorkspace) SnapshotDirty(contentPath string) (dirty, ok bool) {
 // ok is false when no snapshot is recorded there.
 func (s *FakeWorkspace) SnapshotInfo(contentPath string) (*snapshotRecord, bool) {
 	defer s.LockUnlock()()
-	rec, ok := s.snapshots[contentPath]
+	rec, ok := s.snapshots().snapshots[contentPath]
 	return rec, ok
 }
 
@@ -179,7 +196,7 @@ func (s *FakeWorkspace) SnapshotInfo(contentPath string) (*snapshotRecord, bool)
 // ok is false when no snapshot is recorded there.
 func (s *FakeWorkspace) BreakGlassSnapshot(contentPath string) (ok bool) {
 	defer s.LockUnlock()()
-	rec, ok := s.snapshots[contentPath]
+	rec, ok := s.snapshots().snapshots[contentPath]
 	if ok {
 		rec.Dirty = true
 	}

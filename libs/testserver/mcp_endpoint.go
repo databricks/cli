@@ -109,7 +109,7 @@ func (s *FakeWorkspace) McpEndpoint(req Request, name string) Response {
 // mcpServiceNamed returns the stored service with the given full name. Unity Catalog names are case-insensitive, so the
 // match ignores case, as McpServicesList does.
 func (s *FakeWorkspace) mcpServiceNamed(name string) (catalog.McpService, bool) {
-	for key, service := range s.McpServices {
+	for key, service := range s.mcpServices().McpServices {
 		if strings.EqualFold(key, name) {
 			return service, true
 		}
@@ -119,7 +119,7 @@ func (s *FakeWorkspace) mcpServiceNamed(name string) (catalog.McpService, bool) 
 
 // mcpSignedIn reports whether the caller has a credential for the service. Like mcpServiceNamed, the match ignores case.
 func (s *FakeWorkspace) mcpSignedIn(name string) bool {
-	for key := range s.McpUserCredentials {
+	for key := range s.mcpServices().McpUserCredentials {
 		if strings.EqualFold(key, name) {
 			return true
 		}

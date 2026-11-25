@@ -17,6 +17,29 @@ import (
 
 func init() {
 	registerRoutes("bundledeployments", addBundleDeploymentsRoutes)
+	registerStore("bundledeployments", newBundleDeploymentsStore)
+}
+
+type bundleDeploymentsStore struct {
+	// DmsDeployments holds Deployment Metadata Service (DMS) records, keyed by
+	// deployment ID. Each record carries its versions and latest resource state.
+	DmsDeployments map[string]*DmsDeployment
+
+	// DmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment made for
+	// it. An ID appears here before DmsDeployments has a record, which its first version
+	// creates, so the node is what makes the ID valid in between.
+	DmsDeploymentNodes map[string]string
+}
+
+func newBundleDeploymentsStore(*FakeWorkspace) *bundleDeploymentsStore {
+	return &bundleDeploymentsStore{
+		DmsDeployments:     map[string]*DmsDeployment{},
+		DmsDeploymentNodes: map[string]string{},
+	}
+}
+
+func (s *FakeWorkspace) bundleDeployments() *bundleDeploymentsStore {
+	return stateOf[bundleDeploymentsStore](s)
 }
 
 func addBundleDeploymentsRoutes(server *Server) {
@@ -64,7 +87,7 @@ const maxOperationsPerVersion = 800
 // because the SDK enum is generated from the OpenAPI spec, which trails the service proto.
 const operationStatusPending bundledeployments.OperationStatus = "OPERATION_STATUS_PENDING"
 
-// State is kept in FakeWorkspace.DmsDeployments, keyed by deployment ID.
+// State is kept in bundleDeploymentsStore.DmsDeployments, keyed by deployment ID.
 
 // dmsDeploymentNodeName is the workspace node name the service uses for deployments.
 // It must match DEPLOYMENT_NODE_NAME on the service side (DeploymentWhsClient).
@@ -170,7 +193,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	var objectID int64
 	if existing, ok := s.files[nodePath]; ok {
 		objectID = existing.Info.ObjectId
-		if _, ok := s.DmsDeployments[strconv.FormatInt(objectID, 10)]; ok {
+		if _, ok := s.bundleDeployments().DmsDeployments[strconv.FormatInt(objectID, 10)]; ok {
 			return Response{
 				StatusCode: 409,
 				Body:       map[string]string{"error_code": "ALREADY_EXISTS", "message": "deployment " + strconv.FormatInt(objectID, 10) + " already exists"},
@@ -192,7 +215,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 	// The record carries no version yet; last_version_id stays empty until
 	// the first CreateVersion. A failed registration leaves a record with no versions.
 	deploymentID := strconv.FormatInt(objectID, 10)
-	s.DmsDeploymentNodes[deploymentID] = nodePath
+	s.bundleDeployments().DmsDeploymentNodes[deploymentID] = nodePath
 
 	if resp, ok := checkWorkspaceInfo(dep.WorkspaceInfo); !ok {
 		return resp
@@ -200,7 +223,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 
 	dep.Name = "deployments/" + deploymentID
 	dep.Status = bundledeployments.DeploymentStatusDeploymentStatusActive
-	s.DmsDeployments[deploymentID] = &DmsDeployment{
+	s.bundleDeployments().DmsDeployments[deploymentID] = &DmsDeployment{
 		Deployment: dep,
 		Versions:   map[string]*bundledeployments.Version{},
 		Resources:  map[string]bundledeployments.Resource{},
@@ -212,7 +235,7 @@ func (s *FakeWorkspace) CreateDeployment(req Request) Response {
 func (s *FakeWorkspace) GetDeployment(deploymentID string) Response {
 	defer s.LockUnlock()()
 
-	d, ok := s.DmsDeployments[deploymentID]
+	d, ok := s.bundleDeployments().DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
@@ -331,7 +354,7 @@ func (s *FakeWorkspace) UpdateDeployment(req Request, deploymentID string) Respo
 
 	defer s.LockUnlock()()
 
-	d, ok := s.DmsDeployments[deploymentID]
+	d, ok := s.bundleDeployments().DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
@@ -362,11 +385,11 @@ func (s *FakeWorkspace) DeleteDeployment(deploymentID string) Response {
 
 	// The service trashes the deployment's workspace node, so a later get-status
 	// on the node path reports the deployment as absent.
-	if nodePath, ok := s.DmsDeploymentNodes[deploymentID]; ok {
+	if nodePath, ok := s.bundleDeployments().DmsDeploymentNodes[deploymentID]; ok {
 		delete(s.files, nodePath)
 	}
-	delete(s.DmsDeploymentNodes, deploymentID)
-	delete(s.DmsDeployments, deploymentID)
+	delete(s.bundleDeployments().DmsDeploymentNodes, deploymentID)
+	delete(s.bundleDeployments().DmsDeployments, deploymentID)
 	return Response{Body: map[string]any{}}
 }
 
@@ -394,7 +417,7 @@ func (s *FakeWorkspace) CreateVersion(req Request, deploymentID string) Response
 
 	defer s.LockUnlock()()
 
-	d, ok := s.DmsDeployments[deploymentID]
+	d, ok := s.bundleDeployments().DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
@@ -479,7 +502,7 @@ func (s *FakeWorkspace) CompleteVersion(req Request, deploymentID, versionID str
 
 	defer s.LockUnlock()()
 
-	d, ok := s.DmsDeployments[deploymentID]
+	d, ok := s.bundleDeployments().DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
@@ -585,7 +608,7 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 
 	defer s.LockUnlock()()
 
-	d, ok := s.DmsDeployments[deploymentID]
+	d, ok := s.bundleDeployments().DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
@@ -684,7 +707,7 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 func (s *FakeWorkspace) ListResources(deploymentID string) Response {
 	defer s.LockUnlock()()
 
-	d, ok := s.DmsDeployments[deploymentID]
+	d, ok := s.bundleDeployments().DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}
@@ -706,7 +729,7 @@ func (s *FakeWorkspace) ListResources(deploymentID string) Response {
 func (s *FakeWorkspace) ListOperations(deploymentID, versionID string) Response {
 	defer s.LockUnlock()()
 
-	d, ok := s.DmsDeployments[deploymentID]
+	d, ok := s.bundleDeployments().DmsDeployments[deploymentID]
 	if !ok {
 		return dmsNotFound("deployment " + deploymentID)
 	}

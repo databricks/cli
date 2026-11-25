@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path"
 	"reflect"
 	"slices"
@@ -18,24 +17,9 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/dataquality"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
-
 	"github.com/databricks/cli/libs/structs/structtag"
-	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/files"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/serving"
-	"github.com/databricks/databricks-sdk-go/service/settingsv2"
-	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -187,130 +171,58 @@ type FakeWorkspace struct {
 	// recreates without polling) keep immediate deletion.
 	eventualConsistency bool
 
+	// The workspace file tree is shared: many APIs write files and directories to it.
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
-	// dbfs is the DBFS namespace, created on first use (see dbfs.go).
-	dbfs *fakeDbfs
+	// stores holds the state of each fake API, keyed by storeKey. See registerStore.
+	stores map[any]any
+}
 
-	// sandboxFiles holds the filesystem of each sandbox, created on first use (see sandbox_files.go).
-	sandboxFiles map[string]*fakeSandboxFs
+// storeKey is the key of the store of type T in FakeWorkspace.stores.
+type storeKey[T any] struct{}
 
-	// snapshots records immutable-snapshot content paths. Breaking the glass on a
-	// recorded path flips it dirty for good, as in the real API.
-	snapshots map[string]*snapshotRecord
+// storeRegistration creates the store of one fake API for a new workspace.
+type storeRegistration struct {
+	key      string
+	newStore func(w *FakeWorkspace) (key, store any)
+}
 
-	Jobs                  map[int64]jobs.Job
-	JobRuns               map[int64]jobs.Run
-	JobRunOutputs         map[int64]jobs.RunOutput
-	JobRunIdempotency     map[string]int64
-	Pipelines             map[string]pipelines.GetPipelineResponse
-	PipelineUpdates       map[string]pipelines.UpdateInfo
-	Monitors              map[string]catalog.MonitorInfo
-	DataQualityMonitors   map[string]dataquality.Monitor
-	Apps                  map[string]apps.App
-	Schemas               map[string]catalog.SchemaInfo
-	Grants                map[string][]catalog.PrivilegeAssignment
-	Volumes               map[string]catalog.VolumeInfo
-	Dashboards            *EventualMap[string, *fakeDashboard]
-	PublishedDashboards   map[string]dashboards.PublishedDashboard
-	GenieSpaces           map[string]dashboards.GenieSpace
-	SqlWarehouses         map[string]sql.GetWarehouseResponse
-	Alerts                map[string]sql.AlertV2
-	PurgedAlertIDs        map[string]bool
-	Experiments           map[string]ml.GetExperimentResponse
-	ModelRegistryModels   map[string]ml.Model
-	ModelRegistryModelIDs map[string]string // model name -> numeric ID
-	Clusters              map[string]compute.ClusterDetails
-	ClusterLibraries      map[string][]compute.Library // cluster id -> installed libraries
-	InstancePools         map[string]compute.GetInstancePool
-	ClusterPolicies       map[string]compute.Policy
-	Catalogs              map[string]catalog.CatalogInfo
-	ExternalLocations     map[string]catalog.ExternalLocationInfo
-	RegisteredModels      map[string]catalog.RegisteredModelInfo
-	ModelServices         map[string]catalog.ModelService
-	McpServices           map[string]catalog.McpService
-	// McpUserCredentials holds the caller's sign-in to each MCP service, keyed by the service full name. The fake has one
-	// caller.
-	McpUserCredentials    map[string]catalog.McpServiceUserMappedCredential
-	ModelProviderServices map[string]catalog.ModelProviderService
+var storeRegistrations []storeRegistration
 
-	// RegisteredModelVersions counts the versions registered on each model, keyed by its full name.
-	RegisteredModelVersions map[string]int
+// registerStore adds the state of one fake API, which newStore creates for every
+// workspace. Call it from the init function of the API's file, with the file name
+// as key. The API's handlers reach the store through stateOf, under the workspace
+// lock like the rest of the workspace state.
+func registerStore[T any](key string, newStore func(w *FakeWorkspace) *T) {
+	storeRegistrations = append(storeRegistrations, storeRegistration{
+		key: key,
+		newStore: func(w *FakeWorkspace) (any, any) {
+			return storeKey[T]{}, newStore(w)
+		},
+	})
+}
 
-	Features              map[string]ml.Feature
-	ServingEndpoints      map[string]serving.ServingEndpointDetailed
-	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
-	VectorSearchIndexes   map[string]fakeVectorSearchIndex
+// sortedStoreRegistrations orders the registrations by key, so the order stores
+// are created in does not depend on the order init functions run in.
+var sortedStoreRegistrations = sync.OnceValue(func() []storeRegistration {
+	sorted := slices.Clone(storeRegistrations)
+	slices.SortStableFunc(sorted, func(a, b storeRegistration) int {
+		return strings.Compare(a.key, b.key)
+	})
+	return sorted
+})
 
-	// VectorSearchIndexesPendingDeletion counts how many further CREATEs an
-	// already-deleted index name must reject with "pending deletion". See
-	// VectorSearchIndexDelete.
-	VectorSearchIndexesPendingDeletion map[string]int
+// stateOf returns the store of type T that registerStore created for w.
+func stateOf[T any](w *FakeWorkspace) *T {
+	return w.stores[storeKey[T]{}].(*T)
+}
 
-	MaterializationSets map[string]ml.MaterializationSet
-	// Operations belongs to MaterializationSets: the operations its handlers return, keyed by name.
-	Operations map[string]ml.Operation
-
-	FeatureSpecs map[string]ml.FeatureSpec
-
-	SecretScopes map[string]workspace.SecretScope
-	Secrets      map[string]map[string]string // scope -> key -> value
-	Acls         map[string][]workspace.AclItem
-	UCSecrets    map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
-
-	// WorkspaceSettings holds settings written through the settings v2 public API, keyed by name.
-	WorkspaceSettings map[string]settingsv2.Setting
-
-	// Generic permissions storage: key is "{object_type}:{object_id}"
-	Permissions map[string]iam.ObjectPermissions
-
-	Groups map[string]iam.Group
-
-	Repos map[string]workspace.RepoInfo
-
-	DatabaseInstances    map[string]database.DatabaseInstance
-	DatabaseCatalogs     map[string]database.DatabaseCatalog
-	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
-
-	PostgresProjects          map[string]postgres.Project
-	PostgresBranches          map[string]postgres.Branch
-	PostgresCatalogs          map[string]postgres.Catalog
-	PostgresDatabases         map[string]postgres.Database
-	PostgresEndpoints         map[string]postgres.Endpoint
-	PostgresRoles             map[string]postgres.Role
-	PostgresSyncedTables      map[string]postgres.SyncedTable
-	PostgresSnapshotSchedules map[string]postgres.SnapshotSchedule
-	PostgresDataApis          map[string]postgres.DataApi
-	PostgresOperations        map[string]postgres.Operation
-
-	// Branches and endpoints that the server provisioned implicitly together
-	// with their parent (e.g. the production branch on a new project, or the
-	// primary endpoint on a new branch). The real backend rejects independent
-	// deletion of these — they go away only when the parent is deleted.
-	postgresImplicitBranches  map[string]bool
-	postgresImplicitEndpoints map[string]bool
-
-	// clusterVenvs caches Python venvs per existing cluster ID,
-	// matching cloud behavior where libraries are cached on running clusters.
-	clusterVenvs map[string]*clusterEnv
-
-	// DmsDeployments holds Deployment Metadata Service (DMS) records, keyed by
-	// deployment ID. Each record carries its versions and latest resource state.
-	DmsDeployments map[string]*DmsDeployment
-
-	// DmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment made for
-	// it. An ID appears here before DmsDeployments has a record, which its first version
-	// creates, so the node is what makes the ID valid in between.
-	DmsDeploymentNodes map[string]string
-
-	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
-	// serves, generated on first use. See sshTunnelHostKey.
-	sshTunnelHostKeyPEM []byte
-	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
-	// to the tunnel's secret scope so a client can pin it.
-	sshTunnelHostPublicKey []byte
+// storeCleaner is implemented by stores that hold resources outside the
+// workspace's memory, such as temporary directories.
+type storeCleaner interface {
+	cleanup()
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -467,7 +379,7 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	eventualConsistency := strings.HasPrefix(token, EventualConsistencyTokenPrefix)
-	return &FakeWorkspace{
+	w := &FakeWorkspace{
 		url:                 url,
 		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
 		eventualConsistency: eventualConsistency,
@@ -513,97 +425,13 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
-		snapshots:    make(map[string]*snapshotRecord),
-
-		Jobs:                  map[int64]jobs.Job{},
-		JobRuns:               map[int64]jobs.Run{},
-		JobRunOutputs:         map[int64]jobs.RunOutput{},
-		JobRunIdempotency:     map[string]int64{},
-		Grants:                map[string][]catalog.PrivilegeAssignment{},
-		Pipelines:             map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:       map[string]pipelines.UpdateInfo{},
-		Monitors:              map[string]catalog.MonitorInfo{},
-		DataQualityMonitors:   map[string]dataquality.Monitor{},
-		Apps:                  map[string]apps.App{},
-		Catalogs:              map[string]catalog.CatalogInfo{},
-		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},
-		Schemas:               map[string]catalog.SchemaInfo{},
-		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
-		ModelServices:         map[string]catalog.ModelService{},
-		McpServices:           map[string]catalog.McpService{},
-		McpUserCredentials:    map[string]catalog.McpServiceUserMappedCredential{},
-		ModelProviderServices: map[string]catalog.ModelProviderService{},
-		Features:              map[string]ml.Feature{},
-		MaterializationSets:   map[string]ml.MaterializationSet{},
-		Operations:            map[string]ml.Operation{},
-		FeatureSpecs:          map[string]ml.FeatureSpec{},
-		Volumes:               map[string]catalog.VolumeInfo{},
-		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
-		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
-		GenieSpaces:           map[string]dashboards.GenieSpace{},
-		SqlWarehouses: map[string]sql.GetWarehouseResponse{
-			TestDefaultWarehouseId: {
-				Id:    TestDefaultWarehouseId,
-				Name:  "DEFAULT Test SQL Warehouse",
-				State: sql.StateRunning,
-			},
-		},
-		ServingEndpoints:          map[string]serving.ServingEndpointDetailed{},
-		VectorSearchEndpoints:     map[string]vectorsearch.EndpointInfo{},
-		VectorSearchIndexes:       map[string]fakeVectorSearchIndex{},
-		Repos:                     map[string]workspace.RepoInfo{},
-		SecretScopes:              map[string]workspace.SecretScope{},
-		Secrets:                   map[string]map[string]string{},
-		Acls:                      map[string][]workspace.AclItem{},
-		WorkspaceSettings:         map[string]settingsv2.Setting{},
-		Permissions:               map[string]iam.ObjectPermissions{},
-		Groups:                    map[string]iam.Group{},
-		DatabaseInstances:         map[string]database.DatabaseInstance{},
-		DatabaseCatalogs:          map[string]database.DatabaseCatalog{},
-		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
-		PostgresProjects:          map[string]postgres.Project{},
-		PostgresBranches:          map[string]postgres.Branch{},
-		PostgresCatalogs:          map[string]postgres.Catalog{},
-		PostgresDatabases:         map[string]postgres.Database{},
-		PostgresEndpoints:         map[string]postgres.Endpoint{},
-		PostgresRoles:             map[string]postgres.Role{},
-		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
-		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
-		PostgresDataApis:          map[string]postgres.DataApi{},
-		PostgresOperations:        map[string]postgres.Operation{},
-		postgresImplicitBranches:  map[string]bool{},
-		postgresImplicitEndpoints: map[string]bool{},
-		clusterVenvs:              map[string]*clusterEnv{},
-		DmsDeployments:            map[string]*DmsDeployment{},
-		DmsDeploymentNodes:        map[string]string{},
-		Alerts:                    map[string]sql.AlertV2{},
-		PurgedAlertIDs:            map[string]bool{},
-		Experiments:               map[string]ml.GetExperimentResponse{},
-		ModelRegistryModels:       map[string]ml.Model{},
-		ModelRegistryModelIDs:     map[string]string{},
-		Clusters: map[string]compute.ClusterDetails{
-			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
-			// requires (ValidateClusterAccess rejects anything else), matching the cloud
-			// TEST_DEFAULT_CLUSTER_ID this stands in for.
-			TestDefaultClusterId: {
-				ClusterId:        TestDefaultClusterId,
-				ClusterName:      "DEFAULT Test Cluster",
-				State:            compute.StateRunning,
-				DataSecurityMode: compute.DataSecurityModeSingleUser,
-				SingleUserName:   TestUser.UserName,
-			},
-		},
-		InstancePools:    map[string]compute.GetInstancePool{},
-		ClusterLibraries: map[string][]compute.Library{},
-		ClusterPolicies: map[string]compute.Policy{
-			// Seeded so the stateful list keeps backing the variable-lookup tests
-			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
-			"5678": {PolicyId: "5678", Name: "wrong-cluster-policy"},
-			"9876": {PolicyId: "9876", Name: "some-test-cluster-policy"},
-		},
-		VectorSearchIndexesPendingDeletion: map[string]int{},
-		RegisteredModelVersions:            map[string]int{},
+		stores:       map[any]any{},
 	}
+	for _, r := range sortedStoreRegistrations() {
+		key, store := r.newStore(w)
+		w.stores[key] = store
+	}
+	return w
 }
 
 func (s *FakeWorkspace) CurrentUser() iam.User {
@@ -1397,10 +1225,12 @@ func (s *FakeWorkspace) DirectoryExists(path string) bool {
 	return exists
 }
 
-// Cleanup removes all cached cluster venvs.
+// Cleanup releases what the stores hold outside the workspace's memory.
 func (s *FakeWorkspace) Cleanup() {
-	for _, env := range s.clusterVenvs {
-		os.RemoveAll(env.dir)
+	for _, store := range s.stores {
+		if c, ok := store.(storeCleaner); ok {
+			c.cleanup()
+		}
 	}
 }
 

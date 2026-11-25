@@ -192,7 +192,7 @@ func TestJobsRunNow_RepeatedTokenReturnsTheSameRun(t *testing.T) {
 	second := runNow(t, workspace, request).Body.(jobs.RunNowResponse).RunId
 
 	assert.Equal(t, first, second)
-	assert.Len(t, workspace.JobRuns, 1)
+	assert.Len(t, workspace.jobs().JobRuns, 1)
 }
 
 // Requests without a token are never deduped (`bundle run`, `jobs run-now`).
@@ -204,7 +204,7 @@ func TestJobsRunNow_WithoutATokenIsNeverDeduped(t *testing.T) {
 	second := runNow(t, workspace, jobs.RunNow{JobId: jobID}).Body.(jobs.RunNowResponse).RunId
 
 	assert.NotEqual(t, first, second)
-	assert.Len(t, workspace.JobRuns, 2)
+	assert.Len(t, workspace.jobs().JobRuns, 2)
 }
 
 // An interrupted deploy leaves the run going, and the CLI cancels it before

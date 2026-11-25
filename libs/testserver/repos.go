@@ -12,6 +12,21 @@ import (
 
 func init() {
 	registerRoutes("repos", addReposRoutes)
+	registerStore("repos", newReposStore)
+}
+
+type reposStore struct {
+	Repos map[string]workspace.RepoInfo
+}
+
+func newReposStore(*FakeWorkspace) *reposStore {
+	return &reposStore{
+		Repos: map[string]workspace.RepoInfo{},
+	}
+}
+
+func (s *FakeWorkspace) repos() *reposStore {
+	return stateOf[reposStore](s)
 }
 
 func addReposRoutes(server *Server) {
@@ -22,7 +37,7 @@ func addReposRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/repos/{repo_id}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Repos, req.Vars["repo_id"])
+		return MapGet(req.Workspace, req.Workspace.repos().Repos, req.Vars["repo_id"])
 	})
 
 	server.Handle("PATCH", "/api/2.0/repos/{repo_id}", func(req Request) any {
@@ -63,7 +78,7 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 		HeadCommitId: fakeHeadCommitID,
 	}
 
-	s.Repos[id] = repoInfo
+	s.repos().Repos[id] = repoInfo
 	s.repoIdByPath[repoReq.Path] = repoId
 
 	return Response{
@@ -83,7 +98,7 @@ func (s *FakeWorkspace) ReposUpdate(req Request) Response {
 		}
 	}
 
-	repoInfo, ok := s.Repos[req.Vars["repo_id"]]
+	repoInfo, ok := s.repos().Repos[req.Vars["repo_id"]]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -96,7 +111,7 @@ func (s *FakeWorkspace) ReposUpdate(req Request) Response {
 		newRepoInfo.Branch = repoReq.Branch
 	}
 
-	s.Repos[req.Vars["repo_id"]] = newRepoInfo
+	s.repos().Repos[req.Vars["repo_id"]] = newRepoInfo
 
 	return Response{
 		Body: newRepoInfo,
@@ -106,14 +121,14 @@ func (s *FakeWorkspace) ReposUpdate(req Request) Response {
 func (s *FakeWorkspace) ReposDelete(req Request) Response {
 	defer s.LockUnlock()()
 
-	repoInfo, ok := s.Repos[req.Vars["repo_id"]]
+	repoInfo, ok := s.repos().Repos[req.Vars["repo_id"]]
 	if !ok {
 		return Response{
 			StatusCode: 404,
 		}
 	}
 
-	delete(s.Repos, req.Vars["repo_id"])
+	delete(s.repos().Repos, req.Vars["repo_id"])
 	delete(s.repoIdByPath, repoInfo.Path)
 	return Response{}
 }
@@ -135,5 +150,5 @@ func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, boo
 	if longest == "" {
 		return workspace.RepoInfo{}, false
 	}
-	return s.Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
+	return s.repos().Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
 }

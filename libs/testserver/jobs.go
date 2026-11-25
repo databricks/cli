@@ -22,6 +22,27 @@ import (
 
 func init() {
 	registerRoutes("jobs", addJobsRoutes)
+	registerStore("jobs", newJobsStore)
+}
+
+type jobsStore struct {
+	Jobs              map[int64]jobs.Job
+	JobRuns           map[int64]jobs.Run
+	JobRunOutputs     map[int64]jobs.RunOutput
+	JobRunIdempotency map[string]int64
+}
+
+func newJobsStore(*FakeWorkspace) *jobsStore {
+	return &jobsStore{
+		Jobs:              map[int64]jobs.Job{},
+		JobRuns:           map[int64]jobs.Run{},
+		JobRunOutputs:     map[int64]jobs.RunOutput{},
+		JobRunIdempotency: map[string]int64{},
+	}
+}
+
+func (s *FakeWorkspace) jobs() *jobsStore {
+	return stateOf[jobsStore](s)
 }
 
 func addJobsRoutes(server *Server) {
@@ -81,7 +102,7 @@ func addJobsRoutes(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
-		return MapList(req.Workspace, req.Workspace.JobRuns, "runs")
+		return MapList(req.Workspace, req.Workspace.jobs().JobRuns, "runs")
 	})
 }
 
@@ -230,7 +251,7 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
 	// https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go#L108
 	creator := userForToken(req.Token).UserName
-	s.Jobs[jobId] = jobs.Job{
+	s.jobs().Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		Settings:        &jobSettings,
 		CreatorUserName: creator,
@@ -269,7 +290,7 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 	jobFixUps(&request.NewSettings)
 
 	jobId := request.JobId
-	prevjob, ok := s.Jobs[jobId]
+	prevjob, ok := s.jobs().Jobs[jobId]
 	if !ok {
 		return Response{StatusCode: 403, Body: "{}"}
 	}
@@ -282,7 +303,7 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		request.NewSettings.RunAs = prevjob.Settings.RunAs
 	}
 
-	s.Jobs[jobId] = jobs.Job{
+	s.jobs().Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		CreatorUserName: prevjob.CreatorUserName,
 		RunAsUserName:   prevjob.RunAsUserName,
@@ -409,7 +430,7 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 		return jobReadPermissionDenied(userForToken(req.Token).UserName, jobIdInt)
 	}
 
-	job, ok := s.Jobs[jobIdInt]
+	job, ok := s.jobs().Jobs[jobIdInt]
 	if !ok {
 		// Match the real Jobs API, which echoes the job id in the error message.
 		return Response{
@@ -467,10 +488,10 @@ func (s *FakeWorkspace) JobsDelete(req Request, jobId int64) Response {
 		return jobDeletePermissionDenied(userForToken(req.Token).UserName, jobId)
 	}
 
-	if _, ok := s.Jobs[jobId]; !ok {
+	if _, ok := s.jobs().Jobs[jobId]; !ok {
 		return Response{StatusCode: 404}
 	}
-	delete(s.Jobs, jobId)
+	delete(s.jobs().Jobs, jobId)
 	return Response{}
 }
 
@@ -500,8 +521,8 @@ func jobDeletePermissionDenied(principal string, jobId int64) Response {
 func (s *FakeWorkspace) JobsList() Response {
 	defer s.LockUnlock()()
 
-	list := make([]jobs.BaseJob, 0, len(s.Jobs))
-	for _, job := range s.Jobs {
+	list := make([]jobs.BaseJob, 0, len(s.jobs().Jobs))
+	for _, job := range s.jobs().Jobs {
 		job = setSourceIfNotSet(job)
 		baseJob := jobs.BaseJob{}
 		if err := jsonConvert(job, &baseJob); err != nil {
@@ -525,13 +546,13 @@ func (s *FakeWorkspace) installTaskLibrariesOnCluster(task jobs.Task) {
 	if task.ExistingClusterId == "" || len(task.Libraries) == 0 {
 		return
 	}
-	installed := s.ClusterLibraries[task.ExistingClusterId]
+	installed := s.libraries().ClusterLibraries[task.ExistingClusterId]
 	for _, lib := range task.Libraries {
 		if !containsLibrary(installed, lib) {
 			installed = append(installed, lib)
 		}
 	}
-	s.ClusterLibraries[task.ExistingClusterId] = installed
+	s.libraries().ClusterLibraries[task.ExistingClusterId] = installed
 }
 
 func (s *FakeWorkspace) JobsRunNow(req Request) Response {
@@ -545,14 +566,14 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	job, ok := s.Jobs[request.JobId]
+	job, ok := s.jobs().Jobs[request.JobId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
 	// A resent request with the same non-empty token returns the run that token started.
 	if request.IdempotencyToken != "" {
-		if runId, ok := s.JobRunIdempotency[request.IdempotencyToken]; ok {
+		if runId, ok := s.jobs().JobRunIdempotency[request.IdempotencyToken]; ok {
 			return Response{Body: jobs.RunNowResponse{RunId: runId}}
 		}
 	}
@@ -611,16 +632,16 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 				if failure, ok := errors.AsType[*taskFailure](err); ok {
 					runOutput.ErrorTrace = failure.trace
 				}
-				s.JobRunOutputs[taskRunId] = runOutput
+				s.jobs().JobRunOutputs[taskRunId] = runOutput
 			case logs != "":
-				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
+				s.jobs().JobRunOutputs[taskRunId] = jobs.RunOutput{
 					Logs: logs,
 				}
 			}
 		}
 	}
 
-	s.JobRuns[runId] = jobs.Run{
+	s.jobs().JobRuns[runId] = jobs.Run{
 		RunId:                runId,
 		JobId:                request.JobId,
 		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
@@ -633,7 +654,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	}
 
 	if request.IdempotencyToken != "" {
-		s.JobRunIdempotency[request.IdempotencyToken] = runId
+		s.jobs().JobRunIdempotency[request.IdempotencyToken] = runId
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
@@ -735,7 +756,7 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 		})
 	}
 
-	s.JobRuns[runId] = jobs.Run{
+	s.jobs().JobRuns[runId] = jobs.Run{
 		RunId:      runId,
 		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
 		RunPageUrl: fmt.Sprintf("%s/?o=%d#job/run/%d", s.url, TestWorkspaceID, runId),
@@ -799,10 +820,10 @@ func (s *FakeWorkspace) publishSSHTunnelHostKey(scope string) {
 	if _, err := s.ensureSSHTunnelHostKey(); err != nil {
 		return
 	}
-	if s.Secrets[scope] == nil {
-		s.Secrets[scope] = make(map[string]string)
+	if s.secrets().Secrets[scope] == nil {
+		s.secrets().Secrets[scope] = make(map[string]string)
 	}
-	s.Secrets[scope][sshServerPublicKeySecretKey] = string(s.sshTunnelHostPublicKey)
+	s.secrets().Secrets[scope][sshServerPublicKeySecretKey] = string(s.sshTunnel().sshTunnelHostPublicKey)
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.
@@ -1038,7 +1059,7 @@ func (s *FakeWorkspace) getOrCreateClusterEnv(task jobs.Task) (*clusterEnv, func
 	clusterID := task.ExistingClusterId
 
 	if clusterID != "" {
-		if env, ok := s.clusterVenvs[clusterID]; ok {
+		if env, ok := s.clusters().clusterVenvs[clusterID]; ok {
 			return env, nil, nil
 		}
 	}
@@ -1065,7 +1086,7 @@ func (s *FakeWorkspace) getOrCreateClusterEnv(task jobs.Task) (*clusterEnv, func
 
 	// Cache venv for existing clusters; use cleanup for new clusters.
 	if clusterID != "" {
-		s.clusterVenvs[clusterID] = env
+		s.clusters().clusterVenvs[clusterID] = env
 		return env, nil, nil
 	}
 
@@ -1139,7 +1160,7 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	run, ok := s.JobRuns[runIdInt]
+	run, ok := s.jobs().JobRuns[runIdInt]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -1148,7 +1169,7 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
 		// Transition stored state to TERMINATED for the next poll.
 		terminateRun(&run)
-		s.JobRuns[runIdInt] = run
+		s.jobs().JobRuns[runIdInt] = run
 
 		// Return RUNNING for this poll (before the transition).
 		runResp := run
@@ -1174,7 +1195,7 @@ func (s *FakeWorkspace) JobsCancelRun(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	run, ok := s.JobRuns[request.RunId]
+	run, ok := s.jobs().JobRuns[request.RunId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -1185,7 +1206,7 @@ func (s *FakeWorkspace) JobsCancelRun(req Request) Response {
 			LifeCycleState: jobs.RunLifeCycleStateTerminated,
 			ResultState:    jobs.RunResultStateCanceled,
 		}
-		s.JobRuns[request.RunId] = run
+		s.jobs().JobRuns[request.RunId] = run
 	}
 
 	return Response{}
@@ -1199,7 +1220,7 @@ func (s *FakeWorkspace) JobsDeleteRun(req Request) Response {
 			Body:       fmt.Sprintf("request parsing error: %s", err),
 		}
 	}
-	return MapDelete(s, s.JobRuns, request.RunId)
+	return MapDelete(s, s.jobs().JobRuns, request.RunId)
 }
 
 func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {
@@ -1215,17 +1236,17 @@ func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {
 	defer s.LockUnlock()()
 
 	// First check if output exists directly for this run ID
-	output, ok := s.JobRunOutputs[runIdInt]
+	output, ok := s.jobs().JobRunOutputs[runIdInt]
 	if ok {
 		return Response{Body: output}
 	}
 
 	// If not, check if this is a job run ID with tasks
-	jobRun, ok := s.JobRuns[runIdInt]
+	jobRun, ok := s.jobs().JobRuns[runIdInt]
 	if ok && len(jobRun.Tasks) > 0 {
 		// For single-task jobs, return the task's output
 		taskRunId := jobRun.Tasks[0].RunId
-		if taskOutput, ok := s.JobRunOutputs[taskRunId]; ok {
+		if taskOutput, ok := s.jobs().JobRunOutputs[taskRunId]; ok {
 			return Response{Body: taskOutput}
 		}
 	}

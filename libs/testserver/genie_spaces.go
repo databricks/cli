@@ -12,6 +12,21 @@ import (
 
 func init() {
 	registerRoutes("genie_spaces", addGenieSpacesRoutes)
+	registerStore("genie_spaces", newGenieSpacesStore)
+}
+
+type genieSpacesStore struct {
+	GenieSpaces map[string]dashboards.GenieSpace
+}
+
+func newGenieSpacesStore(*FakeWorkspace) *genieSpacesStore {
+	return &genieSpacesStore{
+		GenieSpaces: map[string]dashboards.GenieSpace{},
+	}
+}
+
+func (s *FakeWorkspace) genieSpaces() *genieSpacesStore {
+	return stateOf[genieSpacesStore](s)
 }
 
 func addGenieSpacesRoutes(server *Server) {
@@ -118,7 +133,7 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 		Etag: "1",
 	}
 
-	s.GenieSpaces[spaceId] = genieSpace
+	s.genieSpaces().GenieSpaces[spaceId] = genieSpace
 
 	// Genie spaces are not exposed as workspace files ("dataRoom is not
 	// user-facing"), so unlike dashboards we do not register a workspace path
@@ -133,7 +148,7 @@ func (s *FakeWorkspace) GenieSpaceGet(req Request) Response {
 	defer s.LockUnlock()()
 
 	spaceId := req.Vars["space_id"]
-	genieSpace, ok := s.GenieSpaces[spaceId]
+	genieSpace, ok := s.genieSpaces().GenieSpaces[spaceId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -159,7 +174,7 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 	defer s.LockUnlock()()
 
 	spaceId := req.Vars["space_id"]
-	genieSpace, ok := s.GenieSpaces[spaceId]
+	genieSpace, ok := s.genieSpaces().GenieSpaces[spaceId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -232,7 +247,7 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 		genieSpace.Etag = strconv.Itoa(prevEtag + 1)
 	}
 
-	s.GenieSpaces[spaceId] = genieSpace
+	s.genieSpaces().GenieSpaces[spaceId] = genieSpace
 
 	return Response{
 		Body: genieSpace,
@@ -243,7 +258,7 @@ func (s *FakeWorkspace) GenieSpaceTrash(req Request) Response {
 	defer s.LockUnlock()()
 
 	spaceId := req.Vars["space_id"]
-	if _, ok := s.GenieSpaces[spaceId]; !ok {
+	if _, ok := s.genieSpaces().GenieSpaces[spaceId]; !ok {
 		return Response{
 			StatusCode: 404,
 			Body: map[string]string{
@@ -252,7 +267,7 @@ func (s *FakeWorkspace) GenieSpaceTrash(req Request) Response {
 		}
 	}
 
-	delete(s.GenieSpaces, spaceId)
+	delete(s.genieSpaces().GenieSpaces, spaceId)
 
 	return Response{
 		StatusCode: 200,
