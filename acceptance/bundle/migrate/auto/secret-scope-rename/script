@@ -20,8 +20,8 @@ trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 title "Secret scopes in the workspace after the deploy"
 trace $CLI secrets list-scopes -o json | jq -r '.[].name' | sort
 
-title "Redeploy on direct: the plan still sees nothing to do"
+title "Plan again on direct: the plan still sees nothing to do"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
 
 title "The state after the deploy records the scope's name and id"
-trace jq '.state["resources.secret_scopes.foo"] | {id: .__id__, scope: .state.scope}' .databricks/bundle/default/resources.json
+trace read_state.py secret_scopes foo id scope

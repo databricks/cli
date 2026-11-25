@@ -23,18 +23,15 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 >>> [CLI] secrets list-scopes -o json
 test-scope-[UNIQUE_NAME]
 
-=== Redeploy on direct: the plan still sees nothing to do
+=== Plan again on direct: the plan still sees nothing to do
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === The state after the deploy records the scope's name and id
 
->>> jq .state["resources.secret_scopes.foo"] | {id: .__id__, scope: .state.scope} .databricks/bundle/default/resources.json
-{
-  "id": "test-scope-[UNIQUE_NAME]",
-  "scope": "test-scope-[UNIQUE_NAME]-renamed"
-}
+>>> read_state.py secret_scopes foo id scope
+secret_scopes foo id='test-scope-[UNIQUE_NAME]' scope='test-scope-[UNIQUE_NAME]-renamed'
 
 === Cleanup
 
