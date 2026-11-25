@@ -13,4 +13,6 @@ include:
   - out/resource/*.yml
 
 
+>>> [CLI] alerts-v2 trash-alert [ALERT_ID] --purge
+
 >>> [CLI] workspace delete /Workspace/Users/[USERNAME]/test-[UNIQUE_NAME] --recursive

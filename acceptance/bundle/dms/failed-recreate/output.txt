@@ -131,7 +131,7 @@ API message: Fault injected by test.
 
 Files: 2 uploaded, 0 deleted
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --dms --fold-pending //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions",
@@ -157,20 +157,7 @@ Files: 2 uploaded, 0 deleted
     "update_mask": "state,error_message,status"
   },
   "body": {
-    "error_message": "",
-    "sequence_id": 0,
-    "status": "OPERATION_STATUS_PENDING"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,status"
-  },
-  "body": {
     "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
-    "sequence_id": 1,
     "status": "OPERATION_STATUS_FAILED"
   }
 }

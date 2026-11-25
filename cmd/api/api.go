@@ -44,12 +44,14 @@ const (
 // also live under /accounts/.
 var accountSegmentRe = regexp.MustCompile(`(^|/)accounts/[^/]+`)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "api",
-		Short: "Perform Databricks API call",
-	}
+// Spec declares the api command.
+var Spec = root.CommandSpec{
+	Use:   "api",
+	Short: "Perform Databricks API call",
+	Build: buildCommand,
+}
 
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
 	cmd.AddCommand(
 		makeCommand(http.MethodGet),
 		makeCommand(http.MethodHead),
@@ -58,8 +60,6 @@ func New() *cobra.Command {
 		makeCommand(http.MethodPatch),
 		makeCommand(http.MethodDelete),
 	)
-
-	return cmd
 }
 
 func makeCommand(method string) *cobra.Command {

@@ -1,0 +1,434 @@
+package mcp
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/log/handler"
+	"github.com/databricks/cli/libs/shellquote"
+	"github.com/databricks/databricks-sdk-go/config"
+)
+
+// Commands that binding messages tell the user to run.
+const (
+	authLoginCommand = "databricks auth login"
+	mcpAddCommand    = "databricks aitools mcp add"
+	mcpRemoveCommand = "databricks aitools mcp remove"
+)
+
+// BindCategory names the kind of a binding failure. The values are stable identifiers
+// for the failure, not telemetry values.
+type BindCategory string
+
+const (
+	BindProfileNotFound    BindCategory = "PROFILE_NOT_FOUND"
+	BindProfileHostChanged BindCategory = "PROFILE_HOST_CHANGED"
+	BindAuthFailed         BindCategory = "AUTH_FAILED"
+	BindUncategorized      BindCategory = "UNCATEGORIZED"
+)
+
+// BindOptions selects what a proxy binds to. Service is the full name, for example system.ai.github.
+type BindOptions struct {
+	Profile string
+	Service string
+	State   *State
+	// Stderr receives the notice printed when no install record exists. It must not be nil.
+	Stderr io.Writer
+	// CaptureAuthorization receives the Authorization header obtained during binding, when set.
+	CaptureAuthorization func(string)
+}
+
+// BindError is a failed binding check. Its message is the text printed to stderr.
+type BindError struct {
+	Category BindCategory
+	message  string
+	cause    error
+}
+
+func (e *BindError) Error() string {
+	return e.message
+}
+
+func (e *BindError) Unwrap() error {
+	return e.cause
+}
+
+// Bind checks that the profile still names the host and workspace recorded for the service,
+// then authenticates with the profile's own credentials. It never reads stdin, prompts, or
+// loads a bundle. It returns the resolved config and the matching state entry, which is nil
+// when none exists.
+//
+// The config file is the one that DATABRICKS_CONFIG_FILE names in the context, resolved once:
+// the profile lookup, the entry match and cfg.ConfigFile all use that path. The profile is
+// checked before the SDK resolves the config, so a re-pointed host is never contacted. The CLI's
+// token store reads DATABRICKS_CONFIG_FILE from the process environment instead, so a caller
+// that sets the variable in the context must also set it in the process environment.
+func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error) {
+	configFile, err := ResolveConfigFile(ctx, env.Get(ctx, mcpconfig.ConfigFileEnv))
+	if err != nil {
+		return nil, nil, uncategorizedError(err)
+	}
+	entry, err := CheckBinding(ctx, opts.State, opts.Service, opts.Profile, configFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cfg, err := BoundConfig(opts.Profile, configFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	if entry == nil {
+		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
+	}
+	authorization, err := AuthenticateBound(ctx, cfg, opts.Profile, PinnedFile(entry, configFile))
+	if err != nil {
+		return nil, nil, err
+	}
+	if opts.CaptureAuthorization != nil {
+		opts.CaptureAuthorization(authorization)
+	}
+	return cfg, entry, nil
+}
+
+// BoundConfig returns the config of profileName in configFile, which is resolved, with the loaders that Bind uses: the
+// profile's own settings and the non-auth environment. The profile's loader chain would also fill missing credentials
+// from the environment, and a token meant for another workspace must not reach this one. It does not authenticate; see
+// AuthenticateBound.
+func BoundConfig(profileName, configFile string) (*config.Config, error) {
+	return resolveBound(&config.Config{
+		Profile:    profileName,
+		ConfigFile: configFile,
+		Loaders:    []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
+	})
+}
+
+// BoundConfigWithin is BoundConfig with the SDK's request and retry budgets set to budget, rounded up to whole seconds. A
+// budget of zero keeps the SDK's defaults. Resolving the profile runs on a context of its own, so a context deadline does
+// not reach it, and these budgets are what bound it (see profileMetadata.Load in cmd/auth).
+func BoundConfigWithin(profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	return resolveBound(withinBudget(profileName, configFile, budget))
+}
+
+// BoundUploadConfig is BoundConfigWithin for a config that only a telemetry upload uses. Its credentials never refresh a
+// token, since the command may exit before a refresh finishes, and a rotated single-use refresh token would be lost (see
+// auth.CredentialsWithoutRefresh). It does not authenticate.
+func BoundUploadConfig(ctx context.Context, profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	cfg := withinBudget(profileName, configFile, budget)
+	cfg.Credentials = auth.CredentialsWithoutRefresh()
+	quietHostMetadata(ctx, cfg)
+	return resolveBound(cfg)
+}
+
+// quietHostMetadata makes a failed host metadata lookup of cfg a debug message, so that a command which succeeded does not
+// warn about its telemetry upload. The lookup runs with a debug-only logger of ctx, since the SDK's background context
+// would send the registered resolver's warning to the global logger. A failed lookup falls back to the user config, as
+// the SDK does.
+func quietHostMetadata(ctx context.Context, cfg *config.Config) {
+	logger := slog.New(handler.DebugOnlyHandler{Handler: log.GetLogger(ctx).Handler()})
+	cfg.HostMetadataResolver = func(sdkCtx context.Context, host string) (*config.HostMetadata, error) {
+		resolve := cfg.DefaultHostMetadataResolver()
+		if factory := config.DefaultHostMetadataResolverFactory; factory != nil {
+			if r := factory(cfg); r != nil {
+				resolve = r
+			}
+		}
+		meta, err := resolve(log.NewContext(sdkCtx, logger), host)
+		if err != nil {
+			log.Debugf(sdkCtx, "telemetry: cannot resolve host metadata for %s: %s", host, err)
+			return nil, nil
+		}
+		return meta, nil
+	}
+}
+
+// withinBudget is the config of profileName in configFile, with the SDK's request and retry budgets set to budget.
+func withinBudget(profileName, configFile string, budget time.Duration) *config.Config {
+	seconds := int((budget + time.Second - 1) / time.Second)
+	return &config.Config{
+		Profile:             profileName,
+		ConfigFile:          configFile,
+		Loaders:             []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
+		HTTPTimeoutSeconds:  seconds,
+		RetryTimeoutSeconds: seconds,
+	}
+}
+
+// resolveBound resolves cfg, as BoundConfig does.
+func resolveBound(cfg *config.Config) (*config.Config, error) {
+	if err := cfg.EnsureResolved(); err != nil {
+		// Configuration that the SDK rejects is not a credential failure, so a login would not fix it.
+		return nil, uncategorizedError(err)
+	}
+	return cfg, nil
+}
+
+// AuthenticateBound checks that cfg, from BoundConfig for profileName, has a credential. A credential the profile cannot
+// provide is AUTH_FAILED, with the login command for the profile. pinnedFile is the config file an entry pins the
+// profile to, or "" when there is none; the login command names it. It returns
+// the Authorization header from that authentication for callers that need it.
+func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pinnedFile string) (string, error) {
+	// Authenticate only writes headers onto req, which is never sent. The request takes
+	// the command's context, as in cmd/root/auth.go.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
+	if err != nil {
+		return "", uncategorizedError(err)
+	}
+	if err := cfg.Authenticate(req); err != nil {
+		return "", AuthErrorIn(profileName, pinnedFile, err)
+	}
+	return req.Header.Get("Authorization"), nil
+}
+
+// PinnedFile returns the config file that a hint for entry must name, or "" when the hint's command reads the same file
+// without one. An entry pinned to a config file names configFile, the file the profile is read from. A nil entry has no
+// pin. The path has forward slashes, as every hint spells it.
+func PinnedFile(entry *Entry, configFile string) string {
+	if entry != nil && entry.ConfigFile != "" {
+		return filepath.ToSlash(configFile)
+	}
+	return ""
+}
+
+// CheckProfile returns the PROFILE_NOT_FOUND error for a profile that configFile does not name with a host, or nil when
+// it does. It is CheckBinding for a caller that has no service yet, so its message names the profile and no server. It
+// reads the config files only and makes no request.
+func CheckProfile(profileName, configFile string) error {
+	_, err := profileFor("", profileName, configFile, nil)
+	return err
+}
+
+// CheckBinding returns the state entry for service and profileName bound to configFile, the config file the caller
+// resolved with ResolveConfigFile, or nil when there is none. It returns the error Bind returns when the profile does not
+// match: the profile is gone or has no host, or with an entry, its host or workspace changed. The profile is checked
+// without an entry too, under the service's name. It reads the config files only and makes no request, so a caller can
+// refuse before it sends a token to the profile's host.
+func CheckBinding(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
+	entry, err := FindEntry(ctx, state, service, profileName, configFile)
+	if err != nil {
+		return nil, err
+	}
+	if entry == nil {
+		_, err := profileFor(service, profileName, configFile, nil)
+		return nil, err
+	}
+	p, err := profileFor(entry.Name, profileName, configFile, entry)
+	if err != nil {
+		return nil, err
+	}
+	if drift := driftOf(*entry, p); drift != nil {
+		return nil, driftError(entry.Name, profileName, *entry, *drift)
+	}
+	return entry, nil
+}
+
+// CheckUnrecordedBinding is CheckBinding for a server with no install record. Nothing records the host the server was
+// bound to, so cfg, the config Bind resolved at start, stands in for the record. The messages name no record to remove,
+// since there is none.
+func CheckUnrecordedBinding(service, profileName, configFile string, cfg *config.Config) error {
+	p, err := profileFor(service, profileName, configFile, nil)
+	if err != nil {
+		return err
+	}
+	bound := Entry{Host: cfg.Host, WorkspaceID: cfg.WorkspaceID}
+	if drift := driftOf(bound, p); drift != nil {
+		return unrecordedDriftError(service, profileName, bound, *drift)
+	}
+	return nil
+}
+
+// profileFor returns the profile profileName in configFile, or the PROFILE_NOT_FOUND error that says it
+// is gone. name and entry describe the state entry the profile serves; entry is nil without one, and name is
+// "" when no server is chosen yet.
+func profileFor(name, profileName, configFile string, entry *Entry) (profile.Profile, error) {
+	p, err := configFiles{}.profile(configFile, profileName)
+	switch {
+	case errors.Is(err, ErrProfileMissing):
+		problem := "no longer exists"
+		if entry == nil {
+			// Nothing records that the profile existed: the server is not installed yet, or its entry was written by hand.
+			problem = "does not exist"
+		}
+		return profile.Profile{}, profileGoneError(name, profileName, filepath.ToSlash(configFile), entry, problem, err)
+	case errors.Is(err, errProfileNoHost):
+		return profile.Profile{}, profileGoneError(name, profileName, filepath.ToSlash(configFile), entry, "has no host", err)
+	case err != nil:
+		return profile.Profile{}, uncategorizedError(err)
+	}
+	return p, nil
+}
+
+// uncategorizedError wraps a failure that has no category of its own. Its message is the cause's.
+func uncategorizedError(err error) error {
+	return &BindError{Category: BindUncategorized, message: err.Error(), cause: err}
+}
+
+// RemoveNamesCommand returns the command that removes the server named name. Server names are unique in the state.
+func RemoveNamesCommand(name string) string {
+	return mcpRemoveCommand + " --names " + shellquote.BashArg(name)
+}
+
+// AddServiceCommand returns the command that installs service for profileName into agentName. Running it again repairs
+// an entry this CLI wrote, and adopts one it has no record of. configFile is the file the install must bind to, passed
+// as DATABRICKS_CONFIG_FILE; pass "" when the install's default file is that file.
+func AddServiceCommand(service, profileName, agentName, configFile string) string {
+	command := mcpAddCommand + " --names " + shellquote.BashArg(service) + " --profile " + shellquote.BashArg(profileName) + " --agents " + shellquote.BashArg(agentName)
+	if configFile != "" {
+		command = "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(filepath.ToSlash(configFile)) + " " + command
+	}
+	return command
+}
+
+// InstallConfigFile returns the config file that a printed install command names in DATABRICKS_CONFIG_FILE, for the
+// install to bind to path, the file of an entry or record. A pinned entry always needs it. An unpinned one needs it only
+// when the shell may select another file, since the command otherwise binds to the default file, which is path. It
+// returns "" when the command needs no DATABRICKS_CONFIG_FILE.
+func InstallConfigFile(ctx context.Context, path string, pinned bool) string {
+	if pinned || env.Get(ctx, mcpconfig.ConfigFileEnv) != "" {
+		return path
+	}
+	return ""
+}
+
+// RecreateCommand returns the command that logs in to host for profileName again. configFile is the file the login must
+// write, passed as DATABRICKS_CONFIG_FILE; pass "" when the login's default file is that file.
+func RecreateCommand(host, profileName, configFile string) string {
+	return ConfigFileCommand(configFile, authLoginCommand+" --host "+shellquote.BashArg(host)+" --profile "+shellquote.BashArg(profileName))
+}
+
+// ConfigFileCommand returns command with DATABRICKS_CONFIG_FILE set to configFile, when configFile is not "". A command
+// that a hint prints names the file of a profile that is not the one the shell reads. The file is written with forward
+// slashes on every platform, as the other paths in the hints are.
+func ConfigFileCommand(configFile, command string) string {
+	if configFile == "" {
+		return command
+	}
+	return "DATABRICKS_CONFIG_FILE=" + shellquote.BashArg(filepath.ToSlash(configFile)) + " " + command
+}
+
+// profileGoneError builds the PROFILE_NOT_FOUND error for a profile that the config file does not
+// name with a host, either because it is absent or because its section has no host. problem completes
+// the sentence "which ... in <path>". Without a state entry nothing was set up for the profile, so the
+// message only says how to set the profile up, without a host, and it names the server only when name is set. An entry
+// pinned to a config file puts that file in the recreate hint.
+func profileGoneError(name, profileName, path string, entry *Entry, problem string, cause error) error {
+	if entry == nil {
+		login := authLoginCommand + " --profile " + shellquote.BashArg(profileName)
+		subject := "Databricks profile \"" + profileName + "\""
+		if name != "" {
+			subject = "MCP server " + name + " needs " + subject
+		}
+		message := fmt.Sprintf("%s, which %s in %s. Set it up with: %s", subject, problem, path, login)
+		return &BindError{Category: BindProfileNotFound, message: message, cause: cause}
+	}
+	pinnedPath := ""
+	if entry.ConfigFile != "" {
+		pinnedPath = path
+	}
+	recreate := RecreateCommand(entry.Host, profileName, pinnedPath)
+	message := fmt.Sprintf("MCP server %s is bound to Databricks profile \"%s\", which %s in %s. Recreate it with: %s or remove the server with: %s",
+		name, profileName, problem, path, recreate, RemoveNamesCommand(name))
+	return &BindError{Category: BindProfileNotFound, message: message, cause: cause}
+}
+
+// DriftMessage tells how the profile of entry, which is named profileName, now differs from what the entry recorded: its
+// host, or its workspace when the host is the same. subject starts the sentence, for example "MCP server github-logfood"
+// or "it". The serve errors and `mcp list` both word a drift with it.
+func DriftMessage(subject string, entry Entry, profileName string, drift Drift) string {
+	recordedHost, recordedWorkspaceID := recordedTarget(entry)
+	if NormalizeHost(recordedHost) != NormalizeHost(drift.CurrentHost) {
+		return fmt.Sprintf("%s was set up for %s, but profile \"%s\" now points at %s", subject, recordedHost, profileName, drift.CurrentHost)
+	}
+	return fmt.Sprintf("%s was set up for workspace %s, but profile \"%s\" now points at workspace %s", subject, recordedWorkspaceID, profileName, drift.CurrentWorkspaceID)
+}
+
+// driftError is the PROFILE_HOST_CHANGED error for an entry whose profile now names another host,
+// or another workspace on the same host.
+func driftError(name, profileName string, entry Entry, drift Drift) error {
+	message := fmt.Sprintf("%s. Run: %s and add it again", DriftMessage("MCP server "+name, entry, profileName, drift), RemoveNamesCommand(name))
+	return &BindError{Category: BindProfileHostChanged, message: message}
+}
+
+// unrecordedDriftError is the PROFILE_HOST_CHANGED error for a server with no install record. A restart binds the server
+// to the profile's current host, as the startup check does without a record.
+func unrecordedDriftError(service, profileName string, bound Entry, drift Drift) error {
+	message := DriftMessage("MCP server "+service, bound, profileName, drift) + ". Restart the MCP server in your agent to use the current host"
+	return &BindError{Category: BindProfileHostChanged, message: message}
+}
+
+// configFileError is the PROFILE_HOST_CHANGED error for an entry whose config file is not the one in
+// use. The profile may name the same host there, but the server was set up against the recorded file.
+func configFileError(name, profileName, recordedPath, currentPath string) error {
+	message := fmt.Sprintf("MCP server %s was set up with config file %s, but profile \"%s\" is read from %s now. Run: %s and add it again, or set %s to %s",
+		name, recordedPath, profileName, currentPath, RemoveNamesCommand(name), mcpconfig.ConfigFileEnv, shellquote.BashArg(recordedPath))
+	return &BindError{Category: BindProfileHostChanged, message: message}
+}
+
+// AuthError is the AUTH_FAILED error for a credential that the profile's own settings could not
+// provide. The message points at the login command for the profile.
+func AuthError(profileName string, cause error) error {
+	return AuthErrorIn(profileName, "", cause)
+}
+
+// AuthErrorIn is AuthError for a profile pinned to configFile. The login command names configFile, since the login must
+// write that file; pass "" when the login's default file is that file.
+func AuthErrorIn(profileName, configFile string, cause error) error {
+	message := fmt.Sprintf("%s\nRun: %s", cause, LoginCommand(profileName, configFile))
+	return &BindError{Category: BindAuthFailed, message: message, cause: cause}
+}
+
+// LoginCommand returns the command that logs in profileName. configFile is the file the login must write, passed as
+// DATABRICKS_CONFIG_FILE; pass "" when the login's default file is that file.
+func LoginCommand(profileName, configFile string) string {
+	return ConfigFileCommand(configFile, authLoginCommand+" --profile "+shellquote.BashArg(profileName))
+}
+
+// FindEntry returns the entry for the service and profile whose config file is configFile, or nil when
+// the service and profile have no entry at all. Service names are compared without case, as Unity Catalog
+// names are. Both sides are compared as resolved paths, so an entry with no pinned file matches the default file.
+//
+// An entry for the service and profile in another file is an error, not a missing entry: the server was
+// set up against that file, and binding through this one would switch it without a record. An entry
+// whose file cannot be resolved, such as a "~" path with no home directory, cannot be compared. The
+// bind fails on it, since it might be the match.
+func FindEntry(ctx context.Context, state *State, service, profileName, configFile string) (*Entry, error) {
+	var unresolved error
+	var other *Entry
+	var otherPath string
+	for i := range state.Servers {
+		entry := &state.Servers[i]
+		if !strings.EqualFold(entry.Service, service) || entry.Profile != profileName {
+			continue
+		}
+		path, err := ResolveConfigFile(ctx, entry.ConfigFile)
+		if err != nil {
+			unresolved = errors.Join(unresolved, fmt.Errorf("MCP server %s: %w", entry.Name, err))
+			continue
+		}
+		if SamePath(path, configFile) {
+			return entry, nil
+		}
+		if other == nil {
+			other, otherPath = entry, path
+		}
+	}
+	if unresolved != nil {
+		return nil, uncategorizedError(unresolved)
+	}
+	if other != nil {
+		return nil, configFileError(other.Name, profileName, filepath.ToSlash(otherPath), filepath.ToSlash(configFile))
+	}
+	return nil, nil
+}

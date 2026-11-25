@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ func TestHasDatabricksToolingInstalledNoAgents(t *testing.T) {
 	Registry = []*Agent{}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksToolingInstalled(t.Context()))
+	assert.True(t, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
 }
 
 func TestHasDatabricksToolingInstalledCanonicalOnly(t *testing.T) {
@@ -35,7 +36,7 @@ func TestHasDatabricksToolingInstalledCanonicalOnly(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksToolingInstalled(t.Context()))
+	assert.True(t, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
 }
 
 func TestHasDatabricksToolingInstalledIgnoresAgentDir(t *testing.T) {
@@ -56,7 +57,7 @@ func TestHasDatabricksToolingInstalledIgnoresAgentDir(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksToolingInstalled(t.Context()))
+	assert.False(t, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
 }
 
 func TestHasDatabricksToolingInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
@@ -77,7 +78,7 @@ func TestHasDatabricksToolingInstalledWithOnlyNonDatabricksSkills(t *testing.T) 
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksToolingInstalled(t.Context()))
+	assert.False(t, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
 }
 
 func TestHasDatabricksToolingInstalledNoSkillsDir(t *testing.T) {
@@ -95,7 +96,7 @@ func TestHasDatabricksToolingInstalledNoSkillsDir(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksToolingInstalled(t.Context()))
+	assert.False(t, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
 }
 
 func TestHasDatabricksToolingInstalledCustomSubdirNotChecked(t *testing.T) {
@@ -116,7 +117,7 @@ func TestHasDatabricksToolingInstalledCustomSubdirNotChecked(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksToolingInstalled(t.Context()))
+	assert.False(t, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
 }
 
 func TestHasDatabricksToolingInstalledDatabricksAppsCanonical(t *testing.T) {
@@ -139,7 +140,7 @@ func TestHasDatabricksToolingInstalledDatabricksAppsCanonical(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksToolingInstalled(t.Context()))
+	assert.True(t, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
 }
 
 func TestHasDatabricksSkillsInFollowsSymlinks(t *testing.T) {
@@ -186,7 +187,7 @@ func TestHasDatabricksToolingInstalledLegacyPath(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksToolingInstalled(t.Context()))
+	assert.True(t, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
 }
 
 func TestHasDatabricksToolingInstalled(t *testing.T) {
@@ -228,7 +229,51 @@ func TestHasDatabricksToolingInstalled(t *testing.T) {
 			Registry = registry
 			t.Cleanup(func() { Registry = origRegistry })
 
-			assert.Equal(t, tc.want, HasDatabricksToolingInstalled(t.Context()))
+			assert.Equal(t, tc.want, HasDatabricksToolingInstalled(t.Context(), noInstalledPlugins))
+		})
+	}
+}
+
+// TestHasDatabricksToolingInstalledRecordedPlugins covers agents without a
+// plugin manifest reader (Codex, Copilot): a plugin recorded in the CLI
+// install state or in the agent's own config counts for them, and every
+// detected agent still needs one.
+func TestHasDatabricksToolingInstalledRecordedPlugins(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		agentDirs    []string
+		claudePlugin bool
+		// codexPlugin writes the records `codex plugin add` leaves.
+		codexPlugin bool
+		recorded    []string
+		want        bool
+	}{
+		{name: "codex plugin in its config, copilot plugin recorded", agentDirs: []string{".codex", ".copilot"}, codexPlugin: true, recorded: []string{NameCopilot}, want: true},
+		{name: "codex plugin in its config, nothing for copilot", agentDirs: []string{".codex", ".copilot"}, codexPlugin: true, want: false},
+		{name: "codex and copilot plugins recorded", agentDirs: []string{".codex", ".copilot"}, recorded: []string{NameCodex, NameCopilot}, want: true},
+		{name: "only the codex plugin recorded", agentDirs: []string{".codex", ".copilot"}, recorded: []string{NameCodex}, want: false},
+		{name: "nothing recorded", agentDirs: []string{".codex", ".copilot"}, want: false},
+		{name: "codex plugin recorded, cursor without tooling", agentDirs: []string{".codex", ".cursor"}, recorded: []string{NameCodex}, want: false},
+		{name: "a claude code record without its manifest", agentDirs: []string{".claude"}, recorded: []string{NameClaudeCode}, want: false},
+		{name: "claude code plugin in its manifest, codex plugin recorded", agentDirs: []string{".claude", ".codex"}, claudePlugin: true, recorded: []string{NameCodex}, want: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			testutil.SetAgentEnv(t, "HOME", home, "USERPROFILE", home)
+			t.Chdir(t.TempDir())
+			for _, dir := range tc.agentDirs {
+				require.NoError(t, os.MkdirAll(filepath.Join(home, dir), 0o755))
+			}
+			if tc.claudePlugin {
+				writePluginManifest(t, home, `{"plugins":{"databricks@claude-plugins-official":[{"scope":"user","version":"0.2.6"}]}}`)
+			}
+			if tc.codexPlugin {
+				require.NoError(t, os.WriteFile(filepath.Join(home, ".codex", "config.toml"), []byte("[plugins.\"databricks@databricks-agent-skills\"]\n"), 0o600))
+				require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex", "plugins", "cache", "databricks-agent-skills", "databricks", "0.2.50"), 0o755))
+			}
+			installedPlugins := func(context.Context) []string { return tc.recorded }
+
+			assert.Equal(t, tc.want, HasDatabricksToolingInstalled(t.Context(), installedPlugins))
 		})
 	}
 }

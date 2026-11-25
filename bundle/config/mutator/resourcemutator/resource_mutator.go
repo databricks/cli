@@ -189,6 +189,10 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Drops (dynamic): resources.dashboards.*.file_path
 		ConfigureDashboardSerializedDashboard(),
 
+		// Reads (dynamic): resources.apps.*.thumbnail_path
+		// Updates (dynamic): resources.apps.*.thumbnail_content
+		ConfigureAppThumbnail(),
+
 		// Reads (dynamic): resources.genie_spaces.*.file_path
 		// Updates (dynamic): resources.genie_spaces.*.serialized_space
 		ConfigureGenieSpaceSerializedSpace(),

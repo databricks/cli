@@ -1,0 +1,67 @@
+
+=== The create request fails with 500 but the role was created: deploy uses the role
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_roles.owner
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/projects/test-pg-proj/branches/main/roles
+POST /api/2.0/postgres/projects/test-pg-proj/branches/main/roles
+GET /api/2.0/postgres/projects/test-pg-proj/branches/main/roles/app-owner
+
+=== The create request fails with 500 and the role was not created: deploy repeats the create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_branches.main
+Created postgres_projects.my_project
+Warn: deploying resources.postgres_roles.owner: retrying after 500 Internal Server Error from POST /api/2.0/postgres/projects/test-pg-proj/branches/main/roles
+Created postgres_roles.owner
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/projects/test-pg-proj/branches/main/roles
+POST /api/2.0/postgres/projects/test-pg-proj/branches/main/roles
+GET /api/2.0/postgres/projects/test-pg-proj/branches/main/roles/app-owner
+POST /api/2.0/postgres/projects/test-pg-proj/branches/main/roles
+GET /api/2.0/postgres/projects/test-pg-proj/branches/main/roles/app-owner/operations/[UUID][0]
+
+=== The role cannot be read after the create request fails: deploy fails with the create error
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_branches.main
+Created postgres_projects.my_project
+Warn: deploying resources.postgres_roles.owner: checking whether role projects/test-pg-proj/branches/main/roles/app-owner was created: Fault injected by test.
+Error: cannot create resources.postgres_roles.owner: Fault injected by test. (500 INTERNAL_ERROR)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj/branches/main/roles?role_id=app-owner
+HTTP Status: 500 Internal Server Error
+API error_code: INTERNAL_ERROR
+API message: Fault injected by test.
+
+Files: 0 uploaded, 0 deleted
+
+>>> print_requests.py --get //postgres/projects/test-pg-proj/branches/main/roles
+POST /api/2.0/postgres/projects/test-pg-proj/branches/main/roles
+GET /api/2.0/postgres/projects/test-pg-proj/branches/main/roles/app-owner
+
+=== With replace_existing, a failed create request is repeated without reading the role
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_branches.main
+Created postgres_projects.my_project
+Warn: deploying resources.postgres_roles.owner: retrying after 500 Internal Server Error from POST /api/2.0/postgres/projects/test-pg-proj/branches/main/roles
+Created postgres_roles.owner
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/projects/test-pg-proj/branches/main/roles
+POST /api/2.0/postgres/projects/test-pg-proj/branches/main/roles
+POST /api/2.0/postgres/projects/test-pg-proj/branches/main/roles
+GET /api/2.0/postgres/projects/test-pg-proj/branches/main/roles/app-owner/operations/[UUID][1]

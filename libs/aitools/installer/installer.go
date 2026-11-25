@@ -226,6 +226,9 @@ type InstallOptions struct {
 	IncludeExperimental bool
 	SpecificSkills      []string // empty = all skills
 	Scope               string   // ScopeGlobal or ScopeProject (default: global)
+	// SkillsOnly records the target agents that could have had the plugin in
+	// InstallState.SkillsOnlyAgents: the user chose raw skills for them.
+	SkillsOnly bool
 }
 
 func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath string) ([]byte, error) {
@@ -259,8 +262,9 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 
 // FetchSkillsManifestWithFallback fetches the skills manifest at the given ref.
 // If the ref points to a non-existent tag (not-found error), it falls back to
-// the embedded manifest's skills version. Returns the manifest, the (possibly
-// updated) ref, and any error.
+// the embedded manifest's skills version. A manifest that names a skill or file
+// outside its directory fails with ErrUnsafeManifestPath, whatever the source.
+// Returns the manifest, the (possibly updated) ref, and any error.
 func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, ref string, allowFallback bool) (*Manifest, string, error) {
 	tag := strings.TrimPrefix(ref, "v")
 	manifest, err := src.FetchManifest(ctx, ref)
@@ -274,7 +278,13 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 			log.Warnf(ctx, "Could not resolve embedded skills version: %v", fbErr)
 		}
 	}
-	return manifest, ref, err
+	if err != nil {
+		return nil, ref, err
+	}
+	if err := checkManifestPaths(manifest); err != nil {
+		return nil, ref, err
+	}
+	return manifest, ref, nil
 }
 
 // installedSkillsRelease returns the newest recorded raw-skills release and
@@ -444,7 +454,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// previous installs (e.g., experimental skills from a prior run) are preserved.
 	if state == nil {
 		state = &InstallState{
-			SchemaVersion: schemaVersionV2,
+			SchemaVersion: CurrentSchemaVersion,
 			Skills:        make(map[string]string, len(targetSkills)),
 			RepoDirs:      make(map[string]string, len(targetSkills)),
 		}
@@ -465,6 +475,17 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// enabled; this field does not retroactively remove them.
 	state.IncludeExperimental = opts.IncludeExperimental
 	state.Scope = scope
+	if opts.SkillsOnly {
+		for _, a := range targetAgents {
+			// Without its CLI on PATH the agent could not have had the plugin:
+			// install suggests --skills-only for that case too, and update
+			// should migrate the agent once the CLI is there.
+			if a.Plugin != nil && a.HasBinary(ctx) && !slices.Contains(state.SkillsOnlyAgents, a.Name) {
+				state.SkillsOnlyAgents = append(state.SkillsOnlyAgents, a.Name)
+			}
+		}
+		slices.Sort(state.SkillsOnlyAgents)
+	}
 	for name, meta := range targetSkills {
 		state.Skills[name] = meta.Version
 		state.RepoDirs[name] = meta.RepoDir
@@ -487,7 +508,9 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if len(targetSkills) == 1 {
 		noun = "skill"
 	}
-	cmdio.LogProgress(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
+	// Name the directory so an agent can open the installed SKILL.md files
+	// instead of searching the filesystem for them.
+	cmdio.LogProgress(ctx, fmt.Sprintf("Installed %d %s in %s.", len(targetSkills), noun, filepath.ToSlash(baseDir)))
 	return nil
 }
 
@@ -547,6 +570,14 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 
 	result := make(map[string]SkillMeta, len(candidates))
 	for name, meta := range candidates {
+		if reason := unportableSkill(name, meta.Files); reason != "" {
+			if isSpecific {
+				return nil, &SkillError{Skill: name, Reason: ReasonUnportableSkill, Detail: "cannot be installed: " + reason}
+			}
+			log.Warnf(ctx, "Skipping skill %q: %s", name, reason)
+			continue
+		}
+
 		if meta.IsExperimental() && !opts.IncludeExperimental {
 			if isSpecific {
 				return nil, &SkillError{Skill: name, Reason: ReasonExperimentalSkill, Detail: "is experimental; use --experimental to install"}

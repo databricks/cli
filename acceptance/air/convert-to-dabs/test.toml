@@ -1,3 +1,8 @@
 # convert-to-dabs writes the bundle in place (next to train.yaml + src/). These are
 # generated artifacts, not committed inputs, so exclude them from the repo-diff check.
-Ignore = ["databricks.yml", "generated_artifacts", "generated-b300", "generated-docker"]
+Ignore = ["databricks.yml", "generated_artifacts", "generated-b300", "generated-databricks-ai", "generated-docker"]
+
+[[Repls]]
+# Fix path with reverse slashes in the output for Windows.
+Old = 'TEST_TMP_DIR]\\src'
+New = 'TEST_TMP_DIR]/src'

@@ -3,6 +3,14 @@ envsubst < alert.json.tmpl > alert.json
 
 alert_id=$(trace $CLI alerts-v2 create-alert --json @alert.json | jq -r '.id')
 add_repl "$alert_id" ALERT_ID
+
+# Unbind leaves the alert in place; purge it so leaked alerts do not exhaust the
+# workspace quota for alerts.
+cleanup() {
+    trace $CLI alerts-v2 trash-alert $alert_id --purge
+}
+trap cleanup EXIT
+
 trace $CLI bundle deployment bind my_alert $alert_id --auto-approve
 trace $CLI bundle summary
 

@@ -3,6 +3,7 @@
 package jobs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -19,11 +20,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "jobs",
-		Short: `The Jobs API allows you to create, edit, and delete jobs.`,
-		Long: `The Jobs API allows you to create, edit, and delete jobs.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "jobs",
+	Short:   `The Jobs API allows you to create, edit, and delete jobs.`,
+	GroupID: "lakeflow",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Jobs API allows you to create, edit, and delete jobs.
 
   You can use a Databricks job to run a data processing or data analysis task in
   a Databricks cluster with scalable resources. Your job can consist of a single
@@ -40,14 +46,13 @@ func New() *cobra.Command {
 
   [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
   [Secrets CLI]: https://docs.databricks.com/dev-tools/cli/secrets-cli.html
-  [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
-		GroupID: "lakeflow",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCancelAllRuns())
@@ -75,8 +80,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start cancel-all-runs command
@@ -183,7 +186,7 @@ func newCancelRun() *cobra.Command {
   still be running when this request completes.
 
   Arguments:
-    RUN_ID: This field is required.`
+    RUN_ID: The canonical identifier of the run to cancel.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -225,14 +228,14 @@ func newCancelRun() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
-				id, err := cmdio.Select(ctx, names, "This field is required")
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run to cancel")
 				if err != nil {
 					return err
 				}
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return errors.New("expected to have this field is required")
+				return errors.New("expected to have the canonical identifier of the run to cancel")
 			}
 			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
 			if err != nil {
@@ -566,7 +569,9 @@ func newExportRun() *cobra.Command {
 	cmd.Short = `Export and retrieve a job run.`
 	cmd.Long = `Export and retrieve a job run.
 
-  Export and retrieve the job run task.
+  Export and retrieve the job run task. Only notebook task runs can be exported.
+  For a multi-task job run, pass the run_id of the individual notebook task
+  run rather than the ID of the job run.
 
   Arguments:
     RUN_ID: The canonical identifier for the run. This field is required.`

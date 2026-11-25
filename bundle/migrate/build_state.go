@@ -340,7 +340,7 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 		rules  []dresources.FieldRule
 		action string
 	}{
-		{cfg.ProvidedIDFields, "recreated"},
+		{cfg.ProvidedIDRules(), "recreated"},
 		{cfg.UpdatableIDFields, "renamed"},
 	} {
 		for _, rule := range kind.rules {

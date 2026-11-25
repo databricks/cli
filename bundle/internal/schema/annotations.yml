@@ -270,7 +270,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -289,18 +289,6 @@ resources:
       "markdown_description": |-
         The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
       "$fields":
-        "app_status":
-          "description": |-
-            PLACEHOLDER
-        "budget_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "compute_size":
-          "description": |-
-            PLACEHOLDER
-        "compute_status":
-          "description": |-
-            PLACEHOLDER
         "config":
           "description": |-
             PLACEHOLDER
@@ -321,98 +309,13 @@ resources:
                 "value_from":
                   "description": |-
                     PLACEHOLDER
-        "effective_budget_policy_id":
-          "description": |-
-            PLACEHOLDER
         "effective_resources":
           "$fields":
-            "app":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "database":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "database_name":
-                  "description": |-
-                    PLACEHOLDER
-                "instance_name":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "experiment":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "experiment_id":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
             "genie_space":
-              "description": |-
-                PLACEHOLDER
               "$fields":
                 "name":
                   "description": |-
                     PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-                "space_id":
-                  "description": |-
-                    PLACEHOLDER
-            "job":
-              "description": |-
-                PLACEHOLDER
-            "postgres":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "branch":
-                  "description": |-
-                    PLACEHOLDER
-                "database":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-            "secret":
-              "description": |-
-                PLACEHOLDER
-            "serving_endpoint":
-              "description": |-
-                PLACEHOLDER
-            "sql_warehouse":
-              "description": |-
-                PLACEHOLDER
-            "uc_securable":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-                "securable_full_name":
-                  "description": |-
-                    PLACEHOLDER
-                "securable_type":
-                  "description": |-
-                    PLACEHOLDER
-        "effective_usage_policy_id":
-          "description": |-
-            PLACEHOLDER
         "git_source":
           "description": |-
             Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
@@ -421,17 +324,11 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "oauth2_app_client_id":
-          "description": |-
-            PLACEHOLDER
-        "oauth2_app_integration_id":
-          "description": |-
-            PLACEHOLDER
         "permissions":
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -457,27 +354,9 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "service_principal_client_id":
+        "thumbnail_path":
           "description": |-
-            PLACEHOLDER
-        "service_principal_id":
-          "description": |-
-            PLACEHOLDER
-        "service_principal_name":
-          "description": |-
-            PLACEHOLDER
-        "source_code_path":
-          "description": |-
-            PLACEHOLDER
-        "telemetry_export_destinations":
-          "description": |-
-            PLACEHOLDER
-        "usage_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "user_api_scopes":
-          "description": |-
-            PLACEHOLDER
+            The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
     "catalogs":
       "description": |-
         PLACEHOLDER
@@ -529,7 +408,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "$fields":
@@ -600,7 +479,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -695,7 +574,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -770,15 +649,9 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "create_database_if_not_exists":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
-        "uid":
-          "description": |-
-            PLACEHOLDER
     "database_instances":
       "description": |-
         PLACEHOLDER
@@ -790,7 +663,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -832,7 +705,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1061,7 +934,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1120,7 +993,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "$fields":
@@ -1196,16 +1069,6 @@ resources:
                 "dependencies":
                   "description": |-
                     List of pip dependencies, as supported by the version of pip in this environment.
-        "git_source":
-          "$fields":
-            "sparse_checkout":
-              "description": |-
-                PLACEHOLDER
-        "health":
-          "$fields":
-            "rules":
-              "description": |-
-                PLACEHOLDER
         "job_clusters":
           "$fields":
             "new_cluster":
@@ -1243,7 +1106,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1309,19 +1172,9 @@ resources:
                 "python_named_params":
                   "description": |-
                     PLACEHOLDER
-            "webhook_notifications":
-              "$fields":
-                "on_duration_warning_threshold_exceeded":
-                  "$fields":
-                    "id":
-                      "description": |-
-                        PLACEHOLDER
         "trigger":
           "$fields":
             "model":
-              "description": |-
-                PLACEHOLDER
-            "table_update":
               "description": |-
                 PLACEHOLDER
     "materialization_sets":
@@ -1442,7 +1295,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1484,7 +1337,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1614,7 +1467,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1748,7 +1601,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -2018,7 +1871,7 @@ resources:
             Scope name requested by the user. Scope names are unique.
         "permissions":
           "description": |-
-            The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+            The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs. For the same principal, resource permissions take precedence over top-level or target permissions.
           "$fields":
             "group_name":
               "description": |-
@@ -2076,14 +1929,6 @@ resources:
       "markdown_description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
       "$fields":
-        "channel":
-          "$fields":
-            "dbsql_version":
-              "description": |-
-                PLACEHOLDER
-            "name":
-              "description": |-
-                PLACEHOLDER
         "enable_photon":
           "description": |-
             Configures whether the warehouse should use Photon optimized clusters.
@@ -2096,7 +1941,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -2122,29 +1967,10 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
-        "tags":
-          "$fields":
-            "custom_tags":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "key":
-                  "description": |-
-                    PLACEHOLDER
-                "value":
-                  "description": |-
-                    PLACEHOLDER
     "synced_database_tables":
       "description": |-
         PLACEHOLDER
       "$fields":
-        "data_synchronization_status":
-          "$fields":
-            "last_sync":
-              "$fields":
-                "delta_table_sync_info":
-                  "description": |-
-                    PLACEHOLDER
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
@@ -2159,7 +1985,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. For the same principal, resource permissions take precedence over top-level or target permissions.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-

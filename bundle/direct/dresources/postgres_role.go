@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -123,7 +124,7 @@ func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*Postgres
 }
 
 func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRoleState) (string, *PostgresRoleRemote, error) {
-	waiter, err := r.client.Postgres.CreateRole(ctx, postgres.CreateRoleRequest{
+	req := postgres.CreateRoleRequest{
 		RoleId: config.RoleId,
 		Parent: config.Parent,
 		Role: postgres.Role{
@@ -140,17 +141,64 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 		},
 		ReplaceExisting: config.ReplaceExisting != nil && *config.ReplaceExisting,
 		ForceSendFields: nil,
-	})
+	}
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateRole(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
+	return remote.Name, remote, nil
+}
 
+// waitCreated waits for the create operation of a role that a create request returned.
+func (r *ResourcePostgresRole) waitCreated(ctx context.Context, waiter postgres.CreateRoleOperationInterface) (*PostgresRoleRemote, error) {
 	result, err := waitCreateOperation(ctx, waiter.Wait)
 	if err != nil {
-		return "", nil, err
+		return nil, err
+	}
+	return makePostgresRoleRemote(result), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate. Role
+// creates on a just-created branch are answered with 500 INTERNAL_ERROR now and then, and the
+// request may have created the role anyway, so look for it before repeating the request.
+func (r *ResourcePostgresRole) recoverFailedCreate(ctx context.Context, req postgres.CreateRoleRequest, start time.Time, createErr error) (string, *PostgresRoleRemote, error) {
+	if req.RoleId == "" {
+		return "", nil, createErr
+	}
+	// A role found after a replace may predate it, and repeating a replace is safe.
+	if req.ReplaceExisting {
+		return "", nil, retrySafe(createErr)
 	}
 
-	remote := makePostgresRoleRemote(result)
+	name := req.Parent + "/roles/" + req.RoleId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Role, *PostgresRoleRemote]{
+		name:  "role " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Role, error) {
+			return r.client.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
+		},
+		createTime:      func(found *postgres.Role) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
+		use: func(_ context.Context, found *postgres.Role) (*PostgresRoleRemote, error) {
+			return makePostgresRoleRemote(found), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresRoleRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateRole(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresRoleRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
+	if err != nil {
+		return "", nil, err
+	}
 	return remote.Name, remote, nil
 }
 

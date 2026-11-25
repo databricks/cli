@@ -60,7 +60,8 @@ class AzureAttributes:
 
     log_analytics_info: VariableOrOptional[LogAnalyticsInfo] = None
     """
-    Defines values necessary to configure and run Azure Log Analytics agent
+    Defines values necessary to configure and run Azure Log Analytics agent.
+    Both `log_analytics_workspace_id` and `log_analytics_primary_key` must be set, or neither.
     """
 
     spot_bid_max_price: VariableOrOptional[float] = None
@@ -117,7 +118,8 @@ class AzureAttributesDict(TypedDict, total=False):
 
     log_analytics_info: VariableOrOptional[LogAnalyticsInfoParam]
     """
-    Defines values necessary to configure and run Azure Log Analytics agent
+    Defines values necessary to configure and run Azure Log Analytics agent.
+    Both `log_analytics_workspace_id` and `log_analytics_primary_key` must be set, or neither.
     """
 
     spot_bid_max_price: VariableOrOptional[float]

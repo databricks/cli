@@ -25,3 +25,6 @@ ignore_remote_changes:
     reason: input_only
   - field: config.env[*].value_from
     reason: input_only
+# "thumbnail" holds the base64-encoded image, so state keeps only its hash.
+hashed_fields:
+  - thumbnail

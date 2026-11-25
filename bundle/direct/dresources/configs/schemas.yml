@@ -1,6 +1,6 @@
-provided_id_fields:
+parent_id_fields:
   - field: catalog_name
-    reason: id_field
+    reason: parent
 updatable_id_fields:
   # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
   - field: name

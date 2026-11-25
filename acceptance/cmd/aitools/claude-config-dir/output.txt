@@ -1,21 +1,71 @@
 
 === Plugin installed only in the custom config directory
 
->>> CLAUDE_CONFIG_DIR=custom [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CLAUDE_CONFIG_DIR=custom [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
 
 === Custom directory takes precedence over the default installation
 
->>> CLAUDE_CONFIG_DIR=missing [CLI] version
+>>> CLAUDE_CONFIG_DIR=missing [CLI] clusters list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
-Databricks CLI v[CLI_VERSION]
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+=== Exempt commands never hint, even without the tooling
+
+>>> CLAUDE_CONFIG_DIR=missing [CLI] current-user me
+json.userName = "[USERNAME]";
 
 === Empty override uses the default installation
 
->>> CLAUDE_CONFIG_DIR= [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> CLAUDE_CONFIG_DIR= [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
 
 === Unset override uses the default installation
 
->>> [CLI] version
-Databricks CLI v[CLI_VERSION]
+>>> [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+=== Outside a Claude Code subprocess only the text hint prints
+
+>>> CLAUDE_CODE_CHILD_SESSION= [CLI] clusters list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+=== Within one session the text line prints at most once per hour and the native line at most once per 10 minutes, so a 2>&1 pipeline on the next command sees neither
+
+>>> [CLI] clusters list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+>>> [CLI] clusters list
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+=== A command outside a Claude Code subprocess leaves the native line due, so the next Claude Code command prints only that line
+
+>>> CLAUDE_CODE_CHILD_SESSION= [CLI] clusters list
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  
+
+>>> [CLI] clusters list
+<claude-code-hint v="1" type="plugin" value="databricks@claude-plugins-official" />
+ID    Name                State
+4321  some-test-cluster   
+9876  some-other-cluster  

@@ -1,0 +1,65 @@
+
+=== The create request times out but the catalog was created: deploy uses the catalog
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created database_catalogs.my_catalog
+Created database_instances.my_instance
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //database/catalogs //unity-catalog/catalogs
+POST /api/2.0/database/catalogs
+GET /api/2.0/database/catalogs/my_catalog
+GET /api/2.1/unity-catalog/catalogs/my_catalog
+
+=== The create request times out and the catalog was not created: deploy repeats the create
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created database_instances.my_instance
+Warn: deploying resources.database_catalogs.my_catalog: retrying after 504 Gateway Timeout from POST /api/2.0/database/catalogs
+Created database_catalogs.my_catalog
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //database/catalogs //unity-catalog/catalogs
+POST /api/2.0/database/catalogs
+GET /api/2.0/database/catalogs/my_catalog
+POST /api/2.0/database/catalogs
+
+=== The create request times out, the catalog shows up only after the create is repeated: deploy uses the catalog
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created database_instances.my_instance
+Warn: deploying resources.database_catalogs.my_catalog: retrying after 504 Gateway Timeout from POST /api/2.0/database/catalogs
+Created database_catalogs.my_catalog
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //database/catalogs //unity-catalog/catalogs
+POST /api/2.0/database/catalogs
+GET /api/2.0/database/catalogs/my_catalog
+POST /api/2.0/database/catalogs
+GET /api/2.0/database/catalogs/my_catalog
+GET /api/2.1/unity-catalog/catalogs/my_catalog
+
+=== The catalog cannot be read after the create request times out: deploy fails with the create error
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created database_instances.my_instance
+Warn: deploying resources.database_catalogs.my_catalog: checking whether database catalog my_catalog was created: Fault injected by test.
+Error: cannot create resources.database_catalogs.my_catalog: Fault injected by test. (504 DEADLINE_EXCEEDED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/database/catalogs
+HTTP Status: 504 Gateway Timeout
+API error_code: DEADLINE_EXCEEDED
+API message: Fault injected by test.
+
+Files: 0 uploaded, 0 deleted
+
+>>> print_requests.py --get //database/catalogs //unity-catalog/catalogs
+POST /api/2.0/database/catalogs
+GET /api/2.0/database/catalogs/my_catalog

@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,11 +26,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "postgres",
-		Short: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
-		Long: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "postgres",
+	Short:   `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
+	GroupID: "postgres",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
   infrastructure, including projects, branches, compute endpoints, and roles.
 
   This API manages database infrastructure only. To query or modify data, use
@@ -40,14 +46,13 @@ func New() *cobra.Command {
   Resources are identified by hierarchical resource names like
   projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}. The
   name field on each resource contains this full path and is output-only. Note
-  that name refers to this resource path, not the user-visible display_name.`,
-		GroupID: "postgres",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  that name refers to this resource path, not the user-visible display_name.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAcknowledgeAssessmentWarnings())
@@ -118,8 +123,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start acknowledge-assessment-warnings command
@@ -143,8 +146,10 @@ func newAcknowledgeAssessmentWarnings() *cobra.Command {
 	cmd.Flags().DurationVar(&acknowledgeAssessmentWarningsTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "acknowledge-assessment-warnings NAME"
-	cmd.Short = `Acknowledge assessment warnings.`
-	cmd.Long = `Acknowledge assessment warnings.
+	cmd.Short = `*Beta* Acknowledge assessment warnings.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Acknowledge assessment warnings.
 
   Acknowledges non-blocking warnings on a specific assessment.
 
@@ -157,12 +162,9 @@ func newAcknowledgeAssessmentWarnings() *cobra.Command {
     NAME: Required. The assessment resource name, in the format
       migrations/{migration}/assessments/{assessment}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -247,8 +249,10 @@ func newAssessMigration() *cobra.Command {
 	cmd.Flags().DurationVar(&assessMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "assess-migration NAME"
-	cmd.Short = `Assess a migration.`
-	cmd.Long = `Assess a migration.
+	cmd.Short = `*Beta* Assess a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Assess a migration.
 
   Creates an immutable assessment run for the migration's current source
   configuration.
@@ -262,12 +266,9 @@ func newAssessMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -491,7 +492,12 @@ func newCreateCatalog() *cobra.Command {
 	cmd.Short = `Register a Database in UC.`
 	cmd.Long = `Register a Database in UC.
 
-  Register a Postgres database in the Unity Catalog.
+  Registers a Postgres database from a Lakebase project branch as a catalog in
+  Unity Catalog, so that its schemas, tables and views are governed and
+  discoverable through Unity Catalog. The catalog is read-only; the data stays
+  managed through Postgres. Returns a long-running operation. Poll it until done
+  is true; its response holds the new catalog. For an overview, see
+  https://docs.databricks.com/aws/en/oltp/projects/register-uc.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -499,8 +505,9 @@ func newCreateCatalog() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    CATALOG_ID: The ID in the Unity Catalog. It becomes the full resource name, for
-      example "my_catalog" becomes "catalogs/my_catalog".`
+    CATALOG_ID: The ID of the catalog to create, which is also its name in Unity Catalog.
+      It becomes the last segment of the catalog's resource name,
+      catalogs/{catalog_id}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1009,7 +1016,10 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Short = `Create an Endpoint.`
 	cmd.Long = `Create an Endpoint.
 
-  Creates a new compute endpoint in the branch.
+  Creates a compute endpoint in the branch. Each branch gets its read-write
+  endpoint when the branch is created, so use this method to add read-only
+  endpoints (read replicas) or, with replace_existing, to reconfigure the
+  existing read-write endpoint.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1019,11 +1029,12 @@ func newCreateEndpoint() *cobra.Command {
   Arguments:
     PARENT: The Branch where this Endpoint will be created. Format:
       projects/{project_id}/branches/{branch_id}
-    ENDPOINT_ID: The ID to use for the Endpoint. This becomes the final component of the
-      endpoint's resource name. The ID is required and must be 1-63 characters
-      long, start with a lowercase letter, and contain only lowercase letters,
-      numbers, and hyphens. For example, primary becomes
-      projects/my-app/branches/development/endpoints/primary.`
+    ENDPOINT_ID: The ID to use for the endpoint. It becomes the final segment of the
+      endpoint's resource name,
+      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}. The
+      ID must be 3 to 63 characters long, start with a lowercase letter, end
+      with a lowercase letter or digit, and contain only lowercase letters,
+      digits, and hyphens.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1133,8 +1144,10 @@ func newCreateMigration() *cobra.Command {
 	cmd.Flags().StringVar(&createMigrationReq.Migration.TargetBranch, "target-branch", createMigrationReq.Migration.TargetBranch, `The Lakebase branch receiving the migrated databases, in the format projects/{project_id}/branches/{branch_id}.`)
 
 	cmd.Use = "create-migration MIGRATION_ID SOURCE_CONNECTION DATABASE_MAPPINGS MIGRATION_TYPE"
-	cmd.Short = `Create a migration.`
-	cmd.Long = `Create a migration.
+	cmd.Short = `*Beta* Create a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a migration.
 
   Creates a migration.
 
@@ -1154,14 +1167,11 @@ func newCreateMigration() *cobra.Command {
     DATABASE_MAPPINGS: Required. Mappings from source databases to target databases.
     MIGRATION_TYPE: Required. Immutable. The intended migration mode, selected when the
       migration is created.
-      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY, MIGRATION_TYPE_ONLINE]`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1296,7 +1306,9 @@ func newCreateProject() *cobra.Command {
 	cmd.Long = `Create a Project.
 
   Creates a new Lakebase Autoscaling Postgres database project, which contains
-  branches and compute endpoints.
+  branches and compute endpoints. The new project starts with a single branch, a
+  read-write compute endpoint on that branch, a Postgres database named
+  databricks_postgres, and a Postgres role for the calling identity.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1304,10 +1316,12 @@ func newCreateProject() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    PROJECT_ID: The ID to use for the Project. This becomes the final component of the
-      project's resource name. The ID is required and must be 1-63 characters
-      long, start with a lowercase letter, and contain only lowercase letters,
-      numbers, and hyphens. For example, my-app becomes projects/my-app.`
+    PROJECT_ID: The ID to use for the project. It becomes the final segment of the
+      project's resource name, projects/{project_id}. The ID must be 3 to 63
+      characters long, start with a lowercase letter, end with a lowercase
+      letter or digit, and contain only lowercase letters, digits, and hyphens.
+      The ID of a soft-deleted project stays reserved until that project is
+      permanently deleted.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1543,7 +1557,8 @@ func newCreateSnapshot() *cobra.Command {
 	cmd.Long = `Create a Snapshot.
 
   Creates a snapshot, an immutable point-in-time copy of a branch's data, within
-  the project.
+  the project. Returns a long-running operation. Poll it until done is true; its
+  response holds the new snapshot.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1553,7 +1568,10 @@ func newCreateSnapshot() *cobra.Command {
   Arguments:
     PARENT: The project in which to create the snapshot. Format: projects/{project_id}
     SNAPSHOT_ID: Client-chosen ID for the snapshot. It becomes the final segment of the
-      snapshot resource name and cannot be changed after creation.`
+      snapshot resource name and cannot be changed after creation. The ID must
+      be 3 to 63 characters long, start with a lowercase letter, end with a
+      lowercase letter or digit, and contain only lowercase letters, digits, and
+      hyphens.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1658,7 +1676,7 @@ func newCreateSyncedTable() *cobra.Command {
 
 	cmd.Flags().Var(&createSyncedTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `Output only.`)
+	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `The full resource name of the synced table, where (catalog, schema, table) are the Unity Catalog names of the synced table.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1666,7 +1684,9 @@ func newCreateSyncedTable() *cobra.Command {
 	cmd.Short = `Create a Synced Database Table.`
 	cmd.Long = `Create a Synced Database Table.
 
-  Create a Synced Table.
+  Create a Synced Table. Creates the synced table in Unity Catalog and the
+  Postgres table on the branch, and starts the pipeline that loads the initial
+  data from the source table.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1892,6 +1912,10 @@ func newDeleteCatalog() *cobra.Command {
 	cmd.Use = "delete-catalog NAME"
 	cmd.Short = `Delete a Database Catalog.`
 	cmd.Long = `Delete a Database Catalog.
+
+  Deletes the catalog from Unity Catalog. The Postgres database and its tables
+  remain in the branch, and the database can be registered again afterwards.
+  Returns a long-running operation. Poll it until done is true.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2205,6 +2229,8 @@ func newDeleteDatabase() *cobra.Command {
 	cmd.Short = `Delete a Database.`
 	cmd.Long = `Delete a Database.
 
+  Deletes the specified Postgres database.
+
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
@@ -2305,7 +2331,10 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Short = `Delete an Endpoint.`
 	cmd.Long = `Delete an Endpoint.
 
-  Deletes the specified compute endpoint.
+  Deletes the specified compute endpoint. Deletion is permanent. Only read-only
+  endpoints can be deleted this way, because a branch's read-write endpoint is
+  deleted together with the branch. To stop the compute costs of a read-write
+  endpoint without deleting the branch, set spec.disabled to true.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2314,11 +2343,7 @@ func newDeleteEndpoint() *cobra.Command {
 
   Arguments:
     NAME: The full resource path of the endpoint to delete. Format:
-      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-
-      Read-write endpoints currently cannot be deleted directly. Their deletion
-      is managed by the parent branch. To avoid compute costs, set disabled to
-      true on the endpoint.`
+      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -2408,8 +2433,10 @@ func newDeleteMigration() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-migration NAME"
-	cmd.Short = `Delete a migration.`
-	cmd.Long = `Delete a migration.
+	cmd.Short = `*Beta* Delete a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a migration.
 
   Soft-deletes a migration.
 
@@ -2422,12 +2449,9 @@ func newDeleteMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2511,13 +2535,15 @@ func newDeleteProject() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteProjectSkipWait, "no-wait", deleteProjectSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteProjectTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
-	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project (hard delete).`)
+	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project and all of its data immediately.`)
 
 	cmd.Use = "delete-project NAME"
 	cmd.Short = `Delete a Project.`
 	cmd.Long = `Delete a Project.
 
-  Deletes the specified database project.
+  Deletes the specified database project. By default the project is soft-deleted
+  and can be restored with Undelete during its retention period; set purge to
+  delete it permanently.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2723,7 +2749,8 @@ func newDeleteSnapshot() *cobra.Command {
 	cmd.Short = `Delete a Snapshot.`
 	cmd.Long = `Delete a Snapshot.
 
-  Deletes the specified snapshot.
+  Deletes the specified snapshot. A deleted snapshot cannot be recovered.
+  Returns a long-running operation. Poll it until done is true.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2825,7 +2852,9 @@ func newDeleteSyncedTable() *cobra.Command {
 	cmd.Short = `Delete a Synced Database Table.`
 	cmd.Long = `Delete a Synced Database Table.
 
-  Delete a Synced Table.
+  Delete a Synced Table. Drops the Postgres table, removes the synced table from
+  its pipeline, and deletes it from Unity Catalog. The pipeline itself is
+  deleted when no other synced table uses it.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -3028,8 +3057,10 @@ func newGetAssessment() *cobra.Command {
 	var getAssessmentReq postgres.GetAssessmentRequest
 
 	cmd.Use = "get-assessment NAME"
-	cmd.Short = `Get a migration assessment.`
-	cmd.Long = `Get a migration assessment.
+	cmd.Short = `*Beta* Get a migration assessment.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a migration assessment.
 
   Gets a migration assessment run.
 
@@ -3037,12 +3068,9 @@ func newGetAssessment() *cobra.Command {
     NAME: Required. The assessment resource name, in the format
       migrations/{migration}/assessments/{assessment}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3153,6 +3181,9 @@ func newGetCatalog() *cobra.Command {
 	cmd.Use = "get-catalog NAME"
 	cmd.Short = `Get a Database Catalog.`
 	cmd.Long = `Get a Database Catalog.
+
+  Gets the catalog with the given name. The status reports the Postgres
+  database, project and branch that the catalog registers.
 
   Arguments:
     NAME: The full resource path of the catalog to retrieve.
@@ -3402,6 +3433,8 @@ func newGetDatabase() *cobra.Command {
 	cmd.Short = `Get a Database.`
 	cmd.Long = `Get a Database.
 
+  Retrieves information about the specified Postgres database.
+
   Arguments:
     NAME: The name of the Database to retrieve. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}`
@@ -3518,8 +3551,10 @@ func newGetMigration() *cobra.Command {
 	var getMigrationReq postgres.GetMigrationRequest
 
 	cmd.Use = "get-migration NAME"
-	cmd.Short = `Get a migration.`
-	cmd.Long = `Get a migration.
+	cmd.Short = `*Beta* Get a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a migration.
 
   Gets a migration.
 
@@ -3527,12 +3562,9 @@ func newGetMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3956,8 +3988,10 @@ func newListAssessments() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-assessments PARENT"
-	cmd.Short = `List migration assessments.`
-	cmd.Long = `List migration assessments.
+	cmd.Short = `*Beta* List migration assessments.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List migration assessments.
 
   Lists assessment runs for a migration.
 
@@ -3965,12 +3999,9 @@ func newListAssessments() *cobra.Command {
     PARENT: Required. The parent migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -4275,7 +4306,7 @@ func newListDatabases() *cobra.Command {
 	cmd.Short = `List postgres databases in a branch.`
 	cmd.Long = `List postgres databases in a branch.
 
-  List Databases.
+  Returns a list of Postgres databases in the branch.
 
   Arguments:
     PARENT: The Branch that owns this collection of databases. Format:
@@ -4338,7 +4369,7 @@ func newListEndpoints() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listEndpointsLimit int
 
-	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Upper bound for the number of endpoints returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -4351,7 +4382,8 @@ func newListEndpoints() *cobra.Command {
 	cmd.Short = `List Endpoints.`
 	cmd.Long = `List Endpoints.
 
-  Returns a paginated list of compute endpoints in the branch.
+  Lists the compute endpoints in the branch, including its read-write endpoint
+  and any read-only endpoints.
 
   Arguments:
     PARENT: The Branch that owns this collection of endpoints. Format:
@@ -4425,17 +4457,16 @@ func newListMigrations() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-migrations"
-	cmd.Short = `List migrations.`
-	cmd.Long = `List migrations.
+	cmd.Short = `*Beta* List migrations.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List migrations.
 
   Lists migrations in the workspace.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -4488,7 +4519,7 @@ func newListProjects() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listProjectsLimit int
 
-	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for the number of projects returned.`)
 	cmd.Flags().BoolVar(&listProjectsReq.ShowDeleted, "show-deleted", listProjectsReq.ShowDeleted, `Whether to include soft-deleted projects in the response.`)
 
 	// Limit flag for total result capping.
@@ -4777,8 +4808,10 @@ func newStartMigration() *cobra.Command {
 	cmd.Flags().DurationVar(&startMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "start-migration NAME"
-	cmd.Short = `Start a migration.`
-	cmd.Long = `Start a migration.
+	cmd.Short = `*Beta* Start a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Start a migration.
 
   Starts the assessed migration named in the request, moving it from
   READY_TO_START into execution. Its first phase, SCHEMA_LOAD, creates the
@@ -4794,12 +4827,9 @@ func newStartMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -4989,8 +5019,10 @@ func newUndeleteMigration() *cobra.Command {
 	cmd.Flags().DurationVar(&undeleteMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "undelete-migration NAME"
-	cmd.Short = `Undelete a migration.`
-	cmd.Long = `Undelete a migration.
+	cmd.Short = `*Beta* Undelete a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Undelete a migration.
 
   Restores a soft-deleted migration before it is permanently purged.
 
@@ -5003,12 +5035,9 @@ func newUndeleteMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -5098,7 +5127,10 @@ func newUndeleteProject() *cobra.Command {
 
 Undelete a Project.
 
-  Undeletes a soft-deleted project.
+  Restores a soft-deleted project together with its branches and their data,
+  compute endpoints, Postgres databases and roles, project settings, and
+  permissions. A project can be restored until its purge_time; after that it
+  is permanently deleted and cannot be recovered.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -5464,6 +5496,9 @@ func newUpdateDatabase() *cobra.Command {
 	cmd.Short = `Update a Database.`
 	cmd.Long = `Update a Database.
 
+  Updates the specified Postgres database. Only the fields named in
+  update_mask change.
+
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
@@ -5472,7 +5507,8 @@ func newUpdateDatabase() *cobra.Command {
   Arguments:
     NAME: The resource name of the database. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The list of fields to update. The updatable fields are spec.role and
+      spec.postgres_database.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -5588,8 +5624,10 @@ func newUpdateEndpoint() *cobra.Command {
 	cmd.Short = `Update an Endpoint.`
 	cmd.Long = `Update an Endpoint.
 
-  Updates the specified compute endpoint. You can update autoscaling limits,
-  suspend timeout, or enable/disable the compute endpoint.
+  Updates the configuration of the specified compute endpoint. Only the spec
+  fields named in update_mask change, and spec.endpoint_type cannot be
+  changed. The endpoint keeps its hostnames across updates, so existing
+  connection strings stay valid.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -5599,7 +5637,11 @@ func newUpdateEndpoint() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the endpoint. Format:
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The fields to update, as paths relative to the endpoint, for example
+      spec.autoscaling_limit_max_cu. Pass spec to update every field that is
+      set in spec. Only fields under spec can be updated. To change the
+      suspension setting, include spec.suspension or the specific suspension
+      field.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -5712,8 +5754,10 @@ func newUpdateMigration() *cobra.Command {
 	cmd.Flags().StringVar(&updateMigrationReq.Migration.TargetBranch, "target-branch", updateMigrationReq.Migration.TargetBranch, `The Lakebase branch receiving the migrated databases, in the format projects/{project_id}/branches/{branch_id}.`)
 
 	cmd.Use = "update-migration NAME UPDATE_MASK SOURCE_CONNECTION DATABASE_MAPPINGS MIGRATION_TYPE"
-	cmd.Short = `Update a migration.`
-	cmd.Long = `Update a migration.
+	cmd.Short = `*Beta* Update a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a migration.
 
   Updates user-owned migration configuration.
 
@@ -5731,14 +5775,11 @@ func newUpdateMigration() *cobra.Command {
     DATABASE_MAPPINGS: Required. Mappings from source databases to target databases.
     MIGRATION_TYPE: Required. Immutable. The intended migration mode, selected when the
       migration is created.
-      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY, MIGRATION_TYPE_ONLINE]`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+      Supported values: [MIGRATION_TYPE_ONE_TIME_COPY]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -5876,7 +5917,8 @@ func newUpdateProject() *cobra.Command {
 	cmd.Short = `Update a Project.`
 	cmd.Long = `Update a Project.
 
-  Updates the specified database project.
+  Updates the configuration of the specified database project. Only the fields
+  named in update_mask change.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -5886,7 +5928,9 @@ func newUpdateProject() *cobra.Command {
   Arguments:
     NAME: Output only. The full resource path of the project. Format:
       projects/{project_id}
-    UPDATE_MASK: The list of fields to update.`
+    UPDATE_MASK: The fields to update, as paths relative to the project, for example
+      spec.display_name. Pass * to update every field that is set in the
+      request. Only fields under spec can be updated.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

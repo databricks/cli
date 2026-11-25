@@ -1,8 +1,8 @@
-provided_id_fields:
+parent_id_fields:
   - field: catalog_name
-    reason: id_field
+    reason: parent
   - field: schema_name
-    reason: id_field
+    reason: parent
 recreate_on_changes:
   - field: storage_location
     reason: immutable

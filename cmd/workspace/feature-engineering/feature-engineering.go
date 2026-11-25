@@ -3,6 +3,7 @@
 package feature_engineering
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,19 +23,23 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "feature-engineering",
-		Short: `Feature Engineering provides APIs for managing features and materialized features.`,
-		Long: `Feature Engineering provides APIs for managing features and materialized
-  features.`,
-		GroupID: "ml",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "feature-engineering",
+	Short:   `Feature Engineering provides APIs for managing features and materialized features.`,
+	GroupID: "ml",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Feature Engineering provides APIs for managing features and materialized
+  features.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newBackfillFeatures())
@@ -74,8 +79,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start backfill-features command
@@ -591,7 +594,6 @@ func newCreateMaterializationSet() *cobra.Command {
 	cmd.Flags().StringVar(&createMaterializationSetReq.RequestId, "request-id", createMaterializationSetReq.RequestId, `Idempotency token for the request.`)
 	cmd.Flags().StringVar(&createMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", createMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
 	// TODO: array: materialized_features
-	// TODO: complex arg: notifications
 
 	cmd.Use = "create-materialization-set"
 	cmd.Short = `Create a materialization set.`
@@ -708,6 +710,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
+	// TODO: complex arg: operations
 	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `Deprecated: This legacy pipeline setting does not control batch job scheduling. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
@@ -2524,7 +2527,6 @@ func newUpdateMaterializationSet() *cobra.Command {
 	cmd.Flags().StringVar(&updateMaterializationSetReq.RequestId, "request-id", updateMaterializationSetReq.RequestId, `Idempotency token for the request.`)
 	cmd.Flags().StringVar(&updateMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", updateMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
 	// TODO: array: materialized_features
-	// TODO: complex arg: notifications
 
 	cmd.Use = "update-materialization-set MATERIALIZATION_SET_ID UPDATE_MASK"
 	cmd.Short = `Update a materialization set.`
@@ -2668,6 +2670,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
+	// TODO: complex arg: operations
 	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `Deprecated: This legacy pipeline setting does not control batch job scheduling. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger

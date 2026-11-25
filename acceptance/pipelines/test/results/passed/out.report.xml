@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="[UUID]" tests="2" failures="0" errors="0" skipped="0">
+    <testcase classname="tests.test_orders" name="test_valid_order" time="1.840"></testcase>
+    <testcase classname="tests.test_orders" name="test_backfill" time="1.000"></testcase>
+  </testsuite>
+</testsuites>

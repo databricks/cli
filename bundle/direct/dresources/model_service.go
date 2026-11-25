@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -96,13 +97,33 @@ func (r *ResourceModelService) DoRead(ctx context.Context, id string) (*resource
 }
 
 func (r *ResourceModelService) DoCreate(ctx context.Context, config *resources.ModelServiceConfig) (string, *resources.ModelServiceConfig, error) {
-	resp, err := r.client.AiGateway.CreateModelService(ctx, catalog.CreateModelServiceRequest{
-		Parent:         config.Parent,
-		ModelServiceId: config.ModelServiceId,
-		ModelService:   modelServiceBody(config),
-	})
+	create := func(ctx context.Context) (*catalog.ModelService, error) {
+		return r.client.AiGateway.CreateModelService(ctx, catalog.CreateModelServiceRequest{
+			Parent:         config.Parent,
+			ModelServiceId: config.ModelServiceId,
+			ModelService:   modelServiceBody(config),
+		})
+	}
+	start := time.Now()
+	resp, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The bundle chooses the full name (parent and model_service_id), and it is unique in the metastore.
+		id := strings.TrimPrefix(config.Parent, "schemas/") + "." + config.ModelServiceId
+		resp, err = recoverCreate(ctx, createRecovery[catalog.ModelService, *catalog.ModelService]{
+			name:  "model service " + id,
+			start: start,
+			get: func(ctx context.Context) (*catalog.ModelService, error) {
+				return r.client.AiGateway.GetModelService(ctx, catalog.GetModelServiceRequest{Name: modelServiceNamePrefix + id})
+			},
+			createTime:      func(found *catalog.ModelService) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[catalog.ModelService],
+			create:          repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	state, err := responseToModelServiceConfig(resp)
 	if err != nil {

@@ -1,1 +1,1 @@
-Badness = 'An explicitly null schedule is reported as missing its required fields.'
+Badness = 'An explicitly null schedule (schedule: null) warns that quartz_cron_expression and timezone_id are not set; it should be treated as no schedule, without warnings.'

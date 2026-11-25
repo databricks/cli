@@ -44,48 +44,42 @@ func pipelineRewritePatterns() []pipelineRewritePattern {
 			mode:        TranslateModeDirectory,
 			skipRewrite: noSkipRewrite,
 		},
+		{
+			pattern:     base.Append(dyn.Key("testing"), dyn.Key("sources"), dyn.AnyIndex(), dyn.Key("glob"), dyn.Key("include")),
+			mode:        TranslateModeGlob,
+			skipRewrite: noSkipRewrite,
+		},
 	}
 
 	return allPatterns
 }
 
 func pipelineLibrariesRewritePatterns() []pipelineRewritePattern {
-	pipelineEnvironmentsPatterns := []pipelineRewritePattern{
-		{
-			pattern: dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("pipelines"),
-				dyn.AnyKey(),
-				dyn.Key("environment"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			mode: TranslateModeLocalRelativeWithPrefix,
-			skipRewrite: func(s string) bool {
-				return !libraries.IsLibraryLocal(s)
-			},
-		},
+	// Test dependencies take the same forms as the pipeline's environment dependencies.
+	dependencies := []dyn.Pattern{
+		base.Append(dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
+		base.Append(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies"), dyn.AnyIndex()),
 	}
 
-	pipelineEnvironmentsPatternsWithPipFlags := []pipelineRewritePattern{
-		{
-			dyn.NewPattern(
-				dyn.Key("resources"),
-				dyn.Key("pipelines"),
-				dyn.AnyKey(),
-				dyn.Key("environment"),
-				dyn.Key("dependencies"),
-				dyn.AnyIndex(),
-			),
-			TranslateModeEnvironmentPipFlag,
-			func(s string) bool {
+	var patterns []pipelineRewritePattern
+	for _, pattern := range dependencies {
+		patterns = append(patterns, pipelineRewritePattern{
+			pattern:     pattern,
+			mode:        TranslateModeLocalRelativeWithPrefix,
+			skipRewrite: func(s string) bool { return !libraries.IsLibraryLocal(s) },
+		})
+	}
+	for _, pattern := range dependencies {
+		patterns = append(patterns, pipelineRewritePattern{
+			pattern: pattern,
+			mode:    TranslateModeEnvironmentPipFlag,
+			skipRewrite: func(s string) bool {
 				_, _, ok := libraries.IsLocalPathInPipFlag(s)
 				return !ok
 			},
-		},
+		})
 	}
-
-	return append(pipelineEnvironmentsPatterns, pipelineEnvironmentsPatternsWithPipFlags...)
+	return patterns
 }
 
 func VisitPipelinePaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {

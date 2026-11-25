@@ -5,6 +5,6 @@
 Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 
 === --debug still shows the hostmetadata line, at debug level

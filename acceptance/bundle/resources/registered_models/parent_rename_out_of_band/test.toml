@@ -1,0 +1,8 @@
+Cloud = true
+Badness = "The plan does not look for a registered model whose schema was renamed outside the bundle: a model has no internal id, so the plan cannot tell it from an unrelated model at the new name and creates it again. The create fails with RESOURCE_ALREADY_EXISTS, and since the model is then no longer tracked, every later deploy fails the same way. The model should be found under the schema's new name, for example by recording an id that adoption can check."
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]

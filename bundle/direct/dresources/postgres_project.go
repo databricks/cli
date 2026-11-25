@@ -3,8 +3,10 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
@@ -101,7 +103,7 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*Postg
 }
 
 func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
-	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+	req := postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
 			Spec:                &config.ProjectSpec,
@@ -119,22 +121,87 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-	})
-	if err != nil {
-		// The project is keyed by the caller-chosen project_id, so repeating the request cannot
-		// create a duplicate: if the failed request did create the project, the retry fails with
-		// ALREADY_EXISTS, just as the next deploy would have.
-		return "", nil, retrySafe(err)
 	}
-
-	// Wait for the project to be ready (long-running operation)
-	result, err := waitCreateOperation(ctx, waiter.Wait)
+	start := time.Now()
+	waiter, err := r.client.Postgres.CreateProject(ctx, req)
+	if err != nil {
+		return r.recoverFailedCreate(ctx, req, start, err)
+	}
+	remote, err := r.waitCreated(ctx, waiter)
 	if err != nil {
 		return "", nil, err
 	}
-
-	remote := makePostgresProjectRemote(result)
 	return remote.Name, remote, nil
+}
+
+// waitCreated waits for the create operation of a project that a create request returned.
+func (r *ResourcePostgresProject) waitCreated(ctx context.Context, waiter postgres.CreateProjectOperationInterface) (*PostgresProjectRemote, error) {
+	result, err := waitCreateOperation(ctx, waiter.Wait)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresProjectRemote(result), nil
+}
+
+// recoverFailedCreate handles a create request that failed; see recoverCreate. Repeating
+// the request without looking first fails with "already exists" when the failed request did create
+// the project, so look for it before repeating. Without a project_id there is no name to look up;
+// the API rejects such a request with 400 anyway.
+func (r *ResourcePostgresProject) recoverFailedCreate(ctx context.Context, req postgres.CreateProjectRequest, start time.Time, createErr error) (string, *PostgresProjectRemote, error) {
+	if req.ProjectId == "" {
+		return "", nil, createErr
+	}
+
+	name := "projects/" + req.ProjectId
+	remote, err := recoverCreate(ctx, createRecovery[postgres.Project, *PostgresProjectRemote]{
+		name:  "project " + name,
+		start: start,
+		get: func(ctx context.Context) (*postgres.Project, error) {
+			return r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: name})
+		},
+		createTime:      func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists:   isPostgresAlreadyExists,
+		createdByCaller: nil,
+		use: func(ctx context.Context, project *postgres.Project) (*PostgresProjectRemote, error) {
+			if err := r.waitDefaultBranchReady(ctx, project); err != nil {
+				return nil, err
+			}
+			return makePostgresProjectRemote(project), nil
+		},
+		create: func(ctx context.Context) (func() (*PostgresProjectRemote, error), error) {
+			waiter, err := r.client.Postgres.CreateProject(ctx, req)
+			if err != nil {
+				return nil, err
+			}
+			return func() (*PostgresProjectRemote, error) { return r.waitCreated(ctx, waiter) }, nil
+		},
+	}, createErr)
+	if err != nil {
+		return "", nil, err
+	}
+	return remote.Name, remote, nil
+}
+
+// waitDefaultBranchReady stands in for the create operation that a recovered project's failed
+// request would have waited for: dependent resources are created on the default branch, so wait
+// for it to leave INIT. The project is ours either way, so a wait that ends early, or a default
+// branch that cannot be read, only warns: state still records the project, and the next deploy
+// does not fail with "already exists".
+func (r *ResourcePostgresProject) waitDefaultBranchReady(ctx context.Context, project *postgres.Project) error {
+	if project.Status == nil || project.Status.DefaultBranch == "" {
+		return nil
+	}
+	name := project.Status.DefaultBranch
+	branch, err := readBranch(ctx, r.client, name)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		log.Warnf(ctx, "waiting for branch %s to become ready: %s", name, err)
+		return nil
+	}
+	_, err = waitBranchReady(ctx, r.client, branch)
+	return err
 }
 
 // The default endpoint settings carry the same suspension oneof as an endpoint does;

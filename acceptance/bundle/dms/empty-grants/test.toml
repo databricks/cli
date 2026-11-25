@@ -1,6 +1,5 @@
-# KNOWN BUG (Cloud=false): emptying a grants node makes apply call DeleteState, which records
-# the operation as a delete with no state. The staged action is still UPDATE, so the service
-# rejects a succeeded UPDATE that names no state while the schema still exists. The fake does
-# not model that check, so this passes locally but fails on a real workspace. Re-enable once
-# emptying grants records an update carrying the emptied state instead of a delete.
+Badness = "Emptying a grants node records a succeeded UPDATE operation with no state (apply calls DeleteState for an emptied resource), which the real service rejects with 400 INVALID_PARAMETER_VALUE; the recorded PATCH .../operations/schemas.foo.grants without a state field is the buggy output. It should record an update carrying the emptied grants state."
+
+# Cloud = false because of the bug in Badness: the fake does not model the service's check,
+# so this passes locally but fails on a real workspace. Re-enable once it is fixed.
 Cloud = false

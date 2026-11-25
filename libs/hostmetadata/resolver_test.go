@@ -1,14 +1,19 @@
 package hostmetadata_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/hostmetadata"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/log/handler"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -105,4 +110,122 @@ func TestFactory_EndToEnd_CacheHitSkipsSDKFetch(t *testing.T) {
 
 	assert.Equal(t, "acct-1", cfg2.AccountID)
 	assert.Equal(t, int32(1), hits.Load(), "second EnsureResolved must not hit the server")
+}
+
+// sdkFetch returns the SDK's real well-known fetch for host, using the SDK
+// HTTP client with a short timeout.
+func sdkFetch(t *testing.T, host string) config.HostMetadataResolver {
+	cfg := &config.Config{
+		Host:                 host,
+		Token:                "x",
+		Credentials:          config.PatCredentials{},
+		HTTPTimeoutSeconds:   1,
+		RetryTimeoutSeconds:  1,
+		HostMetadataResolver: func(context.Context, string) (*config.HostMetadata, error) { return nil, nil },
+	}
+	require.NoError(t, cfg.EnsureResolved())
+	return cfg.DefaultHostMetadataResolver()
+}
+
+func captureLog(t *testing.T) (context.Context, *bytes.Buffer) {
+	var buf bytes.Buffer
+	logger := slog.New(handler.NewFriendlyHandler(&buf, &handler.Options{Level: log.LevelDebug}))
+	return log.NewContext(t.Context(), logger), &buf
+}
+
+func TestNewResolver_Timeout_LogsAtDebugAndCachesNegative(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	var hits atomic.Int32
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		<-release
+	}))
+	t.Cleanup(server.Close)
+	t.Cleanup(func() { close(release) })
+
+	r := hostmetadata.NewResolver(sdkFetch(t, server.URL))
+
+	ctx, buf := captureLog(t)
+	m, err := r(ctx, server.URL)
+	require.NoError(t, err)
+	assert.Nil(t, m)
+	assert.Contains(t, buf.String(), "Debug: [hostmetadata] failed to fetch host metadata for "+server.URL)
+	assert.NotContains(t, buf.String(), "Warn:")
+
+	first := hits.Load()
+	_, err = r(ctx, server.URL)
+	require.NoError(t, err)
+	assert.Equal(t, first, hits.Load(), "a timeout must be negatively cached")
+}
+
+func TestNewResolver_TransientStatus_LogsAtDebugAndCachesNegative(t *testing.T) {
+	for _, status := range []int{
+		http.StatusRequestTimeout,
+		http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+	} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+			var hits atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				hits.Add(1)
+				w.WriteHeader(status)
+			}))
+			t.Cleanup(server.Close)
+
+			r := hostmetadata.NewResolver(sdkFetch(t, server.URL))
+
+			ctx, buf := captureLog(t)
+			m, err := r(ctx, server.URL)
+			require.NoError(t, err)
+			assert.Nil(t, m)
+			assert.Contains(t, buf.String(), "Debug: [hostmetadata] failed to fetch host metadata for "+server.URL)
+			assert.NotContains(t, buf.String(), "Warn:")
+
+			first := hits.Load()
+			_, err = r(ctx, server.URL)
+			require.NoError(t, err)
+			assert.Equal(t, first, hits.Load(), "a transient status must be negatively cached")
+		})
+	}
+}
+
+func TestNewResolver_NonTransientStatus_LogsWarn(t *testing.T) {
+	for _, status := range []int{http.StatusNotFound, http.StatusNotImplemented} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(status)
+			}))
+			t.Cleanup(server.Close)
+
+			r := hostmetadata.NewResolver(sdkFetch(t, server.URL))
+
+			ctx, buf := captureLog(t)
+			_, err := r(ctx, server.URL)
+			require.NoError(t, err)
+			assert.Contains(t, buf.String(), "Warn: [hostmetadata] failed to fetch host metadata for "+server.URL)
+		})
+	}
+}
+
+func TestNewResolver_OtherFetchError_LogsWarn(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	fetch := func(ctx context.Context, host string) (*config.HostMetadata, error) {
+		return nil, &url.Error{Op: "Get", URL: host, Err: errors.New("dial tcp: lookup example: no such host")}
+	}
+	r := hostmetadata.NewResolver(fetch)
+
+	ctx, buf := captureLog(t)
+	_, err := r(ctx, "https://example")
+	require.NoError(t, err)
+	assert.Contains(t, buf.String(), "Warn: [hostmetadata] failed to fetch host metadata for https://example")
 }

@@ -3,6 +3,7 @@
 package environments
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,23 +23,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "environments",
-		Short: `APIs to manage environment resources.`,
-		Long: `APIs to manage environment resources.
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "environments",
+	Short:   `APIs to manage environment resources.`,
+	GroupID: "environments",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `APIs to manage environment resources.
 
   The Environments API provides management capabilities for different types of
   environments including workspace-level base environments that define the
   environment version and dependencies to be used in serverless notebooks and
-  jobs.`,
-		GroupID: "environments",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  jobs.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateWorkspaceBaseEnvironment())
@@ -55,8 +60,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-workspace-base-environment command
@@ -86,7 +89,7 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.RequestId, "request-id", createWorkspaceBaseEnvironmentReq.RequestId, `A unique identifier for this request.`)
 	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironmentId, "workspace-base-environment-id", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironmentId, `The ID to use for the workspace base environment, which will become the final component of the resource name.`)
 	cmd.Flags().Var(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.BaseEnvironmentType, "base-environment-type", `The type of base environment (CPU or GPU). Supported values: [CPU, GPU]`)
-	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, `The WSFS or UC Volumes path to the environment YAML file.`)
+	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, `The workspace file or Unity Catalog volume path to the YAML file that defines the environment version and dependencies.`)
 	cmd.Flags().StringVar(&createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, "name", createWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, `The resource name of the workspace base environment.`)
 	// TODO: complex arg: spec
 
@@ -97,7 +100,8 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
   Creates a new WorkspaceBaseEnvironment. This is a long-running operation. The
   operation will asynchronously generate a materialized environment to optimize
   dependency resolution and is only marked as done when the materialized
-  environment has been successfully generated or has failed.
+  environment has been successfully generated or has failed. Poll the returned
+  operation with GetOperation.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -215,6 +219,7 @@ func newDeleteWorkspaceBaseEnvironment() *cobra.Command {
   Deletes a WorkspaceBaseEnvironment. Deleting a base environment may impact
   linked notebooks and jobs. This operation is irreversible and should be
   performed only when you are certain the environment is no longer needed.
+  Databricks-provided base environments cannot be deleted.
 
   Arguments:
     NAME: Required. The resource name of the workspace base environment to delete.
@@ -275,7 +280,8 @@ func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
 
   Gets the default WorkspaceBaseEnvironment configuration for the workspace.
   Returns the current default base environment settings for both CPU and GPU
-  compute.
+  compute. An unset CPU or GPU field means that compute type uses the Databricks
+  Standard base environment.
 
   Arguments:
     NAME: A static resource name of the default workspace base environment. Format:
@@ -336,7 +342,12 @@ func newGetOperation() *cobra.Command {
 	cmd.Long = `Get the status of a long-running operation.
 
   Gets the status of a long-running operation. Clients can use this method to
-  poll the operation result.
+  poll the operation result. Create, update and refresh return an operation
+  named operations/{workspace_base_environment_id}. The operation is done when
+  the materialized environment build finishes. On success, response contains
+  the WorkspaceBaseEnvironment with status CREATED. When the status is
+  FAILED, EXPIRED or INVALID, error is set instead, and error.message
+  carries the environment's status message when one is available.
 
   Arguments:
     NAME: The name of the operation resource.`
@@ -547,7 +558,9 @@ func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
   a long-running operation. The operation will asynchronously regenerate the
   materialized environment and is only marked as done when the materialized
   environment has been successfully generated or has failed. The existing
-  materialized environment remains available until it expires.
+  materialized environment remains available until it expires. Poll the returned
+  operation with GetOperation. Databricks-provided base environments cannot be
+  refreshed.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -555,7 +568,7 @@ func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: Required. The resource name of the workspace base environment to delete.
+    NAME: Required. The resource name of the workspace base environment to refresh.
       Format: workspace-base-environments/{workspace_base_environment}`
 
 	cmd.Annotations = make(map[string]string)
@@ -652,7 +665,9 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 
   Updates the default WorkspaceBaseEnvironment configuration for the workspace.
   Sets the specified base environments as the workspace defaults for CPU and/or
-  GPU compute.
+  GPU compute. Unsetting a default makes that compute type use the Databricks
+  Standard base environment. The Standard base environment has no resource name,
+  so unsetting the field is the only way to select it.
 
   Arguments:
     NAME: The resource name of this singleton resource. Format:
@@ -664,7 +679,10 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 
       To unset one or both defaults, include the field path(s) in the mask and
       omit them from the request body. To unset both, you must list both paths
-      explicitly — the wildcard '*' cannot be used to unset fields.`
+      explicitly — the wildcard '*' cannot be used to unset fields. Unsetting
+      a default makes that compute type use the Databricks Standard base
+      environment. The Standard base environment has no resource name, so
+      unsetting the field is the only way to select it.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -743,7 +761,7 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Flags().Var(&updateWorkspaceBaseEnvironmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.BaseEnvironmentType, "base-environment-type", `The type of base environment (CPU or GPU). Supported values: [CPU, GPU]`)
-	cmd.Flags().StringVar(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, `The WSFS or UC Volumes path to the environment YAML file.`)
+	cmd.Flags().StringVar(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, "filepath", updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Filepath, `The workspace file or Unity Catalog volume path to the YAML file that defines the environment version and dependencies.`)
 	cmd.Flags().StringVar(&updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, "name", updateWorkspaceBaseEnvironmentReq.WorkspaceBaseEnvironment.Name, `The resource name of the workspace base environment.`)
 	// TODO: complex arg: spec
 
@@ -755,7 +773,8 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
   operation. The operation will asynchronously regenerate the materialized
   environment and is only marked as done when the materialized environment has
   been successfully generated or has failed. The existing materialized
-  environment remains available until it expires.
+  environment remains available until it expires. Poll the returned operation
+  with GetOperation. Databricks-provided base environments cannot be updated.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -763,7 +782,8 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME:
+    NAME: The resource name of the workspace base environment to update. Format:
+      workspace-base-environments/{workspace_base_environment}
     DISPLAY_NAME: Human-readable display name for the workspace base environment.`
 
 	cmd.Annotations = make(map[string]string)

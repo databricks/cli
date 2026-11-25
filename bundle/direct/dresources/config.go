@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"reflect"
+	"slices"
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"go.yaml.in/yaml/v3"
 )
@@ -49,6 +52,44 @@ func (b *BackendDefaultRule) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// ProvidedIDRules returns the provided ID fields, the parent ID fields among them.
+func (c *ResourceLifecycleConfig) ProvidedIDRules() []FieldRule {
+	return append(slices.Clone(c.ProvidedIDFields), c.ParentIDFields...)
+}
+
+// IsBackendDefault reports whether remote, the remote value at path, matches any of
+// the backend-default rules (and the rule's allowed values, if specified).
+func (c *ResourceLifecycleConfig) IsBackendDefault(path *structpath.PathNode, remote any) bool {
+	for _, rule := range c.BackendDefaults {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		if len(rule.Values) == 0 {
+			return true
+		}
+		if matchesAllowedValue(remote, rule.Values) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
+// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
+func matchesAllowedValue(remote any, values []json.RawMessage) bool {
+	remoteType := reflect.TypeOf(remote)
+	for _, raw := range values {
+		candidate := reflect.New(remoteType).Interface()
+		if err := json.Unmarshal(raw, candidate); err != nil {
+			continue
+		}
+		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
+			return true
+		}
+	}
+	return false
+}
+
 // RemoteAdditionRule marks a sub-object whose contents the backend co-owns whenever the
 // object's WhenSet field is set. Inside such an object, a field the config never declared
 // coming back set from the remote is an addition by the backend, not drift.
@@ -84,7 +125,8 @@ type ResourceLifecycleConfig struct {
 	// these config fields directly. So a remote-only difference on them can only be
 	// the backend normalizing what we sent: the resource was found at its ID, and a
 	// real out-of-band rename would change the ID and 404 (handled as resource-gone).
-	// A local change recreates (delete + create).
+	// A local change recreates (delete + create). ParentIDFields are provided ID fields
+	// too; read both through ProvidedIDRules.
 	ProvidedIDFields []FieldRule `yaml:"provided_id_fields,omitempty"`
 
 	// UpdatableIDFields: like ProvidedIDFields these compose the resource's
@@ -93,6 +135,15 @@ type ResourceLifecycleConfig struct {
 	// remote-only difference is still skipped (see classifyIDField) — DoRead found
 	// the resource by its recorded ID, so it can only be backend normalization.
 	UpdatableIDFields []FieldRule `yaml:"updatable_id_fields,omitempty"`
+
+	// ParentIDFields: the ID fields that name the resource's parent (a volume's catalog_name and
+	// schema_name). They are provided ID fields too, so they are not listed again under
+	// provided_id_fields (see ProvidedIDRules). The backend moves the resource along with a
+	// renamed parent, so a change to one of these that only follows the parent's rename re-keys
+	// the resource instead of recreating it at its old ID (see followsParentRename and
+	// addParentMoves). Any other field, such as a name that references the parent's name, is the
+	// resource's own and never follows it. Requires IDFromState.
+	ParentIDFields []FieldRule `yaml:"parent_id_fields,omitempty"`
 
 	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
 	// A change is skipped when local and remote differ only by trailing slashes.
@@ -166,6 +217,7 @@ var empty = ResourceLifecycleConfig{
 	RecreateOnChanges:     nil,
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,
+	ParentIDFields:        nil,
 	NormalizeSlash:        nil,
 	IgnoreRemoteAdditions: nil,
 	BackendDefaults:       nil,

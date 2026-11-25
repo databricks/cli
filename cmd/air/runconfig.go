@@ -67,7 +67,7 @@ type runConfig struct {
 	MaxRetries                *int           `yaml:"max_retries" help:"How many times to retry a failed run. Must be >= 0. Defaults to 3 when unset." group:"Execution"`
 	TimeoutMinutes            *int           `yaml:"timeout_minutes" help:"Wall-clock limit for the run in minutes. Must be >= 1." group:"Execution"`
 	IdempotencyToken          *string        `yaml:"idempotency_token" help:"Reuse token: a repeat submission with the same token returns the existing run instead of starting another. Max 64 characters." group:"Execution"`
-	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed." group:"Workload"`
+	Parameters                map[string]any `yaml:"parameters" help:"Free-form values written as YAML to $HYPERPARAMETERS_PATH. Nested structures are allowed. When using Python's yaml.safe_load, very small or large floats such as 0.00002 or 1e6 may be returned as strings; convert them with float() after loading." group:"Workload"`
 	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only." group:"MLflow tracking"`
 	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace." group:"MLflow tracking"`
 	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ." group:"MLflow tracking"`
@@ -730,14 +730,7 @@ func cutLast(s, sep string) (before, after string, found bool) {
 // unknownConfigFieldError reports an unresolvable segment, naming the valid
 // siblings and, when one is close enough, a suggestion.
 func unknownConfigFieldError(parent configField, part string, matched []string) error {
-	names := make([]string, 0, len(parent.children))
-	for _, c := range parent.children {
-		if c.hidden {
-			continue
-		}
-		names = append(names, configLeafName(c.path))
-	}
-	slices.Sort(names)
+	names := visibleConfigChildNames(parent)
 
 	msg := fmt.Sprintf("unknown config field %q", configHelpRoot+"."+strings.Join(matched, "."))
 	if suggestion, ok := closestConfigField(part, names); ok {
@@ -746,9 +739,27 @@ func unknownConfigFieldError(parent configField, part string, matched []string) 
 	return fmt.Errorf("%s\n\nfields under %q are: %s", msg, parent.path, strings.Join(names, ", "))
 }
 
-// closestConfigField returns the nearest candidate by edit distance, if one is
-// close enough to be worth suggesting.
+// visibleConfigChildNames returns the sorted YAML names of a field's documented
+// children.
+func visibleConfigChildNames(parent configField) []string {
+	names := make([]string, 0, len(parent.children))
+	for _, c := range parent.children {
+		if c.hidden {
+			continue
+		}
+		names = append(names, configLeafName(c.path))
+	}
+	slices.Sort(names)
+	return names
+}
+
+// closestConfigField suggests a renamed field or the nearest candidate by edit
+// distance, if one is close enough to be worth suggesting.
 func closestConfigField(name string, candidates []string) (string, bool) {
+	// The renamed pool selector is too distant for the typo heuristic.
+	if name == "pool_id" && slices.Contains(candidates, "accelerator_pool_id") {
+		return "accelerator_pool_id", true
+	}
 	best, bestDist := "", 0
 	for _, c := range candidates {
 		d := configEditDistance(name, c)
@@ -918,15 +929,33 @@ func renderConfigField(w io.Writer, f configField, computeOptions []computeOptio
 	}
 	fmt.Fprintf(w, "\nFor details on a field, run \"databricks air run -h %s.<field>\".\n", f.path)
 	if f.path == configHelpRoot {
+		fmt.Fprint(w, runtimeEnvHelp)
 		fmt.Fprint(w, agentSkillHelp)
 	}
 }
+
+// skillInstallCommand installs the databricks-ai-runtime agent skill. Help
+// pages that point coding agents at the skill share it.
+const skillInstallCommand = "databricks aitools install --skills-only --skills databricks-ai-runtime"
+
+// runtimeEnvHelp follows the fields in `-h config`: training code needs these
+// variables (MLFLOW_RUN_ID especially, since the runtime has already created the
+// MLflow run), and the YAML schema is where people and agents look for them.
+const runtimeEnvHelp = `
+Set on every node (use in command and training code):
+  CODE_SOURCE_PATH              Extracted code_source directory
+  MLFLOW_RUN_ID                 MLflow run created for this attempt; log metrics and artifacts to it
+  NUM_NODES, NODE_RANK          Node count and this node's rank (0 to NUM_NODES-1)
+  WORLD_SIZE, LOCAL_WORLD_SIZE  GPUs across all nodes, and on this node
+  MASTER_ADDR, MASTER_PORT      Rank-0 address for distributed launchers such as torchrun
+  HYPERPARAMETERS_PATH          The parameters YAML, when parameters is set
+`
 
 // agentSkillHelp closes `-h config`: users look up the schema while writing
 // YAML, which is when an agent skill that writes it for them is most useful.
 const agentSkillHelp = `
 Let a coding agent write this YAML for you with the databricks-ai-runtime skill:
-  databricks aitools install --skills-only --skills databricks-ai-runtime
+  ` + skillInstallCommand + `
   (add --scope project to install into the current project)
   https://github.com/databricks/databricks-agent-skills/tree/main/skills/databricks-ai-runtime
 `

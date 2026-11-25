@@ -3,6 +3,7 @@
 package ai_functions
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,18 +19,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "ai-functions",
-		Short:   `Transform and enrich data with AI on Databricks.`,
-		Long:    `Transform and enrich data with AI on Databricks.`,
-		GroupID: "aifunctions",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "ai-functions",
+	Short:   `Transform and enrich data with AI.`,
+	GroupID: "aifunctions",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Transform and enrich data with AI.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newAiClassify())
@@ -45,8 +50,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start ai-classify command
@@ -72,9 +75,9 @@ func newAiClassify() *cobra.Command {
 	cmd.Short = `Classify text into labels.`
 	cmd.Long = `Classify text into labels.
 
-  Classifies content according to a set of provided labels. For REST API
-  requests, the default rate limit is 1,200 requests per minute per workspace.
-  Contact your Databricks account team to request a higher limit.`
+  Classifies content according to a set of provided labels. The AI Classify REST
+  API has a default rate limit of 1,200 requests per minute per workspace.
+  Contact your account team to request a higher limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -140,18 +143,24 @@ func newAiDecide() *cobra.Command {
 	// TODO: complex arg: options
 
 	cmd.Use = "ai-decide"
-	cmd.Short = `*Beta* Get fast structured decisions.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get fast structured decisions.
+	cmd.Short = `Get fast structured decisions.`
+	cmd.Long = `Get fast structured decisions.
 
   Turn text and structured data into decisions your application can use. Define
   questions and criteria to choose an option, estimate a probability, or assign
-  a score given a provided state.`
+  a score given a provided state. The AI Decide REST API has a default rate
+  limit of 1,200 requests per minute per workspace. Contact your account team to
+  request a higher limit.
+
+  > **Note:** The v1 AI Decide syntax supporting strings and objects in state
+  and objects and arrays in instructions will no longer be supported starting
+  February 1, 2027. To use AI Decide, you must set options.version to "2.0",
+  pass an array of typed content objects to state, and a nonblank string to
+  instructions.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -217,9 +226,8 @@ func newAiExtract() *cobra.Command {
 	cmd.Long = `Extract structured data from text.
 
   Extracts structured data from text and documents according to a provided
-  schema. For REST API requests, the default rate limit is 120 requests per
-  minute per workspace. Contact your Databricks account team to request a higher
-  limit.`
+  schema. The AI Extract REST API has a default rate limit of 120 requests per
+  minute per workspace. Contact your account team to request a higher limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -376,10 +384,11 @@ func newCancelBatch() *cobra.Command {
 Cancel a batch.
 
   Starts the asynchronous cancellation of a batch. Requests in progress are
-  drained first. Cancellation is best effort, so the batch can still complete.
+  stopped, and the results of the requests that finished are kept. Cancellation
+  is best effort, so the batch can still complete.
 
   Arguments:
-    NAME: Resource name of the batch. Format: batch_<id>.`
+    NAME: Unique identifier of the batch. Format: batch_<id>.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -454,7 +463,10 @@ Create a batch.
       request, in the form {"custom_id": ..., "body": ...}. The file can hold
       up to 50,000 requests and be up to 200 MiB.
     OUTPUT_REF: Unity Catalog volume path to write the JSONL output file to. If the path
-      is a directory, the file is <path>/<name>_output.jsonl.`
+      is a directory, the file is <path>/<name>_output.jsonl. Each line is the
+      result of one request, in the form {"custom_id": ..., "response": ...},
+      or {"custom_id": ..., "error": {"type": ..., "message": ...}} for a
+      request that failed or did not finish.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -542,7 +554,7 @@ Get a batch.
   Gets the latest status and progress of a batch.
 
   Arguments:
-    NAME: Resource name of the batch. Format: batch_<id>.`
+    NAME: Unique identifier of the batch. Format: batch_<id>.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

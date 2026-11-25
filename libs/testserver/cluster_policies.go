@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/libs/clusterpolicy"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -49,6 +50,24 @@ func (s *FakeWorkspace) ClusterPoliciesCreate(req Request) any {
 	id := nextUUID()
 	policy.PolicyId = id
 	s.ClusterPolicies[id] = policy
+
+	// The backend grants the creator CAN_USE on a new policy.
+	creatorName := userForToken(req.Token).UserName
+	creator := iam.AccessControlResponse{
+		DisplayName:    creatorName,
+		AllPermissions: []iam.Permission{{PermissionLevel: "CAN_USE", ForceSendFields: []string{"Inherited"}}},
+	}
+	if creatorName == TestUserSP.UserName {
+		creator.ServicePrincipalName = creatorName
+	} else {
+		creator.UserName = creatorName
+	}
+	objectID := "/cluster-policies/" + id
+	s.Permissions[objectID] = iam.ObjectPermissions{
+		ObjectId:          objectID,
+		ObjectType:        "cluster-policy",
+		AccessControlList: []iam.AccessControlResponse{creator},
+	}
 
 	return Response{Body: compute.CreatePolicyResponse{PolicyId: id}}
 }

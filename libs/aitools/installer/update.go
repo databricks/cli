@@ -30,6 +30,19 @@ type UpdateOptions struct {
 	Check   bool     // dry run: show what would change without downloading
 	Skills  []string // empty = all installed
 	Scope   string   // ScopeGlobal or ScopeProject (default: global)
+
+	// KeepModified keeps an installed skill at its version when its files are
+	// not exactly the ones the CLI recorded (the user edited them, or there is
+	// no record to check against), instead of replacing it. Automatic updates
+	// set it: they must never overwrite what the user changed.
+	KeepModified bool
+
+	// NoDowngrade refuses a release older than the installed one even when
+	// the ref is pinned (by DATABRICKS_SKILLS_REF or the compatibility
+	// manifest). A pinned branch or commit SHA is still installed. Automatic
+	// updates set it: a newer release the user installed is theirs to roll
+	// back.
+	NoDowngrade bool
 }
 
 // UpdateResult describes what UpdateSkills did (or would do in check mode).
@@ -103,6 +116,12 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
 
+	// A pinned ref is the ref installed, so it is compared before fetching its
+	// manifest. A branch or commit SHA has no release order to compare.
+	if explicit && opts.NoDowngrade && semver.IsValid(latestTag) && semver.Compare(latestTag, installedRef) < 0 {
+		return nil, &RefusedError{Err: fmt.Errorf("keeping the installed skills %s, which are newer than the pinned %s; run 'databricks aitools update' to install %s", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(latestTag), DisplaySkillsVersion(latestTag))}
+	}
+
 	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, allowFallback && !explicit)
 	if err != nil {
 		if opts.Check {
@@ -144,6 +163,14 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			continue
 		}
 
+		// Keep the installed copy of a skill this CLI cannot install portably,
+		// as for one that needs a newer CLI.
+		if reason := unportableSkill(name, meta.Files); reason != "" {
+			log.Warnf(ctx, "Skipping skill %q: %s", name, reason)
+			result.Skipped = append(result.Skipped, name)
+			continue
+		}
+
 		// Filter experimental skills unless state opted in.
 		if meta.IsExperimental() && !state.IncludeExperimental {
 			log.Debugf(ctx, "Skipping experimental skill %s", name)
@@ -161,6 +188,12 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		oldVersion, wasInstalled := state.Skills[name]
 
 		if meta.Version == oldVersion && stateRepoDir(state, name) == meta.RepoDir && !opts.Force {
+			result.Unchanged = append(result.Unchanged, name)
+			continue
+		}
+
+		if wasInstalled && opts.KeepModified && !skillPrunable(ctx, baseDir, name, scope, cwd, state) {
+			log.Warnf(ctx, "Warning: keeping %q at %s: its installed files were modified.", name, oldVersion)
 			result.Unchanged = append(result.Unchanged, name)
 			continue
 		}

@@ -3,6 +3,7 @@
 package alerts
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,22 +19,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "alerts",
-		Short: `The alerts API can be used to perform CRUD operations on alerts.`,
-		Long: `The alerts API can be used to perform CRUD operations on alerts. An alert is a
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "alerts",
+	Short:   `The alerts API can be used to perform CRUD operations on alerts.`,
+	GroupID: "sql",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The alerts API can be used to perform CRUD operations on alerts. An alert is a
   Databricks SQL object that periodically runs a query, evaluates a condition of
   its result, and notifies one or more users and/or notification destinations if
   the condition was met. Alerts can be scheduled using the sql_task type of
-  the Jobs API, e.g. :method:jobs/create.`,
-		GroupID: "sql",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  the Jobs API, e.g. :method:jobs/create.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -46,8 +51,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -143,7 +146,10 @@ func newDelete() *cobra.Command {
 
   Moves an alert to the trash. Trashed alerts immediately disappear from
   searches and list views, and can no longer trigger. You can restore a trashed
-  alert through the UI. A trashed alert is permanently deleted after 30 days.`
+  alert through the UI. A trashed alert is permanently deleted after 30 days.
+
+  Arguments:
+    ID: UUID of the alert to move to the trash.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -162,14 +168,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Alerts drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "UUID of the alert to move to the trash")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have uuid of the alert to move to the trash")
 		}
 		deleteReq.Id = args[0]
 
@@ -210,7 +216,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
 
-  Gets an alert.`
+  Gets an alert.
+
+  Arguments:
+    ID: UUID of the alert to fetch.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -229,14 +238,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Alerts drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "UUID of the alert to fetch")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have ")
+			return errors.New("expected to have uuid of the alert to fetch")
 		}
 		getReq.Id = args[0]
 
@@ -278,7 +287,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of alerts to return per page.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
@@ -356,11 +365,16 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
 
-  Updates an alert.
+  Updates the fields of an alert named in update_mask. Changing
+  owner_user_name requires workspace admin privileges; changing any other
+  field requires CAN MANAGE permission on the alert.
 
   Arguments:
-    ID:
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+    ID: UUID of the alert to update.
+    UPDATE_MASK: Comma-separated list of the alert fields to update, such as display_name
+      or condition. Fields not listed keep their current values.
+
+      The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as

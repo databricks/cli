@@ -6,7 +6,7 @@ Skipped the plugin for Claude Code: 'claude' is not on PATH. Installing skill fi
 Installing Databricks skills for Claude Code, Cursor...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 Claude Code has skill files
 
 === a plugin installed with Claude Code itself is kept, without skill files next to it
@@ -16,7 +16,7 @@ Claude Code already has the databricks plugin; it was not refreshed because 'cla
 Installing Databricks skills for Cursor...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
 Claude Code has no skill files
 
 >>> [CLI] aitools update --force
@@ -38,7 +38,20 @@ Error: Claude Code: 'claude' is not on PATH
 Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
+
+=== --skills-only with the agent's CLI on PATH: update keeps the skill files
+
+>>> [CLI] aitools install --agents=claude-code --skills-only
+Installing Databricks skills for Claude Code...
+Using skills version test-ref
+Fetching skills manifest...
+Installed 1 skill in [TEST_TMP_DIR]/home/.databricks/aitools/skills.
+
+>>> [CLI] aitools update --force
+  updated test-stable v1.0.0 -> v1.0.0
+Updated 1 skill.
+Claude Code has skill files
 
 === project scope: a personal plugin does not replace the project's skill files
 
@@ -47,7 +60,7 @@ Skipped the plugin for Claude Code: 'claude' is not on PATH. Installing skill fi
 Installing Databricks skills for Claude Code...
 Using skills version test-ref
 Fetching skills manifest...
-Installed 1 skill.
+Installed 1 skill in [TEST_TMP_DIR]/home/project/.databricks/aitools/skills.
 Skipped Cursor: does not support project-scoped skills
   To set up Cursor in the global scope, run: databricks aitools install --scope=global --agents=cursor
 

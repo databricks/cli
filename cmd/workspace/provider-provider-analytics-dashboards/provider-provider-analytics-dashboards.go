@@ -3,6 +3,8 @@
 package provider_provider_analytics_dashboards
 
 import (
+	"context"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -15,18 +17,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "provider-provider-analytics-dashboards",
-		Short:   `Manage templated analytics solution for providers.`,
-		Long:    `Manage templated analytics solution for providers.`,
-		GroupID: "marketplace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "provider-provider-analytics-dashboards",
+	Short:   `Manage templated analytics solution for providers.`,
+	GroupID: "marketplace",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage templated analytics solution for providers.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -38,8 +44,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -57,8 +61,10 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create provider analytics dashboard.`
 	cmd.Long = `Create provider analytics dashboard.
 
-  Create provider analytics dashboard. Returns Marketplace specific id. Not to
-  be confused with the Lakeview dashboard id.`
+  Creates the Provider Analytics Dashboard in the caller's workspace from the
+  latest template. Fails if the dashboard already exists. Returns the
+  Marketplace-specific id of the dashboard record, which is distinct from the
+  AI/BI dashboard ID.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -101,7 +107,10 @@ func newGet() *cobra.Command {
 
 	cmd.Use = "get"
 	cmd.Short = `Get provider analytics dashboard.`
-	cmd.Long = `Get provider analytics dashboard.`
+	cmd.Long = `Get provider analytics dashboard.
+
+  Gets the Provider Analytics Dashboard that was created for the caller's
+  account. Returns an empty response if the dashboard has not been created yet.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -144,7 +153,10 @@ func newGetLatestVersion() *cobra.Command {
 
 	cmd.Use = "get-latest-version"
 	cmd.Short = `Get latest version of provider analytics dashboard.`
-	cmd.Long = `Get latest version of provider analytics dashboard.`
+	cmd.Long = `Get latest version of provider analytics dashboard.
+
+  Gets the latest available version of the Provider Analytics Dashboard
+  template.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -191,14 +203,19 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Int64Var(&updateReq.Version, "version", updateReq.Version, `this is the version of the dashboard template we want to update our user to current expectation is that it should be equal to latest version of the dashboard template.`)
+	cmd.Flags().Int64Var(&updateReq.Version, "version", updateReq.Version, `Version of the dashboard template to update to.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update provider analytics dashboard.`
 	cmd.Long = `Update provider analytics dashboard.
 
+  Updates the Provider Analytics Dashboard to a newer version of the template.
+  The requested version must be newer than the version that the dashboard
+  currently uses.
+
   Arguments:
-    ID: id is immutable property and can't be updated.`
+    ID: Marketplace-specific ID of the dashboard record, as returned when the
+      dashboard was created or retrieved.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

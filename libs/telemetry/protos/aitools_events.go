@@ -9,10 +9,12 @@ const (
 	// AitoolsHintKindInstallText is the generic stderr line asking the agent to
 	// run `databricks aitools install`.
 	AitoolsHintKindInstallText AitoolsHintKind = "INSTALL_TEXT"
-	// AitoolsHintKindClaudeCodeNative and AitoolsHintKindAgentInstallText
-	// mirror enum values of the proto for hints the CLI does not print.
-	// Nothing logs them today.
+	// AitoolsHintKindClaudeCodeNative is Claude Code's native
+	// `<claude-code-hint>` line, which makes Claude Code offer to install the
+	// Databricks plugin.
 	AitoolsHintKindClaudeCodeNative AitoolsHintKind = "CLAUDE_CODE_NATIVE"
+	// AitoolsHintKindAgentInstallText is the stderr line asking a non-Claude
+	// coding agent to run `databricks aitools install` for itself.
 	AitoolsHintKindAgentInstallText AitoolsHintKind = "AGENT_INSTALL_TEXT"
 	// AitoolsHintKindAppsInitTip is the non-interactive tip printed by
 	// `databricks apps init`.
@@ -22,9 +24,10 @@ const (
 	AitoolsHintKindAppsInitPrompt AitoolsHintKind = "APPS_INIT_PROMPT"
 )
 
-// AitoolsHintEvent is emitted once each time the CLI prints the Claude Code
-// install hint or the `apps init` skills tip or install prompt; other messages
-// that mention `databricks aitools install` log nothing. It carries no
+// AitoolsHintEvent is emitted once for each install-hint line the CLI prints
+// for a coding agent (Claude Code's native and text lines are one event each)
+// and for the `apps init` skills tip or install prompt; other messages that
+// mention `databricks aitools install` log nothing. It carries no
 // user-authored strings. The command it was shown on is ExecutionContext.Command
 // of the enclosing log entry. The CLI sets no calling-agent field on this
 // event: the calling agent is reported by the User-Agent of the telemetry
@@ -138,10 +141,10 @@ type AitoolsCommandEvent struct {
 	Outcome       AitoolsCommandOutcome `json:"outcome,omitempty"`
 	ErrorCategory AitoolsErrorCategory  `json:"error_category,omitempty"`
 
-	// Whether the command could prompt. For install: cmdio.IsPromptSupported
-	// and no coding agent detected, so an agent on a terminal reports false.
-	// For every other command: cmdio.IsPromptSupported. A measurable false, so
-	// no omitempty.
+	// Whether the command could prompt: cmdio.IsPromptSupported and no coding
+	// agent detected, so an agent on a terminal reports false. The same for
+	// every command, including list and version, which never prompt. A
+	// measurable false, so no omitempty.
 	Interactive bool `json:"interactive"`
 
 	// Install only: delivery mode. Set on every install event once flags parse.
@@ -156,4 +159,85 @@ type AitoolsCommandEvent struct {
 	// Set on events once a scope flag selects one or the scope is resolved;
 	// omitted when none or both scopes are selected.
 	Scope AitoolsInstallScope `json:"scope,omitempty"`
+}
+
+// AitoolsAutoInstallOutcome mirrors AitoolsAutoInstallOutcome.Type: how the
+// automatic installation of Databricks AI tools on the first run of a new CLI
+// version ended.
+type AitoolsAutoInstallOutcome string
+
+const (
+	AitoolsAutoInstallOutcomeUnspecified AitoolsAutoInstallOutcome = "TYPE_UNSPECIFIED"
+	// The tools were installed, or an existing installation was updated and
+	// changed.
+	AitoolsAutoInstallOutcomeInstalled AitoolsAutoInstallOutcome = "INSTALLED"
+	// An existing installation was updated and nothing changed: it was current,
+	// or every outdated skill was kept because the user modified it.
+	AitoolsAutoInstallOutcomeUpToDate AitoolsAutoInstallOutcome = "UP_TO_DATE"
+	// The installed tools were left as they are: skills without install state
+	// (installed by hand, or by an older CLI), or skills newer than the release
+	// this CLI installs.
+	AitoolsAutoInstallOutcomeKept AitoolsAutoInstallOutcome = "KEPT"
+	// Every change would have run an agent CLI, which auto-install does not do
+	// on Windows: a plan of only plugin installs, or an update of an
+	// installation with plugins.
+	AitoolsAutoInstallOutcomeSkippedPlatform AitoolsAutoInstallOutcome = "SKIPPED_PLATFORM"
+	// The run was in CI (the CI env var, or a CI provider's own).
+	AitoolsAutoInstallOutcomeSkippedCI AitoolsAutoInstallOutcome = "SKIPPED_CI"
+	// The user turned auto-install off: DATABRICKS_AITOOLS_AUTO_INSTALL=false,
+	// `aitools auto-install disable`, a global `aitools uninstall`, "no" at
+	// the prompt of an earlier version, or "no" to the skills prompt of
+	// `apps init`.
+	AitoolsAutoInstallOutcomeSkippedOptOut AitoolsAutoInstallOutcome = "SKIPPED_OPTOUT"
+	// The machine is in the holdout cohort.
+	AitoolsAutoInstallOutcomeSkippedHoldout AitoolsAutoInstallOutcome = "SKIPPED_HOLDOUT"
+	// No supported coding agent has a config directory on the machine.
+	AitoolsAutoInstallOutcomeSkippedNoAgents AitoolsAutoInstallOutcome = "SKIPPED_NO_AGENTS"
+	// The user answered "no" at the install prompt, which also turns
+	// auto-install off.
+	AitoolsAutoInstallOutcomeDeclined AitoolsAutoInstallOutcome = "DECLINED"
+	// The install prompt got no answer: stdin was closed, Ctrl+C was pressed,
+	// it timed out, or the answer was neither yes nor no. Nothing is installed
+	// and auto-install stays on, so the next CLI version asks again.
+	AitoolsAutoInstallOutcomeUnanswered AitoolsAutoInstallOutcome = "UNANSWERED"
+	// The attempt failed or timed out; a later run of the same version
+	// retries.
+	AitoolsAutoInstallOutcomeFailed AitoolsAutoInstallOutcome = "FAILED"
+	// The attempt failed and was the last one this CLI version gets.
+	AitoolsAutoInstallOutcomeRetriesExhausted AitoolsAutoInstallOutcome = "RETRIES_EXHAUSTED"
+)
+
+// AitoolsHoldoutArm mirrors AitoolsHoldoutArm.Type: the auto-install
+// experiment arm of the machine, from a stable per-machine bucket.
+type AitoolsHoldoutArm string
+
+const (
+	AitoolsHoldoutArmUnspecified AitoolsHoldoutArm = "TYPE_UNSPECIFIED"
+	// The machine never auto-installs (control group).
+	AitoolsHoldoutArmHoldout AitoolsHoldoutArm = "HOLDOUT"
+	// The machine auto-installs.
+	AitoolsHoldoutArmTreatment AitoolsHoldoutArm = "TREATMENT"
+)
+
+// AitoolsAutoInstallEvent is emitted when the CLI decides about installing
+// Databricks AI tools on the first run of a new version: once per version and
+// machine, plus once per retry after a failed attempt. A version whose outcome
+// is settled emits nothing, and so does a run that the remote gate turns off;
+// the CI and opt-out checks come before the gate, so they are emitted either
+// way. A run that has to ask before installing but cannot emits nothing and
+// leaves the version to a later run. An install with no tools installed yet
+// also emits an AitoolsInstallEvent with Trigger AUTO_FIRST_RUN.
+type AitoolsAutoInstallEvent struct {
+	Outcome    AitoolsAutoInstallOutcome `json:"outcome"`
+	HoldoutArm AitoolsHoldoutArm         `json:"holdout_arm"`
+
+	// Whether a person may be at the terminal (cmdio.HasTerminal and no
+	// coding agent detected). Such a run asks before the first install of a
+	// version, so DECLINED and UNANSWERED come only with true; INSTALLED with
+	// true may still have run without asking (an update, or a retry after an
+	// accepted attempt). A measurable false, so no omitempty.
+	Interactive bool `json:"interactive"`
+
+	// Set for FAILED and RETRIES_EXHAUSTED.
+	ErrorCategory AitoolsErrorCategory `json:"error_category,omitempty"`
 }

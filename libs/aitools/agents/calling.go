@@ -59,11 +59,14 @@ func (t Tooling) String() string {
 // DatabricksTooling reports the Databricks plugin or skills in this agent's own
 // locations; read errors count as not installed. Claude Code's manifest is
 // authoritative because `claude plugin uninstall` leaves a stale CLI install
-// record. For Codex and Copilot, pluginRecorded (the CLI install state) is the
-// only plugin source, so it misses plugins installed with the agent's own CLI
-// and includes plugins later removed with it. The shared skills store is not consulted: it cannot attribute skills.
-// The install hint's claudeToolingInstalled differs on purpose: it stays quiet
-// for any trace of an install, while this reports what the agent loads.
+// record. For Codex and Copilot the plugin is the one their own config records
+// (see DatabricksPluginConfigured), which covers one installed with the
+// agent's own CLI, or one pluginRecorded (the CLI install state) reports, so a
+// plugin later removed with the agent's own CLI still counts until the record
+// is cleared. The shared skills store is not consulted: it cannot attribute
+// skills.
+// The install hint uses it too, so Claude Code is hinted exactly when it loads
+// no Databricks tooling.
 func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() bool) Tooling {
 	// An unknown working directory skips the project lookups below.
 	cwd := ""
@@ -76,7 +79,7 @@ func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() boo
 			return ToolingPlugin
 		}
 	case a.Plugin != nil:
-		if pluginRecorded() {
+		if configured, _ := a.DatabricksPluginConfigured(ctx); configured || pluginRecorded() {
 			return ToolingPlugin
 		}
 	}
@@ -92,6 +95,10 @@ func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() boo
 	}
 	return ToolingNone
 }
+
+// noRecordedPlugin is the pluginRecorded argument to DatabricksTooling for
+// callers that don't consult the CLI install record.
+func noRecordedPlugin() bool { return false }
 
 // projectDirs returns cwd and each of its parents up to the repository root,
 // the nearest directory holding .git (a file in a git worktree, so the walk

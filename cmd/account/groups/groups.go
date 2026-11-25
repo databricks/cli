@@ -6,6 +6,7 @@
 package groups
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -20,23 +21,26 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "groups",
-		Short: `Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.`,
-		Long: `Groups simplify identity management, making it easier to assign access to
+// Spec declares the groups command.
+var Spec = root.CommandSpec{
+	Use:     "groups",
+	Short:   `Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.`,
+	GroupID: "iam",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Annotations = map[string]string{
+		"package": "iam",
+	}
+	cmd.Long = `Groups simplify identity management, making it easier to assign access to
   Databricks account, data, and other securable objects.
 
   It is best practice to assign access to workspaces and access-control policies
   in Unity Catalog to groups, instead of to users individually. All Databricks
   account identities can be assigned as members of groups, and members inherit
-  permissions that are assigned to their group.`,
-		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
-	}
+  permissions that are assigned to their group.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -50,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command

@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/log/handler"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -83,7 +84,7 @@ func startTelemetryAuth(cmd *cobra.Command, args []string) *pendingAuth {
 	if telemetry.Disabled(ctx) {
 		return nil
 	}
-	sctx := log.NewContext(ctx, slog.New(debugOnlyHandler{log.GetLogger(ctx).Handler()}))
+	sctx := log.NewContext(ctx, slog.New(handler.DebugOnlyHandler{Handler: log.GetLogger(ctx).Handler()}))
 	shadow := &cobra.Command{Use: cmd.Use}
 	shadow.Flags().AddFlagSet(cmd.Flags())
 	shadow.SetContext(root.SkipTokenRefresh(root.SkipLoadBundle(root.SkipPrompt(sctx))))
@@ -160,36 +161,12 @@ func (p *pendingAuth) finished() bool {
 	}
 }
 
-// debugOnlyHandler logs records above Debug (e.g. hostmetadata's "failed to
-// fetch host metadata" Warn) at Debug, so they show only with --debug.
-type debugOnlyHandler struct{ slog.Handler }
-
-func debugOnly(level slog.Level) slog.Level {
-	return min(level, log.LevelDebug)
-}
-
-func (h debugOnlyHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return h.Handler.Enabled(ctx, debugOnly(level))
-}
-
-func (h debugOnlyHandler) Handle(ctx context.Context, r slog.Record) error {
-	r.Level = debugOnly(r.Level)
-	return h.Handler.Handle(ctx, r)
-}
-
-func (h debugOnlyHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return debugOnlyHandler{h.Handler.WithAttrs(attrs)}
-}
-
-func (h debugOnlyHandler) WithGroup(name string) slog.Handler {
-	return debugOnlyHandler{h.Handler.WithGroup(name)}
-}
-
 // installOpts is the subset of install options telemetry records, kept narrow
 // so every field that leaves the machine is visible here.
 type installOpts struct {
 	Scope        string
 	Experimental bool
+	Trigger      protos.AitoolsInstallTrigger
 }
 
 // logInstallEvent buffers an install event; cmd/root uploads it at exit.
@@ -205,6 +182,7 @@ func logInstallEvent(ctx context.Context, plan []agentPlanItem, opts installOpts
 			Experimental:  opts.Experimental,
 			ErrorCategory: errCategory,
 			AgentResults:  agentResultsField(outcomes),
+			Trigger:       opts.Trigger,
 		},
 	})
 }
