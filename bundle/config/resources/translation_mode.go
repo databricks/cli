@@ -1,4 +1,4 @@
-package paths
+package resources
 
 // TranslateMode specifies how a path should be translated.
 type TranslateMode int

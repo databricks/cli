@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -120,5 +121,17 @@ func (a *Alert) ApplyPresets(p *PresetSettings) {
 func (a *Alert) FieldDefaults(c DefaultsContext) []FieldDefault {
 	return []FieldDefault{
 		{"parent_path", c.ResourcePath},
+	}
+}
+
+// LocalPaths declares the alert definition file. It is not translated because
+// it is read relative to the bundle root.
+func (a *Alert) LocalPaths() []LocalPath {
+	return []LocalPath{
+		{
+			Pattern: dyn.NewPattern(dyn.Key("file_path")),
+			Mode:    TranslateModeLocalRelative,
+			When:    TranslateNever,
+		},
 	}
 }

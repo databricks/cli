@@ -84,7 +84,7 @@ func TestVisitJobPaths(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobPaths)
+	actual := collectVisitedPathsOf(t, root, isNotLibraryPath)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.tasks[0].notebook_task.notebook_path"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[1].spark_python_task.python_file"),
@@ -123,7 +123,7 @@ func TestVisitJobPaths_environments(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobPaths)
+	actual := collectVisitedPathsOf(t, root, isNotLibraryPath)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.environments[1].spec.project_environment"),
 		dyn.MustPathFromString("resources.jobs.job0.environments[2].spec.project_environment"),
@@ -155,7 +155,7 @@ func TestVisitJobPaths_environmentVariables(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobPaths)
+	actual := collectVisitedPathsOf(t, root, isNotLibraryPath)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[0]"),
 		dyn.MustPathFromString("resources.jobs.job0.environment_variables[0].spec.files[1]"),
@@ -198,7 +198,7 @@ func TestVisitJobPaths_foreach(t *testing.T) {
 		},
 	}
 
-	actual := collectVisitedPaths(t, root, VisitJobPaths)
+	actual := collectVisitedPathsOf(t, root, isNotLibraryPath)
 	expected := []dyn.Path{
 		dyn.MustPathFromString("resources.jobs.job0.tasks[0].for_each_task.task.notebook_task.notebook_path"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[1].for_each_task.task.alert_task.workspace_path"),

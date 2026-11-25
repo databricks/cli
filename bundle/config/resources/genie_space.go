@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -133,5 +134,15 @@ func (r *GenieSpace) ApplyPresets(p *PresetSettings) {
 func (r *GenieSpace) FieldDefaults(c DefaultsContext) []FieldDefault {
 	return []FieldDefault{
 		{"parent_path", c.ResourcePath},
+	}
+}
+
+func (r *GenieSpace) LocalPaths() []LocalPath {
+	return []LocalPath{
+		{
+			Pattern: dyn.NewPattern(dyn.Key("file_path")),
+			Mode:    TranslateModeLocalRelative,
+			When:    TranslateOnLoad,
+		},
 	}
 }

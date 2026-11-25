@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -173,5 +174,15 @@ func (r *Dashboard) FieldDefaults(c DefaultsContext) []FieldDefault {
 	return []FieldDefault{
 		{"parent_path", c.ResourcePath},
 		{"embed_credentials", false},
+	}
+}
+
+func (r *Dashboard) LocalPaths() []LocalPath {
+	return []LocalPath{
+		{
+			Pattern: dyn.NewPattern(dyn.Key("file_path")),
+			Mode:    TranslateModeLocalRelative,
+			When:    TranslateOnLoad,
+		},
 	}
 }

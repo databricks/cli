@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -173,4 +174,16 @@ func (r *JobRun) InitializeURL(baseURL url.URL) {
 		return
 	}
 	r.URL = workspaceurls.JobRunURL(baseURL, strconv.FormatInt(jobID, 10), r.ID)
+}
+
+// LocalPaths declares the watched files of file-change triggers. They are not
+// translated: hashing still needs a local glob, not a workspace path.
+func (r *JobRun) LocalPaths() []LocalPath {
+	return []LocalPath{
+		{
+			Pattern: dyn.NewPattern(dyn.Key("lifecycle"), dyn.Key("triggers"), dyn.AnyIndex(), dyn.Key("on_file_change")),
+			Mode:    TranslateModeLocalRelative,
+			When:    TranslateNever,
+		},
+	}
 }
