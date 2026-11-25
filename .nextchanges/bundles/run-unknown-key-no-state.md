@@ -1,0 +1,1 @@
+* `bundle run` and `pipelines run`, `stop`, `dry-run` and `test` on a never-deployed bundle now report a KEY that is not defined in config, instead of suggesting `databricks bundle deploy`. ([#7985](https://github.com/databricks/cli/pull/7985))
