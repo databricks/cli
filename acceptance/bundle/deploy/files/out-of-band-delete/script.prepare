@@ -1,0 +1,6 @@
+# get_status_fields is the allow-list of workspace get-status fields this test
+# asserts on. Anything the backend returns outside this list is dropped, so a new
+# field in the API response does not break the golden.
+get_status_fields() {
+    jq '{object_type, path}'
+}

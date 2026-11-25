@@ -6,14 +6,14 @@ BUNDLE_PATH="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete/de
 trace $CLI bundle deploy
 
 title "After the initial deploy the python_file exists"
-trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | get_status_fields
 
 title "Delete the remote bundle directory out-of-band (simulates deleting it in the UI)"
 trace $CLI workspace delete --recursive "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete"
 
 title "Redeploy uploads the files again"
 trace $CLI bundle deploy
-trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | get_status_fields
 
 title "A redeploy without changes uploads nothing"
 trace $CLI bundle deploy
@@ -28,8 +28,8 @@ trace musterr $CLI workspace get-status "$BUNDLE_PATH/files"
 
 title "bundle validate recreates the files directory without uploading anything"
 trace $CLI bundle validate
-trace $CLI workspace get-status "$BUNDLE_PATH/files" | jq '{object_type,path}'
+trace $CLI workspace get-status "$BUNDLE_PATH/files" | get_status_fields
 
 title "The next deploy still uploads the files again"
 trace $CLI bundle deploy
-trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | get_status_fields
