@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -55,6 +56,10 @@ func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceCli
 		return false, err
 	}
 	return true, nil
+}
+
+func (*PostgresProject) SchemaLaunchStage() clijson.LaunchStage {
+	return clijson.LaunchStagePublicBeta
 }
 
 func (p *PostgresProject) ResourceDescription() ResourceDescription {

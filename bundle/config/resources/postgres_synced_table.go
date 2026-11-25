@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -50,6 +51,10 @@ func (s *PostgresSyncedTable) Exists(ctx context.Context, w *databricks.Workspac
 		return false, err
 	}
 	return true, nil
+}
+
+func (*PostgresSyncedTable) SchemaLaunchStage() clijson.LaunchStage {
+	return clijson.LaunchStagePublicBeta
 }
 
 func (s *PostgresSyncedTable) ResourceDescription() ResourceDescription {

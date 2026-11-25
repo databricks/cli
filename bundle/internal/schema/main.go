@@ -15,8 +15,6 @@ import (
 	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 // interpolationPattern builds a JSON Schema regex for ${prefix.path...} references.
@@ -91,88 +89,23 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 	}
 }
 
-func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	switch typ {
-	case reflect.TypeFor[resources.Job]():
-		// This field has been deprecated in jobs API v2.1 and is always set to
-		// "MULTI_TASK" in the backend. We should not expose it to the user.
-		delete(s.Properties, "format")
-
-		// These fields are only meant to be set by the DABs client (ie the CLI)
-		// and thus should not be exposed to the user. These are used to annotate
-		// jobs that were created by DABs.
-		delete(s.Properties, "deployment")
-		delete(s.Properties, "edit_mode")
-
-	case reflect.TypeFor[resources.JobRun]():
-		// CLI-managed; not user-configurable.
-		delete(s.Properties, "idempotency_token")
-
-	case reflect.TypeFor[jobs.GitSource]():
-		// These fields are readonly and are not meant to be set by the user.
-		delete(s.Properties, "job_source")
-		delete(s.Properties, "git_snapshot")
-
-	default:
-		// Do nothing
-	}
-
-	return s
-}
-
-func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	switch typ {
-	case reflect.TypeFor[resources.Pipeline]():
-		// Even though DABs supports this field, TF provider does not. Thus, we
-		// should not expose it to the user.
-		delete(s.Properties, "dry_run")
-
-		// These fields are only meant to be set by the DABs client (ie the CLI)
-		// and thus should not be exposed to the user. These are used to annotate
-		// pipelines that were created by DABs.
-		delete(s.Properties, "deployment")
-	default:
-		// Do nothing
-	}
-
-	return s
-}
-
-// removeDeploymentFields strips deployment_id and version_id from the job and
-// pipeline deployment blocks. The CLI sets these to track the bundle
-// deployment in the Deployment Metadata Service; they are not user-configurable,
-// so they must not appear in the JSON schema or the generated annotation files.
-// The parent "deployment" block is already removed from the Job and Pipeline
-// schemas (see removeJobsFields / removePipelineFields); this removes the fields
-// from the JobDeployment / PipelineDeployment type definitions themselves.
-func removeDeploymentFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	switch typ {
-	case reflect.TypeFor[jobs.JobDeployment](), reflect.TypeFor[pipelines.PipelineDeployment]():
-		delete(s.Properties, "deployment_id")
-		delete(s.Properties, "version_id")
-	default:
-		// Do nothing
-	}
-
-	return s
-}
-
-// While volume_type is required in the volume create API, DABs automatically sets
-// it's value to "MANAGED" if it's not provided. Thus, we make it optional
-// in the bundle schema.
-func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	if typ != reflect.TypeFor[resources.Volume]() {
-		return s
-	}
-
-	var res []string
-	for _, r := range s.Required {
-		if r != "volume_type" {
-			res = append(res, r)
+// resourceSchemaTransforms returns a transform that applies the schema
+// transforms resource types declare (see [resources.SchemaTransformer]). Where
+// several resource types declare a transform for the same Go type, they run in
+// the canonical order of resource types.
+func resourceSchemaTransforms() func(reflect.Type, jsonschema.Schema) jsonschema.Schema {
+	byType := map[reflect.Type][]func(jsonschema.Schema) jsonschema.Schema{}
+	for _, d := range config.ResourceTypesImplementing[resources.SchemaTransformer]() {
+		for typ, fn := range d.SchemaTransforms() {
+			byType[typ] = append(byType[typ], fn)
 		}
 	}
-	s.Required = res
-	return s
+	return func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+		for _, fn := range byType[typ] {
+			s = fn(s)
+		}
+		return s
+	}
 }
 
 func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
@@ -235,7 +168,7 @@ func main() {
 // only documents fields the generated schema actually contains. Both the
 // generator and the detached-annotation test use it to stay in lockstep.
 func configTypeGraph() (*typeGraph, error) {
-	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields)
+	return newTypeGraph(reflect.TypeFor[config.Root](), resourceSchemaTransforms())
 }
 
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
@@ -282,10 +215,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	}
 
 	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		removeJobsFields,
-		removePipelineFields,
-		removeDeploymentFields,
-		makeVolumeTypeOptional,
+		resourceSchemaTransforms(),
 		a.addAnnotations,
 		removeOutputOnlyFields,
 	}
