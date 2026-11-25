@@ -11,6 +11,15 @@ type LifecycleStartedTelemetry interface {
 	LifecycleStartedTelemetryKey() string
 }
 
+// DeployTelemetryBoolValues is implemented by resource types that report boolean values
+// about their resources in deploy telemetry. It is called on a zero value.
+type DeployTelemetryBoolValues interface {
+	// DeployTelemetryBoolValues returns the values to report for group, all resources
+	// of this type in the bundle by key, in the order to report them. Each value of
+	// group is a pointer to this type, which is nil for a null in the configuration.
+	DeployTelemetryBoolValues(group map[string]any) []protos.BoolMapEntry
+}
+
 // DeployTelemetryCount is implemented by resource types whose number of resources the
 // deploy telemetry event reports in a deprecated field of its own. New types do not
 // implement it: the event's resources_metadata counts every type.
