@@ -1,8 +1,10 @@
-package resourcemutator
+package stages_test
 
 import (
 	"testing"
 
+	_ "github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,29 +16,29 @@ import (
 //   - The StageAfterTargetMerge mutators only merge keyed sequences, because code that
 //     loads a configuration without the initialize phase runs that stage on its own.
 func TestStageMutatorOrder(t *testing.T) {
-	expected := map[Stage][]string{
-		StageBeforeVariables: {
+	expected := map[stages.Stage][]string{
+		stages.StageBeforeVariables: {
 			"ValidateSecretValueIsVariable",
 		},
-		StageBeforePresets: {
+		stages.StageBeforePresets: {
 			"OverrideCompute",
 		},
-		StageAfterDefaults: {
+		stages.StageAfterDefaults: {
 			"DashboardFixups",
 			"GenieSpaceFixups",
 		},
-		StageAfterResourceVariables: {
+		stages.StageAfterResourceVariables: {
 			"ExpandPipelineGlobPaths",
 			"NormalizeMaterializationSetMaterializedFeatureMembers",
 		},
-		StageAfterTargetMerge: {
+		stages.StageAfterTargetMerge: {
 			"MergeJobClusters",
 			"MergeJobParameters",
 			"MergeJobTasks",
 			"MergePipelineClusters",
 			"MergeApps",
 		},
-		StageAfterUCDependencies: {
+		stages.StageAfterUCDependencies: {
 			"JobClustersFixups",
 			"ModelServingEndpointFixups",
 			"ClusterFixups",
@@ -46,27 +48,21 @@ func TestStageMutatorOrder(t *testing.T) {
 			"LoadDBAlertFiles",
 			"ConfigureClusterPolicyDefinition",
 		},
-		StageAfterPython: {
+		stages.StageAfterPython: {
 			"ApplyDefaultTaskSource",
 			"InitializeVolumePaths",
 			"ResolveVariableReferences(resources)",
 		},
-		StageAfterFieldValidation: {
+		stages.StageAfterFieldValidation: {
 			"ValidateJobRunTriggers",
 		},
-		StageBeforeDirectEngine: {
+		stages.StageBeforeDirectEngine: {
 			"SecretScopeFixups",
 		},
-		StageAfterBuild: {
+		stages.StageAfterBuild: {
 			"ResolveJobRunFileTriggers",
 		},
 	}
 
-	actual := map[Stage][]string{}
-	for stage, mutators := range stageMutatorsByStage() {
-		for _, m := range mutators {
-			actual[stage] = append(actual[stage], m.newMutator().Name())
-		}
-	}
-	assert.Equal(t, expected, actual)
+	assert.Equal(t, expected, stages.MutatorNamesByStage())
 }

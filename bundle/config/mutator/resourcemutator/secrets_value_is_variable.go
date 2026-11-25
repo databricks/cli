@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -12,7 +13,7 @@ import (
 
 func init() {
 	// Reads (dynamic): resources.secrets.*.value, which must still be an unresolved variable reference.
-	registerStageMutator(StageBeforeVariables, "secrets", ValidateSecretValueIsVariable)
+	stages.Register(stages.StageBeforeVariables, "secrets", ValidateSecretValueIsVariable)
 }
 
 type validateSecretValueIsVariable struct{}

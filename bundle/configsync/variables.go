@@ -7,7 +7,11 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+
+	// Registers the mutators of the stage this file applies; without it, the stage is
+	// empty in binaries that do not otherwise link the package, such as unit tests.
+	_ "github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -133,7 +137,7 @@ func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 	// Keyed sequences merge in the initialize phase, which this reload skips. Without
 	// them the sequences here stay in file order while the change paths address the
 	// merged, key-sorted order, so a lookup would read a different element.
-	bundle.ApplyContext(ctx, fresh, resourcemutator.ApplyStage(resourcemutator.StageAfterTargetMerge))
+	bundle.ApplyContext(ctx, fresh, stages.ApplyStage(stages.StageAfterTargetMerge))
 	return fresh.Config.Value()
 }
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -17,7 +18,7 @@ import (
 func init() {
 	// Adds a MANAGE ACL for the current user to every secret scope, so that the
 	// configuration and the direct engine state agree on .permissions entries.
-	registerStageMutator(StageBeforeDirectEngine, "secret_scopes", SecretScopeFixups)
+	stages.Register(stages.StageBeforeDirectEngine, "secret_scopes", SecretScopeFixups)
 }
 
 type secretScopeFixups struct{}

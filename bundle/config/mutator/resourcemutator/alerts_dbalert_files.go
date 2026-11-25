@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -21,7 +22,7 @@ import (
 func init() {
 	// Reads (typed): resources.alerts.*.file_path
 	// Updates (typed): resources.alerts.* (loads alert configuration from .dbalert.json file)
-	registerStageMutator(StageAfterUCDependencies, "alerts", LoadDBAlertFiles)
+	stages.Register(stages.StageAfterUCDependencies, "alerts", LoadDBAlertFiles)
 }
 
 type loadDBAlertFiles struct{}

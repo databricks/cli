@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 )
 
 func init() {
 	// Reads and updates (typed): resources.clusters.*
-	registerStageMutator(StageAfterUCDependencies, "clusters", ClusterFixups)
+	stages.Register(stages.StageAfterUCDependencies, "clusters", ClusterFixups)
 }
 
 type clusterFixups struct{}

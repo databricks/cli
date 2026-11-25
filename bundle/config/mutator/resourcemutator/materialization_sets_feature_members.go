@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -17,7 +18,7 @@ import (
 func init() {
 	// Reads (typed): resources.materialization_sets.*.materialized_features
 	// Rejects a set listing two materialized features with the same member key
-	registerStageMutator(StageAfterResourceVariables, "materialization_sets", NormalizeMaterializationSetMaterializedFeatureMembers)
+	stages.Register(stages.StageAfterResourceVariables, "materialization_sets", NormalizeMaterializationSetMaterializedFeatureMembers)
 }
 
 type normalizeMaterializationSetMaterializedFeatureMembers struct{}

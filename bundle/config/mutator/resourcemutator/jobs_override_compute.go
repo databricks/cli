@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
@@ -19,7 +20,7 @@ func init() {
 	// Updates (typed): b.Config.Resources.Jobs.*.Tasks.*.{NewCluster,ExistingClusterId,JobClusterKey,EnvironmentKey} (replaces compute settings with specified cluster ID)
 	// OR corresponding fields on ForEachTask if that is present
 	// Overrides job compute settings with a specified cluster ID for development or testing
-	registerStageMutator(StageBeforePresets, "jobs", OverrideCompute)
+	stages.Register(stages.StageBeforePresets, "jobs", OverrideCompute)
 }
 
 type overrideCompute struct{}

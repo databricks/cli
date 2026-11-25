@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -12,7 +13,7 @@ import (
 func init() {
 	// Reads (dynamic): resources.apps.*.resources (reads app resources to merge)
 	// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
-	registerStageMutator(StageAfterTargetMerge, "apps", MergeApps)
+	stages.Register(stages.StageAfterTargetMerge, "apps", MergeApps)
 }
 
 type mergeApps struct{}

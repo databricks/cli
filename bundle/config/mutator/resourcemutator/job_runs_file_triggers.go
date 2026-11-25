@@ -14,6 +14,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -23,7 +24,7 @@ const fileTriggerPrefix = "lifecycle.triggers.on_file_change: "
 func init() {
 	// Fingerprint on_file_change triggers once, after every step that can produce
 	// a watched file: build and the predeploy script.
-	registerStageMutator(StageAfterBuild, "job_runs", ResolveJobRunFileTriggers)
+	stages.Register(stages.StageAfterBuild, "job_runs", ResolveJobRunFileTriggers)
 }
 
 type resolveJobRunFileTriggers struct{}

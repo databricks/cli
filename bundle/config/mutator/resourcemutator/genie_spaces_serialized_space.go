@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -15,7 +16,7 @@ const serializedSpaceFieldName = "serialized_space"
 func init() {
 	// Reads (dynamic): resources.genie_spaces.*.file_path
 	// Updates (dynamic): resources.genie_spaces.*.serialized_space
-	registerStageMutator(StageAfterUCDependencies, "genie_spaces", ConfigureGenieSpaceSerializedSpace)
+	stages.Register(stages.StageAfterUCDependencies, "genie_spaces", ConfigureGenieSpaceSerializedSpace)
 }
 
 type configureGenieSpaceSerializedSpace struct{}

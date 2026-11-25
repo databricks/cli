@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/permissions"
@@ -37,7 +38,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
-		resourcemutator.ApplyStage(resourcemutator.StageBeforeVariables),
+		stages.ApplyStage(stages.StageBeforeVariables),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -168,7 +169,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		// Resource changes that must see the resources Python code defined and must not be
 		// visible to Python code.
-		resourcemutator.ApplyStage(resourcemutator.StageAfterPython),
+		stages.ApplyStage(stages.StageAfterPython),
 
 		// Drop empty-string values on omitempty resource fields so they are not
 		// force-sent to the backend. Runs after variable resolution (a variable may
@@ -206,7 +207,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Rejects a Data API that sets nothing besides parent; the API would reject it at deploy time.
 		validate.PostgresDataApiSettings(),
 
-		resourcemutator.ApplyStage(resourcemutator.StageAfterFieldValidation),
+		stages.ApplyStage(stages.StageAfterFieldValidation),
 
 		// Reads (dynamic): resources.*.*.lifecycle.depends_on
 		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.

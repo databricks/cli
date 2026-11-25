@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -16,7 +17,7 @@ var jsonPolicyFields = []string{"definition", "policy_family_definition_override
 func init() {
 	// Reads (dynamic): resources.cluster_policies.*.definition
 	// Updates (dynamic): resources.cluster_policies.*.definition (inline YAML -> JSON string)
-	registerStageMutator(StageAfterUCDependencies, "cluster_policies", ConfigureClusterPolicyDefinition)
+	stages.Register(stages.StageAfterUCDependencies, "cluster_policies", ConfigureClusterPolicyDefinition)
 }
 
 type configureClusterPolicyDefinition struct{}

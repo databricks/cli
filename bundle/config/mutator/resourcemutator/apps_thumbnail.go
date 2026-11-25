@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -18,7 +19,7 @@ const maxAppThumbnailBytes = 250_000
 func init() {
 	// Reads (dynamic): resources.apps.*.thumbnail_path
 	// Updates (dynamic): resources.apps.*.thumbnail_content
-	registerStageMutator(StageAfterUCDependencies, "apps", ConfigureAppThumbnail)
+	stages.Register(stages.StageAfterUCDependencies, "apps", ConfigureAppThumbnail)
 }
 
 type configureAppThumbnail struct{}

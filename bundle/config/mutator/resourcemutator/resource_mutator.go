@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -29,7 +30,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): range b.Config.Resources.Pipelines[].Permissions (set permission based on bundle run_as; only if Experimental.UseLegacyRunAs is set)
 		SetRunAs(),
 
-		ApplyStage(StageBeforePresets),
+		stages.ApplyStage(stages.StageBeforePresets),
 
 		// ApplyPresets should have more priority than defaults below, so it should be run first
 		ApplyPresets(),
@@ -100,7 +101,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		ApplyStage(StageAfterDefaults),
+		stages.ApplyStage(stages.StageAfterDefaults),
 
 		// Reads (typed): b.Config.Permissions (validates permission levels)
 		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (reads existing permissions)
@@ -129,8 +130,8 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
 		mutator.ResolveVariableReferencesOnlyResources(),
 
-		ApplyStage(StageAfterResourceVariables),
-		ApplyStage(StageAfterTargetMerge),
+		stages.ApplyStage(stages.StageAfterResourceVariables),
+		stages.ApplyStage(stages.StageAfterTargetMerge),
 
 		// Reads (dynamic): resources.{catalogs,schemas,external_locations,volumes,registered_models,vector_search_indexes}.*.grants
 		// Updates (dynamic): same paths — merges grant entries by principal and deduplicates privileges
@@ -142,7 +143,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Translates implicit schema and catalog references across all UC resources to explicit syntax to capture dependencies
 		CaptureUCDependencies(),
 
-		ApplyStage(StageAfterUCDependencies),
+		stages.ApplyStage(stages.StageAfterUCDependencies),
 	)
 }
 

@@ -1,4 +1,4 @@
-package resourcemutator
+package stages
 
 import (
 	"cmp"
@@ -72,9 +72,9 @@ type stageMutator struct {
 
 var stageMutators []stageMutator
 
-// registerStageMutator registers newMutator to run in stage for the resource type under
+// Register registers newMutator to run in stage for the resource type under
 // resourceKey. Call it from init() in the file of that resource type.
-func registerStageMutator(stage Stage, resourceKey string, newMutator func() bundle.Mutator) {
+func Register(stage Stage, resourceKey string, newMutator func() bundle.Mutator) {
 	stageMutators = append(stageMutators, stageMutator{stage: stage, resourceKey: resourceKey, newMutator: newMutator})
 }
 

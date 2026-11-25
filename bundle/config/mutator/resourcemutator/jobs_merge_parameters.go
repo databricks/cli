@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -12,7 +13,7 @@ import (
 func init() {
 	// Reads (dynamic): resources.jobs.*.parameters (reads job parameters to merge)
 	// Updates (dynamic): resources.jobs.*.parameters (merges job parameters with the same name)
-	registerStageMutator(StageAfterTargetMerge, "jobs", MergeJobParameters)
+	stages.Register(stages.StageAfterTargetMerge, "jobs", MergeJobParameters)
 }
 
 type mergeJobParameters struct{}

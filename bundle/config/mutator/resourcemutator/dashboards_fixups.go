@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -11,7 +12,7 @@ func init() {
 	// Reads (typed): b.Config.Resources.Dashboards (checks dashboard configurations)
 	// Updates (typed): b.Config.Resources.Dashboards[].ParentPath (ensures /Workspace prefix is present)
 	// Ensures dashboard parent paths have the required /Workspace prefix
-	registerStageMutator(StageAfterDefaults, "dashboards", DashboardFixups)
+	stages.Register(stages.StageAfterDefaults, "dashboards", DashboardFixups)
 }
 
 type dashboardFixups struct{}

@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -21,7 +21,7 @@ import (
 func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool) {
 	bundle.ApplySeqContext(ctx, b,
 		deploy.CheckDashboardsModifiedRemotely(isPlan),
-		resourcemutator.ApplyStage(resourcemutator.StageBeforeDirectEngine),
+		stages.ApplyStage(stages.StageBeforeDirectEngine),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		statemgmt.CheckRunningResource(),

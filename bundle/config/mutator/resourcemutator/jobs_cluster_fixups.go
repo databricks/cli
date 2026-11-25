@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -12,7 +13,7 @@ import (
 
 func init() {
 	// Reads and updates (typed): resources.jobs.*.**
-	registerStageMutator(StageAfterUCDependencies, "jobs", JobClustersFixups)
+	stages.Register(stages.StageAfterUCDependencies, "jobs", JobClustersFixups)
 }
 
 type jobClustersFixups struct{}

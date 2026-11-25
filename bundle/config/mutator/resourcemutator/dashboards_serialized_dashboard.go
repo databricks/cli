@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -16,7 +17,7 @@ func init() {
 	// Reads (dynamic): resources.dashboards.*.file_path
 	// Updates (dynamic): resources.dashboards.*.serialized_dashboard
 	// Drops (dynamic): resources.dashboards.*.file_path
-	registerStageMutator(StageAfterUCDependencies, "dashboards", ConfigureDashboardSerializedDashboard)
+	stages.Register(stages.StageAfterUCDependencies, "dashboards", ConfigureDashboardSerializedDashboard)
 }
 
 type configureDashboardSerializedDashboard struct{}
