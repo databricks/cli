@@ -2,7 +2,7 @@ R="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default"
 INTERNAL="$R/files/.databricks/bundle/default/.internal"
 
 trace $CLI bundle deploy
-trace $CLI workspace list "$INTERNAL" -o json | jq -c '[.[].path]'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "$INTERNAL" -o json | jq -c '[.[].path]'
 
 title "Save a plan, then apply it from a fresh checkout (no .databricks cache)"
 trace $CLI bundle plan -o json > tmp.plan.json
@@ -10,6 +10,5 @@ trace rm -rf .databricks
 trace $CLI bundle deploy --plan tmp.plan.json
 
 title "The wrapper notebook the job runs is still in the workspace"
-job_id=$($CLI bundle summary -o json | jq -r '.resources.jobs.whl.id')
-$CLI jobs get "$job_id" | jq -c '.settings.tasks[0].notebook_task.notebook_path'
-trace $CLI workspace list "$INTERNAL" -o json | jq -c '[.[].path]'
+trace $CLI jobs get $(read_id.py whl) | jq -c '.settings.tasks[0].notebook_task.notebook_path'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "$INTERNAL" -o json | jq -c '[.[].path]'
