@@ -35,6 +35,10 @@ func (s *SyncedDatabaseTable) Exists(ctx context.Context, w *databricks.Workspac
 	return true, nil
 }
 
+func (*SyncedDatabaseTable) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (s *SyncedDatabaseTable) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "synced_database_table",

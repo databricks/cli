@@ -38,6 +38,10 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	return true, nil
 }
 
+func (*Schema) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*Schema) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "schema",

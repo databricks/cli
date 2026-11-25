@@ -3,8 +3,6 @@ package resourcemutator
 import (
 	"fmt"
 	"reflect"
-	"slices"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -21,72 +19,46 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func allResourceTypes(t *testing.T) []string {
-	// Compute supported resource types based on the `Resources{}` struct.
-	r := &config.Resources{}
-	rv, err := convert.FromTyped(r, dyn.NilValue)
-	require.NoError(t, err)
-	normalized, _ := convert.Normalize(r, rv, convert.IncludeMissingFields)
-	var resourceTypes []string
-	for _, k := range normalized.MustMap().Keys() {
-		resourceTypes = append(resourceTypes, k.MustString())
+// rejectsAllRunAs reports whether every resource of the declaring type is
+// rejected when the run_as identity differs from the deploying user.
+func rejectsAllRunAs(declarer resources.RunAsDeclarer) bool {
+	_, conditional := declarer.(resources.RunAsConditionalRejecter)
+	return declarer.RunAsSupport() == resources.RunAsRejected && !conditional
+}
+
+func TestRunAsSupportIsDeclaredForEveryResourceType(t *testing.T) {
+	config.AssertResourceTypesImplement[resources.RunAsDeclarer](t)
+}
+
+func TestRunAsDeclarationsAreConsistent(t *testing.T) {
+	for key, declarer := range config.ResourceTypesImplementing[resources.RunAsDeclarer]() {
+		support := declarer.RunAsSupport()
+		assert.Contains(t, []resources.RunAsSupport{resources.RunAsNotApplicable, resources.RunAsApplied, resources.RunAsRejected}, support, key)
+
+		_, receiver := declarer.(resources.RunAsReceiver)
+		assert.Equal(t, support == resources.RunAsApplied, receiver, "%s must implement RunAsReceiver if and only if it declares RunAsApplied", key)
+
+		if _, ok := declarer.(resources.RunAsValidator); ok {
+			assert.True(t, receiver, "%s implements RunAsValidator but not RunAsReceiver", key)
+		}
+		if _, ok := declarer.(resources.RunAsLegacyReceiver); ok {
+			assert.True(t, receiver, "%s implements RunAsLegacyReceiver but not RunAsReceiver", key)
+		}
+		if _, ok := declarer.(resources.RunAsConditionalRejecter); ok {
+			assert.Equal(t, resources.RunAsRejected, support, "%s implements RunAsConditionalRejecter but does not declare RunAsRejected", key)
+		}
 	}
-	slices.Sort(resourceTypes)
+}
 
-	// Assert the total list of resource supported, as a sanity check that using
-	// the dyn library gives us the correct list of all resources supported. Please
-	// also update this check when adding a new resource
-	require.Equal(
-		t, []string{
-			"alerts",
-			"apps",
-			"catalogs",
-			"cluster_policies",
-			"clusters",
-			"dashboards",
-			"data_quality_monitors",
-			"database_catalogs",
-			"database_instances",
-			"experiments",
-			"external_locations",
-			"feature_specs",
-			"features",
-			"genie_spaces",
-			"instance_pools",
-			"internal_immutable_snapshots",
-			"job_runs",
-			"jobs",
-			"materialization_sets",
-			"mcp_services",
-			"model_provider_services",
-			"model_services",
-			"model_serving_endpoints",
-			"models",
-			"pipelines",
-			"postgres_branches",
-			"postgres_catalogs",
-			"postgres_data_apis",
-			"postgres_databases",
-			"postgres_endpoints",
-			"postgres_projects",
-			"postgres_roles",
-			"postgres_snapshot_schedules",
-			"postgres_synced_tables",
-			"quality_monitors",
-			"registered_models",
-			"schemas",
-			"secret_scopes",
-			"secrets",
-			"sql_warehouses",
-			"synced_database_tables",
-			"vector_search_endpoints",
-			"vector_search_indexes",
-			"volumes",
-		},
-		resourceTypes,
-	)
-
-	return resourceTypes
+// runAsField returns the RunAs field of the resource type under key.
+func runAsField(t *testing.T, key string) (reflect.StructField, bool) {
+	for _, rt := range config.AllResourceTypes() {
+		if rt.Key == key {
+			return rt.Type.FieldByName("RunAs")
+		}
+	}
+	require.Failf(t, "not a resource type", "%s", key)
+	return reflect.StructField{}, false
 }
 
 func TestRunAsWorksForAllowedResources(t *testing.T) {
@@ -157,138 +129,41 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 	}
 }
 
-// Bundle "run_as" has two modes of operation, each with a different set of
-// resources that are supported.
-// Cases:
-//  1. When the bundle "run_as" identity is same as the current deployment
-//     identity. In this case all resources are supported.
-//  2. When the bundle "run_as" identity is different from the current
-//     deployment identity. In this case only a subset of resources are
-//     supported. This subset of resources are defined in the allow list below.
-//
-// To be a part of the allow list, the resource must satisfy one of the following
-// two conditions:
-//  1. The resource supports setting a run_as identity to a different user
-//     from the owner/creator of the resource. For example, jobs.
-//  2. Run as semantics do not apply to the resource's current API. For example,
-//     experiments or registered models.
-//
-// Any resource that is not on the allow list cannot be used when the bundle
-// run_as is different from the current deployment user. "bundle validate" must
-// return an error if such a resource has been defined, and the run_as identity
-// is different from the current deployment identity.
-//
-// If a resource gains run_as support, review this list and the group support
-// classification below. Model serving endpoints are excluded. Dashboards are
-// allowed when embed_credentials is false and rejected otherwise.
-var allowList = []string{
-	"alerts",
-	"catalogs",
-	"clusters",
-	"cluster_policies",
-	"dashboards",
-	"database_catalogs",
-	"database_instances",
-	"external_locations",
-	"synced_database_tables",
-	"jobs",
-	"materialization_sets",
-	"pipelines",
-	"models",
-	"model_services",
-	"mcp_services",
-	"model_provider_services",
-	"postgres_branches",
-	"postgres_catalogs",
-	"postgres_data_apis",
-	"postgres_databases",
-	"postgres_endpoints",
-	"postgres_projects",
-	"postgres_roles",
-	"postgres_snapshot_schedules",
-	"postgres_synced_tables",
-	"registered_models",
-	"experiments",
-	"feature_specs",
-	"features",
-	"genie_spaces",
-	"instance_pools",
-	"job_runs",
-	"internal_immutable_snapshots",
-	"schemas",
-	"secret_scopes",
-	"secrets",
-	"sql_warehouses",
-	"vector_search_endpoints",
-	"vector_search_indexes",
-	"volumes",
-}
-
-type groupRunAsSupport int
-
-const (
-	groupRunAsUnsupported groupRunAsSupport = iota
-	groupRunAsSupported
-)
-
-// Classify every resource type that exposes a run_as field.
-var groupRunAsSupportByResource = map[string]groupRunAsSupport{
-	"alerts":    groupRunAsUnsupported,
-	"jobs":      groupRunAsSupported,
-	"pipelines": groupRunAsSupported,
-}
-
-func TestRunAsGroupSupportClassification(t *testing.T) {
-	actual := make(map[string]groupRunAsSupport)
-	resourceTypes := reflect.TypeFor[config.Resources]()
-	for field := range resourceTypes.Fields() {
-		require.Equal(t, reflect.Map, field.Type.Kind(), field.Name)
-		require.Equal(t, reflect.Pointer, field.Type.Elem().Kind(), field.Name)
-		resourceType := field.Type.Elem().Elem()
-		runAsField, ok := resourceType.FieldByName("RunAs")
-		if !ok {
-			continue
-		}
-
-		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
-		require.Equal(t, reflect.Pointer, runAsField.Type.Kind(), name)
-		runAsType := runAsField.Type.Elem()
-		require.Equal(t, reflect.Struct, runAsType.Kind(), name)
-		support := groupRunAsUnsupported
-		if _, ok := runAsType.FieldByName("GroupName"); ok {
-			support = groupRunAsSupported
-		}
-		actual[name] = support
+// A resource type with a run_as field must receive the bundle run_as identity.
+func TestRunAsAppliedToEveryTypeWithRunAsField(t *testing.T) {
+	for key, declarer := range config.ResourceTypesImplementing[resources.RunAsDeclarer]() {
+		_, hasField := runAsField(t, key)
+		assert.Equal(t, hasField, declarer.RunAsSupport() == resources.RunAsApplied, "%s has a RunAs field: %v", key, hasField)
 	}
-
-	require.Equal(t, groupRunAsSupportByResource, actual)
 }
 
+// A resource type whose run_as has a group_name receives a group identity; any
+// other type that receives run_as rejects a group identity.
 func TestRunAsGroupSupportBehavior(t *testing.T) {
-	for resourceType, support := range groupRunAsSupportByResource {
-		t.Run(resourceType, func(t *testing.T) {
-			yaml := fmt.Sprintf("run_as: {group_name: group}\nworkspace: {current_user: {userName: deployer}}\nresources:\n  %s: {test: {}}\n", resourceType)
+	for key := range config.ResourceTypesImplementing[resources.RunAsReceiver]() {
+		t.Run(key, func(t *testing.T) {
+			field, ok := runAsField(t, key)
+			require.True(t, ok)
+			require.Equal(t, reflect.Pointer, field.Type.Kind())
+			require.Equal(t, reflect.Struct, field.Type.Elem().Kind())
+			_, supportsGroup := field.Type.Elem().FieldByName("GroupName")
+
+			yaml := fmt.Sprintf("run_as: {group_name: group}\nworkspace: {current_user: {userName: deployer}}\nresources:\n  %s: {test: {}}\n", key)
 			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
 			require.NoError(t, diags.Error())
 			b := &bundle.Bundle{Config: *r}
 			diags = bundle.Apply(t.Context(), b, SetRunAs())
 
-			switch support {
-			case groupRunAsUnsupported:
+			if !supportsGroup {
 				require.ErrorContains(t, diags.Error(), "run_as.group_name")
-			case groupRunAsSupported:
-				require.NoError(t, diags.Error())
-				switch resourceType {
-				case "jobs":
-					assert.Equal(t, "group", b.Config.Resources.Jobs["test"].RunAs.GroupName)
-				case "pipelines":
-					assert.Equal(t, "group", b.Config.Resources.Pipelines["test"].RunAs.GroupName)
-				default:
-					t.Fatalf("add a group propagation assertion for %s", resourceType)
-				}
-			default:
-				t.Fatalf("unknown group run_as support level for %s", resourceType)
+				return
 			}
+			require.NoError(t, diags.Error())
+			res, _, err := b.Config.Resources.ResolveKey(key + ".test")
+			require.NoError(t, err)
+			runAs := reflect.ValueOf(res).Elem().FieldByName("RunAs")
+			require.False(t, runAs.IsNil())
+			assert.Equal(t, "group", runAs.Elem().FieldByName("GroupName").String())
 		})
 	}
 }
@@ -315,14 +190,12 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 	v, err = dyn.Set(v, "resources", dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
 
-	for _, rt := range allResourceTypes(t) {
-		// Skip allowed resources
-		if slices.Contains(allowList, rt) {
+	for rt, declarer := range config.ResourceTypesImplementing[resources.RunAsDeclarer]() {
+		if !rejectsAllRunAs(declarer) {
 			continue
 		}
 
-		// Add an instance of the resource type that is not on the allow list to
-		// the bundle configuration.
+		// Add an instance of the rejected resource type to the bundle configuration.
 		nv, err := dyn.SetByPath(v, dyn.NewPath(dyn.Key("resources"), dyn.Key(rt)), dyn.V(map[string]dyn.Value{
 			"foo": dyn.V(map[string]dyn.Value{
 				"path": dyn.V("bar"),
@@ -344,23 +217,6 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		assert.Contains(t, diags.Error().Error(), "do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: alice. Run as identity: bob.\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", rt)
-	}
-}
-
-func TestRunAsSupportListsAreComplete(t *testing.T) {
-	supported := config.SupportedResources()
-
-	// Every resource type needs an explicit decision: either it accepts a different
-	// run_as identity (allowList) or it is rejected (runAsUnsupportedResources).
-	for key := range supported {
-		inAllowList := slices.Contains(allowList, key)
-		inUnsupported := slices.Contains(runAsUnsupportedResources, key)
-		assert.NotEqual(t, inAllowList, inUnsupported, "%s must be in exactly one of allowList or runAsUnsupportedResources", key)
-	}
-
-	for _, key := range slices.Concat(allowList, runAsUnsupportedResources) {
-		_, ok := supported[key]
-		assert.True(t, ok, "%s is listed for run_as but is not a supported resource type", key)
 	}
 }
 
@@ -386,14 +242,14 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 	v, err = dyn.Set(v, "resources", dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
 
-	for _, rt := range allResourceTypes(t) {
-		// Skip unsupported resources
-		if !slices.Contains(allowList, rt) {
+	for rt, declarer := range config.ResourceTypesImplementing[resources.RunAsDeclarer]() {
+		// Resource types whose rejection is conditional are not rejected for
+		// this configuration.
+		if rejectsAllRunAs(declarer) {
 			continue
 		}
 
-		// Add an instance of the resource type that is not on the allow list to
-		// the bundle configuration.
+		// Add an instance of the resource type to the bundle configuration.
 		nv, err := dyn.SetByPath(v, dyn.NewPath(dyn.Key("resources"), dyn.Key(rt)), dyn.V(map[string]dyn.Value{
 			"foo": dyn.V(map[string]dyn.Value{
 				"name": dyn.V("bar"),

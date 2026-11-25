@@ -42,6 +42,10 @@ func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClie
 	return true, nil
 }
 
+func (*QualityMonitor) RunAsSupport() RunAsSupport {
+	return RunAsRejected
+}
+
 func (*QualityMonitor) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "quality_monitor",

@@ -91,6 +91,10 @@ func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name st
 	return true, nil
 }
 
+func (*App) RunAsSupport() RunAsSupport {
+	return RunAsRejected
+}
+
 func (*App) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "app",

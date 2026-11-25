@@ -38,6 +38,10 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 	return true, nil
 }
 
+func (*MlflowExperiment) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (s *MlflowExperiment) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "experiment",

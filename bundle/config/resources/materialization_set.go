@@ -86,6 +86,10 @@ func (s *MaterializationSet) Exists(ctx context.Context, w *databricks.Workspace
 	return true, nil
 }
 
+func (*MaterializationSet) RunAsSupport() RunAsSupport {
+	return RunAsNotApplicable
+}
+
 func (*MaterializationSet) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "materialization_set",

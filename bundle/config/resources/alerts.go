@@ -2,12 +2,14 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -59,4 +61,27 @@ func (a *Alert) InitializeURL(baseURL url.URL) {
 
 func (a *Alert) GetName() string {
 	return a.DisplayName
+}
+
+func (*Alert) RunAsSupport() RunAsSupport {
+	return RunAsApplied
+}
+
+// The alert run_as identity has no group_name, so an alert can only run as a
+// group if it sets its own run_as.
+func (a *Alert) ValidateRunAs(runAs *jobs.JobRunAs) error {
+	if runAs.GroupName != "" && a.RunAs == nil {
+		return errors.New("alerts do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on each alert")
+	}
+	return nil
+}
+
+func (a *Alert) ApplyRunAs(runAs *jobs.JobRunAs) {
+	if a.RunAs != nil {
+		return
+	}
+	a.RunAs = &sql.AlertV2RunAs{
+		ServicePrincipalName: runAs.ServicePrincipalName,
+		UserName:             runAs.UserName,
+	}
 }

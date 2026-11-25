@@ -3,7 +3,6 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -11,16 +10,13 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type setRunAs struct{}
 
 // This mutator does two things:
 //
-//  1. Sets the run_as field for jobs to the value of the run_as field in the bundle.
+//  1. Sets the run_as field of resources that support it to the value of the run_as field in the bundle.
 //
 //  2. Validates that the bundle run_as configuration is valid in the context of the bundle.
 //     If the run_as user is different from the current deployment user, DABs only
@@ -41,16 +37,6 @@ func reportRunAsNotSupported(resourceType string, location diag.Location, curren
 		Locations: []diag.Location{location},
 		Severity:  diag.Error,
 	}}
-}
-
-// Resource groups (by plural name) whose API does not support a run_as identity
-// different from the deploying user. Dashboards are not listed because only those
-// with embed_credentials set are affected; validateRunAs checks them individually.
-var runAsUnsupportedResources = []string{
-	"model_serving_endpoints",
-	"quality_monitors",
-	"data_quality_monitors",
-	"apps",
 }
 
 func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
@@ -85,27 +71,34 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 
 	if runAs.GroupName != "" {
 		identity = fmt.Sprintf("group %q", runAs.GroupName)
-		for _, alert := range b.Config.Resources.Alerts {
-			if alert.RunAs == nil {
-				return diag.Errorf("alerts do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on each alert")
+	}
+
+	for _, group := range b.Config.Resources.AllResources() {
+		for _, r := range group.Resources {
+			if validator, ok := r.(resources.RunAsValidator); ok {
+				if err := validator.ValidateRunAs(runAs); err != nil {
+					return diag.FromErr(err)
+				}
 			}
 		}
 	}
 
-	// Errors are reported in AllResources order. Dashboards are checked inside
-	// the loop to keep their place in that order.
+	// Errors are reported in AllResources order.
 	for _, group := range b.Config.Resources.AllResources() {
 		resourceType := group.Description.PluralName
+		declarer, _ := config.ResourceTypeAs[resources.RunAsDeclarer](resourceType)
+		if declarer.RunAsSupport() != resources.RunAsRejected {
+			continue
+		}
 
-		// Dashboards only reject run_as when embed_credentials is set, so check each one.
-		if resourceType == "dashboards" {
-			for key, dashboard := range b.Config.Resources.Dashboards {
-				if !dashboard.EmbedCredentials {
+		if rejecter, ok := declarer.(resources.RunAsConditionalRejecter); ok {
+			for key, r := range group.Resources {
+				if !r.(resources.RunAsConditionalRejecter).RejectsRunAs() {
 					continue
 				}
 				diags = diags.Extend(reportRunAsNotSupported(
-					"dashboards with embed_credentials set to true",
-					b.Config.GetLocationOf(structpath.NewPath(nil, "resources", "dashboards", key)),
+					rejecter.RunAsRejectedSubject(),
+					b.Config.GetLocationOf(structpath.NewPath(nil, "resources", resourceType, key)),
 					b.Config.Workspace.CurrentUser.UserName,
 					identity,
 				))
@@ -113,7 +106,7 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 			continue
 		}
 
-		if len(group.Resources) == 0 || !slices.Contains(runAsUnsupportedResources, resourceType) {
+		if len(group.Resources) == 0 {
 			continue
 		}
 		diags = diags.Extend(reportRunAsNotSupported(
@@ -127,89 +120,29 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	return diags
 }
 
-func setRunAsForJobs(b *bundle.Bundle) {
-	runAs := b.Config.RunAs
-	if runAs == nil {
-		return
-	}
-
-	for i := range b.Config.Resources.Jobs {
-		job := b.Config.Resources.Jobs[i]
-		if job.RunAs != nil {
-			continue
-		}
-		job.RunAs = &jobs.JobRunAs{
-			GroupName:            runAs.GroupName,
-			ServicePrincipalName: runAs.ServicePrincipalName,
-			UserName:             runAs.UserName,
+func applyRunAs(b *bundle.Bundle) {
+	for _, group := range b.Config.Resources.AllResources() {
+		for _, r := range group.Resources {
+			if receiver, ok := r.(resources.RunAsReceiver); ok {
+				receiver.ApplyRunAs(b.Config.RunAs)
+			}
 		}
 	}
 }
 
-func setRunAsForPipelines(b *bundle.Bundle) {
+func applyLegacyRunAs(b *bundle.Bundle) {
 	runAs := b.Config.RunAs
 	if runAs == nil {
 		return
 	}
 
-	for i := range b.Config.Resources.Pipelines {
-		pipeline := b.Config.Resources.Pipelines[i]
-		if pipeline.RunAs != nil {
-			continue
+	currentUser := b.Config.Workspace.CurrentUser.UserName
+	for _, group := range b.Config.Resources.AllResources() {
+		for _, r := range group.Resources {
+			if receiver, ok := r.(resources.RunAsLegacyReceiver); ok {
+				receiver.ApplyLegacyRunAs(runAs, currentUser)
+			}
 		}
-		pipeline.RunAs = &pipelines.RunAs{
-			GroupName:            runAs.GroupName,
-			ServicePrincipalName: runAs.ServicePrincipalName,
-			UserName:             runAs.UserName,
-		}
-	}
-}
-
-func setRunAsForAlerts(b *bundle.Bundle) {
-	runAs := b.Config.RunAs
-	if runAs == nil {
-		return
-	}
-
-	for i := range b.Config.Resources.Alerts {
-		alert := b.Config.Resources.Alerts[i]
-		if alert.RunAs != nil {
-			continue
-		}
-		alert.RunAs = &sql.AlertV2RunAs{
-			ServicePrincipalName: runAs.ServicePrincipalName,
-			UserName:             runAs.UserName,
-		}
-	}
-}
-
-// Legacy behavior of run_as for SDP pipelines. Available under the experimental.use_run_as_legacy flag.
-// Only available to unblock customers stuck due to breaking changes in https://github.com/databricks/cli/pull/1233
-func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
-	runAs := b.Config.RunAs
-	if runAs == nil {
-		return
-	}
-
-	me := b.Config.Workspace.CurrentUser.UserName
-	// If user deploying the bundle and the one defined in run_as are the same
-	// Do not add IS_OWNER permission. Current user is implied to be an owner in this case.
-	// Otherwise, it will fail due to this bug https://github.com/databricks/terraform-provider-databricks/issues/2407
-	if runAs.UserName == me || runAs.ServicePrincipalName == me {
-		return
-	}
-
-	for i := range b.Config.Resources.Pipelines {
-		pipeline := b.Config.Resources.Pipelines[i]
-		pipeline.Permissions = slices.DeleteFunc(pipeline.Permissions, func(p resources.PipelinePermission) bool {
-			return (runAs.ServicePrincipalName != "" && p.ServicePrincipalName == runAs.ServicePrincipalName) ||
-				(runAs.UserName != "" && p.UserName == runAs.UserName)
-		})
-		pipeline.Permissions = append(pipeline.Permissions, resources.PipelinePermission{
-			Level:                pipelines.PipelinePermissionLevelIsOwner,
-			ServicePrincipalName: runAs.ServicePrincipalName,
-			UserName:             runAs.UserName,
-		})
 	}
 }
 
@@ -231,8 +164,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		if b.Config.Value().Get("run_as").Get("group_name").Kind() != dyn.KindInvalid {
 			return diag.Errorf("run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity")
 		}
-		setPipelineOwnersToRunAsIdentity(b)
-		setRunAsForJobs(b)
+		applyLegacyRunAs(b)
 		return diag.Diagnostics{
 			{
 				Severity:  diag.Warning,
@@ -249,8 +181,6 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diags
 	}
 
-	setRunAsForJobs(b)
-	setRunAsForPipelines(b)
-	setRunAsForAlerts(b)
+	applyRunAs(b)
 	return nil
 }

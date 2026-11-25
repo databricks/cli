@@ -64,6 +64,10 @@ func (m *DataQualityMonitor) Exists(ctx context.Context, w *databricks.Workspace
 	return true, nil
 }
 
+func (*DataQualityMonitor) RunAsSupport() RunAsSupport {
+	return RunAsRejected
+}
+
 func (*DataQualityMonitor) ResourceDescription() ResourceDescription {
 	return ResourceDescription{
 		SingularName:  "data_quality_monitor",
