@@ -3,6 +3,7 @@
 package workspace_entity_tag_assignments
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,18 +19,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "workspace-entity-tag-assignments",
-		Short:   `Manage tag assignments on workspace-scoped objects.`,
-		Long:    `Manage tag assignments on workspace-scoped objects.`,
-		GroupID: "tags",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspace-entity-tag-assignments",
+	Short:   `Manage tag assignments on workspace-scoped objects.`,
+	GroupID: "tags",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage tag assignments on workspace-scoped objects.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateTagAssignment())
@@ -42,8 +47,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-tag-assignment command
@@ -386,17 +389,9 @@ func newUpdateTagAssignment() *cobra.Command {
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
-      commas (no spaces). The field path is relative to the resource object,
-      using a dot (.) to navigate sub-fields (e.g., author.given_name).
-      Specification of elements in sequence or map fields is not allowed, as
-      only the entire collection field can be specified. Field names must
-      exactly match the resource field names.
-
-      A field mask of * indicates full replacement. It’s recommended to
-      always explicitly list the fields being updated and avoid using *
-      wildcards, as it can lead to unintended results if the API changes in the
-      future.`
+    UPDATE_MASK: The comma-separated list of fields to update. Only tag_value can be
+      updated, because the entity type, entity ID and tag key identify the tag
+      assignment.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

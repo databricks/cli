@@ -1,3 +1,7 @@
+provided_id_fields:
+  # UC lowercases the name; remote returns "main.ml.myfeature" for config "main.ml.MyFeature".
+  - field: full_name
+    reason: id_field
 stable_output_fields:
   # name is the last component of full_name, which is immutable, so it cannot change on an
   # in-place update; see the stable_output_fields doc in config.go and ES-2202624.

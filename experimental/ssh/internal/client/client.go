@@ -64,8 +64,12 @@ var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel c
 
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
-// DefaultEnvironmentVersion is the serverless environment version used when --environment-version is not set.
-const DefaultEnvironmentVersion = 4
+// Serverless environment versions used when --environment-version is not set. GPU stays on 4
+// because the standard version 5 and 6 environments ship no torch on GPU.
+const (
+	DefaultCPUEnvironmentVersion = 5
+	DefaultGPUEnvironmentVersion = 4
+)
 
 const (
 	sshServerTaskKey         = "start_ssh_server"
@@ -213,9 +217,11 @@ func (o *ClientOptions) Validate() error {
 // known_hosts conflicts). The environment is folded into the hash because a
 // serverless server bakes in its environment at startup: distinct environments
 // must map to distinct connection names so they don't reuse each other's server.
+// An environmentVersion of 0 stands for the default of the compute type.
 func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, environmentVersion int) string {
 	// The version is hashed even when it is the default, so bumping
-	// DefaultEnvironmentVersion intentionally moves users to a new server.
+	// DefaultCPUEnvironmentVersion or DefaultGPUEnvironmentVersion intentionally
+	// moves users of that compute type to a new server.
 	var hashInput string
 	switch {
 	case baseEnvironment != "":
@@ -223,7 +229,8 @@ func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, en
 	default:
 		// The key keeps a version from hashing like a base environment
 		// whose name is that number.
-		hashInput = host + "\x00environment_version=" + strconv.Itoa(environmentVersion)
+		version := cmp.Or(environmentVersion, defaultEnvironmentVersion(accelerator))
+		hashInput = host + "\x00environment_version=" + strconv.Itoa(version)
 	}
 	h := md5.Sum([]byte(hashInput))
 	hashStr := hex.EncodeToString(h[:4])
@@ -236,6 +243,25 @@ func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, en
 
 func (o *ClientOptions) IsServerlessMode() bool {
 	return o.ClusterID == "" && o.ConnectionName != ""
+}
+
+// submittedEnvironmentVersion returns the serverless environment version the server job is
+// submitted with, or 0 when it sets none: dedicated clusters have no environment, and a custom
+// base environment carries its own version.
+func (o *ClientOptions) submittedEnvironmentVersion() int {
+	if !o.IsServerlessMode() || o.BaseEnvironment != "" {
+		return 0
+	}
+	return cmp.Or(o.EnvironmentVersion, defaultEnvironmentVersion(o.Accelerator))
+}
+
+// defaultEnvironmentVersion returns the serverless environment version used when
+// --environment-version is not set.
+func defaultEnvironmentVersion(accelerator string) int {
+	if accelerator != "" {
+		return DefaultGPUEnvironmentVersion
+	}
+	return DefaultCPUEnvironmentVersion
 }
 
 // SessionIdentifier returns the unique identifier for the session.
@@ -854,7 +880,7 @@ func buildSSHServerSubmitRun(version, secretScopeName, jobNotebookPath, baseEnvi
 		if baseEnvironment != "" {
 			spec.BaseEnvironment = baseEnvironment
 		} else {
-			spec.EnvironmentVersion = strconv.Itoa(cmp.Or(opts.EnvironmentVersion, DefaultEnvironmentVersion))
+			spec.EnvironmentVersion = strconv.Itoa(opts.submittedEnvironmentVersion())
 		}
 		submitRequest.Environments = []jobs.JobEnvironment{
 			{
@@ -1616,6 +1642,7 @@ func buildSshTunnelEvent(opts ClientOptions, outcome connectOutcome) *protos.Ssh
 		ServerStartTimeMs:  outcome.serverStartTimeMs,
 		IsSuccess:          outcome.isSuccess,
 		HasBaseEnvironment: opts.BaseEnvironment != "",
+		EnvironmentVersion: opts.submittedEnvironmentVersion(),
 		HasUsagePolicy:     opts.UsagePolicyID != "",
 		// The connect side can only report that the knob was asked for. Whether any detached
 		// process was there to keep is reported by the server, at teardown.

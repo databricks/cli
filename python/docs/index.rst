@@ -21,6 +21,7 @@ See `Bundle configuration in Python <https://docs.databricks.com/aws/en/dev-tool
    databricks.bundles.database_instances
    databricks.bundles.experiments
    databricks.bundles.external_locations
+   databricks.bundles.feature_specs
    databricks.bundles.features
    databricks.bundles.genie_spaces
    databricks.bundles.instance_pools

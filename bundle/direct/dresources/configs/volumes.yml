@@ -1,8 +1,8 @@
-provided_id_fields:
+parent_id_fields:
   - field: catalog_name
-    reason: id_field
+    reason: parent
   - field: schema_name
-    reason: id_field
+    reason: parent
 recreate_on_changes:
   - field: storage_location
     reason: immutable
@@ -16,3 +16,6 @@ normalize_slash:
   # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
   - field: storage_location
     reason: uc_strips_trailing_slash
+# Assigned by the backend and kept across renames: lets the plan find a volume renamed outside the
+# bundle or by an interrupted deploy (see InternalIDField).
+internal_id_field: volume_id

@@ -12,10 +12,10 @@ trace databricks air images push \
   --schema my-schema \
   --artifact cuda:13.4.1-cudnn-devel-ubuntu26.04
 
-title "inferred region and workspace ID requests\n"
+title "inferred region and workspace ID requests"
 trace print_requests.py --get //api
 
-title "docker commands\n"
+title "docker commands"
 cat "$DOCKER_LOG"
 
 title "missing image is pulled for AIR; destination defaults to source"
@@ -28,6 +28,14 @@ trace databricks air images push -p docker-test -s example/image:v1 --catalog ma
 # Parsing the complete stdout fails if Docker progress or human-readable text leaks into it.
 trace jq -e '{v, data}' "$HOME/result.json"
 
+title "image with WORKDIR warns but is pushed"
+export DOCKER_TEST_MODE=workdir
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
+title "image with WORKDIR / does not warn"
+export DOCKER_TEST_MODE=workdir-root
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
 title "daemon failure must not pull"
 export DOCKER_TEST_MODE=daemon-error
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
@@ -36,12 +44,20 @@ title "inspect failure must not pull"
 export DOCKER_TEST_MODE=inspect-error
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
+title "unreadable image sizes warn but the image is pushed"
+export DOCKER_TEST_MODE=bad-size
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
 title "incompatible local image must not be pushed"
 export DOCKER_TEST_MODE=arm64
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
 title "incompatible pulled image must not be pushed"
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
+
+title "rejected push still links the registry limits"
+export DOCKER_TEST_MODE=push-error
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
 title "pull failure must not be pushed"
 export DOCKER_TEST_MODE=pull-error
@@ -59,5 +75,25 @@ cp "$DOCKER_LOG" "$HOME/docker.before-length.log"
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --artifact "$(cat oversized-artifact.txt)"
 cmp "$DOCKER_LOG" "$HOME/docker.before-length.log"
 
-title "all docker commands\n"
+title "all docker commands"
 cat "$DOCKER_LOG"
+
+title "in a Claude Code session the auth docker configure child adds no install hint"
+# As in a Claude Code tool call, with no session id, so the session throttle
+# can't be what keeps the child quiet. The CI variables would drop the native
+# line in CI only.
+unset_ci_env
+unset CLAUDE_CODE_SESSION_ID
+# A host CLAUDE_CONFIG_DIR would move the plugin lookup away from the isolated HOME.
+unset CLAUDE_CONFIG_DIR
+export CLAUDECODE=1 CLAUDE_CODE_CHILD_SESSION=1
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+cat >> "$HOME/.databrickscfg" <<ENDCFG
+[pat-test]
+host = $DATABRICKS_HOST_ORIG
+token = dapi-test
+auth_type = pat
+ENDCFG
+# The failing child's output is embedded mid-line in the error, where Claude
+# Code can't strip a native line.
+trace musterr databricks air images push -p pat-test -s example/image:v1 --catalog main --schema training

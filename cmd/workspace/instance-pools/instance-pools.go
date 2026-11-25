@@ -3,6 +3,7 @@
 package instance_pools
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,11 +19,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "instance-pools",
-		Short: `Instance Pools API are used to create, edit, delete and list instance pools by using ready-to-use cloud instances which reduces a cluster start and auto-scaling times.`,
-		Long: `Instance Pools API are used to create, edit, delete and list instance pools by
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "instance-pools",
+	Short:   `Instance Pools API are used to create, edit, delete and list instance pools by using ready-to-use cloud instances which reduces a cluster start and auto-scaling times.`,
+	GroupID: "compute",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Instance Pools API are used to create, edit, delete and list instance pools by
   using ready-to-use cloud instances which reduces a cluster start and
   auto-scaling times.
 
@@ -39,14 +45,13 @@ func New() *cobra.Command {
   the same pool for both.
 
   Databricks does not charge DBUs while instances are idle in the pool. Instance
-  provider billing does apply. See pricing.`,
-		GroupID: "compute",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  provider billing does apply. See pricing.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -63,8 +68,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create command
@@ -88,7 +91,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: azure_attributes
 	// TODO: map via StringToStringVar: custom_tags
 	// TODO: complex arg: disk_spec
-	cmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	cmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, the instances in this pool will dynamically acquire additional disk space when their Spark workers are running low on disk space.`)
 	// TODO: complex arg: gcp_attributes
 	cmd.Flags().IntVar(&createReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", createReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
 	cmd.Flags().IntVar(&createReq.MaxCapacity, "max-capacity", createReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
@@ -109,10 +112,11 @@ func newCreate() *cobra.Command {
     INSTANCE_POOL_NAME: Pool name requested by the user. Pool name must be unique. Length must be
       between 1 and 100 characters.
     NODE_TYPE_ID: This field encodes, through a single value, the resources available to
-      each of the Spark nodes in this cluster. For example, the Spark nodes can
-      be provisioned and optimized for memory or compute intensive workloads. A
-      list of available node types can be retrieved by using the
-      [clusters/listNodeTypes] API call.
+      each of the Spark nodes in clusters that use this pool. For example, the
+      Spark nodes can be provisioned and optimized for memory or compute
+      intensive workloads. A list of available node types can be retrieved by
+      using the [clusters/listNodeTypes] API call. The node type cannot be
+      changed after the pool is created.
 
       [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes`
 
@@ -302,17 +306,23 @@ func newEdit() *cobra.Command {
 	cmd.Short = `Edit an existing instance pool.`
 	cmd.Long = `Edit an existing instance pool.
 
-  Modifies the configuration of an existing instance pool.
+  Modifies the configuration of an existing instance pool. Settings that are
+  fixed at creation, such as the node type, cannot be changed and the request
+  fails if it attempts to change one. Omitted min_idle_instances,
+  max_capacity and idle_instance_autotermination_minutes are reset to their
+  defaults; omitted custom_tags keep their current value. On Azure, an omitted
+  azure_attributes.capacity_reservation_group is removed.
 
   Arguments:
-    INSTANCE_POOL_ID: Instance pool ID
+    INSTANCE_POOL_ID: Identifier of the instance pool to edit.
     INSTANCE_POOL_NAME: Pool name requested by the user. Pool name must be unique. Length must be
       between 1 and 100 characters.
     NODE_TYPE_ID: This field encodes, through a single value, the resources available to
-      each of the Spark nodes in this cluster. For example, the Spark nodes can
-      be provisioned and optimized for memory or compute intensive workloads. A
-      list of available node types can be retrieved by using the
-      [clusters/listNodeTypes] API call.
+      each of the Spark nodes in clusters that use this pool. For example, the
+      Spark nodes can be provisioned and optimized for memory or compute
+      intensive workloads. A list of available node types can be retrieved by
+      using the [clusters/listNodeTypes] API call. The node type cannot be
+      changed after the pool is created.
 
       [clusters/listNodeTypes]: https://docs.databricks.com/api/workspace/clusters/listnodetypes`
 

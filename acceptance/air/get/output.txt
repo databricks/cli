@@ -1,5 +1,6 @@
 
 === get (text)
+
 >>> [CLI] air get 123
 
 ╭─ Configuration ────────────────────────────────────────────────╮
@@ -21,7 +22,7 @@
 │  Status        ● SUCCESS                                       │
 │  Submitted     2023-11-14 22:13 UTC                            │
 │  Retries       0                                               │
-│  Max Retries   3                                               │
+│  Max Retries   N/A                                             │
 │  Duration      12s                                             │
 │  Experiment    my-exp                                          │
 │  MLflow Run    my-run                                          │
@@ -35,31 +36,45 @@ Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
 MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 
 === get (json)
+
 >>> [CLI] air get 123 -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",
   "data": {
     "run_id": "123",
+    "task_key": null,
     "status": "SUCCESS",
     "started_at": "[TIMESTAMP]",
     "duration_seconds": 12,
     "attempt_number": 0,
     "experiment_name": "my-exp",
     "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
-    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/artifacts/logs/node_0",
+    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/logs",
+    "mlflow_experiment_id": "exp1",
+    "mlflow_run_id": "run1",
     "est_remaining_seconds": null,
-    "est_percent_complete": null
+    "est_percent_complete": null,
+    "user": "user@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": null,
+    "base_environment": null,
+    "max_retries": null,
+    "mlflow_run_name": "my-run",
+    "sweep": null
   }
 }
 
 === invalid run id
+
 >>> [CLI] air get notanumber
 Error: invalid JOB_RUN_ID "notanumber": must be a positive integer
 
 Exit code: 1
 
 === invalid run id (json)
+
 >>> [CLI] air get notanumber -o json
 {
   "v": 1,

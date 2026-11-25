@@ -36,7 +36,7 @@ func TestPoolsCommandShape(t *testing.T) {
 	assert.NoError(t, get.Args(get, []string{})) // id optional: resolved when there's one pool
 	assert.Error(t, get.Args(get, []string{"a", "b"}))
 
-	assert.True(t, hasSubcommand(New(), "pools"))
+	assert.True(t, hasSubcommand(root.NewCommand(t.Context(), Spec), "pools"))
 	assert.False(t, hasSubcommand(newListCommand(), "pools"))
 	assert.False(t, hasSubcommand(newGetCommand(), "pool"))
 }
@@ -160,7 +160,7 @@ func TestListPoolsTextEmpty(t *testing.T) {
 	cmd.SetOut(&buf)
 
 	require.NoError(t, cmd.RunE(cmd, nil))
-	assert.Contains(t, buf.String(), "No GPU pools found.")
+	assert.Contains(t, buf.String(), "No GPU Pools found.")
 }
 
 func TestGetPoolJSON(t *testing.T) {
@@ -264,7 +264,7 @@ func TestGetPoolOmitIDNoPools(t *testing.T) {
 
 	err := cmd.RunE(cmd, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no GPU pools found")
+	assert.Contains(t, err.Error(), "no GPU Pools found")
 }
 
 func TestGetPoolOmitIDMultipleErrors(t *testing.T) {
@@ -334,7 +334,7 @@ func TestGetPoolNotFoundJSON(t *testing.T) {
 	var got errorEnvelope
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, "NOT_FOUND", got.Error.Code)
-	assert.Contains(t, got.Error.Message, `GPU pool "missing" not found`)
+	assert.Contains(t, got.Error.Message, `GPU Pool "missing" not found`)
 }
 
 func TestGetPoolPlain404(t *testing.T) {

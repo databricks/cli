@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class AiClassifyFunctionLabel:
     """
-    :meta private: [EXPERIMENTAL]
-
     One label the input can be classified as.
     """
 
@@ -23,14 +21,14 @@ class AiClassifyFunctionLabel:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The name returned when an input is classified as this label.
+    [Beta] The name returned when an input is classified as this label.
     """
 
     description: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Guidance describing what belongs under this label.
+    [Beta] Guidance describing what belongs under this label.
     """
 
     @classmethod
@@ -48,14 +46,14 @@ class AiClassifyFunctionLabelDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] The name returned when an input is classified as this label.
+    [Beta] The name returned when an input is classified as this label.
     """
 
     description: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Guidance describing what belongs under this label.
+    [Beta] Guidance describing what belongs under this label.
     """
 
 

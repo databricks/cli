@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -36,7 +37,7 @@ func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// Multiple targets means we look for the `default` flag.
 	var defaults []string
 	for name, env := range b.Config.Targets {
-		if env != nil && env.Default {
+		if env != nil && config.IsExplicitlyEnabled(env.Default) {
 			defaults = append(defaults, name)
 		}
 	}

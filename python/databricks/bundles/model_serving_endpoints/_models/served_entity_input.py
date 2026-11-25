@@ -36,6 +36,9 @@ class ServedEntityInput:
     """
 
     entity_version: VariableOrOptional[str] = None
+    """
+    The version of the model in Databricks Model Registry or Unity Catalog to be served, or empty if the entity is a FEATURE_SPEC function.
+    """
 
     environment_vars: VariableOrDict[str] = field(default_factory=dict)
     """
@@ -121,6 +124,9 @@ class ServedEntityInputDict(TypedDict, total=False):
     """
 
     entity_version: VariableOrOptional[str]
+    """
+    The version of the model in Databricks Model Registry or Unity Catalog to be served, or empty if the entity is a FEATURE_SPEC function.
+    """
 
     environment_vars: VariableOrDict[str]
     """

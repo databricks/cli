@@ -1,0 +1,31 @@
+{
+  "action": "update",
+  "changes": {
+    "db_aggregates_enabled": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": true
+    },
+    "db_max_rows": {
+      "action": "update",
+      "old": 100,
+      "new": 500,
+      "remote": 100
+    },
+    "jwt_role_claim_key": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": ".sub"
+    },
+    "openapi_mode": {
+      "action": "skip",
+      "reason": "backend_default",
+      "remote": "OPEN_API_MODE_DISABLED"
+    },
+    "server_timing_enabled": {
+      "action": "skip",
+      "reason": "empty",
+      "remote": false
+    }
+  }
+}

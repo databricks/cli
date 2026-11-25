@@ -14,6 +14,7 @@ resources:
       lifecycle:
         depends_on:
           - resource: a.b.c
+          - resource: jobs.a_job.grants
   # lifecycle is a separate type on job_runs.
   job_runs:
     a_run:

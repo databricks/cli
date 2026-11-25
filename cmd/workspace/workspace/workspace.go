@@ -3,6 +3,7 @@
 package workspace
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,23 +19,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "workspace",
-		Short: `The Workspace API allows you to list, import, export, and delete workspace objects such as notebooks, files, folders, and dashboards.`,
-		Long: `The Workspace API allows you to list, import, export, and delete workspace
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "workspace",
+	Short:   `The Workspace API allows you to list, import, export, and delete workspace objects such as notebooks, files, folders, and dashboards.`,
+	GroupID: "workspace",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `The Workspace API allows you to list, import, export, and delete workspace
   objects such as notebooks, files, folders, and dashboards. Additionally, it
   provides endpoints to manage permissions for any workspace object.
 
   A notebook is a web-based interface to a document that contains runnable code,
-  visualizations, and explanatory text.`,
-		GroupID: "workspace",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  visualizations, and explanatory text.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -52,8 +57,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start delete command
@@ -456,7 +459,7 @@ func newImport() *cobra.Command {
 
 	cmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
+	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content to import.`)
 	cmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported. Supported values: [
   AUTO,
   DBC,
@@ -466,7 +469,7 @@ func newImport() *cobra.Command {
   R_MARKDOWN,
   SOURCE,
 ]`)
-	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL]`)
+	cmd.Flags().Var(&importReq.Language, "language", `The language of the notebook. Supported values: [PYTHON, R, SCALA, SQL]`)
 	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
 
 	cmd.Use = "import PATH"
@@ -558,7 +561,7 @@ func newList() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listLimit int
 
-	cmd.Flags().Int64Var(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
+	cmd.Flags().Int64Var(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `A UTC timestamp in milliseconds since the epoch.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)

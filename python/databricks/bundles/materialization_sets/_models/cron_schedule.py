@@ -20,7 +20,7 @@ class CronSchedule:
     """
     :meta private: [EXPERIMENTAL]
 
-    A cron-based schedule trigger for the materialization pipeline.
+    A cron-based schedule trigger for batch materialization.
     """
 
     cron_expression: VariableOrOptional[str] = None
@@ -36,6 +36,19 @@ class CronSchedule:
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] How the schedule is determined. Defaults to MANUAL when unset.
+    """
+
+    paused: VariableOrOptional[bool] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether automatic materialization is paused. Defaults to `false`.
+    Supported only for materializations in a materialization set.
+    Use the `UpdateMaterializationSet` API to pause or resume the set.
+    
+    Pausing does not cancel running or queued runs. Runs can still be
+    triggered through the `TriggerMaterializationSet` API. Resuming does
+    not submit a run. Creating a paused materialization skips its initial run.
     """
 
     timezone_id: VariableOrOptional[str] = None
@@ -71,6 +84,19 @@ class CronScheduleDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] How the schedule is determined. Defaults to MANUAL when unset.
+    """
+
+    paused: VariableOrOptional[bool]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Whether automatic materialization is paused. Defaults to `false`.
+    Supported only for materializations in a materialization set.
+    Use the `UpdateMaterializationSet` API to pause or resume the set.
+    
+    Pausing does not cancel running or queued runs. Runs can still be
+    triggered through the `TriggerMaterializationSet` API. Resuming does
+    not submit a run. Creating a paused materialization skips its initial run.
     """
 
     timezone_id: VariableOrOptional[str]

@@ -3,6 +3,7 @@
 package grants
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,11 +18,16 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "grants",
-		Short: `In Unity Catalog, data is secure by default.`,
-		Long: `In Unity Catalog, data is secure by default. Initially, users have no access
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "grants",
+	Short:   `In Unity Catalog, data is secure by default.`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `In Unity Catalog, data is secure by default. Initially, users have no access
   to data in a metastore. Access can be granted by either a metastore admin, the
   owner of an object, or the owner of the catalog or schema that contains the
   object. Securable objects in Unity Catalog are hierarchical and privileges are
@@ -30,14 +36,13 @@ func New() *cobra.Command {
   This means that granting a privilege on the catalog automatically grants the
   privilege to all current and future objects within the catalog. Similarly,
   privileges granted on a schema are inherited by all current and future objects
-  within that schema.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  within that schema.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -50,8 +55,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start get command
@@ -87,8 +90,11 @@ func newGet() *cobra.Command {
   indication that the end of results has been reached.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
-    FULL_NAME: Full name of securable.`
+    SECURABLE_TYPE: Type of the securable, such as catalog, schema, table or volume.
+      The value is case-insensitive.
+    FULL_NAME: Full name of the securable. Tables, views, volumes and functions use the
+      three-level name catalog.schema.object; a metastore uses its metastore
+      ID.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -377,7 +383,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
-	cmd.Flags().BoolVar(&updateReq.OmitPermissionsInResponse, "omit-permissions-in-response", updateReq.OmitPermissionsInResponse, `Optional, default false.`)
+	cmd.Flags().BoolVar(&updateReq.OmitPermissionsInResponse, "omit-permissions-in-response", updateReq.OmitPermissionsInResponse, `Whether to omit the privilege assignments from the response.`)
 
 	cmd.Use = "update SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Update permissions.`
@@ -386,8 +392,11 @@ func newUpdate() *cobra.Command {
   Updates the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
-    FULL_NAME: Full name of securable.`
+    SECURABLE_TYPE: Type of the securable, such as catalog, schema, table or volume.
+      The value is case-insensitive.
+    FULL_NAME: Full name of the securable. Tables, views, volumes and functions use the
+      three-level name catalog.schema.object; a metastore uses its metastore
+      ID.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

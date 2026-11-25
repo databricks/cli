@@ -1,17 +1,27 @@
 package configsync
 
 import (
+	"cmp"
 	"context"
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 )
 
 // recoverTelemetry swallows any panic raised while collecting or emitting
@@ -70,6 +80,8 @@ type Stats struct {
 	// asked to sync. Comparing the two classifies a selector miss.
 	StateResourceIDs    *protos.BundleConfigRemoteSyncResourceIds
 	SelectedResourceIDs *protos.BundleConfigRemoteSyncResourceIds
+
+	InGitRepo *bool
 
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
@@ -281,6 +293,89 @@ func (s *Stats) CollectStateIDs(typeAndIDs []string) {
 	s.StateResourceIDs = collectResourceIDs(typeAndIDs)
 }
 
+// WithProfileAuth sets the auth config from an explicitly selected profile when
+// loading the bundle or its target failed before the bundle set its own, so the
+// failure can still be reported. Without the target its workspace is unknown, so
+// nothing is set without a profile or when the profile is not found.
+// Only the profile is used: the bundle config can name other hosts, and
+// telemetry must not be sent there. The config is left for the upload to
+// resolve within its own timeout, and as the upload may be cut off at exit, its
+// auth never refreshes an OAuth token.
+func WithProfileAuth(ctx context.Context, b *bundle.Bundle, profileName, target string) (out context.Context) {
+	out = ctx
+	defer recoverTelemetry(ctx)
+	if cmdctx.HasConfigUsed(ctx) || telemetry.Disabled(ctx) {
+		return ctx
+	}
+	// With the target selected, only the bundle's own auth can have failed, and
+	// auth errors are not reported.
+	if b != nil && b.Config.Bundle.Target != "" {
+		log.Debugf(ctx, "config-remote-sync telemetry skipped: bundle auth failed")
+		return ctx
+	}
+	profileName = cmp.Or(profileName, env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"))
+	if profileName == "" {
+		log.Debugf(ctx, "config-remote-sync telemetry skipped: no profile selected")
+		return ctx
+	}
+	profiles, err := profile.GetProfiler(ctx).LoadProfiles(ctx, profile.WithName(profileName))
+	if err != nil || len(profiles) == 0 {
+		log.Debugf(ctx, "config-remote-sync telemetry skipped: profile %s not found", profileName)
+		return ctx
+	}
+	// As in bundle auth, a profile for another host than the bundle's is rejected,
+	// and so is one for another workspace on the same unified host.
+	if b != nil {
+		host, id := b.Config.Workspace.Host, b.Config.Workspace.WorkspaceID
+		// The target was not merged, so its own workspace is not in the root config yet.
+		if t := b.Config.Targets[selectedTarget(ctx, b, target)]; t != nil && t.Workspace != nil {
+			host, id = cmp.Or(t.Workspace.Host, host), cmp.Or(t.Workspace.WorkspaceID, id)
+		}
+		p := profiles[0]
+		bundleID, profileID := workspaceID(host, id), workspaceID(p.Host, p.WorkspaceID)
+		if host != "" && canonicalHost(host) != canonicalHost(p.Host) || bundleID != "" && profileID != "" && bundleID != profileID {
+			log.Debugf(ctx, "config-remote-sync telemetry skipped: profile %s is for another workspace than the bundle's %s", profileName, host)
+			return ctx
+		}
+	}
+	cfg := (&config.Workspace{Profile: profileName}).Config(ctx)
+	// As for a bundle's own profile, the profile wins over auth env vars, so the
+	// upload goes to the host checked above.
+	cfg.Loaders = databrickscfg.ProfileAuthLoaders
+	cfg.Credentials = auth.CredentialsWithoutRefresh()
+	return cmdctx.SetConfigUsed(ctx, cfg)
+}
+
+// workspaceID returns the explicit workspace ID, else the one in the host URL.
+func workspaceID(host, id string) string {
+	return cmp.Or(id, auth.ExtractHostQueryParams(host).WorkspaceID)
+}
+
+func canonicalHost(host string) string {
+	return (&sdkconfig.Config{Host: host}).CanonicalHostName()
+}
+
+// selectedTarget returns the target loading the bundle selects: the named one,
+// else DATABRICKS_BUNDLE_TARGET, else the only target or the one marked default.
+func selectedTarget(ctx context.Context, b *bundle.Bundle, name string) string {
+	if name == "" {
+		name, _ = bundleenv.Target(ctx)
+	}
+	if name != "" {
+		return name
+	}
+	var defaults []string
+	for n, t := range b.Config.Targets {
+		if len(b.Config.Targets) == 1 || (t != nil && config.IsExplicitlyEnabled(t.Default)) {
+			defaults = append(defaults, n)
+		}
+	}
+	if len(defaults) != 1 {
+		return ""
+	}
+	return defaults[0]
+}
+
 // LogTelemetry emits the BundleConfigRemoteSyncEvent for this run.
 func (s *Stats) LogTelemetry(ctx context.Context) {
 	defer recoverTelemetry(ctx)
@@ -317,6 +412,7 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			StatesAvailableCount:               s.StatesAvailableCount,
 			StateResourceIDs:                   s.StateResourceIDs,
 			SelectedResourceIDs:                s.SelectedResourceIDs,
+			InGitRepo:                          s.InGitRepo,
 			ErrorMessage:                       s.ErrorMessage,
 			ErrorCategory:                      s.ErrorCategory,
 		},

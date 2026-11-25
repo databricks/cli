@@ -91,6 +91,14 @@ tasks:
       - cd codegen && uv run --frozen -m codegen.main --output ..
       # Generated code is fixed and formatted by the global ruff (see ../ruff.toml).
       # `uv tool run`, not `uvx`: the SDK bumper runs this with only `uv` installed.
+      #
+      # Unused imports (F401) are removed in a pass of their own first. In a single
+      # `check --fix` the F401 and I001 (import sort) fixes overlap, and the sort can
+      # run before a statement is trimmed: a long import then gets wrapped with a
+      # trailing comma that survives the trim and is never folded back. Which
+      # statements that hits depends on their neighbours, so adding one import could
+      # rewrap unrelated ones. With F401 first, wrapping depends only on the final line.
+      - uv tool run ruff@0.15.17 check --fix --select F401 databricks databricks_tests || true
       - uv tool run ruff@0.15.17 check --fix databricks databricks_tests || true
       - uv tool run ruff@0.15.17 format
 

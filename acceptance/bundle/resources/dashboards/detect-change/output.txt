@@ -1,5 +1,6 @@
 
 === Check summary before deployment -- should not have id but should have modified_status=created
+
 >>> [CLI] bundle summary --output json
 {
   "display_name": "test-dashboard-[UNIQUE_NAME]",
@@ -17,6 +18,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert that the dashboard exists at the expected path and is, indeed, a dashboard:
+
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json
 {
   "object_type": "DASHBOARD",
@@ -24,6 +26,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Check summary again -- should have id but no modified_status
+
 >>> [CLI] bundle summary --output json
 
 >>> cat out.summary.json
@@ -38,7 +41,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
-=== Load the dashboard by its ID and confirm its display name: {
+=== Load the dashboard by its ID and confirm its display name: 
+{
   "display_name": "test-dashboard-[UNIQUE_NAME]",
   "page_display_name": "New Page"
 }
@@ -49,6 +53,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === Try to redeploy the bundle and confirm that the out of band modification is detected:
+
 >>> [CLI] bundle plan
 Warning: dashboard "file_reference" has been modified remotely
   at resources.dashboards.file_reference
@@ -100,6 +105,7 @@ The remote modifications will be lost.
 Exit code: 1
 
 === Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored:
+
 >>> errcode [CLI] bundle deploy --force
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated dashboards.file_reference

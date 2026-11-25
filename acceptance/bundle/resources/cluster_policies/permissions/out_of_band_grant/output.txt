@@ -7,10 +7,12 @@ Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan is a no-op immediately after deploy
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Grant an extra principal out of band
+
 >>> [CLI] cluster-policies set-permissions [TEST_CLUSTER_POLICY_ID] --json {"access_control_list":[{"group_name":"users","permission_level":"CAN_USE"},{"user_name":"intruder@example.com","permission_level":"CAN_USE"}]}
 {
   "access_control_list": [
@@ -39,12 +41,14 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 }
 
 === Plan detects the permission drift
+
 >>> [CLI] bundle plan
 update cluster_policies.test_cluster_policy.permissions
 
 Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 === Redeploy reconciles the ACL back to the configured grants
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_drift/default/files...
 Updated cluster_policies.test_cluster_policy.permissions
@@ -66,6 +70,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === Plan is a no-op again
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

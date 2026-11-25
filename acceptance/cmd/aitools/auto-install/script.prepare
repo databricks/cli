@@ -1,0 +1,73 @@
+# auto_install_state prints the persisted auto-install state.
+auto_install_state() {
+    local path="${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
+    if [ -f "$path" ]; then cat "$path"; else echo "(no auto-install state)"; fi
+}
+
+# The host's own CI flag or opt-out would change every case. CI detection also
+# reads the providers' own variables (the SDK's useragent.CiCdProvider list).
+unset CI DATABRICKS_AITOOLS_AUTO_INSTALL GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF_BUILD CIRCLECI     TRAVIS BITBUCKET_BUILD_NUMBER PROJECT_ID BUILD_ID PROJECT_NUMBER LOCATION CODEBUILD_BUILD_ARN TFC_RUN_ID
+# Telemetry is printed by print_telemetry.
+unset DATABRICKS_CLI_DISABLE_TELEMETRY DATABRICKS_CLI_TELEMETRY_TIMEOUT
+
+# Without a terminal, only a coding agent's call installs: any other run cannot
+# ask first, so it skips (see no-terminal). The cases have no terminal, so they
+# run as a coding agent's call. AGENT is the generic marker; this name gets no
+# agent hint.
+export AGENT=test-agent
+
+# Test binaries are development builds, which never auto-install. Each case
+# names the released version it simulates.
+export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.30.0
+
+# use_home drops the PATH entries below, so resolve these first.
+mkdir_bin=$(command -v mkdir)
+rm_bin=$(command -v rm)
+ls_bin=$(command -v ls)
+
+# use_home HOME [ID] isolates HOME with Cursor's config dir present, and stores
+# the machine id ID (default: treatment-machine, whose holdout bucket is in the
+# treatment arm; holdout-machine is in the holdout), so the arm does not
+# depend on a random id.
+#
+# Auto-install acts only on agents whose config directory exists, and installs
+# plugins through agent CLIs found on PATH. Keep both inside the test: point
+# every agent config dir at the test HOME, and drop every PATH entry holding an
+# agent CLI. Windows also finds a command under each PATHEXT extension.
+use_home() {
+    sethome "$1"
+    unset CLAUDE_CONFIG_DIR PI_CODING_AGENT_DIR GEMINI_CLI_HOME GOOSE_PATH_ROOT
+    export XDG_CONFIG_HOME="${USERPROFILE:-$HOME}/.config"
+    export APPDATA="${USERPROFILE:-$HOME}/AppData/Roaming"
+    local exts="" filtered_path="" dir bin ext keep
+    if [ -n "${PATHEXT:-}" ]; then exts=$(printf '%s' "$PATHEXT" | tr ';' ':'); fi
+    local IFS=:
+    for dir in $PATH; do
+        keep=1
+        for bin in claude cursor-agent codex opencode copilot pi gemini goose kiro; do
+            if [ -x "$dir/$bin" ]; then keep=; fi
+            for ext in $exts; do
+                if [ -f "$dir/$bin$ext" ]; then keep=; fi
+            done
+        done
+        if [ -n "$keep" ]; then filtered_path="$filtered_path:$dir"; fi
+    done
+    export PATH="${filtered_path#:}"
+    "$mkdir_bin" -p "${USERPROFILE:-$HOME}/.cursor" "${USERPROFILE:-$HOME}/.databricks/aitools"
+    echo "{\"id\": \"${2:-treatment-machine}\"}" > "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
+}
+
+# gate true|false [SKILLS] writes a compatibility manifest into the CLI cache
+# with that auto_install flag and skills version SKILLS (default: latest). A
+# fresh cache file replaces the remote manifest.
+gate() {
+    "$mkdir_bin" -p "$DATABRICKS_CACHE_DIR"
+    echo "{\"0.0.0\": {\"appkit\": \"0.84.0\", \"skills\": \"${2:-latest}\", \"auto_install\": $1}}" > "$DATABRICKS_CACHE_DIR/compat-manifest.json"
+}
+
+# cursor_skills lists the skills installed for Cursor.
+cursor_skills() {
+    local dir="${USERPROFILE:-$HOME}/.cursor/skills" skills=""
+    if [ -d "$dir" ]; then skills=$("$ls_bin" "$dir"); fi
+    echo "${skills:-(no skills)}"
+}

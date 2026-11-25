@@ -1,10 +1,15 @@
 
 === list (text)
+
 >>> [CLI] air list
-   Run ID           Experiment  Status     Started              Duration  Progress  MLflow                  User                   Accelerators
-   334747067049496  qwen-train  ● SUCCESS  [TIMESTAMP]       12s         -  qwen-train-001          [USERNAME]  8x H100
+   Run ID                 Experiment              Status     Started              Duration  Progress  MLflow                  User                   Accelerators
+   334747067049496        qwen-train              ● SUCCESS  [TIMESTAMP]       12s         -  qwen-train-001          [USERNAME]  8x H100
+   334747067049500        air-byot-multitask-dag  ● SUCCESS  [TIMESTAMP]       20s         -  qwen-train-001          [USERNAME]  1x A10
+   334747067049510 train  train-then-eval         ● SUCCESS  [TIMESTAMP]       40s         -  qwen-train-001          [USERNAME]  1x A10
+   334747067049510 eval   train-then-eval         ● FAILED   [TIMESTAMP]       15s         -  qwen-train-001          [USERNAME]  1x A10
 
 === list (json)
+
 >>> [CLI] air list -o json
 {
   "v": 1,
@@ -13,22 +18,83 @@
     "runs": [
       {
         "run_id": "334747067049496",
+        "task_key": null,
         "run_name": "qwen-train",
         "user": "[USERNAME]",
         "status": "SUCCESS",
         "started_at": "[TIMESTAMP]",
-        "is_sweep": false
+        "is_sweep": false,
+        "experiment_name": "qwen-train",
+        "duration_seconds": 12,
+        "accelerator_type": "GPU_8xH100",
+        "num_accelerators": 8,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049496?o=[WORKSPACE_ID]"
+      },
+      {
+        "run_id": "334747067049500",
+        "task_key": "train",
+        "run_name": "air-byot-multitask-dag",
+        "user": "[USERNAME]",
+        "status": "SUCCESS",
+        "started_at": "[TIMESTAMP]",
+        "is_sweep": false,
+        "experiment_name": "air-byot-multitask-dag",
+        "duration_seconds": 20,
+        "accelerator_type": "GPU_1xA10",
+        "num_accelerators": 1,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049500?o=[WORKSPACE_ID]"
+      },
+      {
+        "run_id": "334747067049510",
+        "task_key": "train",
+        "run_name": "train-then-eval",
+        "user": "[USERNAME]",
+        "status": "SUCCESS",
+        "started_at": "[TIMESTAMP]",
+        "is_sweep": false,
+        "experiment_name": "train-then-eval",
+        "duration_seconds": 40,
+        "accelerator_type": "GPU_1xA10",
+        "num_accelerators": 1,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049510?o=[WORKSPACE_ID]"
+      },
+      {
+        "run_id": "334747067049510",
+        "task_key": "eval",
+        "run_name": "train-then-eval",
+        "user": "[USERNAME]",
+        "status": "FAILED",
+        "started_at": "[TIMESTAMP]",
+        "is_sweep": false,
+        "experiment_name": "train-then-eval",
+        "duration_seconds": 15,
+        "accelerator_type": "GPU_1xA10",
+        "num_accelerators": 1,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049510?o=[WORKSPACE_ID]"
       }
     ]
   }
 }
 
+=== list (json): no matching runs is an empty array
+
+>>> [CLI] air list --filter experiment=no-such-experiment -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "runs": []
+  }
+}
+
 === list --all-status (text, via AiTrainingService index)
+
 >>> [CLI] air list --all-status
    Run ID           Experiment  Status     Started              Duration  Progress  MLflow                  User                   Accelerators
    334747067049496  qwen-train  ● SUCCESS  [TIMESTAMP]       12s         -  qwen-train-001          [USERNAME]  8x H100
 
 === list --all-status (json)
+
 >>> [CLI] air list --all-status -o json
 {
   "v": 1,
@@ -37,12 +103,37 @@
     "runs": [
       {
         "run_id": "334747067049496",
+        "task_key": null,
         "run_name": "qwen-train",
         "user": "[USERNAME]",
         "status": "SUCCESS",
         "started_at": "[TIMESTAMP]",
-        "is_sweep": false
+        "is_sweep": false,
+        "experiment_name": "qwen-train",
+        "duration_seconds": 12,
+        "accelerator_type": "GPU_8xH100",
+        "num_accelerators": 8,
+        "dashboard_url": "[DATABRICKS_URL]/jobs/runs/334747067049496?o=[WORKSPACE_ID]"
       }
     ]
+  }
+}
+
+=== invalid filter (text)
+
+>>> musterr [CLI] air list --filter bogus=1
+Error: unsupported --filter key "bogus": supported keys are accelerator_type, experiment, num_accelerators, user
+
+=== invalid filter (json)
+
+>>> musterr [CLI] air list --filter bogus=1 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "unsupported --filter key \"bogus\": supported keys are accelerator_type, experiment, num_accelerators, user",
+    "retryable": false
   }
 }

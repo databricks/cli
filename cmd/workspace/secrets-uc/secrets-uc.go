@@ -3,6 +3,7 @@
 package secrets_uc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,23 +23,27 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "secrets-uc",
-		Short: `A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).`,
-		Long: `A secret is a Unity Catalog securable object that stores sensitive credential
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "secrets-uc",
+	Short:   `A secret is a Unity Catalog securable object that stores sensitive credential data (such as passwords, tokens, and keys) within a three-level namespace (**catalog_name.schema_name.secret_name**).`,
+	GroupID: "catalog",
+	Build:   buildCommand,
+}
+
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `A secret is a Unity Catalog securable object that stores sensitive credential
   data (such as passwords, tokens, and keys) within a three-level namespace
   (**catalog_name.schema_name.secret_name**).
 
   Secrets can be managed using standard Unity Catalog permissions and are scoped
-  to a schema within a catalog.`,
-		GroupID: "catalog",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+  to a schema within a catalog.`
+	cmd.RunE = root.ReportUnknownSubcommand
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateSecret())
@@ -51,8 +56,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-secret command
@@ -95,11 +98,10 @@ func newCreateSecret() *cobra.Command {
     NAME: The name of the secret, relative to its parent schema.
     CATALOG_NAME: The name of the catalog where the schema and the secret reside.
     SCHEMA_NAME: The name of the schema where the secret resides.
-    VALUE: The secret value to store. This field is input-only and is not returned in
-      responses — use the **effective_value** field (via GetSecret with
-      **include_value** set to true) to read the secret value. The maximum size
-      is 60 KiB (pre-encryption). Accepted content includes passwords, tokens,
-      keys, and other sensitive credential data.`
+    VALUE: The secret value to store, such as a password, token, or key. It is never
+      returned in responses. To read it, call GetSecret with **include_value**
+      set to true and use the **effective_value** field. The maximum size is 60
+      KiB before encryption.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -260,12 +262,17 @@ func newGetSecret() *cobra.Command {
 
   Gets a secret by its three-level (fully qualified) name.
 
-  You must be a metastore admin, the owner of the secret, or have the **MANAGE**
-  privilege on the secret.
+  You must be a metastore admin or the owner of the secret, or have the
+  **MANAGE** privilege on the secret (together with **USE CATALOG** on its
+  catalog and **USE SCHEMA** on its schema), on its schema (together with **USE
+  CATALOG** on its catalog), or on its catalog. Alternatively, you can have the
+  **READ_SECRET**, **WRITE_SECRET**, or **REFERENCE_SECRET** privilege on the
+  secret, its schema, or its catalog, together with **USE CATALOG** on its
+  catalog and **USE SCHEMA** on its schema.
 
-  The secret value isn't returned by default. To retrieve it, you must also have
-  the **READ_SECRET** privilege and set **include_value** to true in the
-  request.
+  The secret value isn't returned by default. To retrieve it, set
+  **include_value** to true in the request; this requires ownership of the
+  secret or the **READ_SECRET** privilege.
 
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the secret (for example,
@@ -340,14 +347,18 @@ func newListSecrets() *cobra.Command {
 	cmd.Short = `List secrets.`
 	cmd.Long = `List secrets.
 
-  Lists secrets in Unity Catalog.
+  Lists the secrets in a schema.
 
-  You must be a metastore admin, the owner of the secret, or have the **MANAGE**
-  privilege on the secret.
+  With **USE CATALOG** on the catalog and **USE SCHEMA** on the schema, the
+  response contains the secrets that you own or hold a privilege on. Metastore
+  admins, principals with the **MANAGE** privilege on the catalog, and
+  principals with the **MANAGE** privilege on the schema together with **USE
+  CATALOG** on the catalog see every secret in the schema.
 
-  Both **catalog_name** and **schema_name** must be specified together to filter
-  secrets within a specific schema. Results are paginated; use the
-  **page_token** field from the response to retrieve subsequent pages.`
+  Secrets are listed within a single schema, so both **catalog_name** and
+  **schema_name** must be specified. Results are paginated; pass the
+  **next_page_token** value from the response as **page_token** to retrieve the
+  next page.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -415,12 +426,19 @@ func newUpdateSecret() *cobra.Command {
 
   Updates an existing secret in Unity Catalog.
 
-  You must be the owner of the secret or a metastore admin. If you are a
-  metastore admin, only the **owner** field can be changed.
+  To change **value**, you must be the owner of the secret, or have the
+  **WRITE_SECRET** privilege on it together with **USE CATALOG** on its catalog
+  and **USE SCHEMA** on its schema. To change **comment** or **expire_time**,
+  you must be the owner or have the **MANAGE** privilege on the secret (together
+  with **USE CATALOG** on its catalog and **USE SCHEMA** on its schema), on its
+  schema (together with **USE CATALOG** on its catalog), or on its catalog. To
+  change **owner**, you must be the owner, a metastore admin, or have the
+  **MANAGE** privilege on the secret (together with **USE CATALOG** on its
+  catalog and **USE SCHEMA** on its schema), on its schema (together with **USE
+  CATALOG** on its catalog), or on its catalog. A metastore admin can change
+  only the **owner** field.
 
-  Use the **update_mask** field to specify which fields to update. Supported
-  updatable fields include **value**, **comment**, **owner**, and
-  **expire_time**.
+  Use the **update_mask** field to specify which fields to update.
 
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the secret (for example,
@@ -434,11 +452,10 @@ func newUpdateSecret() *cobra.Command {
     NAME: The name of the secret, relative to its parent schema.
     CATALOG_NAME: The name of the catalog where the schema and the secret reside.
     SCHEMA_NAME: The name of the schema where the secret resides.
-    VALUE: The secret value to store. This field is input-only and is not returned in
-      responses — use the **effective_value** field (via GetSecret with
-      **include_value** set to true) to read the secret value. The maximum size
-      is 60 KiB (pre-encryption). Accepted content includes passwords, tokens,
-      keys, and other sensitive credential data.`
+    VALUE: The secret value to store, such as a password, token, or key. It is never
+      returned in responses. To read it, call GetSecret with **include_value**
+      set to true and use the **effective_value** field. The maximum size is 60
+      KiB before encryption.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

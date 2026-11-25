@@ -66,11 +66,11 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
       ]
     }
   },
-  "creation_timestamp": [UNIX_TIME_MILLIS][0],
+  "creation_timestamp": [UNIX_TIME_MILLIS],
   "creator": "[USERNAME]",
   "description": "",
   "id": "[UUID]",
-  "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
+  "last_updated_timestamp": [UNIX_TIME_MILLIS],
   "name": "[ORIGINAL_ENDPOINT_ID]",
   "permission_level": "CAN_MANAGE",
   "route_optimized": true,

@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class DeltaTableSource:
     """
-    :meta private: [EXPERIMENTAL]
-
     A Unity Catalog Delta table input source. The function is applied to each row.
     """
 
@@ -23,21 +21,21 @@ class DeltaTableSource:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Name of the column holding the content the function is applied to.
+    [Beta] Name of the column holding the content the function is applied to.
     """
 
     table_name: VariableOr[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Fully qualified three-part name of the source table (catalog.schema.table).
+    [Beta] Fully qualified three-part name of the source table (catalog.schema.table).
     """
 
     merge_key_columns: VariableOrList[str] = field(default_factory=list)
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Columns that together identify a row across incremental runs, so results can
+    [Beta] Columns that together identify a row across incremental runs, so results can
     be matched back to their source rows. When unset, the task derives an
     implicit key from Delta row tracking. If row tracking is also disabled there
     is no stable key, so each run reprocesses the entire source (a full refresh)
@@ -60,21 +58,21 @@ class DeltaTableSourceDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Name of the column holding the content the function is applied to.
+    [Beta] Name of the column holding the content the function is applied to.
     """
 
     table_name: VariableOr[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Fully qualified three-part name of the source table (catalog.schema.table).
+    [Beta] Fully qualified three-part name of the source table (catalog.schema.table).
     """
 
     merge_key_columns: VariableOrList[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Columns that together identify a row across incremental runs, so results can
+    [Beta] Columns that together identify a row across incremental runs, so results can
     be matched back to their source rows. When unset, the task derives an
     implicit key from Delta row tracking. If row tracking is also disabled there
     is no stable key, so each run reprocesses the entire source (a full refresh)

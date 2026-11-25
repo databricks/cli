@@ -12,6 +12,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] cluster-policies delete [POLICY_ID]
 
 === Selecting the unaffected job does not read policies for unselected jobs
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[UNAFFECTED_ID] -o json
 {
   "status": "success",
@@ -29,6 +30,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //policies/clusters/get --get --oneline
 
 === A selected job's policy read error leaves the job unchanged without saving
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[ARRAY_CHANGE_ID] --save -o json
 {
   "status": "partial",
@@ -49,6 +51,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 {"method": "GET", "path": "/api/2.0/policies/clusters/get", "q": {"policy_id": "[POLICY_ID]"}}
 
 === An array replacement leaves the selected job unchanged
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[ARRAY_CHANGE_ID] --save -o json
 {
   "status": "partial",
@@ -65,6 +68,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> diff.py databricks.yml.backup databricks.yml
 
 === A log-storage switch leaves the selected job unchanged
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[LOG_STORAGE_CHANGE_ID] --save -o json
 {
   "status": "partial",
@@ -81,6 +85,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> diff.py databricks.yml.backup databricks.yml
 
 === Switching autoscale to a fixed worker count leaves the selected job unchanged
+
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[WORKER_COUNT_CHANGE_ID] --save -o json
 {
   "status": "partial",
@@ -97,6 +102,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> diff.py databricks.yml.backup databricks.yml
 
 === Unrelated jobs still sync when other jobs depend on the missing policy
+
 >>> [CLI] bundle config-remote-sync --save -o json
 {
   "status": "partial",

@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "workspace": {
+            "type": "integer",
+            "description": "Workspace number",
+            "default": 0
+        }
+    }
+}

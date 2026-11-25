@@ -418,12 +418,12 @@ func TestWaitingSpinnerText(t *testing.T) {
 	assert.Equal(t, "Waiting for GPU capacity...",
 		newStreamer(t, "STATUS: Waiting for GPU capacity", "PENDING", "").waitingSpinnerText())
 
-	// No status message + PENDING -> compute-capacity fallback.
-	assert.Equal(t, waitingForComputeStatus,
+	// No status message + PENDING -> neutral fallback.
+	assert.Equal(t, waitingForWorkloadStatus,
 		newStreamer(t, "", "PENDING", "").waitingSpinnerText())
 
 	for _, state := range []string{"PENDING", "QUEUED", "WAITING_FOR_RETRY", "BLOCKED"} {
-		assert.Equal(t, waitingForComputeStatus,
+		assert.Equal(t, waitingForWorkloadStatus,
 			newStreamer(t, "", "RUNNING", state).waitingSpinnerText(), state)
 	}
 
@@ -434,6 +434,144 @@ func TestWaitingSpinnerText(t *testing.T) {
 		newStreamer(t, "", "RUNNING", "").waitingSpinnerText())
 	assert.Equal(t, "Waiting for run to start (node 0)...",
 		newStreamer(t, "", "TERMINATED", "PENDING").waitingSpinnerText())
+}
+
+func TestStreamBricklensPrintsWaitingStatusWithoutTTY(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	var runGets int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			if runGets < 4 {
+				_, _ = w.Write([]byte(`{"log_records":[]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"log_records":[{"record_id":"a","time_unix_nano":20000000000,"body":"training"}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			runGets++
+			if runGets < 4 {
+				_, _ = w.Write([]byte(`{"run_id":1,"state":{"life_cycle_state":"PENDING"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	// Buffers are not TTYs, so this is the agent/CI case where no spinner renders.
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &stdout, &stderr, "", ""))
+	ok, err := streamBricklensLogs(ctx, newTestWorkspaceClient(t, srv.URL), &stdout,
+		logRequest{runID: 1, attempt: -1, tailLines: -1},
+		logRunStatus{lifeCycleState: "PENDING", startTimeMs: 10_000})
+	require.NoError(t, err)
+	assert.True(t, ok)
+	assert.Equal(t, "Waiting for GPU capacity...\n", stderr.String())
+	assert.Contains(t, stdout.String(), "training")
+}
+
+func TestStreamBricklensJSONEmitsWaitingEvent(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	tests := []struct {
+		name        string
+		outputBody  string
+		wantMessage string
+	}{
+		{"authoritative status message", `{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`, "Waiting for GPU capacity..."},
+		{"fallback message", `{"ai_runtime_task_output":{}}`, waitingForWorkloadStatus},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var runGets int
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case strings.HasSuffix(r.URL.Path, "/logs"):
+					if runGets < 4 {
+						_, _ = w.Write([]byte(`{"log_records":[]}`))
+						return
+					}
+					_, _ = w.Write([]byte(`{"log_records":[{"record_id":"a","time_unix_nano":20000000000,"body":"training"}]}`))
+				case r.URL.Path == "/api/2.2/jobs/runs/get":
+					runGets++
+					if runGets < 4 {
+						_, _ = w.Write([]byte(`{"run_id":1,"state":{"life_cycle_state":"PENDING"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+						return
+					}
+					_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+				case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+					_, _ = w.Write([]byte(tt.outputBody))
+				default:
+					_, _ = w.Write([]byte(`{}`))
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			var stdout, stderr bytes.Buffer
+			ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &stdout, &stderr, "", ""))
+			ok, err := streamBricklensLogs(ctx, newTestWorkspaceClient(t, srv.URL), &stdout,
+				logRequest{runID: 1, attempt: -1, tailLines: -1, jsonOutput: true},
+				logRunStatus{lifeCycleState: "PENDING", startTimeMs: 10_000})
+			require.NoError(t, err)
+			assert.True(t, ok)
+
+			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
+			require.GreaterOrEqual(t, len(lines), 2)
+			var first waitingEvent
+			require.NoError(t, json.Unmarshal([]byte(lines[0]), &first))
+			assert.Equal(t, "WAITING", first.Type)
+			assert.Equal(t, tt.wantMessage, first.Message)
+			assert.Contains(t, lines[len(lines)-1], `"line":"training"`)
+			assert.Equal(t, 1, strings.Count(stdout.String(), `"type":"WAITING"`), "one event per distinct status")
+			assert.Empty(t, stderr.String())
+		})
+	}
+}
+
+func TestStreamBricklensJSONActiveRunWithLogsSkipsWaitingEvent(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	var runGets int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			_, _ = w.Write([]byte(`{"log_records":[{"record_id":"a","time_unix_nano":20000000000,"body":"training"}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			runGets++
+			if runGets < 3 {
+				_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":2,"attempt_number":0}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &stdout, &stderr, "", ""))
+	ok, err := streamBricklensLogs(ctx, newTestWorkspaceClient(t, srv.URL), &stdout,
+		logRequest{runID: 1, attempt: -1, tailLines: -1, jsonOutput: true, boundInitialLogs: true},
+		logRunStatus{lifeCycleState: "RUNNING", startTimeMs: 10_000})
+	require.NoError(t, err)
+	assert.True(t, ok)
+
+	assert.Contains(t, stdout.String(), `"line":"training"`)
+	assert.NotContains(t, stdout.String(), `"type":"WAITING"`, "a run that already has logs is not waiting")
 }
 
 func TestEmitLogLineJSON(t *testing.T) {
@@ -530,6 +668,7 @@ func TestMatchFatalPattern(t *testing.T) {
 func TestEmitNoLogs(t *testing.T) {
 	tests := []struct {
 		name   string
+		req    logRequest
 		status logRunStatus
 		want   string
 	}{
@@ -543,20 +682,56 @@ func TestEmitNoLogs(t *testing.T) {
 			status: logRunStatus{lifeCycleState: "RUNNING"},
 			want:   "No logs available yet for run 7, which is still in state RUNNING\n",
 		},
+		{
+			name:   "latest retry of a terminal run",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", stateMessage: "Out of capacity.", latestAttempt: 2},
+			want:   "No logs available for run 7. Run terminated in state FAILED: Out of capacity. Earlier retries may have logs; pass --retry N (0 through 1) to see them\n",
+		},
+		{
+			name:   "latest retry of a terminal run with one earlier retry",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", latestAttempt: 1},
+			want:   "No logs available for run 7. Run terminated in state FAILED. Earlier retries may have logs; pass --retry 0 to see them\n",
+		},
+		{
+			name:   "latest retry of a running run",
+			req:    logRequest{attempt: -1},
+			status: logRunStatus{lifeCycleState: "RUNNING", latestAttempt: 2},
+			want:   "No logs available yet for run 7, which is still in state RUNNING\n",
+		},
+		{
+			name:   "explicitly requested retry",
+			req:    logRequest{attempt: 2},
+			status: logRunStatus{lifeCycleState: "TERMINATED", resultState: "FAILED", latestAttempt: 2},
+			want:   "No logs available for run 7. Run terminated in state FAILED\n",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var text bytes.Buffer
-			emitNoLogs(&text, logRequest{runID: 7}, tc.status)
+			req := tc.req
+			req.runID = 7
+			emitNoLogs(&text, req, tc.status)
 			assert.Equal(t, tc.want, text.String())
 
+			wantNode := strings.Replace(tc.want, "for run 7", "for node 1 in run 7", 1)
+			nodeReq := req
+			nodeReq.node = 1
+			nodeReq.nodeSet = true
+
+			var nodeText bytes.Buffer
+			emitNoLogs(&nodeText, nodeReq, tc.status)
+			assert.Equal(t, wantNode, nodeText.String())
+
 			var jsonBuf bytes.Buffer
-			emitNoLogs(&jsonBuf, logRequest{runID: 7, node: 1, jsonOutput: true}, tc.status)
+			nodeReq.jsonOutput = true
+			emitNoLogs(&jsonBuf, nodeReq, tc.status)
 			var ev logEvent
 			require.NoError(t, json.Unmarshal(jsonBuf.Bytes(), &ev))
 			assert.Equal(t, "ERROR", ev.Type)
 			assert.Equal(t, 1, ev.Node)
-			assert.Equal(t, strings.TrimRight(tc.want, "\n"), ev.Line)
+			assert.Equal(t, strings.TrimRight(wantNode, "\n"), ev.Line)
 		})
 	}
 }
@@ -734,7 +909,9 @@ func TestStreamBricklensActiveEmptyProbesMLflow(t *testing.T) {
 		logRequest{runID: 123, attempt: -1, tailLines: -1, jsonOutput: true},
 		logRunStatus{lifeCycleState: "RUNNING"})
 	require.ErrorIs(t, err, errBricklensFeatureDisabled)
-	assert.Empty(t, out.String())
+	// Only the WAITING status event precedes the fallback; no log lines.
+	assert.NotContains(t, out.String(), `"line"`)
+	assert.Contains(t, out.String(), `"type":"WAITING"`)
 }
 
 func TestFetchLogsFallsBackToMLflowWhenBricklensEmpty(t *testing.T) {

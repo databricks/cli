@@ -3,6 +3,7 @@
 package disaster_recovery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -20,18 +21,22 @@ import (
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
 
-func New() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "disaster-recovery",
-		Short:   `Manage disaster recovery configurations and execute failover operations.`,
-		Long:    `Manage disaster recovery configurations and execute failover operations.`,
-		GroupID: "disasterrecovery",
-		RunE:    root.ReportUnknownSubcommand,
-	}
+// Spec declares the command for this service.
+var Spec = root.CommandSpec{
+	Use:     "disaster-recovery",
+	Short:   `Manage disaster recovery configurations and execute failover operations.`,
+	GroupID: "disasterrecovery",
+	Build:   buildCommand,
+}
 
-	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "GA"
-	cmd.Annotations["launch_stage_display"] = "GA"
+func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.Long = `Manage disaster recovery configurations and execute failover operations.`
+	cmd.RunE = root.ReportUnknownSubcommand
+
+	cmd.Annotations = map[string]string{
+		"launch_stage":         "GA",
+		"launch_stage_display": "GA",
+	}
 
 	// Add methods
 	cmd.AddCommand(newCreateFailoverGroup())
@@ -49,8 +54,6 @@ func New() *cobra.Command {
 	for _, fn := range cmdOverrides {
 		fn(cmd)
 	}
-
-	return cmd
 }
 
 // start create-failover-group command
@@ -80,16 +83,23 @@ func newCreateFailoverGroup() *cobra.Command {
 	cmd.Short = `Create a Failover Group.`
 	cmd.Long = `Create a Failover Group.
 
-  Create a new failover group.
+  Create a failover group. The group starts in the CREATING state and moves to
+  INITIAL_REPLICATION while the first replication cycle copies all in-scope data
+  to the secondary region; failover becomes available once the group is ACTIVE.
+  Set validate_only to check the request without creating anything.
 
   Arguments:
     PARENT: The parent resource. Format: accounts/{account_id}.
     FAILOVER_GROUP_ID: Client-provided identifier for the failover group. Used to construct the
       resource name as {parent}/failover-groups/{failover_group_id}.
-    REGIONS: List of all regions participating in this failover group.
-    WORKSPACE_SETS: Workspace sets, each containing workspaces that replicate to each other.
+    REGIONS: The two cloud regions that participate in this failover group, the primary
+      and the secondary. Each workspace set contains one workspace in each
+      region.
+    WORKSPACE_SETS: Workspace sets, each containing workspaces that replicate to each other. A
+      failover group currently supports exactly one workspace set.
     INITIAL_PRIMARY_REGION: Initial primary region. Used only in Create requests to set the starting
-      primary region. Not returned in responses.`
+      primary region, and must be one of the regions in regions. Not returned
+      in responses.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -278,7 +288,8 @@ func newDeleteFailoverGroup() *cobra.Command {
 	cmd.Short = `Delete a Failover Group.`
 	cmd.Long = `Delete a Failover Group.
 
-  Delete a failover group.
+  Delete a failover group. Deleting stops replication for the group; stable URLs
+  linked to it are detached but not deleted.
 
   Arguments:
     NAME: The fully qualified resource name of the failover group to delete. Format:
@@ -401,7 +412,15 @@ func newFailoverFailoverGroup() *cobra.Command {
 	cmd.Short = `Failover a Failover Group to a new primary region.`
 	cmd.Long = `Failover a Failover Group to a new primary region.
 
-  Initiate a failover to a new primary region.
+  Initiate a failover that makes target_primary_region the primary region.
+  Stable URLs linked to the group are pointed at the new primary workspace,
+  replication is reversed so that the former primary becomes the secondary, and
+  the group moves through FAILING_OVER to INITIAL_REPLICATION until it has a
+  replication point in the new direction. The group must be ACTIVE; repeating
+  the request while it is FAILING_OVER is accepted. To fail back, repeat the
+  request with the former primary region as the target once the group is ACTIVE
+  again. In an unplanned failover, data written after the replication point can
+  be lost.
 
   Arguments:
     NAME: The fully qualified resource name of the failover group to failover.
@@ -409,7 +428,7 @@ func newFailoverFailoverGroup() *cobra.Command {
     TARGET_PRIMARY_REGION: The target primary region. Must be one of the participating regions and
       different from the current effective_primary_region. Serves as an
       idempotency check.
-    FAILOVER_TYPE: The type of failover to perform.
+    FAILOVER_TYPE: The type of failover to perform. FORCED is the only supported type.
       Supported values: [FORCED]`
 
 	cmd.Annotations = make(map[string]string)
@@ -495,7 +514,7 @@ func newGetFailoverGroup() *cobra.Command {
 	cmd.Short = `Get a Failover Group.`
 	cmd.Long = `Get a Failover Group.
 
-  Get a failover group.
+  Get a failover group, including its current state and replication point.
 
   Arguments:
     NAME: The fully qualified resource name of the failover group. Format:
@@ -628,10 +647,11 @@ func newListFailoverGroups() *cobra.Command {
 	cmd.Short = `List Failover Groups.`
 	cmd.Long = `List Failover Groups.
 
-  List failover groups.
+  List the failover groups in an account.
 
-  List entries are abbreviated: state and replication_point are not
-  populated. Call GetFailoverGroup to retrieve the full resource.
+  List entries are abbreviated: state, replication_point and
+  unity_catalog_assets.location_mappings are not populated. Call
+  GetFailoverGroup to retrieve the full resource.
 
   Arguments:
     PARENT: The parent resource. Format: accounts/{account_id}.`
@@ -777,16 +797,27 @@ func newUpdateFailoverGroup() *cobra.Command {
 	cmd.Short = `Update a Failover Group.`
 	cmd.Long = `Update a Failover Group.
 
-  Update a failover group.
+  Update a failover group. Only the fields named in update_mask change. You can
+  turn workspace asset replication on or off, attach or detach a stable URL, and
+  change the Unity Catalog catalogs and location mappings; the regions, the
+  workspace set name and the workspace IDs cannot be changed. Updates are
+  rejected while a create, failover or delete is in progress, and after a create
+  or delete has failed.
 
   Arguments:
     NAME: Fully qualified resource name in the format
       accounts/{account_id}/failover-groups/{failover_group_id}.
-    UPDATE_MASK: Comma-separated list of fields to update.
-    REGIONS: List of all regions participating in this failover group.
-    WORKSPACE_SETS: Workspace sets, each containing workspaces that replicate to each other.
+    UPDATE_MASK: Comma-separated list of the fields to update. The supported paths are
+      workspace_sets, unity_catalog_assets, unity_catalog_assets.catalogs
+      and unity_catalog_assets.location_mappings; any other path is rejected.
+    REGIONS: The two cloud regions that participate in this failover group, the primary
+      and the secondary. Each workspace set contains one workspace in each
+      region.
+    WORKSPACE_SETS: Workspace sets, each containing workspaces that replicate to each other. A
+      failover group currently supports exactly one workspace set.
     INITIAL_PRIMARY_REGION: Initial primary region. Used only in Create requests to set the starting
-      primary region. Not returned in responses.`
+      primary region, and must be one of the regions in regions. Not returned
+      in responses.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

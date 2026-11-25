@@ -34,6 +34,7 @@ npm-shrinkwrap.json
 package-lock.json
 
 === Npm accepts a shrinkwrap template with a pnpm lockfile
+
 >>> [CLI] apps init --name shrinkwrap-app --template shrinkwrap-template --package-manager npm --skip-install
 ✔ Creating project
 

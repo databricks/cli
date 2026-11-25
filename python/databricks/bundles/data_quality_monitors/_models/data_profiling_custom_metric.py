@@ -33,18 +33,22 @@ class DataProfilingCustomMetric:
 
     output_data_type: VariableOr[str]
     """
-    The output type of the custom metric.
+    Specifies the Spark SQL data type of the metric value, either as a plain type name or as a JSON-encoded
+    StructField.
     """
 
     type: VariableOr[DataProfilingCustomMetricType]
     """
-    The type of the custom metric.
+    The type of the custom metric. `DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE` metrics depend only on the
+    columns of the input table, `DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED` metrics depend only on previously
+    computed aggregate metrics, and `DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT` metrics depend on previously computed
+    aggregate or derived metrics.
     """
 
     input_columns: VariableOrList[str] = field(default_factory=list)
     """
     A list of column names in the input table the metric should be computed for.
-    Can use ``":table"`` to indicate that the metric needs information from multiple columns.
+    Can use `":table"` to indicate that the metric needs information from multiple columns.
     """
 
     @classmethod
@@ -70,18 +74,22 @@ class DataProfilingCustomMetricDict(TypedDict, total=False):
 
     output_data_type: VariableOr[str]
     """
-    The output type of the custom metric.
+    Specifies the Spark SQL data type of the metric value, either as a plain type name or as a JSON-encoded
+    StructField.
     """
 
     type: VariableOr[DataProfilingCustomMetricTypeParam]
     """
-    The type of the custom metric.
+    The type of the custom metric. `DATA_PROFILING_CUSTOM_METRIC_TYPE_AGGREGATE` metrics depend only on the
+    columns of the input table, `DATA_PROFILING_CUSTOM_METRIC_TYPE_DERIVED` metrics depend only on previously
+    computed aggregate metrics, and `DATA_PROFILING_CUSTOM_METRIC_TYPE_DRIFT` metrics depend on previously computed
+    aggregate or derived metrics.
     """
 
     input_columns: VariableOrList[str]
     """
     A list of column names in the input table the metric should be computed for.
-    Can use ``":table"`` to indicate that the metric needs information from multiple columns.
+    Can use `":table"` to indicate that the metric needs information from multiple columns.
     """
 
 

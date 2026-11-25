@@ -1,0 +1,99 @@
+
+=== Deploy two schemas, and a model and a secret in the shared one, named after the app schema
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created registered_models.model1
+Created schemas.app
+Created schemas.shared
+Created secrets.secret1
+Files: 2 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the app schema. The model and the secret stay in the shared schema, so only their own name changes
+
+>>> update_file.py databricks.yml test_app_ test_app_renamed_
+
+>>> [CLI] bundle plan
+update registered_models.model1
+update schemas.app
+recreate secrets.secret1
+
+Plan: 1 to add, 2 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Recreated secrets.secret1
+Updated registered_models.model1
+Updated schemas.app
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 2 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py --sort //unity-catalog
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/secrets/main.test_shared_[UNIQUE_NAME].test_app_[UNIQUE_NAME]"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/models/main.test_shared_[UNIQUE_NAME].test_app_[UNIQUE_NAME]",
+  "body": {
+    "catalog_name": "main",
+    "comment": "",
+    "new_name": "test_app_renamed_[UNIQUE_NAME]",
+    "schema_name": "test_shared_[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/schemas/main.test_app_[UNIQUE_NAME]",
+  "body": {
+    "comment": "",
+    "custom_max_retention_hours": 0,
+    "new_name": "test_app_renamed_[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/secrets",
+  "body": {
+    "catalog_name": "main",
+    "name": "test_app_renamed_[UNIQUE_NAME]",
+    "schema_name": "test_shared_[UNIQUE_NAME]",
+    "value": "secret-value"
+  }
+}
+
+=== The old model and secret are gone; the new ones are in the shared schema
+old model is gone
+old secret is gone
+
+>>> [CLI] registered-models get main.test_shared_[UNIQUE_NAME].test_app_renamed_[UNIQUE_NAME]
+{
+  "full_name": "main.test_shared_[UNIQUE_NAME].test_app_renamed_[UNIQUE_NAME]"
+}
+
+>>> [CLI] secrets-uc get-secret main.test_shared_[UNIQUE_NAME].test_app_renamed_[UNIQUE_NAME]
+{
+  "full_name": "main.test_shared_[UNIQUE_NAME].test_app_renamed_[UNIQUE_NAME]"
+}
+
+=== Redeploy is a no-op
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.model1
+  delete resources.schemas.app
+  delete resources.schemas.shared
+  delete resources.secrets.secret1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.app
+  delete resources.schemas.shared
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 4 deleted

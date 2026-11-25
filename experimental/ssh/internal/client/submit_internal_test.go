@@ -35,17 +35,32 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 
 	t.Run("serverless environment version", func(t *testing.T) {
 		for _, tt := range []struct {
-			version int
-			want    string
+			name        string
+			accelerator string
+			version     int
+			proxyMode   bool
+			want        string
 		}{
-			{0, "4"},
-			{5, "5"},
+			{name: "CPU default", want: "5"},
+			{name: "CPU explicit", version: 4, want: "4"},
+			{name: "GPU default", accelerator: "GPU_1xA10", want: "4"},
+			{name: "GPU explicit", accelerator: "GPU_1xA10", version: 5, want: "5"},
+			// A persisted IDE ProxyCommand carries --accelerator but no --environment-version.
+			{name: "GPU default in proxy mode", accelerator: "GPU_1xA10", proxyMode: true, want: "4"},
 		} {
-			opts := ClientOptions{ConnectionName: "conn", ServerTimeout: time.Hour, EnvironmentVersion: tt.version}
-			got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
+			t.Run(tt.name, func(t *testing.T) {
+				opts := ClientOptions{
+					ConnectionName:     "conn",
+					Accelerator:        tt.accelerator,
+					ProxyMode:          tt.proxyMode,
+					ServerTimeout:      time.Hour,
+					EnvironmentVersion: tt.version,
+				}
+				got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
 
-			require.Len(t, got.Environments, 1)
-			assert.Equal(t, tt.want, got.Environments[0].Spec.EnvironmentVersion)
+				require.Len(t, got.Environments, 1)
+				assert.Equal(t, tt.want, got.Environments[0].Spec.EnvironmentVersion)
+			})
 		}
 	})
 

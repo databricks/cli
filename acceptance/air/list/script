@@ -4,8 +4,17 @@ trace $CLI air list
 title "list (json)"
 trace $CLI air list -o json
 
+title "list (json): no matching runs is an empty array"
+trace $CLI air list --filter 'experiment=no-such-experiment' -o json
+
 title "list --all-status (text, via AiTrainingService index)"
 trace $CLI air list --all-status
 
 title "list --all-status (json)"
 trace $CLI air list --all-status -o json
+
+title "invalid filter (text)"
+trace musterr $CLI air list --filter bogus=1
+
+title "invalid filter (json)"
+trace musterr $CLI air list --filter bogus=1 -o json

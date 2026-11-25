@@ -8,6 +8,7 @@ azure_environment = USGOVERNMENT
 custom_key = my-custom-value
 
 === Run auth login (no --configure-cluster or --configure-serverless)
+
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile DEFAULT
 Profile DEFAULT was successfully saved
 

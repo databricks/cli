@@ -1,0 +1,142 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.no_run_as
+Created jobs.pending_add
+Created jobs.removed_run_as
+Created jobs.run_as_to_owner
+Created jobs.transferred_owner
+Created jobs.user_to_creator
+Created jobs.user_to_sp
+Created jobs.user_to_user
+Files: 2 uploaded, 0 deleted
+Resources: 8 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove run_as from config and deploy
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated jobs.removed_run_as
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 7 unchanged
+
+>>> [CLI] jobs get [REMOVED_RUN_AS_ID]
+{
+  "user_name": "first-user@example.com"
+}
+
+=== Add run_as to config without deploying
+
+=== Change run_as remotely
+
+>>> [CLI] jobs set-permissions [TRANSFERRED_OWNER_ID] --json {"access_control_list": [{"user_name": "new-owner@example.com", "permission_level": "IS_OWNER"}]}
+
+=== Detect and save changes
+
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 7 resource(s):
+
+Resource: resources.jobs.no_run_as
+  run_as: add
+
+Resource: resources.jobs.pending_add
+  run_as.user_name: replace
+
+Resource: resources.jobs.removed_run_as
+  run_as: add
+
+Resource: resources.jobs.transferred_owner
+  permissions: add
+
+Resource: resources.jobs.user_to_creator
+  run_as.user_name: replace
+
+Resource: resources.jobs.user_to_sp
+  run_as.service_principal_name: add
+  run_as.user_name: remove
+
+Resource: resources.jobs.user_to_user
+  run_as.user_name: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -12,4 +12,6 @@
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+
++      run_as:
++        service_principal_name: [UUID]
+     # The remote run_as names the owner, which is what no run_as means.
+     run_as_to_owner:
+@@ -28,4 +30,7 @@
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+
++      permissions:
++        - level: IS_OWNER
++          user_name: new-owner@example.com
+     # run_as is removed from config and deployed; the job keeps it remotely.
+     removed_run_as:
+@@ -36,9 +41,11 @@
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+
++      run_as:
++        user_name: first-user@example.com
+     # run_as is added to config locally and not deployed.
+     pending_add:
+       name: pending-add-[UNIQUE_NAME]
+       run_as:
+-        user_name: local-user@example.com
++        user_name: remote-user@example.com
+       tasks:
+         - task_key: main
+@@ -49,5 +56,5 @@
+       name: user-to-user-[UNIQUE_NAME]
+       run_as:
+-        user_name: first-user@example.com
++        user_name: second-user@example.com
+       tasks:
+         - task_key: main
+@@ -58,5 +65,5 @@
+       name: user-to-creator-[UNIQUE_NAME]
+       run_as:
+-        user_name: first-user@example.com
++        user_name: [USERNAME]
+       tasks:
+         - task_key: main
+@@ -67,5 +74,5 @@
+       name: user-to-sp-[UNIQUE_NAME]
+       run_as:
+-        user_name: first-user@example.com
++        service_principal_name: [UUID]
+       tasks:
+         - task_key: main
+
+=== Second sync is a no-op
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
+=== Plan after sync
+
+>>> [CLI] bundle plan
+create jobs.transferred_owner.permissions
+
+Plan: 1 to add, 0 to change, 0 to delete, 8 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.no_run_as
+  delete resources.jobs.pending_add
+  delete resources.jobs.removed_run_as
+  delete resources.jobs.run_as_to_owner
+  delete resources.jobs.transferred_owner
+  delete resources.jobs.user_to_creator
+  delete resources.jobs.user_to_sp
+  delete resources.jobs.user_to_user
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 8 deleted

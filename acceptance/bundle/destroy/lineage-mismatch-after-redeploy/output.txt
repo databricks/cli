@@ -21,12 +21,13 @@ Destroy: 1 deleted
 
 === and leaves the bundle state dir clean, with no empty scaffolding directories:
 
->>> find .databricks -name terraform -prune -o -print
+>>> find.py --dirs ^\.databricks(/|$)
 .databricks
 .databricks/.gitignore
 .databricks/bundle
 .databricks/bundle/default
 .databricks/bundle/default/deployment.json
+.databricks/bundle/default/released-deploy-locks.json
 
 === Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -142,15 +143,15 @@ func TestApplyDeployFlags(t *testing.T) {
 			name: "forceLock ignored when force-lock flag unchanged",
 			opts: bundleDeployOptions{forceLock: true},
 			assertion: func(t *testing.T, b *bundle.Bundle) {
-				assert.False(t, b.Config.Bundle.Deployment.Lock.Force)
+				assert.Nil(t, b.Config.Bundle.Deployment.Lock.Force)
 			},
 		},
 		{
 			name:      "lock.force from databricks.yml survives an unset force-lock flag",
 			opts:      bundleDeployOptions{},
-			configure: func(b *bundle.Bundle) { b.Config.Bundle.Deployment.Lock.Force = true },
+			configure: func(b *bundle.Bundle) { b.Config.Bundle.Deployment.Lock.Force = new(true) },
 			assertion: func(t *testing.T, b *bundle.Bundle) {
-				assert.True(t, b.Config.Bundle.Deployment.Lock.Force)
+				assert.True(t, config.IsExplicitlyEnabled(b.Config.Bundle.Deployment.Lock.Force))
 			},
 		},
 		{
@@ -158,7 +159,7 @@ func TestApplyDeployFlags(t *testing.T) {
 			args: []string{"--force-lock"},
 			opts: bundleDeployOptions{forceLock: true},
 			assertion: func(t *testing.T, b *bundle.Bundle) {
-				assert.True(t, b.Config.Bundle.Deployment.Lock.Force)
+				assert.True(t, config.IsExplicitlyEnabled(b.Config.Bundle.Deployment.Lock.Force))
 			},
 		},
 		{
@@ -187,14 +188,14 @@ func TestApplyDeployFlags(t *testing.T) {
 		{
 			name:      "failOnActiveRuns ignored when flag unchanged",
 			opts:      bundleDeployOptions{failOnActiveRuns: true},
-			assertion: func(t *testing.T, b *bundle.Bundle) { assert.False(t, b.Config.Bundle.Deployment.FailOnActiveRuns) },
+			assertion: func(t *testing.T, b *bundle.Bundle) { assert.Nil(t, b.Config.Bundle.Deployment.FailOnActiveRuns) },
 		},
 		{
 			name: "failOnActiveRuns applies when --fail-on-active-runs is set",
 			args: []string{"--fail-on-active-runs"},
 			opts: bundleDeployOptions{failOnActiveRuns: true},
 			assertion: func(t *testing.T, b *bundle.Bundle) {
-				assert.True(t, b.Config.Bundle.Deployment.FailOnActiveRuns)
+				assert.True(t, config.IsExplicitlyEnabled(b.Config.Bundle.Deployment.FailOnActiveRuns))
 			},
 		},
 	}

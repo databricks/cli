@@ -1,0 +1,33 @@
+
+=== The create request times out but the project was created: deploy uses the project
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --get //postgres/projects
+POST /api/2.0/postgres/projects
+GET /api/2.0/postgres/projects/test-pg-proj
+GET /api/2.0/postgres/projects/test-pg-proj/branches/production
+
+=== The project cannot be read after the create request times out: deploy fails with the create error
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Warn: deploying resources.postgres_projects.my_project: checking whether project projects/test-pg-proj was created: Fault injected by test.
+Error: cannot create resources.postgres_projects.my_project: Fault injected by test. (504 DEADLINE_EXCEEDED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects?project_id=test-pg-proj
+HTTP Status: 504 Gateway Timeout
+API error_code: DEADLINE_EXCEEDED
+API message: Fault injected by test.
+
+Files: 0 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_requests.py --get //postgres/projects
+POST /api/2.0/postgres/projects
+GET /api/2.0/postgres/projects/test-pg-proj

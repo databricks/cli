@@ -2,13 +2,17 @@ package aitools
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,6 +69,13 @@ func interactiveCtx(t *testing.T) (context.Context, func()) {
 	go drain(test.Stderr)
 
 	return ctx, test.Done
+}
+
+// interactiveCtxWithStderr is a context whose prompts look supported and
+// whose stderr is kept in the returned buffer. Stdin is empty.
+func interactiveCtxWithStderr(t *testing.T) (context.Context, *bytes.Buffer) {
+	var stderr bytes.Buffer
+	return cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(""), io.Discard, &stderr)), &stderr
 }
 
 // --- parseScopeFlag tests ---
@@ -407,6 +418,7 @@ func TestResolveScopeForUpdateNoFlagsBothNonInteractive(t *testing.T) {
 }
 
 func TestResolveScopeForUpdateNoFlagsBothInteractive(t *testing.T) {
+	isolateAgents(t)
 	globalDir, projectDir := setupScopeTest(t)
 	installGlobalState(t, globalDir)
 	installProjectState(t, projectDir)
@@ -426,6 +438,29 @@ func TestResolveScopeForUpdateNoFlagsBothInteractive(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, promptCalled)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
+}
+
+func TestResolveScopeForUpdateNoFlagsBothAgentCaller(t *testing.T) {
+	// Agents run commands in a pseudo-terminal, where prompts look supported
+	// but nobody answers them. An agent caller gets the --scope error, as a
+	// run without a terminal does, instead of the picker.
+	isolateAgents(t, "CLAUDECODE", "1")
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
+	installProjectState(t, projectDir)
+
+	orig := promptUpdateScopeSelection
+	t.Cleanup(func() { promptUpdateScopeSelection = orig })
+	promptUpdateScopeSelection = func(_ context.Context) ([]string, error) {
+		t.Error("update scope picker shown to an agent caller")
+		return nil, assert.AnError
+	}
+
+	ctx, stderr := interactiveCtxWithStderr(t)
+	_, err := resolveScopeForUpdate(ctx, false, false, globalDir, projectDir)
+	require.EqualError(t, err, "skills are installed in both global and project scopes; use --scope=global, --scope=project, or --scope=both to specify which to update")
+	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, classifyInstallError(err))
+	assert.Equal(t, "No prompts shown because a coding agent (claude-code) was detected.\n", stderr.String())
 }
 
 func TestResolveScopeForUpdateNoFlagsNeitherInstalled(t *testing.T) {
@@ -524,6 +559,7 @@ func TestResolveScopeForUninstallNoFlagsBothNonInteractive(t *testing.T) {
 }
 
 func TestResolveScopeForUninstallNoFlagsBothInteractive(t *testing.T) {
+	isolateAgents(t)
 	globalDir, projectDir := setupScopeTest(t)
 	installGlobalState(t, globalDir)
 	installProjectState(t, projectDir)
@@ -543,6 +579,26 @@ func TestResolveScopeForUninstallNoFlagsBothInteractive(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, promptCalled)
 	assert.Equal(t, installer.ScopeProject, scope)
+}
+
+func TestResolveScopeForUninstallNoFlagsBothAgentCaller(t *testing.T) {
+	isolateAgents(t, "CODEX_CI", "1")
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
+	installProjectState(t, projectDir)
+
+	orig := promptUninstallScopeSelection
+	t.Cleanup(func() { promptUninstallScopeSelection = orig })
+	promptUninstallScopeSelection = func(_ context.Context) (string, error) {
+		t.Error("uninstall scope picker shown to an agent caller")
+		return "", assert.AnError
+	}
+
+	ctx, stderr := interactiveCtxWithStderr(t)
+	_, err := resolveScopeForUninstall(ctx, false, false, globalDir, projectDir)
+	require.EqualError(t, err, "skills are installed in both global and project scopes; use --scope=global or --scope=project to specify which to uninstall")
+	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, classifyInstallError(err))
+	assert.Equal(t, "No prompts shown because a coding agent (codex) was detected.\n", stderr.String())
 }
 
 func TestResolveScopeForUninstallNoFlagsNeitherInstalled(t *testing.T) {
@@ -619,4 +675,19 @@ func TestResolveScopeForUpdateProjectFlagHintsUpdate(t *testing.T) {
 	_, err := resolveScopeForUpdate(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "with --scope=global to update those")
+}
+
+// TestDetectInstalledScopesIgnoresMCPOnlyState checks that MCP records alone do not make a scope
+// installed.
+func TestDetectInstalledScopesIgnoresMCPOnlyState(t *testing.T) {
+	globalDir, projectDir := setupScopeTest(t)
+	require.NoError(t, installer.SaveMCPState(globalDir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "github-logfood"}}}))
+
+	hasGlobal, hasProject, err := detectInstalledScopes(globalDir, projectDir)
+	require.NoError(t, err)
+	assert.False(t, hasGlobal)
+	assert.False(t, hasProject)
+
+	_, err = withExplicitScopeCheck(globalDir, installer.ScopeGlobal, "update", projectDir, false, false)
+	assert.Error(t, err)
 }

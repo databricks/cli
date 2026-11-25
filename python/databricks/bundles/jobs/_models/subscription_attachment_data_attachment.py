@@ -33,12 +33,12 @@ class SubscriptionAttachmentDataAttachment:
 
     file_format: VariableOr[SubscriptionAttachmentDataAttachmentFileFormat]
     """
-    [Public Preview] The file format of the exported tabular data files.
+    The file format of the exported tabular data files.
     """
 
     include_applied_filters: VariableOrOptional[bool] = None
     """
-    [Public Preview] When true, the dashboard's applied filter values are included alongside the tabular data as
+    When true, the dashboard's applied filter values are included alongside the tabular data as
     an additional attached file.
     """
 
@@ -46,7 +46,7 @@ class SubscriptionAttachmentDataAttachment:
         default_factory=list
     )
     """
-    [Public Preview] The widgets whose underlying data is exported. At least one widget must be referenced.
+    The widgets whose underlying data is exported. At least one widget must be referenced.
     """
 
     @classmethod
@@ -62,18 +62,18 @@ class SubscriptionAttachmentDataAttachmentDict(TypedDict, total=False):
 
     file_format: VariableOr[SubscriptionAttachmentDataAttachmentFileFormatParam]
     """
-    [Public Preview] The file format of the exported tabular data files.
+    The file format of the exported tabular data files.
     """
 
     include_applied_filters: VariableOrOptional[bool]
     """
-    [Public Preview] When true, the dashboard's applied filter values are included alongside the tabular data as
+    When true, the dashboard's applied filter values are included alongside the tabular data as
     an additional attached file.
     """
 
     widgets: VariableOrList[SubscriptionAttachmentDataAttachmentWidgetParam]
     """
-    [Public Preview] The widgets whose underlying data is exported. At least one widget must be referenced.
+    The widgets whose underlying data is exported. At least one widget must be referenced.
     """
 
 

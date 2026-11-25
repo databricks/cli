@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle
+
+resources:
+  model_serving_endpoints:
+    my_endpoint:
+      name: test-endpoint

@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+NEW_MODEL="main.test-schema-${UNIQUE_NAME}.mymodel_renamed"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py //unity-catalog &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a registered model with grants"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace read_state.py registered_models model1.grants id
+
+title "Rename the model: its ID changes, and so does the ID of its grants"
+trace update_file.py databricks.yml mymodel mymodel_renamed
+trace $CLI bundle plan --output json | jq '.plan["resources.registered_models.model1.grants"].changes'
+
+title "Deploy renames the model in place and applies the grants under the new name"
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog
+trace $CLI grants get function "$NEW_MODEL" | jq '.privilege_assignments[] | select(.principal == "deco-test-user@databricks.com")'
+
+title "The grants are recorded under the new name, so the next plan is a no-op"
+trace read_state.py registered_models model1.grants id
+trace $CLI bundle plan

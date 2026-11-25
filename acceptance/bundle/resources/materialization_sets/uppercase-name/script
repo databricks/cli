@@ -1,0 +1,50 @@
+# The set's action, and the plan entries for each member and its feature name.
+set_plan() {
+    $CLI bundle plan -o json | jq '.plan."resources.materialization_sets.set1" | {action, changes: (.changes // {} | with_entries(select(.key | test("(\\]|feature_name)$"))) | map_values({action, reason}))}'
+}
+
+trace $CLI bundle deploy
+
+title "Each feature is created under the schema's spelling"
+trace print_requests.py --keep //feature-engineering/features | jq -s 'map(.body.full_name) | sort'
+
+title "Each member names its feature in lowercase, from a reference or written out"
+trace print_requests.py //feature-engineering/materialization-sets
+
+title "A plan on an unchanged bundle skips each member's feature name instead of recreating the set"
+trace set_plan
+trace $CLI bundle plan
+
+title "Changing only the case of a written-out feature name is skipped"
+trace update_file.py databricks.yml "feature_name: main.MySchema.FeatB" "feature_name: main.myschema.featb"
+trace set_plan
+trace update_file.py databricks.yml "feature_name: main.myschema.featb" "feature_name: MAIN.MYSCHEMA.FEATB"
+trace set_plan
+
+title "Naming another feature still recreates the set"
+trace update_file.py databricks.yml "feature_name: MAIN.MYSCHEMA.FEATB" "feature_name: main.MySchema.FeatC"
+trace set_plan
+trace update_file.py databricks.yml "feature_name: main.MySchema.FeatC" "feature_name: main.MySchema.FeatB"
+
+title "Removing a member updates the set, naming the remaining member's feature in lowercase"
+trace update_file.py databricks.yml "        - feature_name: main.MySchema.FeatB
+          offline_store_config:
+            catalog_name: main
+            schema_name: myschema
+            table_name_prefix: offline
+          cron_schedule_trigger:
+            mode: MANUAL
+            cron_expression: \"0 0 * * * ?\"
+" ""
+trace $CLI bundle deploy
+trace print_requests.py //feature-engineering/materialization-sets
+trace $CLI bundle plan
+
+title "The service refuses a member that names its feature in other than lowercase"
+trace musterr $CLI feature-engineering create-materialization-set --json '{"materialized_features": [{"feature_name": "main.MySchema.FeatA", "offline_store_config": {"catalog_name": "main", "schema_name": "myschema", "table_name_prefix": "direct"}, "cron_schedule_trigger": {"mode": "MANUAL", "cron_expression": "0 0 * * * ?"}}]}'
+trace print_requests.py //feature-engineering/materialization-sets
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //feature-engineering/materialization-sets
+
+rm -f out.requests.txt

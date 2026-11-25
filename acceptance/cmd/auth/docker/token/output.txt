@@ -54,4 +54,17 @@ Error: no Databricks profile found for workspace ID 444555666 from registry host
 === Multiple profiles for the workspace
 
 >>> musterr [CLI] auth docker token
-Error: multiple Databricks profiles match workspace ID [WORKSPACE_ID]: docker-test and duplicate. Remove duplicate workspace_id entries before using Docker credential helper
+Error: multiple Databricks profiles match workspace ID [WORKSPACE_ID]: docker-test and duplicate. Select the profile for Docker with: databricks auth docker configure <profile-name>
+
+=== Recorded profile for the workspace
+
+>>> [CLI] auth docker token --no-force-refresh
+{
+  "Secret": "duplicate-access-token",
+  "Username": "oauthtoken"
+}
+
+=== Recorded profile that no longer exists
+
+>>> musterr [CLI] auth docker token
+Error: profile "gone" selected for Docker registry [WORKSPACE_ID].container.us-west-2.localhost is missing or no longer targets workspace ID [WORKSPACE_ID]. Select the profile for Docker with: databricks auth docker configure <profile-name>

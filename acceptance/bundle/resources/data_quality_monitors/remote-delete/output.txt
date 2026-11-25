@@ -6,9 +6,11 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Delete the monitor out of band
+
 >>> [CLI] data-quality delete-monitor table [UUID]
 
 === Plan should detect the monitor is gone and re-create it
+
 >>> [CLI] bundle plan
 create data_quality_monitors.table_monitor
 

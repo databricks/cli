@@ -24,7 +24,7 @@
 
 === The latest-release lookup picks the manifest version
 
->>> print_requests.py --get
+>>> print_requests.py --get ^//telemetry-ext ^//.well-known
 {
   "method": "GET",
   "path": "/repos/databricks/databricks-agent-skills/releases/latest"

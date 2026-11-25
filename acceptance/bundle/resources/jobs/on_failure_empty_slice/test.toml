@@ -1,2 +1,1 @@
-Badness = "Permanent drift due to https://github.com/databricks/databricks-sdk-go/issues/1366"
 RecordRequests = false

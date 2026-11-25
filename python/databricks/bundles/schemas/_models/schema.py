@@ -12,10 +12,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.schemas._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.schemas._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.schemas._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentParam,
@@ -46,7 +43,9 @@ class Schema(Resource):
 
     custom_max_retention_hours: VariableOrOptional[int] = None
     """
-    [Public Preview] Custom maximum retention period in hours for the schema.
+    [Public Preview] Dropped objects in the schema remain recoverable for this number of hours before they are permanently
+    purged. The value must be 0 or within the range allowed for the metastore. Schemas that do not set
+    their own value inherit the parent catalog's value.
     """
 
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
@@ -66,7 +65,11 @@ class Schema(Resource):
 
     storage_root: VariableOrOptional[str] = None
     """
-    Storage root URL for managed tables within schema.
+    Managed tables and volumes in the schema are stored under this storage root URL. The path must be
+    inside an external location on which the caller has the CREATE MANAGED STORAGE privilege. If omitted,
+    managed data is stored under the parent catalog's storage root, or under the metastore's root storage
+    location when the catalog has none. Schemas in Delta Sharing catalogs cannot have a storage root, and
+    schemas in a federated Hive metastore catalog must set one.
     """
 
     @classmethod
@@ -97,7 +100,9 @@ class SchemaDict(TypedDict, total=False):
 
     custom_max_retention_hours: VariableOrOptional[int]
     """
-    [Public Preview] Custom maximum retention period in hours for the schema.
+    [Public Preview] Dropped objects in the schema remain recoverable for this number of hours before they are permanently
+    purged. The value must be 0 or within the range allowed for the metastore. Schemas that do not set
+    their own value inherit the parent catalog's value.
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]
@@ -117,7 +122,11 @@ class SchemaDict(TypedDict, total=False):
 
     storage_root: VariableOrOptional[str]
     """
-    Storage root URL for managed tables within schema.
+    Managed tables and volumes in the schema are stored under this storage root URL. The path must be
+    inside an external location on which the caller has the CREATE MANAGED STORAGE privilege. If omitted,
+    managed data is stored under the parent catalog's storage root, or under the metastore's root storage
+    location when the catalog has none. Schemas in Delta Sharing catalogs cannot have a storage root, and
+    schemas in a federated Hive metastore catalog must set one.
     """
 
 

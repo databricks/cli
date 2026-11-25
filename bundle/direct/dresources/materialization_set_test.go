@@ -130,7 +130,8 @@ func TestMaterializationSetOperationFailureWithoutFailedMembers(t *testing.T) {
 
 // TestMaterializationSetMembershipChangeAction enumerates every path shape the planner hands this
 // resource: a whole member and the whole member list are an update unless they hold a member the
-// deployed set lacks, and every other path keeps the action the rules gave it.
+// deployed set lacks, a member's feature name is skipped, and every other path keeps the action the
+// rules gave it.
 func TestMaterializationSetMembershipChangeAction(t *testing.T) {
 	const member = "materialized_features[member='feature_name=main.ns.feat|online_store_name=store|is_streaming_mode=false']"
 	const streamingMember = "materialized_features[member='feature_name=main.ns.feat|online_store_name=store|is_streaming_mode=true']"
@@ -146,6 +147,8 @@ func TestMaterializationSetMembershipChangeAction(t *testing.T) {
 	turnedStreaming.StreamingMode = &ml.StreamingMode{}
 	movedStore := deployed
 	movedStore.OnlineStoreConfig = &ml.OnlineStoreConfig{OnlineStoreName: "other"}
+	mixedCase := deployed
+	mixedCase.FeatureName = "main.NS.Feat"
 	remote := &ml.MaterializationSet{MaterializedFeatures: []ml.MaterializedFeature{deployed}}
 
 	for _, test := range []struct {
@@ -160,12 +163,13 @@ func TestMaterializationSetMembershipChangeAction(t *testing.T) {
 		{"member whose trigger turned streaming", streamingMember, turnedStreaming, remote, deployplan.Recreate, reasonMemberAdded},
 		{"member whose online store changed", movedStoreMember, movedStore, remote, deployplan.Recreate, reasonMemberAdded},
 		{"member the deployed set has", member, deployed, remote, deployplan.Update, "immutable"},
+		{"member the deployed set has, naming its feature in other case", member, mixedCase, remote, deployplan.Update, "immutable"},
 		{"member removed", member, nil, remote, deployplan.Update, "immutable"},
 		{"list holding a member the deployed set lacks", "materialized_features", []ml.MaterializedFeature{deployed, added}, remote, deployplan.Recreate, reasonMemberAdded},
 		{"list the deployed set has", "materialized_features", []ml.MaterializedFeature{deployed}, remote, deployplan.Update, "immutable"},
 		{"list emptied", "materialized_features", nil, remote, deployplan.Update, "immutable"},
 		{"set missing remotely", addedMember, added, nil, deployplan.Update, "immutable"},
-		{"feature name field", member + ".feature_name", nil, remote, deployplan.Recreate, "immutable"},
+		{"feature name field", member + ".feature_name", "main.NS.Feat", remote, deployplan.Skip, reasonFeatureNameCaseOnly},
 		{"trigger field", member + ".cron_schedule_trigger", nil, remote, deployplan.Recreate, "immutable"},
 		{"destination field", member + ".online_store_config.table_name_prefix", nil, remote, deployplan.Recreate, "immutable"},
 		{"set id", "materialization_set_id", nil, remote, deployplan.Recreate, "immutable"},
@@ -197,4 +201,17 @@ func TestMaterializationSetDestinationSuppressionStillReachesMemberFields(t *tes
 
 	assert.Equal(t, deployplan.Skip, change.Action)
 	assert.Equal(t, "input_only_not_returned", change.Reason)
+}
+
+func TestWithLowercaseFeatureNamesCopiesTheSet(t *testing.T) {
+	config := ml.MaterializationSet{MaterializedFeatures: []ml.MaterializedFeature{
+		{FeatureName: "main.MySchema.Feat"},
+		{FeatureName: "main.myschema.other"},
+	}}
+
+	sent := withLowercaseFeatureNames(config)
+
+	assert.Equal(t, "main.myschema.feat", sent.MaterializedFeatures[0].FeatureName)
+	assert.Equal(t, "main.myschema.other", sent.MaterializedFeatures[1].FeatureName)
+	assert.Equal(t, "main.MySchema.Feat", config.MaterializedFeatures[0].FeatureName)
 }
