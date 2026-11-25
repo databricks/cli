@@ -1,0 +1,54 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    # Permissions and grants are linked to their resource with a
+    # ${resources.<type>.<key>...} reference, which these keys cannot appear in.
+    "123":
+      name: all digits
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+    "2024_01":
+      name: digits and underscores
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+    "_1":
+      name: underscore and digit
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+    "0job_":
+      name: trailing underscore
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+
+    # Not reported: an empty list plans no permissions.
+    "456":
+      name: empty permissions
+      permissions: []
+
+    # Not reported: a key with a letter that ends with a letter or digit can be referenced.
+    00_clear:
+      name: leading digit
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+
+  schemas:
+    "2024_02":
+      catalog_name: main
+      name: s
+      grants:
+        - principal: users
+          privileges: [USE_SCHEMA]
+
+  secret_scopes:
+    "_2":
+      name: scope
+      permissions:
+        - level: READ
+          group_name: users

@@ -221,6 +221,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Rejects entries that point to a missing or ambiguous resource, or to the resource itself.
 		validate.LifecycleDependsOn(),
 
+		// Reads (dynamic): resources.*.*.{permissions,grants}
+		// Rejects resources with permissions or grants whose key cannot appear in a ${...} reference.
+		validate.ReferenceableResourceKeys(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Errors when a cross-resource reference points to a Terraform-only field
 		// with no DABs equivalent.

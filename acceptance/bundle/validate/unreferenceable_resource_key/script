@@ -1,0 +1,4 @@
+musterr trace $CLI bundle validate
+
+# Plan stops at the same check instead of failing later with "cannot parse".
+musterr trace $CLI bundle plan

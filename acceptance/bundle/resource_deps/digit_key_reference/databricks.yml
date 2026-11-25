@@ -4,7 +4,7 @@ bundle:
 resources:
   jobs:
     # Permissions are linked to their job through ${resources.jobs.00_clear.id},
-    # so the plan fails when the reference grammar rejects the key.
+    # so the key must be one the reference grammar accepts.
     00_clear:
       name: leading digit
       permissions:

@@ -1,0 +1,83 @@
+
+>>> [CLI] bundle validate
+Error: resource key "0job_" cannot be referenced, so its permissions cannot be deployed
+  at resources.jobs.0job_
+  in databricks.yml:24:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "123" cannot be referenced, so its permissions cannot be deployed
+  at resources.jobs.123
+  in databricks.yml:9:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "2024_01" cannot be referenced, so its permissions cannot be deployed
+  at resources.jobs.2024_01
+  in databricks.yml:14:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "_1" cannot be referenced, so its permissions cannot be deployed
+  at resources.jobs._1
+  in databricks.yml:19:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "2024_02" cannot be referenced, so its grants cannot be deployed
+  at resources.schemas.2024_02
+  in databricks.yml:43:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "_2" cannot be referenced, so its permissions cannot be deployed
+  at resources.secret_scopes._2
+  in databricks.yml:51:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 6 errors
+
+>>> [CLI] bundle plan
+Error: resource key "0job_" cannot be referenced, so its permissions cannot be deployed
+  at resources.jobs.0job_
+  in databricks.yml:24:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "123" cannot be referenced, so its permissions cannot be deployed
+  at resources.jobs.123
+  in databricks.yml:9:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "2024_01" cannot be referenced, so its permissions cannot be deployed
+  at resources.jobs.2024_01
+  in databricks.yml:14:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "_1" cannot be referenced, so its permissions cannot be deployed
+  at resources.jobs._1
+  in databricks.yml:19:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "2024_02" cannot be referenced, so its grants cannot be deployed
+  at resources.schemas.2024_02
+  in databricks.yml:43:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
+Error: resource key "_2" cannot be referenced, so its permissions cannot be deployed
+  at resources.secret_scopes._2
+  in databricks.yml:51:7
+
+Permissions and grants are linked to their resource with a ${resources...} reference. Rename the key to use only letters, digits, hyphens and underscores, with at least one letter, ending with a letter or a digit.
+
