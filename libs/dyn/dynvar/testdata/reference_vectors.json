@@ -362,6 +362,34 @@
       "path": "变量.９世界"
     },
     {
+      "id": "non-decimal-number-after-digit",
+      "comment": "Superscript two is a number, not a letter, so the segment has no letter",
+      "input": "${a.1²}",
+      "match": false
+    },
+    {
+      "id": "non-decimal-number-segment",
+      "input": "${a.²}",
+      "match": false
+    },
+    {
+      "id": "non-decimal-number-leads-segment",
+      "comment": "Non-decimal numbers lead a segment the same way digits do",
+      "input": "${a.²b}",
+      "match": true,
+      "references": ["a.²b"],
+      "pure": true,
+      "path": "a.²b"
+    },
+    {
+      "id": "non-decimal-number-after-letter",
+      "input": "${a.b²}",
+      "match": true,
+      "references": ["a.b²"],
+      "pure": true,
+      "path": "a.b²"
+    },
+    {
       "id": "empty-string",
       "input": "",
       "match": false,
