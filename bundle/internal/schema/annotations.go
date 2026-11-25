@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
@@ -15,6 +16,8 @@ import (
 )
 
 type annotationHandler struct {
+	// Annotations from cli.json only.
+	extracted annotation.File
 	// Annotations from cli.json merged with the annotations file.
 	parsedAnnotations annotation.File
 	// Annotations from the annotations file only: the content the CLI owns
@@ -32,6 +35,7 @@ func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandl
 		return nil, err
 	}
 	return &annotationHandler{
+		extracted:          extracted,
 		parsedAnnotations:  merged,
 		fileAnnotations:    fromFile,
 		missingAnnotations: annotation.File{},
@@ -71,6 +75,48 @@ func dropPlaceholders(fromFile annotation.File) {
 // added.
 func isEmptyDescriptor(d annotation.Descriptor) bool {
 	return reflect.DeepEqual(d, annotation.Descriptor{})
+}
+
+// splitOverrides partitions the hand-written annotations into the entries for
+// fields the CLI alone defines and the entries that override or complete a
+// field cli.json already carries. An entry counts as an override when upstream
+// knows the node (the field exists in the spec, or the type has upstream docs)
+// and the entry sets a key upstream could supply itself; docs-site-only keys
+// like markdown_description never make a node an override.
+func splitOverrides(fromFile, extracted annotation.File) (cliOnly, overrides annotation.File) {
+	cliOnly = annotation.File{}
+	overrides = annotation.File{}
+	for typePath, ta := range fromFile {
+		for name, d := range ta.Fields {
+			_, upstream := extracted[typePath].Fields[name]
+			if upstream && hasUpstreamKeys(d) {
+				overrides.SetField(typePath, name, d)
+			} else {
+				cliOnly.SetField(typePath, name, d)
+			}
+		}
+		if isEmptyDescriptor(ta.Self) {
+			continue
+		}
+		if !isEmptyDescriptor(extracted[typePath].Self) && hasUpstreamKeys(ta.Self) {
+			overrides.SetSelf(typePath, ta.Self)
+		} else {
+			cliOnly.SetSelf(typePath, ta.Self)
+		}
+	}
+	return cliOnly, overrides
+}
+
+// hasUpstreamKeys reports whether d sets any key that cli.json can carry for a
+// node, i.e. anything a fix to the upstream spec could make redundant.
+func hasUpstreamKeys(d annotation.Descriptor) bool {
+	return d.Description != "" ||
+		len(d.Enum) > 0 ||
+		d.DeprecationMessage != "" ||
+		d.LaunchStage != "" ||
+		len(d.EnumLaunchStages) > 0 ||
+		len(d.EnumDescriptions) > 0 ||
+		d.OutputOnly != nil
 }
 
 // mergeAnnotationFiles merges later layers over earlier ones with the same
@@ -118,17 +164,25 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 	return s
 }
 
-// syncAnnotationFiles writes both annotation files back in canonical form.
-// annotationsPath receives the hand-authored docs; generatedPath receives a
-// placeholder entry for every field that has no documentation anywhere, so new
-// undocumented fields show up as a diff in a file that is visibly generated.
-// Entries for fields that no longer exist in the config are dropped with a
-// warning.
-func (d *annotationHandler) syncAnnotationFiles(annotationsPath, generatedPath string, g *typeGraph) error {
-	detached, err := saveAnnotationsFile(annotationsPath, annotationsFileHeader, d.fileAnnotations, g)
+// syncAnnotationFiles writes the annotation files back in canonical form.
+// annotationsPath receives the hand-written docs for fields only the CLI
+// defines; overridesPath the hand-written entries that touch fields cli.json
+// already defines; generatedPath a placeholder entry for every field that has
+// no documentation anywhere, so new undocumented fields show up as a diff in a
+// file that is visibly generated. Entries for fields that no longer exist in
+// the config are dropped with a warning.
+func (d *annotationHandler) syncAnnotationFiles(annotationsPath, overridesPath, generatedPath string, g *typeGraph) error {
+	cliOnly, overrides := splitOverrides(d.fileAnnotations, d.extracted)
+	detached, err := saveAnnotationsFile(annotationsPath, annotationsFileHeader, cliOnly, g)
 	if err != nil {
 		return err
 	}
+	detachedOverrides, err := saveAnnotationsFile(overridesPath, overridesFileHeader, overrides, g)
+	if err != nil {
+		return err
+	}
+	detached = append(detached, detachedOverrides...)
+	slices.Sort(detached)
 	for _, k := range detached {
 		fmt.Printf("Dropping annotation for `%s`: no matching field in the bundle configuration\n", k)
 	}
