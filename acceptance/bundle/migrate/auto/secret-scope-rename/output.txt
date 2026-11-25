@@ -1,0 +1,44 @@
+
+=== Replay the prior terraform deployment (captured from a real terraform run)
+
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+=== Rename the secret scope (a provided id field) and plan: the plan migrates in memory only
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Deploy on direct without --auto-approve
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Migrated 2 resources to direct deployment engine.
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+=== Secret scopes in the workspace after the deploy
+
+>>> [CLI] secrets list-scopes -o json
+test-scope-[UNIQUE_NAME]
+
+=== Plan again on direct: the plan still sees nothing to do
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== The state after the deploy records the scope's name and id
+
+>>> read_state.py secret_scopes foo id scope
+secret_scopes foo id='test-scope-[UNIQUE_NAME]' scope='test-scope-[UNIQUE_NAME]-renamed'
+
+=== Cleanup
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.secret_scopes.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
