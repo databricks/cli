@@ -19,6 +19,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func init() {
+	registerTestDeps("job_runs", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// A run can only be triggered against an existing job, so create one first.
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
+			Name: "job-for-run",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "t",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.JobRun{
+			JobId: resp.JobId,
+		}, nil
+	})
+
+	registerKnownMissingInRemoteType("job_runs",
+		// Local-only trigger fingerprints under lifecycle.
+		"lifecycle",
+	)
+
+	registerKnownMissingInStateType("job_runs",
+		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
+		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
+		"lifecycle.triggers",
+	)
+
+	registerCreateRecoveryOptOut("job_runs", "candidate: DoCreate mints the run-now idempotency token per request; repeating the request with the same token would return the run it started")
+}
+
 // jobRunClientFor returns a client talking to server. Call it after the test
 // registers its own handlers: first registration wins, so the defaults added here
 // only fill the gaps.

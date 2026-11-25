@@ -1,12 +1,38 @@
 package dresources
 
 import (
+	"context"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestConfig("catalogs", &resources.Catalog{
+		Name:    "mycatalog",
+		Comment: "Test catalog",
+		// Note: EnablePredictiveOptimization cannot be set during creation,
+		// only during updates. It is not included in the test config.
+		// IsolationMode has the same restriction but is applied by DoCreate with a
+		// follow-up update, so it is set here to cover that path.
+		IsolationMode: catalog.CatalogIsolationModeIsolated,
+	})
+
+	registerTestDeps("catalogs.grants", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "catalog",
+			FullName:      "mycatalog",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	})
+}
 
 func TestResourceCatalog_DoCreate_IsolationMode(t *testing.T) {
 	tests := []struct {

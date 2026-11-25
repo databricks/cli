@@ -1,9 +1,11 @@
 package dresources
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
@@ -13,6 +15,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestDeps("database_catalogs", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		_, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
+			DatabaseInstance: database.DatabaseInstance{
+				Name: "mydbinstance1",
+			},
+		})
+
+		return &resources.DatabaseCatalog{
+			Name:                 "mydbcatalog",
+			DatabaseInstanceName: "mydbinstance1",
+		}, err
+	})
+}
 
 const testDatabaseCatalogName = "my_catalog"
 

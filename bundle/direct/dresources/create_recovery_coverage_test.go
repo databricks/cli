@@ -34,33 +34,15 @@ import (
 // Neither works for a resource whose id the backend assigns, unless the create request takes an
 // idempotency token, or for one whose read response has no create time: a resource found by name
 // could then predate the deploy, and taking it over would let two bundles share it.
-var createRecoveryOptOut = map[string]string{
-	"jobs":             "the backend assigns the job id, names are not unique, and the create request takes no idempotency token",
-	"pipelines":        "the backend assigns the pipeline id, names are not unique, and the create request takes no idempotency token",
-	"clusters":         "the backend assigns the cluster id, names are not unique, and the create request takes no idempotency token",
-	"sql_warehouses":   "the backend assigns the warehouse id, and the create request takes no idempotency token",
-	"instance_pools":   "the backend assigns the pool id, and the create request takes no idempotency token",
-	"alerts":           "the backend assigns the alert id, display names are not unique, and the create request takes no idempotency token",
-	"genie_spaces":     "the backend assigns the space id, titles are not unique, and the create request takes no idempotency token",
-	"feature_specs":    "the read response has no create time",
-	"secret_scopes":    "the read response has no create time",
-	"quality_monitors": "the read response has no create time",
+//
+// A reason that starts with "candidate:" marks a resource that could recover, each with a change
+// of its own.
+var createRecoveryOptOut = map[string]string{}
 
-	"data_quality_monitors":  "the read response has no create time",
-	"vector_search_indexes":  "the read response has no create time",
-	"synced_database_tables": "the read response has no create time; the Unity Catalog table it registers would have to be read for one",
-
-	"internal_immutable_snapshots": "the snapshot is an immutable upload, and it is not known whether a second upload to the same path is accepted",
-
-	// Candidates: these could recover, each with a change of its own.
-	"job_runs":             "candidate: DoCreate mints the run-now idempotency token per request; repeating the request with the same token would return the run it started",
-	"materialization_sets": "candidate: DoCreate mints the request_id per request; repeating the request with the same request_id would return the set it created",
-	"cluster_policies":     "candidate: policy names are unique and the read response has created_at_timestamp, but the backend assigns the id, so the lookup has to go by name",
-	"apps":                 "candidate: app names are unique and the read response has create_time, but DoCreate already handles an app that is being deleted, and recovery has to fit with that",
-	"database_instances":   "candidate: instance names are unique and the read response has creation_time; not done yet",
-	"experiments":          "candidate: experiment names are unique and the read response has creation_time, but libs/testserver has neither get-by-name nor creation_time",
-	"models":               "candidate: model names are unique and the read response has creation_timestamp, but libs/testserver does not set it",
-	"postgres_data_apis":   "candidate: a database has one Data API, but the read response takes its spec from the status, which can be empty while it is being enabled, so a recovered Data API needs a wait the create operation would otherwise do",
+// registerCreateRecoveryOptOut declares that the DoCreate of resourceType does not recover from
+// a failed create request, and why. Call it from the init() of the type's test file.
+func registerCreateRecoveryOptOut(resourceType, reason string) {
+	registerOnce(createRecoveryOptOut, "createRecoveryOptOut", resourceType, reason)
 }
 
 // mutatingRequest is the method and path of a request that is not a read.

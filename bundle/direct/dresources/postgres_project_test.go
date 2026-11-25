@@ -1,11 +1,13 @@
 package dresources
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
@@ -15,6 +17,39 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestConfig("postgres_projects", &resources.PostgresProject{
+		ProjectId:   "test-project",
+		DisplayName: "Test Project",
+		PgVersion:   16,
+	})
+
+	registerTestDeps("postgres_projects.permissions", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		const projectID = "permissions-project"
+		waiter, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: projectID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if _, err := waiter.Wait(ctx); err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/database-projects/" + projectID,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	})
+
+	registerKnownMissingInRemoteType("postgres_projects",
+		"purge_on_delete",
+	)
+}
 
 const testProjectName = "projects/p"
 

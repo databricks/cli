@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
@@ -16,6 +17,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestDeps("postgres_branches", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-branch",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Branch",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresBranch{
+			Parent:     "projects/test-project-for-branch",
+			BranchId:   "test-branch",
+			BranchSpec: postgres.BranchSpec{},
+		}, nil
+	})
+
+	registerKnownMissingInRemoteType("postgres_branches",
+		"replace_existing",
+		"purge_on_delete",
+	)
+}
 
 const (
 	testBranchParent = "projects/p"

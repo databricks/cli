@@ -1,9 +1,11 @@
 package dresources
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
@@ -13,6 +15,45 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestDeps("postgres_databases", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-database",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Database",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-database",
+			BranchId: "test-branch-for-database",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresDatabase{
+			Parent:           "projects/test-project-for-database/branches/test-branch-for-database",
+			DatabaseId:       "test-database",
+			PostgresDatabase: "app_db",
+			Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
+		}, nil
+	})
+
+	registerKnownMissingInRemoteType("postgres_databases",
+		"replace_existing",
+	)
+}
 
 // A create request that times out lands after the first lookup: the repeated request is rejected
 // with the 400 that Lakebase databases answer for a taken name, and the next lookup finds the

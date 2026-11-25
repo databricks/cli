@@ -49,7 +49,7 @@ A create request can fail with a timeout or a 5xx after the backend applied it. 
  - If the create is idempotent (a PUT, or setting the desired value), return the error wrapped with `retrySafe(err)`; the framework repeats the request on transient errors.
  - If the bundle chooses the name and the API keeps it unique, call `recoverCreate` (create_recovery.go) on the error. It looks the resource up by name, uses it if it was created after the first request (the read response must carry a create time), and repeats the request while the resource is missing.
 
-`TestCreateRecoveryCoverage` (create_recovery_coverage_test.go) fails a create request of every resource, with and without the backend applying it. A resource that can do neither, e.g. because the backend assigns its ID, is listed in `createRecoveryOptOut` with the reason.
+`TestCreateRecoveryCoverage` (create_recovery_coverage_test.go) fails a create request of every resource, with and without the backend applying it. A resource that can do neither, e.g. because the backend assigns its ID, calls `registerCreateRecoveryOptOut` with the reason from the `init()` of its test file.
 
 ## Async APIs: WaitAfterCreate / WaitAfterUpdate
 
@@ -133,7 +133,7 @@ Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` se
 
  - Make sure to implement CRUD for testserver in libs/testserver
  - Test first with go test ./bundle/direct/dresources
-   - You might need to add test fixture in all\_test.go
+   - Register the test fixture of the type, and of its permissions and grants, from an `init()` in the type's test file (`job_test.go` for `job.go`): `registerTestConfig`, `registerTestDeps` when other resources must exist first, or `registerWithoutTestFixture` with the reason. Known gaps between the input, state and remote types go there too (`registerKnownMissingInStateType`, `registerKnownMissingInRemoteType`). `TestEveryAdapterHasTestFixture` names every type that registers none.
  - Implement acceptance tests in acceptance/bundle/resources/<resource>/<subtest>
    - See acceptance/bundle/resources/volumes
    - Prefer smaller tests for each operation.
