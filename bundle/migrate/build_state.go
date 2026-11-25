@@ -362,7 +362,8 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 			}
 			tfPath := path
 			fieldName := rule.Field.String()
-			if tfName, ok := idFieldTerraformNames[group][fieldName]; ok {
+			tfName, renamed := idFieldTerraformNames[group][fieldName]
+			if renamed {
 				tfPath = structpath.NewStringKey(nil, tfName)
 				fieldName = tfName
 			}
@@ -378,10 +379,11 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 				return fmt.Errorf("id field %q: expected string values, got config %T and deployed %T", rule.Field.String(), configVal, deployedVal)
 			}
 
-			// A reference the state could not take (it names a config field the state type does
-			// not have, e.g. a secret scope's name) stays a literal template here, and the plan
-			// compares that same literal: there is no config value to reconcile.
-			if dynvar.ContainsVariableReference(configStr) {
+			// References are extracted by state field name, so one in a renamed field (a secret
+			// scope's name) is never resolved: it stays a literal template here, and the plan
+			// compares that same literal, so there is no config value to reconcile. Other fields
+			// had their references resolved above, and a resolved value may contain "${".
+			if renamed && dynvar.ContainsVariableReference(configStr) {
 				continue
 			}
 
