@@ -225,6 +225,10 @@ type CommitSelection struct {
 	// Named holds the selected test dirs.
 	Named Named
 
+	// Elsewhere holds the test dirs the message names only for other clouds. A cloud run
+	// reports them as skipped: left out, the report would show them as missing there.
+	Elsewhere Named
+
 	// Matched lists the names that selected a test, Unmatched the ones that selected none.
 	Matched   []string
 	Unmatched []string
@@ -267,8 +271,13 @@ func FromCommitMessage(root string, testDirs map[string]bool, cloud string) (Com
 	named, unmatched := ResolveNames(root, names, testDirs)
 	matched := slices.DeleteFunc(names, func(name string) bool { return slices.Contains(unmatched, name) })
 	where := "local"
+	var elsewhere Named
 	if cloud != "" {
 		where = cloud
+		elsewhere, _ = ResolveNames(root, NamesForCloud(parsed, ""), testDirs)
+		for dir := range named {
+			delete(elsewhere, dir)
+		}
 	}
-	return CommitSelection{Named: named, Matched: matched, Unmatched: unmatched, Rejected: rejected, Where: where}, nil
+	return CommitSelection{Named: named, Elsewhere: elsewhere, Matched: matched, Unmatched: unmatched, Rejected: rejected, Where: where}, nil
 }

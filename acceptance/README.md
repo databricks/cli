@@ -32,9 +32,10 @@ gcp: TestAccept/bundle/validate/enum/DMS=true
 - `TestAccept/<path>` selects every test dir that is `<path>` or under `<path>/`, with all its variants. `TestAccept/<dir>/KEY=value[/KEY=value...]` selects only the matching variants of test dir `<dir>`, as `go test` names them; each `KEY=value` must be in one of the dir's variants (per its `out.test.toml`). `TestAccept` alone selects every test. A name that matches no acceptance test (including non-acceptance test names) is logged as a warning and otherwise ignored.
 - The named tests are added to the changed-test selection (`DATABRICKS_TEST_SELECT_CHANGED`, used by the PR cloud run and `./task local-select`) and to the windows/macOS PR subset (`TESTS_SELECT_SUBSET_PCT`), without counting toward their limits. Runs with neither selection (Linux PR cell, nightly) do not read the commit message: they run every test.
 - On cloud, a named test still needs `Cloud = true` (and a matching `CloudEnvs`), but it runs even if it is `CloudSlow` when it is named by its own dir or variant name (naming any variant of a dir lifts this for the dir). A path above the dir (or a bare `TestAccept`) does not lift `CloudSlow`, so a whole subtree stays within the PR run's `-short` budget.
+- A cloud run reports a test named only for other clouds as skipped instead of leaving it out, so the integration report does not show it as missing on that cloud. If the branch changed the test, it still runs there as a changed test.
 - On pull requests, such a line makes `tools/testmask` select the tests and the cloud run even if the changed files alone would not. The merge queue ignores it.
 - On the merge commit GitHub creates for a PR (`refs/pull/N/merge`), the message of the PR's head commit is used. The parser is in `acceptance/internal/selection/commit.go`.
-- To see what a commit message selects without running the suite: `go run ./acceptance/internal/selection/cmd [-cloud aws|azure|gcp]` prints the named tests and the warnings after the changed ones.
+- To see what a commit message selects without running the suite: `go run ./acceptance/internal/selection/cmd [-cloud aws|azure|gcp]` prints the named tests and the warnings after the changed ones; with `-cloud` it also lists the tests named only for other clouds, which that run skips.
 
 ## Authoring
 

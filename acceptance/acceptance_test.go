@@ -550,7 +550,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// means all variants of that dir changed. Both selection.EnvVar and the subset
 	// selector keep these tests, so detect them at most once here.
 	var changedTests map[string][]string
-	var namedTests selection.Named
+	var namedTests, namedElsewhere selection.Named
 	if changedLimit > 0 {
 		// A failed selection (e.g. no origin/main in a shallow checkout) must fail the
 		// run: treating it as "nothing changed" would silently skip new tests.
@@ -568,6 +568,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		commit, err := selection.FromCommitMessage(".", testDirsSet, namedCloud)
 		require.NoError(t, err)
 		namedTests = commit.Named
+		namedElsewhere = commit.Elsewhere
 		if len(namedTests) > 0 {
 			t.Log(commit.Summary())
 		}
@@ -584,7 +585,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	if selectChanged {
 		testDirs = slices.DeleteFunc(testDirs, func(dir string) bool {
 			_, ok := changedTests[dir]
-			return !ok && !namedTests.Has(dir)
+			return !ok && !namedTests.Has(dir) && !namedElsewhere.Has(dir)
 		})
 	}
 
@@ -634,6 +635,11 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
+			}
+
+			if _, changed := changedTests[dir]; selectChanged && !changed && namedElsewhere.Has(dir) {
+				skippedDirs += 1
+				t.Skipf("Disabled via the last commit message, which names it only for other clouds (CLOUD_ENV=%s)", cloudEnv)
 			}
 
 			skipReason := getSkipReason(&config, configPath, namedTests.Exact(dir))

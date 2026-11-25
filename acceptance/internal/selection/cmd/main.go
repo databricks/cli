@@ -10,9 +10,10 @@
 //
 // With no arguments the selection comes from git, exactly as the test runner gets it, and
 // also lists the tests the last commit message names (see acceptance/README.md) for the run
-// -cloud picks: aws, azure or gcp, or empty for a local run. Each argument stands for a
-// changed file instead, and counts as modified unless it carries a status ("A:path" for an
-// added file, "R100:old:new" for a rename); the commit message is not read then.
+// -cloud picks: aws, azure or gcp, or empty for a local run. For a cloud it also lists the
+// tests named only for other clouds, which that run reports as skipped. Each argument stands
+// for a changed file instead, and counts as modified unless it carries a status ("A:path" for
+// an added file, "R100:old:new" for a rename); the commit message is not read then.
 //
 // Each line is a `go test -run` pattern, so a selected test can be run as printed:
 //
@@ -98,7 +99,7 @@ func main() {
 // like the test runner, which logs the section only when there is something in it.
 func printNamed(commit selection.CommitSelection) {
 	warnings := commit.Warnings()
-	if len(commit.Named) == 0 && len(warnings) == 0 {
+	if len(commit.Named) == 0 && len(commit.Elsewhere) == 0 && len(warnings) == 0 {
 		return
 	}
 	fmt.Printf("Selected %d test dirs named in the last commit message (%s)\n", len(commit.Named), commit.Where)
@@ -117,6 +118,12 @@ func printNamed(commit selection.CommitSelection) {
 		}
 		for _, name := range names {
 			fmt.Printf("       %s\n", name)
+		}
+	}
+	if len(commit.Elsewhere) > 0 {
+		fmt.Printf("Skipping %d test dirs named in the last commit message only for other clouds, unless changed (%s)\n", len(commit.Elsewhere), commit.Where)
+		for _, dir := range slices.Sorted(maps.Keys(commit.Elsewhere)) {
+			fmt.Printf("       %s\n", runPattern(strings.Split(dir, "/")))
 		}
 	}
 	for _, warning := range warnings {
