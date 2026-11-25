@@ -1,16 +1,29 @@
-package mutator
+package resourcemutator
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
+
+func init() {
+	// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
+	// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
+	// model, so exposing it to Python would fail resource loading (like the "deployment"
+	// metadata that the initialize phase annotates).
+	stages.Register(stages.StageAfterPython, "volumes",
+		InitializeVolumePaths,
+		mutator.ResolveVolumePathReferencesOnlyResources,
+	)
+}
 
 type initializeVolumePaths struct{}
 

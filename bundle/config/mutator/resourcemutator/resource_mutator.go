@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -29,14 +30,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): range b.Config.Resources.Pipelines[].Permissions (set permission based on bundle run_as; only if Experimental.UseLegacyRunAs is set)
 		SetRunAs(),
 
-		// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
-		// Reads (env): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
-		// Reads (typed): b.Config.Resources.Jobs.*.Tasks.*.ForEachTask
-		// Updates (typed): b.Config.Bundle.ClusterId (sets from environment if in development mode)
-		// Updates (typed): b.Config.Resources.Jobs.*.Tasks.*.{NewCluster,ExistingClusterId,JobClusterKey,EnvironmentKey} (replaces compute settings with specified cluster ID)
-		// OR corresponding fields on ForEachTask if that is present
-		// Overrides job compute settings with a specified cluster ID for development or testing
-		OverrideCompute(),
+		ApplyStage(stages.StageBeforePresets),
 
 		// ApplyPresets should have more priority than defaults below, so it should be run first
 		ApplyPresets(),
@@ -107,15 +101,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		// Reads (typed): b.Config.Resources.Dashboards (checks dashboard configurations)
-		// Updates (typed): b.Config.Resources.Dashboards[].ParentPath (ensures /Workspace prefix is present)
-		// Ensures dashboard parent paths have the required /Workspace prefix
-		DashboardFixups(),
-
-		// Reads (typed): b.Config.Resources.GenieSpaces (checks genie space configurations)
-		// Updates (typed): b.Config.Resources.GenieSpaces[].ParentPath (ensures /Workspace prefix is present)
-		// Ensures genie space parent paths have the required /Workspace prefix
-		GenieSpaceFixups(),
+		ApplyStage(stages.StageAfterDefaults),
 
 		// Reads (typed): b.Config.Permissions (validates permission levels)
 		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (reads existing permissions)
@@ -144,34 +130,8 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
 		mutator.ResolveVariableReferencesOnlyResources(),
 
-		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
-		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
-		// Expands glob patterns in pipeline library paths to include all matching files
-		ExpandPipelineGlobPaths(),
-
-		// Reads (typed): resources.materialization_sets.*.materialized_features
-		// Rejects a set listing two materialized features with the same member key
-		NormalizeMaterializationSetMaterializedFeatureMembers(),
-
-		// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)
-		// Updates (dynamic): resources.jobs.*.job_clusters (merges job clusters with the same job_cluster_key)
-		MergeJobClusters(),
-
-		// Reads (dynamic): resources.jobs.*.parameters (reads job parameters to merge)
-		// Updates (dynamic): resources.jobs.*.parameters (merges job parameters with the same name)
-		MergeJobParameters(),
-
-		// Reads (dynamic): resources.jobs.*.tasks (reads job tasks to merge)
-		// Updates (dynamic): resources.jobs.*.tasks (merges job tasks with the same task_key)
-		MergeJobTasks(),
-
-		// Reads (dynamic): resources.pipelines.*.clusters (reads pipeline clusters to merge)
-		// Updates (dynamic): resources.pipelines.*.clusters (merges pipeline clusters with the same label)
-		MergePipelineClusters(),
-
-		// Reads (dynamic): resources.apps.*.resources (reads app resources to merge)
-		// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
-		MergeApps(),
+		ApplyStage(stages.StageAfterResourceVariables),
+		ApplyStage(stages.StageAfterTargetMerge),
 
 		// Reads (dynamic): resources.{catalogs,schemas,external_locations,volumes,registered_models,vector_search_indexes}.*.grants
 		// Updates (dynamic): same paths — merges grant entries by principal and deduplicates privileges
@@ -183,37 +143,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Translates implicit schema and catalog references across all UC resources to explicit syntax to capture dependencies
 		CaptureUCDependencies(),
 
-		// Reads (dynamic): resources.dashboards.*.file_path
-		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
-		// Drops (dynamic): resources.dashboards.*.file_path
-		ConfigureDashboardSerializedDashboard(),
-
-		// Reads (dynamic): resources.apps.*.thumbnail_path
-		// Updates (dynamic): resources.apps.*.thumbnail_content
-		ConfigureAppThumbnail(),
-
-		// Reads (dynamic): resources.genie_spaces.*.file_path
-		// Updates (dynamic): resources.genie_spaces.*.serialized_space
-		ConfigureGenieSpaceSerializedSpace(),
-
-		// Reads (dynamic): resources.cluster_policies.*.definition
-		// Updates (dynamic): resources.cluster_policies.*.definition (inline YAML -> JSON string)
-		ConfigureClusterPolicyDefinition(),
-
-		// Reads (typed): resources.alerts.*.file_path
-		// Updates (typed): resources.alerts.* (loads alert configuration from .dbalert.json file)
-		mutator.LoadDBAlertFiles(),
-
-		// Reads and updates (typed): resources.jobs.*.**
-		JobClustersFixups(),
-		ClusterFixups(),
-
-		// Reads (typed): resources.model_serving_endpoints.*.config.{served_models,served_entities}
-		// Validates: Cannot use both served_models and served_entities at the same time
-		// Updates (typed): resources.model_serving_endpoints.*.config.served_entities (converts served_models to served_entities)
-		// Updates (typed): resources.model_serving_endpoints.*.config.served_entities[*].workload_size (sets default "Small" if not specified)
-		// Drops: resources.model_serving_endpoints.*.config.served_models (after conversion)
-		ModelServingEndpointFixups(),
+		ApplyStage(stages.StageAfterUCDependencies),
 	)
 }
 

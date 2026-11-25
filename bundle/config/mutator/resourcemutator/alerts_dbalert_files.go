@@ -1,4 +1,4 @@
-package mutator
+package resourcemutator
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -17,6 +18,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
+
+func init() {
+	// Reads (typed): resources.alerts.*.file_path
+	// Updates (typed): resources.alerts.* (loads alert configuration from .dbalert.json file)
+	stages.Register(stages.StageAfterUCDependencies, "alerts", LoadDBAlertFiles)
+}
 
 type loadDBAlertFiles struct{}
 

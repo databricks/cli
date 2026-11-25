@@ -4,10 +4,19 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
+
+func init() {
+	// Default the `source` field on job tasks (GIT for git_source jobs, else
+	// WORKSPACE). Runs after PythonMutator so it sees the final git_source/tasks
+	// and does not expose the injected default to Python code, while remaining
+	// visible in `bundle validate`/`summary`.
+	stages.Register(stages.StageAfterPython, "jobs", ApplyDefaultTaskSource)
+}
 
 type applyDefaultTaskSource struct{}
 

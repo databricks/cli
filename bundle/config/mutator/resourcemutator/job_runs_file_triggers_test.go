@@ -1,4 +1,4 @@
-package mutator_test
+package resourcemutator_test
 
 import (
 	"crypto/sha256"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
@@ -43,7 +43,7 @@ func TestResolveJobRunFileTriggersHashesThroughSyncRoot(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.ResolveJobRunFileTriggers())
 	require.False(t, diags.HasError())
 	assert.Equal(t,
 		contentHash("watched.txt\x00"+contentHash("watched")+"\x00"),
@@ -88,7 +88,7 @@ func TestResolveJobRunFileTriggersRejectsRootedPatterns(t *testing.T) {
 				},
 			}
 
-			diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
+			diags := bundle.Apply(t.Context(), b, resourcemutator.ResolveJobRunFileTriggers())
 			require.True(t, diags.HasError(), "expected %q to be rejected", pattern)
 			assert.Contains(t, diags[0].Summary, "must be relative to the defining YAML file")
 		})

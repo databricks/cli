@@ -1,4 +1,4 @@
-package mutator
+package resourcemutator
 
 import (
 	"context"
@@ -6,8 +6,14 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 )
+
+func init() {
+	// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
+	stages.Register(stages.StageAfterFieldValidation, "job_runs", ValidateJobRunTriggers)
+}
 
 type validateJobRunTriggers struct{}
 

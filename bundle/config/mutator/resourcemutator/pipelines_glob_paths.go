@@ -5,11 +5,19 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
+
+func init() {
+	// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
+	// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)
+	// Expands glob patterns in pipeline library paths to include all matching files
+	stages.Register(stages.StageAfterResourceVariables, "pipelines", ExpandPipelineGlobPaths)
+}
 
 type expandPipelineGlobPaths struct{}
 

@@ -6,10 +6,22 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 )
+
+func init() {
+	// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
+	// Reads (env): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
+	// Reads (typed): b.Config.Resources.Jobs.*.Tasks.*.ForEachTask
+	// Updates (typed): b.Config.Bundle.ClusterId (sets from environment if in development mode)
+	// Updates (typed): b.Config.Resources.Jobs.*.Tasks.*.{NewCluster,ExistingClusterId,JobClusterKey,EnvironmentKey} (replaces compute settings with specified cluster ID)
+	// OR corresponding fields on ForEachTask if that is present
+	// Overrides job compute settings with a specified cluster ID for development or testing
+	stages.Register(stages.StageBeforePresets, "jobs", OverrideCompute)
+}
 
 type overrideCompute struct{}
 

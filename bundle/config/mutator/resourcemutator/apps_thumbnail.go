@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -14,6 +15,12 @@ import (
 // maxAppThumbnailBytes matches the limit of the Apps UI and of the databricks_app
 // Terraform resource, so all clients accept the same images.
 const maxAppThumbnailBytes = 250_000
+
+func init() {
+	// Reads (dynamic): resources.apps.*.thumbnail_path
+	// Updates (dynamic): resources.apps.*.thumbnail_content
+	stages.Register(stages.StageAfterUCDependencies, "apps", ConfigureAppThumbnail)
+}
 
 type configureAppThumbnail struct{}
 

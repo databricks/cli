@@ -4,10 +4,20 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
+
+func init() {
+	// Reads (typed): resources.model_serving_endpoints.*.config.{served_models,served_entities}
+	// Validates: Cannot use both served_models and served_entities at the same time
+	// Updates (typed): resources.model_serving_endpoints.*.config.served_entities (converts served_models to served_entities)
+	// Updates (typed): resources.model_serving_endpoints.*.config.served_entities[*].workload_size (sets default "Small" if not specified)
+	// Drops: resources.model_serving_endpoints.*.config.served_models (after conversion)
+	stages.Register(stages.StageAfterUCDependencies, "model_serving_endpoints", ModelServingEndpointFixups)
+}
 
 type modelServingEndpointFixups struct{}
 

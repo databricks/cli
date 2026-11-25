@@ -13,7 +13,7 @@ This document defines where logic about a resource type lives, so that shared co
 
 ## Conventions
 
-- **Registration:** a per-type file registers itself with its package's registry from `func init()`. Registration only records the value; any non-trivial work happens on first use. A registry must not depend on registration order: it sorts by resource key (or another explicit, documented order) before use, and keeps the in-file order of several registrations made by one file.
+- **Registration:** a per-type file registers itself with its package's registry from `func init()`. Registration only records the value; any non-trivial work happens on first use. A registry must not depend on registration order: it sorts by resource key (or another explicit, documented order) before use. If a type registers more than once, the registry documents how those registrations are ordered, and that order must not depend on the order in which `init()` functions run.
 - **File names:** a new per-type file is named after the type's key under `resources:` (`jobs`, `pipelines`, `feature_specs`): `<key>.go`, or `<key>_<aspect>.go` when a type has several files.
 - **Completeness by test, not by list:** where a fact must be declared for every type, a test fails for a type that declares nothing and names that type.
 - **Shared code names no resource type:** shared ("engine") code contains no resource-type names, no type switches on resource types and no per-type branches. Such logic goes where the rules above put it.

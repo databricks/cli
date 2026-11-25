@@ -4,10 +4,17 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 )
+
+func init() {
+	// Reads (dynamic): resources.jobs.*.job_clusters (reads job clusters to merge)
+	// Updates (dynamic): resources.jobs.*.job_clusters (merges job clusters with the same job_cluster_key)
+	stages.Register(stages.StageAfterTargetMerge, "jobs", MergeJobClusters)
+}
 
 type mergeJobClusters struct{}
 

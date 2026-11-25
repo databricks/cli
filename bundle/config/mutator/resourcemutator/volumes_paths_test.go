@@ -1,10 +1,11 @@
-package mutator
+package resourcemutator
 
 import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/require"
@@ -132,7 +133,7 @@ func TestVolumePathPipeline_ResolvesCrossVolumeReference(t *testing.T) {
 		t.Context(),
 		b,
 		InitializeVolumePaths(),
-		ResolveVolumePathReferencesOnlyResources(),
+		mutator.ResolveVolumePathReferencesOnlyResources(),
 	)
 	require.NoError(t, diags.Error())
 	require.Equal(t, "/Volumes/main/myschema/volbar", b.Config.Resources.Volumes["bar"].VolumePath)

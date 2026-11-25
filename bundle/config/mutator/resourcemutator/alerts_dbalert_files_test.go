@@ -1,4 +1,4 @@
-package mutator_test
+package resourcemutator_test
 
 import (
 	"os"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
@@ -72,7 +72,7 @@ func TestLoadDBAlertFiles(t *testing.T) {
 
 	// Note: This test only verifies that the mutator doesn't error when a file_path is set.
 	// The full functionality is tested in acceptance tests where the bundle is properly initialized.
-	diags := bundle.Apply(t.Context(), b, mutator.LoadDBAlertFiles())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.LoadDBAlertFiles())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "Test Alert", b.Config.Resources.Alerts["my_alert"].DisplayName)
@@ -113,7 +113,7 @@ func TestLoadDBAlertFilesRelativeToBundleRoot(t *testing.T) {
 		File: filepath.Join(dir, "databricks.yml"),
 	}})
 
-	diags := bundle.Apply(t.Context(), b, mutator.LoadDBAlertFiles())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.LoadDBAlertFiles())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "SELECT 1\n", b.Config.Resources.Alerts["my_alert"].QueryText)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
@@ -45,11 +46,7 @@ func loadTargetWithDiags(t *testing.T, path, env string) (*bundle.Bundle, diag.D
 		mutator.RewriteSyncPaths(),
 		mutator.SyncDefaultPath(),
 		mutator.SyncInferRoot(),
-		resourcemutator.MergeJobClusters(),
-		resourcemutator.MergeJobParameters(),
-		resourcemutator.MergeJobTasks(),
-		resourcemutator.MergePipelineClusters(),
-		resourcemutator.MergeApps(),
+		resourcemutator.ApplyStage(stages.StageAfterTargetMerge),
 		resourcemutator.ModelServingEndpointFixups(),
 	))
 	return b, diags

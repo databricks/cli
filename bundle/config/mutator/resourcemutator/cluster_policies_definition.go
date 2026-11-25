@@ -6,12 +6,19 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
 // jsonPolicyFields are the JSON-policy fields normalized from inline YAML to a JSON string.
 var jsonPolicyFields = []string{"definition", "policy_family_definition_overrides"}
+
+func init() {
+	// Reads (dynamic): resources.cluster_policies.*.definition
+	// Updates (dynamic): resources.cluster_policies.*.definition (inline YAML -> JSON string)
+	stages.Register(stages.StageAfterUCDependencies, "cluster_policies", ConfigureClusterPolicyDefinition)
+}
 
 type configureClusterPolicyDefinition struct{}
 

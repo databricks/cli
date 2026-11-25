@@ -2,12 +2,18 @@ package resourcemutator
 
 import (
 	"context"
-	"path"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 )
+
+func init() {
+	// Reads (typed): b.Config.Resources.Dashboards (checks dashboard configurations)
+	// Updates (typed): b.Config.Resources.Dashboards[].ParentPath (ensures /Workspace prefix is present)
+	// Ensures dashboard parent paths have the required /Workspace prefix
+	stages.Register(stages.StageAfterDefaults, "dashboards", DashboardFixups)
+}
 
 type dashboardFixups struct{}
 
@@ -17,15 +23,6 @@ func DashboardFixups() bundle.Mutator {
 
 func (m *dashboardFixups) Name() string {
 	return "DashboardFixups"
-}
-
-// The DoRead method for direct deployment adds the /Workspace prefix. Add it to the local
-// configuration as well to avoid persistent recreates.
-func ensureWorkspacePrefix(parentPath string) string {
-	if parentPath == "/Workspace" || strings.HasPrefix(parentPath, "/Workspace/") {
-		return parentPath
-	}
-	return path.Join("/Workspace", parentPath)
 }
 
 func (m *dashboardFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

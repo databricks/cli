@@ -1,4 +1,4 @@
-package mutator
+package resourcemutator
 
 import (
 	"context"
@@ -14,11 +14,18 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/stages"
 	"github.com/databricks/cli/libs/diag"
 )
 
 // Every diagnostic below is reported against an on_file_change entry.
 const fileTriggerPrefix = "lifecycle.triggers.on_file_change: "
+
+func init() {
+	// Fingerprint on_file_change triggers once, after every step that can produce
+	// a watched file: build and the predeploy script.
+	stages.Register(stages.StageAfterBuild, "job_runs", ResolveJobRunFileTriggers)
+}
 
 type resolveJobRunFileTriggers struct{}
 
