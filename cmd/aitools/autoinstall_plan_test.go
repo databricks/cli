@@ -120,6 +120,52 @@ func TestPlanToolsKeepsSkillsWithoutInstallState(t *testing.T) {
 	assert.True(t, tools.fresh())
 }
 
+// Install state that an unfinished first install of auto-install saved is
+// finished as a first install. Install state that anything else wrote, such
+// as a later `aitools install --skills-only`, is updated: a first install
+// would put Claude Code on the plugin and drop the user's choices.
+func TestPlanToolsUpdatesInstallStateAnUnfinishedInstallDidNotWrite(t *testing.T) {
+	autoInstallHome(t)
+	dir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	saved := &installer.InstallState{
+		SchemaVersion: installer.CurrentSchemaVersion,
+		Release:       "v0.2.6",
+		Skills:        map[string]string{"databricks-sql": "1.0.0"},
+		Scope:         installer.ScopeGlobal,
+	}
+	require.NoError(t, installer.SaveState(dir, saved))
+	loaded, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	digest, err := installStateDigest(loaded)
+	require.NoError(t, err)
+	prior := autoinstall.State{Installing: true, InstallStateDigest: digest}
+
+	tools, err := planTools(t.Context(), prior)
+	require.NoError(t, err)
+	assert.True(t, tools.fresh(), "the install state is the unfinished install's own")
+
+	// The MCP section is written by the mcp commands and does not count.
+	require.NoError(t, installer.SaveMCPState(dir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "databricks"}}}))
+	tools, err = planTools(t.Context(), prior)
+	require.NoError(t, err)
+	assert.True(t, tools.fresh(), "an MCP record keeps the install state the unfinished install's own")
+
+	saved.SkillsOnlyAgents = []string{agents.NameClaudeCode}
+	require.NoError(t, installer.SaveState(dir, saved))
+	tools, err = planTools(t.Context(), prior)
+	require.NoError(t, err)
+	assert.False(t, tools.fresh())
+	require.NotNil(t, tools.existing, "the user's install state is updated")
+	assert.Equal(t, []string{agents.NameClaudeCode}, tools.existing.SkillsOnlyAgents)
+
+	// Install state saved while Installing is set, by a CLI that recorded no
+	// digest, is not known to be the unfinished install's own either.
+	tools, err = planTools(t.Context(), autoinstall.State{Installing: true})
+	require.NoError(t, err)
+	require.NotNil(t, tools.existing)
+}
+
 func TestPlanToolsKeepsPluginInstalledWithAgentCLI(t *testing.T) {
 	// The records Codex CLI 0.171.0 and Copilot CLI 1.0.x write for
 	// `codex plugin add` and `copilot plugin install`. Each records the

@@ -325,6 +325,11 @@ func TestAutoInstallPrompt(t *testing.T) {
 
 			state, err := autoinstall.Load(ctx)
 			require.NoError(t, err)
+			// Only an install that saved install state and did not finish
+			// records its digest; TestAutoInstallRetriesAnAgentThatGotNoSkills
+			// checks the value.
+			assert.Equal(t, tc.unwritableSkillsDir, state.InstallStateDigest != "", "install state digest")
+			state.InstallStateDigest = ""
 			assert.Equal(t, tc.wantState, state)
 
 			var outcomes []protos.AitoolsAutoInstallOutcome
@@ -532,10 +537,13 @@ func TestAutoInstallRetriesAnAgentThatGotNoSkills(t *testing.T) {
 
 	outcomes, state := runAutoInstallAt(t, 0)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
-	assert.Equal(t, failedAttempts(1, 0), state)
 	installState, err := installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
 	require.NoError(t, err)
 	require.NotNil(t, installState, "the skills are recorded")
+	want := failedAttempts(1, 0)
+	want.InstallStateDigest, err = installStateDigest(installState)
+	require.NoError(t, err)
+	assert.Equal(t, want, state)
 
 	require.NoError(t, os.Remove(skillsDir))
 	outcomes, state = runAutoInstallAt(t, 5*time.Minute)

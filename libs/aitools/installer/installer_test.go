@@ -1168,6 +1168,42 @@ func TestInstallSkillsForAgentsReportsAgentWithUnwritableSkillsDir(t *testing.T)
 	}
 }
 
+// An agent that got some of the skills counts toward the summary, and its
+// failure names how many skills it is missing.
+func TestInstallSkillsForAgentsReportsAgentMissingSomeSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	// A skill of another tool is in the way of databricks-jobs, and it cannot
+	// be moved aside.
+	agent := testAgent(tmp)
+	inTheWay := filepath.Join(tmp, ".test-agent", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(inTheWay, 0o755))
+	orig := renamePathFn
+	t.Cleanup(func() { renamePathFn = orig })
+	renamePathFn = func(oldpath, newpath string) error {
+		if oldpath == inTheWay {
+			return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: fs.ErrPermission}
+		}
+		return os.Rename(oldpath, newpath)
+	}
+
+	err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{agent}, InstallOptions{})
+
+	agentsErr, ok := errors.AsType[*AgentSkillsError](err)
+	require.True(t, ok, "want *AgentSkillsError, got %v", err)
+	require.Len(t, agentsErr.Failures, 1)
+	f := agentsErr.Failures[0]
+	assert.True(t, f.Partial())
+	assert.Equal(t, 1, f.Skills)
+	assert.Equal(t, 2, f.Total)
+	assert.True(t, strings.HasPrefix(f.Notice(), "Test Agent is missing 1 of 2 skills: "), f.Notice())
+	assert.FileExists(t, filepath.Join(tmp, ".test-agent", "skills", "databricks-sql", "SKILL.md"))
+	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
+}
+
 func TestLegacyTargetedInstallBlocked(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())

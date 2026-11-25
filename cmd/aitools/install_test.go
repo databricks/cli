@@ -821,7 +821,7 @@ func TestExecutePlanNothingInstalledIsAnError(t *testing.T) {
 }
 
 // stubSkillsAgentFailures makes the install of 34 skills succeed, except that
-// each named agent is reported as getting only got of them.
+// each named agent is reported as getting only `got` of the 34 skills.
 func stubSkillsAgentFailures(t *testing.T, got int, failing ...string) error {
 	t.Helper()
 	cause := &fs.PathError{Op: "mkdir", Path: "/home/user/.cursor/skills/databricks-core", Err: fs.ErrPermission}
@@ -897,8 +897,10 @@ func TestExecutePlanReportsSkillsAgentThatGotNoSkills(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cause := stubSkillsAgentFailures(t, tc.got, agents.NameCursor)
 			reason := "could not install 34 skills: mkdir /home/user/.cursor/skills/databricks-core: permission denied"
+			notice := "Skipped Cursor: " + reason
 			if tc.got > 0 {
 				reason = "could not install 33 of 34 skills: mkdir /home/user/.cursor/skills/databricks-core: permission denied"
+				notice = "Cursor is missing 33 of 34 skills: mkdir /home/user/.cursor/skills/databricks-core: permission denied"
 			}
 			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 			rerun := installInvocation{scope: installer.ScopeGlobal, skillsOnly: true}
@@ -911,9 +913,10 @@ func TestExecutePlanReportsSkillsAgentThatGotNoSkills(t *testing.T) {
 				got = append(got, fmt.Sprintf("%s %s %s %s", o.agent.Name, o.delivery, o.status, o.errorCategory))
 			}
 			assert.Equal(t, tc.wantOutcomes, got)
+			require.NotEmpty(t, outcomes)
 			assert.Equal(t, reason, outcomes[0].message)
 			assert.Equal(t, "Check that you own /home/user/.cursor/skills/databricks-core and can write to it (an earlier run with sudo can leave it owned by root), then re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'.", outcomes[0].recovery)
-			assert.Contains(t, stderr.String(), "Skipped Cursor: "+reason+"\n  Check that you own")
+			assert.Contains(t, stderr.String(), notice+"\n  Check that you own")
 			if !tc.wantErr {
 				require.NoError(t, err)
 				return

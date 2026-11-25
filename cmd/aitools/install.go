@@ -924,11 +924,12 @@ func skillsBatchError(ctx context.Context, rerun installInvocation, skillsAgents
 
 // forgetStalePluginRecords drops the CLI's plugin records of plugin agents
 // that were just given skill files, whether or not every file could be
-// written: those whose CLI is missing, and those under --skills-only. They have no plugin (see pluginAlreadyInstalled and
-// planItemFor), so a record left by a removal with the agent's own CLI, or in
-// the agent itself, is stale, and list and update would keep treating them as
-// plugin agents and never refresh their skill files. The skills are already
-// installed, so a failure here is only a warning.
+// written: those whose CLI is missing, and those under --skills-only. They
+// have no plugin (see pluginAlreadyInstalled and planItemFor), so a record
+// left by a removal with the agent's own CLI, or in the agent itself, is
+// stale, and list and update would keep treating them as plugin agents and
+// never refresh their skill files. The skills are already installed, so a
+// failure here is only a warning.
 func forgetStalePluginRecords(ctx context.Context, scope string, items []agentPlanItem) {
 	if len(items) == 0 {
 		return
@@ -1061,7 +1062,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 				reason := f.Reason()
 				recovery := installRecovery(ctx, skillsAgentRerun(rerun, it), f.Err)
 				if !quiet {
-					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %s", it.agent.DisplayName, reason)))
+					cmdio.LogString(ctx, cmdio.Yellow(ctx, f.Notice()))
 					cmdio.LogString(ctx, "  "+recovery)
 				}
 				outcomes = append(outcomes, agentOutcome{
