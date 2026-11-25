@@ -114,6 +114,10 @@ func (m *ModelProviderService) InitializeURL(baseURL url.URL) {
 	m.URL = workspaceurls.ResourceURL(baseURL, "model_provider_services", m.ID)
 }
 
+func (*ModelProviderService) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (m *ModelProviderService) GetName() string {
 	return m.ModelProviderServiceId
 }

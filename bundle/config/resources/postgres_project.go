@@ -82,6 +82,11 @@ func (*PostgresProject) PermissionsSupport() PermissionsSupport {
 	}
 }
 
+func (*PostgresProject) NamePrefixExemptReason() string {
+	return "the project is addressed by its ID (projects/{project_id}); its display_name is not prefixed today and, " +
+		"unlike for dashboards, no decision has been recorded on whether it should be"
+}
+
 func (p *PostgresProject) GetName() string {
 	return p.DisplayName
 }

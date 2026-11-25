@@ -87,3 +87,22 @@ func (m *DataQualityMonitor) GetURL() (string, bool) {
 func (m *DataQualityMonitor) GetName() string {
 	return DataQualityMonitorID(m.ObjectType, m.ObjectId)
 }
+
+func (m *DataQualityMonitor) ApplyPresets(p *PresetSettings) {
+	if p.TriggerPauseStatus != TriggerPauseStatusPaused {
+		return
+	}
+	// Same as quality monitors: the schedule's pause_status is read-only, so a
+	// paused preset can only drop the schedule.
+	if m.DataProfilingConfig == nil {
+		return
+	}
+	s := m.DataProfilingConfig.Schedule
+	if s != nil && s.PauseStatus != dataquality.CronSchedulePauseStatusCronSchedulePauseStatusUnpaused {
+		m.DataProfilingConfig.Schedule = nil
+	}
+}
+
+func (*DataQualityMonitor) NamePrefixExemptReason() string {
+	return "a monitor has no name of its own: it is identified by the object it monitors"
+}

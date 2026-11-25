@@ -70,6 +70,10 @@ func (e *PostgresEndpoint) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresEndpoint) NamePrefixExemptReason() string {
+	return "an endpoint has no name of its own: its resource name is its ID"
+}
+
 func (e *PostgresEndpoint) GetName() string {
 	// Endpoints have no name field of their own; the resource name is the ID
 	// ("projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}").

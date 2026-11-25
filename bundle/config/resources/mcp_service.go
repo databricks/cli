@@ -106,6 +106,10 @@ func (m *McpService) InitializeURL(baseURL url.URL) {
 	m.URL = workspaceurls.ResourceURL(baseURL, "mcp_services", m.ID)
 }
 
+func (*McpService) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (m *McpService) GetName() string {
 	return m.McpServiceId
 }

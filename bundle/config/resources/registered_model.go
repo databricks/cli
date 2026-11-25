@@ -71,3 +71,9 @@ func (s *RegisteredModel) GetName() string {
 func (s *RegisteredModel) UCNames() []UCName {
 	return []UCName{ucCatalogAndSchemas(&s.CatalogName, &s.SchemaName)}
 }
+
+func (s *RegisteredModel) ApplyPresets(p *PresetSettings) {
+	s.Name = normalizePrefix(p.NamePrefix) + s.Name
+
+	// As of 2024-06, registered models don't yet support tags
+}

@@ -82,3 +82,10 @@ func (s *ClusterPolicy) InitializeURL(baseURL url.URL) {
 func (s *ClusterPolicy) GetName() string {
 	return s.Name
 }
+
+// ApplyPresets prefixes the policy name: it is a user-facing display name
+// (unique, 1-100 chars), not the API id (policy_id), so prefixing it in dev
+// mode avoids collisions between developers without changing identity.
+func (s *ClusterPolicy) ApplyPresets(p *PresetSettings) {
+	s.Name = p.NamePrefix + s.Name
+}

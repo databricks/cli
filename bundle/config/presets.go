@@ -1,8 +1,10 @@
 package config
 
+import "github.com/databricks/cli/bundle/config/resources"
+
 const (
-	Paused   = "PAUSED"
-	Unpaused = "UNPAUSED"
+	Paused   = resources.TriggerPauseStatusPaused
+	Unpaused = resources.TriggerPauseStatusUnpaused
 )
 
 type Presets struct {

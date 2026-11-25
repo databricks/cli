@@ -98,3 +98,23 @@ func (a *Alert) ApplyRunAs(runAs *jobs.JobRunAs) {
 		UserName:             runAs.UserName,
 	}
 }
+
+func (a *Alert) ApplyPresets(p *PresetSettings) {
+	a.DisplayName = p.NamePrefix + a.DisplayName
+	if p.TriggerPauseStatus != "" {
+		paused := sql.SchedulePauseStatusPaused
+		if p.TriggerPauseStatus == TriggerPauseStatusUnpaused {
+			paused = sql.SchedulePauseStatusUnpaused
+		}
+		// Only set pause status if a schedule is defined and pause status is not already set
+		if a.Schedule.QuartzCronSchedule != "" && a.Schedule.PauseStatus == "" {
+			a.Schedule.PauseStatus = paused
+		}
+	}
+}
+
+func (a *Alert) FieldDefaults(c DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		{"parent_path", c.ResourcePath},
+	}
+}

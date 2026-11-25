@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -94,4 +95,69 @@ func (j *Job) ApplyRunAs(runAs *jobs.JobRunAs) {
 
 func (j *Job) ApplyLegacyRunAs(runAs *jobs.JobRunAs, _ string) {
 	j.ApplyRunAs(runAs)
+}
+
+func (j *Job) ApplyPresets(p *PresetSettings) {
+	j.Name = p.NamePrefix + j.Name
+	if len(p.Tags) > 0 {
+		if j.Tags == nil {
+			// Note: only create this map if tags is not empty, to avoid inserting "tags: {}" entry in the config
+			j.Tags = make(map[string]string, len(p.Tags))
+		}
+		for _, tag := range p.Tags {
+			if j.Tags[tag.Key] == "" {
+				j.Tags[tag.Key] = tag.Value
+			}
+		}
+	}
+	if j.MaxConcurrentRuns == 0 {
+		j.MaxConcurrentRuns = p.JobsMaxConcurrentRuns
+	}
+	if p.TriggerPauseStatus != "" {
+		paused := jobs.PauseStatusPaused
+		if p.TriggerPauseStatus == TriggerPauseStatusUnpaused {
+			paused = jobs.PauseStatusUnpaused
+		}
+
+		if j.Schedule != nil && j.Schedule.PauseStatus == "" {
+			j.Schedule.PauseStatus = paused
+		}
+		if j.Continuous != nil && j.Continuous.PauseStatus == "" {
+			j.Continuous.PauseStatus = paused
+		}
+		if j.Trigger != nil && j.Trigger.PauseStatus == "" {
+			j.Trigger.PauseStatus = paused
+		}
+		for i := range j.Triggers {
+			if j.Triggers[i].PauseStatus == "" {
+				j.Triggers[i].PauseStatus = paused
+			}
+		}
+	}
+}
+
+func (j *Job) FieldDefaults(DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		// The defaults are the same as for terraform provider latest version (v1.75.0)
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/jobs/resource_job.go#L532
+		{"name", "Untitled"},
+		{"max_concurrent_runs", 1},
+		{"schedule.pause_status", "UNPAUSED"},
+		{"trigger.pause_status", "UNPAUSED"},
+		{"continuous.pause_status", "UNPAUSED"},
+
+		// Enable queueing for jobs by default, following the behavior from API 2.2+.
+		// As of 2024-04, we're still using API 2.1 which has queueing disabled by default.
+		{"queue", map[string]dyn.Value{
+			"enabled": dyn.V(true),
+		}},
+
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
+		{"job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
+		{"job_clusters[*].new_cluster.workload_type.clients.jobs", true},
+	}
+}
+
+func (j *Job) IsRunAsSet() bool {
+	return j.RunAs != nil
 }

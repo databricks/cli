@@ -48,6 +48,10 @@ func (s *SyncedDatabaseTable) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*SyncedDatabaseTable) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (s *SyncedDatabaseTable) GetName() string {
 	return s.Name
 }

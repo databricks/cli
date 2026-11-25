@@ -75,6 +75,16 @@ func (v *Volume) InitializeURL(baseURL url.URL) {
 	v.URL = workspaceurls.ResourceURL(baseURL, "volumes", v.ID)
 }
 
+func (*Volume) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
+func (*Volume) FieldDefaults(DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		{"volume_type", "MANAGED"},
+	}
+}
+
 func (v *Volume) GetName() string {
 	return v.Name
 }

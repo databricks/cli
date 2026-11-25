@@ -81,3 +81,12 @@ func (s *Schema) UCSchemaName() (string, string) {
 func (s *Schema) UCNames() []UCName {
 	return []UCName{ucCatalogAndSchemas(&s.CatalogName)}
 }
+
+func (s *Schema) ApplyPresets(p *PresetSettings) {
+	if p.SkipNamePrefixForSchema {
+		return
+	}
+	s.Name = normalizePrefix(p.NamePrefix) + s.Name
+	// HTTP API for schemas doesn't yet support tags. It's only supported in
+	// the Databricks UI and via the SQL API.
+}

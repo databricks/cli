@@ -72,6 +72,10 @@ func (f *FeatureSpec) InitializeURL(baseURL url.URL) {
 	f.URL = workspaceurls.ResourceURL(baseURL, "feature_specs", f.ID)
 }
 
+func (*FeatureSpec) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (f *FeatureSpec) GetName() string {
 	return f.Name
 }

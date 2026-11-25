@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"slices"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -119,4 +120,45 @@ func (p *Pipeline) UCNames() []UCName {
 	// "schema" and "target" have the same semantics in the SDP API but are mutually
 	// exclusive i.e. only one can be set at a time.
 	return []UCName{ucCatalogAndSchemas(&p.Catalog, &p.Schema, &p.Target)}
+}
+
+func (p *Pipeline) ApplyPresets(t *PresetSettings) {
+	p.Name = t.NamePrefix + p.Name
+	if t.PipelinesDevelopment {
+		//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
+		p.Development = true
+	}
+	if t.TriggerPauseStatus == TriggerPauseStatusPaused {
+		//nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
+		p.Continuous = false
+	}
+
+	if len(t.Tags) > 0 {
+		if p.Tags == nil {
+			// Note: only create this map if tags is not empty, to avoid inserting "tags: {}" entry in the config
+			p.Tags = make(map[string]string, len(t.Tags))
+		}
+		for _, tag := range t.Tags {
+			if p.Tags[tag.Key] == "" {
+				p.Tags[tag.Key] = tag.Value
+			}
+		}
+	}
+}
+
+func (p *Pipeline) FieldDefaults(DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		// Same as terraform
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
+		{"edition", "ADVANCED"},
+		{"channel", "CURRENT"},
+	}
+}
+
+func (p *Pipeline) ValidateProductionMode() diag.Diagnostics {
+	//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
+	if p.Development {
+		return diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
+	}
+	return nil
 }

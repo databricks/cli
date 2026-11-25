@@ -134,11 +134,10 @@ func findNonUserPath(b *bundle.Bundle) string {
 }
 
 func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
-	r := b.Config.Resources
-	for i := range r.Pipelines {
-		//nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-		if r.Pipelines[i].Development {
-			return diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
+	r := &b.Config.Resources
+	for v := range resourcesImplementing[resources.ProductionModeValidator](r) {
+		if diags := v.ValidateProductionMode(); diags != nil {
+			return diags
 		}
 	}
 
@@ -179,9 +178,9 @@ func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnos
 // Determines whether run_as is explicitly set for all resources.
 // We do this in a best-effort fashion rather than check the top-level
 // 'run_as' field because the latter is not required to be set.
-func isRunAsSet(r config.Resources) bool {
-	for i := range r.Jobs {
-		if r.Jobs[i].RunAs == nil {
+func isRunAsSet(r *config.Resources) bool {
+	for v := range resourcesImplementing[resources.ExplicitRunAsReporter](r) {
+		if !v.IsRunAsSet() {
 			return false
 		}
 	}

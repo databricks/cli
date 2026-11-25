@@ -2,7 +2,7 @@ package resourcemutator
 
 import (
 	"reflect"
-	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -552,66 +552,25 @@ func TestAllResourcesMocked(t *testing.T) {
 	}
 }
 
-// TestAppropriateResourcesAreRenamed checks that every resource with a user-facing
-// Name field is renamed by dev-mode / presets.name_prefix, except for an
-// explicit carve-out list. The carve-out applies to resources whose Name is
-// the API primary key / object id (not a display name) — prefixing those
-// would change the resource's identity rather than its label.
+// TestAppropriateResourcesAreRenamed checks that dev-mode / presets.name_prefix
+// renames every resource, unless its type implements resources.NamePrefixExempt,
+// in which case its name must stay unchanged. TestAllResourcesMocked makes sure
+// that the mock bundle has a resource of every type.
 func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
-
-	notRenamedFields := []reflect.Type{
-		reflect.TypeFor[*resources.Catalog](),
-		reflect.TypeFor[*resources.ExternalLocation](),
-		reflect.TypeFor[*resources.Volume](),
-		reflect.TypeFor[*resources.VectorSearchEndpoint](),
-		reflect.TypeFor[*resources.VectorSearchIndex](),
-	}
-
-	// Resources whose Name is server-generated or otherwise not a user-facing
-	// label, so the rename matrix doesn't apply. Reflection still finds a
-	// Name field on these via embedded SDK types, hence the explicit skip.
-	notUserNamed := []string{
-		"Apps",
-		"Features",
-		"FeatureSpecs",
-		"SecretScopes",
-		"Secrets",
-		"DatabaseInstances",
-		"DatabaseCatalogs",
-		"SyncedDatabaseTables",
-		"PostgresProjects",
-		"PostgresBranches",
-		"PostgresEndpoints",
-		"PostgresCatalogs",
-		"PostgresDatabases",
-		"PostgresSyncedTables",
-	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	resources := reflect.ValueOf(b.Config.Resources)
-	for i := range resources.NumField() {
-		field := resources.Field(i)
-		if field.Kind() != reflect.Map {
-			continue
-		}
-		resourceType := resources.Type().Field(i).Name
-		if slices.Contains(notUserNamed, resourceType) {
-			continue
-		}
-		for _, key := range field.MapKeys() {
-			resource := field.MapIndex(key)
-			nameField := resource.Elem().FieldByName("Name")
-			if !nameField.IsValid() || nameField.Kind() != reflect.String {
-				continue
-			}
-
-			if slices.Contains(notRenamedFields, resource.Type()) {
-				assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resourceType)
+	for _, group := range b.Config.Resources.AllResources() {
+		for key, r := range group.Resources {
+			name := r.GetName()
+			prefixed := strings.Contains(name, "[dev lennart] ") || strings.Contains(name, "dev_lennart_")
+			if e, ok := r.(resources.NamePrefixExempt); ok {
+				assert.NotEmpty(t, e.NamePrefixExemptReason(), "%s.%s", group.Description.PluralName, key)
+				assert.False(t, prefixed, "%s.%s implements resources.NamePrefixExempt but its name %q is prefixed", group.Description.PluralName, key, name)
 			} else {
-				assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resourceType)
+				assert.True(t, prefixed, "%s.%s: name %q is not prefixed; prefix it in ApplyPresets or implement resources.NamePrefixExempt", group.Description.PluralName, key, name)
 			}
 		}
 	}

@@ -64,6 +64,10 @@ func (c *Catalog) InitializeURL(baseURL url.URL) {
 	c.URL = workspaceurls.ResourceURL(baseURL, "catalogs", c.ID)
 }
 
+func (*Catalog) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (c *Catalog) GetName() string {
 	return c.Name
 }

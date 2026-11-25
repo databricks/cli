@@ -72,6 +72,10 @@ func (s *Secret) InitializeURL(baseURL url.URL) {
 	s.URL = workspaceurls.ResourceURL(baseURL, "secrets", s.ID)
 }
 
+func (*Secret) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (s *Secret) GetName() string {
 	if s.ID != "" {
 		return s.ID

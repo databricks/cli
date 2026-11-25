@@ -48,6 +48,10 @@ func (d *DatabaseCatalog) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*DatabaseCatalog) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (d *DatabaseCatalog) GetName() string {
 	return d.Name
 }

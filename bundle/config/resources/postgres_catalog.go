@@ -63,6 +63,10 @@ func (c *PostgresCatalog) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresCatalog) NamePrefixExemptReason() string {
+	return unityCatalogNamePrefixExemptReason
+}
+
 func (c *PostgresCatalog) GetName() string {
 	return c.CatalogId
 }

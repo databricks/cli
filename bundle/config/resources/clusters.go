@@ -87,3 +87,29 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 func (s *Cluster) GetName() string {
 	return s.ClusterName
 }
+
+func (s *Cluster) ApplyPresets(p *PresetSettings) {
+	s.ClusterName = p.NamePrefix + s.ClusterName
+	if len(p.Tags) > 0 {
+		if s.CustomTags == nil {
+			s.CustomTags = make(map[string]string, len(p.Tags))
+		}
+		for _, tag := range p.Tags {
+			normalisedKey := p.Tagging.NormalizeKey(tag.Key)
+			normalisedValue := p.Tagging.NormalizeValue(tag.Value)
+			if _, ok := s.CustomTags[normalisedKey]; !ok {
+				s.CustomTags[normalisedKey] = normalisedValue
+			}
+		}
+	}
+}
+
+func (s *Cluster) FieldDefaults(DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		// Same as terraform
+		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
+		{"autotermination_minutes", 60},
+		{"workload_type.clients.notebooks", true},
+		{"workload_type.clients.jobs", true},
+	}
+}

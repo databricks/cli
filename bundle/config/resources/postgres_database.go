@@ -74,6 +74,10 @@ func (d *PostgresDatabase) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*PostgresDatabase) NamePrefixExemptReason() string {
+	return "a database has no name of its own: its resource name is its ID"
+}
+
 func (d *PostgresDatabase) GetName() string {
 	// Databases have no name field of their own; the resource name is the ID
 	// ("projects/{project_id}/branches/{branch_id}/databases/{database_id}").

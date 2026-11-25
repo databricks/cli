@@ -121,3 +121,13 @@ func (r *GenieSpace) InitializeURL(baseURL url.URL) {
 func (r *GenieSpace) GetName() string {
 	return r.Title
 }
+
+func (r *GenieSpace) ApplyPresets(p *PresetSettings) {
+	r.Title = p.NamePrefix + r.Title
+}
+
+func (r *GenieSpace) FieldDefaults(c DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		{"parent_path", c.ResourcePath},
+	}
+}

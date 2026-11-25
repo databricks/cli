@@ -160,3 +160,14 @@ func (*Dashboard) RunAsRejectedSubject() string {
 func (r *Dashboard) RejectsRunAs() bool {
 	return r.EmbedCredentials
 }
+
+func (r *Dashboard) ApplyPresets(p *PresetSettings) {
+	r.DisplayName = p.NamePrefix + r.DisplayName
+}
+
+func (r *Dashboard) FieldDefaults(c DefaultsContext) []FieldDefault {
+	return []FieldDefault{
+		{"parent_path", c.ResourcePath},
+		{"embed_credentials", false},
+	}
+}

@@ -99,6 +99,10 @@ func (*MaterializationSet) ResourceDescription() ResourceDescription {
 	}
 }
 
+func (*MaterializationSet) NamePrefixExemptReason() string {
+	return "a set has no name: it is identified only by its server-assigned id"
+}
+
 // GetName returns the in-product name, which is empty: a set is identified only by its
 // server-assigned id.
 func (s *MaterializationSet) GetName() string {
