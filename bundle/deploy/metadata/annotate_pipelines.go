@@ -8,8 +8,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+func init() {
+	annotations.Register("pipelines", AnnotatePipelines)
+}
+
 type annotatePipelines struct{}
 
+// AnnotatePipelines sets the bundle deployment metadata of every pipeline.
 func AnnotatePipelines() bundle.Mutator {
 	return &annotatePipelines{}
 }
