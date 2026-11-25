@@ -19,8 +19,13 @@ type UCName struct {
 // or schemas. A name that matches a catalog or schema defined in the same bundle
 // is rewritten into a reference to that resource, so that the deployment order
 // follows the dependency.
+//
+// Unlike a static declaration, this is per-instance behaviour: UCNames is called on
+// each configured resource and returns pointers into it, so that the names can be
+// rewritten in place.
 type UCNameDeclarer interface {
-	// UCNames returns the fields of the receiver that name a catalog or schema.
+	// UCNames returns pointers to the fields of the receiver that name a catalog or
+	// schema.
 	UCNames() []UCName
 }
 
