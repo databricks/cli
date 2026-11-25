@@ -1,11 +1,29 @@
 package dresources
 
 import (
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	registerWithoutTestFixture("cluster_policies", "the test server creates a policy from an empty request")
+
+	registerTestDeps("cluster_policies.permissions", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &PermissionsState{
+			ObjectID: "/cluster-policies/cluster-policy-permissions",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_USE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	})
+
+	registerCreateRecoveryOptOut("cluster_policies", "candidate: policy names are unique and the read response has created_at_timestamp, but the backend assigns the id, so the lookup has to go by name")
+}
 
 func TestClusterPolicyPrepareState(t *testing.T) {
 	tests := []struct {

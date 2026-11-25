@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/testserver"
@@ -20,6 +22,45 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestConfig("apps", &resources.App{
+		Name: "myapp",
+	})
+
+	registerTestDeps("apps.permissions", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Apps.Create(ctx, apps.CreateAppRequest{
+			App: apps.App{
+				Name: "app-permissions",
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/apps/" + waiter.Response.Name,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	})
+
+	registerKnownMissingInRemoteType("apps",
+		// The Apps API can't return the thumbnail image, only its thumbnail_url.
+		"thumbnail",
+	)
+
+	registerKnownMissingInStateType("apps",
+		"lifecycle.prevent_destroy",
+		"lifecycle.depends_on",
+		// The image read from thumbnail_path is kept in state as thumbnail.
+		"thumbnail_path",
+	)
+
+	registerCreateRecoveryOptOut("apps", "candidate: app names are unique and the read response has create_time, but DoCreate already handles an app that is being deleted, and recovery has to fit with that")
+}
 
 // TestAppDoCreate_RetriesWhenAppIsDeleting verifies that DoCreate retries when
 // an app already exists but is in DELETING state.

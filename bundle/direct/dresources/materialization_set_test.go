@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -11,6 +12,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	// A feature materialized to both an offline table and one online store: the two members
+	// share a feature name, so they exercise the member key's online-store discriminator.
+	registerTestConfig("materialization_sets", &resources.MaterializationSet{
+		MaterializedFeatures: []ml.MaterializedFeature{
+			{
+				FeatureName:         "main.default.my_feature",
+				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
+				OfflineStoreConfig: &ml.OfflineStoreConfig{
+					CatalogName:     "main",
+					SchemaName:      "default",
+					TableNamePrefix: "offline",
+				},
+			},
+			{
+				FeatureName:         "main.default.my_feature",
+				CronScheduleTrigger: &ml.CronSchedule{CronExpression: "0 0 * * * ?"},
+				OnlineStoreConfig: &ml.OnlineStoreConfig{
+					CatalogName:     "main",
+					SchemaName:      "default",
+					OnlineStoreName: "my_store",
+				},
+			},
+		},
+	})
+
+	registerCreateRecoveryOptOut("materialization_sets", "candidate: DoCreate mints the request_id per request; repeating the request with the same request_id would return the set it created")
+}
 
 // operationStub stands in for a generated operation interface. The three verbs' interfaces differ
 // only in what Wait returns, which materializationSetOperationTarget never calls.

@@ -1,17 +1,53 @@
 package dresources
 
 import (
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestConfig("genie_spaces", &resources.GenieSpace{
+		Title:           "my-genie-space",
+		WarehouseId:     "test-warehouse-id",
+		ParentPath:      "/Workspace/Users/user@example.com",
+		SerializedSpace: "{}",
+	})
+
+	registerTestDeps("genie_spaces.permissions", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Genie.CreateSpace(ctx, dashboards.GenieCreateSpaceRequest{
+			Title:           "genie-space-permissions",
+			WarehouseId:     "test-warehouse-id",
+			SerializedSpace: "{}",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/genie/" + resp.SpaceId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	})
+
+	registerKnownMissingInStateType("genie_spaces",
+		"file_path",
+	)
+
+	registerCreateRecoveryOptOut("genie_spaces", "the backend assigns the space id, titles are not unique, and the create request takes no idempotency token")
+}
 
 func TestIsMissingGenieParentPathError(t *testing.T) {
 	tests := []struct {

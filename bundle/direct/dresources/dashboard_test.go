@@ -1,15 +1,64 @@
 package dresources
 
 import (
+	"context"
 	"encoding/json"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	registerTestConfig("dashboards", &resources.Dashboard{
+		DisplayName:         "my-dashboard",
+		ParentPath:          "/Workspace/Users/user@example.com",
+		WarehouseId:         "test-warehouse-id",
+		SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1","pageType":"PAGE_TYPE_CANVAS"}]}`,
+
+		DatasetCatalog: "main",
+		DatasetSchema:  "myschema",
+	})
+
+	registerTestDeps("dashboards.permissions", func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		parentPath := "/Workspace/Users/user@example.com"
+
+		// Create parent directory if it doesn't exist
+		err := client.Workspace.MkdirsByPath(ctx, parentPath)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
+			Dashboard: dashboards.Dashboard{
+				DisplayName:         "dashboard-permissions",
+				ParentPath:          parentPath,
+				SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1"}]}`,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/dashboards/" + resp.DashboardId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	})
+
+	registerKnownMissingInStateType("dashboards",
+		"file_path",
+	)
+}
 
 func TestDashboardState_JSONSerialization_PublishedField(t *testing.T) {
 	state := &DashboardState{
