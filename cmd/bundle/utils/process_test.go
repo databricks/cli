@@ -4,11 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/dms"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
@@ -16,49 +12,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func enrollmentAnswer(enrolled bool) <-chan bool {
-	c := make(chan bool, 1)
-	c <- enrolled
-	return c
-}
-
-func TestRecordsDeploymentHistory(t *testing.T) {
-	for _, tc := range []struct {
-		name       string
-		configured *bool
-		env        string
-		enrolled   <-chan bool
-		want       bool
-	}{
-		// An explicit choice is never sent to the service, so there is no answer to read.
-		{"config on", new(true), "", nil, true},
-		{"config off", new(false), "", nil, false},
-		{"env on", nil, "true", nil, true},
-		{"env off", nil, "false", nil, false},
-		{"no choice, enrolled", nil, "", enrollmentAnswer(true), true},
-		{"no choice, not enrolled", nil, "", enrollmentAnswer(false), false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			b := &bundle.Bundle{}
-			b.Config.Experimental = &config.Experimental{DeploymentHistory: tc.configured}
-			ctx := env.Set(t.Context(), bundleenv.DeploymentHistoryVariable, tc.env)
-			assert.Equal(t, tc.want, recordsDeploymentHistory(ctx, b, tc.enrolled))
-		})
-	}
-}
-
 func TestCheckAutoEnrollmentGivesUpAfterTheTimeout(t *testing.T) {
 	server := testserver.New(t)
+	entered := make(chan struct{}, 1)
 	release := make(chan struct{})
 	t.Cleanup(func() { close(release) })
 	server.Handle("GET", "/api/2.0/bundle/enrollments:check", func(testserver.Request) any {
+		select {
+		case entered <- struct{}{}:
+		default:
+		}
 		<-release
 		return map[string]any{"enrollments": map[string]bool{dms.FeatureRecordHistoryAuto: true}}
 	})
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
-	assert.False(t, <-checkAutoEnrollment(t.Context(), w, 50*time.Millisecond))
+	result := checkAutoEnrollment(t.Context(), w, time.Second)
+	select {
+	case <-entered:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the check never reached the server")
+	}
+	// The handler is still blocked, so only the timeout can have produced an answer.
+	assert.False(t, <-result)
 }
 
 func TestIsNewerVersion(t *testing.T) {

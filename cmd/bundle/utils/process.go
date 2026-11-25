@@ -250,15 +250,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
 
-	// Set when the bundle leaves recording to the workspace's enrollment; see recordsDeploymentHistory.
-	var autoEnrolled <-chan bool
+	// Whether a deploy or plan records history. Decided before the state pull, so an enrollment
+	// check with the service runs alongside it.
+	var recordsHistory <-chan bool
 
 	if shouldReadState {
-		// Asked before the state pull so the answer is in by the time it is needed.
 		if opts.Deploy || opts.PreDeployChecks {
-			if _, explicit := deploymentHistoryChoice(ctx, b); !explicit {
-				autoEnrolled = checkAutoEnrollment(ctx, b.WorkspaceClient(ctx), enrollmentCheckTimeout)
-			}
+			recordsHistory = recordsDeploymentHistory(ctx, b)
 		}
 
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -376,7 +374,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			stateMode = dstate.WritingDeploymentHistoryOnly
 		case opts.Deploy || opts.PreDeployChecks:
 			// Deploy and plan follow the current configuration.
-			if recordsDeploymentHistory(ctx, b, autoEnrolled) {
+			if <-recordsHistory {
 				stateMode = dstate.WritingDeploymentHistoryShadow
 				if b.DeploymentBundle.StateDB.Data.Features == nil {
 					b.DeploymentBundle.StateDB.Data.Features = make(map[string]struct{})
@@ -700,22 +698,19 @@ func prepareDeploymentHistoryShadow(ctx context.Context, b *bundle.Bundle) (*bun
 	return deployment, nil
 }
 
-// deploymentHistoryChoice returns the bundle's own setting for recording and whether it has one.
-func deploymentHistoryChoice(ctx context.Context, b *bundle.Bundle) (enabled, explicit bool) {
+// recordsDeploymentHistory delivers whether this deploy or plan records history: the bundle's own
+// setting when it has one, otherwise the workspace's enrollment, asked in the background.
+func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle) <-chan bool {
 	var configured *bool
 	if b.Config.Experimental != nil {
 		configured = b.Config.Experimental.DeploymentHistory
 	}
-	return bundleenv.DeploymentHistoryChoice(ctx, configured)
-}
-
-// recordsDeploymentHistory reports whether this deploy or plan records history: the bundle's own
-// setting when it has one, otherwise the workspace's enrollment.
-func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle, autoEnrolled <-chan bool) bool {
-	if enabled, explicit := deploymentHistoryChoice(ctx, b); explicit {
-		return enabled
+	if enabled, explicit := bundleenv.DeploymentHistoryChoice(ctx, configured); explicit {
+		result := make(chan bool, 1)
+		result <- enabled
+		return result
 	}
-	return <-autoEnrolled
+	return checkAutoEnrollment(ctx, b.WorkspaceClient(ctx), enrollmentCheckTimeout)
 }
 
 // enrollmentCheckTimeout caps the wait for the enrollment answer, so a slow service cannot
@@ -723,8 +718,8 @@ func recordsDeploymentHistory(ctx context.Context, b *bundle.Bundle, autoEnrolle
 const enrollmentCheckTimeout = 5 * time.Second
 
 // checkAutoEnrollment asks, in the background, whether the workspace records deployment history
-// by default. A failed check reads as not enrolled: a workspace the service does not serve
-// rejects the call, and that must not fail a deploy that never asked for history.
+// by default. Any failure, including the rejection a workspace the service does not serve gets,
+// reads as not enrolled.
 func checkAutoEnrollment(ctx context.Context, w *databricks.WorkspaceClient, timeout time.Duration) <-chan bool {
 	result := make(chan bool, 1)
 	go func() {
