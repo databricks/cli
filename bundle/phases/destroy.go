@@ -108,7 +108,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	if !quiet {
-		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
+		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups(), true, deployplan.Delete)
 	}
 	// Called even when quiet: the cascade lookup can fail, and that error must surface.
 	if err := logPipelineDeleteApproval(ctx, b, deleteActions, quiet); err != nil {

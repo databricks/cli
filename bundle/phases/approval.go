@@ -15,44 +15,44 @@ type approvalGroup struct {
 	skipChildren bool   // skip actions where IsChildResource() is true
 }
 
-// approvalEntry is one resource type in approvalTable, the single list that
-// deploy and destroy derive their prompts from.
+// approvalEntry holds the deploy and destroy messages of one resource type.
 type approvalEntry struct {
 	group              string
 	deployMessage      string
 	deploySkipChildren bool
-	// destroyMessage is nil when destroy has no prompt of its own for the group.
-	destroyMessage *string
+	// destroyMessage is empty when destroy prints no message from the table for the group.
+	destroyMessage string
 }
 
-// approvalTable is in deploy's order. Destroy's groups keep the same relative order.
+// approvalTable lists the resource types whose deletion or recreation needs consent.
+// Deploy asks for approval only when the plan deletes or recreates a resource in one of
+// these groups. Destroy asks whatever it deletes, and first prints the message of each
+// group it deletes resources from. Messages print in table order.
 var approvalTable = []approvalEntry{
-	{group: "schemas", deployMessage: deleteOrRecreateSchemaMessage, deploySkipChildren: true, destroyMessage: new(deleteSchemaMessage)},
-	// Destroy prompts for pipelines in logPipelineDeleteApproval, which picks the message
+	{group: "schemas", deployMessage: deleteOrRecreateSchemaMessage, deploySkipChildren: true, destroyMessage: deleteSchemaMessage},
+	// Destroy prints the pipeline messages in logPipelineDeleteApproval, which picks one
 	// per pipeline from its cascade_on_destroy setting.
 	{group: "pipelines", deployMessage: deleteOrRecreatePipelineMessage},
-	{group: "volumes", deployMessage: deleteOrRecreateVolumeMessage, destroyMessage: new(deleteVolumeMessage)},
-	// Deploy only.
+	{group: "volumes", deployMessage: deleteOrRecreateVolumeMessage, destroyMessage: deleteVolumeMessage},
+	// No destroy message: the deploy message warns that a recreated dashboard gets a new
+	// ID and URL, and destroy recreates nothing.
 	{group: "dashboards", deployMessage: deleteOrRecreateDashboardMessage},
-	{group: "database_instances", deployMessage: deleteOrRecreateDatabaseInstanceMessage, destroyMessage: new(deleteDatabaseInstanceMessage)},
-	{group: "synced_database_tables", deployMessage: deleteOrRecreateSyncedDatabaseTableMessage, destroyMessage: new(deleteSyncedDatabaseTableMessage)},
-	{group: "postgres_projects", deployMessage: deleteOrRecreatePostgresProjectMessage, destroyMessage: new(deletePostgresProjectMessage)},
-	{group: "postgres_branches", deployMessage: deleteOrRecreatePostgresBranchMessage, destroyMessage: new(deletePostgresBranchMessage)},
-	{group: "postgres_databases", deployMessage: deleteOrRecreatePostgresDatabaseMessage, destroyMessage: new(deletePostgresDatabaseMessage)},
-	{group: "vector_search_indexes", deployMessage: deleteOrRecreateVectorSearchIndexMessage, destroyMessage: new(deleteVectorSearchIndexMessage)},
-	{group: "genie_spaces", deployMessage: deleteOrRecreateGenieSpaceMessage, destroyMessage: new(deleteGenieSpaceMessage)},
-	// Deploy only.
+	{group: "database_instances", deployMessage: deleteOrRecreateDatabaseInstanceMessage, destroyMessage: deleteDatabaseInstanceMessage},
+	{group: "synced_database_tables", deployMessage: deleteOrRecreateSyncedDatabaseTableMessage, destroyMessage: deleteSyncedDatabaseTableMessage},
+	{group: "postgres_projects", deployMessage: deleteOrRecreatePostgresProjectMessage, destroyMessage: deletePostgresProjectMessage},
+	{group: "postgres_branches", deployMessage: deleteOrRecreatePostgresBranchMessage, destroyMessage: deletePostgresBranchMessage},
+	{group: "postgres_databases", deployMessage: deleteOrRecreatePostgresDatabaseMessage, destroyMessage: deletePostgresDatabaseMessage},
+	{group: "vector_search_indexes", deployMessage: deleteOrRecreateVectorSearchIndexMessage, destroyMessage: deleteVectorSearchIndexMessage},
+	{group: "genie_spaces", deployMessage: deleteOrRecreateGenieSpaceMessage, destroyMessage: deleteGenieSpaceMessage},
+	// No destroy message: the deploy message warns that a recreated set recomputes every
+	// member, and destroy recreates nothing.
 	{group: "materialization_sets", deployMessage: deleteOrRecreateMaterializationSetMessage},
-	{group: "features", deployMessage: deleteOrRecreateFeatureMessage, destroyMessage: new(deleteFeatureMessage)},
-	{group: "feature_specs", deployMessage: deleteOrRecreateFeatureSpecMessage, destroyMessage: new(deleteFeatureSpecMessage)},
+	{group: "features", deployMessage: deleteOrRecreateFeatureMessage, destroyMessage: deleteFeatureMessage},
+	{group: "feature_specs", deployMessage: deleteOrRecreateFeatureSpecMessage, destroyMessage: deleteFeatureSpecMessage},
 }
 
-var deployApprovalGroups = deployGroups()
-
-var destroyApprovalGroups = destroyGroups()
-
-// deployGroups returns the groups deploy prompts for, with the skipChildren setting for schemas.
-func deployGroups() []approvalGroup {
+// deployApprovalGroups returns the groups deploy asks for approval on.
+func deployApprovalGroups() []approvalGroup {
 	groups := make([]approvalGroup, 0, len(approvalTable))
 	for _, e := range approvalTable {
 		groups = append(groups, approvalGroup{group: e.group, message: e.deployMessage, skipChildren: e.deploySkipChildren})
@@ -60,14 +60,14 @@ func deployGroups() []approvalGroup {
 	return groups
 }
 
-// destroyGroups returns the groups destroy prompts for through logApprovalGroups.
-func destroyGroups() []approvalGroup {
+// destroyApprovalGroups returns the groups whose destroy message comes from the table.
+func destroyApprovalGroups() []approvalGroup {
 	var groups []approvalGroup
 	for _, e := range approvalTable {
-		if e.destroyMessage == nil {
+		if e.destroyMessage == "" {
 			continue
 		}
-		groups = append(groups, approvalGroup{group: e.group, message: *e.destroyMessage})
+		groups = append(groups, approvalGroup{group: e.group, message: e.destroyMessage})
 	}
 	return groups
 }

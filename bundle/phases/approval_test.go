@@ -3,28 +3,26 @@ package phases
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// Every group in approvalTable needs a deploy prompt. Groups without a destroy prompt
-// are listed explicitly, so adding a group to only one command is a visible choice here.
+// Every group in approvalTable must be a resource type and needs a deploy message. Groups
+// without a destroy message are listed explicitly, so adding a group to only one command
+// is a visible choice here.
 func TestApprovalTableEntries(t *testing.T) {
-	var noDestroyPrompt []string
+	supported := config.SupportedResources()
+	var noDestroyMessage []string
 	for _, e := range approvalTable {
-		require.NotEmpty(t, e.deployMessage, "group %s has no deploy message", e.group)
-		if e.destroyMessage == nil {
-			noDestroyPrompt = append(noDestroyPrompt, e.group)
-			continue
+		// A group that is not a resource type matches no action, so its messages never print.
+		_, ok := supported[e.group]
+		assert.True(t, ok, "group %s is not a resource type", e.group)
+		assert.NotEmpty(t, e.deployMessage, "group %s has no deploy message", e.group)
+		if e.destroyMessage == "" {
+			noDestroyMessage = append(noDestroyMessage, e.group)
 		}
-		assert.NotEmpty(t, *e.destroyMessage, "group %s has an empty destroy message", e.group)
 	}
 
-	assert.ElementsMatch(t, []string{
-		// Deploy only.
-		"dashboards",
-		"materialization_sets",
-		// Destroy prompts for pipelines in logPipelineDeleteApproval instead.
-		"pipelines",
-	}, noDestroyPrompt)
+	// approvalTable says why each of these has none.
+	assert.ElementsMatch(t, []string{"pipelines", "dashboards", "materialization_sets"}, noDestroyMessage)
 }
