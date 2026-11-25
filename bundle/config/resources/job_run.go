@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -135,6 +136,15 @@ func (r *JobRun) GetLifecycle() LifecycleConfig {
 // GetName returns the in-product name, which is empty: a run has no name.
 func (r *JobRun) GetName() string {
 	return ""
+}
+
+// LoadDeployedState sets ResolvedJobID to the job_id the run was launched against, for the URL
+// only. RunNow.JobId keeps its ${resources.jobs.*.id} reference, and with it its plan dependency.
+func (r *JobRun) LoadDeployedState(state resourcestate.ResourceState) {
+	if state.JobID == 0 {
+		return
+	}
+	r.ResolvedJobID = state.JobID
 }
 
 // InitializeURL sets the run's workspace URL. The job id comes from RunNow.JobId
