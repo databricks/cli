@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/patchwheel"
@@ -214,39 +215,29 @@ var clusterLibrariesPattern = dyn.NewPattern(
 	dyn.Key("libraries"),
 )
 
-func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	expanders := []expandPattern{
-		{
-			pattern: taskLibrariesPattern,
-			fn:      expandLibraries,
-		},
-		{
-			pattern: forEachTaskLibrariesPattern,
-			fn:      expandLibraries,
-		},
-		{
-			pattern: envDepsPattern,
-			fn:      expandEnvironmentDeps,
-		},
-		{
-			pattern: pipelineEnvDepsPattern,
-			fn:      expandEnvironmentDeps,
-		},
-		{
-			pattern: pipelineTestingEnvDepsPattern,
-			fn:      expandEnvironmentDeps,
-		},
-		{
-			pattern: clusterLibrariesPattern,
-			fn:      expandLibraries,
-		},
+// expanders returns an expander for every library location that holds a list.
+// They are in the order of [locations], which is the order of the diagnostics.
+func expanders() []expandPattern {
+	var out []expandPattern
+	for _, l := range locations() {
+		switch l.Kind {
+		case resources.LibraryList:
+			out = append(out, expandPattern{pattern: l.pattern, fn: expandLibraries})
+		case resources.DependencyList:
+			out = append(out, expandPattern{pattern: l.pattern, fn: expandEnvironmentDeps})
+		case resources.LibraryFile:
+			// Not expanded; see [resources.LibraryFile].
+		}
 	}
+	return out
+}
 
+func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
-		for _, expander := range expanders {
+		for _, expander := range expanders() {
 			v, err = dyn.MapByPattern(v, expander.pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
 				d, output := expander.fn(ctx, b, p, lv)
 				diags = diags.Extend(d)

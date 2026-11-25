@@ -112,3 +112,17 @@ func (p *Pipeline) LocalPaths() []LocalPath {
 	}
 	return paths
 }
+
+func (p *Pipeline) LibraryLocations() []LibraryLocation {
+	return []LibraryLocation{
+		{
+			Pattern:           dyn.NewPattern(dyn.Key("environment"), dyn.Key("dependencies")),
+			Kind:              DependencyList,
+			SkipPatchedWheels: true,
+		},
+		{
+			Pattern: dyn.NewPattern(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies")),
+			Kind:    DependencyList,
+		},
+	}
+}
