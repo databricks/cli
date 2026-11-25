@@ -234,7 +234,8 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
 		sp.Update("Installing " + change.Name + "...")
-		records, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
+		// An agent that cannot get the skill stays a logged warning here.
+		records, _, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
 		if err != nil {
 			return nil, err
 		}

@@ -960,18 +960,20 @@ func topLevelFailure(runErr error) error {
 
 // executePlan carries out the plan and returns each agent's outcome. Skills
 // installs, including those of agents whose CLI is missing, go through the
-// existing skills path as one group. A failed plugin install is a warning,
-// unless the agent was explicitly named via --agents, which is an error. A run
-// that sets up no agent at all is an error too, so callers never mistake it for
-// success. The per-agent recovery steps repeat rerun for the agent at hand.
+// existing skills path as one group. An agent whose plugin or skill files
+// could not be installed is a warning, unless the agent was explicitly named
+// via --agents, which is an error. A run that sets up no agent at all is an
+// error too, so callers never mistake it for success. The per-agent recovery
+// steps repeat rerun for the agent at hand.
 func executePlan(ctx context.Context, src installer.ManifestSource, plan []agentPlanItem, opts installer.InstallOptions, rerun installInvocation, quiet bool) ([]agentOutcome, error) {
 	var skillsAgents []*agents.Agent
-	var fallbackItems, staleRecordItems, keptItems, pluginItems, skipItems []agentPlanItem
+	var skillsItems, fallbackItems, staleRecordItems, keptItems, pluginItems, skipItems []agentPlanItem
 	skillsExplicit := false
 	for _, it := range plan {
 		switch it.delivery {
 		case deliverySkills:
 			skillsAgents = append(skillsAgents, it.agent)
+			skillsItems = append(skillsItems, it)
 			skillsExplicit = skillsExplicit || it.explicit
 			if it.cliMissing {
 				fallbackItems = append(fallbackItems, it)
@@ -1033,11 +1035,47 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			installer.PrintInstallingFor(ctx, skillsAgents)
 		}
 		skillsErr = installSkillsForAgentsFn(ctx, src, skillsAgents, opts)
-		if skillsErr == nil {
-			for _, a := range skillsAgents {
-				outcomes = append(outcomes, agentOutcome{agent: a, delivery: deliverySkills, status: outcomeInstalled})
+		failed := map[*agents.Agent]installer.AgentSkillsFailure{}
+		if agentsErr, ok := errors.AsType[*installer.AgentSkillsError](skillsErr); ok {
+			// The skills were installed and recorded; only these agents did not
+			// get them, so each is reported like a failed plugin agent.
+			for _, f := range agentsErr.Failures {
+				failed[f.Agent] = f
 			}
-			forgetStalePluginRecords(ctx, opts.Scope, staleRecordItems)
+			skillsErr = nil
+		}
+		if skillsErr == nil {
+			for _, it := range skillsItems {
+				f, ok := failed[it.agent]
+				if !ok {
+					outcomes = append(outcomes, agentOutcome{agent: it.agent, delivery: deliverySkills, status: outcomeInstalled})
+					continue
+				}
+				reason := f.Reason()
+				recovery := installRecovery(ctx, skillsAgentRerun(rerun, it), f.Err)
+				if !quiet {
+					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %s", it.agent.DisplayName, reason)))
+					cmdio.LogString(ctx, "  "+recovery)
+				}
+				outcomes = append(outcomes, agentOutcome{
+					agent:         it.agent,
+					delivery:      deliverySkills,
+					status:        outcomeFailed,
+					errorCategory: classifyInstallError(f.Err),
+					message:       reason,
+					recovery:      recovery,
+				})
+				if it.explicit {
+					explicitErrs = append(explicitErrs, &displayError{msg: it.agent.DisplayName + ": " + reason, err: f.Err})
+				}
+			}
+			var installedStale []agentPlanItem
+			for _, it := range staleRecordItems {
+				if _, ok := failed[it.agent]; !ok {
+					installedStale = append(installedStale, it)
+				}
+			}
+			forgetStalePluginRecords(ctx, opts.Scope, installedStale)
 		}
 	}
 

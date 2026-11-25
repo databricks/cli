@@ -428,6 +428,15 @@ func skillsOnlyCommand(inv installInvocation, it agentPlanItem) string {
 	return installCommand(inv, it)
 }
 
+// skillsAgentRerun is rerun for one agent that gets skill files. An agent
+// whose CLI is missing gets --skills-only: named via --agents, it would get
+// the plugin instead.
+func skillsAgentRerun(inv installInvocation, it agentPlanItem) installInvocation {
+	inv.agents = it.agent.Name
+	inv.skillsOnly = inv.skillsOnly || it.cliMissing
+	return inv
+}
+
 // pluginFailureText returns the one-line reason and the recovery step for a
 // plugin agent that could not be set up. The skill files alternative starts
 // with removing the plugin when the agent already has one, since --skills-only

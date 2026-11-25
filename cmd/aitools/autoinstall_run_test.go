@@ -52,6 +52,9 @@ func TestAutoInstallPrompt(t *testing.T) {
 		input string
 		// installState replaces the global install state file.
 		installState string
+		// unwritableSkillsDir puts a file where Cursor's skills directory
+		// belongs, so Cursor cannot get the skills.
+		unwritableSkillsDir bool
 		// env is set on top of a terminal with color.
 		env map[string]string
 		// agent is a coding agent's env var, set to 1: the run is that
@@ -126,6 +129,16 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantStderr:  []string{"Could not install Databricks AI tools. To install them, run: databricks aitools install"},
 			wantState:   autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, AcceptedVersion: "1.30.0", Installing: true, ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeFailed,
+		},
+		{
+			name:                "an agent that got no skills is a failed attempt, retried later",
+			unwritableSkillsDir: true,
+			agent:               "CLAUDECODE",
+			stdinPiped:          true,
+			stdoutRedirected:    true,
+			stderrRedirected:    true,
+			wantState:           autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, Installing: true, ID: "treatment-machine"},
+			wantOutcome:         protos.AitoolsAutoInstallOutcomeFailed,
 		},
 		{
 			name:        "NO_COLOR still asks",
@@ -277,6 +290,9 @@ func TestAutoInstallPrompt(t *testing.T) {
 			if tc.inContainer {
 				inContainer = func() bool { return true }
 			}
+			if tc.unwritableSkillsDir {
+				require.NoError(t, os.WriteFile(filepath.Join(home, ".cursor", "skills"), nil, 0o644))
+			}
 			t.Setenv("TERM", "xterm")
 			for k, v := range tc.env {
 				t.Setenv(k, v)
@@ -305,6 +321,7 @@ func TestAutoInstallPrompt(t *testing.T) {
 
 			_, err := os.Stat(filepath.Join(home, ".cursor", "skills", "databricks-test", "SKILL.md"))
 			assert.Equal(t, tc.wantSkills, err == nil, "Cursor has the skill")
+			assert.Equal(t, tc.wantSkills, strings.Contains(stderr.String(), "Installed Databricks AI tools for Cursor."), "notice names Cursor")
 
 			state, err := autoinstall.Load(ctx)
 			require.NoError(t, err)

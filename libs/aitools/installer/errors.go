@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+
+	"github.com/databricks/cli/libs/aitools/agents"
 )
 
 // ErrNothingInstalled reports that update or uninstall found no install state
@@ -146,6 +149,47 @@ type StateError struct {
 
 func (e *StateError) Error() string { return e.Err.Error() }
 func (e *StateError) Unwrap() error { return e.Err }
+
+// AgentSkillsError reports agents that did not get every skill, because their
+// skills directory could not be written. The skills are still installed in
+// the canonical directory and recorded in the install state, and every agent
+// not listed got them.
+type AgentSkillsError struct {
+	Failures []AgentSkillsFailure
+}
+
+// AgentSkillsFailure is one agent that did not get Skills of the skills, with
+// the first error.
+type AgentSkillsFailure struct {
+	Agent  *agents.Agent
+	Skills int
+	Err    error
+}
+
+// Reason describes the failure without naming the agent.
+func (f AgentSkillsFailure) Reason() string {
+	noun := "skills"
+	if f.Skills == 1 {
+		noun = "skill"
+	}
+	return fmt.Sprintf("could not install %d %s: %v", f.Skills, noun, f.Err)
+}
+
+func (e *AgentSkillsError) Error() string {
+	msgs := make([]string, len(e.Failures))
+	for i, f := range e.Failures {
+		msgs[i] = f.Agent.DisplayName + ": " + f.Reason()
+	}
+	return strings.Join(msgs, "; ")
+}
+
+func (e *AgentSkillsError) Unwrap() []error {
+	errs := make([]error, len(e.Failures))
+	for i, f := range e.Failures {
+		errs[i] = f.Err
+	}
+	return errs
+}
 
 // RefusedError reports an install the installer declines to run in the
 // current state, such as a downgrade or a targeted install over untracked

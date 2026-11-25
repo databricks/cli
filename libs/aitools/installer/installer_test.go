@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -1110,6 +1111,61 @@ func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
 	agent2SkillsDir := filepath.Join(agent2Dir, "skills")
 	_, err = os.Stat(filepath.Join(agent2SkillsDir, "databricks-sql"))
 	assert.NoError(t, err, "agent2 should have databricks-sql")
+}
+
+func TestInstallSkillsForAgentsReportsAgentWithUnwritableSkillsDir(t *testing.T) {
+	tests := []struct {
+		name       string
+		withOther  bool
+		wantPrints bool
+	}{
+		// One agent gets copies of the skill files.
+		{name: "only agent", withOther: false, wantPrints: false},
+		// Two agents get symlinks; the other agent still gets the skills.
+		{name: "with another agent", withOther: true, wantPrints: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := setupTestHome(t)
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			setupFetchMock(t)
+			t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+			// A file where the skills directory belongs cannot be written to on
+			// any OS, unlike a directory without write permission on Windows.
+			broken := testAgent(tmp)
+			require.NoError(t, os.WriteFile(filepath.Join(tmp, ".test-agent", "skills"), nil, 0o644))
+			targets := []*agents.Agent{broken}
+			otherDir := filepath.Join(tmp, ".other-agent")
+			if tc.withOther {
+				require.NoError(t, os.MkdirAll(otherDir, 0o755))
+				targets = append(targets, &agents.Agent{
+					Name:        "other-agent",
+					DisplayName: "Other Agent",
+					ConfigDir:   func(context.Context) (string, error) { return otherDir, nil },
+				})
+			}
+
+			err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, targets, InstallOptions{})
+
+			agentsErr, ok := errors.AsType[*AgentSkillsError](err)
+			require.True(t, ok, "want *AgentSkillsError, got %v", err)
+			require.Len(t, agentsErr.Failures, 1)
+			assert.Equal(t, broken, agentsErr.Failures[0].Agent)
+			assert.Equal(t, 2, agentsErr.Failures[0].Skills)
+			assert.Contains(t, agentsErr.Failures[0].Reason(), "could not install 2 skills: ")
+
+			// The skills are installed and recorded for the agents that got them.
+			state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+			require.NoError(t, err)
+			require.NotNil(t, state)
+			assert.Len(t, state.Skills, 2)
+			if tc.withOther {
+				assert.FileExists(t, filepath.Join(otherDir, "skills", "databricks-sql", "SKILL.md"))
+			}
+			assert.Equal(t, tc.wantPrints, strings.Contains(stderr.String(), "Installed 2 skills in "))
+		})
+	}
 }
 
 func TestLegacyTargetedInstallBlocked(t *testing.T) {
