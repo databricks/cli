@@ -1,0 +1,1 @@
+* When a command shows the workspace profile picker because no default profile is set, it now prints how to make the picked profile the default with `databricks auth switch --profile <name>`, so later commands stop prompting. ([#8013](https://github.com/databricks/cli/pull/8013))
