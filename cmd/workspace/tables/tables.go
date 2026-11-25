@@ -112,8 +112,10 @@ Create a table.
 
   Arguments:
     NAME: Name of table, relative to parent schema.
-    CATALOG_NAME: Name of parent catalog.
-    SCHEMA_NAME: Name of parent schema relative to its parent catalog.
+    CATALOG_NAME: Name of parent catalog. Required for creation using catalog and schema
+      names.
+    SCHEMA_NAME: Name of parent schema relative to its parent catalog. Required for
+      creation using catalog and schema names.
     TABLE_TYPE: The type of the table. MANAGED tables store their data in storage that
       Unity Catalog manages, EXTERNAL tables store it in a registered external
       location, FOREIGN tables mirror objects of an external database through a

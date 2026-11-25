@@ -135,15 +135,25 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Reason, "reason", updateReq.Reason, ``)
+	cmd.Flags().StringVar(&updateReq.Reason, "reason", updateReq.Reason, `Message for the consumer that explains the status change, at most 255 characters.`)
 	// TODO: complex arg: share
 
 	cmd.Use = "update LISTING_ID REQUEST_ID STATUS"
 	cmd.Short = `Update personalization request status.`
 	cmd.Long = `Update personalization request status.
 
-  Update personalization request. This method only permits updating the status
-  of the request.`
+  Updates the status of a personalization request; other properties of the
+  request cannot be changed. Fulfilling a request grants the consumer access to
+  the share, and denying a fulfilled request revokes that access. The listing
+  must be published.
+
+  Arguments:
+    LISTING_ID: ID of the listing that the request was made for.
+    REQUEST_ID: ID of the personalization request.
+    STATUS: New status of the request. Allowed transitions: NEW or REQUEST_PENDING to
+      REQUEST_PENDING, FULFILLED or DENIED; FULFILLED to DENIED; DENIED to
+      REQUEST_PENDING.
+      Supported values: [DENIED, FULFILLED, NEW, REQUEST_PENDING]`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

@@ -36,7 +36,6 @@ class PythonOperatorTask:
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] An ordered list of task parameters.
-    TODO(JOBS-30885): Add limits for parameters.
     """
 
     @classmethod
@@ -63,7 +62,6 @@ class PythonOperatorTaskDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] An ordered list of task parameters.
-    TODO(JOBS-30885): Add limits for parameters.
     """
 
 

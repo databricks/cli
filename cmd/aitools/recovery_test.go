@@ -224,6 +224,7 @@ func TestReleaseLookupRecoveryNamesOverriddenHost(t *testing.T) {
 
 func TestPluginFailureText(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
+	stubPluginAlreadyInstalled(t, false)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	claude.Plugin.Source = "anthropics/claude-plugins-official"
 	claude.Plugin.Marketplace = "claude-plugins-official"
@@ -281,12 +282,33 @@ func TestPluginFailureTextKeepsTheRunsFlags(t *testing.T) {
 	// The fallback after a plugin failure must not drop --experimental or
 	// --output json, and must name only the failed agent.
 	t.Setenv("PATH", t.TempDir())
+	stubPluginAlreadyInstalled(t, false)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	item := agentPlanItem{agent: claude, delivery: deliveryPlugin, scope: agentScopeUser}
 	inv := installInvocation{scope: installer.ScopeGlobal, agents: "claude-code,codex", experimental: true, jsonOutput: true}
 
 	_, recovery := pluginFailureText(t.Context(), inv, item, &installer.BlockedError{Agent: claude.Name, Reason: installer.ReasonCLINotOnPath, Detail: "not found"})
 	assert.Equal(t, "Install or update the Claude Code CLI so 'claude' is on PATH, then re-run 'databricks aitools install --scope=global --agents=claude-code --experimental --output json'. Or install skill files instead: databricks aitools install --scope=global --agents=claude-code --skills-only --experimental --output json", recovery)
+}
+
+// An agent that already has the plugin is skipped under --skills-only, so the
+// skill files alternative starts with removing the plugin.
+func TestPluginFailureTextForAgentWithPlugin(t *testing.T) {
+	fakeBinsOnPath(t, "claude")
+	stubPluginAlreadyInstalled(t, true)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	item := agentPlanItem{agent: claude, delivery: deliveryPlugin, scope: agentScopeUser}
+	inv := installInvocation{scope: installer.ScopeGlobal, agents: agents.NameClaudeCode}
+
+	_, recovery := pluginFailureText(t.Context(), inv, item, errors.New("boom"))
+	assert.Equal(t, "Re-run 'databricks aitools install --scope=global --agents=claude-code --debug' to see details, or install skill files instead: remove the plugin first with 'databricks aitools uninstall --scope=global --agents=claude-code', then run: databricks aitools install --scope=global --agents=claude-code --skills-only", recovery)
+}
+
+func TestSkipRecoveryForAgentWithPluginKeepsTheScope(t *testing.T) {
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	inv := installInvocation{scope: installer.ScopeProject, agents: "claude-code,cursor", skillsOnly: true, skills: "databricks-jobs"}
+	it := agentPlanItem{agent: claude, delivery: deliverySkip, pluginRemoval: "remove the plugin first with 'databricks aitools uninstall --scope=project --agents=claude-code'"}
+	assert.Equal(t, "To use skill files instead, remove the plugin first with 'databricks aitools uninstall --scope=project --agents=claude-code', then run: databricks aitools install --scope=project --agents=claude-code --skills-only --skills=databricks-jobs", skipRecovery(inv, it))
 }
 
 func TestSkipRecoveryNamesOnlyTheAgentInTheGlobalScope(t *testing.T) {
@@ -320,6 +342,7 @@ func TestBuildInstallOutputIncludesRecovery(t *testing.T) {
 
 func TestPluginFailureTextCLIWithoutPluginCommand(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
+	stubPluginAlreadyInstalled(t, false)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	err := &installer.BlockedError{Agent: claude.Name, Reason: installer.ReasonCLINotOnPath, Detail: "unknown command 'plugin'"}
 
@@ -333,6 +356,7 @@ func TestRecoveryCommandsKeepTheProjectScope(t *testing.T) {
 	// A project-scoped run must not be told to run a command that defaults to
 	// the global scope or to every detected agent.
 	t.Setenv("PATH", t.TempDir())
+	stubPluginAlreadyInstalled(t, false)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	item := agentPlanItem{agent: claude, delivery: deliveryPlugin, scope: agentScopeProject}
 	inv := installInvocation{scope: installer.ScopeProject}

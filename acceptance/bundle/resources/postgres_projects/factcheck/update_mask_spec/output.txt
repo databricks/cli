@@ -1,7 +1,7 @@
 
 === Create accepts a minimal body; the server materializes the rest
 
->>> [CLI] postgres get-project projects/factcheck-spec-[UNIQUE_NAME]
+>>> retry [CLI] postgres get-project projects/factcheck-spec-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
   "project_id": "factcheck-spec-[UNIQUE_NAME]",
@@ -66,7 +66,7 @@
 
 === Set default_endpoint_settings to a non-default value (leaf mask)
 
->>> [CLI] postgres get-project projects/factcheck-spec-[UNIQUE_NAME]
+>>> retry [CLI] postgres get-project projects/factcheck-spec-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
   "project_id": "factcheck-spec-[UNIQUE_NAME]",
@@ -148,7 +148,7 @@
   }
 }
 
->>> [CLI] postgres get-project projects/factcheck-spec-[UNIQUE_NAME]
+>>> retry [CLI] postgres get-project projects/factcheck-spec-[UNIQUE_NAME]
 {
   "name": "projects/factcheck-spec-[UNIQUE_NAME]",
   "project_id": "factcheck-spec-[UNIQUE_NAME]",

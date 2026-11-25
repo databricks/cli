@@ -452,6 +452,10 @@ func newList() *cobra.Command {
 	cmd.Short = `List assets.`
 	cmd.Long = `List assets.
 
+  List the assets in a clean room. Listed assets do not include their asset-type
+  specific details, such as table columns or notebook content; use the get
+  method to retrieve them.
+
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.`
 

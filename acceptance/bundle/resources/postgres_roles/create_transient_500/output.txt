@@ -36,7 +36,7 @@ GET /api/2.0/postgres/projects/test-pg-proj/branches/main/roles/app-owner/operat
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created postgres_branches.main
 Created postgres_projects.my_project
-Warn: deploying resources.postgres_roles.owner: checking whether projects/test-pg-proj/branches/main/roles/app-owner was created: Fault injected by test.
+Warn: deploying resources.postgres_roles.owner: checking whether role projects/test-pg-proj/branches/main/roles/app-owner was created: Fault injected by test.
 Error: cannot create resources.postgres_roles.owner: Fault injected by test. (500 INTERNAL_ERROR)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj/branches/main/roles?role_id=app-owner

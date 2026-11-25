@@ -11,6 +11,26 @@ for terminal SSH sessions as well as for IDE Remote Development: the tunnel runs
 attaches as a single user. Standard access mode (`USER_ISOLATION`), Dedicated-to-a-group, and
 no-isolation clusters all fail with `cluster '<id>' must be a dedicated single-user cluster`.
 
+## Network Requirements
+
+The server is the Linux build of the CLI with the client's version. The client downloads it and
+uploads it to `/Workspace/Users/<me>/.databricks/ssh-tunnel/<version>/` once per version, so the
+machine running `ssh connect` needs to reach one of:
+
+- GitHub (`github.com` and `release-assets.githubusercontent.com`), which serves the CLI release
+  archives, or
+- an HTTPS Python package index that serves the CLI wheels of the `databricks` package:
+  `PIP_INDEX_URL`, else an `index-url = <url>` line in the per-user pip config, else PyPI
+  (`pypi.org` and `files.pythonhosted.org`). The per-user pip config is the first of
+  `~/.config/pip/pip.conf` and `~/.pip/pip.conf` on Linux,
+  `~/Library/Application Support/pip/pip.conf` and those two on macOS, and
+  `%APPDATA%\pip\pip.ini` on Windows. `PIP_CONFIG_FILE`, `XDG_CONFIG_HOME`, `UV_INDEX_URL` and
+  system-wide pip config files are not read. The client falls back to the index when the GitHub
+  download fails, takes a wheel only if it matches the SHA-256 digest the index lists, and sends
+  credentials in the index URL only to the index host.
+
+Development builds are not published, so they need `--releases-dir` (see [Development](#development)).
+
 ## Usage
 A. With local ssh config setup:
 ```shell
@@ -233,9 +253,12 @@ Resume protocol v2 lets an SSH session survive a dropped websocket without losin
 bytes. The protocol is symmetric: the client and server keep separate offsets and replay buffers
 for their outgoing streams.
 
-Before opening the websocket, the client requests `/capabilities`. It enables resume only when the
+For compute SSH, the client requests `/capabilities` before opening the websocket. It enables resume only when the
 server returns `{"resume_version":2}`. A missing route, another version, an invalid response, or a
 probe that takes more than ten seconds leaves resume disabled. The SSH connection still proceeds.
+For sandbox SSH, the server reports `resume_version` in its command-output readiness response.
+The client enables resume only for version 2 and authenticates each replacement WebSocket through
+sandbox port forwarding using current workspace credentials and the invocation token.
 When resume is enabled, the initial websocket URL includes these query parameters:
 
 | Parameter | Initial value | Meaning |

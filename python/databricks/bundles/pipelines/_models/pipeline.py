@@ -66,6 +66,10 @@ class Pipeline(Resource):
     allow_duplicate_names: VariableOrOptional[bool] = None
     """
     If false, deployment will fail if name conflicts with that of another pipeline.
+    
+    Ignored when `parent_path` is set. A pipeline in a workspace folder must have a name that is
+    unique within that folder, and creation fails if the folder already contains an object with the
+    same name.
     """
 
     budget_policy_id: VariableOrOptional[str] = None
@@ -189,9 +193,11 @@ class Pipeline(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path of the pipeline parent folder in workspace file tree.
+    [Beta] Path of the pipeline parent folder in workspace file tree.
     
-    If absent, the pipeline doesn't have a workspace object.
+    If absent, the pipeline doesn't have a parent folder.
+    
+    Example: /Workspace/Projects/my_project
     """
 
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
@@ -243,6 +249,7 @@ class Pipeline(Resource):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
+    Use compute_policy_id instead. Only one of these fields may be set.
     """
 
     storage: VariableOrOptional[str] = None
@@ -290,6 +297,10 @@ class PipelineDict(TypedDict, total=False):
     allow_duplicate_names: VariableOrOptional[bool]
     """
     If false, deployment will fail if name conflicts with that of another pipeline.
+    
+    Ignored when `parent_path` is set. A pipeline in a workspace folder must have a name that is
+    unique within that folder, and creation fails if the folder already contains an object with the
+    same name.
     """
 
     budget_policy_id: VariableOrOptional[str]
@@ -413,9 +424,11 @@ class PipelineDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Path of the pipeline parent folder in workspace file tree.
+    [Beta] Path of the pipeline parent folder in workspace file tree.
     
-    If absent, the pipeline doesn't have a workspace object.
+    If absent, the pipeline doesn't have a parent folder.
+    
+    Example: /Workspace/Projects/my_project
     """
 
     permissions: VariableOrList[PipelinePermissionParam]
@@ -467,6 +480,7 @@ class PipelineDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
+    Use compute_policy_id instead. Only one of these fields may be set.
     """
 
     storage: VariableOrOptional[str]

@@ -1,6 +1,8 @@
 package autoinstall
 
 import (
+	"time"
+
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
 )
@@ -9,6 +11,11 @@ const (
 	// MaxAttempts is how many failed attempts one CLI version gets. A new
 	// version starts over.
 	MaxAttempts = 10
+
+	// firstRetryDelay is the wait after the first failed attempt of a
+	// version before the next one. It doubles with each failed attempt, so
+	// the last of MaxAttempts comes about 42 hours after the first.
+	firstRetryDelay = 5 * time.Minute
 
 	// HoldoutPercent is the share of machines (by Bucket) that never
 	// auto-install, so the install rate can be compared with a control group.
@@ -25,8 +32,10 @@ const (
 	ReasonOnRuntime        Reason = "on_runtime"
 	ReasonCacheDisabled    Reason = "cache_disabled"
 	ReasonDevelopmentBuild Reason = "development_build"
+	ReasonRootInUserHome   Reason = "root_in_user_home"
 	ReasonAlreadyRan       Reason = "already_ran"
 	ReasonRetriesExhausted Reason = "retries_exhausted"
+	ReasonRetryNotDue      Reason = "retry_not_due"
 
 	// Settle the version without installing. All but ReasonGateOff are
 	// reported: the feature is not launched while the gate is off.
@@ -43,7 +52,7 @@ const (
 // settles the version. A run that is not due changes nothing.
 func (r Reason) Due() bool {
 	switch r {
-	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonAlreadyRan, ReasonRetriesExhausted:
+	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted, ReasonRetryNotDue:
 		return false
 	case ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun:
 		return true
@@ -66,8 +75,15 @@ type Inputs struct {
 	// Version is the running CLI version.
 	Version string
 
+	// RootInUserHome is set when the CLI runs as root in a home directory
+	// that another user owns (see RootInUserHome).
+	RootInUserHome bool
+
 	// State is the persisted state: last version, attempts and opt-out.
 	State State
+
+	// Now is the time of the run.
+	Now time.Time
 
 	// CI is set when the CLI runs in continuous integration.
 	CI bool
@@ -100,6 +116,10 @@ func Decide(in Inputs) Reason {
 	// they would trigger on every build.
 	case build.IsDevelopmentVersion(in.Version):
 		return ReasonDevelopmentBuild
+	// Root under sudo with HOME kept would leave files the user cannot
+	// change in the user's home.
+	case in.RootInUserHome:
+		return ReasonRootInUserHome
 	case in.State.LastVersion == in.Version && in.State.Attempts >= MaxAttempts:
 		return ReasonRetriesExhausted
 	case in.State.LastVersion == in.Version && in.State.Attempts == 0:
@@ -113,12 +133,27 @@ func Decide(in Inputs) Reason {
 		return ReasonSkippedCI
 	case in.EnvOptOut, in.State.OptedOut:
 		return ReasonSkippedOptOut
+	// A source or agent CLI that stays broken would otherwise make every
+	// following command wait for a failing attempt. The wait is for the
+	// install only: CI and the opt-out settle the version during it.
+	case in.State.LastVersion == in.Version && !retryDue(in.State, in.Now):
+		return ReasonRetryNotDue
 	case !in.GateOn:
 		return ReasonGateOff
 	case InHoldout(in.Bucket):
 		return ReasonSkippedHoldout
 	}
 	return ReasonRun
+}
+
+// retryDue reports whether the wait after the failed attempts of s is over at
+// now: firstRetryDelay after the first, doubling with each one after it. A
+// state without State.LastAttempt (one an older CLI wrote) is due. So is one
+// whose last attempt is later than now: the clock was set back, and the wait
+// would otherwise last until the clock caught up.
+func retryDue(s State, now time.Time) bool {
+	since := now.Sub(s.LastAttempt)
+	return since < 0 || since >= firstRetryDelay<<(s.Attempts-1)
 }
 
 // InHoldout reports whether a machine in bucket belongs to the holdout.
