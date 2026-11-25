@@ -140,3 +140,7 @@ func (r *Dashboard) GetID() string {
 func (*Dashboard) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
 	return &event.ResourceDashboardIDs
 }
+
+func (*Dashboard) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceDashboardCount
+}

@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -36,6 +37,10 @@ func (s *Schema) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 		return false, err
 	}
 	return true, nil
+}
+
+func (*Schema) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceSchemaCount
 }
 
 func (*Schema) ResourceDescription() ResourceDescription {

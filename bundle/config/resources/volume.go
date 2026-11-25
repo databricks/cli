@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -49,6 +50,10 @@ func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, full
 	}
 
 	return true, nil
+}
+
+func (*Volume) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceVolumeCount
 }
 
 func (*Volume) ResourceDescription() ResourceDescription {

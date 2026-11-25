@@ -11,6 +11,15 @@ type LifecycleStartedTelemetry interface {
 	LifecycleStartedTelemetryKey() string
 }
 
+// DeployTelemetryCount is implemented by resource types whose number of resources the
+// deploy telemetry event reports in a deprecated field of its own. New types do not
+// implement it: the event's resources_metadata counts every type.
+type DeployTelemetryCount interface {
+	// DeployTelemetryCountField returns the field of event that holds the number of
+	// resources of this type.
+	DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64
+}
+
 // DeployTelemetryIDs is implemented by resource types whose IDs the deploy telemetry
 // event lists in a field of its own.
 type DeployTelemetryIDs interface {

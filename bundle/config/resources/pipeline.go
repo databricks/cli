@@ -71,3 +71,7 @@ func (p *Pipeline) GetID() string {
 func (*Pipeline) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
 	return &event.ResourcePipelineIDs
 }
+
+func (*Pipeline) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourcePipelineCount
+}

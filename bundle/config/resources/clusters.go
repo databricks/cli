@@ -82,3 +82,7 @@ func (s *Cluster) GetID() string {
 func (*Cluster) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
 	return &event.ResourceClusterIDs
 }
+
+func (*Cluster) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceClusterCount
+}

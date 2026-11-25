@@ -231,6 +231,41 @@ func TestDeployTelemetryIDsFieldsAreDeclaredOnce(t *testing.T) {
 	assert.Empty(t, declaredBy, "declared fields that are not IDs fields of the deploy event")
 }
 
+// Every per-type count field of the deploy event is filled by exactly one resource type.
+func TestDeployTelemetryCountFieldsAreDeclaredOnce(t *testing.T) {
+	var event protos.BundleDeployEvent
+	declaredBy := map[*int64][]string{}
+	for key, d := range config.ResourceTypesImplementing[resources.DeployTelemetryCount]() {
+		field := d.DeployTelemetryCountField(&event)
+		declaredBy[field] = append(declaredBy[field], key)
+	}
+
+	v := reflect.ValueOf(&event).Elem()
+	for i := range v.NumField() {
+		name := v.Type().Field(i).Name
+		// ResourceCount counts resources of every type.
+		if name == "ResourceCount" || !strings.HasPrefix(name, "Resource") || !strings.HasSuffix(name, "Count") {
+			continue
+		}
+		field := v.Field(i).Addr().Interface().(*int64)
+		assert.Len(t, declaredBy[field], 1, "field %s is declared by %v", name, declaredBy[field])
+		delete(declaredBy, field)
+	}
+	assert.Empty(t, declaredBy, "declared fields that are not per-type count fields of the deploy event")
+}
+
+func TestRecordResourceCounts(t *testing.T) {
+	r := &config.Resources{
+		Jobs:    map[string]*resources.Job{"a": {}, "nil": nil},
+		Apps:    map[string]*resources.App{"a": {}},
+		Secrets: map[string]*resources.Secret{"s": {}},
+	}
+
+	var event protos.BundleDeployEvent
+	recordResourceCounts(r, &event)
+	assert.Equal(t, protos.BundleDeployEvent{ResourceJobCount: 2, ResourceAppCount: 1}, event)
+}
+
 func TestRecordResourceIDs(t *testing.T) {
 	r := &config.Resources{
 		Jobs: map[string]*resources.Job{

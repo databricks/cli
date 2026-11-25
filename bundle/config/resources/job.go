@@ -71,3 +71,7 @@ func (j *Job) GetID() string {
 func (*Job) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
 	return &event.ResourceJobIDs
 }
+
+func (*Job) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
+	return &event.ResourceJobCount
+}

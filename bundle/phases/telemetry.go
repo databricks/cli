@@ -291,6 +291,16 @@ func recordLifecycleStarted(b *bundle.Bundle) {
 	}
 }
 
+// recordResourceCounts fills the field of event that each resource type declares for its
+// number of resources.
+func recordResourceCounts(r *config.Resources, event *protos.BundleDeployEvent) {
+	for _, group := range r.AllResources() {
+		if d, ok := config.ResourceTypeAs[resources.DeployTelemetryCount](group.Description.PluralName); ok {
+			*d.DeployTelemetryCountField(event) = int64(len(group.Resources))
+		}
+	}
+}
+
 // recordResourceIDs fills the field of event that each resource type declares for its
 // IDs, with the IDs of up to ResourceIdLimit of its resources.
 func recordResourceIDs(r *config.Resources, event *protos.BundleDeployEvent) {
@@ -439,19 +449,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		DeploymentId: b.Metrics.DeploymentId.String(),
 		ErrorMessage: errMsg,
 
-		ResourceCount:                     resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
-		ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),
-		ResourcePipelineCount:             int64(len(b.Config.Resources.Pipelines)),
-		ResourceModelCount:                int64(len(b.Config.Resources.Models)),
-		ResourceExperimentCount:           int64(len(b.Config.Resources.Experiments)),
-		ResourceModelServingEndpointCount: int64(len(b.Config.Resources.ModelServingEndpoints)),
-		ResourceRegisteredModelCount:      int64(len(b.Config.Resources.RegisteredModels)),
-		ResourceQualityMonitorCount:       int64(len(b.Config.Resources.QualityMonitors)),
-		ResourceSchemaCount:               int64(len(b.Config.Resources.Schemas)),
-		ResourceVolumeCount:               int64(len(b.Config.Resources.Volumes)),
-		ResourceClusterCount:              int64(len(b.Config.Resources.Clusters)),
-		ResourceDashboardCount:            int64(len(b.Config.Resources.Dashboards)),
-		ResourceAppCount:                  int64(len(b.Config.Resources.Apps)),
+		ResourceCount: resourcesCount, //nolint:staticcheck // SA1019: populated alongside ResourcesMetadata during the transition
 
 		ResourcesMetadata: collectResourcesMetadata(ctx, b),
 		DeploymentHistory: deploymentHistory,
@@ -477,6 +475,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			BundleMutatorExecutionTimeMs: getExecutionTimes(b),
 		},
 	}
+	recordResourceCounts(&b.Config.Resources, event)
 	recordResourceIDs(&b.Config.Resources, event)
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
