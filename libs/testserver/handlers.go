@@ -1637,7 +1637,7 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SetPermissions(req)
 	})
 
-	// Postgres Operations (must be before specific resource routes):
+	// Postgres Operations:
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/operations/{operation_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/operations/" + req.Vars["operation_id"]
 		return req.Workspace.PostgresOperationGet(name)
@@ -1884,34 +1884,6 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
 		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
-	})
-
-	// Postgres Roles:
-	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
-		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
-		roleID := req.URL.Query().Get("role_id")
-		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
-		return req.Workspace.PostgresRoleCreate(req, parent, roleID, replaceExisting)
-	})
-
-	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
-		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
-		return req.Workspace.PostgresRoleList(parent)
-	})
-
-	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
-		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
-		return req.Workspace.PostgresRoleGet(name)
-	})
-
-	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
-		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
-		return req.Workspace.PostgresRoleUpdate(req, name)
-	})
-
-	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
-		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
-		return req.Workspace.PostgresRoleDelete(name)
 	})
 
 	// Catch-all handler for invalid postgres resource names.
