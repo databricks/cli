@@ -6,16 +6,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
-// meRetryTimeout bounds how long GetCurrentUser retries transient 500s.
+// meRetryTimeout bounds how long GetCurrentUser retries transient errors.
 const meRetryTimeout = 30 * time.Second
 
-// GetCurrentUser returns the current user, retrying on HTTP 500 responses.
+// GetCurrentUser returns the current user, retrying on HTTP 500 responses and on the
+// transport errors [retry.IsTransientRead] covers.
 //
 // CurrentUser.Me is a read-only endpoint, so retrying any 500 is safe. The
 // Databricks SCIM API intermittently returns "500 TEMPORARILY_UNAVAILABLE" (a
@@ -31,6 +33,11 @@ func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.Us
 			return user, nil
 		}
 		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusInternalServerError {
+			return nil, retries.Continue(err)
+		}
+		// Transport errors the SDK does not retry, such as the server closing the connection
+		// during the TLS handshake ("EOF").
+		if retry.IsTransientRead(ctx, err) {
 			return nil, retries.Continue(err)
 		}
 		return nil, retries.Halt(err)

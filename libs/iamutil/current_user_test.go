@@ -1,7 +1,9 @@
 package iamutil
 
 import (
+	"io"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -14,9 +16,22 @@ import (
 
 func TestGetCurrentUserRetriesOn500(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	me := m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything)
-	me.Return(nil, &apierr.APIError{StatusCode: http.StatusInternalServerError, ErrorCode: "TEMPORARILY_UNAVAILABLE"}).Once()
-	me.Return(&iam.User{UserName: "test-user"}, nil).Once()
+	api := m.GetMockCurrentUserAPI()
+	// Separate expectations: a second Return on the same call would replace the first.
+	api.EXPECT().Me(mock.Anything, mock.Anything).Return(nil, &apierr.APIError{StatusCode: http.StatusInternalServerError, ErrorCode: "TEMPORARILY_UNAVAILABLE"}).Once()
+	api.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "test-user"}, nil).Once()
+
+	user, err := GetCurrentUser(t.Context(), m.WorkspaceClient)
+	require.NoError(t, err)
+	assert.Equal(t, "test-user", user.UserName)
+}
+
+func TestGetCurrentUserRetriesOnEOF(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	api := m.GetMockCurrentUserAPI()
+	// Separate expectations: a second Return on the same call would replace the first.
+	api.EXPECT().Me(mock.Anything, mock.Anything).Return(nil, &url.Error{Op: "Get", URL: "https://example.test/api/2.0/preview/scim/v2/Me", Err: io.EOF}).Once()
+	api.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "test-user"}, nil).Once()
 
 	user, err := GetCurrentUser(t.Context(), m.WorkspaceClient)
 	require.NoError(t, err)

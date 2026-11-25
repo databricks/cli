@@ -5,11 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/databricks/cli/libs/diag"
@@ -94,9 +96,17 @@ func isConnectionLost(err error) bool {
 //     POST /workspace-files/import-file.
 var transientReadMessages = []string{"REFUSED_STREAM", "unexpected EOF"}
 
+// windowsConnectionReset is WSAECONNRESET ("An existing connection was forcibly closed by the
+// remote host"). The SDK retries a reset by matching the Unix text "connection reset by peer",
+// which Windows does not use. No Unix errno has this value, so the check only matches on Windows.
+const windowsConnectionReset = syscall.Errno(10054)
+
 // IsTransientRead returns true for errors worth retrying on an idempotent call (a read or an
 // overwriting write): the transient server errors IsTransient covers, plus the transport errors
-// in transientReadMessages. The SDK already retries the transport errors it recognizes
+// in transientReadMessages, a bare EOF and a connection reset on Windows. A bare EOF means the
+// server closed the connection during the TLS handshake (seen on GET /preview/scim/v2/Me), or,
+// over HTTP/1.1, before responding; HTTP/2 reports a cut mid-request as "unexpected EOF". The SDK
+// already retries the transport errors it recognizes
 // (connection reset/refused, i/o timeout, TLS handshake) for its full RetryTimeout, so retrying
 // every *url.Error would restart that multi-minute loop; these are the gaps it leaves. net/http
 // bundles unexported http2 types, so we match the message, as the SDK does for its own transient
@@ -107,6 +117,9 @@ func IsTransientRead(ctx context.Context, err error) bool {
 	}
 	if _, ok := errors.AsType[*url.Error](err); !ok {
 		return false
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, windowsConnectionReset) {
+		return true
 	}
 	return slices.ContainsFunc(transientReadMessages, func(m string) bool {
 		return strings.Contains(err.Error(), m)
