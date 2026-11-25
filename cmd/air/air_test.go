@@ -19,7 +19,7 @@ func TestNewRegistersAllSubcommands(t *testing.T) {
 		registered[c.Name()] = true
 	}
 
-	want := []string{"run", "get", "list", "pools", "logs", "cancel", "register", "convert-to-dabs", "images"}
+	want := []string{"run", "get", "list", "pools", "logs", "cancel", "register", "serve", "convert-to-dabs", "images"}
 	for _, name := range want {
 		assert.True(t, registered[name], "subcommand %q is not registered", name)
 	}

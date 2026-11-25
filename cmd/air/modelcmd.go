@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 )
 
 // This file holds what `air register` and `air serve` share: their JSON error codes,
@@ -171,6 +172,10 @@ const (
 	taskAudioTranslations   = "llm/v1/audio/translations"
 )
 
+// endpointNameRe matches a serving endpoint name: letters, digits, '-' and '_'.
+// The name is part of the API's URL paths, so nothing else may reach a request.
+var endpointNameRe = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z0-9_-]+$`) })
+
 // validateUCModelName checks a Unity Catalog model name from source, the YAML field
 // or a flag.
 func validateUCModelName(name, source string) error {
@@ -188,4 +193,20 @@ func serverLength(s string) int {
 		n += utf16.RuneLen(r)
 	}
 	return n
+}
+
+// wholeNumber is a count in the YAML. The decoder would truncate 0.5 into an int,
+// which makes half a replica a scale to zero, so only integers are taken.
+type wholeNumber int
+
+func (n *wholeNumber) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.ScalarNode || node.ShortTag() != "!!int" {
+		return fmt.Errorf("line %d: %q is not a whole number", node.Line, node.Value)
+	}
+	var v int
+	if err := node.Decode(&v); err != nil {
+		return err
+	}
+	*n = wholeNumber(v)
+	return nil
 }
