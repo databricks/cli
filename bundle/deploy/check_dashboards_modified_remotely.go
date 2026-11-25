@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	registerPreDeployCheck("dashboards", func(isPlan bool) bundle.Mutator {
+	preDeployChecks.Register("dashboards", func(isPlan bool) bundle.Mutator {
 		return CheckDashboardsModifiedRemotely(isPlan)
 	})
 }

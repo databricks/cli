@@ -39,6 +39,10 @@ The canonical order of resource types is the field order of `config.Resources`.
 
 A declaration must not depend on the receiver's contents: it is called on a zero value.
 
+## Registering behaviour
+
+A package that needs at most one value per type (a check, a contribution function, ...) keeps a `config.ResourceTypeRegistry[T]` in a package-level variable, and the file of each type calls its `Register` from `init()`. `All()` yields the registrations in canonical order, whatever the order of `init()`, and `Get(key)` returns one. On first use the registry panics on a key that is not a resource type or that is registered twice.
+
 ## Testing completeness
 
 `config.AssertResourceTypesImplement[I](t, except...)` fails the test for every resource type that does not implement `I` and is not listed in `except`, and names its key. It also fails for a listed key that is not a resource type or that does implement `I`, so an opt-out cannot go stale. Give each listed key a comment with the reason:

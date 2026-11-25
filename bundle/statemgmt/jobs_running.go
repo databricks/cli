@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	registerRunningCheck("jobs", IsJobRunning)
+	runningChecks.Register("jobs", IsJobRunning)
 }
 
 func IsJobRunning(ctx context.Context, w *databricks.WorkspaceClient, jobId string) (bool, error) {

@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	registerRunningCheck("pipelines", IsPipelineRunning)
+	runningChecks.Register("pipelines", IsPipelineRunning)
 }
 
 func IsPipelineRunning(ctx context.Context, w *databricks.WorkspaceClient, pipelineId string) (bool, error) {
