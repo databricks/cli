@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -43,15 +44,24 @@ func (m *dropEmptyStrings) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			return root, err
 		}
 
-		// Keep an empty apps description instead of dropping it: an app update without
-		// the field leaves the remote description unchanged, so removing description
-		// from config would never converge. Force-sending "" clears it.
-		return dyn.MapByPattern(root, dyn.NewPattern(dyn.Key("resources"), dyn.Key("apps"), dyn.AnyKey()), func(_ dyn.Path, app dyn.Value) (dyn.Value, error) {
-			if _, err := dyn.Get(app, "description"); err != nil {
-				return dyn.Set(app, "description", dyn.V(""))
+		for key, d := range config.ResourceTypesImplementing[resources.EmptyStringSender]() {
+			fields := d.FieldsSentWhenEmpty()
+			root, err = dyn.MapByPattern(root, dyn.NewPattern(dyn.Key("resources"), dyn.Key(key), dyn.AnyKey()), func(_ dyn.Path, r dyn.Value) (dyn.Value, error) {
+				for _, field := range fields {
+					if _, err := dyn.Get(r, field); err != nil {
+						r, err = dyn.Set(r, field, dyn.V(""))
+						if err != nil {
+							return r, err
+						}
+					}
+				}
+				return r, nil
+			})
+			if err != nil {
+				return root, err
 			}
-			return app, nil
-		})
+		}
+		return root, nil
 	})
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))

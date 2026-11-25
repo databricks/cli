@@ -74,6 +74,13 @@ func (a *App) GetLifecycle() LifecycleConfig {
 	return *a.Lifecycle
 }
 
+// FieldsSentWhenEmpty keeps an empty description instead of dropping it: an app update
+// without the field leaves the remote description unchanged, so removing description
+// from config would never converge. Force-sending "" clears it.
+func (*App) FieldsSentWhenEmpty() []string {
+	return []string{"description"}
+}
+
 func (a *App) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, a)
 }
