@@ -153,7 +153,8 @@ func doCreateLikeApply(ctx context.Context, adapter *Adapter, state any) (id str
 
 // TestCreateRecoveryCoverage checks that every resource's DoCreate, run as the deploy runs it,
 // succeeds when its create request fails with a 504, both when the backend applied the request and
-// when it did not. A resource that cannot recover goes in createRecoveryOptOut with the reason.
+// when it did not. A resource that cannot recover calls registerCreateRecoveryOptOut with the
+// reason, from the init() of its own test file.
 func TestCreateRecoveryCoverage(t *testing.T) {
 	for resourceType, resource := range SupportedResources() {
 		t.Run(resourceType, func(t *testing.T) {
@@ -198,10 +199,10 @@ func TestCreateRecoveryCoverage(t *testing.T) {
 					if reason, ok := createRecoveryOptOut[resourceType]; ok {
 						apiErr, isAPIErr := errors.AsType[*apierr.APIError](err)
 						require.True(t, isAPIErr && apiErr.StatusCode == http.StatusGatewayTimeout,
-							"%s recovers from a failed %s %s or fails for another reason (%v); if it recovers, remove it from createRecoveryOptOut (%s)", resourceType, createReq.method, createReq.path, err, reason)
+							"%s recovers from a failed %s %s or fails for another reason (%v); if it recovers, remove its registerCreateRecoveryOptOut call from the init() of its test file (%s)", resourceType, createReq.method, createReq.path, err, reason)
 						return
 					}
-					require.NoError(t, err, "%s does not recover from a failed %s %s; call recoverCreate in DoCreate, or add it to createRecoveryOptOut with the reason", resourceType, createReq.method, createReq.path)
+					require.NoError(t, err, "%s does not recover from a failed %s %s; call recoverCreate in DoCreate, or call registerCreateRecoveryOptOut with the reason from the init() of its test file", resourceType, createReq.method, createReq.path)
 					remote, err := adapter.DoRead(ctx, id)
 					require.NoError(t, err)
 					require.NotNil(t, remote)

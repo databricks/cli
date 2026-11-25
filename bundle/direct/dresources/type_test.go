@@ -83,7 +83,7 @@ func TestInputSubset(t *testing.T) {
 			// Check that resource-specific known missing fields are actually missing
 			for _, f := range knownMissingInStateType[resourceType] {
 				if !slices.Contains(missingFields, f) {
-					t.Errorf("field %q is listed in knownMissingInStateType but exists in StateType; remove it from the list", f)
+					t.Errorf("field %q is registered with registerKnownMissingInStateType but exists in StateType; remove it from that call in the type's test file", f)
 				}
 			}
 
@@ -140,7 +140,7 @@ func TestRemoteSuperset(t *testing.T) {
 			// Check that known missing fields are actually missing
 			for _, f := range known {
 				if !slices.Contains(missingFields, f) {
-					t.Errorf("field %q is listed in knownMissingInRemoteType but exists in RemoteType; remove it from the list", f)
+					t.Errorf("field %q is registered with registerKnownMissingInRemoteType but exists in RemoteType; remove it from that call in the type's test file", f)
 				}
 			}
 
