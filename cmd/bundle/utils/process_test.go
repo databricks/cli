@@ -1,15 +1,11 @@
 package utils
 
 import (
-	"net/http"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/env"
@@ -20,78 +16,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func enrollmentAnswer(enrolled bool) <-chan bool {
+	c := make(chan bool, 1)
+	c <- enrolled
+	return c
+}
+
 func TestRecordsDeploymentHistory(t *testing.T) {
-	answer := func(v enrollment) <-chan enrollment {
-		c := make(chan enrollment, 1)
-		c <- v
-		return c
-	}
-	recordingPlan := &deployplan.Plan{Features: map[string]struct{}{dstate.FeatureDeploymentHistoryShadow: {}}}
 	for _, tc := range []struct {
-		name           string
-		configured     *bool
-		env            string
-		enrollment     <-chan enrollment
-		stateRecording bool
-		plan           *deployplan.Plan
-		want           bool
+		name       string
+		configured *bool
+		env        string
+		enrolled   <-chan bool
+		want       bool
 	}{
-		{"config on, not enrolled", new(true), "", answer(notEnrolled), false, nil, true},
-		{"config off opts out of enrollment", new(false), "", answer(enrolled), true, nil, false},
-		{"env on", nil, "true", nil, false, nil, true},
-		{"env off opts out of enrollment", nil, "false", answer(enrolled), true, nil, false},
-		{"no choice, enrolled", nil, "", answer(enrolled), false, nil, true},
-		{"no choice, not enrolled, was recording", nil, "", answer(notEnrolled), true, recordingPlan, false},
-		{"no choice, could not ask, was recording", nil, "", answer(enrollmentUnknown), true, nil, true},
-		{"no choice, could not ask, was not recording", nil, "", answer(enrollmentUnknown), false, nil, false},
-		{"no choice, could not ask, plan records", nil, "", answer(enrollmentUnknown), false, recordingPlan, true},
-		{"no choice, could not ask, plan does not record", nil, "", answer(enrollmentUnknown), true, &deployplan.Plan{}, false},
+		// An explicit choice is never sent to the service, so there is no answer to read.
+		{"config on", new(true), "", nil, true},
+		{"config off", new(false), "", nil, false},
+		{"env on", nil, "true", nil, true},
+		{"env off", nil, "false", nil, false},
+		{"no choice, enrolled", nil, "", enrollmentAnswer(true), true},
+		{"no choice, not enrolled", nil, "", enrollmentAnswer(false), false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{}
 			b.Config.Experimental = &config.Experimental{DeploymentHistory: tc.configured}
-			db := &b.DeploymentBundle.StateDB
-			require.NoError(t, db.Open(t.Context(), filepath.Join(t.TempDir(), "resources.json"), dstate.ReadingFile, dstate.WithRecovery(false), dstate.OpenDmsArgs{}))
-			if tc.stateRecording {
-				db.Data.Features = map[string]struct{}{dstate.FeatureDeploymentHistoryShadow: {}}
-			}
 			ctx := env.Set(t.Context(), bundleenv.DeploymentHistoryVariable, tc.env)
-			assert.Equal(t, tc.want, recordsDeploymentHistory(ctx, b, tc.enrollment, tc.plan))
-		})
-	}
-}
-
-func TestCheckAutoEnrollment(t *testing.T) {
-	enrollments := func(v map[string]bool) any {
-		return map[string]any{"enrollments": v}
-	}
-	apiError := func(status int, code string) any {
-		return testserver.Response{
-			StatusCode: status,
-			Headers:    map[string][]string{"Content-Type": {"application/json"}},
-			Body:       map[string]string{"error_code": code, "message": code},
-		}
-	}
-	for _, tc := range []struct {
-		name     string
-		response any
-		want     enrollment
-	}{
-		{"enrolled", enrollments(map[string]bool{dms.FeatureRecordHistoryAuto: true}), enrolled},
-		{"not enrolled", enrollments(map[string]bool{dms.FeatureRecordHistoryAuto: false}), notEnrolled},
-		{"feature unknown to the service", enrollments(map[string]bool{}), notEnrolled},
-		{"workspace not served", apiError(http.StatusForbidden, "PERMISSION_DENIED"), notEnrolled},
-		{"service predates the API", apiError(http.StatusNotFound, "ENDPOINT_NOT_FOUND"), notEnrolled},
-		{"service failure", apiError(http.StatusBadRequest, "BAD_REQUEST"), enrollmentUnknown},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			server := testserver.New(t)
-			server.Handle("GET", "/api/2.0/bundle/enrollments:check", func(testserver.Request) any {
-				return tc.response
-			})
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
-			require.NoError(t, err)
-			assert.Equal(t, tc.want, <-checkAutoEnrollment(t.Context(), w, enrollmentCheckTimeout))
+			assert.Equal(t, tc.want, recordsDeploymentHistory(ctx, b, tc.enrolled))
 		})
 	}
 }
@@ -107,7 +58,7 @@ func TestCheckAutoEnrollmentGivesUpAfterTheTimeout(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
-	assert.Equal(t, enrollmentUnknown, <-checkAutoEnrollment(t.Context(), w, 50*time.Millisecond))
+	assert.False(t, <-checkAutoEnrollment(t.Context(), w, 50*time.Millisecond))
 }
 
 func TestIsNewerVersion(t *testing.T) {
