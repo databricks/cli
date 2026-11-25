@@ -162,9 +162,8 @@ type FakeWorkspace struct {
 	eventualConsistency bool
 
 	// The workspace file tree is shared: many APIs write files and directories to it.
-	directories  map[string]workspace.ObjectInfo
-	files        map[string]FileEntry
-	repoIdByPath map[string]int64
+	directories map[string]workspace.ObjectInfo
+	files       map[string]FileEntry
 
 	// stores holds the state of each fake API, keyed by storeKey. See registerStore.
 	stores map[any]any
@@ -413,9 +412,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				ObjectId:   nextTreenodeID(),
 			},
 		},
-		files:        make(map[string]FileEntry),
-		repoIdByPath: make(map[string]int64),
-		stores:       map[any]any{},
+		files:  make(map[string]FileEntry),
+		stores: map[any]any{},
 	}
 	for _, r := range sortedStoreRegistrations() {
 		key, store := r.newStore(w)
@@ -496,7 +494,7 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo boo
 	// A Git folder root is reported as the repo, before any directory entry for
 	// the same path: mkdirs of a path inside a Git folder seeds its ancestors,
 	// which would otherwise shadow the root and report the wrong object id.
-	if repoId, ok := s.repoIdByPath[cleaned]; ok {
+	if repoId, ok := s.repos().repoIdByPath[cleaned]; ok {
 		// Control-plane repos (under /Repos) report the REPO object type, while
 		// Git-CLI-enabled folders elsewhere are materialized as plain DIRECTORY
 		// nodes. Both resolve to a valid repo ID via the repos API.
@@ -560,7 +558,7 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	// The real API 404s on a missing path rather than reporting an empty directory.
 	// Repos are listable but tracked outside s.directories, so admit them too.
 	_, isDir := s.directories[cleaned]
-	_, isRepo := s.repoIdByPath[cleaned]
+	_, isRepo := s.repos().repoIdByPath[cleaned]
 	if !isDir && !isRepo {
 		return Response{
 			StatusCode: 404,

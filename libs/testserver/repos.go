@@ -16,12 +16,14 @@ func init() {
 }
 
 type reposStore struct {
-	Repos map[string]workspace.RepoInfo
+	Repos        map[string]workspace.RepoInfo
+	repoIdByPath map[string]int64
 }
 
 func newReposStore(*FakeWorkspace) *reposStore {
 	return &reposStore{
-		Repos: map[string]workspace.RepoInfo{},
+		Repos:        map[string]workspace.RepoInfo{},
+		repoIdByPath: make(map[string]int64),
 	}
 }
 
@@ -79,7 +81,7 @@ func (s *FakeWorkspace) ReposCreate(req Request) Response {
 	}
 
 	s.repos().Repos[id] = repoInfo
-	s.repoIdByPath[repoReq.Path] = repoId
+	s.repos().repoIdByPath[repoReq.Path] = repoId
 
 	return Response{
 		Body: repoInfo,
@@ -129,7 +131,7 @@ func (s *FakeWorkspace) ReposDelete(req Request) Response {
 	}
 
 	delete(s.repos().Repos, req.Vars["repo_id"])
-	delete(s.repoIdByPath, repoInfo.Path)
+	delete(s.repos().repoIdByPath, repoInfo.Path)
 	return Response{}
 }
 
@@ -139,7 +141,7 @@ func (s *FakeWorkspace) ReposDelete(req Request) Response {
 // its root.
 func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, bool) {
 	longest := ""
-	for repoPath := range s.repoIdByPath {
+	for repoPath := range s.repos().repoIdByPath {
 		if objectPath != repoPath && !strings.HasPrefix(objectPath, repoPath+"/") {
 			continue
 		}
@@ -150,5 +152,5 @@ func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, boo
 	if longest == "" {
 		return workspace.RepoInfo{}, false
 	}
-	return s.repos().Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
+	return s.repos().Repos[strconv.FormatInt(s.repos().repoIdByPath[longest], 10)], true
 }
