@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/versioncheck"
 	"golang.org/x/mod/semver"
 	"golang.org/x/sync/errgroup"
@@ -34,8 +35,8 @@ import (
 const (
 	skillsRepoOwner      = "databricks"
 	skillsRepoName       = "databricks-agent-skills"
-	stableSkillsRepoPath = "skills"
-	experimentalRepoPath = "experimental"
+	stableSkillsRepoPath = skills.StableRepoDir
+	experimentalRepoPath = skills.ExperimentalRepoDir
 
 	// fetchConcurrency caps the number of in-flight skill file fetches.
 	// Each file is one HTTPS GET to raw.githubusercontent.com; sequential
@@ -194,32 +195,11 @@ func GetSkillsBaseURL(ctx context.Context) string {
 	return "https://raw.githubusercontent.com/" + skillsRepoOwner + "/" + skillsRepoName
 }
 
-// Manifest describes the skills manifest fetched from the skills repo.
-type Manifest struct {
-	Version   string               `json:"version"`
-	UpdatedAt string               `json:"updated_at"`
-	Skills    map[string]SkillMeta `json:"skills"`
-}
-
-// SkillMeta describes a single skill entry in the manifest.
-type SkillMeta struct {
-	Version     string   `json:"version"`
-	UpdatedAt   string   `json:"updated_at"`
-	Files       []string `json:"files"`
-	Description string   `json:"description,omitempty"`
-	MinCLIVer   string   `json:"min_cli_version,omitempty"`
-
-	// RepoDir is "skills" or "experimental" (manifest field repo_dir).
-	RepoDir string `json:"repo_dir,omitempty"`
-
-	// SourceName is the upstream skill directory name within RepoDir.
-	// Set during normalization, not from JSON.
-	SourceName string `json:"-"`
-}
-
-func (s SkillMeta) IsExperimental() bool {
-	return s.RepoDir == experimentalRepoPath
-}
+// Manifest and SkillMeta are defined in libs/skills, which the skill sources share.
+type (
+	Manifest  = skills.Manifest
+	SkillMeta = skills.SkillMeta
+)
 
 // InstallOptions controls the behavior of InstallSkillsForAgents.
 type InstallOptions struct {
@@ -281,7 +261,7 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 	if err != nil {
 		return nil, ref, err
 	}
-	if err := checkManifestPaths(manifest); err != nil {
+	if err := skills.CheckManifestPaths(manifest); err != nil {
 		return nil, ref, err
 	}
 	return manifest, ref, nil
