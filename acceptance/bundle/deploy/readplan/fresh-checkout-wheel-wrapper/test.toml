@@ -1,2 +1,5 @@
 # Applying a saved plan skips the build that generates python_wheel_wrapper notebooks.
 Ignore = ["tmp.plan.json"]
+
+# Keep MSYS2 on Windows from rewriting /Workspace/... arguments into drive paths.
+Env.MSYS_NO_PATHCONV = "1"
