@@ -15,8 +15,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
 
@@ -44,47 +42,6 @@ type Downloader struct {
 
 // DownloaderOption configures a Downloader.
 type DownloaderOption func(*Downloader)
-
-// WithSparkPythonFiles enables downloading workspace files referenced by a
-// spark_python_task.
-func WithSparkPythonFiles() DownloaderOption {
-	return func(n *Downloader) {
-		n.downloadSparkPythonFiles = true
-	}
-}
-
-func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
-	if task.NotebookTask != nil {
-		return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
-	}
-
-	if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
-		return n.markFileForDownload(ctx, &task.SparkPythonTask.PythonFile)
-	}
-
-	return nil
-}
-
-// isWorkspaceFileTask reports whether a task file lives in the Databricks
-// workspace and should be downloaded. Files sourced from Git (source: GIT) are
-// left to the Git repository, and python_file also accepts cloud URIs
-// (dbfs:/, s3:/, adls:/, gcs:/) which are not workspace paths; per the Jobs API,
-// workspace files are absolute and begin with "/".
-func isWorkspaceFileTask(source jobs.Source, filePath string) bool {
-	return source != jobs.SourceGit && strings.HasPrefix(filePath, "/")
-}
-
-func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pipelines.PipelineLibrary) error {
-	if lib.Notebook != nil {
-		return n.markNotebookForDownload(ctx, &lib.Notebook.Path)
-	}
-
-	if lib.File != nil {
-		return n.markFileForDownload(ctx, &lib.File.Path)
-	}
-
-	return nil
-}
 
 func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) error {
 	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath)
@@ -243,27 +200,6 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 	}
 
 	*notebookPath = filepath.ToSlash(rel)
-	return nil
-}
-
-func (n *Downloader) MarkTasksForDownload(ctx context.Context, tasks []jobs.Task) error {
-	var paths []string
-	for _, task := range tasks {
-		if task.NotebookTask != nil {
-			paths = append(paths, task.NotebookTask.NotebookPath)
-		}
-		if n.downloadSparkPythonFiles && task.SparkPythonTask != nil && isWorkspaceFileTask(task.SparkPythonTask.Source, task.SparkPythonTask.PythonFile) {
-			paths = append(paths, task.SparkPythonTask.PythonFile)
-		}
-	}
-	if len(paths) > 0 {
-		n.basePath = commonDirPrefix(paths)
-	}
-	for i := range tasks {
-		if err := n.MarkTaskForDownload(ctx, &tasks[i]); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
