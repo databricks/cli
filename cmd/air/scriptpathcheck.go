@@ -72,15 +72,16 @@ func commandWords(command string) []string {
 // and so are words that can't be a path (no `.`, `/` or `$`), such as the 8 in
 // `torchrun --nproc_per_node 8 train.py`. The first word that can be a path is
 // the only one checked. `-m` and `-c` run a module or inline code, so there's no
-// script.
+// script; for bash and sh, so does any flag that contains `c`, such as `-lc`.
 func scriptArgument(words, snapshotFiles []string) string {
-	args, ok := launcherArgs(words)
+	launcher, args, ok := launcherArgs(words)
 	if !ok {
 		return ""
 	}
+	shell := launcher == "bash" || launcher == "sh"
 	for _, word := range args {
 		switch {
-		case word == "-m" || word == "-c":
+		case word == "-m" || word == "-c" || shell && strings.HasPrefix(word, "-") && strings.Contains(word, "c"):
 			return ""
 		case strings.HasPrefix(word, "-") || !strings.ContainsAny(word, "./$"):
 			continue
@@ -93,13 +94,15 @@ func scriptArgument(words, snapshotFiles []string) string {
 	return ""
 }
 
-func launcherArgs(words []string) ([]string, bool) {
+// launcherArgs returns the launcher's first word and the words after the
+// launcher when words start with a script launcher.
+func launcherArgs(words []string) (string, []string, bool) {
 	for _, launcher := range scriptLaunchers {
 		if len(words) > len(launcher) && slices.Equal(words[:len(launcher)], launcher) {
-			return words[len(launcher):], true
+			return launcher[0], words[len(launcher):], true
 		}
 	}
-	return nil, false
+	return "", nil, false
 }
 
 func relativeScriptMessage(field, rel string) string {
