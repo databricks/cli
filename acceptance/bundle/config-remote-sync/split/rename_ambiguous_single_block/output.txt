@@ -42,8 +42,8 @@ Resource: resources.jobs.ambiguous_single_block_job
            depends_on:
 -            - task_key: alpha
 -            - task_key: beta
++            - task_key: aaa
 +            - task_key: zzz
-+            - {task_key: aaa}
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/gamma
 
@@ -71,8 +71,8 @@ Exit code: 1
 
 >>> grep -A5 task_key: gamma databricks.yml
           depends_on:
+            - task_key: aaa
             - task_key: zzz
-            - {task_key: aaa}
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/gamma
 
