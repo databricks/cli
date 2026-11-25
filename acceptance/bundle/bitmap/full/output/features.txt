@@ -178,3 +178,17 @@
 2754 resources.features.*.time_window.tumbling.window_duration
 2755 resources.features.*.timeseries_column
 2756 resources.features.*.timeseries_column.name
+5311 resources.features.*.function.lookup
+5312 resources.features.*.function.lookup.entities
+5313 resources.features.*.function.lookup.entities[*]
+5314 resources.features.*.function.lookup.entities[*].entity
+5315 resources.features.*.function.lookup.entities[*].input
+5316 resources.features.*.function.lookup.entities[*].input.feature
+5317 resources.features.*.function.lookup.entities[*].input.feature.feature
+5318 resources.features.*.function.lookup.feature
+5319 resources.features.*.function.lookup.feature.feature
+5320 resources.features.*.function.secondary_keys
+5321 resources.features.*.function.secondary_keys.feature
+5322 resources.features.*.function.secondary_keys.feature.feature
+5323 resources.features.*.function.secondary_keys.key
+5324 resources.features.*.function.secondary_keys.max_keys

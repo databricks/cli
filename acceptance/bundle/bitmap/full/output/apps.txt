@@ -263,3 +263,5 @@
 4269 resources.apps.*.permissions[*].user_name
 4270 resources.apps.*.permissions[*].service_principal_name
 4271 resources.apps.*.permissions[*].group_name
+5325 resources.apps.*.thumbnail_path
+5326 resources.apps.*.thumbnail_content
