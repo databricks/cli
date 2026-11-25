@@ -60,3 +60,17 @@ func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 func (s *ModelServingEndpoint) GetName() string {
 	return s.Name
 }
+
+func (s *ModelServingEndpoint) UCNames() []UCName {
+	var names []UCName
+	if s.AiGateway != nil && s.AiGateway.InferenceTableConfig != nil {
+		itc := s.AiGateway.InferenceTableConfig
+		names = append(names, ucCatalogAndSchemas(&itc.CatalogName, &itc.SchemaName))
+	}
+	// AutoCaptureConfig is deprecated but still in use.
+	if s.Config != nil && s.Config.AutoCaptureConfig != nil {
+		acc := s.Config.AutoCaptureConfig
+		names = append(names, ucCatalogAndSchemas(&acc.CatalogName, &acc.SchemaName))
+	}
+	return names
+}

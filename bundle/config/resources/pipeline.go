@@ -62,3 +62,9 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 func (p *Pipeline) GetName() string {
 	return p.Name
 }
+
+func (p *Pipeline) UCNames() []UCName {
+	// "schema" and "target" have the same semantics in the SDP API but are mutually
+	// exclusive i.e. only one can be set at a time.
+	return []UCName{ucCatalogAndSchemas(&p.Catalog, &p.Schema, &p.Target)}
+}

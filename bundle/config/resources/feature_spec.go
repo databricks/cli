@@ -67,3 +67,7 @@ func (f *FeatureSpec) InitializeURL(baseURL url.URL) {
 func (f *FeatureSpec) GetName() string {
 	return f.Name
 }
+
+func (f *FeatureSpec) UCNames() []UCName {
+	return []UCName{ucThreePartName(&f.Name)}
+}

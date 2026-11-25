@@ -3,9 +3,13 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
+	"maps"
+	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -23,6 +27,7 @@ type captureUCDependencies struct{}
 // dependency the resource has on the catalog.
 //
 // This mutator translates any implicit catalog or schema references to the explicit syntax.
+// Resource types declare the fields to translate by implementing [resources.UCNameDeclarer].
 func CaptureUCDependencies() bundle.Mutator {
 	return &captureUCDependencies{}
 }
@@ -31,58 +36,68 @@ func (m *captureUCDependencies) Name() string {
 	return "CaptureUCDependencies"
 }
 
-func schemaNameRef(key string) string {
-	return fmt.Sprintf("${resources.schemas.%s.name}", key)
+type ucSchemaKey struct {
+	catalogName string
+	schemaName  string
 }
 
-func catalogNameRef(key string) string {
-	return fmt.Sprintf("${resources.catalogs.%s.name}", key)
+// ucTargets maps the names of the catalogs and schemas defined in the bundle to
+// references to them. It is built before any name is rewritten, because a schema's
+// own catalog name is rewritten too while other resources still match against it.
+type ucTargets struct {
+	catalogs map[string]string
+	schemas  map[ucSchemaKey]string
 }
 
-func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *resources.Schema) {
-	if catalogName == "" || schemaName == "" {
-		return "", nil
+func newUCTargets(groups []config.ResourceGroup) *ucTargets {
+	t := &ucTargets{
+		catalogs: map[string]string{},
+		schemas:  map[ucSchemaKey]string{},
 	}
-
-	for k, s := range b.Config.Resources.Schemas {
-		if s != nil && s.CatalogName == catalogName && s.Name == schemaName {
-			return k, s
+	for _, group := range groups {
+		// Sorted, so that the first key wins if several resources define the same name.
+		for _, key := range slices.Sorted(maps.Keys(group.Resources)) {
+			r := group.Resources[key]
+			if reflect.ValueOf(r).IsNil() {
+				continue
+			}
+			ref := fmt.Sprintf("${resources.%s.%s.name}", group.Description.PluralName, key)
+			if c, ok := r.(resources.UCCatalogResource); ok {
+				if name := c.UCCatalogName(); name != "" {
+					addIfAbsent(t.catalogs, name, ref)
+				}
+			}
+			if s, ok := r.(resources.UCSchemaResource); ok {
+				if catalogName, schemaName := s.UCSchemaName(); catalogName != "" && schemaName != "" {
+					addIfAbsent(t.schemas, ucSchemaKey{catalogName, schemaName}, ref)
+				}
+			}
 		}
 	}
-	return "", nil
+	return t
 }
 
-func findCatalog(b *bundle.Bundle, catalogName string) (string, *resources.Catalog) {
-	if catalogName == "" {
-		return "", nil
+func addIfAbsent[K comparable](m map[K]string, key K, value string) {
+	if _, ok := m[key]; !ok {
+		m[key] = value
 	}
-
-	for k, c := range b.Config.Resources.Catalogs {
-		if c != nil && c.Name == catalogName {
-			return k, c
-		}
-	}
-	return "", nil
 }
 
 // resolveSchema returns the explicit schema reference if the given catalogName
 // and schemaName match a schema defined in the bundle. Otherwise returns schemaName
-// unchanged. Must be called before resolveCatalog on the same resource since
-// findSchema needs the original (unmutated) catalogName.
-func resolveSchema(b *bundle.Bundle, catalogName, schemaName string) string {
-	k, s := findSchema(b, catalogName, schemaName)
-	if s != nil {
-		return schemaNameRef(k)
+// unchanged.
+func (t *ucTargets) resolveSchema(catalogName, schemaName string) string {
+	if ref, ok := t.schemas[ucSchemaKey{catalogName, schemaName}]; ok {
+		return ref
 	}
 	return schemaName
 }
 
 // resolveCatalog returns the explicit catalog reference if catalogName matches
 // a catalog defined in the bundle. Otherwise returns catalogName unchanged.
-func resolveCatalog(b *bundle.Bundle, catalogName string) string {
-	k, c := findCatalog(b, catalogName)
-	if c != nil {
-		return catalogNameRef(k)
+func (t *ucTargets) resolveCatalog(catalogName string) string {
+	if ref, ok := t.catalogs[catalogName]; ok {
+		return ref
 	}
 	return catalogName
 }
@@ -99,176 +114,55 @@ func splitUCName(name string, n int) ([]string, bool) {
 	return parts, true
 }
 
-// resolveAiGatewayParent rewrites a `schemas/{catalog}.{schema}` parent reference so that
-// a catalog or schema defined in the same bundle becomes an explicit deploy-time
-// dependency. AI Gateway securables address their parent schema with this
-// compound field rather than separate catalog/schema fields.
-func resolveAiGatewayParent(b *bundle.Bundle, parent string) string {
-	rest, ok := strings.CutPrefix(parent, "schemas/")
-	if !ok {
-		return parent
-	}
-	parts, ok := splitUCName(rest, 2)
-	if !ok {
-		return parent
-	}
-	catalogName, schemaName := parts[0], parts[1]
-	return "schemas/" + resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName)
-}
-
-// resolveThreePartName applies resolveCatalog and resolveSchema to the catalog and
-// schema of a "catalog.schema.name" UC identifier. A name that is not three parts, or
-// that already contains a reference, is returned unchanged; a mix of references and
-// literals is not supported.
-func resolveThreePartName(b *bundle.Bundle, name string) string {
+// resolveCompound applies resolveCatalog and resolveSchema to the catalog and
+// schema of a compound UC name: prefix followed by n dot-separated components, the
+// first two being a catalog and a schema. A name without the prefix or with a
+// different number of components is returned unchanged.
+func (t *ucTargets) resolveCompound(name, prefix string, n int) string {
+	// A name that already contains a reference is left as is: we only rewrite a
+	// fully literal name and do not support a mix of references and literals.
 	if dynvar.ContainsVariableReference(name) {
 		return name
 	}
-	parts, ok := splitUCName(name, 3)
+	rest, ok := strings.CutPrefix(name, prefix)
+	if !ok {
+		return name
+	}
+	parts, ok := splitUCName(rest, n)
 	if !ok {
 		return name
 	}
 	catalogName, schemaName := parts[0], parts[1]
-	return resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+	parts[0] = t.resolveCatalog(catalogName)
+	parts[1] = t.resolveSchema(catalogName, schemaName)
+	return prefix + strings.Join(parts, ".")
+}
+
+func (t *ucTargets) resolve(name resources.UCName) {
+	if name.Compound != nil {
+		*name.Compound = t.resolveCompound(*name.Compound, name.Prefix, name.Parts)
+		return
+	}
+	// Schemas are resolved against the catalog name before it is rewritten.
+	for _, schema := range name.Schemas {
+		*schema = t.resolveSchema(*name.Catalog, *schema)
+	}
+	*name.Catalog = t.resolveCatalog(*name.Catalog)
 }
 
 func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Resolve resources that depend on schemas before resolving schemas themselves.
-	// The schema resolution below modifies schema.CatalogName, and findSchema
-	// (used by resolveSchema) matches against the original schema.CatalogName value.
-	for _, v := range b.Config.Resources.Volumes {
-		if v == nil {
-			continue
-		}
-		v.SchemaName = resolveSchema(b, v.CatalogName, v.SchemaName)
-		v.CatalogName = resolveCatalog(b, v.CatalogName)
-	}
-	for _, s := range b.Config.Resources.Secrets {
-		if s == nil {
-			continue
-		}
-		s.SchemaName = resolveSchema(b, s.CatalogName, s.SchemaName)
-		s.CatalogName = resolveCatalog(b, s.CatalogName)
-	}
-	for _, rm := range b.Config.Resources.RegisteredModels {
-		if rm == nil {
-			continue
-		}
-		rm.SchemaName = resolveSchema(b, rm.CatalogName, rm.SchemaName)
-		rm.CatalogName = resolveCatalog(b, rm.CatalogName)
-	}
-	for _, p := range b.Config.Resources.Pipelines {
-		if p == nil {
-			continue
-		}
-		// "schema" and "target" have the same semantics in the SDP API but are mutually
-		// exclusive i.e. only one can be set at a time.
-		p.Schema = resolveSchema(b, p.Catalog, p.Schema)
-		p.Target = resolveSchema(b, p.Catalog, p.Target)
-		p.Catalog = resolveCatalog(b, p.Catalog)
-	}
-	for _, qm := range b.Config.Resources.QualityMonitors {
-		if qm == nil || qm.OutputSchemaName == "" {
-			continue
-		}
-		// A name that already contains a reference is left as is: we only rewrite a
-		// fully literal name and do not support a mix of references and literals.
-		if dynvar.ContainsVariableReference(qm.OutputSchemaName) {
-			continue
-		}
-		// OutputSchemaName is a compound "catalog.schema" string.
-		parts, ok := splitUCName(qm.OutputSchemaName, 2)
-		if !ok {
-			continue
-		}
-		catalogName, schemaName := parts[0], parts[1]
-		resolved := resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName)
-		if resolved != qm.OutputSchemaName {
-			qm.OutputSchemaName = resolved
-		}
-	}
-	for _, idx := range b.Config.Resources.VectorSearchIndexes {
-		if idx == nil {
-			continue
-		}
-		idx.Name = resolveThreePartName(b, idx.Name)
-	}
-	for _, f := range b.Config.Resources.Features {
-		if f == nil {
-			continue
-		}
-		f.FullName = resolveThreePartName(b, f.FullName)
-	}
-	for _, set := range b.Config.Resources.MaterializationSets {
-		if set == nil {
-			continue
-		}
-		for i := range set.MaterializedFeatures {
-			member := &set.MaterializedFeatures[i]
-			if offline := member.OfflineStoreConfig; offline != nil {
-				offline.SchemaName = resolveSchema(b, offline.CatalogName, offline.SchemaName)
-				offline.CatalogName = resolveCatalog(b, offline.CatalogName)
+	groups := b.Config.Resources.AllResources()
+	targets := newUCTargets(groups)
+	for _, group := range groups {
+		for _, r := range group.Resources {
+			d, ok := r.(resources.UCNameDeclarer)
+			if !ok || reflect.ValueOf(r).IsNil() {
+				continue
 			}
-			if online := member.OnlineStoreConfig; online != nil {
-				online.SchemaName = resolveSchema(b, online.CatalogName, online.SchemaName)
-				online.CatalogName = resolveCatalog(b, online.CatalogName)
+			for _, name := range d.UCNames() {
+				targets.resolve(name)
 			}
 		}
-	}
-	for _, fs := range b.Config.Resources.FeatureSpecs {
-		if fs == nil {
-			continue
-		}
-		fs.Name = resolveThreePartName(b, fs.Name)
-	}
-	for _, mse := range b.Config.Resources.ModelServingEndpoints {
-		if mse == nil {
-			continue
-		}
-		if mse.AiGateway != nil && mse.AiGateway.InferenceTableConfig != nil {
-			itc := mse.AiGateway.InferenceTableConfig
-			itc.SchemaName = resolveSchema(b, itc.CatalogName, itc.SchemaName)
-			itc.CatalogName = resolveCatalog(b, itc.CatalogName)
-		}
-		// AutoCaptureConfig is deprecated but still in use.
-		if mse.Config != nil && mse.Config.AutoCaptureConfig != nil {
-			acc := mse.Config.AutoCaptureConfig
-			acc.SchemaName = resolveSchema(b, acc.CatalogName, acc.SchemaName)
-			acc.CatalogName = resolveCatalog(b, acc.CatalogName)
-		}
-	}
-	for _, ms := range b.Config.Resources.ModelServices {
-		if ms == nil {
-			continue
-		}
-		// A parent that already contains a reference is left as is; a mix of
-		// references and literals is not supported.
-		if dynvar.ContainsVariableReference(ms.Parent) {
-			continue
-		}
-		ms.Parent = resolveAiGatewayParent(b, ms.Parent)
-	}
-	for _, ms := range b.Config.Resources.McpServices {
-		if ms == nil {
-			continue
-		}
-		ms.Parent = resolveAiGatewayParent(b, ms.Parent)
-	}
-	for _, mps := range b.Config.Resources.ModelProviderServices {
-		if mps == nil {
-			continue
-		}
-		mps.Parent = resolveAiGatewayParent(b, mps.Parent)
-	}
-
-	// Schemas are resolved last because the schema catalog resolution modifies
-	// schema.CatalogName, and findSchema (used by resolveSchema above) matches
-	// against the original schema.CatalogName value.
-	for _, s := range b.Config.Resources.Schemas {
-		if s == nil {
-			continue
-		}
-		s.CatalogName = resolveCatalog(b, s.CatalogName)
 	}
 	return nil
 }

@@ -109,3 +109,17 @@ func (s *MaterializationSet) GetURL() (string, bool) {
 
 // InitializeURL leaves URL unset. See GetURL.
 func (s *MaterializationSet) InitializeURL(_ url.URL) {}
+
+func (s *MaterializationSet) UCNames() []UCName {
+	var names []UCName
+	for i := range s.MaterializedFeatures {
+		member := &s.MaterializedFeatures[i]
+		if offline := member.OfflineStoreConfig; offline != nil {
+			names = append(names, ucCatalogAndSchemas(&offline.CatalogName, &offline.SchemaName))
+		}
+		if online := member.OnlineStoreConfig; online != nil {
+			names = append(names, ucCatalogAndSchemas(&online.CatalogName, &online.SchemaName))
+		}
+	}
+	return names
+}

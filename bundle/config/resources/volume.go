@@ -79,3 +79,7 @@ func (v *Volume) GetName() string {
 func (v *Volume) ComputeVolumePath() string {
 	return fmt.Sprintf("/Volumes/%s/%s/%s", v.CatalogName, v.SchemaName, v.Name)
 }
+
+func (v *Volume) UCNames() []UCName {
+	return []UCName{ucCatalogAndSchemas(&v.CatalogName, &v.SchemaName)}
+}

@@ -67,3 +67,7 @@ func (c *Catalog) UnmarshalJSON(b []byte) error {
 func (c Catalog) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
+
+func (c *Catalog) UCCatalogName() string {
+	return c.Name
+}
