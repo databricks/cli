@@ -31,12 +31,19 @@ type Skill struct {
 	// Commands lists the CLI command groups the skill covers.
 	Commands []string
 
+	// MinCLIVersion is the oldest CLI version that can use the skill (manifest
+	// field min_cli_version). Install skips the skill on an older CLI, so callers
+	// that install skills must apply the same check.
+	MinCLIVersion string
+
 	Experimental bool
 }
 
 // Catalog is the set of skills a source serves.
 type Catalog struct {
-	// Skills are sorted by name.
+	// Skills are sorted by name. The catalog lists every skill the release
+	// names. Install also skips a skill with a non-portable name or file path,
+	// and a skill whose MinCLIVersion is newer than the running CLI.
 	Skills []Skill
 
 	// Version is the release version.
@@ -45,8 +52,13 @@ type Catalog struct {
 	// Label says where the catalog came from.
 	Label string
 
+	// FetchedAt is when the source produced the catalog. A source that serves
+	// a cached copy sets it to the time the copy was fetched.
 	FetchedAt time.Time
-	Stale     bool
+
+	// Stale reports that the source served a cached copy it could not refresh.
+	// Sources that always read the release themselves leave it false.
+	Stale bool
 
 	// Rules is text shown above the catalog, empty when the release has none.
 	Rules string

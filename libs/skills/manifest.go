@@ -20,8 +20,9 @@ const (
 	StateFileName = ".state.json"
 )
 
-// ErrUnsafeManifestPath reports a skills manifest that names a skill or file
-// outside the skills directory. The command layer classifies it like a
+// ErrUnsafeManifestPath reports a skills manifest that names a skill directory,
+// a skill file or catalog_rules outside the release. Its message keeps the
+// wording install has always printed. The command layer classifies it like a
 // manifest that does not parse.
 var ErrUnsafeManifestPath = errors.New("skills manifest names a path outside the skills directory")
 
@@ -31,8 +32,8 @@ type Manifest struct {
 	UpdatedAt string               `json:"updated_at"`
 	Skills    map[string]SkillMeta `json:"skills"`
 
-	// CatalogRules names a file at the release root whose text the skills
-	// catalog shows above the skill list (manifest field catalog_rules).
+	// CatalogRules names a file in the release, relative to its root, whose text
+	// the skills catalog shows above the skill list (manifest field catalog_rules).
 	CatalogRules string `json:"catalog_rules,omitempty"`
 }
 
