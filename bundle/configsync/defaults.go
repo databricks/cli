@@ -5,6 +5,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"reflect"
 	"slices"
@@ -35,10 +36,9 @@ type resourceRulesFile struct {
 	// This is a temporary solution until the bundle plan issue is resolved.
 	ServerSideDefaults []serverSideDefaultRule `yaml:"server_side_defaults"`
 
-	// ResetValues are the values that should be used to reset CLI-defaulted fields.
-	// If CLI-defaulted field is changed on remote and should be disabled (e.g. queueing
-	// disabled -> remote field is nil) we can't define it in the config as "null"
-	// because CLI default will be applied again.
+	// ResetValues are the values written to the config in place of a remote change that
+	// disables a CLI-defaulted field. Writing "null" would not do: the CLI default would
+	// be applied again.
 	ResetValues []fieldValueRule `yaml:"reset_values"`
 
 	// PrefixedNameFields are the name fields where the name prefix (e.g. "[dev user] ")
@@ -83,33 +83,81 @@ var loadSyncRules = sync.OnceValue(func() syncRules {
 		if err != nil {
 			panic(err)
 		}
-		decoder := yaml.NewDecoder(bytes.NewReader(data))
-		decoder.KnownFields(true)
-		var file resourceRulesFile
-		if err := decoder.Decode(&file); err != nil {
-			panic(fmt.Errorf("%s: %w", name, err))
+		file, err := parseRulesFile(name, data)
+		if err != nil {
+			panic(err)
 		}
-
-		prefix := "resources." + rulesResourceType(name) + ".*."
-		for _, rule := range file.ServerSideDefaults {
-			expected, err := rule.expected()
-			if err != nil {
-				panic(fmt.Errorf("%s: %s: %w", name, rule.Field, err))
-			}
-			rules.serverSideDefaults = append(rules.serverSideDefaults, fieldPattern{pattern: prefix + rule.Field, value: expected})
-		}
-		for _, rule := range file.ResetValues {
-			if rule.Value == nil {
-				panic(fmt.Errorf("%s: %s: value is required", name, rule.Field))
-			}
-			rules.resetValues = append(rules.resetValues, fieldPattern{pattern: prefix + rule.Field, value: asRemoteValue(rule.Value)})
-		}
-		for _, field := range file.PrefixedNameFields {
-			rules.prefixedNameFields = append(rules.prefixedNameFields, prefix+field)
-		}
+		rules.serverSideDefaults = append(rules.serverSideDefaults, file.serverSideDefaults...)
+		rules.resetValues = append(rules.resetValues, file.resetValues...)
+		rules.prefixedNameFields = append(rules.prefixedNameFields, file.prefixedNameFields...)
 	}
 	return rules
 })
+
+// parseRulesFile parses data, the content of the file under rules/ with the given name.
+func parseRulesFile(name string, data []byte) (syncRules, error) {
+	var rules syncRules
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	var file resourceRulesFile
+	if err := decoder.Decode(&file); err != nil {
+		if errors.Is(err, io.EOF) {
+			return rules, fmt.Errorf("%s: file is empty", name)
+		}
+		return rules, fmt.Errorf("%s: %w", name, err)
+	}
+	// The decoder reads one document at a time, so further ones would be dropped silently.
+	var extra yaml.Node
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		return rules, fmt.Errorf("%s: more than one YAML document", name)
+	}
+
+	if err := checkFields(name, "server_side_defaults", file.ServerSideDefaults, func(r serverSideDefaultRule) string { return r.Field }); err != nil {
+		return rules, err
+	}
+	if err := checkFields(name, "reset_values", file.ResetValues, func(r fieldValueRule) string { return r.Field }); err != nil {
+		return rules, err
+	}
+	if err := checkFields(name, "prefixed_name_fields", file.PrefixedNameFields, func(field string) string { return field }); err != nil {
+		return rules, err
+	}
+
+	prefix := "resources." + rulesResourceType(name) + ".*."
+	for _, rule := range file.ServerSideDefaults {
+		expected, err := rule.expected()
+		if err != nil {
+			return rules, fmt.Errorf("%s: %s: %w", name, rule.Field, err)
+		}
+		rules.serverSideDefaults = append(rules.serverSideDefaults, fieldPattern{pattern: prefix + rule.Field, value: expected})
+	}
+	for _, rule := range file.ResetValues {
+		if rule.Value == nil {
+			return rules, fmt.Errorf("%s: %s: value is required", name, rule.Field)
+		}
+		rules.resetValues = append(rules.resetValues, fieldPattern{pattern: prefix + rule.Field, value: asRemoteValue(rule.Value)})
+	}
+	for _, field := range file.PrefixedNameFields {
+		rules.prefixedNameFields = append(rules.prefixedNameFields, prefix+field)
+	}
+	return rules, nil
+}
+
+// checkFields rejects an entry of the list with the given key whose field is empty or
+// repeats the field of an earlier entry: only the first of two entries would apply.
+func checkFields[T any](name, key string, entries []T, field func(T) string) error {
+	seen := make(map[string]bool, len(entries))
+	for i, entry := range entries {
+		f := field(entry)
+		if f == "" {
+			return fmt.Errorf("%s: %s entry %d: field is empty", name, key, i+1)
+		}
+		if seen[f] {
+			return fmt.Errorf("%s: %s entry %d: field %q is listed twice", name, key, i+1, f)
+		}
+		seen[f] = true
+	}
+	return nil
+}
 
 // rulesFileNames returns the files under rules/, sorted.
 func rulesFileNames() []string {

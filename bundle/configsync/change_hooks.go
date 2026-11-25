@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"sync"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 )
 
 // changeHook holds what a resource type decides about plan changes beyond its rules
-// file, because it depends on more than a field's path and value. Every hook is asked
-// about every change, so it must only match the paths of its own resource type. Paths
-// are full change paths, such as "resources.<type>.<name>.<field>".
+// file, because it depends on more than a field's path and value. A hook is consulted
+// only for changes of the resource type it is registered for. Every field is optional.
+// Paths are full change paths, such as "resources.<type>.<name>.<field>".
 type changeHook struct {
 	// keepSkipped reports whether a change the plan skipped is still considered for syncing.
 	keepSkipped func(path string, cd *deployplan.ChangeDesc) bool
@@ -32,40 +32,48 @@ type changeHook struct {
 // not be synced.
 type changeSkip func(resourceKey, path string, cd *deployplan.ChangeDesc) bool
 
-var changeHooks = map[string]changeHook{}
+// changeHookRegistry holds the change hooks by resource type.
+type changeHookRegistry map[string]changeHook
+
+var changeHooks = changeHookRegistry{}
 
 // registerChangeHook registers the change hook of the resource type with the given key.
 func registerChangeHook(resourceType string, hook changeHook) {
-	if _, ok := changeHooks[resourceType]; ok {
+	changeHooks.register(resourceType, hook)
+}
+
+func (r changeHookRegistry) register(resourceType string, hook changeHook) {
+	if _, ok := r[resourceType]; ok {
 		panic(fmt.Sprintf("change hook for %q registered twice", resourceType))
 	}
-	changeHooks[resourceType] = hook
+	r[resourceType] = hook
 }
 
-// sortedChangeHooks returns the registered change hooks in order of resource key.
-var sortedChangeHooks = sync.OnceValue(func() []changeHook {
-	var hooks []changeHook
-	for _, resourceType := range slices.Sorted(maps.Keys(changeHooks)) {
-		hooks = append(hooks, changeHooks[resourceType])
-	}
-	return hooks
-})
-
-func keepSkippedChange(path string, cd *deployplan.ChangeDesc) bool {
-	return slices.ContainsFunc(sortedChangeHooks(), func(hook changeHook) bool { return hook.keepSkipped(path, cd) })
+// keepSkipped reports whether the hook of the resource under resourceKey keeps a
+// change the plan skipped.
+func (r changeHookRegistry) keepSkipped(resourceKey, path string, cd *deployplan.ChangeDesc) bool {
+	hook := r[config.GetResourceTypeFromKey(resourceKey)]
+	return hook.keepSkipped != nil && hook.keepSkipped(path, cd)
 }
 
-func syncsBackendDefault(path string) bool {
-	return slices.ContainsFunc(sortedChangeHooks(), func(hook changeHook) bool { return hook.syncsBackendDefault(path) })
+// syncsBackendDefault reports whether the hook of the resource under resourceKey
+// syncs the field at path as a backend default.
+func (r changeHookRegistry) syncsBackendDefault(resourceKey, path string) bool {
+	hook := r[config.GetResourceTypeFromKey(resourceKey)]
+	return hook.syncsBackendDefault != nil && hook.syncsBackendDefault(path)
 }
 
-// newChangeSkip returns the changes that any change hook says must not be synced.
-func newChangeSkip(ctx context.Context, plan *deployplan.Plan, remote map[string][]dresources.StatePermission) changeSkip {
-	var skips []changeSkip
-	for _, hook := range sortedChangeHooks() {
-		skips = append(skips, hook.newSkip(ctx, plan, remote))
+// newSkip returns the changes that the hook of their resource type says must not be
+// synced. It calls the hooks' newSkip in order of resource key.
+func (r changeHookRegistry) newSkip(ctx context.Context, plan *deployplan.Plan, remote map[string][]dresources.StatePermission) changeSkip {
+	skips := make(map[string]changeSkip)
+	for _, resourceType := range slices.Sorted(maps.Keys(r)) {
+		if newSkip := r[resourceType].newSkip; newSkip != nil {
+			skips[resourceType] = newSkip(ctx, plan, remote)
+		}
 	}
 	return func(resourceKey, path string, cd *deployplan.ChangeDesc) bool {
-		return slices.ContainsFunc(skips, func(skip changeSkip) bool { return skip(resourceKey, path, cd) })
+		skip := skips[config.GetResourceTypeFromKey(resourceKey)]
+		return skip != nil && skip(resourceKey, path, cd)
 	}
 }

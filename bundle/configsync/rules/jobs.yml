@@ -78,9 +78,9 @@ server_side_defaults:
   - field: deployment.*
     skip: always
 
-# If CLI-defaulted field is changed on remote and should be disabled (e.g. queueing disabled -> remote field is nil)
-# we can't define it in the config as "null" because CLI default will be applied again.
 reset_values:
+  # The CLI enables queueing by default, so a remote that disabled it (queue is nil)
+  # is written back as disabled.
   - field: queue
     value: {enabled: false}
 

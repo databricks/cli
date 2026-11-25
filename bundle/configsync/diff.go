@@ -143,7 +143,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 	changes := make(Changes)
 	// Read first: change hooks may decide by a resource's ACL.
 	remote, skipped := readRemotePermissions(ctx, b, plan)
-	skip := newChangeSkip(ctx, plan, remote)
+	skip := changeHooks.newSkip(ctx, plan, remote)
 
 	for resourceKey, entry := range plan.Plan {
 		// permissions and grants are emitted as their own plan keys
@@ -189,7 +189,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 func convertPlanChange(resourceKey, path string, changeDesc *deployplan.ChangeDesc, skip changeSkip, namePrefix string) (*ConfigChangeDesc, error) {
 	fullPath := resourceKey + "." + path
 	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition &&
-		!keepSkippedChange(fullPath, changeDesc) {
+		!changeHooks.keepSkipped(resourceKey, fullPath, changeDesc) {
 		return nil, nil
 	}
 	// Runs before applyLifecycle, which lets through every field a hook syncs as a backend default.
