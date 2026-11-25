@@ -1,0 +1,7 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Instance pools are direct-only; the terraform deploy that seeds the migration fails for them."
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "instance_pools resource is not supported on v0.293.0"

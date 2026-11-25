@@ -1,0 +1,3 @@
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "Dotted pipeline configuration keys are not supported on v0.293.0"

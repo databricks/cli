@@ -1,0 +1,7 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Genie spaces are direct-only too; the terraform deploy that seeds the migration fails for them."
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "genie_spaces resource is not supported on v0.293.0"

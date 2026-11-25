@@ -1,0 +1,6 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = '''
+job_run_job_ref sets a health rule value to 2^53+1 to exercise large-integer
+precision in state migration. The value is out of range for the real backend,
+so this config is local-only (the mock server stores it verbatim).'''

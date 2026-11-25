@@ -1,0 +1,3 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Error: Catalog resources are only supported with direct deployment mode"

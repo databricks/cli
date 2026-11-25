@@ -1,0 +1,5 @@
+[[Exclude]]
+Reason = '''
+Invalid config: resources.features.foo and resources.materialization_sets.foo share the key foo,
+so validation fails with "multiple resources or scripts have been defined with the same key" and
+every invariant test fails at deploy.'''

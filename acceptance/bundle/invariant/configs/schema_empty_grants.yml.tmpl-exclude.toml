@@ -1,0 +1,7 @@
+[[Exclude]]
+Tests = ["no_drift"]
+When = ["DMS=true"]
+Reason = '''
+Emptying a grants node records the operation as a delete with no state, which the deployment
+metadata service rejects on a succeeded UPDATE action that leaves the grants (a live resource). This
+is a known bug tracked by bundle/dms/empty-grants (Cloud=false); skip it under recording here.'''

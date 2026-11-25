@@ -1,0 +1,9 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = '''
+External locations require actual storage credentials with cloud IAM setup
+which are environment-specific, so we only test locally with the mock server'''
+
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Error: Catalog resources are only supported with direct deployment mode"

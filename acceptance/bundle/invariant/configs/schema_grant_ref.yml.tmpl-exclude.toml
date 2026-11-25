@@ -1,0 +1,7 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Grant cross-references require the EmbeddedSlice pattern not present in terraform mode."
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "$resources references to permissions and grants are not supported on v0.293.0"

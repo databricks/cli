@@ -1,0 +1,5 @@
+[[Exclude]]
+Reason = '''
+Invalid config: resources.postgres_branches.foo and resources.postgres_snapshot_schedules.foo share
+the key foo, so validation fails with "multiple resources or scripts have been defined with the same
+key" and every invariant test fails at deploy.'''

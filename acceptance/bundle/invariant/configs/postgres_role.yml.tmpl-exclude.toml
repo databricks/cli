@@ -1,0 +1,3 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = "Postgres resources only work on AWS"

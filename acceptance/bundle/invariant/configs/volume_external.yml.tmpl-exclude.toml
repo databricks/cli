@@ -1,0 +1,3 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = "External volumes reference external locations; excluded from cloud for the same reason"
