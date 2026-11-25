@@ -1,3 +1,5 @@
+api_type: postgres.CatalogCatalogSpec
+
 provided_id_fields:
   # catalog_id is part of the hierarchical name and immutable.
   - field: catalog_id

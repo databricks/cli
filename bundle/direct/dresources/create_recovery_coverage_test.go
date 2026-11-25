@@ -173,7 +173,7 @@ func doCreateLikeApply(ctx context.Context, adapter *Adapter, state any) (id str
 // succeeds when its create request fails with a 504, both when the backend applied the request and
 // when it did not. A resource that cannot recover goes in createRecoveryOptOut with the reason.
 func TestCreateRecoveryCoverage(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		t.Run(resourceType, func(t *testing.T) {
 			ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
 

@@ -16,6 +16,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerAdapter("materialization_sets", (*ResourceMaterializationSet)(nil))
+}
+
 // https://docs.databricks.com/api/workspace/featureengineering
 type ResourceMaterializationSet struct {
 	client *databricks.WorkspaceClient

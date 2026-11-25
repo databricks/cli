@@ -1044,7 +1044,7 @@ var testDeps = map[string]prepareWorkspace{
 func TestAll(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		t.Run(resourceType, func(t *testing.T) {
 			adapter, err := NewAdapter(resource, resourceType, client)
 			require.NoError(t, err)
@@ -1056,7 +1056,7 @@ func TestAll(t *testing.T) {
 
 	m, err := InitAll(client)
 	require.NoError(t, err)
-	require.Len(t, m, len(SupportedResources))
+	require.Len(t, m, len(SupportedResources()))
 }
 
 // testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
@@ -1360,7 +1360,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 // TestResourceConfig validates that all field patterns in resource config
 // exist in the corresponding StateType for each resource.
 func TestResourceConfig(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
@@ -1378,7 +1378,7 @@ func TestResourceConfig(t *testing.T) {
 // TestGeneratedResourceConfig validates that all field patterns in generated resource config
 // exist in the corresponding StateType for each resource.
 func TestGeneratedResourceConfig(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
@@ -1433,7 +1433,7 @@ func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cf
 // The check walks the state type and fails on any uncovered scalar leaf. This
 // keeps the recreate_on_changes lists exhaustive as the SDK adds fields.
 func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 		if adapter.HasDoUpdate() {
@@ -1539,7 +1539,7 @@ func nameIsUserProvided(adapter *Adapter, path *structpath.PathNode) bool {
 // reference is never delayed.
 func TestNameStableOrOptedOut(t *testing.T) {
 	namePath := structpath.MustParsePath("name")
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 

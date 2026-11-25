@@ -17,6 +17,10 @@ import (
 // registeredModelAliasesPath is the state path of the aliases slice, used to detect alias changes.
 var registeredModelAliasesPath = structpath.MustParsePath("aliases")
 
+func init() {
+	registerAdapter("registered_models", (*ResourceRegisteredModel)(nil))
+}
+
 type ResourceRegisteredModel struct {
 	client *databricks.WorkspaceClient
 }

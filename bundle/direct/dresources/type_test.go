@@ -129,7 +129,7 @@ var knownMissingInStateType = map[string][]string{
 //
 // We also resolve pre-deploy references against state, not input.
 func TestInputSubset(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
@@ -193,7 +193,7 @@ func TestInputSubset(t *testing.T) {
 // to resolve remote references, which may have more fields than state by design. It's useful
 // for debugging to see those values in the detailed plan.
 func TestRemoteSuperset(t *testing.T) {
-	for resourceType, resource := range SupportedResources {
+	for resourceType, resource := range SupportedResources() {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 

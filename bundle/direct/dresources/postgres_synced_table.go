@@ -43,6 +43,10 @@ func (s PostgresSyncedTableRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("postgres_synced_tables", (*ResourcePostgresSyncedTable)(nil))
+}
+
 type ResourcePostgresSyncedTable struct {
 	client *databricks.WorkspaceClient
 }

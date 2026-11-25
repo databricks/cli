@@ -1,3 +1,5 @@
+api_type: postgres.RoleRoleSpec
+
 ignore_local_changes:
   # replace_existing only takes effect on create; toggling it later is a no-op.
   - field: replace_existing

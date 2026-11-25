@@ -46,7 +46,7 @@ func TestGetResourceConfig(t *testing.T) {
 // TestSubResourceConfig checks that grants.yml and permissions.yml apply to the grants and
 // permissions of every parent, except where a parent has its own file.
 func TestSubResourceConfig(t *testing.T) {
-	for resourceType := range SupportedResources {
+	for resourceType := range SupportedResources() {
 		var field string
 		switch {
 		case resourceType == "secret_scopes.permissions":
@@ -146,7 +146,7 @@ func TestResourcesYMLNoRedundantRules(t *testing.T) {
 func TestResourcesYMLNoRedundantMissingInRemote(t *testing.T) {
 	cfg := MustLoadConfig()
 	for resourceType, rc := range cfg.Resources {
-		adapter, err := NewAdapter(SupportedResources[resourceType], resourceType, nil)
+		adapter, err := NewAdapter(SupportedResources()[resourceType], resourceType, nil)
 		if err != nil {
 			t.Errorf("%s.yml: failed to create adapter: %v", resourceType, err)
 			continue
@@ -201,7 +201,7 @@ func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
 // relative to it. Without this a typo produces a rule that silently never matches.
 func TestResourcesYMLRemoteAdditionGates(t *testing.T) {
 	for resourceType, rc := range MustLoadConfig().Resources {
-		adapter, err := NewAdapter(SupportedResources[resourceType], resourceType, nil)
+		adapter, err := NewAdapter(SupportedResources()[resourceType], resourceType, nil)
 		require.NoError(t, err)
 
 		for _, rule := range rc.IgnoreRemoteAdditions {

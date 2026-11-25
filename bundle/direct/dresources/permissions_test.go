@@ -35,7 +35,7 @@ func TestPermissionsPrepareInputConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.resourceType, func(t *testing.T) {
-			adapter, err := NewAdapter(SupportedResources[tt.resourceType], tt.resourceType, nil)
+			adapter, err := NewAdapter(SupportedResources()[tt.resourceType], tt.resourceType, nil)
 			require.NoError(t, err)
 
 			input := &[]resources.JobPermission{{Level: "CAN_VIEW", UserName: "alice"}}
@@ -54,18 +54,19 @@ func TestPermissionsPrepareInputConfig(t *testing.T) {
 // Secret scopes declare permissions but not the permissions API, so they are unsupported too.
 func TestPermissionsConfigureUnsupportedParent(t *testing.T) {
 	for _, parent := range []string{"unregistered", "schemas", "secret_scopes"} {
-		_, err := NewAdapter(SupportedResources["jobs.permissions"], parent+".permissions", nil)
+		_, err := NewAdapter(SupportedResources()["jobs.permissions"], parent+".permissions", nil)
 		assert.ErrorContains(t, err, "unsupported permissions resource type: "+parent)
 	}
 }
 
-// The adapters are listed by hand, so check them against what the resource types declare.
+// Types that declare a permissions API object type get the shared adapter; the others must
+// register their own.
 func TestPermissionsAdaptersMatchDeclarations(t *testing.T) {
 	declared := map[string]bool{}
 	for key, d := range config.ResourceTypesImplementing[resources.PermissionsDeclarer]() {
 		resourceType := key + ".permissions"
 		declared[resourceType] = true
-		adapter, ok := SupportedResources[resourceType]
+		adapter, ok := SupportedResources()[resourceType]
 		if !assert.True(t, ok, "%s has no adapter", resourceType) {
 			continue
 		}
@@ -73,7 +74,7 @@ func TestPermissionsAdaptersMatchDeclarations(t *testing.T) {
 		_, isPermissions := adapter.(*ResourcePermissions)
 		assert.Equal(t, usesAPI, isPermissions, "%s: the permissions API adapter must be used exactly when the type declares RequestObjectType", resourceType)
 	}
-	for resourceType := range SupportedResources {
+	for resourceType := range SupportedResources() {
 		if strings.HasSuffix(resourceType, ".permissions") {
 			assert.True(t, declared[resourceType], "%s has an adapter but its parent does not declare permissions", resourceType)
 		}
@@ -88,7 +89,7 @@ func TestPermissionsObjectIDFieldIsReadable(t *testing.T) {
 		if field == "" || field == "id" {
 			continue
 		}
-		adapter, err := NewAdapter(SupportedResources[key], key, nil)
+		adapter, err := NewAdapter(SupportedResources()[key], key, nil)
 		require.NoError(t, err)
 		assert.NoError(t, structaccess.ValidateByString(adapter.RemoteType(), field), key)
 	}
@@ -110,7 +111,7 @@ func TestPermissionsObjectTypesMatchTestServer(t *testing.T) {
 
 // Resources without PrepareInputConfig get their config through unchanged and add no references.
 func TestPrepareInputConfigPassthrough(t *testing.T) {
-	adapter, err := NewAdapter(SupportedResources["schemas"], "schemas", nil)
+	adapter, err := NewAdapter(SupportedResources()["schemas"], "schemas", nil)
 	require.NoError(t, err)
 
 	input := &resources.Schema{Name: "myschema"}

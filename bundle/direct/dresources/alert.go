@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+func init() {
+	registerAdapter("alerts", (*ResourceAlert)(nil))
+}
+
 type ResourceAlert struct {
 	client *databricks.WorkspaceClient
 }

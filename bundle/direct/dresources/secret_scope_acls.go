@@ -13,6 +13,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// Secret scopes have permissions in the bundle configuration, but they are secret ACLs
+// rather than the permissions API, so the scope's permissions get this adapter.
+func init() {
+	registerAdapter("secret_scopes.permissions", (*ResourceSecretScopeAcls)(nil))
+}
+
 type ResourceSecretScopeAcls struct {
 	client *databricks.WorkspaceClient
 }

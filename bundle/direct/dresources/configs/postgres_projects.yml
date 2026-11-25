@@ -1,3 +1,5 @@
+api_type: postgres.ProjectSpec
+
 provided_id_fields:
   # project_id is immutable (part of hierarchical name, not in API spec)
   - field: project_id

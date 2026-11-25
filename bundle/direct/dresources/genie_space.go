@@ -17,6 +17,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
+func init() {
+	registerAdapter("genie_spaces", (*ResourceGenieSpace)(nil))
+}
+
 // ResourceGenieSpace mirrors the dashboard resource pattern (see dashboard.go),
 // with these intentional divergences:
 //   - No Published wrapper: Genie spaces have no publish lifecycle, so

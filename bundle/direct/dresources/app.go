@@ -59,6 +59,10 @@ func (r AppRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(r)
 }
 
+func init() {
+	registerAdapter("apps", (*ResourceApp)(nil))
+}
+
 type ResourceApp struct {
 	client *databricks.WorkspaceClient
 }

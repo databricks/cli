@@ -11,6 +11,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+func init() {
+	registerAdapter("models", (*ResourceMlflowModel)(nil))
+}
+
 type ResourceMlflowModel struct {
 	client *databricks.WorkspaceClient
 }

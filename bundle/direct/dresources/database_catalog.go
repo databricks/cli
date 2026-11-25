@@ -10,6 +10,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
+func init() {
+	registerAdapter("database_catalogs", (*ResourceDatabaseCatalog)(nil))
+}
+
 type ResourceDatabaseCatalog struct {
 	client *databricks.WorkspaceClient
 }

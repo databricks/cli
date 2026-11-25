@@ -29,6 +29,10 @@ func (s SchemaState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func init() {
+	registerAdapter("schemas", (*ResourceSchema)(nil))
+}
+
 type ResourceSchema struct {
 	client *databricks.WorkspaceClient
 }

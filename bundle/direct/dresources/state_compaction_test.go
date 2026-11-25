@@ -47,7 +47,7 @@ func TestHashedFieldsAreValid(t *testing.T) {
 		if len(rc.HashedFields) == 0 {
 			continue
 		}
-		adapter, err := NewAdapter(SupportedResources[name], name, nil)
+		adapter, err := NewAdapter(SupportedResources()[name], name, nil)
 		require.NoError(t, err, "%s: failed to create adapter", name)
 		for _, field := range rc.HashedFields {
 			path, err := structpath.ParsePath(field)
