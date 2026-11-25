@@ -1,5 +1,5 @@
 [[Exclude]]
 Reason = '''
-Not enabled yet. It needs the exclusions of model_service.yml.tmpl (cloud, migrate, auto-migrate:
+Not enabled yet. It needs the exclusions of model_services.yml.tmpl (cloud, migrate, auto-migrate:
 AI Gateway securables are direct-only and need cloud setup the tests do not provision); the other
 invariant tests pass locally.'''

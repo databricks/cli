@@ -14,7 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const invariantConfigsDir = "bundle/invariant/configs"
+const (
+	invariantConfigsDir   = "bundle/invariant/configs"
+	invariantConfigSuffix = ".yml.tmpl"
+)
 
 // LackingInvariantTest lists keys from config.ResourcesTypes that knowingly lack
 // a covering config in invariantConfigsDir. Keys match the ResourcesTypes
@@ -26,6 +29,12 @@ var LackingInvariantTest = map[string]bool{
 	"internal_immutable_snapshots": true,
 }
 
+// invariantConfigsNotAboutOneType lists the configs in invariantConfigsDir that exercise
+// several resource types together and therefore are not named after one of them.
+var invariantConfigsNotAboutOneType = map[string]bool{
+	"uc_trailing_slash.yml.tmpl": true,
+}
+
 // TestInvariantConfigsCoverage ensures that the invariant test configs in
 // bundle/invariant/configs cover every bundle resource type, and that resource
 // types supporting permissions or grants have at least one config exercising them.
@@ -33,8 +42,9 @@ var LackingInvariantTest = map[string]bool{
 // config.ResourcesTypes is the source of truth: it maps each resource group
 // (e.g. "jobs") to its Go type and, where the resource struct has a Permissions
 // or Grants field, adds derived keys "<group>.permissions" and "<group>.grants".
+// A resource group is covered by the config named after it, "<group>.yml.tmpl".
 func TestInvariantConfigsCoverage(t *testing.T) {
-	present, withPermissions, withGrants := scanInvariantConfigs(t)
+	groupsByConfig, withPermissions, withGrants := scanInvariantConfigs(t)
 
 	keys := make([]string, 0, len(config.ResourcesTypes()))
 	for key := range config.ResourcesTypes() {
@@ -55,8 +65,8 @@ func TestInvariantConfigsCoverage(t *testing.T) {
 			covered = withGrants[group]
 			hint = "attaches grants to a " + group + " resource"
 		default:
-			covered = present[key]
-			hint = "defines a " + key + " resource"
+			covered = groupsByConfig[key+invariantConfigSuffix][key]
+			hint = "named " + key + invariantConfigSuffix + " defines a " + key + " resource"
 		}
 
 		if LackingInvariantTest[key] {
@@ -69,11 +79,41 @@ func TestInvariantConfigsCoverage(t *testing.T) {
 	}
 }
 
+// TestInvariantConfigNames ensures that every config in invariantConfigsDir is named after
+// the resource group it is about: "<group>.yml.tmpl", or "<group>_<variant>.yml.tmpl".
+func TestInvariantConfigNames(t *testing.T) {
+	names := invariantConfigNames(t)
+
+	for _, name := range names {
+		if invariantConfigsNotAboutOneType[name] {
+			continue
+		}
+		base := strings.TrimSuffix(name, invariantConfigSuffix)
+		named := false
+		for key := range config.ResourcesTypes() {
+			if strings.Contains(key, ".") {
+				continue
+			}
+			if base == key || strings.HasPrefix(base, key+"_") {
+				named = true
+				break
+			}
+		}
+		assert.True(t, named,
+			"%s/%s is not named after a key under resources: (<key>%s or <key>_<variant>%s); rename it or list it in invariantConfigsNotAboutOneType",
+			invariantConfigsDir, name, invariantConfigSuffix, invariantConfigSuffix)
+	}
+
+	for name := range invariantConfigsNotAboutOneType {
+		assert.Contains(t, names, name, "remove %q from invariantConfigsNotAboutOneType", name)
+	}
+}
+
 // scanInvariantConfigs parses every config in the invariant configs directory and
-// returns the set of resource groups present, the groups with at least one resource
+// returns the resource groups each config defines, the groups with at least one resource
 // carrying permissions, and the groups with at least one resource carrying grants.
-func scanInvariantConfigs(t *testing.T) (present, withPermissions, withGrants map[string]bool) {
-	present = map[string]bool{}
+func scanInvariantConfigs(t *testing.T) (groupsByConfig map[string]map[string]bool, withPermissions, withGrants map[string]bool) {
+	groupsByConfig = map[string]map[string]bool{}
 	withPermissions = map[string]bool{}
 	withGrants = map[string]bool{}
 
@@ -85,6 +125,9 @@ func scanInvariantConfigs(t *testing.T) (present, withPermissions, withGrants ma
 		v, err := yamlloader.LoadYAML(path, strings.NewReader(string(contents)))
 		require.NoError(t, err, "failed to parse %s", path)
 
+		groups := map[string]bool{}
+		groupsByConfig[name] = groups
+
 		resources := v.Get("resources")
 		if resources.Kind() != dyn.KindMap {
 			// Some configs (e.g. PyDABs) declare resources outside of YAML.
@@ -93,7 +136,7 @@ func scanInvariantConfigs(t *testing.T) (present, withPermissions, withGrants ma
 
 		for _, group := range resources.MustMap().Pairs() {
 			groupName := group.Key.MustString()
-			present[groupName] = true
+			groups[groupName] = true
 
 			if group.Value.Kind() != dyn.KindMap {
 				continue
@@ -113,7 +156,7 @@ func scanInvariantConfigs(t *testing.T) (present, withPermissions, withGrants ma
 		}
 	}
 
-	return present, withPermissions, withGrants
+	return groupsByConfig, withPermissions, withGrants
 }
 
 // invariantConfigNames returns the file names of the templates in invariantConfigsDir.
@@ -123,7 +166,7 @@ func invariantConfigNames(t *testing.T) []string {
 
 	var names []string
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yml.tmpl") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), invariantConfigSuffix) {
 			continue
 		}
 		names = append(names, entry.Name())

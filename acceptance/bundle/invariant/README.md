@@ -3,7 +3,10 @@ Unlike regular acceptance tests full output is not recorded, unless the conditio
 no_drift test checks that there are no actions planned after successful deploy. If that's not the case, the
 test will dump full JSON plan to the output.
 
-In order to add a new test, add a config to configs/. Every `configs/*.yml.tmpl` runs in every invariant test
+In order to add a new test, add a config to configs/. Name it after the key under `resources:` of the type
+it is about: `<key>.yml.tmpl` (for example `jobs.yml.tmpl`), or `<key>_<variant>.yml.tmpl` for a variant.
+`TestInvariantConfigNames` checks the names, and `TestInvariantConfigsCoverage` requires a `<key>.yml.tmpl`
+for every resource type. Every `configs/*.yml.tmpl` runs in every invariant test
 (`EnvMatrixFiles` in test.toml). If a config cannot run in some tests, add `configs/<config>-exclude.toml`
 with an `[[Exclude]]` entry per reason: `Tests` names the tests that skip it (all if omitted), `When` the
 further conditions, such as `CONFIG_Cloud=true` or `READPLAN=1`, and `Reason` says why. See

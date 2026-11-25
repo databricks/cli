@@ -188,7 +188,7 @@ type ServerStub struct {
 }
 
 // MatrixFileExcludeSuffix names the sidecar of a file matched by EnvMatrixFiles:
-// "job.yml.tmpl-exclude.toml" holds the exclusions of the value "job.yml.tmpl".
+// "jobs.yml.tmpl-exclude.toml" holds the exclusions of the value "jobs.yml.tmpl".
 const MatrixFileExcludeSuffix = "-exclude.toml"
 
 // matrixFileSidecar is the content of a MatrixFileExcludeSuffix sidecar. Example:

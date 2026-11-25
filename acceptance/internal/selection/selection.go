@@ -462,7 +462,7 @@ func (c changedDirs) get(dir string) *changedDir {
 }
 
 // invariantConfigName returns the config a changed file under acceptance/bundle/invariant/
-// configs/ belongs to (job.yml.tmpl for both job.yml.tmpl and job.yml.tmpl-init.sh), or ""
+// configs/ belongs to (jobs.yml.tmpl for both jobs.yml.tmpl and jobs.yml.tmpl-init.sh), or ""
 // for any other path.
 func invariantConfigName(path string) string {
 	if !strings.HasPrefix(path, invariantConfigsPrefix) {
