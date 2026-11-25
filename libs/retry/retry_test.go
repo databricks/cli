@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -155,8 +155,6 @@ func TestRetryMessage(t *testing.T) {
 // The EOF in TestIsTransientRead must match what a real SDK call returns when the server closes
 // the connection without responding.
 func TestIsTransientReadOnServerClosingConnection(t *testing.T) {
-	// Keep ambient credentials out of the client config.
-	testutil.CleanupEnvironment(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/2.0/preview/scim/v2/Me" {
 			http.NotFound(w, r)
@@ -169,7 +167,14 @@ func TestIsTransientReadOnServerClosingConnection(t *testing.T) {
 	}))
 	defer server.Close()
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	// noEnvLoader keeps ambient DATABRICKS_* variables and ~/.databrickscfg out of the config
+	// without clearing the process environment, which Windows needs to open sockets.
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:     server.URL,
+		Token:    "token",
+		AuthType: "pat",
+		Loaders:  []config.Loader{noEnvLoader{}},
+	})
 	require.NoError(t, err)
 	_, err = w.CurrentUser.Me(t.Context(), iam.MeRequest{})
 	_, isURLError := errors.AsType[*url.Error](err)
@@ -177,3 +182,8 @@ func TestIsTransientReadOnServerClosingConnection(t *testing.T) {
 	assert.ErrorIs(t, err, io.EOF)
 	assert.True(t, IsTransientRead(t.Context(), err))
 }
+
+type noEnvLoader struct{}
+
+func (noEnvLoader) Name() string                   { return "none" }
+func (noEnvLoader) Configure(*config.Config) error { return nil }
