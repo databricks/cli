@@ -1,0 +1,5 @@
+server_side_defaults:
+  - field: storage_location
+    skip: always
+  - field: volume_path
+    skip: always
