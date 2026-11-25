@@ -6,6 +6,7 @@ import (
 	"iter"
 	"slices"
 	"sync"
+	"sync/atomic"
 )
 
 // ResourceTypeRegistry holds at most one value per resource type. A package keeps one in
@@ -15,6 +16,7 @@ type ResourceTypeRegistry[T any] struct {
 	name          string
 	registrations []resourceTypeRegistration[T]
 	ordered       func() []resourceTypeRegistration[T]
+	used          atomic.Bool
 }
 
 type resourceTypeRegistration[T any] struct {
@@ -27,6 +29,7 @@ type resourceTypeRegistration[T any] struct {
 func NewResourceTypeRegistry[T any](name string) *ResourceTypeRegistry[T] {
 	r := &ResourceTypeRegistry[T]{name: name}
 	r.ordered = sync.OnceValue(func() []resourceTypeRegistration[T] {
+		r.used.Store(true)
 		return r.order(allResourceTypes())
 	})
 	return r
@@ -34,7 +37,14 @@ func NewResourceTypeRegistry[T any](name string) *ResourceTypeRegistry[T] {
 
 // Register records value for the resource type under key. Call it from init() in the
 // file of that type. It only records the value; it is checked on first use.
+//
+// It panics if the registry has already been used, because the registration would
+// otherwise be missing from every later [ResourceTypeRegistry.All] and
+// [ResourceTypeRegistry.Get].
 func (r *ResourceTypeRegistry[T]) Register(key string, value T) {
+	if r.used.Load() {
+		panic(fmt.Sprintf("%s registered for resource type %q after first use", r.name, key))
+	}
 	r.registrations = append(r.registrations, resourceTypeRegistration[T]{key: key, value: value})
 }
 

@@ -41,7 +41,7 @@ A declaration must not depend on the receiver's contents: it is called on a zero
 
 ## Registering behaviour
 
-A package that needs at most one value per type (a check, a contribution function, ...) keeps a `config.ResourceTypeRegistry[T]` in a package-level variable, and the file of each type calls its `Register` from `init()`. `All()` yields the registrations in canonical order, whatever the order of `init()`, and `Get(key)` returns one. On first use the registry panics on a key that is not a resource type or that is registered twice.
+A package that needs at most one value per type (a check, a contribution function, ...) keeps a `config.ResourceTypeRegistry[T]` in a package-level variable, and the file of each type calls its `Register` from `init()`. `All()` yields the registrations in canonical order, whatever the order of `init()`, and `Get(key)` returns one. On first use the registry panics on a key that is not a resource type or that is registered twice, and `Register` panics once the registry has been used.
 
 ## Testing completeness
 

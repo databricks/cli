@@ -49,3 +49,12 @@ func TestResourceTypeRegistryRejectsDuplicate(t *testing.T) {
 		r.Get("jobs")
 	})
 }
+
+func TestResourceTypeRegistryRejectsRegisterAfterFirstUse(t *testing.T) {
+	r := NewResourceTypeRegistry[string]("value")
+	r.Register("jobs", "j")
+	r.Get("jobs")
+	assert.PanicsWithValue(t, `value registered for resource type "pipelines" after first use`, func() {
+		r.Register("pipelines", "p")
+	})
+}
