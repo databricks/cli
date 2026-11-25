@@ -23,7 +23,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
+// jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/jobs.go).
 const jobRunTimeout = 24 * time.Hour
 
 // JobRunLifecycleState is the local-only trigger fingerprint.
