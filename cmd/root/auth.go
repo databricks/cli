@@ -349,9 +349,12 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	}
 
 	// Try picking a profile dynamically if the current configuration is not valid.
-	profile, err := AskForWorkspaceProfile(ctx)
+	profile, prompted, err := askForWorkspaceProfile(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if prompted {
+		logDefaultProfileTip(ctx, profile)
 	}
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
@@ -445,23 +448,37 @@ func ResolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	}
 }
 
+// logDefaultProfileTip tells the user how to stop being asked for a profile.
+// Nothing persists the picked profile, so without a default profile every
+// command shows the picker again, which users read as being asked to log in
+// again (CNXT-2467).
+func logDefaultProfileTip(ctx context.Context, profileName string) {
+	cmdio.LogString(ctx, fmt.Sprintf("Tip: run \"databricks auth switch --profile %s\" to use this profile by default and skip this prompt, or pass --profile %s.", profileName, profileName))
+}
+
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
+	name, _, err := askForWorkspaceProfile(ctx)
+	return name, err
+}
+
+// askForWorkspaceProfile also reports whether the user was shown the picker.
+func askForWorkspaceProfile(ctx context.Context) (string, bool, error) {
 	profiler := profile.GetProfiler(ctx)
 	path, err := profiler.GetPath(ctx)
 	if err != nil {
-		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
+		return "", false, fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
 	profiles, err := profiler.LoadProfiles(ctx, profile.MatchWorkspaceProfiles)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	switch len(profiles) {
 	case 0:
-		return "", ErrNoWorkspaceProfiles{path: path}
+		return "", false, ErrNoWorkspaceProfiles{path: path}
 	case 1:
-		return profiles[0].Name, nil
+		return profiles[0].Name, false, nil
 	}
-	return profile.SelectProfile(ctx, profile.SelectConfig{
+	name, err := profile.SelectProfile(ctx, profile.SelectConfig{
 		Label:             "Workspace profiles defined in " + path,
 		Profiles:          profiles,
 		StartInSearchMode: true,
@@ -469,6 +486,7 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 		InactiveTemplate:  `{{.Name}}`,
 		SelectedTemplate:  `{{ "Using workspace profile" | faint }}: {{ .Name | bold }}`,
 	})
+	return name, true, err
 }
 
 func AskForAccountProfile(ctx context.Context) (string, error) {

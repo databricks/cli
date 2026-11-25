@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -230,6 +231,54 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 			Profile: "workspace-1111",
 		})
 	})
+}
+
+// TestWorkspaceClientOrPromptTipsDefaultProfileAfterPick checks that picking
+// a profile interactively tells the user how to make it the default. Without
+// that, every command shows the picker again (CNXT-2467).
+func TestWorkspaceClientOrPromptTipsDefaultProfileAfterPick(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(configFile, []byte(`
+[workspace-1111]
+host = https://workspace-1111.test
+token = foobar
+
+[workspace-1112]
+host = https://workspace-1112.test
+token = foobar
+`), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("PATH", "")
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	ctx, tio := cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
+
+	errch := make(chan error, 1)
+	go func() {
+		defer cancel()
+		_, err := workspaceClientOrPrompt(ctx, &config.Config{HTTPTransport: noNetworkTransport}, true)
+		errch <- err
+	}()
+
+	var stderr strings.Builder
+	sentEnter := false
+	for {
+		line, err := tio.Stderr.ReadString('\n')
+		stderr.WriteString(line)
+		if err != nil {
+			break
+		}
+		if !sentEnter && strings.Contains(line, "Search:") {
+			// Enter picks the first profile.
+			_, _ = tio.Stdin.WriteString("\r")
+			require.NoError(t, tio.Stdin.Flush())
+			sentEnter = true
+		}
+	}
+	require.NoError(t, <-errch)
+	assert.Contains(t, stderr.String(), `Tip: run "databricks auth switch --profile workspace-1111"`)
 }
 
 // TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile drives the
