@@ -35,6 +35,9 @@ bundle files automatically, useful during active dashboard development.
 Usage:
   databricks bundle generate dashboard [flags]
 
+Aliases:
+  dashboard, dashboards
+
 Flags:
   -s, --dashboard-dir string   directory to write the dashboard representation to (default "src")
       --existing-id string     ID of the dashboard to generate configuration for

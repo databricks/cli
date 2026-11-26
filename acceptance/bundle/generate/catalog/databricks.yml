@@ -1,0 +1,5 @@
+bundle:
+  name: generate-catalog
+
+include:
+  - resources/*.yml
