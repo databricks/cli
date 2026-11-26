@@ -309,7 +309,7 @@ func (h *agentHint) show(ctx context.Context, key, native string, textDue bool) 
 	}
 	if textDue {
 		cmdio.LogString(ctx, h.message(ctx))
-		logHintShown(ctx, h.textKind)
+		logHintShown(ctx, h.messageKind(ctx))
 	}
 }
 
@@ -320,6 +320,15 @@ func (h *agentHint) message(ctx context.Context) string {
 		return skillsHintText
 	}
 	return h.text
+}
+
+// messageKind returns the hint-shown kind of message: the skills list kind
+// when skills.HintsEnabled is true, else the agent's install text kind.
+func (h *agentHint) messageKind(ctx context.Context) protos.AitoolsHintKind {
+	if skills.HintsEnabled(ctx) {
+		return protos.AitoolsHintKindSkillsListText
+	}
+	return h.textKind
 }
 
 // claim records the text's throttle key and reports whether the text may

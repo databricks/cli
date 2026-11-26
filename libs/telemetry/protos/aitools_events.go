@@ -16,6 +16,10 @@ const (
 	// AitoolsHintKindAgentInstallText is the stderr line asking a non-Claude
 	// coding agent to run `databricks aitools install` for itself.
 	AitoolsHintKindAgentInstallText AitoolsHintKind = "AGENT_INSTALL_TEXT"
+	// AitoolsHintKindSkillsListText is the stderr line asking the agent to run
+	// `databricks skills list`, shown in place of the install text (of either
+	// kind) when skill hints are on.
+	AitoolsHintKindSkillsListText AitoolsHintKind = "SKILLS_LIST_TEXT"
 	// AitoolsHintKindAppsInitTip is the non-interactive tip printed by
 	// `databricks apps init`.
 	AitoolsHintKindAppsInitTip AitoolsHintKind = "APPS_INIT_TIP"
