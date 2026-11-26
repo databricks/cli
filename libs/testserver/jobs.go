@@ -840,6 +840,8 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 
 // executeNotebookTask executes a notebook task by running the notebook as a Python script.
 // The wrapper feature transforms python_wheel_task into notebook_task that calls the wheel.
+// It returns the notebook's prints, or, if the notebook called dbutils.notebook.exit, the exit
+// value (possibly empty) and no prints.
 func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[string]string) (string, *string, error) {
 	if task.NotebookTask == nil {
 		return "", nil, errors.New("task has no notebook_task")
@@ -924,9 +926,13 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	}
 
 	// dbutils.notebook.exit wrote its value verbatim: the Jobs API returns it as is.
-	if exitValue, err := os.ReadFile(exitFile); err == nil {
+	exitValue, err := os.ReadFile(exitFile)
+	if err == nil {
 		result := string(exitValue)
 		return "", &result, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return "", nil, fmt.Errorf("failed to read notebook exit value: %w", err)
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
