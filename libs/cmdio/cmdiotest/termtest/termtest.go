@@ -547,15 +547,17 @@ func (tt *Term[T]) WaitForOrExit(substr string) bool {
 	}
 }
 
-// WaitFor blocks until substr appears in the raw output stream, or the
-// default timeout elapses. Returns the captured output for use in failure
-// messages.
+// WaitFor blocks until substr appears in the raw output stream or on the
+// screen, or the default timeout elapses. bubbletea v2 redraws only the cells
+// that change, so text shown on screen need not appear whole in the stream:
+// typed "ab" can arrive as "a", then "b" inserted before the cursor. Returns
+// the captured raw output.
 func (tt *Term[T]) WaitFor(substr string) string {
 	tt.t.Helper()
 	deadline := time.Now().Add(defaultTimeout)
 	for {
 		got := tt.Raw()
-		if strings.Contains(got, substr) {
+		if strings.Contains(got, substr) || strings.Contains(tt.Snapshot(), substr) {
 			return got
 		}
 		if time.Now().After(deadline) {
