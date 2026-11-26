@@ -35,12 +35,14 @@ func TestArchive(t *testing.T) {
 	assert.FileExists(t, filepath.Join(assertDir, "bin", "amd64", "go", "bin", "go"))
 	assert.FileExists(t, filepath.Join(assertDir, "bin", "amd64", "uv"))
 	assert.FileExists(t, filepath.Join(assertDir, "bin", "amd64", "jq"))
+	assert.FileExists(t, filepath.Join(assertDir, "bin", "amd64", "python", "bin", "python3.10"))
 
 	// arm64 tool binaries are bundled alongside amd64 because the serverless
 	// driver's CPU architecture is chosen at runtime (see CreateArchive).
 	assert.FileExists(t, filepath.Join(assertDir, "bin", "arm64", "go", "bin", "go"))
 	assert.FileExists(t, filepath.Join(assertDir, "bin", "arm64", "uv"))
 	assert.FileExists(t, filepath.Join(assertDir, "bin", "arm64", "jq"))
+	assert.FileExists(t, filepath.Join(assertDir, "bin", "arm64", "python", "bin", "python3.10"))
 
 	assert.FileExists(t, filepath.Join(assertDir, "cli", "go.mod"))
 	assert.FileExists(t, filepath.Join(assertDir, "cli", "go.sum"))

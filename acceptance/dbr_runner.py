@@ -132,6 +132,8 @@ def setup_environment(extract_dir: Path) -> dict:
         str(go_bin_dir),
         str(bin_dir),
         env.get("PATH", ""),
+        # Last, so python3 stays the system interpreter; uv finds python3.10 here for UV_PYTHON=3.10.
+        str(bin_dir / "python" / "bin"),
     ]
     env["PATH"] = os.pathsep.join(path_entries)
 
