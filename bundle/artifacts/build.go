@@ -38,6 +38,11 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		})
 	}
 
+	// Patched wheel directories already emptied by this build. Wheels of one
+	// distribution in one artifact share a directory, so emptying it per file
+	// would delete the wheels patched before.
+	cleanedDirs := make(map[string]bool)
+
 	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		a := b.Config.Artifacts[artifactName]
 
@@ -82,7 +87,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		if a.Type == "whl" && config.IsExplicitlyEnabled(a.DynamicVersion) && cacheDir != "" {
 			b.Metrics.AddBoolValue(metrics.ArtifactDynamicVersionIsSet, true)
 			for ind, artifactFile := range a.Files {
-				patchedWheel := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source)
+				patchedWheel := makePatchedWheel(ctx, cacheDir, artifactName, artifactFile.Source, cleanedDirs)
 				log.Debugf(ctx, "Patching ind=%d artifactName=%s Source=%s patchedWheel=%s", ind, artifactName, artifactFile.Source, patchedWheel)
 				if patchedWheel != "" {
 					a.Files[ind].Patched = patchedWheel
@@ -126,7 +131,7 @@ func doBuild(ctx context.Context, artifactName string, a *config.Artifact) error
 	return nil
 }
 
-func makePatchedWheel(ctx context.Context, cacheDir, artifactName, wheel string) string {
+func makePatchedWheel(ctx context.Context, cacheDir, artifactName, wheel string, cleanedDirs map[string]bool) string {
 	msg := "Failed to patch wheel with dynamic version"
 	info, err := patchwheel.ParseWheelFilename(wheel)
 	if err != nil {
@@ -139,7 +144,10 @@ func makePatchedWheel(ctx context.Context, cacheDir, artifactName, wheel string)
 	}
 
 	dir := filepath.Join(cacheDir, "patched_wheels", artifactName+"_"+info.Distribution)
-	createAndCleanupDirectory(ctx, dir)
+	if !cleanedDirs[dir] {
+		createAndCleanupDirectory(ctx, dir)
+		cleanedDirs[dir] = true
+	}
 	patchedWheel, isBuilt, err := patchwheel.PatchWheel(wheel, dir)
 	if err != nil {
 		logdiag.LogDiag(ctx, diag.Diagnostic{
