@@ -35,3 +35,8 @@ ls -A | sort
 if [ -f "$venv_python" ]; then
   echo "venv python: present"
 fi
+for f in pyproject.toml uv.lock; do
+  if [ -f "$f" ]; then
+    echo "$f: regular file"
+  fi
+done

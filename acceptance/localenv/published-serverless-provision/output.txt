@@ -25,3 +25,5 @@
 pyproject.toml
 uv.lock
 venv python: present
+pyproject.toml: regular file
+uv.lock: regular file
