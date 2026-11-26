@@ -85,7 +85,9 @@ func withKeptFiles(synced, kept Filelist) Filelist {
 		seen[filepath.ToSlash(f.LocalPath)] = true
 	}
 	for _, f := range kept {
-		if !seen[filepath.ToSlash(f.LocalPath)] {
+		// States written by CLI versions <= v0.220.0 on Windows use backslashes.
+		f.LocalPath = filepath.ToSlash(f.LocalPath)
+		if !seen[f.LocalPath] {
 			synced = append(synced, f)
 		}
 	}
