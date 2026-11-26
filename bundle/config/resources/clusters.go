@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -68,4 +69,13 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 
 func (s *Cluster) GetName() string {
 	return s.ClusterName
+}
+
+func (s *Cluster) LibraryLocations() []LibraryLocation {
+	return []LibraryLocation{
+		{
+			Pattern: dyn.NewPattern(dyn.Key("libraries")),
+			Kind:    LibraryList,
+		},
+	}
 }
