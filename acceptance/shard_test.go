@@ -1,6 +1,7 @@
 package acceptance_test
 
 import (
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"os"
@@ -33,7 +34,7 @@ func newShardSelector(t *testing.T) shardSelector {
 func parseShard(raw string) (shardSelector, error) {
 	is, ns, ok := strings.Cut(raw, "/")
 	if !ok {
-		return shardSelector{}, fmt.Errorf("expected i/N")
+		return shardSelector{}, errors.New("expected i/N")
 	}
 	i, err := strconv.Atoi(is)
 	if err != nil {
@@ -44,7 +45,7 @@ func parseShard(raw string) (shardSelector, error) {
 		return shardSelector{}, err
 	}
 	if n < 1 || i < 0 || i >= n {
-		return shardSelector{}, fmt.Errorf("expected 0 <= i < N")
+		return shardSelector{}, errors.New("expected 0 <= i < N")
 	}
 	return shardSelector{index: i, count: n}, nil
 }
