@@ -30,6 +30,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestLoginDeviceCodeFlagVisibility(t *testing.T) {
+	cmd := newLoginCommand(&auth.AuthArguments{})
+
+	assert.False(t, cmd.Flag("use-device-code").Hidden)
+	// Only the rerun that completes a non-interactive login uses these.
+	assert.True(t, cmd.Flag("user-code").Hidden)
+	assert.True(t, cmd.Flag("confirmation-code").Hidden)
+}
+
 func TestValidateDeviceCodeLogin(t *testing.T) {
 	tests := []struct {
 		name    string
