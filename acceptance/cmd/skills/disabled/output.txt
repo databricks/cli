@@ -1,0 +1,5 @@
+
+>>> env -u DATABRICKS_SKILLS_PREVIEW [CLI] skills list
+Error: unknown command "skills" for "databricks"
+
+>>> env -u DATABRICKS_SKILLS_PREVIEW [CLI] --help
