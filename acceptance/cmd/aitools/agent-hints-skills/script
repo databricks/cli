@@ -13,4 +13,3 @@ trace CURSOR_AGENT=1 $CLI jobs list
 
 title "Skills commands print no hint"
 musterr trace CODEX_CI=1 CODEX_THREAD_ID=thread-2 $CLI skills list
-trace CODEX_CI=1 CODEX_THREAD_ID=thread-2 $CLI skills --help

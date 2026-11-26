@@ -292,6 +292,35 @@ func TestMaybeHint_SkillsCommandSilentWithHintsOn(t *testing.T) {
 	assert.Empty(t, hintKinds(t, ctx))
 }
 
+func TestMaybeHint_SkillsCommandExemptFollowsGuard(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		preview string
+		hints   string
+		path    string
+		want    string
+	}{
+		{"hints on: skills list is silent", "1", "1", "skills list", ""},
+		{"hints on: skills read-file is silent", "1", "1", "skills read-file", ""},
+		{"hints on: a command named skillsfoo is hinted", "1", "1", "skillsfoo", skillsHintText + "\n"},
+		// Preview on, hints off: the skills commands keep the install hint, as
+		// they did before the skills list hint existed.
+		{"preview on, hints off: skills list keeps install text", "1", "", "skills list", hintText + "\n"},
+		{"both unset: skills list keeps install text", "", "", "skills list", hintText + "\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", tc.preview)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", tc.hints)
+
+			MaybeHint(ctx, commandAt(tc.path), noPluginRecorded)
+			assert.Equal(t, tc.want, stderr.String())
+		})
+	}
+}
+
 // commandAt builds a command tree under a "databricks" root and returns the
 // command at the space-separated path, e.g. "current-user me".
 func commandAt(path string) *cobra.Command {
@@ -311,10 +340,7 @@ func TestIsHintExemptCommand(t *testing.T) {
 	}{
 		{"aitools install", true},
 		{"experimental aitools skills install", true},
-		{"skills", true},
-		{"skills list", true},
-		{"skills read-file", true},
-		{"skillsfoo", false},
+		{"skills", false}, // Exempt only with skills.HintsEnabled; see MaybeHint.
 		{"feedback", true},
 		{"auth login", true},
 		{"auth token", true},

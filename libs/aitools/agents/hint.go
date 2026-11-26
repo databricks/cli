@@ -123,7 +123,8 @@ type agentHint struct {
 	// does, nothing is printed.
 	installed func(ctx context.Context) bool
 
-	// text is the model-facing recommendation, printed at most once per
+	// text is the agent's install recommendation, the model-facing text unless
+	// skills.HintsEnabled is true (see message). It is printed at most once per
 	// textHintThrottle per session (see sessionEnv), or per agent on this
 	// machine when there is no session id (see fallbackKey).
 	text string
@@ -203,10 +204,13 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 
 // MaybeHint recommends installing the Databricks AI tooling when a supported
 // agent drives the CLI without it installed. It is a no-op for human callers,
-// unsupported agents, hint-exempt commands (isHintExemptCommand), the `auth
+// unsupported agents, hint-exempt commands (isHintExemptCommand), the
+// `databricks skills` commands when skills.HintsEnabled is true, the `auth
 // token` and `auth docker token` credential helpers, a CLI process the CLI
 // started itself, when there is no output stream, and once the tooling is
 // present.
+// The model-facing text is the skills list recommendation when
+// skills.HintsEnabled is true, else the agent's install text (see message).
 // The agent-native line (if any) and the model-facing text are throttled
 // independently, per session or, for agents without a session id, per agent
 // on this machine (fallbackKey). Both hint-shown events follow the text's
@@ -228,6 +232,11 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 		return nil
 	}
 	if isHintExemptCommand(cmd) {
+		return nil
+	}
+	// Only with skill hints on: with them off, the skills commands keep the
+	// install hint they had before the skills list hint existed.
+	if skills.HintsEnabled(ctx) && isUnder(cmd, skillsCommandPath) {
 		return nil
 	}
 	if IsCredentialHelperCommand(cmd) {
@@ -363,6 +372,11 @@ func IsCredentialHelperCommand(cmd *cobra.Command) bool {
 	return parent != nil && parent.Name() == authCommandName
 }
 
+// skillsCommandPath is the `databricks skills` command group. Its commands are
+// hint-exempt only when skills.HintsEnabled is true (see MaybeHint): reading a
+// skill is the task itself, so the skills list hint would only repeat it.
+const skillsCommandPath = "skills"
+
 // hintExemptCommands are the commands, with their subcommands, on which no
 // tooling hint prints. Paths are relative to the root command. The aitools
 // trees are exempt because telling the agent to run aitools while it already
@@ -373,7 +387,6 @@ func IsCredentialHelperCommand(cmd *cobra.Command) bool {
 var hintExemptCommands = []string{
 	"aitools",
 	"experimental aitools",
-	"skills", // Reading a skill is the task itself: the hint would only repeat it.
 	"auth",
 	"configure",
 	"current-user me",
@@ -387,15 +400,20 @@ var hintExemptCommands = []string{
 // isHintExemptCommand reports whether cmd is one of hintExemptCommands or a
 // subcommand of one.
 func isHintExemptCommand(cmd *cobra.Command) bool {
-	path := cmd.CommandPath()
-	root := cmd.Root().CommandPath()
 	for _, exempt := range hintExemptCommands {
-		full := root + " " + exempt
-		if path == full || strings.HasPrefix(path, full+" ") {
+		if isUnder(cmd, exempt) {
 			return true
 		}
 	}
 	return false
+}
+
+// isUnder reports whether cmd is the command at path, relative to the root
+// command, or one of its subcommands.
+func isUnder(cmd *cobra.Command, path string) bool {
+	full := cmd.Root().CommandPath() + " " + path
+	cmdPath := cmd.CommandPath()
+	return cmdPath == full || strings.HasPrefix(cmdPath, full+" ")
 }
 
 // claudeToolingInstalled reports whether Claude Code has Databricks AI tooling
