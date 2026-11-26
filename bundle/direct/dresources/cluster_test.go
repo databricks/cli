@@ -1,8 +1,6 @@
 package dresources
 
 import (
-	"encoding/json"
-	"net/http"
 	"testing"
 	"time"
 
@@ -73,33 +71,16 @@ func TestClusterOverrideChangeDescLibraries(t *testing.T) {
 	}
 }
 
-func clusterDoesNotExistResponse(id string) testserver.Response {
-	return testserver.Response{
-		StatusCode: http.StatusBadRequest,
-		Body: map[string]string{
-			"error_code": "INVALID_PARAMETER_VALUE",
-			"message":    "Cluster " + id + " does not exist",
-		},
-	}
-}
-
-// For a deleted cluster the backend answers every cluster endpoint with 400
-// INVALID_PARAMETER_VALUE; only the cluster GET is mapped to not-found by the SDK.
+// The fake workspace answers library-status and permanent-delete for a missing cluster with the
+// cloud's 400 INVALID_PARAMETER_VALUE, which the SDK does not map to not-found. The cluster GET
+// (which the SDK does map) is delayed so the library-status error arrives first.
 func newMissingClusterResource(t *testing.T) *ResourceCluster {
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.1/clusters/get", func(req testserver.Request) any {
-		// Answer after the library-status GET, so its unmapped error comes first.
 		time.Sleep(100 * time.Millisecond)
-		return clusterDoesNotExistResponse(req.URL.Query().Get("cluster_id"))
+		return req.Workspace.ClustersGet(req, req.URL.Query().Get("cluster_id"))
 	})
-	server.Handle("GET", "/api/2.0/libraries/cluster-status", func(req testserver.Request) any {
-		return clusterDoesNotExistResponse(req.URL.Query().Get("cluster_id"))
-	})
-	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req testserver.Request) any {
-		var request compute.PermanentDeleteCluster
-		require.NoError(t, json.Unmarshal(req.Body, &request))
-		return clusterDoesNotExistResponse(request.ClusterId)
-	})
+	testserver.AddDefaultHandlers(server)
 
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
 		Host:  server.URL,
