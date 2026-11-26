@@ -1,0 +1,3 @@
+---
+name: databricks-quickstart
+the skill body is the agent text
