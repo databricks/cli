@@ -1,1 +1,1 @@
-* Use the public Sandbox API for sandbox lifecycle commands while preserving CLI output and SSH port forwarding.
+* Use the public Sandbox API for `databricks sandbox` lifecycle commands. ([#8040](https://github.com/databricks/cli/pull/8040))
