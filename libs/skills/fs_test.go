@@ -39,6 +39,7 @@ func TestCatalogFromFixture(t *testing.T) {
 		Name:        "alpha",
 		Description: "A stable skill with a nested file.",
 		Version:     "1.0.0",
+		MinCLIVer:   "0.300.0",
 		Files:       []string{"SKILL.md", "references/guide.md"},
 		Commands:    []string{"jobs", "pipelines"},
 	}, catalog.Skills[0])

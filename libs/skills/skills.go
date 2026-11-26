@@ -24,6 +24,7 @@ type Skill struct {
 	Name        string
 	Description string
 	Version     string
+	MinCLIVer   string
 
 	// Files lists the skill's files relative to the skill directory, SKILL.md included.
 	Files []string
@@ -36,7 +37,8 @@ type Skill struct {
 
 // Catalog is the set of skills a source serves.
 type Catalog struct {
-	// Skills are sorted by name, one per skill the release names.
+	// Skills are sorted by name. Install also skips non-portable names and
+	// paths, which the catalog does not check yet.
 	Skills []Skill
 
 	// Version is the release version.

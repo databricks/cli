@@ -43,6 +43,7 @@ func (s *fsSource) Catalog(_ context.Context) (*Catalog, error) {
 			Name:         name,
 			Description:  meta.Description,
 			Version:      meta.Version,
+			MinCLIVer:    meta.MinCLIVer,
 			Files:        meta.Files,
 			Commands:     meta.Commands,
 			Experimental: meta.IsExperimental(),
