@@ -1,3 +1,6 @@
+# yamlfmt is not available on DBR.
+RunsOnDbr = false
+
 Ignore = [
     '.ruff_cache',
 ]

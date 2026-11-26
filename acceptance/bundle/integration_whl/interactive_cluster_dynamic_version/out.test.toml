@@ -1,4 +1,5 @@
 Cloud = true
 CloudSlow = true
+RunsOnDbr = false
 EnvMatrix.DATA_SECURITY_MODE = ["USER_ISOLATION", "SINGLE_USER"]
 EnvMatrix.DMS = ["", "true"]

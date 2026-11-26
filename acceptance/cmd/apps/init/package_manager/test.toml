@@ -1,3 +1,6 @@
+# pnpm is not installed on DBR.
+RunsOnDbr = false
+
 Env.DATABRICKS_APPKIT_TEMPLATE_PATH = "template"
 Ignore = [
     "empty-bin",
