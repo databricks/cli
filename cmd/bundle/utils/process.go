@@ -527,8 +527,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	// Report a dependency cycle the plan would reject, before deploy uploads anything. It runs
-	// after every step above that changes the config, so it checks what the plan sees; a saved
-	// plan (--plan) is not planned again, so PreDeployChecks is off for it.
+	// after every step above that changes the config, so it checks what the plan sees (for
+	// example, ResolveJobRunFileTriggers replaces a job run's triggers_state, which can hold
+	// references); a saved plan (--plan) is not planned again, so PreDeployChecks is off for it.
 	if opts.PreDeployChecks {
 		bundle.ApplyContext(ctx, b, validate.DependencyCycleAfterBuild())
 		if logdiag.HasError(ctx) {
