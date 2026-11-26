@@ -9,7 +9,9 @@ $CLI secrets put-secret ssh-scope client-public-key --string-value "command=\"ec
 SERVER_HOME="$PWD/server-home"
 mkdir -p "$SERVER_HOME"
 title "The server rejects a client public key with options"
+# GOCOVERDIR is kept so the coverage build (main CI) writes its data instead of printing a warning.
 musterr env -i HOME="$SERVER_HOME" PATH=/usr/bin:/bin DATABRICKS_HOST="$DATABRICKS_HOST" DATABRICKS_TOKEN="$DATABRICKS_TOKEN" \
+  ${GOCOVERDIR:+GOCOVERDIR="$GOCOVERDIR"} \
   $CLI ssh server --serverless --cluster=test-cluster --session-id=test-session --secret-scope-name=ssh-scope \
   --authorized-key-secret-name=client-public-key --shutdown-delay=1s 2>&1 | contains.py '!marker'
 
