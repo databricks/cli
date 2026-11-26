@@ -1,14 +1,6 @@
-Badness = "With dynamic_version, makePatchedWheel empties the artifact's patched_wheels directory before patching each file, so the second wheel of the same distribution deletes the first patched wheel and deploy fails to upload it. Both patched wheels should be kept and uploaded."
+# Plain deploy and deploy --plan both keep the two patched wheels.
+EnvMatrix.READPLAN = ["", "1"]
 
 [[Repls]]
 Old = '\\\\'
 New = '/'
-
-# Windows reports the missing patched wheel with its own message and backslash paths.
-[[Repls]]
-Old = '\\\.databricks\\bundle\\default\\patched_wheels\\my_test_code_my_test_code\\'
-New = '/.databricks/bundle/default/patched_wheels/my_test_code_my_test_code/'
-
-[[Repls]]
-Old = 'The system cannot find the file specified\.'
-New = 'no such file or directory'
