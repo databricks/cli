@@ -68,16 +68,16 @@ Error: unlock called when lock is not held: no active lock on target dir: file d
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
 Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock) doesn't exist.
 
-=== destroy deletes the state directory before it releases the lock, and the release accepts the missing lock
+=== destroy deletes the root directory before it releases the lock, and the release accepts the missing lock
 
 >>> [CLI] bundle destroy --auto-approve --force-lock
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 0 deleted
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock return_export_info=true
-POST /api/2.0/workspace/delete
-POST /api/2.0/workspace/delete
-GET /api/2.0/workspace/get-status path=/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock return_export_info=true
+{"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock", "return_export_info": "true"}}
+{"method": "POST", "path": "/api/2.0/workspace/delete", "body": {"path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default", "recursive": true}}
+{"method": "POST", "path": "/api/2.0/workspace/delete", "body": {"path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]"}}
+{"method": "GET", "path": "/api/2.0/workspace/get-status", "q": {"path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock", "return_export_info": "true"}}
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock
 Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/state/deploy.lock) doesn't exist.

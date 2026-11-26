@@ -1,12 +1,12 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 cleanup() {
-    title "destroy deletes the state directory before it releases the lock, and the release accepts the missing lock"
-    print_requests.py > /dev/null
+    title "destroy deletes the root directory before it releases the lock, and the release accepts the missing lock"
+    print_requests.py > LOG.requests
     # --force-lock so that a run that failed while another lock was in place still cleans up.
     trace $CLI bundle destroy --auto-approve --force-lock
     # The root directory is deleted first; the release then only checks that the lock is gone.
     # Other get-status calls differ between runs, so only the lock's and the deletes are shown.
-    print_requests.py --get --summary //api/2.0/workspace/delete //api/2.0/workspace/get-status | grep -e deploy.lock -e workspace/delete
+    print_requests.py --get --oneline //api/2.0/workspace/delete //api/2.0/workspace/get-status | grep -e deploy.lock -e workspace/delete
     musterr trace MSYS_NO_PATHCONV=1 $CLI workspace get-status $LOCK
 }
 trap cleanup EXIT
