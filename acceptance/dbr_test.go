@@ -249,8 +249,8 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 			TaskKey:        "cloud_tests",
 			EnvironmentKey: "default",
 			MaxRetries:     0,
-			// Without this the zero value is omitted and serverless retries failed tasks.
-			ForceSendFields: []string{"MaxRetries"},
+			// Serverless auto-optimization retries failed tasks regardless of MaxRetries.
+			DisableAutoOptimization: true,
 			NotebookTask: &jobs.NotebookTask{
 				NotebookPath:   notebookPath,
 				BaseParameters: cloudParams,
@@ -266,10 +266,10 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 
 		// Local tests talk to the fake server only, so they get no CLOUD_ENV or workspace resource IDs.
 		tasks = append(tasks, jobs.Task{
-			TaskKey:         "local_tests",
-			EnvironmentKey:  "default",
-			MaxRetries:      0,
-			ForceSendFields: []string{"MaxRetries"},
+			TaskKey:                 "local_tests",
+			EnvironmentKey:          "default",
+			MaxRetries:              0,
+			DisableAutoOptimization: true,
 			NotebookTask: &jobs.NotebookTask{
 				NotebookPath: notebookPath,
 				BaseParameters: map[string]string{
