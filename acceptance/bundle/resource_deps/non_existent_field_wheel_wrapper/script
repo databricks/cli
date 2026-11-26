@@ -3,10 +3,10 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 
 title "The wrapper does not wrap a wheel task without a workspace library"
-update_file.py databricks.yml /Workspace/Shared/my_package /Volumes/main/default/v/my_package
+MSYS_NO_PATHCONV=1 update_file.py databricks.yml "whl: /Workspace/Shared/my_package" "whl: /Volumes/main/default/v/my_package"
 trace musterr $CLI bundle validate
 trace musterr $CLI bundle plan
-update_file.py databricks.yml /Volumes/main/default/v/my_package /Workspace/Shared/my_package
+MSYS_NO_PATHCONV=1 update_file.py databricks.yml "whl: /Volumes/main/default/v/my_package" "whl: /Workspace/Shared/my_package"
 
 title "The wrapper does not move a reference outside the wheel task"
 update_file.py databricks.yml "name: wheel-job" "name: \${resources.jobs.whl.non_existent}"
