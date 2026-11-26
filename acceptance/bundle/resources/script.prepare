@@ -10,6 +10,10 @@ volume_fields() {
 registered_model_fields() {
     jq '{full_name}'
 }
+# secret_scope_names prints the sorted names from 'secrets list-scopes -o json' on one line.
+secret_scope_names() {
+    jq -c '[.[].name] | sort'
+}
 
 # summary_ids prints the ID of each resource in 'bundle summary', by group and key.
 summary_ids() {

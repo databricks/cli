@@ -5,7 +5,7 @@ NEW_SCHEMA="main.moved_schema"
 
 title "Deploy a schema with a volume in it and rename the schema out of band; the recorded names are not readable"
 trace $CLI bundle deploy
-$CLI schemas update "$OLD_SCHEMA" --new-name moved_schema > /dev/null
+$CLI schemas update "$OLD_SCHEMA" --new-name moved_schema &> LOG.rename
 print_requests.py //unity-catalog &> LOG.deploy_requests
 
 title "Destroy finds the renamed schema by its schema_id, and the volume in it by its volume_id, and deletes both there"

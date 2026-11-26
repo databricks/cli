@@ -306,3 +306,16 @@ func TestFilterToSelected_WithParentNeedsItsParentSelected(t *testing.T) {
 	require.NoError(t, p.FilterToSelected(t.Context(), []string{"volumes.v", "schemas.s"}))
 	assert.ElementsMatch(t, []string{"resources.schemas.s", "resources.volumes.v", "resources.volumes.w"}, slices.Collect(maps.Keys(p.Plan)))
 }
+
+func TestFilterToSelected_WithParentWhoseParentIsPulledIn(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.catalogs.c"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	p.Plan["resources.schemas.s"] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: "c.moved", DependsOn: []deployplan.DependsOnEntry{{Node: "resources.catalogs.c"}}}
+	p.Plan["resources.volumes.v"] = &deployplan.PlanEntry{Action: deployplan.Delete, Gone: true, WithParent: "resources.schemas.s", DependsOn: []deployplan.DependsOnEntry{{Node: "resources.schemas.s"}}}
+	p.Plan["resources.volumes.other"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+
+	// The catalog pulls in the schema as its dependent, and the schema the volume: the schema is
+	// deleted in this run, so the volume can go with it.
+	require.NoError(t, p.FilterToSelected(t.Context(), []string{"catalogs.c"}))
+	assert.ElementsMatch(t, []string{"resources.catalogs.c", "resources.schemas.s", "resources.volumes.v"}, slices.Collect(maps.Keys(p.Plan)))
+}

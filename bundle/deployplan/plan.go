@@ -394,8 +394,8 @@ func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]stri
 // dependencies (forward), a deleted one its dependents (reverse) so they are removed
 // together. A delete selection errors if a live resource (not itself being deleted)
 // still references the resource to be deleted; removing it would break the live resource.
-// It also errors for a WithParent delete whose parent is not selected, as the parent's
-// delete is the only one that removes it.
+// It also errors for a WithParent delete whose parent is not in the closure, as the
+// parent's delete is the only one that removes it.
 func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	before := len(p.Plan)
 
@@ -435,13 +435,6 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 		key := queue[0]
 		queue = queue[1:]
 		if p.Plan[key].Action == Delete {
-			if parent := p.Plan[key].WithParent; parent != "" && !slices.Contains(resolved, parent) {
-				// Only its parent's delete removes it, and that takes everything in the parent along:
-				// the user has to ask for it.
-				deleted := strings.TrimPrefix(key, "resources.")
-				parentName := strings.TrimPrefix(parent, "resources.")
-				errs = append(errs, fmt.Sprintf("cannot delete %s on its own: only deleting %s, which was renamed outside the bundle, removes it; also select %s", deleted, parentName, parentName))
-			}
 			for _, dependent := range dependents[key] {
 				// Sub-nodes (grants/permissions, 4-part key) are not user-facing dependents
 				// and never trigger the live-dependent error. If they are themselves being
@@ -466,6 +459,17 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 		} else {
 			for _, dep := range p.Plan[key].DependsOn {
 				p.enqueueReachable(reachable, &queue, dep.Node)
+			}
+		}
+	}
+	for key := range reachable {
+		// Only its parent's delete removes it, and that takes everything in the parent along: the
+		// parent has to be in the selection already (named, or pulled in as a dependent).
+		if parent := p.Plan[key].WithParent; p.Plan[key].Action == Delete && parent != "" {
+			if _, ok := reachable[parent]; !ok {
+				deleted := strings.TrimPrefix(key, "resources.")
+				parentName := strings.TrimPrefix(parent, "resources.")
+				errs = append(errs, fmt.Sprintf("cannot delete %s on its own: only deleting %s, which was renamed outside the bundle, removes it; also select %s", deleted, parentName, parentName))
 			}
 		}
 	}

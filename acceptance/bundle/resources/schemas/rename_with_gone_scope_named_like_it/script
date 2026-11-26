@@ -14,4 +14,4 @@ title "The config follows the rename and drops the scope: the other scope is not
 cp databricks-renamed.yml databricks.yml
 trace $CLI bundle deploy --auto-approve
 trace print_requests.py --sort //unity-catalog //secrets
-trace $CLI secrets list-scopes -o json | jq -c '[.[].name] | sort'
+trace $CLI secrets list-scopes -o json | secret_scope_names

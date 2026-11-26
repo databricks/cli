@@ -118,3 +118,46 @@ func TestMakeGraphDependentOfWithParentWaitsForItsParent(t *testing.T) {
 		}
 	}
 }
+
+func TestMakeGraphParentOfWithParentWaitsForItsDependencies(t *testing.T) {
+	const (
+		locationKey = "resources.external_locations.loc"
+		schemaKey   = "resources.schemas.schema1"
+		volumeKey   = "resources.volumes.volume1"
+	)
+	plan := deployplan.NewPlanDirect()
+	plan.Plan[locationKey] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	plan.Plan[schemaKey] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: "main.moved"}
+	// An external volume whose storage_location names the location: the schema's delete removes it.
+	plan.Plan[volumeKey] = &deployplan.PlanEntry{
+		Action: deployplan.Delete, Gone: true, WithParent: schemaKey,
+		DependsOn: []deployplan.DependsOnEntry{{Node: schemaKey}, {Node: locationKey}},
+	}
+
+	for _, schemaFails := range []bool{false, true} {
+		g, err := makeGraph(plan)
+		require.NoError(t, err)
+		require.NoError(t, g.DetectCycle())
+
+		var mu sync.Mutex
+		var order []string
+		failed := map[string]bool{}
+		g.Run(1, func(key string, failedDependency *string) bool {
+			mu.Lock()
+			defer mu.Unlock()
+			if failedDependency != nil {
+				failed[key] = true
+				return false
+			}
+			order = append(order, key)
+			return !schemaFails || key != schemaKey
+		})
+
+		if schemaFails {
+			assert.Equal(t, []string{schemaKey}, order)
+			assert.Equal(t, map[string]bool{locationKey: true, volumeKey: true}, failed)
+		} else {
+			assert.Equal(t, []string{schemaKey, volumeKey, locationKey}, order)
+		}
+	}
+}
