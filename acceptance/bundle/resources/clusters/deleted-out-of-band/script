@@ -1,6 +1,6 @@
-# The state points at a cluster that was deleted out of band. The backend answers every
-# cluster endpoint for it with 400 INVALID_PARAMETER_VALUE "does not exist"; the stub in
-# test.toml delays the cluster GET so the library-status GET answers first.
+# The state points at a cluster that was deleted out of band. The backend answers clusters/get
+# and libraries/cluster-status for it with 400 INVALID_PARAMETER_VALUE "does not exist"; the
+# stub in test.toml delays the cluster GET so the library-status GET answers first.
 seed_state() {
     mkdir -p .databricks/bundle/default
     cp state.json .databricks/bundle/default/resources.json
@@ -12,6 +12,7 @@ seed_state() {
 title "destroy"
 seed_state
 trace $CLI bundle destroy --auto-approve
+trace print_state.py | jq -c ".state | keys"
 trace print_requests.py --get --sort //clusters //libraries
 
 title "deploy: the cluster is removed from config"
