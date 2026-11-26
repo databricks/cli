@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The downloader tests fetch from the internet, so only cloud CI (CLOUD_ENV set) runs them.
 func TestUvDownloader(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
@@ -18,6 +17,7 @@ func TestUvDownloader(t *testing.T) {
 
 	t.Parallel()
 
+	// Downloads from the internet, so only cloud CI (CLOUD_ENV set) runs it.
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()
@@ -41,6 +41,7 @@ func TestJqDownloader(t *testing.T) {
 
 	t.Parallel()
 
+	// Downloads from the internet, so only cloud CI (CLOUD_ENV set) runs it.
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()
@@ -64,6 +65,7 @@ func TestGoDownloader(t *testing.T) {
 
 	t.Parallel()
 
+	// Downloads from the internet, so only cloud CI (CLOUD_ENV set) runs it.
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()
