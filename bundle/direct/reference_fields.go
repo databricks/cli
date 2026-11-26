@@ -74,38 +74,43 @@ func plannedNodes(configRoot *config.Root, db *dstate.Database, adapters map[str
 	planned := make(map[string]bool)
 	for _, pattern := range planNodePatterns {
 		_, _ = dyn.MapByPattern(configRoot.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			node := p.String()
-			// The plan reads each node back by its key's string form, which a key with a dot does
-			// not survive.
-			if parsed, err := dyn.NewPathFromString(node); err != nil || !parsed.Equal(p) {
-				return v, nil
+			if isPlannedNode(configRoot, db, adapters, p) {
+				planned[p.String()] = true
 			}
-			adapter, ok := adapters[config.GetResourceTypeFromKey(node)]
-			if !ok {
-				return v, nil
-			}
-			inputConfig, err := configRoot.GetResourceConfig(node)
-			if err != nil {
-				return v, nil
-			}
-			_, newState, err := prepareNodeState(adapter, inputConfig, node)
-			if err != nil {
-				return v, nil
-			}
-			hasState := false
-			if db != nil {
-				_, hasState = db.State[node]
-			}
-			if !hasState {
-				if empty, err := adapter.IsEmptyState(newState); err != nil || empty {
-					return v, nil
-				}
-			}
-			planned[node] = true
 			return v, nil
 		})
 	}
 	return planned
+}
+
+// isPlannedNode reports whether the plan includes the node at p. It returns false for nodes the plan
+// cannot read or prepare; the plan reports those itself.
+func isPlannedNode(configRoot *config.Root, db *dstate.Database, adapters map[string]*dresources.Adapter, p dyn.Path) bool {
+	node := p.String()
+	// The plan reads each node back by its key's string form, which a key with a dot does not
+	// survive.
+	if parsed, err := dyn.NewPathFromString(node); err != nil || !parsed.Equal(p) {
+		return false
+	}
+	adapter, ok := adapters[config.GetResourceTypeFromKey(node)]
+	if !ok {
+		return false
+	}
+	inputConfig, err := configRoot.GetResourceConfig(node)
+	if err != nil {
+		return false
+	}
+	_, newState, err := prepareNodeState(adapter, inputConfig, node)
+	if err != nil {
+		return false
+	}
+	if db != nil {
+		if _, hasState := db.State[node]; hasState {
+			return true
+		}
+	}
+	empty, err := adapter.IsEmptyState(newState)
+	return err == nil && !empty
 }
 
 // checkReference returns the plan's error for a reference to a field that the target resource type
@@ -113,10 +118,13 @@ func plannedNodes(configRoot *config.Root, db *dstate.Database, adapters map[str
 func checkReference(adapters map[string]*dresources.Adapter, planned map[string]bool, target string) error {
 	path, err := structpath.ParsePath(target)
 	if err != nil {
-		return nil
+		return nil //nolint:nilerr // the plan reports an unparsable reference
 	}
 	targetResourceKey, targetGroup, fieldPath, err := referenceTarget(path)
-	if err != nil || fieldPath == nil || !planned[targetResourceKey] {
+	if err != nil {
+		return nil //nolint:nilerr // TFOnlyReferences reports Terraform-only fields
+	}
+	if fieldPath == nil || !planned[targetResourceKey] {
 		return nil
 	}
 	return checkReferenceFieldExists(adapters[targetGroup], targetGroup, fieldPath, path)
