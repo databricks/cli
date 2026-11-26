@@ -72,7 +72,7 @@ Error: failed to perform target override for target=bad: variable undefined_var 
 >>> musterr [CLI] bundle config-remote-sync -p myprofile
 Error: Invalid bundle root DATABRICKS_BUNDLE_ROOT="missing": stat missing: no such file or directory
 
-The DATABRICKS_BUNDLE_ROOT environment variable must point to an existing directory that contains a bundle configuration file.
+Set DATABRICKS_BUNDLE_ROOT to a bundle directory or a .yml, .yaml, or .json configuration file.
 
 
 >>> print_requests.py //telemetry-ext

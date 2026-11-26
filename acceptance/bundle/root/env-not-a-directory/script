@@ -1,2 +1,2 @@
-# DATABRICKS_BUNDLE_ROOT points at a file rather than a directory.
+# The override points to a file with an unsupported extension.
 musterr trace DATABRICKS_BUNDLE_ROOT=notadir.txt $CLI bundle validate

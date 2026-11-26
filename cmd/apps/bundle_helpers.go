@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -28,7 +30,14 @@ func makeArgsOptionalWithBundle(cmd *cobra.Command, usage string) {
 		if len(args) > 1 {
 			return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
 		}
-		if !hasBundleConfig() && len(args) != 1 {
+		if len(args) == 1 {
+			return nil
+		}
+		file, err := bundle.ConfigFileFromEnv(cmd.Context())
+		if err != nil || file != "" {
+			return err
+		}
+		if _, err := config.FileNames.FindInPath("."); err != nil {
 			return missingAppNameError(cmd)
 		}
 		return nil

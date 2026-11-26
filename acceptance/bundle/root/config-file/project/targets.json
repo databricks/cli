@@ -1,0 +1,4 @@
+{
+  "targets": {"from_json": {"default": true}},
+  "resources": {"jobs": {"selected_job": {"name": "selected job"}}}
+}

@@ -126,6 +126,9 @@ type Bundle struct {
 	// It is set when we instantiate a new bundle instance.
 	BundleRootPath string
 
+	// ConfigFilePath is the selected entrypoint in the bundle root directory.
+	ConfigFilePath string
+
 	// BundleRoot is a virtual filesystem path to [BundleRootPath].
 	// Exclusively use this field for filesystem operations.
 	BundleRoot vfs.Path
@@ -234,63 +237,46 @@ type Bundle struct {
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
-	b := &Bundle{
-		BundleRootPath: filepath.Clean(path),
-		BundleRoot:     vfs.MustNew(path),
-	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf(ctx, "Found bundle root at %s (file %s)", b.BundleRootPath, configFile)
-	return b, nil
+	return newBundle(ctx, configFile), nil
+}
+
+func newBundle(ctx context.Context, configFile string) *Bundle {
+	dir := filepath.Dir(configFile)
+	log.Debugf(ctx, "Found bundle root at %s (file %s)", dir, configFile)
+	return &Bundle{
+		BundleRootPath: dir,
+		BundleRoot:     vfs.MustNew(dir),
+		ConfigFilePath: configFile,
+	}
 }
 
 // MustLoad returns a bundle configuration.
 // The errors are recorded by logdiag, check with logdiag.HasError().
 func MustLoad(ctx context.Context) *Bundle {
-	root, diags := mustGetRoot(ctx)
-	if diags.HasError() {
-		for _, d := range diags {
-			logdiag.LogDiag(ctx, d)
-		}
-		return nil
-	}
-
-	logdiag.SetRoot(ctx, root)
-
-	b, err := Load(ctx, root)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return nil
-	}
-	return b
+	return load(ctx, true)
 }
 
 // TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
 // The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
 func TryLoad(ctx context.Context) *Bundle {
-	root, diags := tryGetRoot(ctx)
-	if diags.HasError() {
-		for _, d := range diags {
-			logdiag.LogDiag(ctx, d)
-		}
+	return load(ctx, false)
+}
+
+func load(ctx context.Context, required bool) *Bundle {
+	file, diags := findConfigFile(ctx, required)
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
+	}
+	if file == "" {
 		return nil
 	}
-
-	// No root is fine in this function.
-	if root == "" {
-		return nil
-	}
-
-	logdiag.SetRoot(ctx, root)
-
-	b, err := Load(ctx, root)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return nil
-	}
+	b := newBundle(ctx, file)
+	logdiag.SetRoot(ctx, b.BundleRootPath)
 	return b
 }
 

@@ -1,0 +1,13 @@
+mkdir -p .databricks
+export DATABRICKS_CONFIG_FILE=.databricks/test-profile
+cat > "$DATABRICKS_CONFIG_FILE" <<EOF
+[DEFAULT]
+host = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+EOF
+
+trace DATABRICKS_BUNDLE_ROOT=project $CLI --profile DEFAULT bundle debug list-targets
+trace DATABRICKS_BUNDLE_ROOT=project/custom.json $CLI --profile DEFAULT bundle debug list-targets
+musterr trace DATABRICKS_BUNDLE_ROOT=project/custom.json $CLI --profile DEFAULT --target missing workspace list /
+musterr trace DATABRICKS_BUNDLE_ROOT=project/custom.json $CLI --profile DEFAULT --target missing apps logs
+trace DATABRICKS_BUNDLE_ROOT=project/custom.json $CLI --profile DEFAULT bundle plan

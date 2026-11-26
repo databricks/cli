@@ -19,6 +19,9 @@ var Spec = root.CommandSpec{
 func buildCommand(ctx context.Context, cmd *cobra.Command) {
 	cmd.Long = `Declarative Automation Bundles let you express data/AI/analytics projects as code.
 
+Set DATABRICKS_BUNDLE_ROOT to select a bundle directory or a specific .yml, .yaml,
+or .json configuration file. The file's directory is the local bundle root.
+
 Common workflows:
   databricks bundle init default-python      # Initialize new project
   databricks bundle deploy --target dev      # Deploy to development

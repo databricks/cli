@@ -39,11 +39,11 @@ func warnIfNotIncluded(ctx context.Context, b *bundle.Bundle, filename string) {
 		Severity: diag.Warning,
 		Summary:  "Generated configuration is not included in the bundle",
 		Detail: fmt.Sprintf(""+
-			"The file %s is not matched by any pattern in the 'include' section of databricks.yml,\n"+
+			"The file %s is not matched by any pattern in the 'include' section of %s,\n"+
 			"so it will not be deployed. Add a matching entry to the 'include' section, for example:\n"+
 			"\n"+
 			"include:\n"+
 			"  - %s",
-			rel, suggestion),
+			rel, filepath.Base(b.ConfigFilePath), suggestion),
 	})
 }

@@ -1,6 +1,7 @@
 package configsync
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,6 +67,37 @@ resources:
 	assert.Contains(t, modified, "timeout_seconds: 7200")
 	assert.Equal(t, 2, strings.Count(modified, "\n\n"), "both blank lines should be preserved")
 	assert.NotContains(t, modified, blankLineMarker)
+}
+
+func TestApplyChangesToJSONEntrypoint(t *testing.T) {
+	ctx := logdiag.InitContext(t.Context())
+	dir := t.TempDir()
+	file := filepath.Join(dir, "root.json")
+	const original = `{
+  "bundle": {"name": "explicit"},
+  "resources": {"jobs": {"example": {"name": "old"}}},
+  "variables": {"params": {"type": "complex", "default": [9007199254740993, 1.234567890123456789, "001", null]}}
+}`
+	require.NoError(t, os.WriteFile(file, []byte(original), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte("invalid: ["), 0o644))
+	t.Setenv("DATABRICKS_BUNDLE_ROOT", file)
+	b := bundle.MustLoad(ctx)
+	require.NotNil(t, b)
+	preResolved := LoadPreResolvedConfig(ctx, b)
+	require.Equal(t, "explicit", preResolved.Get("bundle").Get("name").MustString())
+	files, err := ApplyChangesToYAML(ctx, b, []FieldChange{{
+		FilePath:  file,
+		WritePath: "resources.jobs.example.name",
+		Change:    &ConfigChangeDesc{Operation: OperationReplace, Value: "new"},
+	}})
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	assert.Equal(t, file, files[0].Path)
+	modified := files[0].ModifiedContent
+	assert.True(t, json.Valid([]byte(modified)))
+	assert.JSONEq(t, strings.Replace(original, `"old"`, `"new"`, 1), modified)
+	assert.Contains(t, modified, "9007199254740993")
+	assert.Contains(t, modified, "1.234567890123456789")
 }
 
 // for readability of test cases

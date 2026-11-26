@@ -122,6 +122,7 @@ func LoadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 	fresh := &bundle.Bundle{
 		BundleRootPath: b.BundleRootPath,
 		BundleRoot:     b.BundleRoot,
+		ConfigFilePath: b.ConfigFilePath,
 	}
 	mutator.DefaultMutators(ctx, fresh)
 	if target := b.Config.Bundle.Target; target != "" {

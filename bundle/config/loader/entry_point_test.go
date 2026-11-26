@@ -16,9 +16,8 @@ func TestEntryPointNoRootPath(t *testing.T) {
 }
 
 func TestEntryPoint(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: "testdata/basic",
-	}
+	b, err := bundle.Load(t.Context(), "testdata/basic")
+	require.NoError(t, err)
 	diags := bundle.Apply(t.Context(), b, loader.EntryPoint())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "loader_test", b.Config.Bundle.Name)

@@ -1,7 +1,7 @@
 
 >>> DATABRICKS_BUNDLE_ROOT=notadir.txt [CLI] bundle validate
-Error: Invalid bundle root DATABRICKS_BUNDLE_ROOT="notadir.txt": not a directory
+Error: Invalid bundle root DATABRICKS_BUNDLE_ROOT="notadir.txt": expected a .yml, .yaml, or .json configuration file
 
-The DATABRICKS_BUNDLE_ROOT environment variable must point to an existing directory that contains a bundle configuration file.
+Set DATABRICKS_BUNDLE_ROOT to a bundle directory or a .yml, .yaml, or .json configuration file.
 
 Found 1 error

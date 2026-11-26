@@ -2,7 +2,7 @@ package env
 
 import "context"
 
-// RootVariable names the environment variable that holds the bundle root path.
+// RootVariable selects the local bundle directory or its configuration file.
 const RootVariable = "DATABRICKS_BUNDLE_ROOT"
 
 // Root returns the bundle root environment variable.

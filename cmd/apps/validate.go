@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/apps/validation"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -53,7 +55,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().String("path", "", "Path to the project directory (defaults to current directory)")
+	cmd.Flags().String("path", "", "Path to the project directory (defaults to the directory selected by DATABRICKS_BUNDLE_ROOT or the current directory)")
 	cmd.Flags().Bool("skip-tests", false, "Skip running tests for faster validation")
 
 	return cmd
@@ -64,8 +66,14 @@ func runValidate(cmd *cobra.Command) error {
 
 	// Get project path
 	projectPath, _ := cmd.Flags().GetString("path")
+	configFile, err := bundle.ConfigFileFromEnv(ctx)
+	if err != nil {
+		return err
+	}
+	if projectPath == "" && configFile != "" {
+		projectPath = filepath.Dir(configFile)
+	}
 	if projectPath == "" {
-		var err error
 		projectPath, err = os.Getwd()
 		if err != nil {
 			return fmt.Errorf("failed to get working directory: %w", err)
@@ -78,7 +86,10 @@ func runValidate(cmd *cobra.Command) error {
 		SkipTests: skipTests,
 	}
 
-	if err := validation.ValidateAuthModes(projectPath); err != nil {
+	if configFile == "" {
+		configFile = filepath.Join(projectPath, "databricks.yml")
+	}
+	if err := validation.ValidateAuthModes(projectPath, configFile); err != nil {
 		return err
 	}
 

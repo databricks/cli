@@ -1,0 +1,6 @@
+bundle:
+  name: conventional
+
+targets:
+  conventional:
+    default: true

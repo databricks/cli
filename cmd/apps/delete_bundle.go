@@ -22,7 +22,7 @@ func BundleDeleteOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 
 		originalRunE := deleteCmd.RunE
 		deleteCmd.RunE = func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 && hasBundleConfig() {
+			if len(args) == 0 {
 				return utils.CommandBundleDestroy(cmd, args, autoApprove, forceDestroy)
 			}
 

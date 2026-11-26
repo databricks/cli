@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -20,7 +21,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// ApplyChangesToYAML generates YAML files for the given field changes.
+// ApplyChangesToYAML patches bundle configuration and preserves each file's format.
 func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) ([]FileChange, error) {
 	originalFiles := make(map[string][]byte)
 	modifiedFiles := make(map[string][]byte)
@@ -52,14 +53,21 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		// TODO: A good alternative approach is to remove parent nodes during the Resolve phase,
 		// when all of their keys/items are removed, but this should be tested for edge cases.
 		// In this case flow style will never appear because empty nodes are never serialized and we won't need clearAddedFlowStyle
-		normalized, err := clearAddedFlowStyle(modifiedFiles[filePath], fileFieldChanges[filePath])
+		var normalized []byte
+		var err error
+		if filepath.Ext(filePath) == ".json" {
+			normalized, err = formatPatchedJSON(modifiedFiles[filePath])
+		} else {
+			normalized, err = clearAddedFlowStyle(modifiedFiles[filePath], fileFieldChanges[filePath])
+			normalized = restoreBlankLines(normalized)
+		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to normalize YAML style in %s: %w", filePath, err)
+			return nil, fmt.Errorf("failed to format %s: %w", filePath, err)
 		}
 		result = append(result, FileChange{
 			Path:            filePath,
 			OriginalContent: string(originalFiles[filePath]),
-			ModifiedContent: string(restoreBlankLines(normalized)),
+			ModifiedContent: string(normalized),
 		})
 	}
 

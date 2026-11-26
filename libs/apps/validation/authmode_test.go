@@ -74,7 +74,8 @@ resources:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateAuthModes(writeAuthModeProject(t, tt.appYAML, tt.bundle))
+			dir := writeAuthModeProject(t, tt.appYAML, tt.bundle)
+			err := ValidateAuthModes(dir, filepath.Join(dir, "databricks.yml"))
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				return
@@ -85,18 +86,19 @@ resources:
 }
 
 func TestValidateAuthModesWithoutManifest(t *testing.T) {
-	assert.NoError(t, ValidateAuthModes(t.TempDir()))
+	dir := t.TempDir()
+	assert.NoError(t, ValidateAuthModes(dir, filepath.Join(dir, "databricks.yml")))
 }
 
 func TestValidateAuthModesFollowsIncludes(t *testing.T) {
 	// An OBO resource whose user_api_scopes live in an included file must not be
 	// flagged as missing its scope.
-	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "appkit.plugins.json"), []byte(authModeManifest), 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "app.yaml"), []byte("env:\n  - name: WAREHOUSE_ID\n    value: wh1\n"), 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte("include:\n  - resources/*.yml\n"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "resources"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "resources", "app.yml"), []byte("resources:\n  apps:\n    app:\n      user_api_scopes:\n        - sql\n"), 0o644))
+	dir := writeAuthModeProject(t, "env:\n  - name: WAREHOUSE_ID\n    value: wh1\n", "resources: {}\n")
+	configDir := t.TempDir()
+	configFile := filepath.Join(configDir, "custom.json")
+	require.NoError(t, os.WriteFile(configFile, []byte(`{"include":["resources/*.yml"]}`), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "resources"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "resources", "app.yml"), []byte("resources:\n  apps:\n    app:\n      user_api_scopes:\n        - sql\n"), 0o644))
 
-	assert.NoError(t, ValidateAuthModes(dir))
+	assert.NoError(t, ValidateAuthModes(dir, configFile))
 }

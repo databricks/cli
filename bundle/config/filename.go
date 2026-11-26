@@ -8,12 +8,21 @@ import (
 
 type ConfigFileNames []string
 
-// FileNames contains allowed names of root bundle configuration files.
+// FileNames contains the names used for automatic root configuration discovery.
 var FileNames = ConfigFileNames{
 	"databricks.yml",
 	"databricks.yaml",
 	"bundle.yml",
 	"bundle.yaml",
+}
+
+// IsConfigFile reports whether path has a supported bundle configuration extension.
+func IsConfigFile(path string) bool {
+	switch filepath.Ext(path) {
+	case ".yml", ".yaml", ".json":
+		return true
+	}
+	return false
 }
 
 func (c ConfigFileNames) FindInPath(path string) (string, error) {

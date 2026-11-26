@@ -20,16 +20,11 @@ func (m *entryPoint) Name() string {
 }
 
 func (m *entryPoint) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	path, err := config.FileNames.FindInPath(b.BundleRootPath)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	this, diags := config.Load(path)
+	this, diags := config.Load(b.ConfigFilePath)
 	if diags.HasError() {
 		return diags
 	}
-	err = b.Config.Merge(this)
-	if err != nil {
+	if err := b.Config.Merge(this); err != nil {
 		diags = diags.Extend(diag.FromErr(err))
 	}
 	return diags
