@@ -295,6 +295,8 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// environments setup-local follows uv's UV_PROJECT_ENVIRONMENT, so a value
 	// from the host shell would move the venv the localenv tests expect.
 	os.Unsetenv("UV_PROJECT_ENVIRONMENT") //nolint:usetesting // t.Setenv cannot unset
+	// An active venv (DBR notebooks always have one) makes uv warn that it does not match the project.
+	os.Unsetenv("VIRTUAL_ENV") //nolint:usetesting // t.Setenv cannot unset
 
 	// Agent skills set DATABRICKS_SKILLS_INVOKED (experimental skill tracking),
 	// so a host value would add skill/ pairs to recorded user agents.
@@ -997,7 +999,8 @@ func runTest(t *testing.T,
 		timeout = max(timeout, config.TimeoutCloud)
 	}
 
-	if IsRunningOnCI {
+	// The workspace file system on DBR is slower than local disk, like CI runners.
+	if IsRunningOnCI || WorkspaceTmpDir {
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
