@@ -252,10 +252,16 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/identity/me", func(req Request) any {
+		if strings.HasPrefix(req.Token, IdentityMeNotEnabledTokenPrefix) {
+			return identityMeNotEnabledResponse()
+		}
 		return req.Workspace.IdentityMe(req.Token)
 	})
 
 	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(req Request) any {
+		if strings.HasPrefix(req.Token, IdentityMeNotEnabledTokenPrefix) {
+			return identityMeNotEnabledResponse()
+		}
 		return req.Workspace.IdentityMeTransitiveParentGroups()
 	})
 
@@ -1933,4 +1939,10 @@ func AddDefaultHandlers(server *Server) {
 			},
 		}
 	})
+}
+
+// identityMeNotEnabledResponse is the 404 a workspace that does not serve identity/me yet
+// answers with.
+func identityMeNotEnabledResponse() Response {
+	return Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "Me API is not enabled."}}
 }

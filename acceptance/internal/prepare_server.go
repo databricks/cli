@@ -148,6 +148,9 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	} else if isTruePtr(config.IsAssumedGroup) {
 		token = testserver.AssumedGroupTokenPrefix + tokenSuffix
 		testUser = testserver.TestUser
+	} else if isTruePtr(config.IdentityMeNotEnabled) {
+		token = testserver.IdentityMeNotEnabledTokenPrefix + tokenSuffix
+		testUser = testserver.TestUser
 	} else if staleOnceEnabled(testEnv) {
 		// Use the eventual-consistency token so the testserver returns 404 on the
 		// first GET after a create, matching real cloud propagation delays.

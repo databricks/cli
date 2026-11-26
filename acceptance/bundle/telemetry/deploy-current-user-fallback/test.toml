@@ -1,0 +1,4 @@
+# The workspace does not serve identity/me yet, so the deploy reads the current user from SCIM /Me.
+# The telemetry records the fallback for the user and for the groups.
+IdentityMeNotEnabled = true
+Ignore = [".databricks"]

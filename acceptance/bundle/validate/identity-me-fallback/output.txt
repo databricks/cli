@@ -1,0 +1,7 @@
+[USERNAME]
+
+>>> print_requests.py --get --keep //identity/me
+current-user-api/identity-me
+
+>>> print_requests.py --get //scim/v2/Me
+current-user-api/scim-me-fallback

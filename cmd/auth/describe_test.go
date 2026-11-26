@@ -514,8 +514,8 @@ func TestGetAuthStatusVerificationFallback(t *testing.T) {
 		},
 		{
 			name:       "workspace branch, both checks fail",
-			primaryErr: &apierr.APIError{StatusCode: http.StatusNotFound, Message: "/api/2.0/identity/me failed"},
-			meStatus:   http.StatusNotFound,
+			primaryErr: &apierr.APIError{StatusCode: http.StatusUnauthorized, Message: "/api/2.0/identity/me failed"},
+			meStatus:   http.StatusUnauthorized,
 			listStatus: http.StatusUnauthorized,
 			accountID:  "test-acct",
 			wantStatus: "error",

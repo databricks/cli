@@ -285,32 +285,159 @@ func TestGetCurrentUserOnceDoesNotRetryOn500(t *testing.T) {
 	assert.Equal(t, int32(1), calls.Load())
 }
 
-func TestGetCurrentUserReportsIdentityMeNotEnabled(t *testing.T) {
+// groupPairs returns "value display" per group, so tests compare what the fallback passes on
+// and not the SDK's decoding details.
+func groupPairs(groups []iam.ComplexValue) []string {
+	var out []string
+	for _, g := range groups {
+		out = append(out, g.Value+" "+g.Display)
+	}
+	return out
+}
+
+// scimUserBody is the SCIM /Me response of a workspace without identity/me. Its groups are
+// unsorted, so a test can see that the fallback passes them on as SCIM returns them.
+var scimUserBody = map[string]any{
+	"id":       "77",
+	"userName": "scim-user@databricks.com",
+	"groups":   []map[string]any{{"value": "2", "display": "zeta"}, {"value": "1", "display": "alpha"}},
+}
+
+// notEnabledResponse is what identity/me answers in a workspace that does not serve it yet.
+func notEnabledResponse(status int, errorCode string) testserver.Response {
+	return testserver.Response{StatusCode: status, Body: map[string]any{"error_code": errorCode, "message": "Me API is not enabled."}}
+}
+
+// newWorkspaceWithSCIM returns a workspace whose identity/me, parent-groups and SCIM /Me are
+// answered by the given handlers. The handlers count their own calls where a test needs it.
+func newWorkspaceWithSCIM(t *testing.T, me, parents, scim func(testserver.Request) any) *databricks.WorkspaceClient {
+	t.Helper()
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", identityMePath, me)
+	server.Handle("GET", identityMeTransitiveParentGroupsPath, parents)
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", scim)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	return w
+}
+
+// Only the not-enabled answers fall back to SCIM /Me. A not-enabled identity/me is the whole
+// trigger, so the user comes from SCIM as it did before identity/me.
+func TestGetCurrentUserFallsBackToSCIMWhenIdentityMeNotEnabled(t *testing.T) {
 	tests := []struct {
 		name      string
 		status    int
 		errorCode string
-		wantIs    error
 	}{
-		{name: "not found", status: http.StatusNotFound, errorCode: "ENDPOINT_NOT_FOUND", wantIs: apierr.ErrNotFound},
-		{name: "not implemented", status: http.StatusNotImplemented, errorCode: "NOT_IMPLEMENTED", wantIs: apierr.ErrNotImplemented},
+		{name: "not found", status: http.StatusNotFound, errorCode: "ENDPOINT_NOT_FOUND"},
+		{name: "not implemented", status: http.StatusNotImplemented, errorCode: "NOT_IMPLEMENTED"},
 		{name: "feature disabled", status: http.StatusBadRequest, errorCode: "FEATURE_DISABLED"},
+		{name: "not found without code", status: http.StatusNotFound},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			w := newIdentityMeWorkspace(t, func(testserver.Request) testserver.Response {
-				return testserver.Response{StatusCode: tc.status, Body: map[string]any{"error_code": tc.errorCode, "message": "Me API is not enabled."}}
-			})
+			var scimCalls atomic.Int32
+			w := newWorkspaceWithSCIM(t,
+				func(testserver.Request) any { return notEnabledResponse(tc.status, tc.errorCode) },
+				func(testserver.Request) any { return notEnabledResponse(tc.status, tc.errorCode) },
+				func(testserver.Request) any {
+					scimCalls.Add(1)
+					return scimUserBody
+				})
 
-			_, err := GetCurrentUser(t.Context(), w)
-			assert.ErrorContains(t, err, "the identity/me API is not enabled in this workspace")
-			assert.ErrorContains(t, err, "use an older Databricks CLI version")
-			assert.ErrorContains(t, err, "Me API is not enabled.")
-			if tc.wantIs != nil {
-				assert.ErrorIs(t, err, tc.wantIs)
-			}
+			user, err := GetCurrentUser(t.Context(), w)
+			require.NoError(t, err)
+			assert.Equal(t, "scim-user@databricks.com", user.UserName)
+			assert.Equal(t, int32(1), scimCalls.Load())
 		})
 	}
+}
+
+// Any other identity/me error fails the read as before and never falls back, so a
+// permission problem or a server fault is not hidden behind SCIM.
+func TestGetCurrentUserDoesNotFallBackOnOtherErrors(t *testing.T) {
+	tests := []struct {
+		name      string
+		status    int
+		errorCode string
+		once      bool
+	}{
+		{name: "unauthenticated", status: http.StatusUnauthorized, errorCode: "UNAUTHENTICATED"},
+		{name: "forbidden", status: http.StatusForbidden, errorCode: "PERMISSION_DENIED"},
+		{name: "bad request", status: http.StatusBadRequest, errorCode: "INVALID_PARAMETER_VALUE"},
+		{name: "server error", status: http.StatusInternalServerError, errorCode: "INTERNAL_ERROR", once: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var scimCalls atomic.Int32
+			w := newWorkspaceWithSCIM(t,
+				func(testserver.Request) any { return notEnabledResponse(tc.status, tc.errorCode) },
+				func(testserver.Request) any { return notEnabledResponse(tc.status, tc.errorCode) },
+				func(testserver.Request) any {
+					scimCalls.Add(1)
+					return scimUserBody
+				})
+
+			var err error
+			if tc.once {
+				_, err = GetCurrentUserOnce(t.Context(), w)
+			} else {
+				_, err = GetCurrentUser(t.Context(), w)
+			}
+			require.Error(t, err)
+			assert.Equal(t, int32(0), scimCalls.Load())
+		})
+	}
+}
+
+// The assumed-group check does not run on the SCIM fallback, which cannot report a group.
+// Without identity/me the caller is the SCIM user, as it was before identity/me.
+func TestGetUserPrincipalFallbackHasNoAssumedGroupCheck(t *testing.T) {
+	w := newWorkspaceWithSCIM(t,
+		func(testserver.Request) any { return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND") },
+		func(testserver.Request) any { return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND") },
+		func(testserver.Request) any { return scimUserBody })
+
+	user, err := GetUserPrincipal(t.Context(), w)
+	require.NoError(t, err)
+	assert.Equal(t, "scim-user@databricks.com", user.UserName)
+}
+
+// Every request that reads the current user names the API that served it in the user agent,
+// so request logs show the path taken. The SCIM call the CLI makes by design carries no tag.
+func TestCurrentUserRequestsAreTaggedWithTheirAPI(t *testing.T) {
+	var identityUA, scimUA string
+	w := newWorkspaceWithSCIM(t,
+		func(req testserver.Request) any {
+			identityUA = req.Headers.Get("User-Agent")
+			return map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user", "account_user_status": "ACTIVE"}}
+		},
+		func(testserver.Request) any { return map[string]any{"me_transitive_parent_groups": []map[string]any{}} },
+		func(req testserver.Request) any {
+			scimUA = req.Headers.Get("User-Agent")
+			return scimUserBody
+		})
+	_, err := GetCurrentUser(t.Context(), w)
+	require.NoError(t, err)
+	assert.Contains(t, identityUA, "current-user-api/identity-me")
+
+	// The same workspace without identity/me: the fallback request carries the fallback tag.
+	fallback := newWorkspaceWithSCIM(t,
+		func(testserver.Request) any { return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND") },
+		func(testserver.Request) any { return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND") },
+		func(req testserver.Request) any {
+			scimUA = req.Headers.Get("User-Agent")
+			return scimUserBody
+		})
+	_, err = GetCurrentUser(t.Context(), fallback)
+	require.NoError(t, err)
+	assert.Contains(t, scimUA, "current-user-api/scim-me-fallback")
+
+	// A direct SCIM call, as the current-user command makes, is not tagged.
+	_, err = w.CurrentUser.Me(t.Context(), iam.MeRequest{})
+	require.NoError(t, err)
+	assert.NotContains(t, scimUA, "current-user-api")
 }
 
 func TestListCurrentUserParentGroupsRejectsRepeatedPageToken(t *testing.T) {
@@ -417,20 +544,27 @@ func TestGetUserPrincipalAndGroupsRunsBothReadsConcurrently(t *testing.T) {
 
 // An identity/me error is returned even though the groups read also failed, and the
 // groups read is cancelled rather than waited for.
-func TestGetUserPrincipalAndGroupsIdentityErrorWinsAndCancelsGroups(t *testing.T) {
+// identity/me not enabled wins over the groups read, which is cancelled and waited for rather
+// than left running. The user and groups then come from one SCIM /Me call.
+func TestGetUserPrincipalAndGroupsFallbackCancelsGroupsRead(t *testing.T) {
 	groupsSeen := make(chan struct{})
+	var scimCalls atomic.Int32
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	server.Handle("GET", identityMePath, func(testserver.Request) any {
 		if !awaitRequest(groupsSeen) {
 			return testserver.Response{StatusCode: http.StatusGatewayTimeout}
 		}
-		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "Me API is not enabled."}}
+		return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND")
 	})
 	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(req testserver.Request) any {
 		close(groupsSeen)
 		blockUntilCancelled(req)
 		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "groups denied"}}
+	})
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(testserver.Request) any {
+		scimCalls.Add(1)
+		return scimUserBody
 	})
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
@@ -438,9 +572,70 @@ func TestGetUserPrincipalAndGroupsIdentityErrorWinsAndCancelsGroups(t *testing.T
 	res, err := getWithin(t, func() (*CurrentUserAndGroups, error) {
 		return GetUserPrincipalAndGroups(t.Context(), w)
 	})
-	assert.Nil(t, res)
-	require.ErrorIs(t, err, ErrMeNotEnabled)
-	assert.NotContains(t, err.Error(), "groups denied")
+	require.NoError(t, err)
+	assert.Equal(t, "scim-user@databricks.com", res.User.UserName)
+	assert.True(t, res.UserFromSCIM)
+	assert.True(t, res.GroupsFromSCIM)
+	assert.Equal(t, int32(1), scimCalls.Load())
+}
+
+// The bundle path reads the user and the groups from one SCIM /Me call when identity/me is
+// not enabled, and passes the groups on as SCIM returns them.
+func TestGetUserPrincipalAndGroupsFallsBackToSCIMForUserAndGroups(t *testing.T) {
+	var scimCalls atomic.Int32
+	w := newWorkspaceWithSCIM(t,
+		func(testserver.Request) any { return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND") },
+		func(testserver.Request) any { return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND") },
+		func(testserver.Request) any {
+			scimCalls.Add(1)
+			return scimUserBody
+		})
+
+	res, err := GetUserPrincipalAndGroups(t.Context(), w)
+	require.NoError(t, err)
+	require.NoError(t, res.GroupsErr)
+	assert.Equal(t, "scim-user@databricks.com", res.User.UserName)
+	assert.Equal(t, []string{"2 zeta", "1 alpha"}, groupPairs(res.Groups))
+	assert.True(t, res.UserFromSCIM)
+	assert.True(t, res.GroupsFromSCIM)
+	assert.Equal(t, int32(1), scimCalls.Load())
+}
+
+// Only the parent-groups endpoint not enabled: the user stays from identity/me and the groups
+// come from SCIM /Me.
+func TestGetUserPrincipalAndGroupsFallsBackToSCIMForGroupsOnly(t *testing.T) {
+	w := newWorkspaceWithSCIM(t,
+		func(testserver.Request) any {
+			return map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user", "account_user_status": "ACTIVE"}}
+		},
+		func(testserver.Request) any { return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND") },
+		func(testserver.Request) any { return scimUserBody })
+
+	res, err := GetUserPrincipalAndGroups(t.Context(), w)
+	require.NoError(t, err)
+	assert.Equal(t, "test-user", res.User.UserName)
+	assert.Equal(t, []string{"2 zeta", "1 alpha"}, groupPairs(res.Groups))
+	assert.False(t, res.UserFromSCIM)
+	assert.True(t, res.GroupsFromSCIM)
+}
+
+// A failed SCIM read of the groups is a groups failure, not an error of the whole read.
+func TestGetUserPrincipalAndGroupsSCIMGroupsFailureIsGroupsError(t *testing.T) {
+	w := newWorkspaceWithSCIM(t,
+		func(testserver.Request) any {
+			return map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user", "account_user_status": "ACTIVE"}}
+		},
+		func(testserver.Request) any { return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND") },
+		func(testserver.Request) any {
+			return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "scim denied"}}
+		})
+
+	res, err := GetUserPrincipalAndGroups(t.Context(), w)
+	require.NoError(t, err)
+	assert.Equal(t, "test-user", res.User.UserName)
+	assert.Nil(t, res.Groups)
+	assert.False(t, res.GroupsFromSCIM)
+	require.ErrorContains(t, res.GroupsErr, "scim denied")
 }
 
 // A groups failure is reported beside the user, never as the error, so the caller can fall

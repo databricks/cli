@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
@@ -17,18 +18,21 @@ import (
 type populateCurrentUser struct{}
 
 // currentUserCacheKey keys the cached principal and groups. Version keeps entries
-// written before the groups were cached, which have another shape, from being read.
+// written before the current shape, which records the API that served them, from being read.
 type currentUserCacheKey struct {
 	Fingerprint bundle.UserFingerprint
 	Version     int
 }
 
-const currentUserCacheVersion = 2
+const currentUserCacheVersion = 3
 
-// cachedCurrentUser is the principal with its groups, cached as one entry.
+// cachedCurrentUser is the principal with its groups, cached as one entry. The source flags
+// are cached too, so a cache hit records the same metrics as the read that filled the entry.
 type cachedCurrentUser struct {
-	User   *iam.User          `json:"user"`
-	Groups []iam.ComplexValue `json:"groups"`
+	User           *iam.User          `json:"user"`
+	Groups         []iam.ComplexValue `json:"groups"`
+	UserFromSCIM   bool               `json:"user_from_scim"`
+	GroupsFromSCIM bool               `json:"groups_from_scim"`
 }
 
 // PopulateCurrentUser sets the `current_user` property on the workspace.
@@ -49,38 +53,40 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 
 	// The groups are part of the cached value, so a cache hit makes no identity/me or
 	// parent-groups request. A failed groups read is not cached, so the next command reads
-	// them again; the principal is kept for the fallback below.
-	var principal *iam.User
-	var groupsErr error
+	// them again; the read is kept for the fallback below.
+	var read *iamutil.CurrentUserAndGroups
 	cached, err := cache.GetOrCompute(ctx, b.Cache, key, func(ctx context.Context) (cachedCurrentUser, error) {
 		r, err := iamutil.GetUserPrincipalAndGroups(ctx, w)
 		if err != nil {
 			return cachedCurrentUser{}, err
 		}
-		principal = r.User
+		read = r
 		if r.GroupsErr != nil {
-			groupsErr = r.GroupsErr
 			return cachedCurrentUser{}, r.GroupsErr
 		}
-		return cachedCurrentUser{User: r.User, Groups: r.Groups}, nil
+		return cachedCurrentUser{User: r.User, Groups: r.Groups, UserFromSCIM: r.UserFromSCIM, GroupsFromSCIM: r.GroupsFromSCIM}, nil
 	})
 
-	user := cached.User
+	var user *iam.User
+	var userFromSCIM, groupsFromSCIM bool
 	switch {
 	case err == nil:
+		user = cached.User
 		user.Groups = cached.Groups
-	case groupsErr != nil && errors.Is(err, groupsErr):
+		userFromSCIM, groupsFromSCIM = cached.UserFromSCIM, cached.GroupsFromSCIM
+	case read != nil && read.GroupsErr != nil && errors.Is(err, read.GroupsErr):
 		// Not a warning: `bundle validate --strict` would fail on it. The permission
 		// recommendation is withheld through CurrentUserGroupsUnknown instead.
-		log.Infof(ctx, "Could not read the groups of the current user: %v", groupsErr)
-		user = principal
+		log.Infof(ctx, "Could not read the groups of the current user: %v", read.GroupsErr)
+		user = read.User
+		userFromSCIM = read.UserFromSCIM
 		b.CurrentUserGroupsUnknown = true
-	case errors.Is(err, iamutil.ErrMeNotEnabled):
-		// diag.FromErr would show only the API fields, which drop this message.
-		return diag.Errorf("%v", err)
 	default:
 		return diag.FromErr(err)
 	}
+
+	b.Metrics.SetBoolValue(metrics.CurrentUserFromSCIMFallback, userFromSCIM)
+	b.Metrics.SetBoolValue(metrics.CurrentUserGroupsFromSCIMFallback, groupsFromSCIM)
 
 	b.Config.Workspace.CurrentUser = &config.User{
 		ShortName:          iamutil.GetShortUserName(user),

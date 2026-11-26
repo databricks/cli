@@ -55,11 +55,14 @@ const (
 	EventualConsistencyTokenPrefix = "dbapi3"
 	// AssumedGroupTokenPrefix marks a caller authorized by an assumed group: identity/me
 	// returns that group as the principal.
-	AssumedGroupTokenPrefix   = "dbapi4"
-	UserID                    = "1000012345"
-	TestDefaultClusterId      = "0123-456789-cluster0"
-	TestDefaultWarehouseId    = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId = "0123-456789-pool0"
+	AssumedGroupTokenPrefix = "dbapi4"
+	// IdentityMeNotEnabledTokenPrefix marks a caller of a workspace that does not serve
+	// identity/me or its parent-groups endpoint yet: both answer 404, SCIM /Me still answers.
+	IdentityMeNotEnabledTokenPrefix = "dbapi5"
+	UserID                          = "1000012345"
+	TestDefaultClusterId            = "0123-456789-cluster0"
+	TestDefaultWarehouseId          = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId       = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{

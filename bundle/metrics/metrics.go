@@ -70,6 +70,16 @@ const (
 	// Whether workspace.state_path is under /Workspace/Shared.
 	StatePathIsShared = "state_path_is_shared"
 
+	// Which API served the current user on this deploy. Both are recorded on every read of the
+	// current user, so the fallback population can be graphed against the rest.
+	//   - current_user_from_scim_fallback: the user came from SCIM /Me, because identity/me is not
+	//     enabled in the workspace. False when identity/me served it.
+	//   - current_user_groups_from_scim_fallback: the groups came from the SCIM /Me response,
+	//     because identity/me or its parent-groups endpoint is not enabled. False when the parent
+	//     groups endpoint served them, or when they could not be read.
+	CurrentUserFromSCIMFallback       = "current_user_from_scim_fallback"
+	CurrentUserGroupsFromSCIMFallback = "current_user_groups_from_scim_fallback"
+
 	// Whether this deploy is compatible with an automatic migration of the deployment
 	// state to a dedicated state storage service (DMS). Deploying a bundle requires
 	// write access (CAN_EDIT or higher) to the state folder; after migration that is

@@ -1551,18 +1551,21 @@ func TestAddChecksRejectedTokenFailsTheTokenCheck(t *testing.T) {
 	assert.Contains(t, out.Warnings[0], "Run: databricks auth login --profile logfood")
 }
 
-// TestAddChecksReportsWorkspaceWithoutIdentityMe checks that a workspace that does not serve identity/me yet is reported
-// with that cause, not as a rejected token: the token was not refused, the check could not run.
-func TestAddChecksReportsWorkspaceWithoutIdentityMe(t *testing.T) {
+// TestAddChecksReadsUserFromSCIMWhenIdentityMeNotEnabled checks that a workspace that does not serve identity/me yet
+// is still checked: the probe reads the user from SCIM /Me, as before identity/me, so the token is reported as ok.
+func TestAddChecksReadsUserFromSCIMWhenIdentityMeNotEnabled(t *testing.T) {
 	home := withHome(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2.0/identity/me" {
-			w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/2.0/identity/me":
 			w.WriteHeader(http.StatusNotImplemented)
 			_, _ = w.Write([]byte(`{"error_code":"NOT_IMPLEMENTED","message":"identity/me is not available"}`))
-			return
+		case "/api/2.0/preview/scim/v2/Me":
+			_, _ = w.Write([]byte(`{"id":"1000012345","userName":"tester@databricks.com"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
 		}
-		w.WriteHeader(http.StatusNotFound)
 	}))
 	t.Cleanup(server.Close)
 	writeHomeConfig(t, home, "[logfood]\nhost = "+server.URL+"\nauth_type = pat\ntoken = dapi-logfood\n")
@@ -1570,10 +1573,10 @@ func TestAddChecksReportsWorkspaceWithoutIdentityMe(t *testing.T) {
 
 	s, out := checkedListServer(t)
 	require.NotNil(t, s.Check)
-	assert.Equal(t, statusUnknown, s.Check.Token)
-	require.Len(t, out.Warnings, 1)
-	assert.Contains(t, out.Warnings[0], "the identity/me API is not enabled in this workspace")
-	assert.NotContains(t, out.Warnings[0], "Run: databricks auth login")
+	assert.Equal(t, statusOK, s.Check.Token)
+	// Other warnings, such as the MCP service this fake does not list, are not about the probe.
+	assert.NotContains(t, strings.Join(out.Warnings, "\n"), "auth login")
+	assert.NotContains(t, strings.Join(out.Warnings, "\n"), "identity/me")
 }
 
 // TestAddChecksAuthWarningNamesPinnedConfigFile checks that the login command in the warning for a rejected token sets

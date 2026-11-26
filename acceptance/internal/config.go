@@ -62,6 +62,10 @@ type TestConfig struct {
 	// If set, the caller is an assumed group: identity/me returns the group as the principal (default is false)
 	IsAssumedGroup *bool
 
+	// If set, the workspace does not serve identity/me or its parent-groups endpoint yet, so the
+	// CLI reads the current user from SCIM /Me (default is false)
+	IdentityMeNotEnabled *bool
+
 	// List of additional replacements to apply on this test.
 	// Old is a regexp, New is a replacement expression.
 	Repls []testdiff.Replacement

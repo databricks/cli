@@ -1,0 +1,10 @@
+# The fallback is logged at debug level. This first command makes the read, so it is the one that logs.
+trace $CLI bundle validate -o json --log-level debug 2>LOG.debug | jq -r '.workspace.current_user.userName'
+contains.py 'reading the current user from SCIM /Me' < LOG.debug > /dev/null
+
+# Both identity/me calls answer not enabled, then SCIM /Me serves the user. The user agent names
+# the API each request went to, so the fallback is visible in the request log.
+# The parent-groups read is cancelled when identity/me fails, so whether it reaches the server is a
+# race. The tags are what is asserted, so they are printed once each.
+trace print_requests.py --get --keep //identity/me | grep -o 'current-user-api/[^ "]*' | sort -u
+trace print_requests.py --get //scim/v2/Me | grep -o 'current-user-api/[^ "]*'

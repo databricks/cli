@@ -52,6 +52,14 @@
               "value": true
             },
             {
+              "key": "current_user_from_scim_fallback",
+              "value": false
+            },
+            {
+              "key": "current_user_groups_from_scim_fallback",
+              "value": false
+            },
+            {
               "key": "experimental.use_legacy_run_as",
               "value": false
             },

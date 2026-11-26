@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
@@ -124,38 +125,118 @@ func TestPopulateCurrentUserRejectsGroupPrincipal(t *testing.T) {
 	assert.Nil(t, b.Config.Workspace.CurrentUser)
 }
 
-// A workspace without identity/me fails the command with the actionable message, not the raw server text.
-func TestPopulateCurrentUserReportsIdentityMeNotEnabled(t *testing.T) {
+// metricValue returns the bool recorded under key, and whether one was recorded.
+func metricValue(b *bundle.Bundle, key string) (bool, bool) {
+	for _, e := range b.Metrics.BoolValues {
+		if e.Key == key {
+			return e.Value, true
+		}
+	}
+	return false, false
+}
+
+// A workspace without identity/me reads the current user from SCIM /Me, and both source
+// metrics say so.
+func TestPopulateCurrentUserFallsBackToSCIMWhenIdentityMeNotEnabled(t *testing.T) {
 	server := testserver.New(t)
-	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+	notEnabled := func(testserver.Request) any {
 		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "Me API is not enabled."}}
+	}
+	server.Handle("GET", "/api/2.0/identity/me", notEnabled)
+	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", notEnabled)
+	b := newPopulateBundle(t, server, "testgroup")
+
+	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
+	require.NoError(t, diags.Error())
+	assert.Empty(t, diags)
+	assert.Equal(t, "tester@databricks.com", b.Config.Workspace.CurrentUser.UserName)
+	assert.False(t, b.CurrentUserGroupsUnknown)
+	fromSCIM, ok := metricValue(b, metrics.CurrentUserFromSCIMFallback)
+	assert.True(t, ok)
+	assert.True(t, fromSCIM)
+	groupsFromSCIM, ok := metricValue(b, metrics.CurrentUserGroupsFromSCIMFallback)
+	assert.True(t, ok)
+	assert.True(t, groupsFromSCIM)
+}
+
+// A workspace that serves identity/me records that the user did not come from the fallback.
+func TestPopulateCurrentUserRecordsIdentityMeAsSource(t *testing.T) {
+	b := newPopulateBundle(t, testserver.New(t), "alpha")
+
+	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
+	require.NoError(t, diags.Error())
+	fromSCIM, ok := metricValue(b, metrics.CurrentUserFromSCIMFallback)
+	assert.True(t, ok)
+	assert.False(t, fromSCIM)
+	groupsFromSCIM, ok := metricValue(b, metrics.CurrentUserGroupsFromSCIMFallback)
+	assert.True(t, ok)
+	assert.False(t, groupsFromSCIM)
+}
+
+// A cache hit reports the source of the read that filled the cache, so the metrics do not
+// depend on whether the command read the current user itself.
+func TestPopulateCurrentUserCacheKeepsSource(t *testing.T) {
+	server := testserver.New(t)
+	var scimCalls atomic.Int32
+	notEnabled := func(testserver.Request) any {
+		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "Me API is not enabled."}}
+	}
+	server.Handle("GET", "/api/2.0/identity/me", notEnabled)
+	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", notEnabled)
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
+		scimCalls.Add(1)
+		return req.Workspace.MeUser(req.Token)
+	})
+	first := newPopulateBundle(t, server, "testgroup")
+	require.NoError(t, bundle.Apply(t.Context(), first, PopulateCurrentUser()).Error())
+
+	second := &bundle.Bundle{Config: config.Root{}}
+	second.Cache = first.Cache
+	second.SetWorkpaceClient(first.WorkspaceClient(t.Context()))
+	require.NoError(t, bundle.Apply(t.Context(), second, PopulateCurrentUser()).Error())
+
+	assert.Equal(t, int32(1), scimCalls.Load())
+	fromSCIM, ok := metricValue(second, metrics.CurrentUserFromSCIMFallback)
+	assert.True(t, ok)
+	assert.True(t, fromSCIM)
+}
+
+// Only a not-enabled identity/me falls back. A forbidden read fails the command, and SCIM is
+// not asked for the user in its place.
+func TestPopulateCurrentUserDoesNotFallBackOnForbidden(t *testing.T) {
+	server := testserver.New(t)
+	var scimCalls atomic.Int32
+	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "denied"}}
+	})
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
+		scimCalls.Add(1)
+		return req.Workspace.MeUser(req.Token)
 	})
 	b := newPopulateBundle(t, server, "testgroup")
 
 	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
 	require.Error(t, diags.Error())
-	assert.ErrorContains(t, diags.Error(), "the identity/me API is not enabled in this workspace")
 	assert.Nil(t, b.Config.Workspace.CurrentUser)
+	assert.Equal(t, int32(0), scimCalls.Load())
 }
 
-// A not-enabled identity/me error is the diagnostic the user sees, even when the parallel
-// groups read also fails.
-func TestPopulateCurrentUserIdentityErrorWinsOverGroupsError(t *testing.T) {
+// A failed groups read does not fail the fallback: the groups come from the SCIM response, and
+// the not-enabled groups error is not shown.
+func TestPopulateCurrentUserFallbackIgnoresGroupsError(t *testing.T) {
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
 		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "Me API is not enabled."}}
 	})
 	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(testserver.Request) any {
-		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "groups denied"}}
+		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "groups not enabled"}}
 	})
 	b := newPopulateBundle(t, server)
 
 	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
-	require.Error(t, diags.Error())
-	assert.ErrorContains(t, diags.Error(), "the identity/me API is not enabled in this workspace")
-	assert.NotContains(t, diags.Error().Error(), "groups denied")
+	require.NoError(t, diags.Error())
 	assert.False(t, b.CurrentUserGroupsUnknown)
-	assert.Nil(t, b.Config.Workspace.CurrentUser)
+	assert.Equal(t, "tester@databricks.com", b.Config.Workspace.CurrentUser.UserName)
 }
 
 // An assumed group is rejected with the same error whether or not its groups read fails,

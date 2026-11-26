@@ -1,0 +1,2 @@
+trace $CLI bundle deploy
+trace print_telemetry_bool_values | grep current_user
