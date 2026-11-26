@@ -100,3 +100,40 @@ Exit code: 1
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
 json.files[0].local_path = "databricks.yml";
+
+=== Plan and apply in one checkout after the wrapper is no longer needed: the apply deletes it and the state drops it
+
+>>> update_file.py databricks.yml python_wheel_wrapper: false python_wheel_wrapper: true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated jobs.whl
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml python_wheel_wrapper: true python_wheel_wrapper: false
+
+>>> rm -rf .databricks
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated jobs.whl
+Files: 1 uploaded, 1 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.databricks/bundle/default/.internal
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.databricks/bundle/default/.internal) doesn't exist.
+
+Exit code: 1
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+json.files[0].local_path = "databricks.yml";
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy --plan tmp.plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged

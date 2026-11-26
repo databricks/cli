@@ -52,3 +52,15 @@ trace rm -rf .databricks
 trace $CLI bundle deploy
 errcode trace MSYS_NO_PATHCONV=1 $CLI workspace list "$INTERNAL"
 state_files
+
+title "Plan and apply in one checkout after the wrapper is no longer needed: the apply deletes it and the state drops it"
+trace update_file.py databricks.yml 'python_wheel_wrapper: false' 'python_wheel_wrapper: true'
+trace $CLI bundle deploy
+trace update_file.py databricks.yml 'python_wheel_wrapper: true' 'python_wheel_wrapper: false'
+trace rm -rf .databricks
+trace $CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
+errcode trace MSYS_NO_PATHCONV=1 $CLI workspace list "$INTERNAL"
+state_files
+trace $CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json

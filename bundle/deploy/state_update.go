@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/notebook"
 )
 
 type stateUpdate struct {
@@ -50,7 +51,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 	if s.keepInternalFiles {
 		_, internal := splitInternalFiles(b.Config.Bundle.Target, state.Files)
-		fl = withKeptFiles(fl, internal)
+		fl = withKeptFiles(fl, internal, b.DeletedFiles)
 	}
 	state.Files = fl
 
@@ -78,16 +79,25 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	return nil
 }
 
-// withKeptFiles appends the kept entries that the synced files don't already list.
-func withKeptFiles(synced, kept Filelist) Filelist {
+// withKeptFiles appends the kept entries that the synced files don't already list
+// and that the sync did not delete (deleted holds remote names).
+func withKeptFiles(synced, kept Filelist, deleted []string) Filelist {
 	seen := make(map[string]bool, len(synced))
 	for _, f := range synced {
 		seen[filepath.ToSlash(f.LocalPath)] = true
 	}
+	isDeleted := make(map[string]bool, len(deleted))
+	for _, name := range deleted {
+		isDeleted[name] = true
+	}
 	for _, f := range kept {
 		// States written by CLI versions <= v0.220.0 on Windows use backslashes.
 		f.LocalPath = filepath.ToSlash(f.LocalPath)
-		if !seen[f.LocalPath] {
+		remoteName := f.LocalPath
+		if f.IsNotebook {
+			remoteName = notebook.StripExtension(remoteName)
+		}
+		if !seen[f.LocalPath] && !isDeleted[remoteName] {
 			synced = append(synced, f)
 		}
 	}

@@ -49,6 +49,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 	b.FileCounts = sync.FileCounts()
+	b.DeletedFiles = sync.Deleted()
 
 	log.Infof(ctx, "Uploaded bundle files")
 	return nil

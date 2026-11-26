@@ -148,6 +148,7 @@ func TestStateUpdateForSavedPlanKeepsInternalFiles(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
 		mutator bundle.Mutator
+		deleted []string
 		want    Filelist
 	}{
 		{
@@ -167,9 +168,19 @@ func TestStateUpdateForSavedPlanKeepsInternalFiles(t *testing.T) {
 				{LocalPath: ".databricks/bundle/default/.internal/notebook_3_job_task.py", IsNotebook: true},
 			},
 		},
+		{
+			name:    "saved plan, deleted by the sync",
+			mutator: StateUpdateForSavedPlan(),
+			deleted: []string{".databricks/bundle/default/.internal/notebook_3_job_task"},
+			want: Filelist{
+				{LocalPath: "test1.py"},
+				{LocalPath: "test2.py", IsNotebook: true},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			b := setupBundleForStateUpdate(t)
+			b.DeletedFiles = tc.deleted
 			ctx := t.Context()
 
 			statePath, err := getPathToStateFile(ctx, b)
