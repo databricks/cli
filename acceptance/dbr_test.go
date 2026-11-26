@@ -178,8 +178,8 @@ func buildBaseParams(testDir, archiveName, debugLogPath string) map[string]strin
 	}
 }
 
-// createDebugLog creates an empty debug log file so we can get its URL before the job runs.
-// This allows us to provide the URL upfront for users to follow along.
+// createDebugLog creates an empty debug log file so we can print its URL before the job runs.
+// The runner uploads the full log there when the tests finish.
 func createDebugLog(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, debugLogsDir, testType string) (string, int64) {
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	debugLogFileName := fmt.Sprintf("debug-%s-%s-%s.log", testType, timestamp, uuid.New().String()[:8])
