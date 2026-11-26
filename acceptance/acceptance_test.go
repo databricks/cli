@@ -1111,7 +1111,8 @@ func runTest(t *testing.T,
 		// addresses the way Go does, so the test-server helper scripts
 		// (kill_after.py, callserver.py, …) would route their requests through
 		// the blocking proxy. NO_PROXY exempts them.
-		cmd.Env = append(cmd.Env, "NO_PROXY=127.0.0.1,localhost")
+		// [::1] covers servers listening on testserver.LoopbackHostEnvVar=::1.
+		cmd.Env = append(cmd.Env, "NO_PROXY=127.0.0.1,localhost,::1,[::1]")
 	}
 	// Run from outputDir so the entry-point script isn't a bundle source; the script
 	// cd's into tmpDir (the bundle dir) as its first line.

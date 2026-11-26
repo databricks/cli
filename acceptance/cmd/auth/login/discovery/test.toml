@@ -3,6 +3,9 @@ Ignore = [
 ]
 RecordRequests = true
 
+# The profiles table pads its Host column to the IPv4 test server URL; on DBR it is [::1].
+RunsOnDbr = false
+
 # Override the introspection endpoint so we can verify it gets called.
 # Host discovery (via .well-known/databricks-config) provides workspace_id.
 # Introspection provides account_id as a fallback since the default

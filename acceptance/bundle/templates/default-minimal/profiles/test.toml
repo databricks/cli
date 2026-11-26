@@ -1,2 +1,5 @@
 # The script writes .databrickscfg.
 Ignore = [".databrickscfg"]
+
+# setup_custom_host needs a second name for the test server; on DBR it listens on [::1], which has none.
+RunsOnDbr = false

@@ -142,7 +142,7 @@ func registryDNSZoneForWorkspaceHost(raw string) (string, error) {
 // isLocalWorkspaceHost matches the plain-HTTP loopback test server that OAuth login also accepts.
 func isLocalWorkspaceHost(raw string) bool {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	return err == nil && u.Scheme == "http" && u.Hostname() == "127.0.0.1"
+	return err == nil && u.Scheme == "http" && (u.Hostname() == "127.0.0.1" || u.Hostname() == "::1")
 }
 
 func matchingDatabricksDNSZone(host string) (string, bool) {

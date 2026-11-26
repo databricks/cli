@@ -143,6 +143,10 @@ def setup_environment(extract_dir: Path) -> dict:
     # Disable telemetry for tests. Just for a marginally faster test execution.
     env["DATABRICKS_CLI_TELEMETRY_DISABLED"] = "true"
 
+    # Serverless refuses IPv4 loopback connections to most ports (including every
+    # kernel-assigned one) but allows IPv6 loopback, so local test servers use ::1.
+    env["DATABRICKS_TEST_LOOPBACK_HOST"] = "::1"
+
     return env
 
 
