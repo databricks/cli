@@ -373,9 +373,10 @@ func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]stri
 // FilterToSelected reduces the plan to the resources named in selected (resolved via
 // ResolveSelectors) plus the others that must change with them. The closure follows
 // edges by action, like the apply graph (makeGraph): a deployed resource pulls in its
-// dependencies (forward), a deleted one all its dependents (reverse). A dependent that is
-// itself deleted is removed together with it; a live one (still in config) makes
-// [Plan.CheckReferencesToDeleted], which runs on the filtered plan, report the reference.
+// dependencies (forward), a deleted one its dependents (reverse). A dependent that is
+// itself deleted is removed together with it; a live one (still in config) is kept, not
+// expanded, so that [Plan.CheckReferencesToDeleted], which runs on the filtered plan,
+// reports its reference.
 func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	before := len(p.Plan)
 
@@ -409,12 +410,23 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 
 	// BFS: deleted nodes pull in their dependents, including the grants/permissions
 	// sub-nodes of key itself; deployed nodes pull in their dependencies.
+	//
+	// A live dependent of a deleted node is kept only so that CheckReferencesToDeleted
+	// reports its reference. It is not expanded through that edge: its other dependencies
+	// are not part of this deletion, and the plan fails on it anyway. It is kept in a
+	// separate set so that a selection that does reach it is still expanded, whatever
+	// the order of the selectors.
+	keptForReport := map[string]struct{}{}
 	for len(queue) > 0 {
 		key := queue[0]
 		queue = queue[1:]
 		if p.Plan[key].Action == Delete {
 			for _, dependent := range dependents[key] {
-				p.enqueueReachable(reachable, &queue, dependent)
+				if p.Plan[dependent].Action == Delete {
+					p.enqueueReachable(reachable, &queue, dependent)
+				} else if _, ok := p.Plan[dependent]; ok {
+					keptForReport[dependent] = struct{}{}
+				}
 			}
 		} else {
 			for _, dep := range p.Plan[key].DependsOn {
@@ -422,6 +434,7 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 			}
 		}
 	}
+	maps.Copy(reachable, keptForReport)
 
 	for key := range p.Plan {
 		if _, ok := reachable[key]; !ok {

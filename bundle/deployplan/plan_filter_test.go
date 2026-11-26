@@ -303,6 +303,67 @@ func TestFilterToSelected_DeletionReportsLiveSubNodeDependent(t *testing.T) {
 	assert.Equal(t, "cannot plan resources.jobs.live.permissions: ${resources.jobs.gone.id} refers to resources.jobs.gone, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.live.permissions too, or add resources.jobs.gone back to the configuration", err.Error())
 }
 
+// Only the references to the selected deletion are reported. A live dependent is kept
+// for the report but not expanded, so the other deleted resources it references, and
+// their dependents, stay out of the filtered plan.
+func TestFilterToSelected_DeletionReportsOnlySelectedConflicts(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.a"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	p.Plan["resources.jobs.b"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	p.Plan["resources.jobs.shared"] = &deployplan.PlanEntry{
+		Action: deployplan.Update,
+		DependsOn: []deployplan.DependsOnEntry{
+			{Node: "resources.jobs.a", Label: "${resources.jobs.a.id}"},
+			{Node: "resources.jobs.b", Label: "${resources.jobs.b.id}"},
+		},
+	}
+	p.Plan["resources.jobs.only_b"] = &deployplan.PlanEntry{
+		Action:    deployplan.Update,
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.b", Label: "${resources.jobs.b.id}"}},
+	}
+
+	require.NoError(t, p.FilterToSelected(t.Context(), []string{"jobs.a"}))
+	assert.NotContains(t, p.Plan, "resources.jobs.b")
+	assert.NotContains(t, p.Plan, "resources.jobs.only_b")
+
+	err := p.CheckReferencesToDeleted()
+	require.Error(t, err)
+	assert.Equal(t, "cannot plan resources.jobs.shared: ${resources.jobs.a.id} refers to resources.jobs.a, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.shared too, or add resources.jobs.a back to the configuration", err.Error())
+}
+
+// A live dependent of a selected delete that a selected deploy also needs is expanded
+// like any other dependency, so the report does not depend on the order of selectors.
+func TestFilterToSelected_DeletionReportIndependentOfSelectorOrder(t *testing.T) {
+	newPlan := func() *deployplan.Plan {
+		p := deployplan.NewPlanDirect()
+		p.Plan["resources.jobs.a"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+		p.Plan["resources.jobs.b"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+		p.Plan["resources.jobs.l"] = &deployplan.PlanEntry{
+			Action: deployplan.Update,
+			DependsOn: []deployplan.DependsOnEntry{
+				{Node: "resources.jobs.a", Label: "${resources.jobs.a.id}"},
+				{Node: "resources.jobs.b", Label: "${resources.jobs.b.id}"},
+			},
+		}
+		p.Plan["resources.jobs.x"] = &deployplan.PlanEntry{
+			Action:    deployplan.Update,
+			DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.l", Label: "${resources.jobs.l.id}"}},
+		}
+		return p
+	}
+
+	var reports []string
+	for _, selected := range [][]string{{"jobs.a", "jobs.x"}, {"jobs.x", "jobs.a"}} {
+		p := newPlan()
+		require.NoError(t, p.FilterToSelected(t.Context(), selected))
+		err := p.CheckReferencesToDeleted()
+		require.Error(t, err)
+		reports = append(reports, err.Error())
+	}
+	assert.Equal(t, reports[0], reports[1])
+	assert.Contains(t, reports[0], "cannot plan resources.jobs.l: ${resources.jobs.b.id}")
+}
+
 // Selecting a resource for deletion leaves its own dependencies alone: they are not
 // pulled into the plan, so they stay deployed untouched.
 func TestFilterToSelected_DeletionLeavesDependencies(t *testing.T) {
