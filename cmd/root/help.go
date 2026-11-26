@@ -12,8 +12,10 @@ import (
 const rootSkillsHint = "Coding agents: run `databricks skills list` to find skills for the commands you use."
 
 // setHelpFunc wraps the default help of root. Every command without a help
-// func of its own inherits it, so this is the one place command groups get
-// skill hints. With hints off, the output is the default help.
+// func of its own inherits it, so this is where command groups get skill
+// hints. A command that sets its own help func bypasses this wrapper and must
+// call skills.WriteGroupHint itself, as air does. With hints off, the output is
+// the default help.
 func setHelpFunc(root *cobra.Command) {
 	defaultHelp := root.HelpFunc()
 	root.SetHelpFunc(func(c *cobra.Command, args []string) {

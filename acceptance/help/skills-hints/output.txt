@@ -17,3 +17,5 @@ Coding agents: read the skills for this command group before you use it.
   databricks skills read demo-skill
 
 >>> [CLI] auth --help
+
+>>> [CLI] fs ls --help

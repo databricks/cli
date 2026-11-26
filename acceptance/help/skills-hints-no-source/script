@@ -1,4 +1,5 @@
-# No skills folder is set, so no group gets a footer. The base URL is unreachable
-# and help must not read it.
+# No skills folder is set, so no group gets a footer. The base URL is unreachable.
+# No source reads it yet, so this checks only the no-source case; the network source
+# adds the check that help does not wait on it.
 trace env -u DATABRICKS_SKILLS_DIR $CLI fs --help | contains.py "!databricks skills read" > /dev/null
 trace env -u DATABRICKS_SKILLS_DIR $CLI --help | tail -n 2

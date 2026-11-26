@@ -11,3 +11,6 @@ trace $CLI air --help | tail -n 4
 
 # A group no skill covers gets no footer.
 trace $CLI auth --help | contains.py "!databricks skills" > /dev/null
+
+# A leaf command under a mapped group gets no footer of its own.
+trace $CLI fs ls --help | contains.py "!databricks skills" > /dev/null
