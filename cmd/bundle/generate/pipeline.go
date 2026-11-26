@@ -20,6 +20,10 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+func init() {
+	registerGenerator("pipelines", NewGeneratePipelineCommand)
+}
+
 func NewGeneratePipelineCommand() *cobra.Command {
 	var configDir string
 	var sourceDir string

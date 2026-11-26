@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"context"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -31,4 +32,16 @@ func ConvertPipelineToValue(pipeline *pipelines.PipelineSpec, rootPath, remoteRo
 	// - edition: this field is rarely changed
 	// - development: this field is specific to the mode where it's used and does not need to be saved to the bundle configuration.
 	return yamlsaver.ConvertToMapValue(pipeline, pipelineOrder, []string{"id", "storage", "edition", "development", "deployment"}, value)
+}
+
+func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pipelines.PipelineLibrary) error {
+	if lib.Notebook != nil {
+		return n.markNotebookForDownload(ctx, &lib.Notebook.Path)
+	}
+
+	if lib.File != nil {
+		return n.markFileForDownload(ctx, &lib.File.Path)
+	}
+
+	return nil
 }
