@@ -2,11 +2,11 @@
 # library-status and permanent-delete for it with 400 INVALID_PARAMETER_VALUE "does not exist".
 trace $CLI bundle deploy
 cluster_id=$(read_id.py foo)
-print_requests.py > /dev/null
+print_requests.py > LOG.requests_deploy
 
 title "deploy: the cluster is still in config, so it is created again"
 $CLI clusters permanent-delete $cluster_id
-print_requests.py > /dev/null
+print_requests.py > LOG.requests_oob_delete
 trace $CLI bundle deploy
 trace print_requests.py //clusters
 
@@ -21,7 +21,7 @@ update_file.py databricks.yml "  clusters:
 "
 trace $CLI bundle plan -o json > plan.json
 $CLI clusters permanent-delete $(read_id.py foo)
-print_requests.py > /dev/null
+print_requests.py > LOG.requests_plan
 trace $CLI bundle deploy --plan plan.json --auto-approve
 trace print_state.py | jq -c ".state | keys"
 trace print_requests.py //clusters

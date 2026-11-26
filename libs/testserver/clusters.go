@@ -284,8 +284,8 @@ func (s *FakeWorkspace) ClustersPermanentDelete(req Request) any {
 	return Response{}
 }
 
-// clusterDoesNotExist is how the cloud answers cluster and library-status requests for a
-// missing cluster: 400 INVALID_PARAMETER_VALUE rather than 404.
+// clusterDoesNotExist is how the cloud answers clusters/get, clusters/permanent-delete and
+// libraries/cluster-status for a missing cluster: 400 INVALID_PARAMETER_VALUE rather than 404.
 func clusterDoesNotExist(clusterId string) Response {
 	return Response{
 		StatusCode: http.StatusBadRequest,

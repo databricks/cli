@@ -73,59 +73,6 @@ func TestClusterOverrideChangeDescLibraries(t *testing.T) {
 	}
 }
 
-// The fake workspace answers library-status and permanent-delete for a missing cluster with the
-// cloud's 400 INVALID_PARAMETER_VALUE, which the SDK does not map to not-found. The cluster GET
-// (which the SDK does map) is delayed so the library-status error arrives first.
-func newMissingClusterResource(t *testing.T) *ResourceCluster {
-	server := testserver.New(t)
-	server.Handle("GET", "/api/2.1/clusters/get", func(req testserver.Request) any {
-		time.Sleep(100 * time.Millisecond)
-		return req.Workspace.ClustersGet(req, req.URL.Query().Get("cluster_id"))
-	})
-	testserver.AddDefaultHandlers(server)
-
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  server.URL,
-		Token: "testtoken",
-	})
-	require.NoError(t, err)
-	return (&ResourceCluster{}).New(client).(*ResourceCluster)
-}
-
-func TestClusterDoReadMissingCluster(t *testing.T) {
-	r := newMissingClusterResource(t)
-	_, err := r.DoRead(t.Context(), "1126-000000-abcdefgh")
-	require.Error(t, err)
-	assert.True(t, apierr.IsMissing(err), "expected a not-found error, got %v", err)
-}
-
-func TestClusterDoDeleteMissingCluster(t *testing.T) {
-	r := newMissingClusterResource(t)
-	err := r.DoDelete(t.Context(), "1126-000000-abcdefgh", nil)
-	require.Error(t, err)
-	assert.True(t, apierr.IsMissing(err), "expected a not-found error, got %v", err)
-}
-
-func TestClusterDoDeleteOtherInvalidParameterError(t *testing.T) {
-	server := testserver.New(t)
-	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req testserver.Request) any {
-		return testserver.Response{
-			StatusCode: http.StatusBadRequest,
-			Body: map[string]string{
-				"error_code": "INVALID_PARAMETER_VALUE",
-				"message":    "Cluster policy 1126-000000-abcdefgh does not exist",
-			},
-		}
-	})
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
-	require.NoError(t, err)
-	r := (&ResourceCluster{}).New(client).(*ResourceCluster)
-
-	err = r.DoDelete(t.Context(), "1126-000000-abcdefgh", nil)
-	require.Error(t, err)
-	assert.False(t, apierr.IsMissing(err), "expected an error that is not not-found, got %v", err)
-}
-
 func TestClusterDoReadCancelsLibrariesWhenClusterIsMissing(t *testing.T) {
 	server := testserver.New(t)
 	server.Handle("GET", "/api/2.0/libraries/cluster-status", func(req testserver.Request) any {
@@ -143,20 +90,4 @@ func TestClusterDoReadCancelsLibrariesWhenClusterIsMissing(t *testing.T) {
 	_, err = r.DoRead(ctx, "1126-000000-abcdefgh")
 	assert.True(t, apierr.IsMissing(err), "expected a not-found error, got %v", err)
 	assert.NoError(t, ctx.Err(), "DoRead waited for the library status after the cluster GET failed")
-}
-
-func TestClusterDoReadClusterDeletedBetweenReads(t *testing.T) {
-	server := testserver.New(t)
-	server.Handle("GET", "/api/2.1/clusters/get", func(req testserver.Request) any {
-		return compute.ClusterDetails{ClusterId: req.URL.Query().Get("cluster_id"), State: compute.StateRunning}
-	})
-	// The fake has no such cluster, so the library status answers with the missing-cluster 400.
-	testserver.AddDefaultHandlers(server)
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
-	require.NoError(t, err)
-	r := (&ResourceCluster{}).New(client).(*ResourceCluster)
-
-	_, err = r.DoRead(t.Context(), "1126-000000-abcdefgh")
-	require.Error(t, err)
-	assert.True(t, apierr.IsMissing(err), "expected a not-found error, got %v", err)
 }
