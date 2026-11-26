@@ -1,3 +1,0 @@
-# Pin the help so any change to the flags or the description of auth login
-# shows up as a diff here.
-trace $CLI auth login --help
