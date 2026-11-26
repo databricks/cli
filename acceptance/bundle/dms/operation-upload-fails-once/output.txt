@@ -60,7 +60,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one
 
->>> fault.py PATCH /api/2.0/bundle/** 500 0 1
+>>> fault.py POST /api/2.0/bundle/deployments/*/versions/*/operations:batchUpdate 500 0 1
 
 >>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
 
@@ -142,29 +142,31 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,status"
-  },
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations:batchUpdate",
   "body": {
-    "error_message": "",
-    "sequence_id": 0,
-    "status": "OPERATION_STATUS_PENDING"
+    "operation": {
+      "error_message": "",
+      "name": "deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
+      "sequence_id": 0,
+      "status": "OPERATION_STATUS_PENDING"
+    },
+    "update_mask": "state,error_message,status"
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
-  "q": {
-    "update_mask": "state,error_message,resource_id,status"
-  },
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/2/operations:batchUpdate",
   "body": {
-    "error_message": "",
-    "resource_id": "dms_other_[UNIQUE_NAME].dms_upload_fails_once_schema_[UNIQUE_NAME]",
-    "sequence_id": 0,
-    "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_upload_fails_once_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][2]\"}}",
-    "status": "OPERATION_STATUS_SUCCEEDED"
+    "operation": {
+      "error_message": "",
+      "name": "deployments/[DEPLOYMENT_ID]/versions/2/operations/schemas.foo",
+      "resource_id": "dms_other_[UNIQUE_NAME].dms_upload_fails_once_schema_[UNIQUE_NAME]",
+      "sequence_id": 0,
+      "state": "{\"state\":{\"catalog_name\":\"dms_other_[UNIQUE_NAME]\",\"comment\":\"v1\",\"name\":\"dms_upload_fails_once_schema_[UNIQUE_NAME]\",\"schema_id\":\"[UUID][2]\"}}",
+      "status": "OPERATION_STATUS_SUCCEEDED"
+    },
+    "update_mask": "state,error_message,resource_id,status"
   }
 }
 {
@@ -192,7 +194,7 @@ Warn: Failed to complete deployment history version: Fault injected by test.
 Destroy: 1 deleted
 
 >>> print_requests.py --dms //versions/3 --oneline
-{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/operations/schemas.foo", "q": {"update_mask": "state,error_message,status"}, "body": {"error_message": "", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/operations:batchUpdate", "body": {"operation": {"error_message": "", "name": "deployments/[DEPLOYMENT_ID]/versions/3/operations/schemas.foo", "sequence_id": 0, "status": "OPERATION_STATUS_SUCCEEDED"}, "update_mask": "state,error_message,status"}}
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/3/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
 >>> musterr env MSYS_NO_PATHCONV=1 [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once-[UNIQUE_NAME]/default/state/resources.json

@@ -23,8 +23,12 @@ import (
 
 // queued builds a buffer whose queue nothing drains, so a test drives record and take itself.
 func queued() *OperationBuffer {
+	return queuedWithCapacity(bufferedOperations)
+}
+
+func queuedWithCapacity(capacity int) *OperationBuffer {
 	return &OperationBuffer{
-		queue:       make(chan string, bufferedOperations),
+		queue:       make(chan string, capacity),
 		pending:     make(map[string]*bufferedUpdate),
 		latestState: make(map[string]OperationUpdate),
 		operations:  make(map[string]*bufferedUpdate),
@@ -61,6 +65,60 @@ func TestBufferCoalescesWhileAKeyIsPending(t *testing.T) {
 	assert.JSONEq(t, `{"state":{"name":"v3"}}`, string(entry.update.State))
 	assert.NotSame(t, first, entry)
 	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(first.update.State))
+}
+
+func TestBatchTakesQueuedUpdatesUpToTheCap(t *testing.T) {
+	s := queuedWithCapacity(maxBatchOperations + 5)
+	for i := range maxBatchOperations + 5 {
+		s.record(fmt.Sprintf("resources.jobs.job_%d", i), stateUpdate(t, "v1"), false, nil)
+	}
+
+	first, ok := s.next(t.Context(), false)
+	require.True(t, ok)
+	batch, carried := s.collect(t.Context(), first)
+
+	assert.Len(t, batch, maxBatchOperations)
+	assert.Nil(t, carried)
+	assert.Equal(t, "resources.jobs.job_0", batch[0].key)
+	assert.Len(t, s.queue, 5, "the rest wait for the next batch")
+}
+
+func TestBatchLeavesARepeatedResourceForTheNextBatch(t *testing.T) {
+	// The second write must echo the sequence id the first one earns, so it cannot share its batch.
+	s := queued()
+	s.record("resources.jobs.foo", stateUpdate(t, "v1"), false, nil)
+	first, ok := s.next(t.Context(), false)
+	require.True(t, ok)
+	s.record("resources.jobs.foo", stateUpdate(t, "v2"), false, nil)
+	s.record("resources.jobs.bar", stateUpdate(t, "v1"), false, nil)
+
+	batch, carried := s.collect(t.Context(), first)
+
+	require.Len(t, batch, 1)
+	require.NotNil(t, carried)
+	assert.Equal(t, "resources.jobs.foo", carried.key)
+	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(carried.entry.update.State))
+	assert.Len(t, s.queue, 1, "bar waits behind it")
+}
+
+func TestBatchStaysUnderTheSizeCap(t *testing.T) {
+	s := queuedWithCapacity(maxBatchOperations)
+	state := json.RawMessage(`{"state":"` + strings.Repeat("x", maxStateSize-16) + `"}`)
+	for i := range maxBatchOperations {
+		s.RecordOperation(t.Context(), fmt.Sprintf("resources.jobs.job_%d", i), false, "id-1", state)
+	}
+
+	first, ok := s.next(t.Context(), false)
+	require.True(t, ok)
+	batch, carried := s.collect(t.Context(), first)
+
+	size := batchRequestOverhead
+	for _, e := range batch {
+		size += len(e.body) + 1
+	}
+	assert.LessOrEqual(t, size, maxBatchBytes)
+	assert.Less(t, len(batch), maxBatchOperations)
+	assert.NotNil(t, carried, "the update past the cap starts the next batch")
 }
 
 func TestBufferFailsOnOversizedState(t *testing.T) {

@@ -60,15 +60,16 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.doomed",
-  "q": {
-    "update_mask": "error_message,status"
-  },
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/1/operations:batchUpdate",
   "body": {
-    "error_message": "Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES] (400 INVALID_PARAMETER_VALUE)",
-    "sequence_id": 0,
-    "status": "OPERATION_STATUS_FAILED"
+    "operation": {
+      "error_message": "Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES] (400 INVALID_PARAMETER_VALUE)",
+      "name": "deployments/[DEPLOYMENT_ID]/versions/1/operations/jobs.doomed",
+      "sequence_id": 0,
+      "status": "OPERATION_STATUS_FAILED"
+    },
+    "update_mask": "error_message,status"
   }
 }
 {

@@ -35,6 +35,7 @@ An unused endpoint records `DMS API called: no`.
 
 Fault cases cover all DMS APIs:
 
+- `BatchUpdateOperations`
 - `CompleteVersion`
 - `CreateDeployment`
 - `CreateVersion`
