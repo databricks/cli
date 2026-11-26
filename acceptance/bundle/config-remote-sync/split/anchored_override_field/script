@@ -4,14 +4,15 @@ trap cleanup EXIT
 $CLI bundle deploy -t dev
 job_id="$(read_id.py my_job)"
 
-title "Change the field remotely"
+title "Change the fields remotely"
 edit_resource.py jobs $job_id <<PYEDIT
 r["max_concurrent_runs"] = 10
+r["description"] = "edited"
 PYEDIT
 
-title "Sync leaves the anchored target value unapplied"
+title "Sync edits under the anchored mapping and leaves the anchored value unapplied"
 cp databricks.yml databricks.yml.backup
 trace $CLI bundle config-remote-sync -t dev --save
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
-trace $CLI bundle validate -t dev -o json | jq -c ".resources.jobs.my_job | {max_concurrent_runs, timeout_seconds}"
+trace $CLI bundle validate -t dev -o json | jq -c ".resources.jobs.my_job | {description, max_concurrent_runs, timeout_seconds}"

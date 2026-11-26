@@ -483,6 +483,7 @@ func TestApplyChangeAddToExistingKey(t *testing.T) {
 		{"null", "parameters:\n  - name: p\n    value:\n", "parameters[0].value", "parameters: [{name: p, value: value}]"},
 		{"sequence index inserts", "parent:\n  - a\n", "parent[0]", "parent: [value, a]"},
 		{"merge key adds", "defaults: &d\n  job_cluster_key: old\ntasks:\n  - <<: *d\n    task_key: main\n", "tasks[0].job_cluster_key", "defaults: {job_cluster_key: old}\ntasks: [{task_key: main, job_cluster_key: value}]"},
+		{"under an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n", "parameters[0].value", "parameters: [{name: p, value: value}, {name: q, value: value}]"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
@@ -502,7 +503,6 @@ func TestApplyChangeKeepsAnchoredKey(t *testing.T) {
 	}{
 		{"anchored null", "parameters:\n  - name: p\n    value: &v\n  - name: q\n    value: *v\n"},
 		{"anchored scalar", "parameters:\n  - name: p\n    value: &v old\n  - name: q\n    value: *v\n"},
-		{"inside an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n"},
 		{"anchor inside the value", "parameters:\n  - name: p\n    value: {k: &v old}\n  - name: q\n    value: *v\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

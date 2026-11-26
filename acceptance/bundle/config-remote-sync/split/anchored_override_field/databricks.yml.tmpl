@@ -2,7 +2,8 @@ bundle:
   name: test-bundle-$UNIQUE_NAME
 
 # max_concurrent_runs is declared in both blocks and the target's value wins, but it
-# is anchored and aliased there, so replacing it would leave the alias dangling.
+# is anchored and aliased there, so replacing it would leave the alias dangling. The
+# target's job mapping is anchored too, which does not stop an edit of description.
 
 resources:
   jobs:
@@ -17,6 +18,7 @@ targets:
   dev:
     resources:
       jobs:
-        my_job:
+        my_job: &dev_job
+          description: dev
           max_concurrent_runs: &runs 2
           timeout_seconds: *runs

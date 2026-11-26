@@ -257,7 +257,8 @@ func (r *blockResolver) replacesKey(change resolvedChange) bool {
 	return r.writesKey(*destinations[0].block, destinations[0].path)
 }
 
-// writesKey reports whether block writes the key at path itself, outside any anchor.
+// writesKey reports whether block writes the key at path itself, with no anchor on or
+// inside its value.
 func (r *blockResolver) writesKey(block sourceBlock, path *structpath.PatternNode) bool {
 	return yamlKeyReplaceable(r.sources[block.file], r.candidatePath(block, path))
 }
@@ -390,7 +391,7 @@ func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) 
 		if blocks != nil && resolved.operation != OperationRemove {
 			if block, ok := blocks.winningBlock(resolved.leaf); ok {
 				if !blocks.writesKey(block, resolved.path) {
-					return nil, fmt.Errorf("%w: the winning definition has no key of its own outside an anchor", errAmbiguousBlock)
+					return nil, fmt.Errorf("%w: the winning definition has no key of its own or its value holds an anchor", errAmbiguousBlock)
 				}
 				return []routeDestination{{block: &block, path: resolved.path}}, nil
 			}
