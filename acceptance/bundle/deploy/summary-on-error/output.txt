@@ -15,5 +15,21 @@ API message: Fault injected by test.
 
 Error: cannot create resources.jobs.job_03: dependency failed: resources.jobs.job_02
 
-Files: 1 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 failed
+
+=== Removing a resource whose delete is denied reports state removal
+
+>>> fault.py POST /api/2.2/jobs/delete 403 0 1 PERMISSION_DENIED
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-summary-on-error/default/files...
+Warn: destroying resources.jobs.job_01: Ignoring permission error when deleting resources.jobs.job_01 id=[JOB_01_ID]: Fault injected by test.
+Removed jobs.job_01 from state
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 removed from state
+
+>>> [CLI] jobs get [JOB_01_ID]
+{
+  "name": "job-01"
+}

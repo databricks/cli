@@ -17,9 +17,11 @@ type Action struct {
 	// delete step has no backend effect.
 	StateOnly bool
 	// Attempted and Applied mirror the same PlanEntry fields: Attempted means Apply
-	// reached this resource, Applied means its operation completed.
+	// reached this resource, Applied means its operation completed (including unbinding).
 	Attempted bool
 	Applied   bool
+	// Unbound mirrors PlanEntry.Unbound: only the state entry was removed.
+	Unbound bool
 }
 
 func (a Action) String() string {

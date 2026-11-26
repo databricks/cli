@@ -1,0 +1,1 @@
+* Report resources removed from bundle state after ignored deletion errors separately from deleted resources in bundle `deploy` and `destroy` output. ([#7496](https://github.com/databricks/cli/pull/7496))

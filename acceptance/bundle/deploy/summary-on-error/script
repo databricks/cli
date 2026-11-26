@@ -4,3 +4,10 @@ title "Deploy three chained jobs; the second create fails"
 # reports the accurate counts (1 created, 2 failed) rather than the planned 3 created.
 trace fault.py "POST /api/2.2/jobs/create" 400 1 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle deploy
+
+title "Removing a resource whose delete is denied reports state removal"
+job_id=$(read_id.py job_01)
+cp databricks-empty.yml databricks.yml
+trace fault.py "POST /api/2.2/jobs/delete" 403 0 1 PERMISSION_DENIED
+trace $CLI bundle deploy
+trace $CLI jobs get "$job_id" | jq '{name: .settings.name}'
