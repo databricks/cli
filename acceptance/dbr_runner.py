@@ -47,13 +47,15 @@ def get_workspace_url():
     return url
 
 
-def get_workspace_debug_log_path(debug_log_path: str) -> str:
-    """Convert workspace API path to FUSE path for direct file access."""
-    # The debug_log_path is an API path (e.g., /Users/user@example.com/dbr_acceptance_tests/debug.log)
-    # We need to convert it to a FUSE path by adding /Workspace prefix
-    if debug_log_path.startswith("/Workspace"):
-        return debug_log_path
-    return f"/Workspace{debug_log_path}"
+def upload_debug_log(local_log_path: Path, debug_log_path: str):
+    """Upload the debug log once via the workspace API."""
+    # Streaming it through FUSE line by line made multi-MB logs fail the task with AsyncFlushFailedException.
+    from databricks.sdk.service.workspace import ImportFormat
+
+    with open(local_log_path, "rb") as f:
+        get_workspace_client().workspace.upload(
+            debug_log_path.removeprefix("/Workspace"), f, format=ImportFormat.AUTO, overwrite=True
+        )
 
 
 # COMMAND ----------
@@ -179,8 +181,7 @@ def run_tests(
     """Run CLI acceptance tests."""
     cli_dir = extract_dir / "cli"
 
-    # Get the workspace FUSE path for the pre-created debug log file
-    workspace_log_path = get_workspace_debug_log_path(debug_log_path)
+    local_log_path = extract_dir / "debug.log"
 
     cmd = [
         "go",
@@ -217,8 +218,8 @@ def run_tests(
     if test_sp_application_id:
         env["TEST_SP_APPLICATION_ID"] = test_sp_application_id
 
-    # Write header to debug log (write directly to workspace via FUSE)
-    with open(workspace_log_path, "w") as log_file:
+    # Write header to debug log
+    with open(local_log_path, "w") as log_file:
         log_file.write(f"Command: {' '.join(cmd)}\n")
         log_file.write(f"Working directory: {cli_dir}\n")
         log_file.write(f"Test type: {test_type}\n")
@@ -260,21 +261,21 @@ def run_tests(
 
     # Collect output while streaming it and write to debug log
     output_lines = []
-    with open(workspace_log_path, "a") as log_file:
+    with open(local_log_path, "a") as log_file:
         for line in process.stdout:
             print(line, end="", flush=True)
             output_lines.append(line)
             log_file.write(line)
-            log_file.flush()
 
     process.wait()
     stdout = "".join(output_lines)
 
     # Write footer to debug log
-    with open(workspace_log_path, "a") as log_file:
+    with open(local_log_path, "a") as log_file:
         log_file.write("\n" + "=" * 60 + "\n")
         log_file.write(f"Tests finished with return code: {process.returncode}\n")
         log_file.write("=" * 60 + "\n")
+    upload_debug_log(local_log_path, debug_log_path)
 
     print("\n" + "=" * 60)
     print(f"Tests finished with return code: {process.returncode}")
