@@ -110,11 +110,13 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 		UvDownloader{Arch: "amd64", BinDir: binDir},
 		JqDownloader{Arch: "amd64", BinDir: binDir},
 		RuffDownloader{Arch: "amd64", BinDir: binDir},
+		PythonDownloader{Arch: "amd64", BinDir: binDir},
 
 		GoDownloader{Arch: "arm64", BinDir: binDir, RepoRoot: repoRoot},
 		UvDownloader{Arch: "arm64", BinDir: binDir},
 		JqDownloader{Arch: "arm64", BinDir: binDir},
 		RuffDownloader{Arch: "arm64", BinDir: binDir},
+		PythonDownloader{Arch: "arm64", BinDir: binDir},
 	}
 
 	for _, downloader := range downloaders {
