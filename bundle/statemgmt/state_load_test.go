@@ -1,12 +1,17 @@
 package statemgmt
 
 import (
+	"maps"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -1482,6 +1487,140 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Secrets["test_secret_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
+}
+
+func TestStateToBundleMarksResourcesOnlyInStateDeleted(t *testing.T) {
+	types := declaredResourceTypes()
+	state := ExportedResourcesMap{}
+	for _, rt := range types {
+		state[stateKey(rt, "removed")] = ResourceState{ID: stateID(rt, "removed")}
+	}
+
+	root := config.Root{}
+	require.NoError(t, StateToBundle(t.Context(), state, &root))
+
+	loaded := resourcesByKey(&root)
+	for _, rt := range types {
+		t.Run(rt.Key, func(t *testing.T) {
+			group := loaded[rt.Key]
+			assert.ElementsMatch(t, []string{"removed"}, slices.Collect(maps.Keys(group)))
+			assertResource(t, group, rt, "removed", stateID(rt, "removed"), resources.ModifiedStatusDeleted)
+		})
+	}
+}
+
+func TestStateToBundleMarksResourcesOnlyInConfigCreated(t *testing.T) {
+	types := declaredResourceTypes()
+	root := configWith(t, types, "added")
+
+	require.NoError(t, StateToBundle(t.Context(), nil, root))
+
+	loaded := resourcesByKey(root)
+	for _, rt := range types {
+		t.Run(rt.Key, func(t *testing.T) {
+			group := loaded[rt.Key]
+			assert.ElementsMatch(t, []string{"added"}, slices.Collect(maps.Keys(group)))
+			assertResource(t, group, rt, "added", "", resources.ModifiedStatusCreated)
+		})
+	}
+}
+
+func TestStateToBundleMergesStateIntoConfig(t *testing.T) {
+	types := declaredResourceTypes()
+	root := configWith(t, types, "deployed", "added")
+	state := ExportedResourcesMap{}
+	for _, rt := range types {
+		state[stateKey(rt, "deployed")] = ResourceState{ID: stateID(rt, "deployed")}
+		state[stateKey(rt, "removed")] = ResourceState{ID: stateID(rt, "removed")}
+	}
+
+	require.NoError(t, StateToBundle(t.Context(), state, root))
+
+	loaded := resourcesByKey(root)
+	for _, rt := range types {
+		t.Run(rt.Key, func(t *testing.T) {
+			group := loaded[rt.Key]
+			assert.ElementsMatch(t, []string{"deployed", "removed", "added"}, slices.Collect(maps.Keys(group)))
+			assertResource(t, group, rt, "deployed", stateID(rt, "deployed"), "")
+			assertResource(t, group, rt, "removed", stateID(rt, "removed"), resources.ModifiedStatusDeleted)
+			assertResource(t, group, rt, "added", "", resources.ModifiedStatusCreated)
+		})
+	}
+}
+
+// declaredResourceTypes returns the resource types that a bundle declares under resources:.
+// Internal types are left out: the deploy pipeline creates them and they have no ID or
+// modified status to load.
+func declaredResourceTypes() []config.ResourceType {
+	internal := map[string]bool{}
+	for field := range reflect.TypeFor[config.Resources]().Fields() {
+		if field.Tag.Get("bundle") == "internal" {
+			internal[structtag.JSONTag(field.Tag.Get("json")).Name()] = true
+		}
+	}
+	return slices.DeleteFunc(config.AllResourceTypes(), func(rt config.ResourceType) bool {
+		return internal[rt.Key]
+	})
+}
+
+func stateKey(rt config.ResourceType, name string) string {
+	return "resources." + rt.Key + "." + name
+}
+
+// stateID is unique per type and name, so that an ID loaded into the wrong resource is caught.
+func stateID(rt config.ResourceType, name string) string {
+	return rt.Key + "/" + name
+}
+
+// configWith returns a configuration with a zero-value resource of every type in types under
+// each of names.
+func configWith(t *testing.T, types []config.ResourceType, names ...string) *config.Root {
+	t.Helper()
+	groups := dyn.NewMapping()
+	for _, rt := range types {
+		group := dyn.NewMapping()
+		for _, name := range names {
+			group.SetLoc(name, nil, dyn.V(dyn.NewMapping()))
+		}
+		groups.SetLoc(rt.Key, nil, dyn.V(group))
+	}
+
+	root := &config.Root{}
+	require.NoError(t, convert.ToTyped(root, dyn.V(map[string]dyn.Value{"resources": dyn.V(groups)})))
+	return root
+}
+
+func resourcesByKey(root *config.Root) map[string]map[string]config.ConfigResource {
+	byKey := map[string]map[string]config.ConfigResource{}
+	for _, group := range root.Resources.AllResources() {
+		byKey[group.Description.PluralName] = group.Resources
+	}
+	return byKey
+}
+
+// assertResource checks that the resource under name is a zero value of type rt apart from its
+// ID and modified status, which StateToBundle sets. An empty id or status means the field is unset.
+func assertResource(t *testing.T, group map[string]config.ConfigResource, rt config.ResourceType, name, id string, status resources.ModifiedStatus) {
+	t.Helper()
+	res, ok := group[name]
+	if !assert.True(t, ok, "resources.%s.%s is missing", rt.Key, name) {
+		return
+	}
+
+	want, err := convert.FromTyped(rt.New(), dyn.NilValue)
+	require.NoError(t, err)
+	if id != "" {
+		want, err = dyn.Set(want, "id", dyn.V(id))
+		require.NoError(t, err)
+	}
+	if status != "" {
+		want, err = dyn.Set(want, "modified_status", dyn.V(status))
+		require.NoError(t, err)
+	}
+
+	got, err := convert.FromTyped(res, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, want.AsAny(), got.AsAny(), "resources.%s.%s", rt.Key, name)
 }
 
 func TestApplyStateLoadsDeployedState(t *testing.T) {
