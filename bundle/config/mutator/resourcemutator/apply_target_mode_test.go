@@ -1,11 +1,11 @@
 package resourcemutator
 
 import (
-	"reflect"
+	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
-
-	"github.com/databricks/databricks-sdk-go/service/database"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -13,18 +13,11 @@ import (
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/dataquality"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,8 +25,21 @@ import (
 // FIXME apply_target_mode_test should be untied from apply_presets_test
 // and apply_target_mode with validate_target_mode should be moved into mutators package.
 
+// targetModeExamples maps a resource key to a function that puts the example
+// resources of that type into a config.Resources. Each type registers its
+// examples from <key>_target_mode_test.go. They are functions so that every
+// mockBundle call gets fresh values that a test can modify.
+var targetModeExamples = map[string]func(*config.Resources){}
+
+func registerTargetModeExamples(key string, set func(*config.Resources)) {
+	if _, ok := targetModeExamples[key]; ok {
+		panic(fmt.Sprintf("target mode examples for %q are registered more than once", key))
+	}
+	targetModeExamples[key] = set
+}
+
 func mockBundle(mode config.Mode) *bundle.Bundle {
-	return &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Mode: mode,
@@ -54,333 +60,6 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				ArtifactPath: "/Users/lennart@company.com/.bundle/x/y/artifacts",
 				FilePath:     "/Users/lennart@company.com/.bundle/x/y/files",
 			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job1": {
-						JobSettings: jobs.JobSettings{
-							Name: "job1",
-							Schedule: &jobs.CronSchedule{
-								QuartzCronExpression: "* * * * *",
-							},
-							Tags: map[string]string{"existing": "tag"},
-						},
-					},
-					"job2": {
-						JobSettings: jobs.JobSettings{
-							Name: "job2",
-							Schedule: &jobs.CronSchedule{
-								QuartzCronExpression: "* * * * *",
-								PauseStatus:          jobs.PauseStatusUnpaused,
-							},
-						},
-					},
-					"job3": {
-						JobSettings: jobs.JobSettings{
-							Name: "job3",
-							Trigger: &jobs.TriggerSettings{
-								FileArrival: &jobs.FileArrivalTriggerConfiguration{
-									Url: "test.com",
-								},
-							},
-						},
-					},
-					"job4": {
-						JobSettings: jobs.JobSettings{
-							Name: "job4",
-							Continuous: &jobs.Continuous{
-								PauseStatus: jobs.PauseStatusPaused,
-							},
-						},
-					},
-				},
-				JobRuns: map[string]*resources.JobRun{
-					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
-				},
-				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}}, //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-				},
-				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment1": {CreateExperiment: ml.CreateExperiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
-					"experiment2": {CreateExperiment: ml.CreateExperiment{Name: "experiment2"}},
-				},
-				Models: map[string]*resources.MlflowModel{
-					"model1": {CreateModelRequest: ml.CreateModelRequest{Name: "model1"}},
-				},
-				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"servingendpoint1": {CreateServingEndpoint: serving.CreateServingEndpoint{Name: "servingendpoint1"}},
-				},
-				ModelServices: map[string]*resources.ModelService{
-					"modelservice1": {ModelServiceConfig: resources.ModelServiceConfig{Parent: "schemas/main.default", ModelServiceId: "modelservice1"}},
-				},
-				McpServices: map[string]*resources.McpService{
-					"mcpservice1": {McpServiceConfig: resources.McpServiceConfig{Parent: "schemas/main.default", McpServiceId: "mcpservice1"}},
-				},
-				ModelProviderServices: map[string]*resources.ModelProviderService{
-					"modelproviderservice1": {ModelProviderServiceConfig: resources.ModelProviderServiceConfig{Parent: "schemas/main.default", ModelProviderServiceId: "modelproviderservice1"}},
-				},
-				RegisteredModels: map[string]*resources.RegisteredModel{
-					"registeredmodel1": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
-				},
-				QualityMonitors: map[string]*resources.QualityMonitor{
-					"qualityMonitor1": {
-						TableName: "qualityMonitor1",
-						CreateMonitor: catalog.CreateMonitor{
-							OutputSchemaName: "catalog.schema",
-						},
-					},
-					"qualityMonitor2": {
-						TableName: "qualityMonitor2",
-						CreateMonitor: catalog.CreateMonitor{
-							OutputSchemaName: "catalog.schema",
-							Schedule:         &catalog.MonitorCronSchedule{},
-						},
-					},
-					"qualityMonitor3": {
-						TableName: "qualityMonitor3",
-						CreateMonitor: catalog.CreateMonitor{
-							OutputSchemaName: "catalog.schema",
-							Schedule: &catalog.MonitorCronSchedule{
-								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
-							},
-						},
-					},
-				},
-				DataQualityMonitors: map[string]*resources.DataQualityMonitor{
-					"dataQualityMonitor1": {Monitor: dataquality.Monitor{
-						ObjectType:             "schema",
-						ObjectId:               "dataQualityMonitor1",
-						AnomalyDetectionConfig: &dataquality.AnomalyDetectionConfig{},
-					}},
-					"dataQualityMonitor2": {Monitor: dataquality.Monitor{
-						ObjectType: "table",
-						ObjectId:   "dataQualityMonitor2",
-						DataProfilingConfig: &dataquality.DataProfilingConfig{
-							Schedule: &dataquality.CronSchedule{QuartzCronExpression: "0 0 12 * * ?", TimezoneId: "UTC"},
-						},
-					}},
-				},
-				Catalogs: map[string]*resources.Catalog{
-					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
-				},
-				ExternalLocations: map[string]*resources.ExternalLocation{
-					"externalLocation1": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "externalLocation1"}},
-				},
-				Schemas: map[string]*resources.Schema{
-					"schema1": {CreateSchema: catalog.CreateSchema{Name: "schema1"}},
-				},
-				Volumes: map[string]*resources.Volume{
-					"volume1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "volume1"}},
-				},
-				Features: map[string]*resources.Feature{
-					"feature1": {Feature: ml.Feature{FullName: "catalog1.schema1.feature1"}},
-				},
-				MaterializationSets: map[string]*resources.MaterializationSet{
-					"materialization_set1": {MaterializationSet: ml.MaterializationSet{
-						MaterializedFeatures: []ml.MaterializedFeature{
-							{FeatureName: "catalog1.schema1.feature1"},
-						},
-					}},
-				},
-				FeatureSpecs: map[string]*resources.FeatureSpec{
-					"feature_spec1": {FeatureSpec: ml.FeatureSpec{Name: "catalog1.schema1.feature_spec1"}},
-				},
-				Clusters: map[string]*resources.Cluster{
-					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
-				},
-				InstancePools: map[string]*resources.InstancePool{
-					"instance_pool1": {CreateInstancePool: compute.CreateInstancePool{InstancePoolName: "instance_pool1", NodeTypeId: "i3.xlarge"}},
-				},
-				ClusterPolicies: map[string]*resources.ClusterPolicy{
-					"cluster_policy1": {CreatePolicy: compute.CreatePolicy{Name: "cluster_policy1"}},
-				},
-				Dashboards: map[string]*resources.Dashboard{
-					"dashboard1": {
-						DashboardConfig: resources.DashboardConfig{
-							DisplayName: "dashboard1",
-						},
-					},
-				},
-				GenieSpaces: map[string]*resources.GenieSpace{
-					"geniespace1": {
-						GenieSpaceConfig: resources.GenieSpaceConfig{
-							Title: "geniespace1",
-						},
-					},
-				},
-				Apps: map[string]*resources.App{
-					"app1": {
-						App: apps.App{
-							Name: "app1",
-						},
-					},
-				},
-				SecretScopes: map[string]*resources.SecretScope{
-					"secretScope1": {
-						Name: "secretScope1",
-					},
-				},
-				Secrets: map[string]*resources.Secret{
-					"secret1": {
-						Secret: catalog.Secret{
-							CatalogName: "main",
-							SchemaName:  "default",
-							Name:        "secret1",
-						},
-					},
-				},
-				SqlWarehouses: map[string]*resources.SqlWarehouse{
-					"sql_warehouse1": {
-						CreateWarehouseRequest: sql.CreateWarehouseRequest{
-							Name: "sql_warehouse1",
-						},
-					},
-				},
-				DatabaseInstances: map[string]*resources.DatabaseInstance{
-					"database_instance1": {
-						DatabaseInstance: database.DatabaseInstance{
-							Name: "database_instance1",
-						},
-					},
-				},
-				DatabaseCatalogs: map[string]*resources.DatabaseCatalog{
-					"database_catalog1": {
-						DatabaseCatalog: database.DatabaseCatalog{
-							Name: "database_catalog1",
-						},
-					},
-				},
-				SyncedDatabaseTables: map[string]*resources.SyncedDatabaseTable{
-					"synced_database_table1": {
-						SyncedDatabaseTable: database.SyncedDatabaseTable{
-							Name: "synced_database_table1",
-						},
-					},
-				},
-				Alerts: map[string]*resources.Alert{
-					"alert1": {
-						AlertV2: sql.AlertV2{
-							DisplayName: "alert1",
-							Schedule: sql.CronSchedule{
-								QuartzCronSchedule: "0 0 12 * * ?",
-							},
-						},
-					},
-					"alert2": {
-						AlertV2: sql.AlertV2{
-							DisplayName: "alert2",
-							Schedule: sql.CronSchedule{
-								QuartzCronSchedule: "0 0 12 * * ?",
-								PauseStatus:        sql.SchedulePauseStatusUnpaused,
-							},
-						},
-					},
-					"alert3": {
-						AlertV2: sql.AlertV2{
-							DisplayName: "alert3",
-						},
-					},
-				},
-				PostgresProjects: map[string]*resources.PostgresProject{
-					"postgres_project1": {
-						PostgresProjectConfig: resources.PostgresProjectConfig{
-							ProjectId: "postgres-project-1",
-							ProjectSpec: postgres.ProjectSpec{
-								DisplayName: "postgres_project1",
-							},
-						},
-					},
-				},
-				PostgresBranches: map[string]*resources.PostgresBranch{
-					"postgres_branch1": {
-						PostgresBranchConfig: resources.PostgresBranchConfig{
-							BranchId: "postgres-branch-1",
-							Parent:   "projects/postgres-project-1",
-						},
-					},
-				},
-				PostgresEndpoints: map[string]*resources.PostgresEndpoint{
-					"postgres_endpoint1": {
-						PostgresEndpointConfig: resources.PostgresEndpointConfig{
-							EndpointId: "postgres-endpoint-1",
-							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
-							EndpointSpec: postgres.EndpointSpec{
-								EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-							},
-						},
-					},
-				},
-				PostgresCatalogs: map[string]*resources.PostgresCatalog{
-					"postgres_catalog1": {
-						PostgresCatalogConfig: resources.PostgresCatalogConfig{
-							CatalogId: "postgres_catalog_1",
-						},
-					},
-				},
-				PostgresDatabases: map[string]*resources.PostgresDatabase{
-					"postgres_database1": {
-						PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
-							DatabaseId: "postgres-database-1",
-							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
-						},
-					},
-				},
-				PostgresRoles: map[string]*resources.PostgresRole{
-					"postgres_role1": {
-						PostgresRoleConfig: resources.PostgresRoleConfig{
-							RoleId: "postgres-role-1",
-							Parent: "projects/postgres-project-1/branches/postgres-branch-1",
-							RoleRoleSpec: postgres.RoleRoleSpec{
-								PostgresRole: "postgres_role_1",
-							},
-						},
-					},
-				},
-				PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
-					"postgres_synced_table1": {
-						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
-							SyncedTableId: "catalog.schema.table1",
-						},
-					},
-				},
-				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
-					"postgres_snapshot_schedule1": {
-						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
-							Branch: "projects/project1/branches/branch1",
-						},
-					},
-				},
-				PostgresDataApis: map[string]*resources.PostgresDataApi{
-					"postgres_data_api1": {
-						PostgresDataApiConfig: resources.PostgresDataApiConfig{
-							Parent: "projects/project1/branches/branch1/databases/database1",
-						},
-					},
-				},
-				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
-					"vs_endpoint1": {
-						CreateEndpoint: vectorsearch.CreateEndpoint{
-							Name:         "vs_endpoint1",
-							EndpointType: vectorsearch.EndpointTypeStandard,
-						},
-					},
-				},
-				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
-					"vs_index1": {
-						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-							Name:         "main.default.vs_index1",
-							EndpointName: "vs_endpoint1",
-							PrimaryKey:   "id",
-							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
-						},
-					},
-				},
-				Snapshots: map[string]*resources.Snapshot{
-					"snapshot1": {
-						BundleID: "bundle1",
-						ACL:      nil,
-					},
-				},
-			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
 		// Use AWS implementation for testing.
@@ -388,6 +67,10 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 			Host: "https://company.cloud.databricks.com",
 		}),
 	}
+	for _, key := range slices.Sorted(maps.Keys(targetModeExamples)) {
+		targetModeExamples[key](&b.Config.Resources)
+	}
+	return b
 }
 
 func TestProcessTargetModeDevelopment(t *testing.T) {
@@ -536,18 +219,29 @@ func TestProcessTargetModeDefault(t *testing.T) {
 
 // Make sure that we have test coverage for all resource types
 func TestAllResourcesMocked(t *testing.T) {
-	b := mockBundle(config.Development)
-	resources := reflect.ValueOf(b.Config.Resources)
+	types := config.AllResourceTypes()
+	for _, rt := range types {
+		if _, ok := targetModeExamples[rt.Key]; !ok {
+			t.Errorf("resource type %q has no examples for the target mode tests; add %s_target_mode_test.go that registers them with registerTargetModeExamples", rt.Key, rt.Key)
+		}
+	}
 
-	for i := range resources.NumField() {
-		field := resources.Field(i)
-		if field.Kind() == reflect.Map {
-			assert.True(
-				t,
-				!field.IsNil() && field.Len() > 0,
-				"apply_target_mode should support '%s' (please add it to apply_target_mode.go and extend the test suite)",
-				resources.Type().Field(i).Name,
-			)
+	for _, key := range slices.Sorted(maps.Keys(targetModeExamples)) {
+		if _, ok := config.ResourceTypeAs[config.ConfigResource](key); !ok {
+			t.Errorf("registerTargetModeExamples(%q): %q is not a resource type", key, key)
+			continue
+		}
+
+		// A registration fills the group under its own key and no other, so that
+		// mockBundle does not depend on the order in which it applies them.
+		var r config.Resources
+		targetModeExamples[key](&r)
+		for i, group := range r.AllResources() {
+			if types[i].Key == key {
+				assert.NotEmpty(t, group.Resources, "registerTargetModeExamples(%q) adds no %s", key, key)
+			} else {
+				assert.Empty(t, group.Resources, "registerTargetModeExamples(%q) adds %s", key, types[i].Key)
+			}
 		}
 	}
 }
@@ -639,35 +333,4 @@ func TestTagsEmptySet(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
-}
-
-func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
-	b := mockBundle(config.Development)
-	b.Config.Presets.JobsMaxConcurrentRuns = 10
-
-	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
-	require.NoError(t, diags.Error())
-
-	assert.Equal(t, 10, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
-}
-
-func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
-	b := mockBundle(config.Development)
-	b.Config.Presets.JobsMaxConcurrentRuns = 1
-
-	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
-	require.NoError(t, diags.Error())
-
-	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
-}
-
-func TestPipelinesDevelopmentDisabled(t *testing.T) {
-	b := mockBundle(config.Development)
-	notEnabled := false
-	b.Config.Presets.PipelinesDevelopment = &notEnabled
-
-	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
-	require.NoError(t, diags.Error())
-
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
 }
