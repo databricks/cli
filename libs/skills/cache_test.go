@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,4 +90,17 @@ func TestCacheFilesAreKeyedByVersionAndStayInside(t *testing.T) {
 		_, ok := cache.readFile(c.version, c.skill, c.file)
 		assert.False(t, ok, "%+v", c)
 	}
+}
+
+func TestNewCacheHonoursCacheEnabled(t *testing.T) {
+	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+
+	disabled, err := NewCache(env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false"))
+	require.NoError(t, err)
+	assert.Nil(t, disabled, "a disabled cache stores nothing")
+
+	enabled, err := NewCache(env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true"))
+	require.NoError(t, err)
+	require.NotNil(t, enabled)
+	assert.Equal(t, filepath.Join(env.Get(ctx, "DATABRICKS_CACHE_DIR"), build.GetInfo().GetSanitizedVersion(), "skills"), enabled.dir)
 }

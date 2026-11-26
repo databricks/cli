@@ -27,8 +27,9 @@ type chain struct {
 // source fails it serves the newest cached catalog marked Stale, or the bundled
 // catalog marked Stale when nothing is cached.
 //
-// ReadFile serves a file from the cache when the catalog's release has it.
-// Otherwise it reads the file live and caches it, and falls back to the bundled copy.
+// ReadFile serves a file from the newest cached release when that release has it,
+// with no live call at any catalog age. Otherwise it reads the file live and caches
+// it, and falls back to the bundled copy.
 //
 //deadcode:allow the skills commands call it once they are wired to the chain
 func NewChain(live Source, cache *Cache, bundled Source) Source {
@@ -65,6 +66,13 @@ func (c *chain) Catalog(ctx context.Context) (*Catalog, error) {
 }
 
 func (c *chain) ReadFile(ctx context.Context, skill, file string) ([]byte, error) {
+	// A cached file of the newest cached release is served before any live call,
+	// whatever the catalog's age, so a cached read makes no live call.
+	if cached, ok := c.cache.Latest(); ok {
+		if data, ok := c.cache.readFile(cached.Version, skill, file); ok {
+			return data, nil
+		}
+	}
 	cat, err := c.Catalog(ctx)
 	if err != nil {
 		return nil, err

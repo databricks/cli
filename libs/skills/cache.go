@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cache"
+	"github.com/databricks/cli/libs/env"
 )
 
 const (
@@ -29,10 +30,14 @@ type Cache struct {
 }
 
 // NewCache returns the skills cache under the CLI's cache folder, beside the
-// other caches of this CLI version (see libs/cache).
+// other caches of this CLI version (see libs/cache). DATABRICKS_CACHE_ENABLED=false
+// turns it off, as it does for the other caches; the returned nil Cache stores nothing.
 //
 //deadcode:allow the skills commands call it once they are wired to the chain
 func NewCache(ctx context.Context) (*Cache, error) {
+	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok && !enabled {
+		return nil, nil
+	}
 	base, err := cache.BaseDir(ctx)
 	if err != nil {
 		return nil, err

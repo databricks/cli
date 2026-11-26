@@ -129,7 +129,8 @@ func TestChainCachedFileReadMakesNoLiveCall(t *testing.T) {
 	assert.Equal(t, "live body", string(data))
 	calls := live.calls
 
-	*now = now.Add(time.Minute)
+	// Past the catalog's freshness window, the cached file is still read without a live call.
+	*now = now.Add(catalogFreshFor + time.Minute)
 	live.err = errLiveDown
 	data, err = c.ReadFile(t.Context(), "alpha", "SKILL.md")
 	require.NoError(t, err)
