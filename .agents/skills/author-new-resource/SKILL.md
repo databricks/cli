@@ -97,6 +97,8 @@ Rules that review enforces on the adapter:
 
 - One SDK call per `DoCreate`, `DoUpdate`, `DoDelete`. Return SDK errors unchanged; the engine adds
   the resource key and id.
+- Helper methods are unexported. `NewAdapter` in `adapter.go` rejects wrong method signatures and
+  any exported method that `IResource` does not declare.
 - Asynchronous waits go in `WaitAfterCreate`, `WaitAfterUpdate`, `WaitAfterDelete`, so state is
   persisted before polling.
 - `RemapState` is a field copy; any remapping lives in `DoRead`.
@@ -111,8 +113,11 @@ Check:
 go build ./... && go test ./bundle/config ./bundle/config/resources ./bundle/config/mutator/resourcemutator ./bundle/phases -count=1
 ```
 
-These packages hold the tests that require every declaration of wiring section 3, so they fail
-until the config type declares each one. Make each decision now; phase 5 reviews them.
+These packages hold the tests that require the config type's declarations, the bind fixture and
+the target mode examples, so they fail until each exists. The other decisions of wiring section 3
+are checked later or not at all: create recovery in phase 3, deployment history by the `DMS=true`
+acceptance leg in phase 4, launch stage and etag protection by hand (wiring section 6). Make each
+decision now; phase 5 reviews them.
 
 The adapter tests need the generated rules from phase 3 (input-only fields fail `TestAll` until
 then), so they are part of the phase 3 check.
@@ -129,7 +134,7 @@ upstream annotation to request, if phase 0 did not already.
 Check:
 
 ```bash
-go test ./bundle/direct/dresources -run 'TestAll/^<plural>$|TestEveryResourceTypeHasAdapter|TestEveryAdapterHasTestFixture|TestCreateRecoveryCoverage|TestResourceConfig|TestConfigFiles|TestResourcesYML|TestInputSubset|TestRemoteSuperset|TestNameStableOrOptedOut|TestNoUpdateResourcesCoverAllFields' -v -count=1
+go test ./bundle/direct/dresources -run 'TestAll/^<plural>$|TestEveryResourceTypeHasAdapter|TestEveryAdapterHasTestFixture|TestCreateRecoveryCoverage|TestResourceConfig|TestGeneratedResourceConfig|TestConfigFiles|TestResourcesYML|TestInputSubset|TestRemoteSuperset|TestNameStableOrOptedOut|TestNoUpdateResourcesCoverAllFields' -v -count=1
 go test ./bundle/internal/schema -run TestRequiredAnnotationsForNewFields -count=1
 ```
 
@@ -151,8 +156,8 @@ exemplar's directories and adapt them; keep `title` lines to one line and let `p
 
 Then prove the tests ran, with the commands in testing reference section 4. `Cloud = true` on the
 `lifecycle` directory is what gets it run against a real workspace: the PR's Integration Tests check
-selects every changed cloud test once the PR is open. Section 6 says how to run it locally first
-when you have access and want a faster loop.
+selects every changed cloud test once the PR is open. Testing reference section 6 says how to run
+it locally first when you have access and want a faster loop.
 
 Check: every proof command lists your tests; `./task test` passes locally; once the PR is open, its
 Integration Tests check passes.
@@ -167,7 +172,8 @@ Each decision is recorded where the code records it: the declaration in
 or `EnvMatrixExclude` line, with a one-line comment when the reason is not obvious from its
 neighbours. "Not applicable" is a valid decision when that comment says why.
 
-Check: the phase 2 and phase 3 test commands pass, and every row of wiring section 6 is verified.
+Check: the phase 2 and phase 3 test commands pass, and every row of wiring section 6 except the
+last two (the changelog fragment and the PR scope, which phase 6 checks) is verified.
 
 ## Phase 6: the PR
 
@@ -175,7 +181,8 @@ Check: the phase 2 and phase 3 test commands pass, and every row of wiring secti
   engine changes, and no changes to shared `libs/` beyond the fake server's file in
   `libs/testserver` (and `dmsResourceTypes`, when the deployment-history service accepts the type).
   If you found something worth fixing elsewhere, open a separate PR.
-- Changelog fragment `.nextchanges/bundles/<plural>.md`, one line.
+- Changelog fragment `.nextchanges/bundles/<plural>.md`, one line ending with the PR link; fill in
+  the PR number right after opening the PR.
 - Run `.agents/skills/pr-checklist`.
 - Description, three sections from the PR template, short; the diff carries the detail:
   - Changes: what the resource is, and its identity and update shape, in two sentences.
@@ -185,9 +192,9 @@ Check: the phase 2 and phase 3 test commands pass, and every row of wiring secti
     them here.
 - Read `references/pitfalls.md` once more against your diff.
 
-Check: the diff touches only the files in the wiring reference plus your acceptance directories (the
-last row of wiring section 6 lists them), and the hand-written Go line count is in the expected
-range. If it is not, say why in the description.
+Check: the last two rows of wiring section 6 are verified: the changelog fragment exists, and the
+diff touches only the files in the wiring reference plus your acceptance directories. The
+hand-written Go line count is in the expected range; if it is not, say why in the description.
 
 ## When the API changes under you
 

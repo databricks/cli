@@ -27,8 +27,11 @@ Every per-type file is named after the key under `resources:` (`<plural>`, as in
 The field is the only shared hand-written file a new type always edits; every other list of
 resource types derives from it. Other shared files change only as the outcome of a decision:
 `dmsResourceTypes` (section 3), or an opt-out entry with its reason in a coverage test
-(`LackingResourceTests`, `LackingBindTests`, `LackingInvariantTest`, `notDeclaring`). Any other
-shared list or branch on the type's name means a missed declaration.
+(`LackingResourceTests`, `LackingBindTests`, `LackingInvariantTest`, `notDeclaring`). A shared Go
+file that must name the type is recorded in
+`bundle/config/resources/testdata/shared_code_resource_types.txt` with
+`go test ./bundle/config/resources -run TestSharedCodeNamesNoNewResourceTypes -update`, and the PR
+says why. Any other shared list or branch on the type's name means a missed declaration.
 
 ## 2. Direct engine rules
 
@@ -36,7 +39,7 @@ The adapter's contract is `bundle/direct/dresources/README.md` and `adapter.go`.
 
 | Add | Where | Caught by |
 |---|---|---|
-| The input config with every field populated (`registerTestConfig`, or `registerTestDeps` if a parent object must exist first), for the type and its `.permissions` or `.grants`; known type gaps with `registerKnownMissingInStateType`/`registerKnownMissingInRemoteType`, each with a comment | `init()` of `bundle/direct/dresources/<plural>_test.go` | `TestEveryAdapterHasTestFixture` checks that a fixture exists, not that it is complete (section 6) |
+| The input config with every field populated (`registerTestConfig`, or `registerTestDeps` if a parent object must exist first), for the type and its `.permissions` or `.grants`; `registerWithoutTestFixture` with the reason only when the zero value of the input config is enough; known type gaps with `registerKnownMissingInStateType`/`registerKnownMissingInRemoteType`, each with a comment | `init()` of `bundle/direct/dresources/<plural>_test.go` | `TestEveryAdapterHasTestFixture` checks that a fixture or an opt-out with a reason exists, not that the fixture is complete (section 6) |
 | Only the rules the proto cannot express: `provided_id_fields` for identity components, `stable_output_fields` for a server-assigned `name`, `backend_defaults` for server-filled defaults, and a commented `recreate_on_changes` or `ignore_remote_changes` only as a bridge until the upstream annotation lands | `configs/<plural>.yml` (omit if empty) | `TestConfigFiles`, `TestResourceConfig`, `TestResourcesYMLNoRedundantRules`, `TestNameStableOrOptedOut`, `TestNoUpdateResourcesCoverAllFields` (no `DoUpdate`). A missing rule fails only the acceptance case that needs it (`uppercase-name` for `provided_id_fields`) |
 | `KeyedSlices()` for repeated fields the API returns unordered, keyed by one real field of the element | adapter file | Nothing checks the key (section 6); the readiness gate decides whether a key exists |
 | `api_type: <pkg>.<Type>` only when `apitypes.generated.yml` picked a request type instead of the resource type (`null` for no generated rules) | `configs/<plural>.yml` | Nothing checks the name (section 6) |
@@ -57,7 +60,7 @@ when the reason is not obvious. The README says which test requires which declar
 | Approval prompts | `Approval()` | Messages when deletion or recreation loses data, is expensive to rebuild, drops child objects, or loses an identity the API minted (a service principal, grants on the old object), with an unused `Order` (`rg -n 'Order:' bundle/config/resources`). Deploy and destroy both, unless deletion is harmless while recreation is not, or destroy's message depends on state (`DestroyFromState`, hook in `bundle/phases/<plural>_approval.go`); say which in a comment. `Approval{}` when nothing is lost. The `basic` golden shows the prompt |
 | Workspace URL | `WorkspaceURL()`, and `InitializeURL()` if there is a page | The UI path for one instance, or `false` with a comment saying the UI has no page |
 | Launch stage | `SchemaLaunchStage()`, or nothing | Nothing means a public Python package. `PUBLIC_BETA` or `PRIVATE_PREVIEW` only for an intentional difference in bundle availability, as the Postgres types do; PyDABs then skips the type (readiness check 2.10) |
-| Bind | `registerBindFixture` or `registerNotBindable` in `<plural>_bind_test.go` | The fixture's `id` (`"0"`, or a composed id) and a mock for the Get call `Exists` makes; not bindable only with the reason |
+| Bind | `registerBindFixture` or `registerNotBindable` in `<plural>_bind_test.go` | The fixture's `id` (`"0"`, or a composed id) and a mock for the Get call `Exists` makes. `Exists` returns `false, nil` when `apierr.IsMissing` reports the Get error, as in `feature_specs.go`. Not bindable only with the reason |
 | Create recovery | `retrySafe`, `recoverCreate`, or `registerCreateRecoveryOptOut` | See "Failed create requests" in `bundle/direct/dresources/README.md` |
 | Deployment history | `dmsResourceTypes` in `libs/testserver/bundledeployments.go` (shared), or an exclusion | The list mirrors the deployment-history service's allowlist: add the type only with that backend change, coordinated. Otherwise exclude the `DMS=true` leg with a comment in `resources/<plural>/test.toml` and the invariant `-exclude.toml`; the leg fails on the first deploy until you do |
 | Etag protection, when edits since the last deployment must be preserved | `etag_field` in `configs/<plural>.yml`, `LoadDeployedState()`, a check registered with `preDeployChecks.Register` | Dashboards are the precedent (`bundle/deploy/dashboards_modified_remotely.go`); readiness check 2.11 describes the flow |
@@ -83,7 +86,7 @@ Run in this order after the Go types compile; `./task generate` runs all of them
 | Command | Writes | Check |
 |---|---|---|
 | `./task generate-refschema` | `acceptance/bundle/refschema/output/<plural>.txt` | File exists and lists the resource's fields with `STATE` or `ALL` |
-| `./task generate-schema` | `bundle/schema/jsonschema.json`, and `bundle/internal/schema/annotations/<plural>.generated.yml` with a `PLACEHOLDER` per undocumented field | Document each placeholder at the same tree position in `annotations/<plural>.yml` (entries for upstream fields move to `<plural>.overrides.yml` on regenerate) and run again until `<plural>.generated.yml` is gone; `TestRequiredAnnotationsForNewFields` fails on leftovers. See the README in that directory |
+| `./task generate-schema` | `bundle/schema/jsonschema.json`, and `bundle/internal/schema/annotations/<plural>.generated.yml` with a `PLACEHOLDER` per undocumented field | Document each placeholder at the same tree position in `annotations/<plural>.yml` (entries for upstream fields move to `<plural>.overrides.yml` on regenerate) and run again until `<plural>.generated.yml` is gone. `TestRequiredAnnotationsForNewFields` only checks that the committed annotation files match a regeneration, so a committed `<plural>.generated.yml` full of placeholders passes it (section 6). Several existing types carry such files (`rg -l PLACEHOLDER bundle/internal/schema/annotations`), among them the exemplars `features`, `mcp_services` and `database_instances`: do not copy annotation files from an exemplar. See the README in that directory |
 | `./task generate-validation` | `bundle/internal/validation/generated/required_fields.go`, `enum_fields.go` | Entries for the type appear |
 | `./task generate-direct` | `bundle/direct/dresources/apitypes.generated.yml`, `configs/<plural>.generated.yml` | The plural has an entry naming the resource type; the generated rules match the proto's `IMMUTABLE`, `OUTPUT_ONLY`, `INPUT_ONLY`. A missing entry means the heuristic found nothing: set `api_type` |
 | `./task pydabs-codegen` | `python/databricks/bundles/<plural>/`, `core/`, docs, test cases | Produced unless `SchemaLaunchStage()` is `PRIVATE_PREVIEW` or `PUBLIC_BETA`. Regenerate the public API snapshot: `cd python && UPDATE_SNAPSHOTS=1 uv run pytest databricks_tests/core/test_public_api.py`. The task deletes the generated packages before it fetches dependencies; if it fails on network access, restore with `git checkout -- python/`, sync the `python/` and `python/codegen/` environments first, and rerun |
@@ -111,8 +114,10 @@ rules in a plan; read them back after `./task generate-direct`.
 
 ## 6. What no test guards
 
-Every other row of this checklist has a test that fails while the row is missing. Verify these by
-hand.
+For every other row of this checklist, a test (or, for generated files, the `generate-check` CI
+job) fails while the file or declaration is missing or contradicts the config type (a `Permissions` field without `PermissionsSupport()`, say). Those
+tests do not judge whether a decision fits the API; phase 5 and review do. The rows below have no
+such test. Verify them by hand.
 
 | Row | Verify |
 |---|---|
@@ -120,9 +125,12 @@ hand.
 | The test fixture populates every field | Compare the `registerTestConfig` call in `<plural>_test.go` with the input fields in `acceptance/bundle/refschema/output/<plural>.txt` |
 | The `KeyedSlices` key is a real, client-settable field | Readiness check 2.2, and an acceptance case that reorders the list and plans nothing |
 | `api_type` names an existing type; a misspelled one yields no rules | `configs/<plural>.generated.yml` exists and lists the behaviours you expect |
-| UC names in a field without `catalog` or `schema` in its name (a three-part `name`, a `parent`), which `TestResourceTypesWithUCNameFieldsDeclareThem` does not see | `rg -n UCNames bundle/config/resources/<plural>.go`; the implicit-deps case deploys the catalog or schema first |
+| UC names in a field without `catalog` or `schema` in its name (a three-part `name`, a `parent`), which `TestResourceTypesWithUCNameFieldsDeclareThem` does not see | `rg -n UCNames bundle/config/resources/<plural>.go` |
+| The implicit-deps acceptance case for a type that declares `UCNames()`; no coverage test requires it | `ls acceptance/bundle/resource_deps/implicit_deps_<singular>/` lists the case, and its output deploys the catalog or schema first |
+| A `Deploy` approval message has a `Destroy` message (or `DestroyFromState`); `TestApprovalDeclarations` checks `Order`, `DestroyFromState` against the hooks and `DeploySkipChildren`, not this | `rg -n -A12 'Approval\(\) Approval' bundle/config/resources/<plural>.go` shows both messages, or a comment saying why destroy needs none |
+| No placeholder is left for the type; `TestRequiredAnnotationsForNewFields` passes with a committed one (section 4) | `ls bundle/internal/schema/annotations/<plural>.generated.yml` finds nothing |
 | A development-mode preset shows in a deployment | `rg -l 'mode: development' acceptance/bundle/resources/<plural>` finds a case whose output shows the displayed name |
 | Etag protection: warning, refusal, explicit overwrite | An external-edit case warns on plan, refuses ordinary deploy and allows `--force`, like `acceptance/bundle/resources/dashboards/detect-change` |
 | The launch stage; only the Postgres types are checked | `python/databricks/bundles/<plural>/` exists exactly when you decided it should |
-| The changelog fragment; `./task check-changelog` checks only fragments that exist | `ls .nextchanges/bundles/<plural>.md` |
-| No other shared hand-written file; `TestSharedCodeNamesNoNewResourceTypes` sees only a type named in Go code under `bundle/` and `cmd/bundle/` | `git diff --name-only origin/main...HEAD -- . ':!acceptance/bundle' ':!python' ':!*.generated.yml' ':!bundle/schema/jsonschema.json' ':!bundle/internal/validation/generated' ':!.nextchanges'` lists only files named after the type, the fake server's file, `bundle/config/resources.go` and the entries of section 1 |
+| The changelog fragment; `./task check-changelog` checks only fragments that exist | `ls .nextchanges/bundles/<plural>.md`; its line ends with the PR link, with the number filled in right after opening the PR |
+| No other shared hand-written file; `TestSharedCodeNamesNoNewResourceTypes` sees only a type named in Go code under `bundle/` and `cmd/bundle/` | `git diff --name-only origin/main...HEAD -- . ':!acceptance/bundle' ':!acceptance/experimental' ':!python' ':!*.generated.yml' ':!bundle/schema/jsonschema.json' ':!bundle/internal/validation/generated' ':!.nextchanges'` lists only files named after the type, the fake server's file, `bundle/config/resources.go` and the entries of section 1 |

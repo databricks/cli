@@ -122,8 +122,8 @@ Walk the checklist in `../author-new-resource/references/wiring.md`. Coverage te
 for a missing per-type file or declaration, so a green CI says each exists; review what each
 decision of section 3 declares: run_as, presets, permissions, grants, UC names, deploy and destroy
 approval messages together, workspace URL, launch stage, bind, create recovery,
-deployment-history allowlist or exclusion. For each: the declaration and whether it fits the API,
-or "not applicable" with a justifying comment. Then check every row of section 6, which no test
+deployment-history allowlist or exclusion, etag protection. For each: the declaration and whether
+it fits the API, or "not applicable" with a justifying comment. Then check every row of section 6, which no test
 guards, with the command given there. A new entry in a coverage test's opt-out list needs its
 reason.
 Table: `checklist row | present? (file:line) | if absent or opted out: justified?`
