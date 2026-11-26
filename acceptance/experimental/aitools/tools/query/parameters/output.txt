@@ -3,7 +3,7 @@
 n,s
 42,hello
 
-=== parameters on the wire
+=== statement on the wire
 
 >>> print_requests.py //api/2.0/sql/statements
-[{"name":"n","type":"INT","value":"42"},{"name":"s","value":"hello"}]
+{"statement":"SELECT :n AS n, :s AS s","parameters":[{"name":"n","type":"INT","value":"42"},{"name":"s","value":"hello"}]}

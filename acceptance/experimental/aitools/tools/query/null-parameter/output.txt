@@ -3,7 +3,7 @@
 is_null
 true
 
-=== parameters on the wire
+=== statement on the wire
 
 >>> print_requests.py //api/2.0/sql/statements
-[{"name":"maybe"}]
+{"statement":"SELECT :maybe IS NULL AS is_null","parameters":[{"name":"maybe"}]}

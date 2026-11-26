@@ -1,4 +1,2 @@
 # Whether the real endpoint accepts the logs is a backend fact: run on every cloud.
 Cloud = true
-# Git Bash would rewrite the /telemetry-ext argument as a Windows path.
-Env.MSYS_NO_PATHCONV = "1"
