@@ -207,8 +207,8 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 	return h.native(ctx)
 }
 
-// MaybeHint recommends installing the Databricks AI tooling when a supported
-// agent drives the CLI without it installed. It is a no-op for human callers,
+// MaybeHint nudges a supported agent toward Databricks AI tooling when it drives
+// the CLI without it installed. It is a no-op for human callers,
 // unsupported agents, hint-exempt commands (isHintExemptCommand), the
 // `databricks skills` commands when skills.HintsEnabled is true, the `auth
 // token` and `auth docker token` credential helpers, a CLI process the CLI
@@ -266,12 +266,15 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if native == "" && !textDue {
 		return nil
 	}
+	// An agent that already has the tooling gets neither text, with skills hints
+	// on too: which agents are hinted stays as it was.
 	if hint.installed(ctx) {
 		return nil
 	}
-	// The auto-install after this command prints its own notice; neither line
-	// may tell the agent to install what it installs. No marker is written
-	// until the hint prints.
+	// The auto-install after this command prints its own notice. The install
+	// text must not ask for an install that run already makes, so both texts
+	// are withheld while it may install: one rule for both. No marker is
+	// written until the hint prints.
 	if autoinstall.InstallsFor != nil && autoinstall.InstallsFor(cmd, hint.agentName) {
 		return func() {
 			if hint.installed(ctx) {
