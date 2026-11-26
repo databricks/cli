@@ -73,9 +73,8 @@ func translateError(err error) error {
 // of an unsupported type for this API."
 const orgIDHeader = "X-Databricks-Org-Id"
 
-// maxNameBytes mirrors the server-side `Sandbox.name` cap. The server
-// measures bytes (not runes), so emoji hit the limit faster than expected;
-// mirroring it client-side lets us fail fast with the observed byte count.
+// Keep the CLI's established byte limit for display labels so name
+// validation and its error messages remain stable across API versions.
 const maxNameBytes = 256
 
 // validateName rejects names that exceed the wire limit (counted in bytes).
@@ -185,8 +184,18 @@ type registerKeyRequest struct {
 // newSandboxAPI returns a sandboxAPI bound to the workspace client's config.
 func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
 	cfg := w.Config
-	// Generated SDK methods must not send the CLI-only workspace sentinel.
 	if cfg.WorkspaceID == profile.WorkspaceIDNone {
+		// Config contains a mutex; use the SDK's copy operation, then normalize
+		// the CLI sentinel only after loaders have resolved the copied config.
+		var err error
+		cfg, err = w.Config.NewWithWorkspaceHost(w.Config.Host)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
+		}
+		cfg.AccountID = w.Config.AccountID
+		if err := cfg.EnsureResolved(); err != nil {
+			return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
+		}
 		cfg.WorkspaceID = ""
 	}
 	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
@@ -255,15 +264,18 @@ func sandboxFromSDK(sb *sdk.Sandbox) *sandboxEntry {
 }
 
 func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, error) {
+	id := "sandbox-" + uuid.New().String()
 	sb, err := a.sandboxes.CreateSandbox(arm503Budget(ctx), sdk.CreateSandboxRequest{
-		SandboxId: "sandbox-" + uuid.New().String(),
+		SandboxId: id,
 		Sandbox: sdk.Sandbox{
 			DisplayName: name,
 			Spec:        &sdk.SandboxSpec{Compute: &sdk.ComputeSpec{InactivityTimeout: duration.New(defaultAutoStopSecs * time.Second)}},
 		},
 	})
 	if err != nil {
-		return nil, translateError(err)
+		// A timed-out response can leave an accepted resource behind. Report
+		// its generated ID so callers can inspect it without retrying creation.
+		return nil, fmt.Errorf("sandbox %s: %w", id, translateError(err))
 	}
 	entry := sandboxFromSDK(sb)
 	return &createResponse{SandboxID: entry.SandboxID, Status: entry.Status}, nil

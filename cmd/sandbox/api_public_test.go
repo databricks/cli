@@ -37,6 +37,7 @@ func newPublicAPI(t *testing.T, workspaceID string, handler http.HandlerFunc) *s
 	require.NoError(t, err)
 	api, err := newSandboxAPI(w)
 	require.NoError(t, err)
+	assert.Equal(t, workspaceID, w.Config.WorkspaceID, "API construction must preserve the workspace client config")
 	return api
 }
 
@@ -289,4 +290,47 @@ func TestPublicSandboxRejectsInvalidIDsBeforeRequests(t *testing.T) {
 			require.ErrorContains(t, api.delete(t.Context(), id), "invalid sandbox ID")
 		})
 	}
+}
+
+func TestPublicSandboxCreateFailureIncludesGeneratedID(t *testing.T) {
+	var id string
+	api := newPublicAPI(t, "", func(w http.ResponseWriter, r *http.Request) {
+		id = r.URL.Query().Get("sandbox_id")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = io.WriteString(w, `{"error_code":"RESOURCE_ALREADY_EXISTS","message":"already exists"}`)
+	})
+	_, err := createAndWait(t.Context(), api, "project", nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, id)
+	var apiError *apierr.APIError
+	require.ErrorAs(t, err, &apiError)
+	assert.Equal(t, http.StatusConflict, apiError.StatusCode)
+}
+
+func TestPublicSandboxSentinelCopyPreservesAccountAndOriginalConfig(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			_, _ = io.WriteString(w, `{"oidc_endpoint":"https://workspace.test/oidc"}`)
+			return
+		}
+		assert.Equal(t, "/api/2.0/sandboxes/test-id", r.URL.Path)
+		assert.Empty(t, r.Header.Get(auth.WorkspaceIDHeader))
+		_, _ = io.WriteString(w, publicRunning)
+	}))
+	t.Cleanup(server.Close)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host: server.URL, Token: "test-token", AccountID: "test-account", WorkspaceID: profile.WorkspaceIDNone,
+	})
+	require.NoError(t, err)
+	api, err := newSandboxAPI(w)
+	require.NoError(t, err)
+	assert.NotSame(t, w.Config, api.c.Config)
+	assert.Equal(t, "test-account", api.c.Config.AccountID)
+	assert.Empty(t, api.c.Config.WorkspaceID)
+	_, err = api.get(t.Context(), "test-id")
+	require.NoError(t, err)
+	assert.Equal(t, profile.WorkspaceIDNone, w.Config.WorkspaceID)
+	assert.Equal(t, "test-account", w.Config.AccountID)
+	assert.Equal(t, server.URL, w.Config.Host)
+	assert.Equal(t, "test-token", w.Config.Token)
 }
