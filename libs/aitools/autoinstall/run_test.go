@@ -155,6 +155,18 @@ func TestRecordClearsInstallingWhenSettled(t *testing.T) {
 	assert.Empty(t, s.InstallStateDigest)
 }
 
+func TestRecordUnfinishedSettlesAndKeepsInstalling(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+
+	require.NoError(t, MarkInstalling(ctx))
+	require.NoError(t, SaveInstallStateDigest(ctx, "digest"))
+	require.NoError(t, Record(ctx, "1.30.0", 1, "machine", time.Now()))
+	require.NoError(t, RecordUnfinished(ctx, "1.30.0", "machine"))
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: "digest", ID: "machine"}, s)
+}
+
 func TestRecordStoresTheLastFailedAttempt(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 	at := time.Date(2026, 1, 2, 3, 4, 5, 0, time.FixedZone("UTC+2", 2*60*60))
