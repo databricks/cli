@@ -11,15 +11,15 @@ import (
 	"testing/synctest"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// What the service ends up holding - the version a deploy claims, the operations it stages, the
-// completion it reports - is asserted end to end by acceptance/bundle/dms. What is left here is
-// what a deploy cannot reach: the queue's coalescing and the size limit. No test here goes
-// through the API - the queue is driven directly, so nothing waits on a request.
+// acceptance/bundle/dms covers deployment history end to end. Unit tests control queue timing
+// and batch composition, which depend on scheduling during a deployment.
 
 // queued builds a buffer whose queue nothing drains, so a test drives record and take itself.
 func queued() *OperationBuffer {
@@ -99,6 +99,50 @@ func TestBatchLeavesARepeatedResourceForTheNextBatch(t *testing.T) {
 	assert.Equal(t, "resources.jobs.foo", carried.key)
 	assert.JSONEq(t, `{"state":{"name":"v2"}}`, string(carried.entry.update.State))
 	assert.Len(t, s.queue, 1, "bar waits behind it")
+}
+
+func TestBatchTracksSequenceIDsPerResource(t *testing.T) {
+	server := testserver.New(t)
+	workspace := testserver.NewFakeWorkspace(server.URL, "token")
+	deployment := &testserver.DmsDeployment{
+		Resources:  make(map[string]bundledeployments.Resource),
+		Operations: make(map[string]*bundledeployments.Operation),
+	}
+	const foo = "resources.jobs.foo"
+	const bar = "resources.jobs.bar"
+	for _, key := range []string{foo, bar} {
+		name := OperationName("dep-1", 1, key)
+		deployment.Operations[name] = &bundledeployments.Operation{
+			Name:        name,
+			ResourceKey: strings.TrimPrefix(key, StatePrefix),
+			ActionType:  bundledeployments.OperationActionTypeOperationActionTypeCreate,
+			Status:      StatusPending,
+		}
+	}
+	workspace.DmsDeployments["dep-1"] = deployment
+	server.Handle("POST", "/api/2.0/bundle/deployments/dep-1/versions/1/operations:batchUpdate", func(req testserver.Request) any {
+		return workspace.BatchUpdateOperations(req, "dep-1", "1")
+	})
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), enrollmentsClient(t, server))
+	b := queued()
+	b.deploymentID = "dep-1"
+	b.versionNum = 1
+	b.sequenceIDs = make(map[string]int64)
+	b.heartbeat = startVersionHeartbeat(ctx, b.deploymentID, b.versionNum)
+	defer b.heartbeat.Stop()
+
+	for _, keys := range [][]string{{foo}, {foo, bar}, {bar, foo}} {
+		for _, key := range keys {
+			b.record(key, stateUpdate(t, "v1"), false, nil)
+		}
+		first, ok := b.next(ctx, false)
+		require.True(t, ok)
+		batch, carried := b.collect(ctx, first)
+		require.Len(t, batch, len(keys))
+		require.Nil(t, carried)
+		require.NoError(t, b.write(ctx, batch))
+	}
+	assert.Equal(t, map[string]int64{foo: 3, bar: 2}, b.sequenceIDs)
 }
 
 func TestBatchStaysUnderTheSizeCap(t *testing.T) {

@@ -17,8 +17,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next
-// plan reads.
+// bufferedOperations caps queued resource keys in authoritative mode. The writer can also
+// hold a batch of up to maxBatchOperations updates and one carried update.
 const bufferedOperations = 10
 
 const historyDrainTimeoutPerOperation = 5 * time.Second
@@ -91,11 +91,11 @@ type OperationBuffer struct {
 	drainTimeout time.Duration
 
 	// sequenceIDs holds the token the last update for a resource returned. A missing key reads as
-	// 0, which is what staging leaves. Unguarded: run is the only goroutine that writes, one update at a time.
+	// 0, which is what staging leaves. Unguarded: only run accesses it, and batches are sent serially.
 	//
 	// TODO: revisit and possibly deprecate. Sequence ids guard against an earlier update
-	// overwriting a later one, which cannot happen here - updates for a resource are sent one at a
-	// time from a single goroutine. The service requires them today, so the client cannot
+	// overwriting a later one, which cannot happen here - updates for a resource are sent in order
+	// from a single goroutine. The service requires them today, so the client cannot
 	// simply stop sending them.
 	sequenceIDs map[string]int64
 
