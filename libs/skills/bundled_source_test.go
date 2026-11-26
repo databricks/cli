@@ -2,6 +2,7 @@ package skills
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,11 @@ func useBundled(t *testing.T, dir string) {
 }
 
 func TestBundledSourceEmptyPlaceholder(t *testing.T) {
+	// A temp snapshot with no skills, so the test does not depend on what
+	// the release build has put into the embedded folder.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(`{"skills": {}}`), 0o644))
+	useBundled(t, dir)
 	src := NewBundledSource()
 
 	_, err := src.Catalog(t.Context())
@@ -34,6 +40,8 @@ func TestBundledSourceFromFixture(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, BundledLabel, catalog.Label)
 	assert.Equal(t, "1.2.0", catalog.Version)
+	assert.True(t, catalog.Stale)
+	assert.True(t, catalog.FetchedAt.IsZero())
 	require.Len(t, catalog.Skills, 2)
 	assert.Equal(t, "alpha", catalog.Skills[0].Name)
 	assert.Equal(t, "beta", catalog.Skills[1].Name)
