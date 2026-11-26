@@ -41,7 +41,8 @@ If `./task lint` reports issues in files under a *different* or deleted worktree
 # Architecture
 
 - `cmd/` - Cobra commands. `cmd/workspace/` and `cmd/account/` are generated.
-- `bundle/` - Bundles: `config/` (loading, validation, schema), `config/mutator/` and `mutator/` (the configuration transformation pipeline; each mutator implements `Mutator`), `phases/` (high-level deployment phases), `direct/` (the deployment engine).
+- `bundle/` - Bundles: `config/` (loading, validation, schema), `config/mutator/` (the configuration transformation pipeline; each mutator implements `Mutator` from `mutator.go`), `phases/` (high-level deployment phases), `direct/` (the deployment engine).
+- `bundle/config/resources/` - One Go type per resource type. Logic about one resource type lives in files named after its key, not in shared code; `bundle/config/resources/README.md` defines where each kind of logic goes and lists the files a new resource type needs.
 - `libs/` - Shared libraries: `dyn/` (dynamic configuration values), `filer/` (local, DBFS, workspace file systems), `auth/`, `sync/`.
 
 Bundles are deployed by the direct engine, which calls the APIs without Terraform. The Terraform engine was removed in v1.20.0: `bundle.engine: terraform` and `DATABRICKS_BUNDLE_ENGINE=terraform` are rejected, and existing Terraform state is migrated to the direct engine before the command runs.

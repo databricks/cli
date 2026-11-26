@@ -18,9 +18,10 @@ import (
 //
 // Counts come from the configuration rather than from state, so every type is
 // reported on every deploy whatever the engine, and a newly added resource type
-// needs no telemetry change (AllResources is exhaustive by construction, guarded
-// by TestResourcesAllResourcesCompleteness). That is what makes this message a
-// superset of the deprecated per-type resource_*_count fields.
+// is counted without a change here (AllResources is derived from config.Resources;
+// TestResourceMetadataCoversAllResourceTypes checks that every type is reported).
+// That is what makes this message a superset of the deprecated per-type
+// resource_*_count fields.
 //
 // Sizes come from b.Metrics.ResourceState, whose entries already carry
 // StateSizeBytes from the WAL replay the direct deploy performed, so nothing is

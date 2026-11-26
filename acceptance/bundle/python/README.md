@@ -7,7 +7,7 @@ over it. `test_python_support_coverage`
 to have one, so a newly-onboarded resource needs a fixture here.
 
 Copy an existing one — `alerts-support/` (a resource with required nested fields) or
-`catalogs-support/` are the canonical examples. A fixture is six
+`catalogs-support/` are the canonical examples. A fixture is seven
 files:
 
 - `databricks.yml` — `bundle.name: my_project`, `sync: {paths: []}`, a top-level
@@ -19,7 +19,7 @@ files:
   string field; it runs over both instances.
 - `script` — copy it verbatim (`bundle validate --output json | jq "pick(...)"`).
 - `test.toml` — `Cloud = false`.
-- `output.txt` — generated, never hand-written.
+- `output.txt` and `out.test.toml` — generated, never hand-written.
 
 ## Authoring a new one
 
@@ -30,7 +30,7 @@ files:
    `python/databricks/bundles/<plural>/_models/<singular>.py`; set all of them,
    recursing into required nested objects. `VariableOrOptional[...] = None` fields are
    optional — omit them.
-3. Get realistic values from `acceptance/bundle/invariant/configs/<singular>.yml.tmpl`,
+3. Get realistic values from `acceptance/bundle/invariant/configs/<plural>.yml.tmpl`,
    but **adapt**: replace `$UNIQUE_NAME` / `$TEST_DEFAULT_WAREHOUSE_ID` and other `$VAR`s
    with plain literals, and drop cloud-only blocks (`permissions`, `grants`,
    `file_path`) — this test is local and deterministic.

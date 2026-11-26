@@ -1,5 +1,7 @@
 # Guidelines on implementing a resource
 
+This document covers the direct engine side of a resource type. For the list of every file a new resource type needs, see "Adding a resource type" in `bundle/config/resources/README.md`.
+
 ## Core constraints
 
  - See adapter.go on what methods are needed and what constraints are present.
@@ -77,7 +79,7 @@ Most resources take their bundle config straight into `PrepareState`. Sub-resour
 
 Two optional hooks cover this, and nothing outside the resource needs to know a node is a sub-resource:
 
- - `Configure(resourceType string) error` is called once per registered type at adapter construction, with the key from `SupportedResources` (e.g. `"jobs.permissions"`). Resolve type-level lookups here — one instance exists per type, so the result can be stored on the receiver, and an unsupported type fails at init rather than at plan time.
+ - `Configure(resourceType string) error` is called once per registered type at adapter construction, with the key from `SupportedResources()` (e.g. `"jobs.permissions"`). Resolve type-level lookups here — one instance exists per type, so the result can be stored on the receiver, and an unsupported type fails at init rather than at plan time.
  - `PrepareInputConfig(inputConfig, resourceKey string) (*structvar.StructVar, error)` converts the node's config into the value handed to `PrepareState`, together with the references needed to complete it. `resourceKey` is the full node (`resources.jobs.foo.permissions`), so the parent node is available for building `${...}` references.
 
 Declare `inputConfig` with its concrete type when every parent shares one (grants: `*[]catalog.PrivilegeAssignment`); use `any` only where the config types genuinely differ per parent, as with permissions.
@@ -89,7 +91,7 @@ on field behaviour might result in recreate. See dstate/migrate.go on how to han
 
 ## hashed_fields: storing large fields as content hashes
 
-Declaring a field under `hashed_fields` in `resources.yml` makes the engine persist only a `sha256:<hex>` content hash of it in state (via `CompactState`) rather than the full contents, for large equality-only fields that are never read back from state (e.g. `dashboards.serialized_dashboard`).
+Declaring a field under `hashed_fields` in `configs/<resource_type>.yml` makes the engine persist only a `sha256:<hex>` content hash of it in state (via `CompactState`) rather than the full contents, for large equality-only fields that are never read back from state (e.g. `dashboards.serialized_dashboard`).
 
 ## deployment_id_field: pointing back at the deployment
 
@@ -143,18 +145,13 @@ Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` se
 
 ## Testing
 
- - Make sure to implement CRUD for testserver in libs/testserver
- - Test first with go test ./bundle/direct/dresources
+The tests a new resource type needs, and the coverage tests that require them, are listed in "Adding a resource type" in `bundle/config/resources/README.md`. For this package:
+
+ - Test first with go test ./bundle/direct/dresources. The CRUD tests run against the fake server in libs/testserver.
    - Register the test fixture of the type, and of its permissions and grants, from an `init()` in the type's test file (`jobs_test.go` for `jobs.go`): `registerTestConfig`, `registerTestDeps` when other resources must exist first, or `registerWithoutTestFixture` with the reason. Known gaps between the input, state and remote types go there too (`registerKnownMissingInStateType`, `registerKnownMissingInRemoteType`). `TestEveryAdapterHasTestFixture` names every type that registers none.
- - Implement acceptance tests in acceptance/bundle/resources/<resource>/<subtest>
+ - In the acceptance tests in acceptance/bundle/resources/<resource>/<subtest>:
    - See acceptance/bundle/resources/volumes
    - Prefer smaller tests for each operation.
    - Make sure bundle deploy/plan/debug plan/summary/destroy are covered
- - Add an invariant test config in acceptance/bundle/invariant/configs/<resource>.yml.tmpl
-   - See existing configs in that directory for the format.
- - Add bind/unbind tests in acceptance/bundle/deployment/bind/<resource>/
-   - These verify that binding an existing resource and then deploying/destroying works correctly.
- - `<resource>` in both directories is the key under `resources:` in databricks.yml.
-   `TestResourceTestDirsCoverage` in acceptance/resource_test_dirs_test.go fails for a type without either directory;
-   a type that cannot have one goes on `LackingResourceTests` or `LackingBindTests` there, with the reason.
+ - The bind/unbind tests in acceptance/bundle/deployment/bind/<resource>/ verify that binding an existing resource and then deploying/destroying works correctly.
  - For new resource types, run at least one test on a live cloud environment.
