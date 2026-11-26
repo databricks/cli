@@ -12,6 +12,7 @@ import (
 func init() {
 	registerRoutes("database_instances", addDatabaseInstancesRoutes)
 	registerStore("database_instances", newDatabaseInstancesStore)
+	registerPermissionsObjectType("database-instances", "database-instances")
 }
 
 type databaseInstancesStore struct {

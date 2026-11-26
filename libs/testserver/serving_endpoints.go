@@ -12,6 +12,7 @@ import (
 func init() {
 	registerRoutes("serving_endpoints", addServingEndpointsRoutes)
 	registerStore("serving_endpoints", newServingEndpointsStore)
+	registerPermissionsObjectType("serving-endpoints", "serving-endpoint")
 }
 
 type servingEndpointsStore struct {

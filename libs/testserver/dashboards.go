@@ -17,6 +17,7 @@ import (
 func init() {
 	registerRoutes("dashboards", addDashboardsRoutes)
 	registerStore("dashboards", newDashboardsStore)
+	registerPermissionsObjectType("dashboards", "dashboard")
 }
 
 type dashboardsStore struct {

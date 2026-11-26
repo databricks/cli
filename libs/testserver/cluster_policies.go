@@ -16,6 +16,7 @@ import (
 func init() {
 	registerRoutes("cluster_policies", addClusterPoliciesRoutes)
 	registerStore("cluster_policies", newClusterPoliciesStore)
+	registerPermissionsObjectType("cluster-policies", "cluster-policy")
 }
 
 type clusterPoliciesStore struct {

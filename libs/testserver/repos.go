@@ -13,6 +13,7 @@ import (
 func init() {
 	registerRoutes("repos", addReposRoutes)
 	registerStore("repos", newReposStore)
+	registerPermissionsObjectType("repos", "repo")
 }
 
 type reposStore struct {

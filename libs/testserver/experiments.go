@@ -13,6 +13,7 @@ import (
 func init() {
 	registerRoutes("experiments", addExperimentsRoutes)
 	registerStore("experiments", newExperimentsStore)
+	registerPermissionsObjectType("experiments", "mlflowExperiment")
 }
 
 type experimentsStore struct {
