@@ -24,7 +24,7 @@ trace $CLI fs cat $DST_DIR/overwrite/query.sql
 trace $CLI fs cat $DST_DIR/overwrite/a/b/c/hello.txt
 
 # The error text differs per kind and names the backend's storage location on DBFS, so it goes
-# to a log; it must name the target.
+# to a log; it must name the target (no leading slash: Git Bash would rewrite the argument).
 title "Copying a directory onto a file fails and leaves the file alone"
-musterr $CLI fs cp -r $SRC_DIR $DST_DIR/my_target 2>&1 | contains.py "/my_target" >LOG.my_target
+musterr $CLI fs cp -r $SRC_DIR $DST_DIR/my_target 2>&1 | contains.py "my_target" >LOG.my_target
 trace $CLI fs cat $DST_DIR/my_target
