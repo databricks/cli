@@ -110,7 +110,13 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	if configRoot.Experimental != nil {
 		configured = configRoot.Experimental.DeploymentHistory
 	}
-	if b.StateDB.RecordsHistory() || bundleenv.RecordsDeploymentHistory(ctx, configured) {
+	// An explicit setting wins; otherwise bind follows the loaded state, like other non-deploy
+	// commands. Only deploy and plan consult the workspace's enrollment.
+	recordsHistory, explicit := bundleenv.DeploymentHistoryChoice(ctx, configured)
+	if !explicit {
+		recordsHistory = b.StateDB.RecordsHistory()
+	}
+	if recordsHistory {
 		if b.StateDB.Data.Features == nil {
 			b.StateDB.Data.Features = make(map[string]struct{})
 		}
