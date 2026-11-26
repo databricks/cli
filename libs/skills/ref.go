@@ -24,12 +24,20 @@ const (
 	RepoName  = "databricks-agent-skills"
 )
 
+// FetchConcurrency caps the number of in-flight skill file fetches.
+// Each file is one HTTPS GET to raw.githubusercontent.com; sequential
+// fetches were latency-bound on TLS handshakes. 8 is enough to amortise
+// the round-trip across a typical skill's files without overwhelming the
+// upstream CDN.
+const FetchConcurrency = 8
+
 // HTTPClient is shared by the skills fetches so the underlying transport
 // reuses TCP+TLS connections. MaxIdleConnsPerHost is raised above the default
-// of 2 to leave headroom for the eight concurrent skill file fetches the installer runs.
+// of 2 to leave headroom above FetchConcurrency, so a brief overlap between a
+// closing and a new connection doesn't force a fresh handshake.
 var HTTPClient = sync.OnceValue(func() *http.Client {
 	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.MaxIdleConnsPerHost = 16
+	t.MaxIdleConnsPerHost = FetchConcurrency * 2
 	return &http.Client{
 		Timeout:   30 * time.Second,
 		Transport: t,
@@ -58,6 +66,9 @@ func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 	return ResolveSkillsRef(ctx, false)
 }
 
+// ResolveSkillsRef is GetSkillsRef, except that with allowFallback a failed
+// latest-release lookup falls back to the embedded cli-compat skills version
+// (logged as a warning) instead of returning an error.
 func ResolveSkillsRef(ctx context.Context, allowFallback bool) (ref string, explicit bool, err error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, true, nil
@@ -93,6 +104,9 @@ func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref
 	return "", false, fmt.Errorf("resolve latest skills release: %w", err)
 }
 
+// FetchLatestSkillsReleaseRef returns the skills repo's latest release tag as a
+// v-prefixed semver string. A failed lookup, an unusable response or an invalid
+// tag returns a *FetchError with stage release.
 func FetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
 	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", versioncheck.GitHubAPIURL(ctx), RepoOwner, RepoName)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

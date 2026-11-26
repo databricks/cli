@@ -35,12 +35,9 @@ const (
 	stableSkillsRepoPath = skills.StableRepoDir
 	experimentalRepoPath = skills.ExperimentalRepoDir
 
-	// fetchConcurrency caps the number of in-flight skill file fetches.
-	// Each file is one HTTPS GET to raw.githubusercontent.com; sequential
-	// fetches were latency-bound on TLS handshakes. 8 is enough to amortise
-	// the round-trip across a typical skill's files without overwhelming the
-	// upstream CDN.
-	fetchConcurrency = 8
+	// fetchConcurrency caps the number of in-flight skill file fetches. The
+	// value lives in libs/skills, next to the HTTP client sized for it.
+	fetchConcurrency = skills.FetchConcurrency
 )
 
 func manifestHasExperimental(m *Manifest) bool {
