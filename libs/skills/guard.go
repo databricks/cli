@@ -3,6 +3,8 @@ package skills
 import (
 	"context"
 
+	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/env"
 )
 
@@ -11,7 +13,8 @@ const (
 	// not registered and nothing else in the feature runs.
 	previewEnv = "DATABRICKS_SKILLS_PREVIEW"
 
-	// hintsEnv turns on skill hints. It only has an effect while previewEnv is set.
+	// hintsEnv forces skill hints on or off. It only has an effect while
+	// previewEnv is set. Unset, the compatibility manifest decides.
 	hintsEnv = "DATABRICKS_SKILLS_HINTS"
 )
 
@@ -22,10 +25,20 @@ func Enabled(ctx context.Context) bool {
 	return envTrue(ctx, previewEnv)
 }
 
-// HintsEnabled reports whether skill hints are on. Hints need the feature on
-// and DATABRICKS_SKILLS_HINTS set to a true value of their own.
+// HintsEnabled reports whether skill hints are on. Hints need the feature on.
+// Then DATABRICKS_SKILLS_HINTS, when set, decides in both directions; otherwise
+// the skills_hints entry of the compatibility manifest that applies to this CLI
+// version does. It reads the local manifest cache or the embedded manifest and
+// never fetches, because it is called while help is printed.
 func HintsEnabled(ctx context.Context) bool {
-	return Enabled(ctx) && envTrue(ctx, hintsEnv)
+	if !Enabled(ctx) {
+		return false
+	}
+	if on, ok := env.GetBool(ctx, hintsEnv); ok {
+		return on
+	}
+	on, err := clicompat.ResolveSkillsHints(ctx, build.GetInfo().Version)
+	return err == nil && on
 }
 
 func envTrue(ctx context.Context, key string) bool {
