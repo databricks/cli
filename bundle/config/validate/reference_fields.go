@@ -2,11 +2,13 @@ package validate
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -34,8 +36,9 @@ func (*referenceFields) Name() string {
 }
 
 func (m *referenceFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// The python wheel wrapper moves wheel tasks and their wheel libraries, and the references in
-	// them, out of the job during the build, so the plan does not resolve those references.
+	// The python wheel wrapper moves the wheel tasks it wraps and their wheel libraries, and the
+	// references in them, out of the job during the build, so the plan does not resolve those
+	// references.
 	skipWheelTasks := !m.afterBuild && b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper)
 
 	// After the build, plan and deploy have the state open: the plan includes the resources in it
@@ -52,7 +55,7 @@ func (m *referenceFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 
 	var diags diag.Diagnostics
 	for _, f := range found {
-		if skipWheelTasks && isInWheelTask(f.Path) {
+		if skipWheelTasks && isInWheelTask(f.Path) && mayBeWrapped(b, f.Path) {
 			continue
 		}
 		d := diag.Errorf("cannot resolve %q: %s", "${"+f.Reference+"}", f.Err)
@@ -74,6 +77,30 @@ func isInWheelTask(path dyn.Path) bool {
 		return true
 	case "libraries":
 		return len(path) >= 8 && path[7].Key() == "whl"
+	}
+	return false
+}
+
+// mayBeWrapped reports whether the python wheel wrapper may wrap the job task at path. The wrapper
+// wraps a task with a python_wheel_task and a workspace library (see trampoline.pythonTrampoline),
+// and decides after the build, when local libraries are uploaded, so a local library counts too.
+func mayBeWrapped(b *bundle.Bundle, path dyn.Path) bool {
+	job, ok := b.Config.Resources.Jobs[path[2].Key()]
+	index := path[4].Index()
+	if !ok || job == nil || index < 0 || index >= len(job.Tasks) {
+		// Not readable as typed config; keep skipping and leave it to the plan.
+		return true
+	}
+	task := job.Tasks[index]
+	if task.PythonWheelTask == nil {
+		return false
+	}
+	for _, l := range task.Libraries {
+		//nolint:staticcheck // SA1019: egg libraries are deprecated in the SDK but remain a supported bundle config field
+		paths := []string{l.Whl, l.Jar, l.Egg, l.Requirements}
+		if libraries.IsWorkspaceLibrary(&l) || slices.ContainsFunc(paths, libraries.IsLibraryLocal) {
+			return true
+		}
 	}
 	return false
 }
