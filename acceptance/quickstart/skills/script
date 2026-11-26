@@ -1,9 +1,9 @@
 # With the variable set, the agent text sends agents to the skills commands and names no skill.
-$CLI quickstart | contains.py 'databricks skills list' 'databricks skills read <name>' 'databricks skills read-file <name> <path>' '!aitools install' '!databricks-core' '!databricks-jobs' '!databricks-pipelines' '!databricks-dabs' '!databricks-apps' > /dev/null
+$CLI quickstart | contains.py 'databricks skills list' 'databricks skills read <name>' 'databricks skills read-file <name> <path>' '!aitools install' '!databricks-core' '!databricks-jobs' '!databricks-pipelines' '!databricks-dabs' '!databricks-apps' > LOG.agent-check
 
 # --skill prints the same text with its frontmatter, for a harness to write to databricks-quickstart/SKILL.md.
 $CLI quickstart --skill > LOG.skill.md
 $CLI quickstart > LOG.agent.md
 head -n 2 LOG.skill.md
-sed -n 3p LOG.skill.md | contains.py 'description: ' > /dev/null
+sed -n 3p LOG.skill.md | contains.py 'description: ' 'finding the right skill with databricks skills' > LOG.description
 tail -n +6 LOG.skill.md | diff LOG.agent.md - && echo "the skill body is the agent text"
