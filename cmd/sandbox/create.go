@@ -69,7 +69,6 @@ Examples:
 				profile = w.Config.Host
 			}
 			_ = setGatewayHost(ctx, profile, result.GatewayHost)
-			_ = upsertSandbox(ctx, profile, result.SandboxID, name)
 
 			// Only clobber an existing default if it's actually gone
 			// (404). Transient errors (5xx, network blip, rate limit)
@@ -121,7 +120,7 @@ func createAndWait(ctx context.Context, api *sandboxAPI, name string, s *spinner
 	_ = upsertSandbox(ctx, profile, result.SandboxID, name)
 
 	if result.Status != "Running" {
-		final, err := waitForRunning(ctx, api, s, result.SandboxID)
+		final, err := waitForState(ctx, api, s, result.SandboxID, "Running", "Provisioning", "Stopped", "Terminated", "Failed")
 		if err != nil {
 			return nil, fmt.Errorf("sandbox %s was created but is not ready: %w", result.SandboxID, err)
 		}

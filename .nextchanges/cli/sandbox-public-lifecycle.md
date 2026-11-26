@@ -1,1 +1,1 @@
-* Use the public Sandbox API for `databricks sandbox` lifecycle commands. ([#8040](https://github.com/databricks/cli/pull/8040))
+* Use the public Sandbox API for `databricks sandbox` lifecycle commands, generate `sandbox-<uuid>` IDs for new sandboxes, and wait for creation readiness. Lifecycle output omits unavailable gateway fields; SSH continues to use port forwarding. ([#8040](https://github.com/databricks/cli/pull/8040))

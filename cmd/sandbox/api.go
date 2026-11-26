@@ -236,6 +236,7 @@ func (a *sandboxAPI) do(ctx context.Context, method, path string, request, respo
 
 // sandboxFromSDK keeps the CLI's status vocabulary and JSON field names.
 func sandboxFromSDK(sb *sdk.Sandbox) *sandboxEntry {
+	// Keep the existing trimmed-label and ID-fallback behavior on reads.
 	entry := &sandboxEntry{SandboxID: strings.TrimPrefix(sb.Name, "sandboxes/"), Status: "Unknown", Name: strings.TrimSpace(sb.DisplayName)}
 	if entry.Name == "" {
 		entry.Name = entry.SandboxID
@@ -318,6 +319,7 @@ func (a *sandboxAPI) update(ctx context.Context, id string, name *string, idleTi
 		req.UpdateMask.Paths = append(req.UpdateMask.Paths, "display_name")
 	}
 	if idleTimeoutSecs != nil || noAutostop != nil {
+		// Preserve the existing reset to 10m when only --no-autostop=false is set.
 		secs := int64(defaultAutoStopSecs)
 		if idleTimeoutSecs != nil {
 			secs = *idleTimeoutSecs

@@ -110,6 +110,7 @@ func TestPublicSandboxUpdateMasksAndPresence(t *testing.T) {
 		{name: "disable", disabled: &disabled, mask: "spec.compute.inactivity_timeout", body: `{"spec":{"compute":{"inactivity_timeout":"0s"}}}`},
 		{name: "reenable at existing CLI default", disabled: &enabled, mask: "spec.compute.inactivity_timeout", body: `{"spec":{"compute":{"inactivity_timeout":"600s"}}}`},
 		{name: "disable takes precedence", timeout: &timeout, disabled: &disabled, mask: "spec.compute.inactivity_timeout", body: `{"spec":{"compute":{"inactivity_timeout":"0s"}}}`},
+		{name: "explicit zero takes precedence over reenable", timeout: &zero, disabled: &enabled, mask: "spec.compute.inactivity_timeout", body: `{"spec":{"compute":{"inactivity_timeout":"0s"}}}`},
 		{name: "combined", label: &label, timeout: &timeout, disabled: &enabled, mask: "display_name,spec.compute.inactivity_timeout", body: `{"display_name":"new label","spec":{"compute":{"inactivity_timeout":"900s"}}}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -125,6 +126,27 @@ func TestPublicSandboxUpdateMasksAndPresence(t *testing.T) {
 			got, err := api.update(t.Context(), "test-id", tc.label, tc.timeout, tc.disabled)
 			require.NoError(t, err)
 			assert.Equal(t, "Running", got.Status)
+		})
+	}
+}
+
+func TestPublicSandboxReadCompatibility(t *testing.T) {
+	for _, tc := range []struct{ name, response, want string }{
+		{name: "unnamed", response: `{"name":"sandboxes/test-id"}`, want: `{"sandboxId":"test-id","status":"Unknown","name":"test-id"}`},
+		{name: "blank label", response: `{"name":"sandboxes/test-id","display_name":"  "}`, want: `{"sandboxId":"test-id","status":"Unknown","name":"test-id"}`},
+		{name: "trimmed label", response: `{"name":"sandboxes/test-id","display_name":" project "}`, want: `{"sandboxId":"test-id","status":"Unknown","name":"project"}`},
+		{name: "unknown state", response: `{"name":"sandboxes/test-id","status":{"state":"SANDBOX_STATE_UNSPECIFIED"}}`, want: `{"sandboxId":"test-id","status":"Unknown","name":"test-id"}`},
+		{name: "disabled autostop", response: `{"name":"sandboxes/test-id","spec":{"compute":{"inactivity_timeout":"0s"}}}`, want: `{"sandboxId":"test-id","status":"Unknown","name":"test-id","idleTimeout":"0s","noAutostop":true}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			api := newPublicAPI(t, "", func(w http.ResponseWriter, r *http.Request) {
+				_, _ = io.WriteString(w, tc.response)
+			})
+			got, err := api.get(t.Context(), "test-id")
+			require.NoError(t, err)
+			data, err := json.Marshal(got)
+			require.NoError(t, err)
+			assert.JSONEq(t, tc.want, string(data))
 		})
 	}
 }
@@ -244,7 +266,7 @@ func TestPublicSandboxErrors(t *testing.T) {
 func TestPublicSandboxCreateReadiness(t *testing.T) {
 	for _, tc := range []struct{ name, state, wantErr string }{
 		{name: "pending reaches running", state: "RUNNING"},
-		{name: "provisioning failure", state: "STOPPED", wantErr: `unexpected state "Stopped"`},
+		{name: "provisioning failure", state: "STOPPED", wantErr: `unexpected state "Stopped" while provisioning`},
 		{name: "cancel pending create", state: "PENDING", wantErr: "context deadline exceeded"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
