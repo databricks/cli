@@ -1061,11 +1061,7 @@ func TestFindDeleteTargetUnverifiedRead(t *testing.T) {
 	_, _, err = b.findDeleteTarget(t.Context(), key, adapters["schemas"], "main.s1", nil, apierr.ErrInternalError)
 	assert.ErrorIs(t, err, apierr.ErrInternalError)
 
-	// A permission error leaves the delete to the recorded ID, as before.
-	id, got, err := b.findDeleteTarget(t.Context(), key, adapters["schemas"], "main.s1", nil, apierr.ErrPermissionDenied)
-	require.NoError(t, err)
-	assert.Empty(t, id)
-	assert.Nil(t, got)
+	// A permission error searches by internal ID first: schemas/destroy_forbidden_at_recorded_name.
 }
 
 func TestUnderMovedParent(t *testing.T) {

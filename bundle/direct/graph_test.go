@@ -39,7 +39,7 @@ func TestMakeGraphDeletesWithParentAfterItsParent(t *testing.T) {
 				return false
 			}
 			order = append(order, key)
-			return !(schemaFails && key == schemaKey)
+			return !schemaFails || key != schemaKey
 		})
 
 		if schemaFails {
