@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -96,33 +95,33 @@ func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
 }
 
 func TestNormalizePath_absolutePath(t *testing.T) {
-	value, err := normalizePath("/notebook.py", "", errors.New("no file"), "/tmp")
+	value, err := normalizePath("/notebook.py", diag.Location{}, "", "/tmp")
 	assert.NoError(t, err)
 	assert.Equal(t, "/notebook.py", value)
 }
 
 func TestNormalizePath_url(t *testing.T) {
-	value, err := normalizePath("s3:///path/to/notebook.py", "", errors.New("no file"), "/tmp")
+	value, err := normalizePath("s3:///path/to/notebook.py", diag.Location{}, "", "/tmp")
 	assert.NoError(t, err)
 	assert.Equal(t, "s3:///path/to/notebook.py", value)
 }
 
 func TestNormalizePath_requirementsFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	dir := filepath.Join(tmpDir, "resources")
-	value, err := normalizePath("-r ../requirements.txt", dir, nil, tmpDir)
+	location := diag.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
+	value, err := normalizePath("-r ../requirements.txt", location, "", tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-r requirements.txt", value)
 
-	value, err = normalizePath("-r      ../requirements.txt", dir, nil, tmpDir)
+	value, err = normalizePath("-r      ../requirements.txt", location, "", tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-r requirements.txt", value)
 }
 
 func TestNormalizePath_environmentDependency(t *testing.T) {
 	tmpDir := t.TempDir()
-	dir := filepath.Join(tmpDir, "resources")
-	value, err := normalizePath("-e ../file.py", dir, nil, tmpDir)
+	location := diag.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
+	value, err := normalizePath("-e ../file.py", location, "", tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-e file.py", value)
 }
@@ -141,8 +140,7 @@ func TestLocationDirectoryNoFile(t *testing.T) {
 }
 
 func TestNormalizePath_noDirectory(t *testing.T) {
-	dir, dirErr := baseDirectory(diag.Location{}, "/tmp/.databricks/bundle/dev/variable-overrides.json", "/tmp")
-	_, err := normalizePath("notebook.py", dir, dirErr, "/tmp")
+	_, err := normalizePath("notebook.py", diag.Location{}, "/tmp/.databricks/bundle/dev/variable-overrides.json", "/tmp")
 	assert.EqualError(t, err, "unable to determine directory for a value at notebook.py: no file in location")
 }
 
@@ -162,23 +160,43 @@ func TestBaseDirectory(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// Values read from the overrides file must carry the exact path NormalizePaths matches on.
-func TestBaseDirectory_valueFromOverridesFile(t *testing.T) {
-	root := t.TempDir()
-	b := &bundle.Bundle{
-		BundleRootPath: root,
-		Config:         config.Root{Bundle: config.Bundle{Target: "dev"}},
+func TestLegacyOverridesPathSuggestion(t *testing.T) {
+	tmp := t.TempDir()
+	root := filepath.Join(tmp, "x", "y", "z")
+	overridesFile := filepath.Join(root, ".databricks", "bundle", "dev", "variable-overrides.json")
+
+	// A file outside the bundle that exists, as with a synced shared directory.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, "shared"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, "shared", "main.py"), nil, 0o600))
+
+	for _, tc := range []struct {
+		value      string
+		suggestion string
+	}{
+		// Written relative to the overrides file's directory: the bundle-root form is suggested.
+		{"../../../src/main.py", "./src/main.py"},
+		{"../../../src/*.whl", "./src/*.whl"},
+		{"../../../dist/x.whl[train]", "./dist/x.whl[train]"},
+		{"-r ../../../requirements.txt", "-r ./requirements.txt"},
+		{"-e   ../../../project", "-e ./project"},
+
+		// Relative to the bundle root, absolute or remote: nothing to suggest.
+		{"./src/main.py", ""},
+		{"../shared/main.py", ""},
+		{"/Workspace/Users/me/main.py", ""},
+		{"dbfs:/libs/x.whl", ""},
+		{"-r ./requirements.txt", ""},
+
+		// Outside the bundle root either way, or into .databricks: not the old form.
+		{"../../../../shared/main.py", ""},
+		{"../../../shared/main.py", ""},
+		{"../../../shared/*.py", ""},
+		{"../main.py", ""},
+	} {
+		suggestion, ok := legacyOverridesPathSuggestion(tc.value, overridesFile, root)
+		assert.Equal(t, tc.suggestion != "", ok, tc.value)
+		if ok {
+			assert.Equal(t, tc.suggestion, suggestion, tc.value)
+		}
 	}
-	overridesFile := variableOverridesFilePath(b)
-	require.NoError(t, os.MkdirAll(filepath.Dir(overridesFile), 0o700))
-	require.NoError(t, os.WriteFile(overridesFile, []byte(`{"task": {"python_file": "./src/main.py"}}`), 0o600))
-
-	values, diags := readVariablesFromFile(b)
-	require.NoError(t, diags.Error())
-	v, err := dyn.GetByPath(values, dyn.MustPathFromString("task.python_file"))
-	require.NoError(t, err)
-
-	dir, err := baseDirectory(v.Location(), overridesFile, root)
-	require.NoError(t, err)
-	assert.Equal(t, root, dir)
 }
