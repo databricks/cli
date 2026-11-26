@@ -1,0 +1,35 @@
+
+=== The service rejects the enrollment check, and the deploy carries on without recording or a warning
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-check-rejected-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/enrollments:check",
+  "q": {
+    "features": "record_history_auto"
+  }
+}
+
+=== The check fails unexpectedly: the deploy warns that it skips deployment history, and does not record
+
+>>> fault.py GET /api/2.0/bundle/enrollments:check 500 0 1000 INTERNAL_ERROR
+
+>>> [CLI] bundle deploy
+Warn: Skipping deployment history: could not check whether this workspace is enrolled: checking enrollments: Fault injected by test.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-check-rejected-[UNIQUE_NAME]/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --get
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/enrollments:check",
+  "q": {
+    "features": "record_history_auto"
+  }
+}

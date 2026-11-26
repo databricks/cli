@@ -1,0 +1,7 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "The workspace is enrolled but the bundle turns recording off, so the deploy neither asks nor records"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --get
+
+rm -f "$OUT_REQUESTS"

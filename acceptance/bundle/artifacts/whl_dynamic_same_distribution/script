@@ -1,0 +1,18 @@
+trap "rm -fr dist" EXIT
+
+# Two wheels of the same distribution that differ only in the python tag.
+mkdir dist
+cp $TESTDIR/../whl_prebuilt_multiple/dist/my_test_code-0.0.1-py3-none-any.whl dist/
+cp dist/my_test_code-0.0.1-py3-none-any.whl dist/my_test_code-0.0.1-py310-none-any.whl
+# A fixed mtime keeps the patched names stable; the python tag keeps them distinct.
+setmtime.py "2020-01-01 00:00:00.0" dist/*.whl
+
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+# Not traced: the command line differs between the READPLAN variants.
+$CLI bundle deploy $(readplanarg tmp.plan.json) 2>&1
+
+title "Each task references its own patched wheel"
+trace print_requests.py //api/2.2/jobs/create | jq '.body.tasks[] | {task_key, whl: .libraries[].whl}'
+
+title "Both patched wheels are in the cache"
+trace find.py '.databricks/.*whl'

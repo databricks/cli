@@ -594,7 +594,6 @@ func newCreateMaterializationSet() *cobra.Command {
 	cmd.Flags().StringVar(&createMaterializationSetReq.RequestId, "request-id", createMaterializationSetReq.RequestId, `Idempotency token for the request.`)
 	cmd.Flags().StringVar(&createMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", createMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
 	// TODO: array: materialized_features
-	// TODO: complex arg: notifications
 
 	cmd.Use = "create-materialization-set"
 	cmd.Short = `Create a materialization set.`
@@ -2528,7 +2527,6 @@ func newUpdateMaterializationSet() *cobra.Command {
 	cmd.Flags().StringVar(&updateMaterializationSetReq.RequestId, "request-id", updateMaterializationSetReq.RequestId, `Idempotency token for the request.`)
 	cmd.Flags().StringVar(&updateMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", updateMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
 	// TODO: array: materialized_features
-	// TODO: complex arg: notifications
 
 	cmd.Use = "update-materialization-set MATERIALIZATION_SET_ID UPDATE_MASK"
 	cmd.Short = `Update a materialization set.`

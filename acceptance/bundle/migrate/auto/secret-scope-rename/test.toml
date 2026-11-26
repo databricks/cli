@@ -1,0 +1,10 @@
+# Local-only: the replay fixtures are captured against the fake server, so they reproduce a
+# terraform state only there, not on a real workspace (replaying them on cloud fails auth and
+# hits backend validation the mock does not enforce).
+Cloud = false
+RecordRequests = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
