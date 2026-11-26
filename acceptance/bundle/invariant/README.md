@@ -5,8 +5,12 @@ test will dump full JSON plan to the output.
 
 In order to add a new test, add a config to configs/. Name it after the key under `resources:` of the type
 it is about: `<key>.yml.tmpl` (for example `jobs.yml.tmpl`), or `<key>_<variant>.yml.tmpl` for a variant.
-`TestInvariantConfigNames` checks the names, and `TestInvariantConfigsCoverage` requires a `<key>.yml.tmpl`
-for every resource type. Every `configs/*.yml.tmpl` runs in every invariant test
+`TestInvariantConfigNames` checks the names; a config about several types is listed in
+`invariantConfigsNotAboutOneType`. `TestInvariantConfigsCoverage` requires a `<key>.yml.tmpl` for every
+resource type, and a config that attaches permissions or grants to every type that has them, unless the
+key is listed in `LackingInvariantTest`. Both tests and lists are in `acceptance/invariant_test.go`, and
+"Adding a resource type" in `bundle/config/resources/README.md` lists the other files a new type needs.
+Every `configs/*.yml.tmpl` runs in every invariant test
 (`EnvMatrixFiles` in test.toml). If a config cannot run in some tests, add `configs/<config>-exclude.toml`
 with an `[[Exclude]]` entry per reason: `Tests` names the tests that skip it (all if omitted), `When` the
 further conditions, such as `CONFIG_Cloud=true` or `READPLAN=1`, and `Reason` says why. See

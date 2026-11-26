@@ -30,7 +30,7 @@ files:
    `python/databricks/bundles/<plural>/_models/<singular>.py`; set all of them,
    recursing into required nested objects. `VariableOrOptional[...] = None` fields are
    optional — omit them.
-3. Get realistic values from `acceptance/bundle/invariant/configs/<singular>.yml.tmpl`,
+3. Get realistic values from `acceptance/bundle/invariant/configs/<plural>.yml.tmpl`,
    but **adapt**: replace `$UNIQUE_NAME` / `$TEST_DEFAULT_WAREHOUSE_ID` and other `$VAR`s
    with plain literals, and drop cloud-only blocks (`permissions`, `grants`,
    `file_path`) — this test is local and deterministic.
