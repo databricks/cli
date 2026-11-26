@@ -373,9 +373,9 @@ func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]stri
 // FilterToSelected reduces the plan to the resources named in selected (resolved via
 // ResolveSelectors) plus the others that must change with them. The closure follows
 // edges by action, like the apply graph (makeGraph): a deployed resource pulls in its
-// dependencies (forward), a deleted one its dependents (reverse) so they are removed
-// together. A delete selection errors if a live resource (not itself being deleted)
-// still references the resource to be deleted; removing it would break the live resource.
+// dependencies (forward), a deleted one all its dependents (reverse). A dependent that is
+// itself deleted is removed together with it; a live one (still in config) makes
+// [Plan.CheckReferencesToDeleted], which runs on the filtered plan, report the reference.
 func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	before := len(p.Plan)
 
@@ -407,43 +407,20 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 		p.enqueueReachable(reachable, &queue, key+".permissions")
 	}
 
-	// BFS: deleted nodes pull in their dependents (also being deleted); deployed
-	// nodes pull in their dependencies. Collect errors for live dependents of a
-	// delete selection before returning, so the user sees all conflicts at once.
-	var errs []string
+	// BFS: deleted nodes pull in their dependents, including the grants/permissions
+	// sub-nodes of key itself; deployed nodes pull in their dependencies.
 	for len(queue) > 0 {
 		key := queue[0]
 		queue = queue[1:]
 		if p.Plan[key].Action == Delete {
 			for _, dependent := range dependents[key] {
-				if p.Plan[dependent].Action == Delete {
-					// Dependent is also being deleted: pull it in. This includes the
-					// grants/permissions sub-nodes (4-part key) of key itself.
-					p.enqueueReachable(reachable, &queue, dependent)
-					continue
-				}
-				// key's own grants/permissions sub-node depends on key, but is not a
-				// user-facing dependent.
-				if strings.Count(dependent, ".") >= 3 && strings.HasPrefix(dependent, key+".") {
-					continue
-				}
-				// Dependent is live (still in config), possibly the grants or permissions
-				// of another resource: deleting key would leave it broken. dependents
-				// lists it once per edge, so it may repeat.
-				for _, dep := range p.Plan[dependent].DependsOn {
-					if dep.Node == key {
-						errs = append(errs, ReferenceToDeletedError(dependent, dep).Error())
-					}
-				}
+				p.enqueueReachable(reachable, &queue, dependent)
 			}
 		} else {
 			for _, dep := range p.Plan[key].DependsOn {
 				p.enqueueReachable(reachable, &queue, dep.Node)
 			}
 		}
-	}
-	if err := joinErrorMessages(errs); err != nil {
-		return err
 	}
 
 	for key := range p.Plan {

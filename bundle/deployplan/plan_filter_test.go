@@ -170,7 +170,7 @@ func TestResolveSelectors_IgnoresInternalTypes(t *testing.T) {
 }
 
 // Multiple live dependents of the same deleted resource are all reported in one error.
-func TestFilterToSelected_DeletionErrorsOnMultipleLiveDependents(t *testing.T) {
+func TestFilterToSelected_DeletionReportsMultipleLiveDependents(t *testing.T) {
 	p := deployplan.NewPlanDirect()
 	p.Plan["resources.jobs.gone"] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	p.Plan["resources.jobs.consumer1"] = &deployplan.PlanEntry{
@@ -180,10 +180,11 @@ func TestFilterToSelected_DeletionErrorsOnMultipleLiveDependents(t *testing.T) {
 		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.gone"}},
 	}
 
-	err := p.FilterToSelected(t.Context(), []string{"jobs.gone"})
+	require.NoError(t, p.FilterToSelected(t.Context(), []string{"jobs.gone"}))
+	err := p.CheckReferencesToDeleted()
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "jobs.consumer1")
-	assert.ErrorContains(t, err, "jobs.consumer2")
+	assert.ErrorContains(t, err, "cannot plan resources.jobs.consumer1")
+	assert.ErrorContains(t, err, "cannot plan resources.jobs.consumer2")
 }
 
 // When a resource is pulled in by the reverse-edge BFS as a Delete dependent, its own
@@ -252,9 +253,9 @@ func TestFilterToSelected_DeletionIncludesDependents(t *testing.T) {
 }
 
 // Deleting a resource that a live (non-delete) dependent still references is an error:
-// proceeding would leave the dependent broken. The message is the one a full plan gives
-// (CheckReferencesToDeleted), once per reference.
-func TestFilterToSelected_DeletionErrorsOnLiveDependent(t *testing.T) {
+// proceeding would leave the dependent broken. FilterToSelected keeps the live dependent,
+// so CheckReferencesToDeleted reports it on the filtered plan, once per reference.
+func TestFilterToSelected_DeletionReportsLiveDependent(t *testing.T) {
 	p := deployplan.NewPlanDirect()
 	p.Plan["resources.jobs.gone"] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	// live still references gone and has a pending update.
@@ -266,19 +267,21 @@ func TestFilterToSelected_DeletionErrorsOnLiveDependent(t *testing.T) {
 		},
 	}
 
-	full := p.CheckReferencesToDeleted()
-	require.Error(t, full)
+	p.Plan["resources.jobs.unrelated"] = &deployplan.PlanEntry{Action: deployplan.Update}
 
-	err := p.FilterToSelected(t.Context(), []string{"jobs.gone"})
+	require.NoError(t, p.FilterToSelected(t.Context(), []string{"jobs.gone"}))
+	assert.Contains(t, p.Plan, "resources.jobs.live")
+	assert.NotContains(t, p.Plan, "resources.jobs.unrelated")
+
+	err := p.CheckReferencesToDeleted()
 	require.Error(t, err)
-	assert.Equal(t, full.Error(), err.Error())
 	assert.Contains(t, err.Error(), "cannot plan resources.jobs.live: ${resources.jobs.gone.id} refers to resources.jobs.gone")
 	assert.Contains(t, err.Error(), "cannot plan resources.jobs.live: ${resources.jobs.gone.name} refers to resources.jobs.gone")
 }
 
 // The grants or permissions of another, live resource that reference the deleted resource
-// are live dependents too. The deleted resource's own sub-nodes are not.
-func TestFilterToSelected_DeletionErrorsOnLiveSubNodeDependent(t *testing.T) {
+// are live dependents too.
+func TestFilterToSelected_DeletionReportsLiveSubNodeDependent(t *testing.T) {
 	p := deployplan.NewPlanDirect()
 	p.Plan["resources.jobs.gone"] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	p.Plan["resources.jobs.gone.permissions"] = &deployplan.PlanEntry{
@@ -294,7 +297,8 @@ func TestFilterToSelected_DeletionErrorsOnLiveSubNodeDependent(t *testing.T) {
 		},
 	}
 
-	err := p.FilterToSelected(t.Context(), []string{"jobs.gone"})
+	require.NoError(t, p.FilterToSelected(t.Context(), []string{"jobs.gone"}))
+	err := p.CheckReferencesToDeleted()
 	require.Error(t, err)
 	assert.Equal(t, "cannot plan resources.jobs.live.permissions: ${resources.jobs.gone.id} refers to resources.jobs.gone, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.live.permissions too, or add resources.jobs.gone back to the configuration", err.Error())
 }
