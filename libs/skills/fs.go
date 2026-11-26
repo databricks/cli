@@ -40,13 +40,12 @@ func (s *fsSource) Catalog(_ context.Context) (*Catalog, error) {
 	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
 		meta := m.Skills[name]
 		catalog.Skills = append(catalog.Skills, Skill{
-			Name:          name,
-			Description:   meta.Description,
-			Version:       meta.Version,
-			Files:         meta.Files,
-			Commands:      meta.Commands,
-			MinCLIVersion: meta.MinCLIVer,
-			Experimental:  meta.IsExperimental(),
+			Name:         name,
+			Description:  meta.Description,
+			Version:      meta.Version,
+			Files:        meta.Files,
+			Commands:     meta.Commands,
+			Experimental: meta.IsExperimental(),
 		})
 	}
 	return catalog, nil
@@ -87,7 +86,7 @@ func (s *fsSource) manifest() (*Manifest, error) {
 		return nil, err
 	}
 	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
-		if repoDir := m.Skills[name].RepoDir; EscapesDir(repoDir) {
+		if repoDir := m.Skills[name].RepoDir; escapesDir(repoDir) {
 			return nil, fmt.Errorf("%w: skill %q has repo_dir %q", ErrUnsafeManifestPath, name, repoDir)
 		}
 	}
@@ -96,7 +95,8 @@ func (s *fsSource) manifest() (*Manifest, error) {
 		// "./RULES.md" and "docs/../RULES.md" are read like "RULES.md".
 		m.CatalogRules = path.Clean(m.CatalogRules)
 	}
-	if EscapesDir(m.CatalogRules) {
+	// "docs/.." cleans to ".", a directory that cannot be read as rules.
+	if m.CatalogRules == "." || escapesDir(m.CatalogRules) {
 		return nil, fmt.Errorf("%w: catalog_rules %q", ErrUnsafeManifestPath, m.CatalogRules)
 	}
 	return &m, nil
