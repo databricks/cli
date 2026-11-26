@@ -4,3 +4,6 @@
 >>> env -u DATABRICKS_SKILLS_DIR [CLI] --help
 
 Coding agents: run `databricks skills list` to find skills for the commands you use.
+
+>>> env -u DATABRICKS_SKILLS_DIR [CLI] air --help
+  Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime

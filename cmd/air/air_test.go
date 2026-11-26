@@ -3,12 +3,16 @@ package aircmd
 import (
 	"bytes"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestNewRegistersAllSubcommands asserts the `air` command wires up every
@@ -126,4 +130,35 @@ func TestRunHelpPointsToAgentSkill(t *testing.T) {
 	run.HelpFunc()(run, nil)
 	assert.Contains(t, out.String(), "databricks-ai-runtime skill")
 	assert.Contains(t, out.String(), "  "+skillInstallCommand+"\n")
+}
+
+// TestHelpSkillsFooterForNestedGroup asserts a group below air gets its own
+// footer from the catalog, since subcommands inherit air's help func. air
+// itself is not mapped here, so it keeps the hard-coded skill line.
+func TestHelpSkillsFooterForNestedGroup(t *testing.T) {
+	dir := t.TempDir()
+	manifest := `{"version": "0.0.1", "skills": {"pools-skill": {"version": "0.0.1", "description": "A skill for tests.", "files": ["SKILL.md"], "commands": ["air pools"]}}}`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(manifest), 0o644))
+	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_DIR", dir)
+
+	// Under a databricks root, the group key is "air pools", as in the CLI.
+	databricks := &cobra.Command{Use: "databricks"}
+	cmd := root.NewCommand(ctx, Spec)
+	databricks.AddCommand(cmd)
+	databricks.SetContext(ctx)
+	cmd.SetContext(ctx)
+	pools := findSubcommand(t, cmd, "pools")
+	pools.SetContext(ctx)
+	var poolsOut bytes.Buffer
+	pools.SetOut(&poolsOut)
+	pools.HelpFunc()(pools, nil)
+	assert.Contains(t, poolsOut.String(), "Coding agents: read the skills for this command group before you use it.\n  databricks skills read pools-skill\n")
+
+	var airOut bytes.Buffer
+	cmd.SetOut(&airOut)
+	cmd.HelpFunc()(cmd, nil)
+	assert.Contains(t, airOut.String(), "  Coding agent skill       databricks aitools install")
+	assert.NotContains(t, airOut.String(), "databricks skills read")
 }

@@ -9,24 +9,24 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-// WriteGroupHint writes the help footer for the command group named group,
-// such as "fs". The footer names each local skill whose Commands include
-// group. It writes nothing when hints are off, when no skill maps the group, or
-// when the local catalog cannot be read. It reads only the local catalog, so
-// help never makes a network call.
-func WriteGroupHint(ctx context.Context, w io.Writer, group string) {
+// GroupSkills returns the names of the local skills whose Commands include
+// group, such as "fs" or "bundle deployment" (see SkillMeta.Commands). It
+// returns nil when hints are off, when no local catalog is set, or when the
+// catalog cannot be read. It reads only the local catalog, so help never makes
+// a network call.
+func GroupSkills(ctx context.Context, group string) []string {
 	if !HintsEnabled(ctx) {
-		return
+		return nil
 	}
 
 	// A folder that cannot be read leaves help without a footer. Help must still print.
 	catalog, err := LocalCatalog(ctx)
 	if err != nil {
 		log.Debugf(ctx, "skills hint: %s", err)
-		return
+		return nil
 	}
 	if catalog == nil {
-		return
+		return nil
 	}
 
 	var names []string
@@ -35,6 +35,14 @@ func WriteGroupHint(ctx context.Context, w io.Writer, group string) {
 			names = append(names, s.Name)
 		}
 	}
+	return names
+}
+
+// WriteGroupHint writes the help footer for the command group named group.
+// The footer names each local skill that GroupSkills returns for group. It
+// writes nothing when GroupSkills is empty.
+func WriteGroupHint(ctx context.Context, w io.Writer, group string) {
+	names := GroupSkills(ctx, group)
 	if len(names) == 0 {
 		return
 	}

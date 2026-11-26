@@ -14,19 +14,20 @@ const rootSkillsHint = "Coding agents: run `databricks skills list` to find skil
 // setHelpFunc wraps the default help of root. Every command without a help
 // func of its own inherits it, so this is where command groups get skill
 // hints. A command that sets its own help func bypasses this wrapper and must
-// call skills.WriteGroupHint itself, as air does. With hints off, the output is
-// the default help.
+// call WriteSkillsHint itself, as air does. With hints off, the output is the
+// default help.
 func setHelpFunc(root *cobra.Command) {
 	defaultHelp := root.HelpFunc()
 	root.SetHelpFunc(func(c *cobra.Command, args []string) {
 		defaultHelp(c, args)
-		writeSkillsHint(c)
+		WriteSkillsHint(c)
 	})
 }
 
-// writeSkillsHint appends the skill hint to the help of c. It reads only the
-// local skills catalog, so help never makes a network call.
-func writeSkillsHint(c *cobra.Command) {
+// WriteSkillsHint appends the skill hint to the help of c: the generic line
+// for the root, or the footer for a command group. It reads only the local
+// skills catalog, so help never makes a network call.
+func WriteSkillsHint(c *cobra.Command) {
 	ctx := c.Context()
 	if !skills.HintsEnabled(ctx) {
 		return
