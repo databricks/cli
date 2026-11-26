@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -66,25 +67,19 @@ func (m *referenceFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 	return diags
 }
 
-// isInWheelTask reports whether path is in the python_wheel_task or in a wheel library of a job
-// task, the fields the python wheel wrapper moves out of the job.
+// isInWheelTask reports whether path is in a job task field that the python wheel wrapper moves out
+// of the tasks it wraps.
 func isInWheelTask(path dyn.Path) bool {
 	if len(path) < 6 || path[0].Key() != "resources" || path[1].Key() != "jobs" || path[3].Key() != "tasks" {
 		return false
 	}
-	switch path[5].Key() {
-	case "python_wheel_task":
-		return true
-	case "libraries":
-		return len(path) >= 8 && path[7].Key() == "whl"
-	}
-	return false
+	return trampoline.IsMovedTaskField(path[5:])
 }
 
 // mayBeWrapped reports whether the python wheel wrapper may wrap the job task at path. The wrapper
-// wraps a task with a python_wheel_task and a workspace library (see trampoline.needsTrampoline),
-// and decides after the build, which may upload a local library to the workspace.
+// decides after the build, which may upload a local library to the workspace, so a Python wheel
+// task with a local library may be wrapped too.
 func mayBeWrapped(b *bundle.Bundle, path dyn.Path) bool {
 	task := b.Config.Resources.Jobs[path[2].Key()].Tasks[path[4].Index()]
-	return task.PythonWheelTask != nil && (libraries.IsTaskWithWorkspaceLibraries(task) || libraries.IsTaskWithLocalLibraries(task))
+	return trampoline.WrapsTask(task) || (task.PythonWheelTask != nil && libraries.IsTaskWithLocalLibraries(task))
 }

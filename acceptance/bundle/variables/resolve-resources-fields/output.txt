@@ -2,8 +2,6 @@ Error: cannot resolve "${resources.schemas.bar.non_existing}": resource type "sc
   at resources.schemas.foo.comment
   in databricks.yml:16:16
 
-
-Exit code: 1
 {
   "a": {
     "default": "${resources.schemas.foo.name}",
