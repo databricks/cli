@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
@@ -63,33 +64,41 @@ func patchMetadata(r io.Reader, oldVersion, newVersion string) ([]byte, error) {
 // patchRecord updates RECORD content: it renames every path with renamePath and, for the
 // METADATA entry (metadataPath, after renaming), updates the hash and size.
 func patchRecord(r io.Reader, renamePath func(string) string, metadataPath, metadataHash string, metadataSize int) ([]byte, error) {
-	scanner := bufio.NewScanner(r)
+	// RECORD is CSV: a path that contains a comma or a quote is quoted, so it must be
+	// parsed as CSV for renamePath to see the real path.
+	reader := csv.NewReader(r)
+	reader.FieldsPerRecord = -1
+	reader.LazyQuotes = true
+
 	var buf bytes.Buffer
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if len(line) == 0 {
+	writer := csv.NewWriter(&buf)
+	for {
+		row, err := reader.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if len(row) == 1 && strings.TrimSpace(row[0]) == "" {
 			continue
 		}
 
-		parts := strings.Split(string(line), ",")
-
-		if len(parts) < 3 {
-			// If the line doesn't have enough parts, preserve it as-is
-			buf.Write(line)
-			buf.WriteString("\n")
-			continue
+		// Rows without path, hash and size are kept as they are.
+		if len(row) >= 3 {
+			row[0] = renamePath(row[0])
+			if metadataPath == row[0] {
+				row[1] = "sha256=" + metadataHash
+				row[2] = strconv.Itoa(metadataSize)
+			}
 		}
 
-		parts[0] = renamePath(parts[0])
-
-		if metadataPath == parts[0] {
-			parts[1] = "sha256=" + metadataHash
-			parts[2] = strconv.Itoa(metadataSize)
+		if err := writer.Write(row); err != nil {
+			return nil, err
 		}
-
-		buf.WriteString(strings.Join(parts, ",") + "\n")
 	}
-	if err := scanner.Err(); err != nil {
+	writer.Flush()
+	if err := writer.Error(); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
