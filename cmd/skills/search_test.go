@@ -20,6 +20,9 @@ var searchCatalog = []skills.Skill{
 	{Name: "jobs-helper", Description: "Run and monitor jobs.", Commands: []string{"jobs"}},
 	{Name: "pipeline-guide", Description: "Build and debug data pipelines.", Commands: []string{"pipelines"}},
 	{Name: "warehouse-sql", Description: "Query SQL warehouses.", Commands: []string{"warehouses", "sql"}},
+	// Its command group appears in neither the name nor the description, so only
+	// a match on Commands finds it.
+	{Name: "cluster-ops", Description: "Manage compute.", Commands: []string{"clusters"}},
 }
 
 func TestMatchSkills(t *testing.T) {
@@ -34,6 +37,7 @@ func TestMatchSkills(t *testing.T) {
 		{name: "several words match several skills", words: []string{"jobs", "sql"}, want: []string{"jobs-helper", "warehouse-sql"}},
 		{name: "case is ignored", words: []string{"JOBS", "Pipelines"}, want: []string{"jobs-helper", "pipeline-guide"}},
 		{name: "a word matches inside a command group", words: []string{"pipe"}, want: []string{"pipeline-guide"}},
+		{name: "a command group matches when the name and description do not", words: []string{"clusters"}, want: []string{"cluster-ops"}},
 		{name: "no match", words: []string{"nothing-here"}, want: []string{}},
 	}
 	for _, tt := range tests {
