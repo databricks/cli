@@ -146,9 +146,9 @@ func expanders() []expandPattern {
 	for _, l := range locations() {
 		switch l.Kind {
 		case resources.LibraryList:
-			out = append(out, expandPattern{pattern: l.pattern, fn: expandLibraries})
+			out = append(out, expandPattern{pattern: l.rootPattern, fn: expandLibraries})
 		case resources.DependencyList:
-			out = append(out, expandPattern{pattern: l.pattern, fn: expandEnvironmentDeps})
+			out = append(out, expandPattern{pattern: l.rootPattern, fn: expandEnvironmentDeps})
 		case resources.LibraryFile:
 			// Not expanded; see [resources.LibraryFile].
 		}

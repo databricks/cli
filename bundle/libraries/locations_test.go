@@ -75,7 +75,7 @@ func TestLibraryLocations(t *testing.T) {
 			t.Errorf("only some of %v are declared as local paths", values)
 		}
 		actual = append(actual, declaration{
-			pattern:           l.pattern.String(),
+			pattern:           l.rootPattern.String(),
 			kind:              l.Kind,
 			skipPatchedWheels: l.SkipPatchedWheels,
 			localPath:         declared > 0,

@@ -14,8 +14,8 @@ import (
 type location struct {
 	resources.LibraryLocation
 
-	// pattern matches the field from the configuration root.
-	pattern dyn.Pattern
+	// rootPattern matches the field from the configuration root.
+	rootPattern dyn.Pattern
 }
 
 // locations returns the library locations of every resource type that implements
@@ -26,7 +26,7 @@ func locations() []location {
 	for key, declarer := range config.ResourceTypesImplementing[resources.LibraryDeclarer]() {
 		base := dyn.NewPattern(dyn.Key("resources"), dyn.Key(key), dyn.AnyKey())
 		for _, l := range declarer.LibraryLocations() {
-			out = append(out, location{LibraryLocation: l, pattern: base.Append(l.Pattern...)})
+			out = append(out, location{LibraryLocation: l, rootPattern: base.Append(l.Pattern...)})
 		}
 	}
 	return out
@@ -49,14 +49,14 @@ func (l location) valuePatterns() []dyn.Pattern {
 	switch l.Kind {
 	case resources.LibraryList:
 		return []dyn.Pattern{
-			l.pattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-			l.pattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
+			l.rootPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
+			l.rootPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 		}
 	case resources.DependencyList:
-		return []dyn.Pattern{l.pattern.Append(dyn.AnyIndex())}
+		return []dyn.Pattern{l.rootPattern.Append(dyn.AnyIndex())}
 	case resources.LibraryFile:
-		return []dyn.Pattern{l.pattern}
+		return []dyn.Pattern{l.rootPattern}
 	default:
-		panic(fmt.Sprintf("unsupported library kind %d at %s", l.Kind, l.pattern))
+		panic(fmt.Sprintf("unsupported library kind %d at %s", l.Kind, l.rootPattern))
 	}
 }

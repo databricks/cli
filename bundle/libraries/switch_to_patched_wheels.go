@@ -58,9 +58,9 @@ func patchedWheelPatterns() []patchedWheelPattern {
 		}
 		switch l.Kind {
 		case resources.LibraryList:
-			out = append(out, patchedWheelPattern{pattern: l.pattern.Append(dyn.AnyIndex(), dyn.Key("whl"))})
+			out = append(out, patchedWheelPattern{pattern: l.rootPattern.Append(dyn.AnyIndex(), dyn.Key("whl"))})
 		case resources.DependencyList:
-			out = append(out, patchedWheelPattern{pattern: l.pattern.Append(dyn.AnyIndex()), withExtras: true})
+			out = append(out, patchedWheelPattern{pattern: l.rootPattern.Append(dyn.AnyIndex()), withExtras: true})
 		case resources.LibraryFile:
 			// Not switched; see [resources.LibraryFile].
 		}
