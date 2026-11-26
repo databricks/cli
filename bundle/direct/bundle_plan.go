@@ -1371,21 +1371,23 @@ func referenceTarget(path *structpath.PathNode) (string, string, *structpath.Pat
 
 // checkReferenceFieldExists returns the error for a reference to a field that the target resource
 // type has neither in its state nor in its remote type, so no deploy can resolve it. The id is
-// always available. fieldPath is the field in DABs naming (see referenceTarget); the error names
-// it as the reference path writes it.
-func checkReferenceFieldExists(adapter *dresources.Adapter, group string, fieldPath, path *structpath.PathNode) error {
+// always available. fieldPath is the field in DABs naming (see referenceTarget), relative to the
+// node; the error names the field as the reference path writes it, relative to the resource, so a
+// reference into permissions or grants reads "resource type "jobs" has no field
+// "permissions[0].nope"".
+func checkReferenceFieldExists(adapter *dresources.Adapter, fieldPath, path *structpath.PathNode) error {
 	if fieldPath.String() == "id" {
 		return nil
 	}
 	if structaccess.ValidatePath(adapter.StateType(), fieldPath) == nil || structaccess.ValidatePath(adapter.RemoteType(), fieldPath) == nil {
 		return nil
 	}
-	_, writtenFieldPath := splitResourcePath(path)
-	return fmt.Errorf("resource type %q has no field %q", group, writtenFieldPath.String())
+	resourceType, _ := path.SkipPrefix(1).Prefix(1).StringKey()
+	return fmt.Errorf("resource type %q has no field %q", resourceType, path.SkipPrefix(3).String())
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	targetResourceKey, targetGroup, fieldPath, err := referenceTarget(path)
+	targetResourceKey, _, fieldPath, err := referenceTarget(path)
 	if err != nil {
 		return nil, err
 	}
@@ -1441,7 +1443,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return nil, fmt.Errorf("internal error: %s: %w", targetResourceKey, err)
 	}
 
-	if err := checkReferenceFieldExists(adapter, targetGroup, fieldPath, path); err != nil {
+	if err := checkReferenceFieldExists(adapter, fieldPath, path); err != nil {
 		return nil, err
 	}
 

@@ -127,5 +127,5 @@ func checkReference(adapters map[string]*dresources.Adapter, planned map[string]
 	if fieldPath == nil || !planned[targetResourceKey] {
 		return nil
 	}
-	return checkReferenceFieldExists(adapters[targetGroup], targetGroup, fieldPath, path)
+	return checkReferenceFieldExists(adapters[targetGroup], fieldPath, path)
 }

@@ -21,7 +21,7 @@ import (
 // Note, it is not run in "bundle migrate" so it must not modify the config
 func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool) {
 	bundle.ApplySeqContext(ctx, b,
-		// Rejects references the plan cannot resolve before deploy uploads anything.
+		// Rejects references to fields the target resource type does not have, before deploy uploads anything.
 		validate.ReferenceFieldsAfterBuild(),
 		deploy.CheckDashboardsModifiedRemotely(isPlan),
 		resourcemutator.SecretScopeFixups(),
