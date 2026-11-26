@@ -19,6 +19,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/dyn"
@@ -28,10 +29,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
-// magic identifies a bundle telemetry bitmap. The bytes are chosen so they do
-// not collide with the leading bytes of the compression formats we wrap the
-// payload in (gzip 0x1f 0x8b, zlib 0x78), so a decoder can tell a raw payload
-// from a compressed one.
+// magic marks the inflated payload as a bundle telemetry bitmap.
 const magic = "DBTB"
 
 // ContextFullBundle marks a bitmap covering the whole user-authored config. Other
@@ -113,8 +111,9 @@ const listSuffix = "[*]"
 // returns the ordered list of field paths, one per field, with map keys
 // rendered as ".*" and slice elements as "[*]", and a "=true" and "=false"
 // entry after each bool field. The telemetry struct's fields are namespaced
-// under "telemetry.". This is the freshly computed schema; the
-// committed schema.deflate is a prefix of it plus any fields since removed.
+// under "telemetry.". This is the freshly computed schema, in walk order; the
+// committed schema.deflate holds every path in it, in its own append order,
+// plus any fields since removed.
 //
 // telemetryType is the internal telemetry struct type (bundle.Telemetry),
 // passed in so this package does not import the bundle package.
@@ -252,7 +251,10 @@ func (b *Builder) Mark(cfg dyn.Value) {
 
 // MarkChanges sets the bits of what after holds that before does not: fields
 // before lacks, values that differ, and the fields on the way to them. Both are
-// rooted at the configuration root. List elements are compared by position.
+// rooted at the configuration root. A list element equal to any element of
+// before is unchanged wherever it moved; a changed one is compared with the
+// element of before that has the same key field (see listKeys), or, without
+// one, with the element at the same position.
 func (b *Builder) MarkChanges(before, after dyn.Value) {
 	if b == nil {
 		return
@@ -333,44 +335,68 @@ type boolValues interface{ Values() []bool }
 var boolValuesType = reflect.TypeFor[boolValues]()
 
 // telemetryPaths returns the schema entries of the telemetry struct: each field
-// under its metric tag (its key in bool_values), followed by its value entries.
-// The tag, not the Go name, so renaming a field keeps its bits.
+// under its name (see telemetryPath), followed by the entries of the values it can
+// record. A plain bool is recorded only when true, so its presence bit is its value.
 func telemetryPaths(telemetryType reflect.Type) ([]string, error) {
 	var paths []string
+	fields := map[string]string{}
 	for field := range telemetryType.Fields() {
-		path, err := telemetryPath(field)
-		if err != nil {
-			return nil, err
+		path := telemetryPath(field)
+		if other, ok := fields[path]; ok {
+			return nil, fmt.Errorf("telemetry fields %s and %s are both named %s", other, field.Name, path)
 		}
-		paths = append(paths, path, path+trueSuffix, path+falseSuffix)
+		fields[path] = field.Name
+		paths = append(paths, path)
+		if field.Type.Kind() != reflect.Bool {
+			paths = append(paths, path+trueSuffix, path+falseSuffix)
+		}
 	}
 	return paths, nil
 }
 
-func telemetryPath(f reflect.StructField) (string, error) {
-	metric := f.Tag.Get("metric")
-	if metric == "" {
-		return "", fmt.Errorf("telemetry field %s has no metric tag", f.Name)
+// telemetryPath names a telemetry field's bits: its metric tag (its key in the
+// legacy bool_values) when it has one, else its Go name in snake case. Bits are
+// decoded by name, so renaming a field without a metric tag renames its bits.
+func telemetryPath(f reflect.StructField) string {
+	name := f.Tag.Get("metric")
+	if name == "" {
+		name = snakeCase(f.Name)
 	}
-	return joinField(telemetryPrefix, metric), nil
+	return joinField(telemetryPrefix, name)
+}
+
+// snakeCase converts a Go name to snake case, keeping acronyms together:
+// "DMSCompatAuto" becomes "dms_compat_auto".
+func snakeCase(name string) string {
+	runes := []rune(name)
+	var out []rune
+	for i, r := range runes {
+		if i > 0 && unicode.IsUpper(r) {
+			prev := runes[i-1]
+			nextLower := i+1 < len(runes) && unicode.IsLower(runes[i+1])
+			if !unicode.IsUpper(prev) || nextLower {
+				out = append(out, '_')
+			}
+		}
+		out = append(out, unicode.ToLower(r))
+	}
+	return string(out)
 }
 
 // markTelemetry sets the bits of the measured telemetry fields: the presence
-// bit and the bit of each value taken. A bool counts only when true.
+// bit and the bit of each value taken. A plain bool counts only when true.
 func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
 	v := reflect.ValueOf(telemetry)
 	for i := range v.NumField() {
-		name := v.Type().Field(i).Name
-		path, err := telemetryPath(v.Type().Field(i))
-		if err != nil {
-			return err
-		}
+		field := v.Type().Field(i)
+		path := telemetryPath(field)
 		var values []bool
 		switch f := v.Field(i).Interface().(type) {
 		case bool:
 			if f {
-				values = []bool{true}
+				setBit(index, bits, path)
 			}
+			continue
 		case *bool:
 			if f != nil {
 				values = []bool{*f}
@@ -378,7 +404,7 @@ func markTelemetry(telemetry any, index map[string]int, bits []bool) error {
 		case boolValues:
 			values = f.Values()
 		default:
-			return fmt.Errorf("telemetry field %s has unsupported type %s", name, v.Field(i).Type())
+			return fmt.Errorf("telemetry field %s has unsupported type %s", field.Name, field.Type)
 		}
 		for _, value := range values {
 			setBit(index, bits, path)

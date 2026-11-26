@@ -3,7 +3,7 @@ bundle:
 
 resources:
   apps:
-    # One app started and one stopped: app_lifecycle_started reports each value once.
+    # One app started and one stopped: app_lifecycle_started takes both values.
     myapp:
       name: my-app
       source_code_path: .

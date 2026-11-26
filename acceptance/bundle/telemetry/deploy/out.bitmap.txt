@@ -16,7 +16,7 @@ P F telemetry.presets_name_prefix_is_set
 P F telemetry.deployment_history_enabled
 P F telemetry.immutable_snapshot_used
 P F telemetry.state_path_is_shared
-PT  telemetry.dms_compat_auto
+P   telemetry.dms_compat_auto
 P F telemetry.permissions_section_set
 PT  telemetry.state_path_in_deployer_home
 P F telemetry.state_path_in_other_user_home

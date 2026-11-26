@@ -59,6 +59,6 @@ P F experimental.use_legacy_run_as
 PTF telemetry.artifact_build_command_is_set
 PTF telemetry.artifact_files_is_set
 PT  telemetry.presets_name_prefix_is_set
-PT  telemetry.config_has_double_dollar_brace
+P   telemetry.config_has_double_dollar_brace
 P F telemetry.experimental.use_legacy_run_as
 PT  telemetry.run_as_set

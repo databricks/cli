@@ -79,15 +79,17 @@ func TestTelemetryBoolValues(t *testing.T) {
 	}
 }
 
-// BoolValues and the bitmap skip fields of any other type, and an empty or
-// duplicate key would be indistinguishable on the wire.
+// BoolValues and the bitmap skip fields of any other type, and a duplicate key
+// would be indistinguishable on the wire. The bitmap checks its own names.
 func TestTelemetryFields(t *testing.T) {
 	supported := []reflect.Type{reflect.TypeFor[bool](), reflect.TypeFor[*bool](), reflect.TypeFor[BoolSet]()}
 	keys := map[string]string{}
 	for _, f := range reflect.VisibleFields(reflect.TypeFor[Telemetry]()) {
 		assert.Contains(t, supported, f.Type, "field %s", f.Name)
 		key := f.Tag.Get("metric")
-		assert.NotEmpty(t, key, "field %s has no metric tag", f.Name)
+		if key == "" {
+			continue
+		}
 		if other, ok := keys[key]; ok {
 			assert.Fail(t, "duplicate metric key", "%q is used by %s and %s", key, other, f.Name)
 		}

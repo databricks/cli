@@ -96,12 +96,21 @@ targets:
     compute_id: c1
   prod: {}
 `
-	assert.Contains(t, loadBits(t, config, "dev"), "bundle.compute_id")
+	dev := loadBits(t, config, "dev")
+	assert.Contains(t, dev, "bundle.compute_id")
+	// The rename to cluster_id is not something the user wrote.
+	assert.NotContains(t, dev, "bundle.cluster_id")
 	// Only the selected target counts.
 	assert.NotContains(t, loadBits(t, config, "prod"), "bundle.compute_id")
 
 	root := loadBits(t, "bundle: {name: x, compute_id: c1}\n", "default")
 	assert.Contains(t, root, "bundle.compute_id")
+	assert.NotContains(t, root, "bundle.cluster_id")
+
+	// Both written: both count.
+	both := loadBits(t, "bundle: {name: x, cluster_id: c0}\ntargets:\n  dev:\n    compute_id: c1\n", "dev")
+	assert.Contains(t, both, "bundle.compute_id")
+	assert.Contains(t, both, "bundle.cluster_id")
 }
 
 // A glob that matches no file leaves no include list after loading; the user

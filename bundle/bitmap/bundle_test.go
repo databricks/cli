@@ -33,7 +33,7 @@ func TestWalkSchema(t *testing.T) {
 	assert.Contains(t, schema, "resources.jobs.*.tasks[*].task_key")
 	assert.Contains(t, schema, "variables.*.default")
 	// Telemetry fields are namespaced under "telemetry." and named by their
-	// metric tag, so renaming a Go field keeps its bits.
+	// metric tag when they have one.
 	assert.Contains(t, schema, "telemetry.select_used")
 	assert.Contains(t, schema, "telemetry.run_as_set")
 	assert.Contains(t, schema, "telemetry.artifact_files_is_set")
@@ -46,7 +46,6 @@ func TestWalkSchema(t *testing.T) {
 		"experimental.use_legacy_run_as",                      // bool, omitempty
 		"resources.jobs.*.queue.enabled",                      // bool, no omitempty
 		"presets.pipelines_development",                       // *bool
-		"telemetry.select_used",                               // telemetry bool
 		"telemetry.run_as_set",                                // telemetry *bool
 		"telemetry.artifact_files_is_set",                     // telemetry BoolSet
 		"resources.jobs.*.tasks[*].disable_auto_optimization", // bool in a list element
@@ -55,6 +54,10 @@ func TestWalkSchema(t *testing.T) {
 		require.GreaterOrEqual(t, i, 0, p)
 		assert.Equal(t, []string{p + "=true", p + "=false"}, schema[i+1:i+3], p)
 	}
+	// A telemetry bool is recorded only when true: its presence bit is its value.
+	assert.Contains(t, schema, "telemetry.select_used")
+	assert.NotContains(t, schema, "telemetry.select_used=true")
+	assert.NotContains(t, schema, "telemetry.select_used=false")
 	// Non-bool fields have no value entries.
 	assert.NotContains(t, schema, "bundle.name=true")
 	assert.NotContains(t, schema, "variables.*.default=true")
@@ -97,7 +100,7 @@ func TestBitsTelemetry(t *testing.T) {
 		{
 			name: "bool true",
 			tm:   bundle.Telemetry{SelectUsed: true},
-			want: []string{"telemetry.select_used", "telemetry.select_used=true"},
+			want: []string{"telemetry.select_used"},
 		},
 		{
 			name: "*bool nil",

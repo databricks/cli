@@ -22,7 +22,7 @@ $CLI bundle deploy -t dev $(readplanarg ../../out.plan_dev.json) 2>&1 | grep -vE
 # LOG.telemetry.dev.json). Decoded, its config fields are the ones bundle bitmap reports above. Its
 # telemetry flags also include those only a deploy measures, and those differ with READPLAN, so only
 # the config fields are compared.
-jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' "$OUT_REQUESTS" > ../../LOG.telemetry.dev.json
+print_requests.py --keep //telemetry-ext | jq '.body.protoLogs[] | fromjson' > ../../LOG.telemetry.dev.json
 jq -r '.entry.databricks_cli_log.bundle_deploy_event.bundle_bitmap' ../../LOG.telemetry.dev.json | $CLI bundle bitmap decode | tail -n +2 | grep -v ' telemetry\.' > ../../LOG.bitmap.deploy.dev.txt
 grep -v ' telemetry\.' ../../out.bitmap.txt > ../../LOG.bitmap.dev.txt
 trace diff.py ../../LOG.bitmap.dev.txt ../../LOG.bitmap.deploy.dev.txt

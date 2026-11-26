@@ -113,7 +113,6 @@
     "telemetry": {
       "artifact_build_command_is_set": true,
       "artifact_files_is_set": true,
-      "config_has_double_dollar_brace": true,
       "presets_name_prefix_is_set": true,
       "run_as_set": true
     }

@@ -34,7 +34,7 @@ def _payload(bits: list[bool], context: int = 0) -> bytes:
 
 def test_embedded_schema():
     assert "bundle.name" in SCHEMA
-    assert "telemetry.select_used=true" in SCHEMA
+    assert "telemetry.run_as_set=true" in SCHEMA
     assert len(SCHEMA) == len(set(SCHEMA))
 
 

@@ -18,8 +18,10 @@ import (
 //     bool_values reports whether any measurement was true, and the bitmap
 //     records each value it took.
 //
-// The `metric` tag is the key in bool_values and names the field's bitmap bits
-// (e.g. "telemetry.select_used"), so renaming a Go field keeps its bits.
+// The bitmap names a field's bits by its `metric` tag when it has one, else by
+// its Go name in snake case (e.g. "telemetry.select_used"). The tag is only for
+// the legacy bool_values map, which lists the fields that have one; a new field
+// needs no tag, and must not be renamed once released, since that renames its bits.
 //
 // Not here: the has_<task_type> keys, which the bitmap already records as config
 // fields (resources.jobs.*.tasks[*].<type>_task), and the local.cache.* keys,
@@ -159,7 +161,8 @@ type Telemetry struct {
 	HasClassicInteractiveCompute     *bool `metric:"has_classic_interactive_compute"`
 }
 
-// BoolValues returns the flags as deploy-event entries, in field order: a true
+// BoolValues returns the flags that have a metric tag as deploy-event entries, in
+// field order: a true
 // bool, the value of a non-nil *bool, and for a BoolSet whether any of its
 // measurements was true.
 func (t *Telemetry) BoolValues() []protos.BoolMapEntry {
@@ -167,6 +170,9 @@ func (t *Telemetry) BoolValues() []protos.BoolMapEntry {
 	v := reflect.ValueOf(t).Elem()
 	for i := range v.NumField() {
 		key := v.Type().Field(i).Tag.Get("metric")
+		if key == "" {
+			continue
+		}
 		switch f := v.Field(i).Interface().(type) {
 		case bool:
 			if f {
