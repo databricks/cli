@@ -6,5 +6,8 @@ trace $CLI --help | tail -n 3
 # A group that the fixture skill covers ends with a footer naming the skill.
 trace $CLI fs --help | tail -n 4
 
+# A group that a command builds its own help for, such as air, gets the same footer.
+trace $CLI air --help | tail -n 4
+
 # A group no skill covers gets no footer.
 trace $CLI auth --help | contains.py "!databricks skills" > /dev/null

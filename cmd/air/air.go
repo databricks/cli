@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
 
@@ -55,11 +56,14 @@ see your active runs with "databricks air list".`
 	addToGroup(cmd, capacityGroupID, newPoolsCommand())
 
 	// Subcommands inherit this help func, so the footer is printed only for `air` itself.
+	// air sets its own help func, so the root's skill hint does not reach it; it adds
+	// the group footer here. air is top-level, so its name is its group.
 	defaultHelp := cmd.HelpFunc()
 	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
 		defaultHelp(c, args)
 		if c == cmd {
 			fmt.Fprint(c.OutOrStdout(), airHelpFooter)
+			skills.WriteGroupHint(c.Context(), c.OutOrStdout(), cmd.Name())
 		}
 	})
 }

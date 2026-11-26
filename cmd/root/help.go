@@ -2,10 +2,8 @@ package root
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
@@ -39,30 +37,6 @@ func writeSkillsHint(c *cobra.Command) {
 	if !c.HasSubCommands() {
 		return
 	}
-
-	// A folder that cannot be read leaves help without a footer. Help must still print.
-	catalog, err := skills.LocalCatalog(ctx)
-	if err != nil {
-		log.Debugf(ctx, "skills hint: %s", err)
-		return
-	}
-	if catalog == nil {
-		return
-	}
-
 	group := strings.TrimPrefix(c.CommandPath(), c.Root().CommandPath()+" ")
-	var names []string
-	for _, s := range catalog.Skills {
-		if slices.Contains(s.Commands, group) {
-			names = append(names, s.Name)
-		}
-	}
-	if len(names) == 0 {
-		return
-	}
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Coding agents: read the skills for this command group before you use it.")
-	for _, name := range names {
-		fmt.Fprintf(w, "  databricks skills read %s\n", name)
-	}
+	skills.WriteGroupHint(ctx, w, group)
 }

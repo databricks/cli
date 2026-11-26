@@ -10,4 +10,10 @@ Use "databricks fs [command] --help" for more information about a command.
 Coding agents: read the skills for this command group before you use it.
   databricks skills read demo-skill
 
+>>> [CLI] air --help
+  Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
+
+Coding agents: read the skills for this command group before you use it.
+  databricks skills read demo-skill
+
 >>> [CLI] auth --help
