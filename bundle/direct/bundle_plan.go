@@ -33,6 +33,13 @@ import (
 
 var errDelayed = errors.New("must be resolved after apply")
 
+// planNodePatterns match the config paths of the nodes in the plan: resources and their permissions and grants.
+var planNodePatterns = []dyn.Pattern{
+	dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+	dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
+	dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
+}
+
 func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	if b.Adapters != nil {
 		return nil
@@ -1419,7 +1426,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	// Note: using adapter.RemoteType() over reflect.TypeOf(remoteState) because remoteState might be untyped nil
 
 	if configValidErr != nil && remoteValidErr != nil {
-		return nil, fmt.Errorf("schema mismatch: %w; %w", configValidErr, remoteValidErr)
+		return nil, unknownReferenceFieldError(targetGroup, fieldPath)
 	}
 
 	if configValidErr == nil && remoteValidErr != nil {
@@ -1561,15 +1568,9 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 	existingKeys := maps.Clone(db.State)
 
-	patterns := []dyn.Pattern{
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
-		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
-	}
-
 	// Walk?
 	if configRoot != nil {
-		for _, pat := range patterns {
+		for _, pat := range planNodePatterns {
 			_, err := dyn.MapByPattern(
 				configRoot.Value(),
 				pat,
@@ -1772,17 +1773,30 @@ func ExtractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 }
 
 func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map[string]string, error) {
-	nodeType := config.GetResourceTypeFromKey(node)
 	refs := make(map[string]string)
+	err := walkReferences(root, node, stateType, func(_ dyn.Path, fieldPath *structpath.PathNode, _ dyn.Value, ref dynvar.Ref) {
+		// Store the original string that contains references, not individual references.
+		refs[fieldPath.String()] = ref.Str
+	})
+	if err != nil {
+		return nil, err
+	}
+	return refs, nil
+}
+
+// walkReferences calls fn for every value with references in the config subtree rooted at node
+// that extractReferences keeps, with its path in the config and its field path within the resource.
+func walkReferences(root dyn.Value, node string, stateType reflect.Type, fn func(path dyn.Path, fieldPath *structpath.PathNode, v dyn.Value, ref dynvar.Ref)) error {
+	nodeType := config.GetResourceTypeFromKey(node)
 
 	path, err := dyn.NewPathFromString(node)
 	if err != nil {
-		return nil, fmt.Errorf("internal error: bad node key: %q: %w", node, err)
+		return fmt.Errorf("internal error: bad node key: %q: %w", node, err)
 	}
 
 	val, err := dyn.GetByPath(root, path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = dyn.WalkReadOnly(val, func(p dyn.Path, v dyn.Value) error {
@@ -1811,15 +1825,14 @@ func extractReferences(root dyn.Value, node string, stateType reflect.Type) (map
 		// reference it carries cannot resolve into state and is not a dependency here. Such
 		// references are still resolved earlier during initialize.
 		if structaccess.ValidatePath(stateType, fieldPath) == nil {
-			// Store the original string that contains references, not individual references.
-			refs[fieldPath.String()] = ref.Str
+			fn(slices.Clone(fullPath), fieldPath, v, ref)
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("parsing refs: %w", err)
+		return fmt.Errorf("parsing refs: %w", err)
 	}
-	return refs, nil
+	return nil
 }
 
 // dynPathToStructPath converts a dyn.Path to a structpath.PathNode.

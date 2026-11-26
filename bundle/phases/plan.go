@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
+	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -20,6 +21,8 @@ import (
 // Note, it is not run in "bundle migrate" so it must not modify the config
 func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool) {
 	bundle.ApplySeqContext(ctx, b,
+		// Rejects references the plan cannot resolve before deploy uploads anything.
+		validate.ReferenceFieldsAfterBuild(),
 		deploy.CheckDashboardsModifiedRemotely(isPlan),
 		resourcemutator.SecretScopeFixups(),
 		deploy.StatePull(),

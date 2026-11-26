@@ -1,3 +1,5 @@
-trace $CLI bundle validate -o json | jq .resources
-musterr $CLI bundle plan &> out.plan.txt
-musterr $CLI bundle deploy &> out.deploy.txt
+trace musterr $CLI bundle validate
+trace musterr $CLI bundle plan
+
+# Deploy fails before uploading the bundle files.
+trace musterr $CLI bundle deploy
