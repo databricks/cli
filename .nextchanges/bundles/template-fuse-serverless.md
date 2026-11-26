@@ -1,0 +1,1 @@
+* `bundle init` into a `/Workspace` folder on serverless (client 2.5+) now writes the template through the workspace file system, like the other bundle commands, instead of the workspace API. ([#8052](https://github.com/databricks/cli/pull/8052))
