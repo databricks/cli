@@ -1,7 +1,7 @@
 DBFS="dbfs:/tmp/fs-basic-${UNIQUE_NAME}"
 
 cleanup() {
-  $CLI fs rm -r ${DBFS} 2>/dev/null || true
+  errcode $CLI fs rm -r ${DBFS} >> LOG.cleanup 2>&1
 }
 trap cleanup EXIT
 

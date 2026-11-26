@@ -5,22 +5,20 @@ ls_fields() {
 }
 
 # Runs a command and prints its stdout and its stderr separately. Keeps the stdout in $STREAMS_STDOUT
-# for byte comparisons, and returns the command's exit code.
-STREAMS_STDOUT=$(mktemp)
+# for byte comparisons, and returns the command's exit code. LOG.* files stay out of the output diff.
+STREAMS_STDOUT=LOG.streams.stdout
 streams() {
-  local err code=0
-  err=$(mktemp)
-  "$@" > "$STREAMS_STDOUT" 2> "$err" || code=$?
+  local code=0
+  "$@" > "$STREAMS_STDOUT" 2> LOG.streams.stderr || code=$?
   echo "stdout:"
   cat "$STREAMS_STDOUT"
   echo
   echo "stderr:"
-  cat "$err"
-  rm -f "$err"
+  cat LOG.streams.stderr
   return $code
 }
 
-# cat, ls, mkdir, rm and completion under $1, an empty directory on DBFS or in a UC Volume.
+# cat, ls, mkdir, rm and completion under $1: a DBFS path that does not exist yet, or the root of a new UC Volume.
 fs_basic() {
   local root=$1
 

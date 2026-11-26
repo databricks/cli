@@ -1,12 +1,11 @@
 VOLUME_NAME="fs-basic-${UNIQUE_NAME}"
 
 cleanup() {
-  $CLI volumes delete "main.default.${VOLUME_NAME}" 2>/dev/null || true
+  errcode $CLI volumes delete "main.default.${VOLUME_NAME}" >> LOG.cleanup 2>&1
 }
 trap cleanup EXIT
 
-# A create whose response is lost can still have been applied; the read then finds the volume.
-$CLI volumes create main default "${VOLUME_NAME}" MANAGED > LOG.volume 2>&1 || $CLI volumes read "main.default.${VOLUME_NAME}" >> LOG.volume
+$CLI volumes create main default "${VOLUME_NAME}" MANAGED > LOG.volume
 
 fs_basic dbfs:/Volumes/main/default/${VOLUME_NAME}
 
