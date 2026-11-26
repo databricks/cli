@@ -1,0 +1,129 @@
+package skills
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+
+	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/atomicfile"
+	"github.com/databricks/cli/libs/cache"
+)
+
+const (
+	catalogFile = "catalog.json"
+	filesDir    = "files"
+
+	// keptVersions is how many release versions are kept: the current and the previous one.
+	keptVersions = 2
+)
+
+// Cache keeps skills releases on disk, one folder per release version, so a
+// file of a release is written once and never replaced. A nil Cache stores nothing.
+type Cache struct {
+	dir string
+}
+
+// NewCache returns the skills cache under the CLI's cache folder, beside the
+// other caches of this CLI version (see libs/cache).
+//
+//deadcode:allow the skills commands call it once they are wired to the chain
+func NewCache(ctx context.Context) (*Cache, error) {
+	base, err := cache.BaseDir(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &Cache{dir: filepath.Join(base, build.GetInfo().GetSanitizedVersion(), "skills")}, nil
+}
+
+// Latest returns the cached catalog fetched most recently. It reads the disk only.
+func (c *Cache) Latest() (*Catalog, bool) {
+	if c == nil {
+		return nil, false
+	}
+	cats := c.catalogs()
+	if len(cats) == 0 {
+		return nil, false
+	}
+	return cats[0], true
+}
+
+// putCatalog stores cat under its release version and removes the releases
+// older than the newest keptVersions.
+func (c *Cache) putCatalog(cat *Catalog) error {
+	if c == nil {
+		return nil
+	}
+	if !isName(cat.Version) {
+		return fmt.Errorf("cannot cache release version %q", cat.Version)
+	}
+	data, err := json.Marshal(cat)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(c.dir, cat.Version, catalogFile)
+	if err := atomicfile.Write(path, data, 0o600, atomicfile.MkDir(0o700)); err != nil {
+		return err
+	}
+	cats := c.catalogs()
+	for _, old := range cats[min(keptVersions, len(cats)):] {
+		_ = os.RemoveAll(filepath.Join(c.dir, old.Version))
+	}
+	return nil
+}
+
+// catalogs returns the readable cached catalogs, newest first. An entry that
+// does not parse is skipped, so a corrupt entry is never served.
+func (c *Cache) catalogs() []*Catalog {
+	entries, _ := os.ReadDir(c.dir)
+	var cats []*Catalog
+	for _, e := range entries {
+		data, err := os.ReadFile(filepath.Join(c.dir, e.Name(), catalogFile))
+		var cat Catalog
+		if err != nil || json.Unmarshal(data, &cat) != nil || !isName(cat.Version) {
+			continue
+		}
+		cats = append(cats, &cat)
+	}
+	slices.SortFunc(cats, func(a, b *Catalog) int { return b.FetchedAt.Compare(a.FetchedAt) })
+	return cats
+}
+
+// readFile returns the cached bytes of a file of a release version.
+func (c *Cache) readFile(version, skill, file string) ([]byte, bool) {
+	if c == nil || !cacheable(version, skill, file) {
+		return nil, false
+	}
+	data, err := os.ReadFile(c.filePath(version, skill, file))
+	return data, err == nil
+}
+
+// writeFile stores the bytes of a file of a release version.
+func (c *Cache) writeFile(version, skill, file string, data []byte) error {
+	if c == nil {
+		return nil
+	}
+	if !cacheable(version, skill, file) {
+		return fmt.Errorf("cannot cache file %q of skill %q", file, skill)
+	}
+	return atomicfile.Write(c.filePath(version, skill, file), data, 0o600, atomicfile.MkDir(0o700))
+}
+
+func (c *Cache) filePath(version, skill, file string) string {
+	return filepath.Join(c.dir, version, filesDir, skill, filepath.FromSlash(file))
+}
+
+// cacheable reports whether the names, which come from a source, stay inside
+// the cache folder of their release.
+func cacheable(version, skill, file string) bool {
+	return isName(version) && isName(skill) && !escapesDir(file)
+}
+
+// isName reports whether s is a single path element.
+func isName(s string) bool {
+	return s != "" && s != "." && s != ".." && !strings.ContainsAny(s, `/\`)
+}
