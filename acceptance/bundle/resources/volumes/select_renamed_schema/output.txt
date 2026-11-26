@@ -27,6 +27,16 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
   "volume_id": "[UUID][1]"
 }
 
+=== Selecting only the volume fails: only the schema's delete removes it, with everything in it
+
+>>> musterr [CLI] bundle deploy --select volumes.volume1 --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Error: cannot delete volumes.volume1 on its own: only deleting schemas.schema1, which was renamed outside the bundle, removes it; also select schemas.schema1
+
+Files: 3 uploaded, 0 deleted
+
+>>> print_requests.py //unity-catalog
+
 === Selecting only the schema still lists the volume, which its delete takes along
 
 >>> [CLI] bundle deploy --select schemas.schema1 --auto-approve
@@ -42,7 +52,7 @@ is removed from the catalog, but the underlying files are not deleted:
   delete resources.volumes.volume1
 Deleted schemas.schema1
 Deleted volumes.volume1
-Files: 3 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 2 deleted, 0 unchanged
 
 >>> print_requests.py //unity-catalog
@@ -57,5 +67,5 @@ Resources: 0 created, 0 changed, 2 deleted, 0 unchanged
 >>> musterr [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
 Error: Schema 'main.test-schema-renamed-[UNIQUE_NAME]' does not exist.
 
->>> [CLI] bundle summary --output json
+>>> summary_ids
 {}

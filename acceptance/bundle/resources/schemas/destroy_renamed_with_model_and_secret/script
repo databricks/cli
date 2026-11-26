@@ -22,11 +22,11 @@ add_repl "$($CLI schemas get "$NEW_SCHEMA" | jq -r .schema_id)" SCHEMA_ID
 title "Out of band, delete the secret, and create another schema under the old name with a model of the same name"
 trace $CLI secrets-uc delete-secret "$NEW_SCHEMA.mysecret"
 trace $CLI schemas create "test-schema-${UNIQUE_NAME}" main | schema_fields
-trace $CLI registered-models create --catalog-name main --schema-name "test-schema-${UNIQUE_NAME}" --name mymodel | jq '{full_name}'
+trace $CLI registered-models create --catalog-name main --schema-name "test-schema-${UNIQUE_NAME}" --name mymodel | registered_model_fields
 print_requests.py //unity-catalog &> LOG.oob_requests
 
 title "The model has no internal ID to find it by, so destroy lists it as going with the schema it found, and sends a delete only for that schema. The secret is gone, and nothing at the old name is touched"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
 trace musterr $CLI schemas get "$NEW_SCHEMA"
-trace $CLI registered-models get "$OLD_SCHEMA.mymodel" | jq '{full_name}'
+trace $CLI registered-models get "$OLD_SCHEMA.mymodel" | registered_model_fields

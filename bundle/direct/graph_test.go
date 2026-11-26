@@ -78,3 +78,43 @@ func TestMakeGraphWithParentReferencingASibling(t *testing.T) {
 	})
 	assert.Equal(t, []string{volume1Key, schemaKey, volume2Key}, order)
 }
+
+func TestMakeGraphDependentOfWithParentWaitsForItsParent(t *testing.T) {
+	const (
+		schemaKey = "resources.schemas.schema1"
+		volumeKey = "resources.volumes.volume1"
+		jobKey    = "resources.jobs.job1"
+	)
+	plan := deployplan.NewPlanDirect()
+	plan.Plan[schemaKey] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: "main.moved"}
+	plan.Plan[volumeKey] = &deployplan.PlanEntry{Action: deployplan.Delete, Gone: true, WithParent: schemaKey, DependsOn: []deployplan.DependsOnEntry{{Node: schemaKey}}}
+	// The job names only the volume, whose removal is the schema's delete.
+	plan.Plan[jobKey] = &deployplan.PlanEntry{Action: deployplan.Delete, DependsOn: []deployplan.DependsOnEntry{{Node: volumeKey}}}
+
+	for _, jobFails := range []bool{false, true} {
+		g, err := makeGraph(plan)
+		require.NoError(t, err)
+		require.NoError(t, g.DetectCycle())
+
+		var mu sync.Mutex
+		var order []string
+		failed := map[string]bool{}
+		g.Run(1, func(key string, failedDependency *string) bool {
+			mu.Lock()
+			defer mu.Unlock()
+			if failedDependency != nil {
+				failed[key] = true
+				return false
+			}
+			order = append(order, key)
+			return !jobFails || key != jobKey
+		})
+
+		if jobFails {
+			assert.Equal(t, []string{jobKey}, order)
+			assert.Equal(t, map[string]bool{schemaKey: true, volumeKey: true}, failed)
+		} else {
+			assert.Equal(t, []string{jobKey, schemaKey, volumeKey}, order)
+		}
+	}
+}

@@ -40,6 +40,12 @@ func makeGraph(plan *deployplan.Plan) (*dagrun.Graph, error) {
 			if _, exists := plan.Plan[dep.Node]; exists {
 				if isDelete {
 					g.AddDirectedEdge(resourceKey, dep.Node, dep.Label)
+					// The delete that removes a WithParent dependency is its parent's, so that one waits
+					// too, and does not run if this one fails, as for a dependency deleted on its own.
+					if parent := plan.Plan[dep.Node].WithParent; parent != "" && parent != resourceKey && plan.Plan[parent] != nil &&
+						!slices.ContainsFunc(entry.DependsOn, func(d deployplan.DependsOnEntry) bool { return d.Node == parent }) {
+						g.AddDirectedEdge(resourceKey, parent, dep.Label)
+					}
 				} else {
 					g.AddDirectedEdge(dep.Node, resourceKey, dep.Label)
 				}

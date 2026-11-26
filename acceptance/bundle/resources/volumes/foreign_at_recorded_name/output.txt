@@ -18,7 +18,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === The other volume has another volume_id, so the plan does not take it for the bundle's: it plans a create
 
 >>> [CLI] bundle plan
-Warning: resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so this bundle leaves it in place. If it is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and 'bundle deployment bind' to manage it again.
+Warning: resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so this bundle leaves it in place. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
 
 create volumes.volume1
 

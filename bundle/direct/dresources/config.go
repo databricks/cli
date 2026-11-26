@@ -145,6 +145,12 @@ type ResourceLifecycleConfig struct {
 	// resource's own and never follows it. Requires IDFromState.
 	ParentIDFields []FieldRule `yaml:"parent_id_fields,omitempty"`
 
+	// MovesWithParent: the resource lives in a UC schema and moves with it on a rename, but its
+	// parent is only part of its full-name ID, so it has no ParentIDFields (a feature). A Delete of
+	// it is looked for under a parent renamed out of band, as for a resource with ParentIDFields
+	// (see findInMovedParents).
+	MovesWithParent bool `yaml:"moves_with_parent,omitempty"`
+
 	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
 	// A change is skipped when local and remote differ only by trailing slashes.
 	NormalizeSlash []FieldRule `yaml:"normalize_slash,omitempty"`
@@ -218,6 +224,7 @@ var empty = ResourceLifecycleConfig{
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,
 	ParentIDFields:        nil,
+	MovesWithParent:       false,
 	NormalizeSlash:        nil,
 	IgnoreRemoteAdditions: nil,
 	BackendDefaults:       nil,

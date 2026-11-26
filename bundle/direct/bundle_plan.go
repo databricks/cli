@@ -389,7 +389,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 		if otherID != "" && remoteState == nil {
-			logdiag.LogDiag(ctx, diag.Warningf("%s: %s. If it is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and 'bundle deployment bind' to manage it again.",
+			logdiag.LogDiag(ctx, diag.Warningf("%s: %s. "+otherObjectAdvice,
 				resourceKey, otherObjectMessage(adapter, dbentry.ID, savedState, otherID))[0])
 		}
 
@@ -920,13 +920,13 @@ func isParentIDField(adapter *dresources.Adapter, path *structpath.PathNode) boo
 
 // findInMovedParents handles a Delete of a resource not found at its recorded ID (Gone) while its
 // parent was found at another ID in this plan: renamed out of band (see findMoved and
-// findByInternalID). The rename moved the resource with the parent, so it is looked for under the
-// parent's new ID, and deleted there as itself if it has its recorded internal ID. When the parent is
-// deleted and the resource is there but cannot be verified (it has no internal ID: a model, a secret,
-// a feature), or may be there (it has one, and a 404 cannot tell a renamed resource from a deleted
-// one), it is marked WithParent: no delete is sent for it, but approval and lifecycle.prevent_destroy
-// see that the parent's delete takes it along. A resource without an internal ID that is not there
-// stays Gone.
+// findByInternalID). Only a resource that lives in a UC parent (ParentIDFields, MovesWithParent)
+// moves with it, so it is looked for under the parent's new ID, and deleted there as itself if it has
+// its recorded internal ID. When the parent is deleted and the resource is there but cannot be
+// verified (it has no internal ID: a model, a secret, a feature), or may be there (it has one, and a
+// 404 cannot tell a renamed resource from a deleted one), it is marked WithParent: no delete is sent
+// for it, but approval and lifecycle.prevent_destroy see that the parent's delete takes it along. A
+// resource without an internal ID that is not there stays Gone.
 func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployplan.Plan) error {
 	parents, err := b.movedParents(plan)
 	if err != nil || len(parents) == 0 {
@@ -960,13 +960,12 @@ func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployp
 			// Verified at its recorded ID by its internal ID (see findDeleteTarget): it did not move.
 			continue
 		}
-		if !entry.Gone && !adapter.HasIDFromState() {
-			// Found at its recorded ID, and its ID is not known to be a UC full name (a secret scope may
-			// be named main.s.x): it is deleted there. Only a Gone one is looked for by prefix.
+		if config := adapter.ResourceConfig(); len(config.ParentIDFields) == 0 && !config.MovesWithParent {
+			// Not a resource that lives in a UC parent and moves with it: an ID that looks like a full
+			// name under the parent's (a secret scope named main.s.x) says nothing about where it is,
+			// found or Gone.
 			continue
 		}
-		// Any resource whose ID is a full name under the parent's can be in it, with or without
-		// IDFromState (a feature's ID is its full name too).
 		parent, id := underMovedParent(parents, dbentry.ID)
 		if parent == nil {
 			continue
@@ -1218,12 +1217,16 @@ func otherInternalID(adapter *dresources.Adapter, savedState, remote any) (strin
 
 // otherObjectMessage says that what is at the recorded ID id is not the bundle's: the plan leaves it
 // alone. It is told when the bundle's own is not found elsewhere either; a resource deleted and
-// created again out of band looks the same, hence the advice the callers add.
+// created again out of band looks the same, hence otherObjectAdvice.
 func otherObjectMessage(adapter *dresources.Adapter, id string, savedState any, otherID string) string {
 	saved, _ := adapter.InternalID(savedState)
 	return fmt.Sprintf("id=%q holds another object: its %s is %q, not %q as recorded, so this bundle leaves it in place",
 		id, adapter.ResourceConfig().InternalIDField, otherID, saved)
 }
+
+// otherObjectAdvice follows otherObjectMessage, for a resource still in the config (deploy) as well as
+// one removed from it (a Delete): bind needs the resource in the config, and a free state entry.
+const otherObjectAdvice = "If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it)."
 
 // warnOtherObjects warns about each Delete that leaves another object in place at its recorded ID
 // (see findDeleteTarget), after findInMovedParents had its chance to find the bundle's own.
@@ -1233,7 +1236,7 @@ func (b *DeploymentBundle) warnOtherObjects(ctx context.Context, plan *deploypla
 		if !ok || plan.Plan[resourceKey].ID != "" {
 			continue
 		}
-		logdiag.LogDiag(ctx, diag.Warningf("%s: %s, and drops %s from the deployment state. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or once the state entry is dropped, bind it again with 'bundle deployment bind' and destroy.",
+		logdiag.LogDiag(ctx, diag.Warningf("%s: %s, and drops %s from the deployment state. "+otherObjectAdvice,
 			resourceKey, message, resourceKey)[0])
 	}
 }
@@ -1293,7 +1296,8 @@ func (b *DeploymentBundle) findDeleteTarget(ctx context.Context, resourceKey str
 // band. A plan without config (destroy), or without this resource in it, has no new name to look at,
 // as findMoved does, so the resource searches for it (DoFindByInternalID). As in findMoved, what is
 // found is taken only if its internal ID matches. A search the user has no permission for finds
-// nothing, and the delete only drops the state entry, as it did before; any other failure fails the
+// nothing: the delete then goes to the recorded ID if the read there was forbidden too (see
+// findDeleteTarget), else only drops the state entry, as it did before. Any other failure fails the
 // plan, so the state keeps the record of the resource and the command can be run again.
 func findByInternalID(ctx context.Context, adapter *dresources.Adapter, savedState any) (string, any, error) {
 	if !adapter.HasFindByInternalID() {

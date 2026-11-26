@@ -38,12 +38,12 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Error: cannot delete resources.schemas.schema1: deleting id=main.test-schema-renamed-[UNIQUE_NAME]: injected (400 INVALID_PARAMETER_VALUE)
+Error: cannot delete resources.schemas.schema1: deleting id=main.test-schema-renamed-[UNIQUE_NAME]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: DELETE [DATABRICKS_URL]/api/2.1/unity-catalog/schemas/main.test-schema-renamed-[UNIQUE_NAME]?force=true
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: injected
+API message: Fault injected by test.
 
 Error: cannot delete resources.volumes.volume1: dependency failed: resources.schemas.schema1
 
@@ -57,7 +57,7 @@ Error: cannot delete resources.volumes.volume1: dependency failed: resources.sch
   }
 }
 
->>> [CLI] bundle summary --output json
+>>> summary_ids
 {
   "schemas": {
     "schema1": "main.test-schema-[UNIQUE_NAME]"

@@ -22,8 +22,12 @@ trace $CLI volumes update "$NEW_SCHEMA.myvolume" --new-name myvolume2 | volume_f
 envsubst < databricks-empty.yml.tmpl > databricks.yml
 print_requests.py //unity-catalog &> LOG.rename_requests
 
+title "Selecting only the volume fails: only the schema's delete removes it, with everything in it"
+trace musterr $CLI bundle deploy --select volumes.volume1 --auto-approve
+trace print_requests.py //unity-catalog
+
 title "Selecting only the schema still lists the volume, which its delete takes along"
 trace $CLI bundle deploy --select schemas.schema1 --auto-approve
 trace print_requests.py //unity-catalog
 trace musterr $CLI schemas get "$NEW_SCHEMA"
-trace $CLI bundle summary --output json | jq '.resources // {}'
+trace summary_ids

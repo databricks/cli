@@ -10,6 +10,7 @@ trace $CLI volumes update "$NEW_SCHEMA.myvolume" --new-name myvolume2 | volume_f
 print_requests.py //unity-catalog &> LOG.deploy_requests
 
 title "The volume goes with the schema's delete, which fails: the volume stays in the state with the schema"
+fault.py "DELETE /api/2.1/unity-catalog/schemas/*" 400 0 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
-trace $CLI bundle summary --output json | jq '.resources | map_values(map_values(.id))'
+trace summary_ids

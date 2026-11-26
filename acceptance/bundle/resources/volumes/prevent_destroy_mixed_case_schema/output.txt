@@ -18,7 +18,7 @@ Updated schemas.schema1
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> [CLI] bundle summary --output json
+>>> summary_ids
 {
   "schemas": {
     "schema1": "main.test-schema-mixed-[UNIQUE_NAME]"

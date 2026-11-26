@@ -1,6 +1,7 @@
 package deployplan_test
 
 import (
+	"maps"
 	"slices"
 	"testing"
 
@@ -284,17 +285,24 @@ func TestFilterToSelected_DeletionLeavesDependencies(t *testing.T) {
 	assert.NotContains(t, p.Plan, "resources.jobs.lib")
 }
 
-func TestFilterToSelected_WithParentBringsItsParent(t *testing.T) {
-	p := deployplan.NewPlanDirect()
-	schemaDep := deployplan.DependsOnEntry{Node: "resources.schemas.s"}
-	p.Plan["resources.schemas.s"] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: "main.moved"}
-	p.Plan["resources.volumes.v"] = &deployplan.PlanEntry{Action: deployplan.Delete, Gone: true, WithParent: "resources.schemas.s", DependsOn: []deployplan.DependsOnEntry{schemaDep}}
-	p.Plan["resources.volumes.other"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+func TestFilterToSelected_WithParentNeedsItsParentSelected(t *testing.T) {
+	newPlan := func() *deployplan.Plan {
+		p := deployplan.NewPlanDirect()
+		schemaDep := deployplan.DependsOnEntry{Node: "resources.schemas.s"}
+		p.Plan["resources.schemas.s"] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: "main.moved"}
+		p.Plan["resources.volumes.v"] = &deployplan.PlanEntry{Action: deployplan.Delete, Gone: true, WithParent: "resources.schemas.s", DependsOn: []deployplan.DependsOnEntry{schemaDep}}
+		p.Plan["resources.volumes.w"] = &deployplan.PlanEntry{Action: deployplan.Delete, DependsOn: []deployplan.DependsOnEntry{schemaDep}}
+		p.Plan["resources.volumes.other"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+		return p
+	}
 
-	// Its parent's delete is what removes it, so selecting it brings the parent, and the parent brings
-	// it back.
-	require.NoError(t, p.FilterToSelected(t.Context(), []string{"volumes.v"}))
-	assert.Contains(t, p.Plan, "resources.schemas.s")
-	assert.Contains(t, p.Plan, "resources.volumes.v")
-	assert.NotContains(t, p.Plan, "resources.volumes.other")
+	// Only the parent's delete removes it, and that one takes w along too: the user has to ask for it.
+	p := newPlan()
+	err := p.FilterToSelected(t.Context(), []string{"volumes.v"})
+	require.EqualError(t, err, "cannot delete volumes.v on its own: only deleting schemas.s, which was renamed outside the bundle, removes it; also select schemas.s")
+	assert.Len(t, p.Plan, 4)
+
+	p = newPlan()
+	require.NoError(t, p.FilterToSelected(t.Context(), []string{"volumes.v", "schemas.s"}))
+	assert.ElementsMatch(t, []string{"resources.schemas.s", "resources.volumes.v", "resources.volumes.w"}, slices.Collect(maps.Keys(p.Plan)))
 }

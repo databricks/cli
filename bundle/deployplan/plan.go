@@ -131,13 +131,13 @@ type PlanEntry struct {
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
-	// Gone is set on Delete entries when planning did not find the resource remotely: a read at its
-	// ID returned nothing (for a resource with an internal ID: found neither at its ID, where another
-	// object may be, nor by its internal ID, nor under a renamed parent; see findInMovedParents; a
-	// search the user may not run finds nothing too), or the state entry has an empty ID (left by a recreate in an older CLI
-	// whose create step failed after the delete). Applying such an entry only removes it from the
-	// state, without calling the delete API, and approval prompts do not list it as a deletion
-	// unless WithParent is set.
+	// Gone is set on Delete entries when planning did not find the resource remotely, or the state
+	// entry has an empty ID (left by a recreate in an older CLI whose create step failed after the
+	// delete). Applying such an entry only removes it from the state, without calling the delete
+	// API, and approval prompts do not list it as a deletion unless WithParent is set.
+	// A resource with an internal ID is not found when it is not at its recorded ID (another object
+	// may be there), not found by findByInternalID (a search the user may not run finds nothing),
+	// and not under a renamed parent (see findInMovedParents).
 	Gone bool `json:"gone,omitempty"`
 	// WithParent is set on a Gone Delete entry whose resource is inside a parent this plan deletes
 	// at the new ID a rename out of band gave it (a volume in a renamed schema), but could not be
@@ -394,6 +394,8 @@ func ResolveSelectors(resourceKeys iter.Seq[string], selectors []string) ([]stri
 // dependencies (forward), a deleted one its dependents (reverse) so they are removed
 // together. A delete selection errors if a live resource (not itself being deleted)
 // still references the resource to be deleted; removing it would break the live resource.
+// It also errors for a WithParent delete whose parent is not selected, as the parent's
+// delete is the only one that removes it.
 func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	before := len(p.Plan)
 
@@ -433,9 +435,12 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 		key := queue[0]
 		queue = queue[1:]
 		if p.Plan[key].Action == Delete {
-			if parent := p.Plan[key].WithParent; parent != "" {
-				// Its parent's delete is what removes it.
-				p.enqueueReachable(reachable, &queue, parent)
+			if parent := p.Plan[key].WithParent; parent != "" && !slices.Contains(resolved, parent) {
+				// Only its parent's delete removes it, and that takes everything in the parent along:
+				// the user has to ask for it.
+				deleted := strings.TrimPrefix(key, "resources.")
+				parentName := strings.TrimPrefix(parent, "resources.")
+				errs = append(errs, fmt.Sprintf("cannot delete %s on its own: only deleting %s, which was renamed outside the bundle, removes it; also select %s", deleted, parentName, parentName))
 			}
 			for _, dependent := range dependents[key] {
 				// Sub-nodes (grants/permissions, 4-part key) are not user-facing dependents
