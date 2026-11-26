@@ -19,3 +19,33 @@ trace $CLI aitools uninstall
 trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 $CLI jobs list
 trace print_telemetry
 trace cursor_skills
+
+# The user put their own copy of a Databricks skill into Cursor's skills
+# directory by hand, on a machine where nothing has run yet. Nothing records
+# it, so an install would replace it.
+use_home hand-placed-home
+hand_placed="${USERPROFILE:-$HOME}/.cursor/skills/databricks-test"
+"$mkdir_bin" -p "$hand_placed"
+echo "my own skill" > "$hand_placed/SKILL.md"
+echo "my notes" > "$hand_placed/NOTES.md"
+hand_placed_files() {
+    "$ls_bin" "$hand_placed"
+}
+# auto_install_outcome prints the outcome of each auto-install event uploaded
+# since the last print_telemetry.
+auto_install_outcome() {
+    print_telemetry | jq -r '.aitools_auto_install_event.outcome // empty'
+}
+# settled_version prints the stored auto-install state without the machine
+# identifier: a settled version has no failed attempts.
+settled_version() {
+    jq -c 'del(.id)' "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
+}
+
+title "first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried"
+trace $CLI jobs list
+trace auto_install_outcome
+trace cursor_skills
+trace hand_placed_files
+trace cat "$hand_placed/SKILL.md"
+trace settled_version

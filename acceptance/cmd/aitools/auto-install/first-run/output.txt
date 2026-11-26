@@ -37,3 +37,23 @@ Uninstalled 1 skill.
 
 >>> cursor_skills
 (no skills)
+
+=== first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried
+
+>>> [CLI] jobs list
+
+>>> auto_install_outcome
+KEPT
+
+>>> cursor_skills
+databricks-test
+
+>>> hand_placed_files
+NOTES.md
+SKILL.md
+
+>>> cat [TEST_TMP_DIR]/hand-placed-home/.cursor/skills/databricks-test/SKILL.md
+my own skill
+
+>>> settled_version
+{"last_version":"1.30.0"}

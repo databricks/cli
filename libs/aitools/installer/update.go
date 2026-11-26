@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -338,6 +339,74 @@ func HasUntrackedSkills(ctx context.Context, cliScope string) bool {
 	}
 	return state == nil && hasLegacyInstall(ctx, dir)
 }
+
+// HasForeignSkillsInAgentDir reports whether the agent's global skills
+// directory has an entry named like a Databricks skill that an install for the
+// agent would move aside and that a first install into globalDir did not make.
+// An install makes links to the skills in globalDir, which it leaves in place,
+// and copies of them. A directory whose files all match the files of the same
+// skill in globalDir is such a copy, or holds nothing that the copy lacks; any
+// other entry is the user's or another tool's.
+func HasForeignSkillsInAgentDir(ctx context.Context, agent *agents.Agent, globalDir string) bool {
+	dir, err := agent.SkillsDir(ctx)
+	if err != nil {
+		return false
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	return slices.ContainsFunc(entries, func(e fs.DirEntry) bool {
+		if !strings.HasPrefix(e.Name(), "databricks") {
+			return false
+		}
+		path := filepath.Join(dir, e.Name())
+		canonicalDir := filepath.Join(globalDir, e.Name())
+		return !linksTo(path, canonicalDir) && !isCopyOf(path, canonicalDir)
+	})
+}
+
+// isCopyOf reports whether dir is a directory, not a link, whose every file is
+// a regular file with the same contents as the file at the same path in
+// canonicalDir.
+func isCopyOf(dir, canonicalDir string) bool {
+	if fi, err := os.Lstat(dir); err != nil || !fi.IsDir() {
+		return false
+	}
+	if fi, err := os.Stat(canonicalDir); err != nil || !fi.IsDir() {
+		return false
+	}
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if !d.Type().IsRegular() {
+			return errNotCopy
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		ours, err := os.ReadFile(filepath.Join(canonicalDir, rel))
+		if err != nil {
+			return err
+		}
+		theirs, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(ours, theirs) {
+			return errNotCopy
+		}
+		return nil
+	})
+	return err == nil
+}
+
+var errNotCopy = errors.New("not a copy")
 
 // hasLegacyInstall checks both canonical and legacy dirs for skills on disk without state.
 func hasLegacyInstall(ctx context.Context, globalDir string) bool {

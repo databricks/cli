@@ -633,6 +633,16 @@ func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) 
 	if len(plan) == 0 {
 		return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeSkippedNoAgents, skipWhy: "no supported coding agent has a config directory"}, nil
 	}
+	// Without install state, Databricks skills in an agent's own directory
+	// that are not links to or copies of the skills in the global directory
+	// were put there by the user or another tool, and an install would move
+	// them to a temporary directory. The unfinished-install marker does not
+	// make them ours: the user may have added them after the install stopped.
+	if slices.ContainsFunc(plan, func(it agentPlanItem) bool {
+		return it.delivery == deliverySkills && installer.HasForeignSkillsInAgentDir(ctx, it.agent, globalDir)
+	}) {
+		return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeKept, skipWhy: "an agent's skills directory has skills without install state"}, nil
+	}
 	if !agentCLIsStoppable {
 		plan = slices.DeleteFunc(plan, func(it agentPlanItem) bool {
 			return it.delivery == deliveryPlugin && !it.cliMissing

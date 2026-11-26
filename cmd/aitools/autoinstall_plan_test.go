@@ -276,6 +276,78 @@ enabled = true
 	}
 }
 
+func TestPlanToolsKeepsSkillsInAnAgentDirWithoutInstallState(t *testing.T) {
+	home := autoInstallHome(t)
+	cursorSkill := filepath.Join(home, ".cursor", "skills", "databricks-sql")
+	require.NoError(t, os.MkdirAll(cursorSkill, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(cursorSkill, "NOTES.md"), []byte("my notes"), 0o644))
+
+	tools, err := planTools(t.Context(), autoinstall.State{})
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeKept, tools.skip)
+	assert.Empty(t, tools.newAgents())
+
+	result, err := tools.install(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeKept, result.outcome)
+	assert.FileExists(t, filepath.Join(cursorSkill, "NOTES.md"))
+
+	// A link the user made counts too: the install would move it aside.
+	require.NoError(t, os.RemoveAll(cursorSkill))
+	target := t.TempDir()
+	if err := os.Symlink(target, cursorSkill); err != nil {
+		t.Skipf("cannot create symlinks: %v", err)
+	}
+	tools, err = planTools(t.Context(), autoinstall.State{})
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeKept, tools.skip)
+
+	// A skill the user added after an install of auto-install stopped is
+	// still theirs.
+	tools, err = planTools(t.Context(), autoinstall.State{Installing: true})
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeKept, tools.skip)
+
+	// The links and copies of the global skills that the stopped install
+	// made are its own, and so is a copy it did not finish.
+	canonical := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-sql")
+	require.NoError(t, os.MkdirAll(filepath.Join(canonical, "references"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(canonical, "SKILL.md"), []byte("skill"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(canonical, "references", "a.md"), []byte("a"), 0o644))
+	require.NoError(t, os.Remove(cursorSkill))
+	require.NoError(t, os.Symlink(canonical, cursorSkill))
+	tools, err = planTools(t.Context(), autoinstall.State{Installing: true})
+	require.NoError(t, err)
+	assert.True(t, tools.fresh())
+
+	require.NoError(t, os.Remove(cursorSkill))
+	require.NoError(t, os.MkdirAll(cursorSkill, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(cursorSkill, "SKILL.md"), []byte("skill"), 0o644))
+	tools, err = planTools(t.Context(), autoinstall.State{Installing: true})
+	require.NoError(t, err)
+	assert.True(t, tools.fresh())
+
+	// A copy the user changed is theirs.
+	require.NoError(t, os.WriteFile(filepath.Join(cursorSkill, "SKILL.md"), []byte("my skill"), 0o644))
+	tools, err = planTools(t.Context(), autoinstall.State{Installing: true})
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeKept, tools.skip)
+
+	require.NoError(t, os.WriteFile(filepath.Join(cursorSkill, "SKILL.md"), []byte("skill"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(cursorSkill, "NOTES.md"), []byte("my notes"), 0o644))
+	tools, err = planTools(t.Context(), autoinstall.State{Installing: true})
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeKept, tools.skip)
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".databricks")))
+
+	// Another skill in the agent's directory is left alone, so it installs.
+	require.NoError(t, os.RemoveAll(cursorSkill))
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".cursor", "skills", "my-skill"), 0o755))
+	tools, err = planTools(t.Context(), autoinstall.State{})
+	require.NoError(t, err)
+	assert.True(t, tools.fresh())
+}
+
 func TestChangedAgents(t *testing.T) {
 	autoInstallHome(t)
 	dir := saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})

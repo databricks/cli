@@ -785,7 +785,7 @@ func agentSkillsDirForScope(ctx context.Context, agent *agents.Agent, scope, cwd
 // backupThirdPartySkill moves destDir to a temp directory if it exists and is not
 // a symlink pointing to canonicalDir. This preserves skills installed by other tools.
 func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName, agentName string) error {
-	fi, err := os.Lstat(destDir)
+	_, err := os.Lstat(destDir)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
@@ -794,17 +794,8 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 	}
 
 	// If it's a symlink to our canonical dir, no backup needed.
-	if fi.Mode()&os.ModeSymlink != 0 {
-		target, err := os.Readlink(destDir)
-		if err == nil {
-			absTarget := target
-			if !filepath.IsAbs(target) {
-				absTarget = filepath.Clean(filepath.Join(filepath.Dir(destDir), target))
-			}
-			if absTarget == canonicalDir {
-				return nil
-			}
-		}
+	if linksTo(destDir, canonicalDir) {
+		return nil
 	}
 
 	backupDir, err := os.MkdirTemp("", fmt.Sprintf("databricks-skill-backup-%s-*", skillName))
@@ -819,6 +810,18 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 
 	log.Debugf(ctx, "Existing %q for %s moved to %s", skillName, agentName, backupDest)
 	return nil
+}
+
+// linksTo reports whether path is a symlink whose target is canonicalDir.
+func linksTo(path, canonicalDir string) bool {
+	target, err := os.Readlink(path)
+	if err != nil {
+		return false
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Clean(filepath.Join(filepath.Dir(path), target))
+	}
+	return target == canonicalDir
 }
 
 func movePathWithCrossDeviceFallback(src, dest string) error {
