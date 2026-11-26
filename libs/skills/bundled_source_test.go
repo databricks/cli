@@ -17,7 +17,7 @@ func useBundled(t *testing.T, dir string) {
 	t.Cleanup(func() { bundledFS = saved })
 }
 
-func TestBundledSourceEmptyPlaceholder(t *testing.T) {
+func TestBundledSourceNoSkills(t *testing.T) {
 	// A temp snapshot with no skills, so the test does not depend on what
 	// the release build has put into the embedded folder. It checks the
 	// empty-manifest rule; the committed folder is checked below.
@@ -28,8 +28,8 @@ func TestBundledSourceEmptyPlaceholder(t *testing.T) {
 }
 
 func TestBundledSourceCommittedPlaceholder(t *testing.T) {
-	// The folder compiled into the binary as committed. The release build
-	// fills it only in its GoReleaser step, so CI always sees this empty copy.
+	// The folder compiled into the binary as committed. A later change fills
+	// it in the release build, so until then CI always sees this empty copy.
 	saved := bundledFS
 	bundledFS = subSnapshot()
 	t.Cleanup(func() { bundledFS = saved })

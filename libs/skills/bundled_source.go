@@ -10,8 +10,8 @@ import (
 
 // bundledSnapshot is a skills release compiled into the binary. It is the
 // fallback for when the published release cannot be reached and nothing is
-// cached. The snapshot is filled when release binaries are built, so the
-// repo holds only an empty manifest.
+// cached. The repo holds only an empty manifest; a later change fills the
+// snapshot when release binaries are built.
 //
 // The all: prefix embeds files whose names start with "." or "_" too. Without
 // it the compiler drops them silently, and a skill file such as
@@ -37,8 +37,6 @@ func subSnapshot() fs.FS {
 // NewBundledSource returns the source over the snapshot compiled into the
 // binary. A snapshot with no skills reports ErrSourceUnreachable, so a
 // development build behaves as if it had no bundled copy.
-//
-//deadcode:allow the wiring task calls it; nothing reads the snapshot yet
 func NewBundledSource() Source {
 	return &bundledSource{src: NewFSSource(bundledFS, BundledLabel)}
 }

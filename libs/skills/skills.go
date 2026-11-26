@@ -48,7 +48,8 @@ type Catalog struct {
 	Label string
 
 	// FetchedAt is when the source produced the catalog. A source that serves
-	// a cached copy sets it to the time the copy was fetched.
+	// a cached copy sets it to the time the copy was fetched. Zero means the
+	// time is unknown, as for the bundled copy.
 	FetchedAt time.Time
 
 	// Stale reports that the catalog is not the current release. The source
