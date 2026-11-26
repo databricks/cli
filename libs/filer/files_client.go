@@ -14,10 +14,12 @@ import (
 	"path"
 	"slices"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/sdk-go/core/apierr"
@@ -106,6 +108,27 @@ func (r *readRetrier) IsRetriable(err error) (time.Duration, bool) {
 		r.serverErrors++
 	}
 	return r.cappedRetrier.IsRetriable(err)
+}
+
+// deleteRetrier is a cappedRetrier that records whether it retried an attempt
+// that may have been applied. A 429 or a refused connection means the backend
+// did not act; after any other retried error (a 5xx or 408 from a gateway, a
+// reset connection) the delete may have gone through, and its retry then gets
+// 404 for a path that is gone as asked. This matches libs/retry, which forgives
+// a 404 after any of its own retries; it does not retry 429 or refused
+// connections.
+type deleteRetrier struct {
+	*cappedRetrier
+	retriedAppliedAttempt bool
+}
+
+func (r *deleteRetrier) IsRetriable(err error) (time.Duration, bool) {
+	delay, ok := r.cappedRetrier.IsRetriable(err)
+	notApplied := httpStatus(err) == http.StatusTooManyRequests || errors.Is(err, syscall.ECONNREFUSED)
+	if ok && !notApplied {
+		r.retriedAppliedAttempt = true
+	}
+	return delay, ok
 }
 
 // As of 19th Feb 2024, the Files API backend has a rate limit of 10 concurrent
@@ -228,8 +251,12 @@ type FilesClient struct {
 	retryBackoff ops.BackoffPolicy
 }
 
-func (w *FilesClient) newRetrier() ops.Retrier {
+func (w *FilesClient) newCappedRetrier() *cappedRetrier {
 	return &cappedRetrier{Retrier: apiretry.NewRetrier(w.retryBackoff, apiretry.RetrierConfig{StatusCodes: filesRetryStatusCodes})}
+}
+
+func (w *FilesClient) newRetrier() ops.Retrier {
+	return w.newCappedRetrier()
 }
 
 func (w *FilesClient) newReadRetrier() ops.Retrier {
@@ -240,6 +267,13 @@ func (w *FilesClient) newReadRetrier() ops.Retrier {
 // retry is the call option that retries a files/v2 call on throttling.
 func (w *FilesClient) retry() call.Option {
 	return call.WithRetrier(w.newRetrier)
+}
+
+// deleteRetry is retry for deletes. The returned retrier tells whether an
+// attempt that may have been applied was retried.
+func (w *FilesClient) deleteRetry() (call.Option, *deleteRetrier) {
+	r := &deleteRetrier{cappedRetrier: w.newCappedRetrier()}
+	return call.WithRetrier(func() ops.Retrier { return r }), r
 }
 
 // readRetry is retry for read-only calls, which are also retried on 500.
@@ -555,7 +589,8 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath}, w.retry())
+	retryOpt, retrier := w.deleteRetry()
+	_, err = w.client.DeleteFile(ctx, files.DeleteFileRequest{FilePath: &absPath}, retryOpt)
 
 	// Return early on success.
 	if err == nil {
@@ -564,6 +599,12 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 
 	// This files delete API returns a 404 if the specified path does not exist.
 	if httpStatus(err) == http.StatusNotFound {
+		// After retrying a possibly applied attempt, the 404 means that attempt
+		// deleted the file.
+		if retrier.retriedAppliedAttempt {
+			log.Debugf(ctx, "%s not found after a retried delete, treating it as deleted", absPath)
+			return nil
+		}
 		return fileDoesNotExistError{absPath}
 	}
 
@@ -581,7 +622,8 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		return cannotDeleteRootError{}
 	}
 
-	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath}, w.retry())
+	retryOpt, retrier := w.deleteRetry()
+	_, err = w.client.DeleteDirectory(ctx, files.DeleteDirectoryRequest{DirectoryPath: &absPath}, retryOpt)
 
 	// Return early on success.
 	if err == nil {
@@ -603,6 +645,12 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 	// directory; treat it as a not-found error so recursive delete can consider
 	// its goal satisfied.
 	if httpStatus(err) == http.StatusNotFound {
+		// After retrying a possibly applied attempt, the 404 means that attempt
+		// deleted the directory.
+		if retrier.retriedAppliedAttempt {
+			log.Debugf(ctx, "%s not found after a retried delete, treating it as deleted", absPath)
+			return nil
+		}
 		return noSuchDirectoryError{absPath}
 	}
 	return describeFilesError(err, "delete", absPath)

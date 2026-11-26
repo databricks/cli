@@ -41,6 +41,7 @@ resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
 resources.postgres_projects.*.status.branch_logical_size_limit_bytes	int64	REMOTE
 resources.postgres_projects.*.status.budget_policy_id	string	REMOTE
 resources.postgres_projects.*.status.compute_last_active_time	*time.Time	REMOTE
+resources.postgres_projects.*.status.compute_policy_id	string	REMOTE
 resources.postgres_projects.*.status.custom_tags	[]postgres.ProjectCustomTag	REMOTE
 resources.postgres_projects.*.status.custom_tags[*]	postgres.ProjectCustomTag	REMOTE
 resources.postgres_projects.*.status.custom_tags[*].key	string	REMOTE

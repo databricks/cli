@@ -204,6 +204,27 @@ func TestDatabricksTooling(t *testing.T) {
 			want:     agents.ToolingPlugin,
 		},
 		{
+			name:  "codex plugin installed with its own CLI",
+			agent: agents.NameCodex,
+			setup: func(t *testing.T, home, cwd string) {
+				t.Setenv("CODEX_HOME", "")
+				writeFile(t, filepath.Join(home, ".codex", "config.toml"), "[plugins.\"databricks@databricks-agent-skills\"]\nenabled = true\n")
+				mkdir(t, home, ".codex", "plugins", "cache", "databricks-agent-skills", "databricks", "0.2.50")
+			},
+			want: agents.ToolingPlugin,
+		},
+		{
+			name:  "copilot plugin installed with its own CLI",
+			agent: agents.NameCopilot,
+			setup: func(t *testing.T, home, cwd string) {
+				t.Setenv("COPILOT_HOME", "")
+				cache := filepath.Join(home, ".copilot", "installed-plugins", "databricks-agent-skills", "databricks")
+				mkdir(t, cache)
+				writeFile(t, filepath.Join(home, ".copilot", "config.json"), `{"installedPlugins":[{"name":"databricks","marketplace":"databricks-agent-skills","cache_path":"`+filepath.ToSlash(cache)+`"}]}`)
+			},
+			want: agents.ToolingPlugin,
+		},
+		{
 			name:  "another agent's plugin does not count",
 			agent: agents.NameCodex,
 			setup: func(t *testing.T, home, cwd string) {

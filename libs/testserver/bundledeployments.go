@@ -711,6 +711,24 @@ func leavesLiveResource(action bundledeployments.OperationActionType) bool {
 	}
 }
 
+// dmsEnrollmentFeatures lists the rollout features the service knows.
+var dmsEnrollmentFeatures = []string{"record_history_auto"}
+
+// dmsCheckEnrollments answers "not enrolled" for every known feature and leaves out the rest,
+// as the service does. A test that needs an enrolled workspace stubs the route.
+func dmsCheckEnrollments(features []string) Response {
+	if len(features) == 0 {
+		return dmsInvalidArgument("features must not be empty")
+	}
+	enrollments := map[string]bool{}
+	for _, feature := range features {
+		if slices.Contains(dmsEnrollmentFeatures, feature) {
+			enrollments[feature] = false
+		}
+	}
+	return Response{Body: map[string]any{"enrollments": enrollments}}
+}
+
 // dmsNotFound returns the RESOURCE_DOES_NOT_EXIST error shape the DMS API uses,
 // which the SDK maps to apierr.ErrNotFound.
 func dmsNotFound(what string) Response {

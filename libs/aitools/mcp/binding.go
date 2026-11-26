@@ -5,15 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/aitools/mcpconfig"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/log/handler"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/config"
 )
@@ -43,6 +47,8 @@ type BindOptions struct {
 	State   *State
 	// Stderr receives the notice printed when no install record exists. It must not be nil.
 	Stderr io.Writer
+	// CaptureAuthorization receives the Authorization header obtained during binding, when set.
+	CaptureAuthorization func(string)
 }
 
 // BindError is a failed binding check. Its message is the text printed to stderr.
@@ -87,8 +93,12 @@ func Bind(ctx context.Context, opts BindOptions) (*config.Config, *Entry, error)
 	if entry == nil {
 		fmt.Fprintf(opts.Stderr, "No install record for %s on profile \"%s\"; using its current host %s\n", opts.Service, opts.Profile, cfg.Host)
 	}
-	if err := AuthenticateBound(ctx, cfg, opts.Profile, PinnedFile(entry, configFile)); err != nil {
+	authorization, err := AuthenticateBound(ctx, cfg, opts.Profile, PinnedFile(entry, configFile))
+	if err != nil {
 		return nil, nil, err
+	}
+	if opts.CaptureAuthorization != nil {
+		opts.CaptureAuthorization(authorization)
 	}
 	return cfg, entry, nil
 }
@@ -109,14 +119,51 @@ func BoundConfig(profileName, configFile string) (*config.Config, error) {
 // budget of zero keeps the SDK's defaults. Resolving the profile runs on a context of its own, so a context deadline does
 // not reach it, and these budgets are what bound it (see profileMetadata.Load in cmd/auth).
 func BoundConfigWithin(profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	return resolveBound(withinBudget(profileName, configFile, budget))
+}
+
+// BoundUploadConfig is BoundConfigWithin for a config that only a telemetry upload uses. Its credentials never refresh a
+// token, since the command may exit before a refresh finishes, and a rotated single-use refresh token would be lost (see
+// auth.CredentialsWithoutRefresh). It does not authenticate.
+func BoundUploadConfig(ctx context.Context, profileName, configFile string, budget time.Duration) (*config.Config, error) {
+	cfg := withinBudget(profileName, configFile, budget)
+	cfg.Credentials = auth.CredentialsWithoutRefresh()
+	quietHostMetadata(ctx, cfg)
+	return resolveBound(cfg)
+}
+
+// quietHostMetadata makes a failed host metadata lookup of cfg a debug message, so that a command which succeeded does not
+// warn about its telemetry upload. The lookup runs with a debug-only logger of ctx, since the SDK's background context
+// would send the registered resolver's warning to the global logger. A failed lookup falls back to the user config, as
+// the SDK does.
+func quietHostMetadata(ctx context.Context, cfg *config.Config) {
+	logger := slog.New(handler.DebugOnlyHandler{Handler: log.GetLogger(ctx).Handler()})
+	cfg.HostMetadataResolver = func(sdkCtx context.Context, host string) (*config.HostMetadata, error) {
+		resolve := cfg.DefaultHostMetadataResolver()
+		if factory := config.DefaultHostMetadataResolverFactory; factory != nil {
+			if r := factory(cfg); r != nil {
+				resolve = r
+			}
+		}
+		meta, err := resolve(log.NewContext(sdkCtx, logger), host)
+		if err != nil {
+			log.Debugf(sdkCtx, "telemetry: cannot resolve host metadata for %s: %s", host, err)
+			return nil, nil
+		}
+		return meta, nil
+	}
+}
+
+// withinBudget is the config of profileName in configFile, with the SDK's request and retry budgets set to budget.
+func withinBudget(profileName, configFile string, budget time.Duration) *config.Config {
 	seconds := int((budget + time.Second - 1) / time.Second)
-	return resolveBound(&config.Config{
+	return &config.Config{
 		Profile:             profileName,
 		ConfigFile:          configFile,
 		Loaders:             []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile},
 		HTTPTimeoutSeconds:  seconds,
 		RetryTimeoutSeconds: seconds,
-	})
+	}
 }
 
 // resolveBound resolves cfg, as BoundConfig does.
@@ -130,18 +177,19 @@ func resolveBound(cfg *config.Config) (*config.Config, error) {
 
 // AuthenticateBound checks that cfg, from BoundConfig for profileName, has a credential. A credential the profile cannot
 // provide is AUTH_FAILED, with the login command for the profile. pinnedFile is the config file an entry pins the
-// profile to, or "" when there is none; the login command names it.
-func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pinnedFile string) error {
+// profile to, or "" when there is none; the login command names it. It returns
+// the Authorization header from that authentication for callers that need it.
+func AuthenticateBound(ctx context.Context, cfg *config.Config, profileName, pinnedFile string) (string, error) {
 	// Authenticate only writes headers onto req, which is never sent. The request takes
 	// the command's context, as in cmd/root/auth.go.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "", nil)
 	if err != nil {
-		return uncategorizedError(err)
+		return "", uncategorizedError(err)
 	}
 	if err := cfg.Authenticate(req); err != nil {
-		return AuthErrorIn(profileName, pinnedFile, err)
+		return "", AuthErrorIn(profileName, pinnedFile, err)
 	}
-	return nil
+	return req.Header.Get("Authorization"), nil
 }
 
 // PinnedFile returns the config file that a hint for entry must name, or "" when the hint's command reads the same file

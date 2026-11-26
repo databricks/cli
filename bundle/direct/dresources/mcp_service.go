@@ -103,14 +103,17 @@ func (r *ResourceMcpService) DoCreate(ctx context.Context, config *resources.Mcp
 	if err != nil {
 		// The bundle chooses the full name (parent and mcp_service_id), and it is unique in the metastore.
 		id := strings.TrimPrefix(config.Parent, "schemas/") + "." + config.McpServiceId
-		resp, err = recoverCreate(ctx, createRecovery[catalog.McpService]{
+		resp, err = recoverCreate(ctx, createRecovery[catalog.McpService, *catalog.McpService]{
 			name:  "mcp service " + id,
 			start: start,
 			get: func(ctx context.Context) (*catalog.McpService, error) {
 				return r.client.AiGateway.GetMcpService(ctx, catalog.GetMcpServiceRequest{Name: mcpServiceNamePrefix + id})
 			},
-			createTime: func(found *catalog.McpService) (time.Time, bool) { return sdkTime(found.CreateTime) },
-			create:     create,
+			createTime:      func(found *catalog.McpService) (time.Time, bool) { return sdkTime(found.CreateTime) },
+			alreadyExists:   isAlreadyExists,
+			createdByCaller: nil,
+			use:             useFound[catalog.McpService],
+			create:          repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

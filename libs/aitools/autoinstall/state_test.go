@@ -18,6 +18,19 @@ func TestLoadMissingFileIsZeroState(t *testing.T) {
 	assert.Equal(t, State{}, s)
 }
 
+func TestLoadStateWithoutLastAttempt(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	path := filepath.Join(home, ".databricks", "aitools", stateFileName)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	// The format of CLI versions before last_attempt was added.
+	require.NoError(t, os.WriteFile(path, []byte(`{"last_version": "1.27.0", "attempts": 3, "id": "machine"}`), 0o600))
+
+	s, err := Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, State{LastVersion: "1.27.0", Attempts: 3, ID: "machine"}, s)
+}
+
 func TestLoadCorruptFileFails(t *testing.T) {
 	home := t.TempDir()
 	ctx := env.WithUserHomeDir(t.Context(), home)
@@ -27,6 +40,17 @@ func TestLoadCorruptFileFails(t *testing.T) {
 
 	_, err := Load(ctx)
 	assert.ErrorContains(t, err, "parse ")
+}
+
+func TestLoadNegativeAttemptsFails(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	path := filepath.Join(home, ".databricks", "aitools", stateFileName)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(`{"last_version": "1.30.0", "attempts": -1}`), 0o600))
+
+	_, err := Load(ctx)
+	assert.ErrorContains(t, err, "negative attempts -1")
 }
 
 func TestSetOptedOutKeepsOtherFields(t *testing.T) {

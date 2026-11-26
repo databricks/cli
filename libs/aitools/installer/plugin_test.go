@@ -332,6 +332,13 @@ func TestUpdatePluginForAgentReportsRefreshWhenUpdateFails(t *testing.T) {
 	assert.NotContains(t, logs.String(), localCopyWarning)
 }
 
+func TestPluginUninstallCommand(t *testing.T) {
+	claude := agents.ByName(agents.NameClaudeCode)
+	assert.Equal(t, "claude plugin uninstall databricks@claude-plugins-official --scope user", PluginUninstallCommand(claude, "claude-plugins-official", "user"))
+	assert.Equal(t, "claude plugin uninstall databricks@databricks-agent-skills --scope project", PluginUninstallCommand(claude, "databricks-agent-skills", "project"))
+	assert.Equal(t, "codex plugin remove databricks@databricks-agent-skills", PluginUninstallCommand(agents.ByName(agents.NameCodex), "databricks-agent-skills", "user"))
+}
+
 func TestUninstallPluginClaudeAlreadyDisabledContinues(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())

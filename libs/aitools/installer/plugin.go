@@ -277,6 +277,13 @@ func pluginUninstallArgs(agent *agents.Agent, rec PluginRecord) []string {
 	}
 }
 
+// PluginUninstallCommand is the command that removes the databricks plugin
+// from the given marketplace with the agent's own CLI in the agent-native
+// scope, for a plugin the CLI has no record of.
+func PluginUninstallCommand(agent *agents.Agent, marketplace, agentScope string) string {
+	return strings.Join(prepend(agent.Binary, pluginUninstallArgs(agent, PluginRecord{Marketplace: marketplace, Scope: agentScope})), " ")
+}
+
 func pluginDisableArgs(agent *agents.Agent, rec PluginRecord) []string {
 	if agent.Name != agents.NameClaudeCode {
 		return nil
@@ -522,20 +529,33 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 // databricks plugin install for the agent. A scope without state, or a state
 // that cannot be read, has no record.
 func PluginRecorded(ctx context.Context, cliScope, agentName string) bool {
+	_, ok := RecordedPlugin(ctx, cliScope, agentName)
+	return ok
+}
+
+// RecordedPlugin returns the agent's databricks plugin record in the CLI
+// install state for cliScope, with the marketplace filled in for records
+// written before it was stored. ok is false as for PluginRecorded.
+func RecordedPlugin(ctx context.Context, cliScope, agentName string) (rec PluginRecord, ok bool) {
 	dir, err := skillsDir(ctx, cliScope)
 	if err != nil {
-		return false
+		return PluginRecord{}, false
 	}
 	state, err := LoadState(dir)
 	if err != nil {
 		log.Debugf(ctx, "Could not load AI tools install state in %s: %v", dir, err)
-		return false
+		return PluginRecord{}, false
 	}
 	if state == nil {
-		return false
+		return PluginRecord{}, false
 	}
-	_, ok := state.Plugins[agentName]
-	return ok
+	rec, ok = state.Plugins[agentName]
+	if ok {
+		if agent := agents.ByName(agentName); agent != nil && agent.Plugin != nil {
+			rec.Marketplace = recordedMarketplace(agent, rec)
+		}
+	}
+	return rec, ok
 }
 
 // ForgetPluginInstalls removes the plugin install records of the named agents

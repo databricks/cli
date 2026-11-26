@@ -1,1 +1,1 @@
-Badness = "configs with id and url should be rejected"
+Badness = "Setting the internal fields id or url on a job is accepted ('Validation OK!') and silently ignored on deploy; validate should reject them as read-only fields."

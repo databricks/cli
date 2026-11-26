@@ -91,6 +91,11 @@ type Agent struct {
 	// their own reader here. found is false when the manifest has no databricks
 	// entry or does not exist; an error means it exists but could not be read.
 	pluginInstalls func(ctx context.Context, a *Agent) (installs []pluginInstall, found bool, err error)
+	// pluginConfigMarketplaces reads the marketplaces the agent's own
+	// records show the databricks plugin as installed from (Codex, Copilot),
+	// for agents without a pluginInstalls reader. See
+	// DatabricksPluginConfigured.
+	pluginConfigMarketplaces func(ctx context.Context) ([]string, error)
 }
 
 // Detected reports whether the agent is installed: its config directory exists,
@@ -316,11 +321,12 @@ var Registry = []*Agent{
 		},
 	},
 	{
-		Name:        NameCodex,
-		DisplayName: "Codex CLI",
-		ConfigDir:   homeSubdir(".codex"),
-		Binary:      "codex",
-		Plugin:      databricksPlugin(),
+		Name:                     NameCodex,
+		DisplayName:              "Codex CLI",
+		ConfigDir:                homeSubdir(".codex"),
+		Binary:                   "codex",
+		Plugin:                   databricksPlugin(),
+		pluginConfigMarketplaces: codexPluginMarketplaces,
 		MCP: &mcpconfig.Spec{
 			Path:   codexMCPPath,
 			Format: mcpconfig.FormatTOML,
@@ -349,11 +355,12 @@ var Registry = []*Agent{
 		mcpHomeEnvs: []string{"XDG_CONFIG_HOME"},
 	},
 	{
-		Name:        NameCopilot,
-		DisplayName: "GitHub Copilot",
-		ConfigDir:   homeSubdir(".copilot"),
-		Binary:      "copilot",
-		Plugin:      databricksPlugin(),
+		Name:                     NameCopilot,
+		DisplayName:              "GitHub Copilot",
+		ConfigDir:                homeSubdir(".copilot"),
+		Binary:                   "copilot",
+		Plugin:                   databricksPlugin(),
+		pluginConfigMarketplaces: copilotPluginMarketplaces,
 		MCP: &mcpconfig.Spec{
 			Path:       copilotMCPPath,
 			Format:     mcpconfig.FormatJSON,
@@ -745,6 +752,16 @@ func copilotMCPPath(ctx context.Context) (string, error) {
 		return filepath.Join(home, "mcp-config.json"), nil
 	}
 	return homeSubdir(".copilot", "mcp-config.json")(ctx)
+}
+
+// copilotConfigPath returns Copilot CLI's config.json, where it records the
+// installed plugins. COPILOT_HOME replaces ~/.copilot.
+// See https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference.
+func copilotConfigPath(ctx context.Context) (string, error) {
+	if home := env.Get(ctx, copilotHomeEnv); home != "" {
+		return filepath.Join(home, "config.json"), nil
+	}
+	return homeSubdir(".copilot", "config.json")(ctx)
 }
 
 // copilotMCPEntry is the stdio entry Copilot CLI documents, with all tools enabled.

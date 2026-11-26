@@ -161,7 +161,7 @@ experimental:
   "$fields":
     "deployment_history":
       "description": |-
-        Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
+        Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments. When not set, history is recorded if Databricks has enrolled the workspace.
     "immutable_folder":
       "description": |-
         Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.
@@ -354,6 +354,9 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
+        "thumbnail_path":
+          "description": |-
+            The local path of a PNG or JPEG image of at most 250 KB to show as the app's thumbnail in the Apps UI, relative to the defining YAML file. Removing it deletes the thumbnail.
     "catalogs":
       "description": |-
         PLACEHOLDER

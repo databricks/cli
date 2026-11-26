@@ -2,6 +2,7 @@ package autoinstall
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -10,6 +11,7 @@ func TestDecide(t *testing.T) {
 	// eligible is a run of a released version never seen before, with the gate on, in the treatment arm.
 	eligible := Inputs{
 		Version: "1.30.0",
+		Now:     time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
 		GateOn:  true,
 		Bucket:  HoldoutPercent,
 	}
@@ -37,6 +39,29 @@ func TestDecide(t *testing.T) {
 		{name: "same version, failed before", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: 3} }, want: ReasonRun},
 		{name: "same version, last attempt left", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts - 1} }, want: ReasonRun},
 		{name: "same version, retries exhausted", modify: func(in *Inputs) { in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts} }, want: ReasonRetriesExhausted},
+		{name: "same version, failed just now", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
+		}, want: ReasonRetryNotDue},
+		{name: "same version, retry due", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now.Add(-firstRetryDelay)}
+		}, want: ReasonRun},
+		{name: "same version, retries exhausted while waiting", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: MaxAttempts, LastAttempt: in.Now}
+		}, want: ReasonRetriesExhausted},
+		{name: "CI before the retry wait", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
+			in.CI = true
+		}, want: ReasonSkippedCI},
+		{name: "opt-out before the retry wait", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now, OptedOut: true}
+		}, want: ReasonSkippedOptOut},
+		{name: "retry wait before the gate", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: in.Now}
+			in.GateOn = false
+		}, want: ReasonRetryNotDue},
+		{name: "new version while the old one waits", modify: func(in *Inputs) {
+			in.State = State{LastVersion: "1.29.0", Attempts: 1, LastAttempt: in.Now}
+		}, want: ReasonRun},
 		{name: "new version after retries exhausted", modify: func(in *Inputs) { in.State = State{LastVersion: "1.29.0", Attempts: MaxAttempts} }, want: ReasonRun},
 		{name: "older CLI after a newer one ran", modify: func(in *Inputs) { in.State.LastVersion = "1.31.0" }, want: ReasonAlreadyRan},
 		{name: "older CLI while a newer one retries", modify: func(in *Inputs) { in.State = State{LastVersion: "1.31.0", Attempts: 2} }, want: ReasonAlreadyRan},
@@ -70,8 +95,36 @@ func TestDecide(t *testing.T) {
 	}
 }
 
+func TestRetryDue(t *testing.T) {
+	last := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	tests := []struct {
+		name     string
+		attempts int
+		since    time.Duration
+		want     bool
+	}{
+		{name: "right after the first", attempts: 1, since: 0, want: false},
+		{name: "before the first wait ends", attempts: 1, since: 5*time.Minute - time.Second, want: false},
+		{name: "after the first wait", attempts: 1, since: 5 * time.Minute, want: true},
+		{name: "the second wait doubles", attempts: 2, since: 10*time.Minute - time.Second, want: false},
+		{name: "after the second wait", attempts: 2, since: 10 * time.Minute, want: true},
+		{name: "the last wait", attempts: MaxAttempts - 1, since: 5 * time.Minute << (MaxAttempts - 2), want: true},
+		{name: "before the last wait ends", attempts: MaxAttempts - 1, since: 5*time.Minute<<(MaxAttempts-2) - time.Second, want: false},
+		{name: "last attempt in the future", attempts: 1, since: -time.Second, want: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := State{Attempts: tc.attempts, LastAttempt: last}
+			assert.Equal(t, tc.want, retryDue(s, last.Add(tc.since)))
+		})
+	}
+
+	// A state an older CLI wrote has no last attempt.
+	assert.True(t, retryDue(State{Attempts: 3}, last))
+}
+
 func TestReasonDue(t *testing.T) {
-	notDue := []Reason{ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted}
+	notDue := []Reason{ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted, ReasonRetryNotDue}
 	due := []Reason{ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun}
 	for _, r := range notDue {
 		assert.False(t, r.Due(), r)

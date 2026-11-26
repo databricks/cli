@@ -12,3 +12,6 @@ targets:
   prod:
     workspace:
       host: https://bar.test
+  staging:
+    workspace:
+      host: https://baz.test

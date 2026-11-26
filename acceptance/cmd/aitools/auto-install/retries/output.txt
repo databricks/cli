@@ -1,17 +1,28 @@
 
-=== a failed attempt is silent and retried on the next run, up to 10 attempts
+=== a failed attempt is silent, and the commands right after it do not retry
 
 >>> print_telemetry
-9 {"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"FAILED","holdout_arm":"TREATMENT","interactive":false,"error_category":"SKILLS_FETCH_FAILED"}}
-9 {"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"SKILLS_FETCH_FAILED","trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"SKILLS_FETCH_FAILED","trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"FAILED","holdout_arm":"TREATMENT","interactive":false,"error_category":"SKILLS_FETCH_FAILED"}}
+
+>>> DATABRICKS_SKILLS_REF=broken-ref [CLI] jobs list
+
+>>> print_telemetry
 
 >>> auto_install_state
 {
   "last_version": "1.30.0",
-  "attempts": 9,
+  "attempts": 1,
+  "last_attempt": "[LAST_ATTEMPT]",
   "installing": true,
   "id": "treatment-machine"
 }
+
+=== once the wait is over, the next run retries, up to 10 attempts
+
+>>> print_telemetry
+8 {"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"FAILED","holdout_arm":"TREATMENT","interactive":false,"error_category":"SKILLS_FETCH_FAILED"}}
+8 {"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"SKILLS_FETCH_FAILED","trigger":"AUTO_FIRST_RUN"}}
 
 >>> DATABRICKS_SKILLS_REF=broken-ref [CLI] jobs list
 

@@ -146,8 +146,10 @@ func newAcknowledgeAssessmentWarnings() *cobra.Command {
 	cmd.Flags().DurationVar(&acknowledgeAssessmentWarningsTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "acknowledge-assessment-warnings NAME"
-	cmd.Short = `Acknowledge assessment warnings.`
-	cmd.Long = `Acknowledge assessment warnings.
+	cmd.Short = `*Beta* Acknowledge assessment warnings.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Acknowledge assessment warnings.
 
   Acknowledges non-blocking warnings on a specific assessment.
 
@@ -160,12 +162,9 @@ func newAcknowledgeAssessmentWarnings() *cobra.Command {
     NAME: Required. The assessment resource name, in the format
       migrations/{migration}/assessments/{assessment}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -250,8 +249,10 @@ func newAssessMigration() *cobra.Command {
 	cmd.Flags().DurationVar(&assessMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "assess-migration NAME"
-	cmd.Short = `Assess a migration.`
-	cmd.Long = `Assess a migration.
+	cmd.Short = `*Beta* Assess a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Assess a migration.
 
   Creates an immutable assessment run for the migration's current source
   configuration.
@@ -265,12 +266,9 @@ func newAssessMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1146,8 +1144,10 @@ func newCreateMigration() *cobra.Command {
 	cmd.Flags().StringVar(&createMigrationReq.Migration.TargetBranch, "target-branch", createMigrationReq.Migration.TargetBranch, `The Lakebase branch receiving the migrated databases, in the format projects/{project_id}/branches/{branch_id}.`)
 
 	cmd.Use = "create-migration MIGRATION_ID SOURCE_CONNECTION DATABASE_MAPPINGS MIGRATION_TYPE"
-	cmd.Short = `Create a migration.`
-	cmd.Long = `Create a migration.
+	cmd.Short = `*Beta* Create a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a migration.
 
   Creates a migration.
 
@@ -1169,12 +1169,9 @@ func newCreateMigration() *cobra.Command {
       migration is created.
       Supported values: [MIGRATION_TYPE_ONE_TIME_COPY]`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -2436,8 +2433,10 @@ func newDeleteMigration() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-migration NAME"
-	cmd.Short = `Delete a migration.`
-	cmd.Long = `Delete a migration.
+	cmd.Short = `*Beta* Delete a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a migration.
 
   Soft-deletes a migration.
 
@@ -2450,12 +2449,9 @@ func newDeleteMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3061,8 +3057,10 @@ func newGetAssessment() *cobra.Command {
 	var getAssessmentReq postgres.GetAssessmentRequest
 
 	cmd.Use = "get-assessment NAME"
-	cmd.Short = `Get a migration assessment.`
-	cmd.Long = `Get a migration assessment.
+	cmd.Short = `*Beta* Get a migration assessment.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a migration assessment.
 
   Gets a migration assessment run.
 
@@ -3070,12 +3068,9 @@ func newGetAssessment() *cobra.Command {
     NAME: Required. The assessment resource name, in the format
       migrations/{migration}/assessments/{assessment}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3556,8 +3551,10 @@ func newGetMigration() *cobra.Command {
 	var getMigrationReq postgres.GetMigrationRequest
 
 	cmd.Use = "get-migration NAME"
-	cmd.Short = `Get a migration.`
-	cmd.Long = `Get a migration.
+	cmd.Short = `*Beta* Get a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a migration.
 
   Gets a migration.
 
@@ -3565,12 +3562,9 @@ func newGetMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3994,8 +3988,10 @@ func newListAssessments() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-assessments PARENT"
-	cmd.Short = `List migration assessments.`
-	cmd.Long = `List migration assessments.
+	cmd.Short = `*Beta* List migration assessments.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List migration assessments.
 
   Lists assessment runs for a migration.
 
@@ -4003,12 +3999,9 @@ func newListAssessments() *cobra.Command {
     PARENT: Required. The parent migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -4464,17 +4457,16 @@ func newListMigrations() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-migrations"
-	cmd.Short = `List migrations.`
-	cmd.Long = `List migrations.
+	cmd.Short = `*Beta* List migrations.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List migrations.
 
   Lists migrations in the workspace.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -4816,8 +4808,10 @@ func newStartMigration() *cobra.Command {
 	cmd.Flags().DurationVar(&startMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "start-migration NAME"
-	cmd.Short = `Start a migration.`
-	cmd.Long = `Start a migration.
+	cmd.Short = `*Beta* Start a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Start a migration.
 
   Starts the assessed migration named in the request, moving it from
   READY_TO_START into execution. Its first phase, SCHEMA_LOAD, creates the
@@ -4833,12 +4827,9 @@ func newStartMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -5028,8 +5019,10 @@ func newUndeleteMigration() *cobra.Command {
 	cmd.Flags().DurationVar(&undeleteMigrationTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "undelete-migration NAME"
-	cmd.Short = `Undelete a migration.`
-	cmd.Long = `Undelete a migration.
+	cmd.Short = `*Beta* Undelete a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Undelete a migration.
 
   Restores a soft-deleted migration before it is permanently purged.
 
@@ -5042,12 +5035,9 @@ func newUndeleteMigration() *cobra.Command {
     NAME: Required. The migration resource name, in the format
       migrations/{migration}.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -5764,8 +5754,10 @@ func newUpdateMigration() *cobra.Command {
 	cmd.Flags().StringVar(&updateMigrationReq.Migration.TargetBranch, "target-branch", updateMigrationReq.Migration.TargetBranch, `The Lakebase branch receiving the migrated databases, in the format projects/{project_id}/branches/{branch_id}.`)
 
 	cmd.Use = "update-migration NAME UPDATE_MASK SOURCE_CONNECTION DATABASE_MAPPINGS MIGRATION_TYPE"
-	cmd.Short = `Update a migration.`
-	cmd.Long = `Update a migration.
+	cmd.Short = `*Beta* Update a migration.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a migration.
 
   Updates user-owned migration configuration.
 
@@ -5785,12 +5777,9 @@ func newUpdateMigration() *cobra.Command {
       migration is created.
       Supported values: [MIGRATION_TYPE_ONE_TIME_COPY]`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

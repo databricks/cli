@@ -134,6 +134,16 @@ type profileKey struct {
 	path    string
 }
 
+// profileGroup returns the group of a server entry in list: its profile in the config file that check resolved, or in the
+// file as written when that file does not resolve.
+func profileGroup(e mcp.Entry, check mcp.EntryCheck) profileKey {
+	path := check.Path
+	if path == "" {
+		path = e.ConfigFile
+	}
+	return profileKey{profile: e.Profile, path: path}
+}
+
 // NewMcpListCmd returns `aitools mcp list`. Without --check it reads the state file and the agent configs only, and
 // makes no network calls. Drift and unreadable entries are reported, not failed: the command exits 0.
 func NewMcpListCmd() *cobra.Command {
@@ -247,12 +257,8 @@ func buildMcpList(ctx context.Context, profileName string) (mcpListOutput, error
 	warnedFiles := map[string]bool{}
 	for i, e := range entries {
 		check := checks[i]
-		path := check.Path
-		if path == "" {
-			// The file cannot be resolved, so the entry is grouped under its file as written.
-			path = e.ConfigFile
-		}
-		key := profileKey{profile: e.Profile, path: path}
+		key := profileGroup(e, check)
+		path := key.path
 		p, ok := groups[key]
 		if !ok {
 			p = &mcpListProfile{Profile: e.Profile, Host: e.Host, Status: statusOK, Servers: []mcpListServer{}, configPath: path}
@@ -513,7 +519,8 @@ func profileCheckClient(ctx context.Context, p *mcpListProfile, login string) (*
 	if err := checkWorkspaceProfile(p.Profile, p.configPath, cfg); err != nil {
 		return nil, err
 	}
-	return boundClient(ctx, cfg, p.Profile, login)
+	w, _, err := boundClient(ctx, cfg, p.Profile, login)
+	return w, err
 }
 
 // tokenStatus is the --check result of a profile's token. A credential that the workspace or the profile refuses is
