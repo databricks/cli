@@ -143,3 +143,25 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	// Existing UUID is not overwritten.
 	require.Equal(t, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), state.ID)
 }
+
+func TestStateUpdateListsKeptInternalFiles(t *testing.T) {
+	b := setupBundleForStateUpdate(t)
+	ctx := t.Context()
+
+	// One kept file is also synced (on disk), so it must be listed once.
+	b.KeptInternalFiles = Filelist{
+		{LocalPath: ".databricks/bundle/default/.internal/notebook_3_job_task", IsNotebook: true},
+		{LocalPath: "test1.py"},
+	}.toSlice(vfs.MustNew(b.BundleRootPath))
+
+	diags := bundle.Apply(ctx, b, &stateUpdate{})
+	require.NoError(t, diags.Error())
+
+	state, err := load(ctx, b)
+	require.NoError(t, err)
+	require.Equal(t, Filelist{
+		{LocalPath: "test1.py"},
+		{LocalPath: "test2.py", IsNotebook: true},
+		{LocalPath: ".databricks/bundle/default/.internal/notebook_3_job_task", IsNotebook: true},
+	}, state.Files)
+}

@@ -1,0 +1,1 @@
+* `bundle deploy --plan` from a fresh checkout keeps listing `python_wheel_wrapper` notebooks in the deployment state, so a later deploy deletes them once their task no longer needs them. ([#PR](https://github.com/databricks/cli/pull/PR))

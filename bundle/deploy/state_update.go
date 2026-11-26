@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"time"
 	"uuid"
 
@@ -43,7 +44,11 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	state.Files = fl
+	kept, err := fromSlice(b.KeptInternalFiles)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	state.Files = withKeptFiles(fl, kept)
 
 	// Generate a UUID for the deployment, if one does not already exist
 	if state.ID == uuid.Nil() {
@@ -67,6 +72,20 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 
 	return nil
+}
+
+// withKeptFiles appends the kept entries that the synced files don't already list.
+func withKeptFiles(synced, kept Filelist) Filelist {
+	seen := make(map[string]bool, len(synced))
+	for _, f := range synced {
+		seen[filepath.ToSlash(f.LocalPath)] = true
+	}
+	for _, f := range kept {
+		if !seen[filepath.ToSlash(f.LocalPath)] {
+			synced = append(synced, f)
+		}
+	}
+	return synced
 }
 
 func StateUpdate() bundle.Mutator {
