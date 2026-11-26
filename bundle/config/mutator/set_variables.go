@@ -30,6 +30,12 @@ func getDefaultVariableFilePath(target string) string {
 	return ".databricks/bundle/" + target + "/variable-overrides.json"
 }
 
+// variableOverridesFilePath is the path of the target's variable overrides file. Values loaded from it carry
+// this exact path as their location, which NormalizePaths matches on.
+func variableOverridesFilePath(b *bundle.Bundle) string {
+	return filepath.Join(b.BundleRootPath, getDefaultVariableFilePath(b.Config.Bundle.Target))
+}
+
 func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, name string, fileDefault dyn.Value) (dyn.Value, error) {
 	// case: variable already has value initialized, so skip
 	if variable.HasValue() {
@@ -97,7 +103,7 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	filePath := filepath.Join(b.BundleRootPath, getDefaultVariableFilePath(b.Config.Bundle.Target))
+	filePath := variableOverridesFilePath(b)
 	if _, err := os.Stat(filePath); err != nil {
 		return dyn.InvalidValue, nil
 	}

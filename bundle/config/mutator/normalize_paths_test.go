@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -159,4 +160,25 @@ func TestBaseDirectory(t *testing.T) {
 
 	_, err = baseDirectory(diag.Location{}, overridesFile, root)
 	assert.Error(t, err)
+}
+
+// Values read from the overrides file must carry the exact path NormalizePaths matches on.
+func TestBaseDirectory_valueFromOverridesFile(t *testing.T) {
+	root := t.TempDir()
+	b := &bundle.Bundle{
+		BundleRootPath: root,
+		Config:         config.Root{Bundle: config.Bundle{Target: "dev"}},
+	}
+	overridesFile := variableOverridesFilePath(b)
+	require.NoError(t, os.MkdirAll(filepath.Dir(overridesFile), 0o700))
+	require.NoError(t, os.WriteFile(overridesFile, []byte(`{"task": {"python_file": "./src/main.py"}}`), 0o600))
+
+	values, diags := readVariablesFromFile(b)
+	require.NoError(t, diags.Error())
+	v, err := dyn.GetByPath(values, dyn.MustPathFromString("task.python_file"))
+	require.NoError(t, err)
+
+	dir, err := baseDirectory(v.Location(), overridesFile, root)
+	require.NoError(t, err)
+	assert.Equal(t, root, dir)
 }

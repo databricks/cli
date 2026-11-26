@@ -44,7 +44,7 @@ func NormalizePaths() bundle.Mutator {
 func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Do not normalize job task paths if using git source
 	gitSourcePaths := collectGitSourcePaths(b)
-	overridesFile := filepath.Join(b.BundleRootPath, getDefaultVariableFilePath(b.Config.Bundle.Target))
+	overridesFile := variableOverridesFilePath(b)
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return paths.VisitPaths(v, func(path dyn.Path, kind paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
