@@ -314,6 +314,14 @@ Exporting files from /Users/[USERNAME]/import-export-[UNIQUE_NAME]/export
 /Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/sqlNotebook -> [TEST_TMP_DIR]/export/overwrite/sqlNotebook.sql
 Export complete
 header-only notebooks are exported with their language's header:
+--- pyNotebook.py
+# Databricks notebook source
+--- sqlNotebook.sql
+-- Databricks notebook source
+--- rNotebook.r
+# Databricks notebook source
+--- scalaNotebook.scala
+// Databricks notebook source
 
 === delete removes the test directory
 

@@ -1,26 +1,9 @@
 DIR="/Users/$CURRENT_USER_NAME/import-export-$UNIQUE_NAME"
 
 cleanup() {
-    $CLI workspace delete --recursive "$DIR" >> LOG.cleanup 2>&1 || true
+    errcode $CLI workspace delete --recursive "$DIR" >> LOG.cleanup 2>&1
 }
 trap cleanup EXIT
-
-# Prints the object type and language of a workspace object, then its SOURCE export.
-show() {
-    echo "--- $1"
-    $CLI workspace get-status "$1" | jq -c '{object_type, language}'
-    $CLI workspace export "$1"
-    echo
-}
-
-# Prints a captured stream only when it is not empty, so the golden shows it.
-assert_empty() {
-    test ! -s "$1" || { echo "unexpected output in $1:"; cat "$1"; }
-}
-
-b64() {
-    printf '%s' "$1" | base64 | tr -d '\n'
-}
 
 # The leading backtick is kept from the original integration test: the marker
 # does not have to start the content for the workspace to detect a notebook.
@@ -46,7 +29,7 @@ title "import --content --format AUTO: a notebook only for a source extension an
 trace $CLI workspace import "$DIR/content-auto/py-nb-as-file" --content "$(b64 "$NB_CONTENT")" --format AUTO
 trace $CLI workspace import "$DIR/content-auto/py-nb-as-notebook.py" --content "$(b64 "$NB_CONTENT")" --format AUTO
 trace $CLI workspace import "$DIR/content-auto/not-a-notebook.py" --content "$(b64 'print(1)')" --format AUTO
-trace $CLI workspace list "$DIR/content-auto" -o json | jq -c 'sort_by(.path) | .[] | {path, object_type, language}'
+trace $CLI workspace list "$DIR/content-auto" -o json | workspace_list_fields
 show "$DIR/content-auto/py-nb-as-file"
 show "$DIR/content-auto/py-nb-as-notebook"
 show "$DIR/content-auto/not-a-notebook.py"
@@ -64,7 +47,7 @@ title "import --file --format AUTO: a notebook only for a source extension and n
 trace $CLI workspace import "$DIR/file-auto/py-nb-as-file" --file import_dir/pyNotebook.py --format AUTO
 trace $CLI workspace import "$DIR/file-auto/py-nb-as-notebook.py" --file import_dir/pyNotebook.py --format AUTO
 trace $CLI workspace import "$DIR/file-auto/not-a-notebook.py" --file import_dir/file-a --format AUTO
-trace $CLI workspace list "$DIR/file-auto" -o json | jq -c 'sort_by(.path) | .[] | {path, object_type, language}'
+trace $CLI workspace list "$DIR/file-auto" -o json | workspace_list_fields
 show "$DIR/file-auto/py-nb-as-file"
 show "$DIR/file-auto/py-nb-as-notebook"
 show "$DIR/file-auto/not-a-notebook.py"
@@ -86,7 +69,7 @@ $CLI workspace export "$DIR/export/pyNotebook" > tmp-stdout.txt
 cmp fixtures/pyNotebook.py tmp-stdout.txt
 echo "export pyNotebook --format JUPYTER: stdout is a Jupyter notebook"
 $CLI workspace export "$DIR/export/pyNotebook" --format JUPYTER > tmp-stdout.txt
-jq -c '{has_cells: has("cells"), has_metadata: has("metadata")}' tmp-stdout.txt
+jupyter_fields tmp-stdout.txt
 
 mkdir -p "$TEST_TMP_DIR/export"
 echo "export --file: stdout is empty, the file has the content"
@@ -98,7 +81,7 @@ assert_empty tmp-stdout.txt
 cmp fixtures/pyNotebook.py "$TEST_TMP_DIR/export/pyNb.py"
 $CLI workspace export "$DIR/export/pyNotebook" --format JUPYTER --file "$TEST_TMP_DIR/export/jupyterNb.ipynb" > tmp-stdout.txt
 assert_empty tmp-stdout.txt
-jq -c '{has_cells: has("cells"), has_metadata: has("metadata")}' "$TEST_TMP_DIR/export/jupyterNb.ipynb"
+jupyter_fields "$TEST_TMP_DIR/export/jupyterNb.ipynb"
 
 title "import-dir imports files and notebooks of every language"
 # The debug log goes to a LOG file (it differs between runs), so stderr holds only the command's own output.
@@ -153,6 +136,8 @@ trace $CLI workspace export-dir "$DIR/export" "$TEST_TMP_DIR/export/overwrite" -
 cmp fixtures/file-a "$TEST_TMP_DIR/export/overwrite/file-a"
 echo "header-only notebooks are exported with their language's header:"
 for name in pyNotebook.py sqlNotebook.sql rNotebook.r scalaNotebook.scala; do
+    echo "--- $name"
+    cat "$TEST_TMP_DIR/export/overwrite/$name"
     cmp "fixtures/$name" "$TEST_TMP_DIR/export/overwrite/$name"
 done
 
