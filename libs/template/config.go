@@ -118,11 +118,11 @@ func (c *config) assignDefaultValues(r *renderer) error {
 		}
 
 		// Resolve custom formats (e.g., warehouse_path auto-selects the default warehouse)
-		if property.Format != "" {
-			val, err := c.resolveFormat(property.Format, "")
-			if err != nil {
-				return err
-			}
+		val, ok, err := c.resolveFormat(property.Format, "")
+		if err != nil {
+			return err
+		}
+		if ok {
 			c.values[name] = val
 			continue
 		}
@@ -148,19 +148,21 @@ func (c *config) assignDefaultValues(r *renderer) error {
 	return nil
 }
 
-// resolveFormat returns a value for custom format types.
-// Returns empty string for unknown formats (to fall back to default handling).
-func (c *config) resolveFormat(format, description string) (string, error) {
+// resolveFormat returns a value for custom format types. It returns ok=false
+// for any other format, including standard JSON schema formats such as "email"
+// that templates may declare, so that those properties keep the regular prompt
+// and default.
+func (c *config) resolveFormat(format, description string) (value string, ok bool, err error) {
 	switch format {
 	case "warehouse_path":
 		w := cmdctx.WorkspaceClient(c.ctx)
 		warehouseId, err := cfgpickers.SelectWarehouse(c.ctx, w, description)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
-		return "/sql/1.0/warehouses/" + warehouseId, nil
+		return "/sql/1.0/warehouses/" + warehouseId, true, nil
 	default:
-		return "", nil
+		return "", false, nil
 	}
 }
 
@@ -200,15 +202,15 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 }
 
 func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, description string) error {
-	var userInput string
+	userInput, ok, err := c.resolveFormat(property.Format, description)
+	if err != nil {
+		return err
+	}
 
-	if property.Format != "" {
-		var err error
-		userInput, err = c.resolveFormat(property.Format, description)
-		if err != nil {
-			return err
-		}
-	} else if property.Enum != nil {
+	switch {
+	case ok:
+		// The format picked the value.
+	case property.Enum != nil:
 		// List options for the user to select from
 		options, err := property.EnumStringSlice()
 		if err != nil {
@@ -232,8 +234,7 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 			return err
 		}
 		userInput = options[idx]
-	} else {
-		var err error
+	default:
 		userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
 		if err != nil {
 			return err
@@ -241,7 +242,6 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 	}
 
 	// Convert user input string back to a Go value
-	var err error
 	c.values[name], err = property.ParseString(userInput)
 	if err != nil {
 		// Show error and retry if validation fails

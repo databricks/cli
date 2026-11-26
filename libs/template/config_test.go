@@ -1,13 +1,17 @@
 package template
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -554,4 +558,22 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, skip)
 	assert.Equal(t, "hello-world", c.values["xyz"])
+}
+
+func TestPromptOnceWithUnhandledFormat(t *testing.T) {
+	var prompts bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader("\n7\n"), io.Discard, &prompts))
+	c, err := newConfigFromSchema(ctx, &jsonschema.Schema{
+		Properties: map[string]*jsonschema.Schema{
+			"email": {Type: "string", Format: "email", Description: "Email", Default: "a@example.com"},
+			"count": {Type: "integer", Format: "int32", Description: "Count", Default: 3},
+		},
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, c.promptOnce(c.schema.Properties["email"], "email", "a@example.com", "Email"))
+	require.NoError(t, c.promptOnce(c.schema.Properties["count"], "count", "3", "Count"))
+
+	assert.Equal(t, "Email [a@example.com]: Count [3]: ", prompts.String())
+	assert.Equal(t, map[string]any{"email": "a@example.com", "count": int64(7)}, c.values)
 }
