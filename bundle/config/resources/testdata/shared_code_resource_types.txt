@@ -8,10 +8,7 @@ bundle/config/validate/required.go: dashboards secret_scopes sql_warehouses
 bundle/config/validate/sensitive_variable_references.go: secrets
 bundle/config/validate/single_node_cluster.go: clusters jobs pipelines
 bundle/config/validate/validate_artifact_path.go: schemas volumes
-bundle/deploy/check_dashboards_modified_remotely.go: dashboards
 bundle/deploy/metadata/annotate_deployment_version.go: jobs pipelines
-bundle/deploy/metadata/annotate_jobs.go: jobs
-bundle/deploy/metadata/annotate_pipelines.go: pipelines
 bundle/deploy/snapshot/upload.go: internal_immutable_snapshots
 bundle/internal/bundletest/benchmark.go: jobs
 bundle/metrics/track_used_compute.go: jobs
