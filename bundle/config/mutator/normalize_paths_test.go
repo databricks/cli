@@ -1,6 +1,7 @@
 package mutator
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -94,33 +95,33 @@ func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
 }
 
 func TestNormalizePath_absolutePath(t *testing.T) {
-	value, err := normalizePath("/notebook.py", diag.Location{}, "/tmp")
+	value, err := normalizePath("/notebook.py", "", errors.New("no file"), "/tmp")
 	assert.NoError(t, err)
 	assert.Equal(t, "/notebook.py", value)
 }
 
 func TestNormalizePath_url(t *testing.T) {
-	value, err := normalizePath("s3:///path/to/notebook.py", diag.Location{}, "/tmp")
+	value, err := normalizePath("s3:///path/to/notebook.py", "", errors.New("no file"), "/tmp")
 	assert.NoError(t, err)
 	assert.Equal(t, "s3:///path/to/notebook.py", value)
 }
 
 func TestNormalizePath_requirementsFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	location := diag.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
-	value, err := normalizePath("-r ../requirements.txt", location, tmpDir)
+	dir := filepath.Join(tmpDir, "resources")
+	value, err := normalizePath("-r ../requirements.txt", dir, nil, tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-r requirements.txt", value)
 
-	value, err = normalizePath("-r      ../requirements.txt", location, tmpDir)
+	value, err = normalizePath("-r      ../requirements.txt", dir, nil, tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-r requirements.txt", value)
 }
 
 func TestNormalizePath_environmentDependency(t *testing.T) {
 	tmpDir := t.TempDir()
-	location := diag.Location{File: filepath.Join(tmpDir, "resources", "job_1.yml")}
-	value, err := normalizePath("-e ../file.py", location, tmpDir)
+	dir := filepath.Join(tmpDir, "resources")
+	value, err := normalizePath("-e ../file.py", dir, nil, tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, "-e file.py", value)
 }
@@ -135,5 +136,27 @@ func TestLocationDirectory(t *testing.T) {
 func TestLocationDirectoryNoFile(t *testing.T) {
 	loc := diag.Location{}
 	_, err := locationDirectory(loc)
+	assert.Error(t, err)
+}
+
+func TestNormalizePath_noDirectory(t *testing.T) {
+	dir, dirErr := baseDirectory(diag.Location{}, "/tmp/.databricks/bundle/dev/variable-overrides.json", "/tmp")
+	_, err := normalizePath("notebook.py", dir, dirErr, "/tmp")
+	assert.EqualError(t, err, "unable to determine directory for a value at notebook.py: no file in location")
+}
+
+func TestBaseDirectory(t *testing.T) {
+	root := t.TempDir()
+	overridesFile := filepath.Join(root, ".databricks", "bundle", "dev", "variable-overrides.json")
+
+	dir, err := baseDirectory(diag.Location{File: overridesFile}, overridesFile, root)
+	require.NoError(t, err)
+	assert.Equal(t, root, dir)
+
+	dir, err = baseDirectory(diag.Location{File: filepath.Join(root, "resources", "job.yml")}, overridesFile, root)
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(root, "resources"), dir)
+
+	_, err = baseDirectory(diag.Location{}, overridesFile, root)
 	assert.Error(t, err)
 }

@@ -25,6 +25,8 @@ func (a normalizePaths) Name() string {
 
 // NormalizePaths is applied to resources declared in YAML to translate
 // paths that are relative to YAML file locations to paths that are relative
+// to the bundle root. Paths in values from the variable overrides file
+// (.databricks/bundle/<target>/variable-overrides.json) are already relative
 // to the bundle root.
 //
 // Pre-conditions:
@@ -55,14 +57,8 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 				return dyn.InvalidValue, fmt.Errorf("value at %s is not a string", path.String())
 			}
 
-			location := v.Location()
-			// The variable overrides file lives under .databricks/bundle/<target>/, but users write
-			// its paths relative to the bundle root.
-			if location.File == overridesFile {
-				location.File = filepath.Join(b.BundleRootPath, filepath.Base(overridesFile))
-			}
-
-			newValue, err := normalizePath(value, location, b.BundleRootPath)
+			dir, dirErr := baseDirectory(v.Location(), overridesFile, b.BundleRootPath)
+			newValue, err := normalizePath(value, dir, dirErr, b.BundleRootPath)
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
@@ -92,14 +88,26 @@ func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {
 	return jobs
 }
 
-func normalizePath(path string, location diag.Location, bundleRootPath string) (string, error) {
+// baseDirectory returns the directory that relative paths in a value at the given location resolve against.
+func baseDirectory(location diag.Location, overridesFile, bundleRootPath string) (string, error) {
+	// The variable overrides file lives under .databricks/bundle/<target>/, but users write
+	// its paths relative to the bundle root.
+	if location.File == overridesFile {
+		return bundleRootPath, nil
+	}
+	return locationDirectory(location)
+}
+
+// normalizePath makes a relative path relative to the bundle root. dir is the directory it is relative to now;
+// dirErr is the reason dir is unknown, reported only if the path needs it.
+func normalizePath(path, dir string, dirErr error, bundleRootPath string) (string, error) {
 	// Handle local file paths used inside pip flags
 	for _, flag := range libraries.PipFlagsWithLocalPaths {
 		reqPath, ok := strings.CutPrefix(path, flag+" ")
 		if ok {
 			// Normalize the path part
 			reqPath = strings.TrimSpace(reqPath)
-			normalizedPath, err := normalizePath(reqPath, location, bundleRootPath)
+			normalizedPath, err := normalizePath(reqPath, dir, dirErr, bundleRootPath)
 			if err != nil {
 				return "", err
 			}
@@ -125,9 +133,8 @@ func normalizePath(path string, location diag.Location, bundleRootPath string) (
 		return path, nil
 	}
 
-	dir, err := locationDirectory(location)
-	if err != nil {
-		return "", fmt.Errorf("unable to determine directory for a value at %s: %w", path, err)
+	if dirErr != nil {
+		return "", fmt.Errorf("unable to determine directory for a value at %s: %w", path, dirErr)
 	}
 
 	relDir, err := filepath.Rel(bundleRootPath, dir)
