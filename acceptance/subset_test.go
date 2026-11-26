@@ -88,11 +88,7 @@ func (s subsetSelector) skipReason(dir string, envset []string) string {
 	if s.isChanged(dir, envset) || s.named.Matches(dir, envset) {
 		return ""
 	}
-	id := dir
-	if len(envset) > 0 {
-		id += "/" + strings.Join(envset, "/")
-	}
-	if hashPercent(s.seed, id) < s.pct {
+	if hashPercent(s.seed, subtestID(dir, envset)) < s.pct {
 		return ""
 	}
 	return "Skipped by " + SubsetPctEnvVar
@@ -110,6 +106,13 @@ func (s subsetSelector) isChanged(dir string, envset []string) bool {
 		return true
 	}
 	return selection.MatchesFilters(envset, filters)
+}
+
+func subtestID(dir string, envset []string) string {
+	if len(envset) == 0 {
+		return dir
+	}
+	return dir + "/" + strings.Join(envset, "/")
 }
 
 // hashPercent maps (seed, id) deterministically to 0..99. A subtest runs when this is

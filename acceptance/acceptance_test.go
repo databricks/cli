@@ -554,6 +554,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	}
 
 	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
+	shard := newShardSelector(t)
 
 	changedLimit, err := selection.ParseLimit(os.Getenv(selection.EnvVar))
 	require.NoError(t, err)
@@ -699,6 +700,9 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				if reason := subset.skipReason(dir, nil); reason != "" {
 					t.Skip(reason)
 				}
+				if reason := shard.skipReason(dir, nil); reason != "" {
+					t.Skip(reason)
+				}
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
 				matched := false
@@ -715,6 +719,9 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 							t.Parallel()
 						}
 						if reason := subset.skipReason(dir, envset); reason != "" {
+							t.Skip(reason)
+						}
+						if reason := shard.skipReason(dir, envset); reason != "" {
 							t.Skip(reason)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
