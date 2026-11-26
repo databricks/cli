@@ -1,22 +1,8 @@
-# Serverless, so no cluster start.
 Cloud = true
 CloudSlow = true
+
+# DMS records deployment history; it doesn't touch what bundle run prints, so one cloud run is enough.
 EnvMatrix.DMS = [""]
-
-Ignore = ["databricks.yml.tmpl"]
-
-# The local server runs the notebook but returns its exit value as logs; the Jobs API returns it as
-# notebook_output.result, with no trailing newline. The cloud run checks the real response.
-[[Server]]
-Pattern = "GET /api/2.2/jobs/runs/get-output"
-Response.Body = '''
-{
-  "notebook_output": {
-    "result": "{\"message\": \"hello from notebook\"}",
-    "truncated": false
-  }
-}
-'''
 
 [[Repls]]
 Old = '/runs/\d+'

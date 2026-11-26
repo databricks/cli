@@ -10,7 +10,7 @@ Run URL: [DATABRICKS_URL]/jobs/[NOTEBOOK_JOB_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 
 [TIMESTAMP] "notebook-output-[UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "notebook-output-[UNIQUE_NAME]" TERMINATED SUCCESS
-{"message": "hello from notebook"}
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.notebook_job
