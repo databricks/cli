@@ -37,11 +37,13 @@ targets:
 resources:
   jobs:
     rename_job:
+      <<: *job_overrides
       tasks:
         - <<: *renamed_task
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
     my_job:
+      timeout_seconds: 300
       job_clusters:
         - job_cluster_key: base
           new_cluster: &base_cluster

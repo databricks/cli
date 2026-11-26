@@ -559,27 +559,31 @@ targets:
 
 	for _, tc := range []struct {
 		name, path, altPath string
+		shadowed            bool
 		key                 bool
 		addPath             string
 	}{
-		{"written", "merged.b", "", true, "merged.b"},
-		{"inherited", "merged.a", "", false, "merged.a"},
-		{"inherited parent", "merged.nested.x", "", false, ""},
-		{"through alias", "alias.a", "", true, ""},
-		{"under anchor", "anchored.a", "", false, ""},
-		{"written in anchor", "base.a", "", true, ""},
-		{"missing parent", "missing.a", "", false, ""},
-		{"alternative only", "missing.a", "targets.dev.merged.a", false, "targets.dev.merged.a"},
-		{"both scopes", "merged.a", "targets.dev.merged.a", false, ""},
+		{"written", "merged.b", "", false, true, "merged.b"},
+		{"inherited", "merged.a", "", false, false, "merged.a"},
+		{"inherited parent", "merged.nested.x", "", false, false, ""},
+		{"through alias", "alias.a", "", false, true, ""},
+		{"under anchor", "anchored.a", "", false, false, ""},
+		{"written in anchor", "base.a", "", false, true, ""},
+		{"missing parent", "missing.a", "", false, false, ""},
+		{"alternative only", "missing.a", "targets.dev.merged.a", false, false, "targets.dev.merged.a"},
+		{"both scopes", "merged.a", "targets.dev.merged.a", false, false, "merged.a"},
+		{"both scopes, shadowed", "merged.a", "targets.dev.merged.a", true, false, "targets.dev.merged.a"},
+		{"shadowed", "merged.a", "", true, false, ""},
+		{"written, shadowed", "merged.b", "targets.dev.merged.b", true, false, "targets.dev.merged.b"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			key, addPath := sourceDocs{}.written(file, tc.path, tc.altPath)
+			key, addPath := sourceDocs{}.written(file, tc.path, tc.altPath, tc.shadowed)
 			assert.Equal(t, tc.key, key)
 			assert.Equal(t, tc.addPath, addPath)
 		})
 	}
 
-	key, addPath := sourceDocs{}.written(filepath.Join(t.TempDir(), "missing.yml"), "a.b", "")
+	key, addPath := sourceDocs{}.written(filepath.Join(t.TempDir(), "missing.yml"), "a.b", "", false)
 	assert.True(t, key)
 	assert.Empty(t, addPath)
 }

@@ -47,3 +47,15 @@ rm databricks.yml.backup pipeline.yml.backup
 
 title "Effective configuration after the sync"
 $CLI bundle validate -o json | jq '.resources.jobs.my_job | {timeout_seconds, b_task: (.tasks[] | select(.task_key == "b_task") | {max_retries, min_retry_interval_millis, depends_on, input_file_name: .notebook_task.base_parameters.input_file_name})}'
+
+title "Edit inherited fields with and without a target override supplying them"
+edit_resource.py jobs $rename_job_id <<EOF2
+r["timeout_seconds"] = 900
+r["tasks"][0]["task_key"] = "main"
+r["tasks"][0]["max_retries"] = 5
+EOF2
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --select-ids "jobs:$rename_job_id" --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+$CLI bundle validate -o json | gron.py | grep -E 'rename_job\.(timeout_seconds|tasks\[0\]\.max_retries) '

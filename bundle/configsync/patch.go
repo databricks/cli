@@ -408,10 +408,11 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 // hold keys inherited through a merge key ('<<: *anchor'): the patcher cannot reach those.
 type sourceDocs map[string]*yaml.Node
 
-// written reports whether the key is written at either path, and the one path whose mapping
-// could take the key instead: none when both could, as the scope would be a guess. An
-// unreadable file counts as written, leaving the outcome to the patcher.
-func (d sourceDocs) written(file, writePath, altWritePath string) (key bool, addPath string) {
+// written reports whether the key is written at either path, and the path whose mapping
+// can take the key instead: writePath, unless only altWritePath has such a mapping or
+// a key at writePath would not take effect (shadowed), which also discounts one written
+// there. An unreadable file counts as written, leaving the outcome to the patcher.
+func (d sourceDocs) written(file, writePath, altWritePath string, shadowed bool) (key bool, addPath string) {
 	doc, ok := d[file]
 	if !ok {
 		doc = &yaml.Node{}
@@ -429,11 +430,14 @@ func (d sourceDocs) written(file, writePath, altWritePath string) (key bool, add
 	if altWritePath != "" {
 		altKey, altParent = keyWrittenAt(doc.Content[0], altWritePath)
 	}
+	if shadowed {
+		key = false
+	}
 	switch {
-	case parent && !altParent:
-		addPath = writePath
-	case altParent && !parent:
+	case altParent && (shadowed || !parent):
 		addPath = altWritePath
+	case parent && !shadowed:
+		addPath = writePath
 	}
 	return key || altKey, addPath
 }

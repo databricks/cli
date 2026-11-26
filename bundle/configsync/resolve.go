@@ -312,7 +312,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 			// Decided for every destination before any index bookkeeping, so a change
 			// that cannot be written everywhere is skipped as a whole and shifts nothing.
-			addPaths, written := writtenDestinations(docs, blocks, targetName, resolved.leaf, configChange.Operation, rename.keyField, destinations)
+			addPaths, written := writtenDestinations(docs, blocks, targetName, resolved, configChange.Operation, rename.keyField, destinations)
 			if !written {
 				log.Debugf(ctx, "config-remote-sync: skipping %s: the file does not write it where it is defined", fullPath)
 				configChange.Operation = OperationSkip
@@ -424,11 +424,11 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 // replaced key can still be added next to the merge key: addPaths holds where, per
 // destination. Anything else unwritten makes written false. renameKey is the key field
 // a rename rewrites, empty for any other change.
-func writtenDestinations(docs sourceDocs, blocks *blockResolver, target string, leaf dyn.Value, operation OperationType, renameKey string, destinations []routeDestination) (addPaths []string, written bool) {
+func writtenDestinations(docs sourceDocs, blocks *blockResolver, target string, resolved resolvedChange, operation OperationType, renameKey string, destinations []routeDestination) (addPaths []string, written bool) {
 	addPaths = make([]string, len(destinations))
 	for i, destination := range destinations {
 		block := destination.block
-		file := leaf.Location().File
+		file := resolved.leaf.Location().File
 		isDefinedInConfig := file != ""
 		path := destination.path
 		_, addressesKey := path.StringKey()
@@ -448,11 +448,15 @@ func writtenDestinations(docs sourceDocs, blocks *blockResolver, target string, 
 			path = path.Parent()
 		}
 		writePath, altWritePath := writeAddress(blocks, block, target, path)
-		key, parentPath := docs.written(file, writePath, altWritePath)
+		// The target override wins the target merge, so a top-level key it also supplies
+		// would not take effect.
+		shadowed := addressesKey && operation == OperationReplace && (block == nil || !block.override) &&
+			blocks != nil && blocks.overrideSupplies(resolved)
+		key, parentPath := docs.written(file, writePath, altWritePath, shadowed)
 		if key && renameKey != "" {
 			// The element can be written while the key it is renamed by is inherited.
 			keyPath, altKeyPath := writeAddress(blocks, block, target, structpath.NewPatternStringKey(destination.path, renameKey))
-			key, _ = docs.written(file, keyPath, altKeyPath)
+			key, _ = docs.written(file, keyPath, altKeyPath, false)
 		}
 		switch {
 		case key:

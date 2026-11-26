@@ -23,7 +23,7 @@ Resource: resources.jobs.my_job
   tasks[task_key='c_task'].depends_on[task_key='setup']: skip
   tasks[task_key='prep']: skip
   tasks[task_key='setup']: remove
-  timeout_seconds: skip
+  timeout_seconds: add
 
 Resource: resources.jobs.rename_job
   tasks[task_key='main']: skip
@@ -39,21 +39,25 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -28,5 +28,5 @@
+@@ -28,5 +28,6 @@
                max_retries: 3
          my_job:
 -          <<: [*job_overrides, *other_job]
 +          !!merge <<: [*job_overrides, *other_job]
++          timeout_seconds: 1200
          rename_job:
            tasks:
-@@ -39,5 +39,5 @@
+@@ -38,7 +39,7 @@
+   jobs:
      rename_job:
+-      <<: *job_overrides
++      !!merge <<: *job_overrides
        tasks:
 -        - <<: *renamed_task
 +        - !!merge <<: *renamed_task
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/notebook
-@@ -51,7 +51,10 @@
+@@ -53,7 +54,10 @@
          - job_cluster_key: derived
            new_cluster:
 -            <<: *base_cluster
@@ -65,7 +69,7 @@ Resource: resources.pipelines.my_pipeline
 +              min_workers: 1
        tasks:
          - task_key: prep
-@@ -59,8 +62,4 @@
+@@ -61,8 +65,4 @@
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/prep
 -        - task_key: setup
@@ -74,7 +78,7 @@ Resource: resources.pipelines.my_pipeline
 -            notebook_path: /Users/{{workspace_user_name}}/setup
          - &base_task
            task_key: a_task
-@@ -75,11 +74,13 @@
+@@ -77,11 +77,13 @@
              base_parameters: &base_params
                input_file_name: ${var.input_a}
 -        - <<: *base_task
@@ -96,7 +100,7 @@ Resource: resources.pipelines.my_pipeline
 
 === Effective configuration after the sync
 {
-  "timeout_seconds": 600,
+  "timeout_seconds": 1200,
   "b_task": {
     "max_retries": 2,
     "min_retry_interval_millis": 5000,
@@ -111,6 +115,27 @@ Resource: resources.pipelines.my_pipeline
     "input_file_name": "other"
   }
 }
+
+=== Edit inherited fields with and without a target override supplying them
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.rename_job
+  tasks[task_key='main'].max_retries: skip
+  timeout_seconds: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -44,4 +44,5 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
++      timeout_seconds: 900
+     my_job:
+       timeout_seconds: 300
+json.resources.jobs.rename_job.tasks[0].max_retries = 1;
+json.resources.jobs.rename_job.timeout_seconds = 900;
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -242,6 +242,25 @@ func (r *blockResolver) winningBlock(value dyn.Value) (sourceBlock, bool) {
 	return sourceBlock{}, false
 }
 
+// overrideSupplies reports whether the selected target's override, in any file, defines
+// the field change addresses, merge keys included. That definition wins the target merge,
+// so writing the field at the top level would leave its value unchanged.
+func (r *blockResolver) overrideSupplies(change resolvedChange) bool {
+	for block, parsed := range r.blocks {
+		if !block.override {
+			continue
+		}
+		path, err := r.pathWithinBlock(block, change)
+		if err != nil {
+			continue
+		}
+		if _, ok := preResolvedValueAt(parsed, r.candidatePath(block, path)); ok {
+			return true
+		}
+	}
+	return false
+}
+
 // indexWithinBlock returns the position of element inside block, where sequencePath is
 // relative to the block. A block is one parsed file, so the sequence read here holds
 // only that file's entries and a plain index into it is block-local.
