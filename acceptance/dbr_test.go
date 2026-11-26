@@ -66,6 +66,10 @@ type dbrTestConfig struct {
 	// If empty, all cloud tests are run.
 	cloudTestFilter string
 
+	// localTestFilter is a regex filter for local acceptance tests, which run against
+	// the fake server without CLOUD_ENV in a parallel task. If empty, no local tests run.
+	localTestFilter string
+
 	// timeout is the maximum duration to wait for the job to complete.
 	timeout time.Duration
 
@@ -174,6 +178,29 @@ func buildBaseParams(testDir, archiveName, debugLogPath string) map[string]strin
 	}
 }
 
+// createDebugLog creates an empty debug log file so we can get its URL before the job runs.
+// This allows us to provide the URL upfront for users to follow along.
+func createDebugLog(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, debugLogsDir, testType string) (string, int64) {
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	debugLogFileName := fmt.Sprintf("debug-%s-%s-%s.log", testType, timestamp, uuid.New().String()[:8])
+	debugLogPath := path.Join(debugLogsDir, debugLogFileName)
+
+	// Create empty file via workspace API
+	err := w.Workspace.Import(ctx, workspace.Import{
+		Path:      debugLogPath,
+		Overwrite: true,
+		Format:    workspace.ImportFormatAuto,
+		Content:   base64.StdEncoding.EncodeToString([]byte("")),
+	})
+	require.NoError(t, err)
+
+	// Get the file's object ID for the URL
+	debugLogStatus, err := w.Workspace.GetStatusByPath(ctx, debugLogPath)
+	require.NoError(t, err)
+
+	return debugLogPath, debugLogStatus.ObjectId
+}
+
 // runDbrTests creates a job and runs it to execute cloud and local acceptance tests on DBR.
 func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, testDir, archiveName, runnerName string, config dbrTestConfig) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -189,27 +216,10 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	err = w.Workspace.MkdirsByPath(ctx, debugLogsDir)
 	require.NoError(t, err)
 
-	// Create an empty debug log file so we can get its URL before the job runs.
-	// This allows us to provide the URL upfront for users to follow along.
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	debugLogFileName := fmt.Sprintf("debug-cloud-%s-%s.log", timestamp, uuid.New().String()[:8])
-	debugLogPath := path.Join(debugLogsDir, debugLogFileName)
-
-	// Create empty file via workspace API
-	err = w.Workspace.Import(ctx, workspace.Import{
-		Path:      debugLogPath,
-		Overwrite: true,
-		Format:    workspace.ImportFormatAuto,
-		Content:   base64.StdEncoding.EncodeToString([]byte("")),
-	})
-	require.NoError(t, err)
-
-	// Get the file's object ID for the URL
-	debugLogStatus, err := w.Workspace.GetStatusByPath(ctx, debugLogPath)
-	require.NoError(t, err)
+	cloudLogPath, cloudLogID := createDebugLog(ctx, t, w, debugLogsDir, "cloud")
 
 	// Build cloud test parameters (Cloud=true tests, run with CLOUD_ENV set)
-	cloudParams := buildBaseParams(testDir, archiveName, debugLogPath)
+	cloudParams := buildBaseParams(testDir, archiveName, cloudLogPath)
 	cloudParams["test_type"] = "cloud"
 	cloudParams["test_filter"] = config.cloudTestFilter
 
@@ -226,8 +236,49 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	} else {
 		t.Log("  Cloud tests: (all)")
 	}
+	if config.localTestFilter != "" {
+		t.Logf("  Local tests: %s", config.localTestFilter)
+	} else {
+		t.Log("  Local tests: (none, set DBR_LOCAL_TEST_FILTER to run them)")
+	}
 
 	notebookPath := path.Join(testDir, runnerName)
+
+	tasks := []jobs.Task{
+		{
+			TaskKey:        "cloud_tests",
+			EnvironmentKey: "default",
+			MaxRetries:     0,
+			NotebookTask: &jobs.NotebookTask{
+				NotebookPath:   notebookPath,
+				BaseParameters: cloudParams,
+				Source:         jobs.SourceWorkspace,
+			},
+		},
+	}
+
+	var localLogID int64
+	if config.localTestFilter != "" {
+		var localLogPath string
+		localLogPath, localLogID = createDebugLog(ctx, t, w, debugLogsDir, "local")
+
+		// Local tests talk to the fake server only, so they get no CLOUD_ENV or workspace resource IDs.
+		tasks = append(tasks, jobs.Task{
+			TaskKey:        "local_tests",
+			EnvironmentKey: "default",
+			MaxRetries:     0,
+			NotebookTask: &jobs.NotebookTask{
+				NotebookPath: notebookPath,
+				BaseParameters: map[string]string{
+					"archive_path":   path.Join(testDir, archiveName),
+					"debug_log_path": localLogPath,
+					"test_type":      "local",
+					"test_filter":    config.localTestFilter,
+				},
+				Source: jobs.SourceWorkspace,
+			},
+		})
+	}
 
 	// Create a job (not a one-time run) so we can use MaxRetries on tasks.
 	// Always use serverless compute.
@@ -242,18 +293,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 				},
 			},
 		},
-		Tasks: []jobs.Task{
-			{
-				TaskKey:        "cloud_tests",
-				EnvironmentKey: "default",
-				MaxRetries:     0,
-				NotebookTask: &jobs.NotebookTask{
-					NotebookPath:   notebookPath,
-					BaseParameters: cloudParams,
-					Source:         jobs.SourceWorkspace,
-				},
-			},
-		},
+		Tasks: tasks,
 	}
 
 	// Create the job
@@ -275,7 +315,10 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	t.Log("")
 	t.Log("=== Job Started ===")
 	t.Logf("  Run URL: %s", runDetails.RunPageUrl)
-	t.Logf("  Debug logs: %s/editor/files/%d", w.Config.Host, debugLogStatus.ObjectId)
+	t.Logf("  Cloud debug logs: %s/editor/files/%d", w.Config.Host, cloudLogID)
+	if localLogID != 0 {
+		t.Logf("  Local debug logs: %s/editor/files/%d", w.Config.Host, localLogID)
+	}
 	t.Log("")
 	t.Logf("Waiting for completion (timeout: %v)...", config.timeout)
 
@@ -340,9 +383,9 @@ func runDbrAcceptanceTests(t *testing.T, config dbrTestConfig) {
 	runDbrTests(ctx, t, w, testDir, archiveName, runnerName, config)
 }
 
-// TestDbrAcceptance runs all acceptance and integration tests on DBR using serverless compute.
-// Only acceptance tests with RunsOnDbr=true in their test.toml will be executed.
-// Both test types run in parallel tasks.
+// TestDbrAcceptance runs acceptance tests on DBR using serverless compute.
+// Cloud tests run if they set RunsOnDbr = true. Local tests matching DBR_LOCAL_TEST_FILTER
+// (a regex under TestAccept/, "." for all) run in a parallel task unless they set RunsOnDbr = false.
 //
 // Run with:
 //
@@ -359,7 +402,8 @@ func TestDbrAcceptance(t *testing.T) {
 	}
 
 	runDbrAcceptanceTests(t, dbrTestConfig{
-		timeout: 3 * time.Hour,
-		verbose: os.Getenv("DBR_TEST_VERBOSE") != "",
+		localTestFilter: os.Getenv("DBR_LOCAL_TEST_FILTER"),
+		timeout:         3 * time.Hour,
+		verbose:         os.Getenv("DBR_TEST_VERBOSE") != "",
 	})
 }
