@@ -1,0 +1,6 @@
+# schema_fields is the allow-list of schema fields the acceptance tests assert on. Anything the
+# backend returns outside this list is dropped, so a new field in the API response does not break
+# the golden.
+schema_fields() {
+    jq '{full_name, schema_id} | with_entries(select(.value != null))'
+}

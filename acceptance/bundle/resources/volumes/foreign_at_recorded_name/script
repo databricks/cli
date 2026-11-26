@@ -19,7 +19,7 @@ print_requests.py //unity-catalog &> LOG.deploy_requests
 add_repl "$($CLI volumes read "$SCHEMA.myvolume" | jq -r .volume_id)" VOLUME_ID
 
 title "Out of band, rename the volume away, and create another one under its name"
-trace $CLI volumes update "$SCHEMA.myvolume" --new-name myvolume-moved | jq '{full_name, volume_id}'
+trace $CLI volumes update "$SCHEMA.myvolume" --new-name myvolume-moved | volume_fields
 add_repl "$($CLI volumes create main "test-schema-${UNIQUE_NAME}" myvolume MANAGED | jq -r .volume_id)" FOREIGN_VOLUME_ID
 print_requests.py //unity-catalog &> LOG.oob_requests
 
@@ -32,4 +32,4 @@ trace print_requests.py //unity-catalog
 trace musterr $CLI volumes read "$SCHEMA.myvolume-moved"
 
 title "The other volume is left alone"
-trace $CLI volumes read "$SCHEMA.myvolume" | jq '{full_name, volume_id}'
+trace $CLI volumes read "$SCHEMA.myvolume" | volume_fields

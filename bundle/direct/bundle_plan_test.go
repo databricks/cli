@@ -1068,28 +1068,30 @@ func TestFindDeleteTargetUnverifiedRead(t *testing.T) {
 	assert.Nil(t, got)
 }
 
-func TestIDUnderMovedParent(t *testing.T) {
-	const schemaKey = "resources.schemas.schema1"
-	dep := deployplan.DependsOnEntry{Node: schemaKey, Label: "${resources.schemas.schema1.name}"}
+func TestUnderMovedParent(t *testing.T) {
+	catalog := &movedParent{key: "resources.catalogs.c", recordedID: "main", id: "archive"}
+	schema := &movedParent{key: "resources.schemas.s", recordedID: "main.s", id: "main.t", deleted: true}
+	sameAsCatalog := &movedParent{key: "resources.schemas.main", recordedID: "main.main", id: "main.moved", deleted: true}
 
 	for name, tt := range map[string]struct {
-		schemaID, foundID, volumeID, want string
+		parents    []*movedParent
+		id, wantID string
+		want       *movedParent
 	}{
-		"moved":                   {schemaID: "main.s", foundID: "main.t", volumeID: "main.s.v", want: "main.t.v"},
-		"schema named as catalog": {schemaID: "main.main", foundID: "main.moved", volumeID: "main.main.v", want: "main.moved.v"},
-		"parent not moved":        {schemaID: "main.s", foundID: "", volumeID: "main.s.v", want: ""},
-		"not under the parent":    {schemaID: "main.s", foundID: "main.t", volumeID: "main.other.v", want: ""},
+		"moved":                         {parents: []*movedParent{schema}, id: "main.s.v", wantID: "main.t.v", want: schema},
+		"schema named like its catalog": {parents: []*movedParent{sameAsCatalog}, id: "main.main.v", wantID: "main.moved.v", want: sameAsCatalog},
+		// The bundle records a child in config case and its renamed parent in UC's lower case.
+		"recorded in another case": {parents: []*movedParent{schema}, id: "main.S.v", wantID: "main.t.v", want: schema},
+		"longest prefix":           {parents: []*movedParent{catalog, schema}, id: "main.s.v", wantID: "main.t.v", want: schema},
+		"only the catalog moved":   {parents: []*movedParent{catalog}, id: "main.s.v", wantID: "archive.s.v", want: catalog},
+		"not under the parent":     {parents: []*movedParent{schema}, id: "main.sx.v", wantID: "", want: nil},
+		"the parent itself":        {parents: []*movedParent{schema}, id: "main.s", wantID: "", want: nil},
+		"no parents":               {parents: nil, id: "main.s.v", wantID: "", want: nil},
 	} {
 		t.Run(name, func(t *testing.T) {
-			plan := deployplan.NewPlanDirect()
-			plan.Plan[schemaKey] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: tt.foundID}
-			b := &DeploymentBundle{}
-			b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
-				schemaKey: {ID: tt.schemaID},
-			}})
-			got, parentDeleted := b.idUnderMovedParent(plan, dstate.ResourceEntry{ID: tt.volumeID, DependsOn: []deployplan.DependsOnEntry{dep}})
-			assert.Equal(t, tt.want, got)
-			assert.Equal(t, tt.want != "", parentDeleted)
+			got, gotID := underMovedParent(tt.parents, tt.id)
+			assert.Same(t, tt.want, got)
+			assert.Equal(t, tt.wantID, gotID)
 		})
 	}
 }

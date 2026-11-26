@@ -166,8 +166,8 @@ func (*ResourceVolume) IDFromState(state *VolumeState) string {
 }
 
 // DoFindByInternalID lists the volumes in the schema for the one with the recorded volume_id. A
-// volume whose schema was renamed is not found; when the schema is in the bundle too, deleting it
-// deletes the volume.
+// volume whose schema was renamed is not found here; when the schema is in the bundle, the plan
+// looks for it under the schema's new name (findInMovedParents).
 func (r *ResourceVolume) DoFindByInternalID(ctx context.Context, state *VolumeState) (string, error) {
 	iter := r.client.Volumes.List(ctx, catalog.ListVolumesRequest{
 		CatalogName:     state.CatalogName,

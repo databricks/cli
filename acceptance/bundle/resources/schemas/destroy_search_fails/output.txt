@@ -10,13 +10,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] schemas update main.test-schema-[UNIQUE_NAME] --new-name test-schema-renamed-[UNIQUE_NAME]
 {
-  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]"
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+  "schema_id": "[UUID]"
 }
 
 === The search for the renamed schema fails, so destroy fails without deleting anything or dropping the state
 
 >>> musterr [CLI] bundle destroy --auto-approve
-Error: cannot plan resources.schemas.schema1: looking for a renamed resource by its internal id "[UUID]": injected (500 INTERNAL_ERROR)
+Error: cannot plan resources.schemas.schema1: looking for schema_id "[UUID]" after a rename outside the bundle: injected (500 INTERNAL_ERROR)
 
 Endpoint: GET [DATABRICKS_URL]/api/2.1/unity-catalog/schemas?catalog_name=main&max_results=0
 HTTP Status: 500 Internal Server Error
@@ -40,5 +41,6 @@ Error: planning failed
 
 >>> [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
 {
-  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]"
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+  "schema_id": "[UUID]"
 }

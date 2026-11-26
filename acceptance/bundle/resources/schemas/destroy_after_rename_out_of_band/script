@@ -18,7 +18,7 @@ print_requests.py //unity-catalog &> LOG.deploy_requests
 add_repl "$($CLI schemas get "$OLD_SCHEMA" | jq -r .schema_id)" SCHEMA_ID
 
 title "Rename the schema out of band, and the config to match"
-trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name, schema_id}'
+trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | schema_fields
 print_requests.py //unity-catalog &> LOG.rename_requests
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 

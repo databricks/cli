@@ -17,17 +17,17 @@ trace $CLI bundle deploy
 print_requests.py //unity-catalog &> LOG.deploy_requests
 
 title "Rename the schema out of band. UC moves the volume with it"
-trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name}'
+trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | schema_fields
 print_requests.py //unity-catalog &> LOG.rename_requests
 
 title "Destroy finds the volume in the renamed schema, so prevent_destroy still stops it"
 trace musterr $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
-trace $CLI volumes read "$NEW_SCHEMA.myvolume" | jq '{full_name}'
+trace $CLI volumes read "$NEW_SCHEMA.myvolume" | volume_fields
 
 title "With the volume renamed out of band too, it is not found, but destroy still lists it, so prevent_destroy still stops it"
-trace $CLI volumes update "$NEW_SCHEMA.myvolume" --new-name myvolume2 | jq '{full_name}'
+trace $CLI volumes update "$NEW_SCHEMA.myvolume" --new-name myvolume2 | volume_fields
 print_requests.py //unity-catalog &> LOG.rename2_requests
 trace musterr $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
-trace $CLI volumes read "$NEW_SCHEMA.myvolume2" | jq '{full_name}'
+trace $CLI volumes read "$NEW_SCHEMA.myvolume2" | volume_fields

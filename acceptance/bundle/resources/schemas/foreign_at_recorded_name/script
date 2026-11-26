@@ -24,7 +24,7 @@ print_requests.py //unity-catalog &> LOG.deploy_requests
 add_repl "$($CLI schemas get "$SCHEMA" | jq -r .schema_id)" SCHEMA_ID
 
 title "Out of band, rename the schema away, and create another one under its name"
-trace $CLI schemas update "$SCHEMA" --new-name "test-schema-moved-${UNIQUE_NAME}" | jq '{full_name, schema_id}'
+trace $CLI schemas update "$SCHEMA" --new-name "test-schema-moved-${UNIQUE_NAME}" | schema_fields
 add_repl "$($CLI schemas create "test-schema-${UNIQUE_NAME}" main | jq -r .schema_id)" FOREIGN_SCHEMA_ID
 print_requests.py //unity-catalog &> LOG.oob_requests
 
@@ -41,4 +41,4 @@ trace print_requests.py //unity-catalog
 trace musterr $CLI schemas get "$MOVED_SCHEMA"
 
 title "The other schema is left alone"
-trace $CLI schemas get "$SCHEMA" | jq '{full_name, schema_id}'
+trace $CLI schemas get "$SCHEMA" | schema_fields

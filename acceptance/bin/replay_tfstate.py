@@ -127,7 +127,7 @@ def main():
             if attrs.get(nf):
                 name_to_attrs[str(attrs[nf])] = attrs
                 # UC lowercases names (a schema created as MySchema is stored as myschema), so the
-                # tfstate can hold the lowercased name of the create request's.
+                # tfstate may hold the lowercased form of the name the create request sent.
                 name_to_attrs.setdefault(str(attrs[nf]).lower(), attrs)
 
     id_map = {}

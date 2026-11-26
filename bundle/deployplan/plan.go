@@ -125,18 +125,27 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 
 type PlanEntry struct {
 	// ID is set when the resource is at another ID than the one in state: a rename moved it there
-	// (see findMoved, and findByInternalID for a Delete), or a parent renamed in this plan moves it
-	// before it is recreated (see addParentMoves). Applying the entry addresses the resource at ID.
+	// (see findMoved, and findByInternalID and findInMovedParents for a Delete), or a parent renamed
+	// in this plan moves it before it is recreated (see addParentMoves). Applying the entry
+	// addresses the resource at ID.
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
 	// Gone is set on Delete entries when the resource no longer exists remotely: planning
 	// confirmed it with a read (for a resource with an internal ID: found neither at its ID, where
-	// another object may be, nor by its internal ID), or the state entry has an empty ID (left by a recreate in
-	// an older CLI whose create step failed after the delete). Applying such an entry only
-	// removes it from the state, without calling the delete API, and approval prompts do
-	// not list it as a deletion.
+	// another object may be, nor by its internal ID, nor under a renamed parent; see
+	// findInMovedParents), or the state entry has an empty ID (left by a recreate in an older CLI
+	// whose create step failed after the delete). Applying such an entry only removes it from the
+	// state, without calling the delete API, and approval prompts do not list it as a deletion
+	// unless WithParent is set.
 	Gone bool `json:"gone,omitempty"`
+	// WithParent is set on a Gone Delete entry whose resource is inside a parent this plan deletes
+	// at the new ID a rename out of band gave it (a volume in a renamed schema), but could not be
+	// verified there by its internal ID. Applying it sends no delete for it, which could hit another
+	// object under the guessed name, and only removes it from the state; the parent's delete
+	// removes it with everything else in the parent. So approval prompts, lifecycle.prevent_destroy
+	// and the counts treat it as a deletion. It holds the parent's resource key.
+	WithParent string `json:"with_parent,omitempty"`
 	// StateOnly marks an entry whose apply has no backend effect and only changes the state:
 	//   - a Delete of a resource that implements no DoDelete. Like Gone, applying it only
 	//     removes it from the state and it is excluded from destructive-action prompts,
@@ -155,10 +164,17 @@ type PlanEntry struct {
 	Changes     Changes                  `json:"changes,omitempty"`
 }
 
-// IsStateOnly reports whether applying this entry makes no backend call and only changes the
+// IsStateOnly reports whether applying this entry has no backend effect and only changes the
 // state: a delete of a resource already gone remotely (Gone) or without a delete operation, or a
-// re-key (StateOnly). Such entries are omitted from human output and need no approval.
+// re-key (StateOnly). Such entries are omitted from human output and need no approval. A Gone
+// entry with WithParent is not: its parent's delete removes it.
 func (e *PlanEntry) IsStateOnly() bool {
+	return (e.Gone || e.StateOnly) && e.WithParent == ""
+}
+
+// SendsNoDelete reports whether applying this Delete entry only removes it from the state, without
+// calling the delete API: it is state-only, or its parent's delete removes it (WithParent).
+func (e *PlanEntry) SendsNoDelete() bool {
 	return e.Gone || e.StateOnly
 }
 
@@ -274,6 +290,7 @@ func (p *Plan) GetActions() []Action {
 			ActionType:  entry.Action,
 			Gone:        entry.Gone,
 			StateOnly:   entry.StateOnly,
+			WithParent:  entry.WithParent != "",
 		})
 	}
 

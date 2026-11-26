@@ -115,10 +115,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if action == deployplan.Delete {
-			if entry.IsStateOnly() {
-				// The resource is already deleted remotely (Gone) or has no delete
-				// operation (StateOnly); either way only remove it from the state,
-				// without calling the delete API.
+			if entry.SendsNoDelete() {
+				// The resource is already deleted remotely (Gone), has no delete
+				// operation (StateOnly), or goes with its parent's delete (WithParent);
+				// in each case only remove it from the state, without calling the
+				// delete API.
 				err = b.StateDB.DeleteState(ctx, resourceKey, false)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB, entry.ID)

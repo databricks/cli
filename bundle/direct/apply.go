@@ -25,7 +25,7 @@ func (d *DeploymentUnit) withResourceKey(ctx context.Context) context.Context {
 }
 
 // Destroy deletes the resource at its recorded ID, or at movedID when the plan found it there (see
-// findByInternalID).
+// findByInternalID and findInMovedParents).
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState, movedID string) error {
 	ctx = log.WithPrefix(ctx, "destroying "+d.ResourceKey)
 	ctx = d.withResourceKey(ctx)

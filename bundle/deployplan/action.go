@@ -15,6 +15,8 @@ type Action struct {
 	// StateOnly mirrors PlanEntry.StateOnly: applying the action only changes the state
 	// (a delete of a resource without DoDelete, or a re-key).
 	StateOnly bool
+	// WithParent mirrors PlanEntry.WithParent: the resource goes with its parent's delete.
+	WithParent bool
 }
 
 func (a Action) String() string {
@@ -23,9 +25,9 @@ func (a Action) String() string {
 
 // IsStateOnly reports whether applying this action makes no backend call and only changes the
 // state (see PlanEntry.IsStateOnly). Such actions are omitted from human output and need no
-// approval.
+// approval. An action with WithParent is not: its parent's delete removes the resource.
 func (a Action) IsStateOnly() bool {
-	return a.Gone || a.StateOnly
+	return (a.Gone || a.StateOnly) && !a.WithParent
 }
 
 func (a Action) IsChildResource() bool {

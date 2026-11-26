@@ -1,0 +1,11 @@
+# volume_fields is the allow-list of volume fields the acceptance tests assert on. Anything the
+# backend returns outside this list is dropped, so a new field in the API response does not break
+# the golden.
+volume_fields() {
+    jq '{full_name, volume_id} | with_entries(select(.value != null))'
+}
+
+# schema_fields is the same allow-list for the schemas these tests create and rename.
+schema_fields() {
+    jq '{full_name, schema_id} | with_entries(select(.value != null))'
+}
