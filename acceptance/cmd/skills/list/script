@@ -1,0 +1,11 @@
+export DATABRICKS_SKILLS_DIR=$TESTROOT/cmd/skills/release
+
+# Text: the catalog rules, then the stable skills by name, then how to read a skill.
+trace $CLI skills list
+
+# Experimental skills are listed only with --experimental.
+trace $CLI skills list --experimental
+
+# JSON: the full catalog, with the release version and source.
+trace $CLI skills list --output json
+trace $CLI skills list --output json --experimental

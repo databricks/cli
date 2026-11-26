@@ -1,6 +1,8 @@
 {
   "version": "0.0.1",
+  "catalog_rules": "RULES.md",
   "skills": {
-    "demo-skill": {"version": "0.0.1", "description": "A skill for tests.", "files": ["SKILL.md"]}
+    "demo-skill": {"version": "0.0.1", "description": "A skill for tests.", "files": ["SKILL.md"], "commands": ["jobs"]},
+    "preview-skill": {"version": "0.0.2", "description": "An experimental skill for tests.", "files": ["SKILL.md"], "repo_dir": "experimental"}
   }
 }

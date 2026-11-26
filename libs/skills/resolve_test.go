@@ -38,6 +38,7 @@ func TestLocalCatalogFromAcceptanceFixture(t *testing.T) {
 	dir := filepath.Join("..", "..", "acceptance", "cmd", "skills", "release")
 	catalog, err := LocalCatalog(env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", dir))
 	require.NoError(t, err)
-	require.Len(t, catalog.Skills, 1)
+	require.Len(t, catalog.Skills, 2)
 	assert.Equal(t, "demo-skill", catalog.Skills[0].Name)
+	assert.Equal(t, "preview-skill", catalog.Skills[1].Name)
 }
