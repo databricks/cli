@@ -81,6 +81,9 @@ Scope rule: model what the CLI's plan and apply depend on, and nothing else.
 Mechanics: one file `libs/testserver/<api>.go` per API, whose `init()` calls `registerStore` (a
 store with a map keyed by id, which handlers reach through `stateOf`) and `registerRoutes`, both
 keyed by the file name; every handler including delete starts with `defer s.LockUnlock()()`.
+For a type with permissions, the same `init()` calls `registerPermissionsObjectType` with the
+request and response object types that `PermissionsSupport()` declares
+(`TestPermissionsObjectTypesMatchTestServer`).
 For an asynchronous API, the fake returns a pending operation at
 least once before completing, so the adapter's polling runs locally. `MapGet` and `MapDelete` cover get and delete when the stored body is the
 request body. Expect 70 to 100 lines. A fake several times that size is modelling backend policy
