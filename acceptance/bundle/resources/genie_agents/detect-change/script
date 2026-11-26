@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+AGENT=$(read_id.py agent)
+
+title "Edit the definition outside the bundle before planning"
+$CLI genie-agents get-genie-agent "agents/$AGENT" | jq '{display_name, description, warehouse_id, parent_path, definition}' > remote.json
+trace update_file.py remote.json "average trip distance" "average fare amount"
+trace $CLI genie-agents update-genie-agent "agents/$AGENT" '*' --json @remote.json | agent_definition
+
+title "Repeated plans keep warning about the remote edit"
+trace $CLI bundle plan
+trace $CLI bundle plan
+trace musterr $CLI bundle deploy
+
+title "Explicit overwrite restores the bundle definition"
+trace $CLI bundle deploy --force
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_definition
+trace $CLI bundle plan
+
+title "A definition edit after saving a plan rejects that plan's update"
+trace update_file.py databricks.yml "Agent grounded in taxi trip data" "Updated bundle description"
+trace $CLI bundle plan -o json > plan.json
+$CLI genie-agents get-genie-agent "agents/$AGENT" | jq '{display_name, description, warehouse_id, parent_path, definition}' > remote.json
+trace update_file.py remote.json "average trip distance" "total fare amount"
+trace $CLI genie-agents update-genie-agent "agents/$AGENT" '*' --json @remote.json | agent_definition
+# The backend's error message and weak etag are not stable across workspaces.
+musterr $CLI bundle deploy --plan plan.json > LOG.stale-plan 2>&1
+trace contains.py "API error_code: ABORTED" < LOG.stale-plan > LOG.stale-plan.checked
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_definition

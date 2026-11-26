@@ -1,0 +1,47 @@
+AGENT="01f0a1b2c3d4e5f60718293a4b5c6d7e"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Create the object outside the bundle in the same folder as its local config.
+AGENT_CONFIG=$(cat <<EOF
+{
+  "display_name": "bound-agent",
+  "warehouse_id": "test-warehouse-id",
+  "parent_path": "/Users/$CURRENT_USER_NAME",
+  "definition": {
+    "config": {
+      "sample_questions": [
+        {"id": "01f0a1b2c3d4e5f60718293a4b5c6d7f", "question": "What was the average trip distance last month?"}
+      ]
+    },
+    "resources": {
+      "tables": [
+        {"identifier": "samples.nyctaxi.trips"}
+      ]
+    }
+  }
+}
+EOF
+)
+trace $CLI genie-agents create-genie-agent --json "$AGENT_CONFIG" --genie-agent-id "$AGENT" | agent_fields
+
+trace $CLI bundle deployment bind agent1 "$AGENT" --auto-approve
+
+# Bind copies the remote object into state, so the first plan after bind must
+# be clean (no recreate).
+trace $CLI bundle plan
+
+title "Bind remembers the deployment etag for remote-edit detection"
+ETAG=$($CLI genie-agents get-genie-agent "agents/$AGENT" | jq -r .etag)
+trace print_state.py --no-dms | jq -e --arg etag "$ETAG" '.state["resources.genie_agents.agent1"].state.etag == $etag and ($etag | length > 0)'
+
+trace $CLI bundle deploy
+
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields
+
+trace $CLI bundle deployment unbind agent1
+
+trace $CLI bundle destroy --auto-approve
+
+# Read the Genie agent again (expecting it still exists and is not deleted):
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | agent_fields

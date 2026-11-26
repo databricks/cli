@@ -1,0 +1,45 @@
+bundle:
+  name: test-bundle
+
+resources:
+  catalogs:
+    my_catalog:
+      name: mycatalog
+  schemas:
+    my_schema:
+      catalog_name: mycatalog
+      name: myschema
+  volumes:
+    my_volume:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: myvolume
+      volume_type: MANAGED
+  genie_agents:
+    my_agent:
+      display_name: my-agent
+      warehouse_id: test-warehouse-id
+      definition:
+        resources:
+          tables:
+            - identifier: mycatalog.myschema.table1
+            - identifier: mycatalog.myschema.table2
+          sql_functions:
+            - id: "01f0a1b2c3d4e5f60718293a4b5c6d70"
+              identifier: mycatalog.myschema.myfunction
+          volumes:
+            - path: /Volumes/mycatalog/myschema/myvolume/subdir
+        instructions:
+          join_specs:
+            - id: "01f0a1b2c3d4e5f60718293a4b5c6d71"
+              left:
+                identifier: mycatalog.myschema.table1
+                alias: a
+              right:
+                identifier: mycatalog.myschema.table2
+                alias: b
+              sql: a.id = b.id
+
+targets:
+  dev:
+    mode: development

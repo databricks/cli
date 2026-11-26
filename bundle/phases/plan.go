@@ -21,6 +21,7 @@ import (
 func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool) {
 	bundle.ApplySeqContext(ctx, b,
 		deploy.CheckDashboardsModifiedRemotely(isPlan),
+		deploy.CheckGenieAgentsModifiedRemotely(isPlan),
 		resourcemutator.SecretScopeFixups(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),

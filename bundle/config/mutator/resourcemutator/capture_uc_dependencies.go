@@ -132,7 +132,54 @@ func resolveThreePartName(b *bundle.Bundle, name string) string {
 	return resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
 }
 
+// resolveVolumePath captures the volume name rather than volume_path, which is
+// resolved before deployment and would lose the dependency on the volume.
+func resolveVolumePath(b *bundle.Bundle, path string) string {
+	if !strings.HasPrefix(path, "/Volumes/") || strings.Contains(path, "${") {
+		return path
+	}
+	parts := strings.SplitN(path, "/", 6)
+	if len(parts) < 5 || parts[2] == "" || parts[3] == "" || parts[4] == "" {
+		return path
+	}
+	catalogName, schemaName, volumeName := parts[2], parts[3], parts[4]
+	for key, volume := range b.Config.Resources.Volumes {
+		if volume != nil && volume.CatalogName == catalogName && volume.SchemaName == schemaName && volume.Name == volumeName {
+			parts[4] = fmt.Sprintf("${resources.volumes.%s.name}", key)
+			break
+		}
+	}
+	parts[2] = resolveCatalog(b, catalogName)
+	parts[3] = resolveSchema(b, catalogName, schemaName)
+	return strings.Join(parts, "/")
+}
+
 func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Match volume paths before volumes and schemas lose their original names.
+	for _, agent := range b.Config.Resources.GenieAgents {
+		if agent == nil {
+			continue
+		}
+		if resources := agent.Definition.Resources; resources != nil {
+			for i := range resources.Tables {
+				resources.Tables[i].Identifier = resolveThreePartName(b, resources.Tables[i].Identifier)
+			}
+			for i := range resources.SqlFunctions {
+				resources.SqlFunctions[i].Identifier = resolveThreePartName(b, resources.SqlFunctions[i].Identifier)
+			}
+			for i := range resources.Volumes {
+				resources.Volumes[i].Path = resolveVolumePath(b, resources.Volumes[i].Path)
+			}
+		}
+		if instructions := agent.Definition.Instructions; instructions != nil {
+			for i := range instructions.JoinSpecs {
+				join := &instructions.JoinSpecs[i]
+				join.Left.Identifier = resolveThreePartName(b, join.Left.Identifier)
+				join.Right.Identifier = resolveThreePartName(b, join.Right.Identifier)
+			}
+		}
+	}
+
 	// Resolve resources that depend on schemas before resolving schemas themselves.
 	// The schema resolution below modifies schema.CatalogName, and findSchema
 	// (used by resolveSchema) matches against the original schema.CatalogName value.

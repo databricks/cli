@@ -1,0 +1,9 @@
+# Genie agent lifecycle, also runs against a real workspace. The cloud run
+# needs the Genie Agents preview enabled on the test workspaces; locally the
+# fake server covers the same flow.
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

@@ -1,0 +1,176 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-genie-agent-test-[UNIQUE_NAME]/default/files...
+Created genie_agents.agent
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Edit the definition outside the bundle before planning
+
+>>> update_file.py remote.json average trip distance average fare amount
+
+>>> [CLI] genie-agents update-genie-agent agents/[AGENT_ID] * --json @remote.json
+{
+  "config": {
+    "sample_questions": [
+      {
+        "id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+        "question": "What was the average fare amount last month?"
+      }
+    ]
+  },
+  "resources": {
+    "tables": [
+      {
+        "description": "NYC taxi trip records",
+        "identifier": "samples.nyctaxi.trips"
+      }
+    ]
+  }
+}
+
+=== Repeated plans keep warning about the remote edit
+
+>>> [CLI] bundle plan
+Warning: genie agent "agent" has been modified remotely
+  at resources.genie_agents.agent
+  in databricks.yml:7:7
+
+This genie agent has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local genie agent definition matches what you intend to deploy
+before proceeding with the deployment.
+
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be lost.
+
+update genie_agents.agent
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan
+Warning: genie agent "agent" has been modified remotely
+  at resources.genie_agents.agent
+  in databricks.yml:7:7
+
+This genie agent has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local genie agent definition matches what you intend to deploy
+before proceeding with the deployment.
+
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be lost.
+
+update genie_agents.agent
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> musterr [CLI] bundle deploy
+Error: genie agent "agent" has been modified remotely
+  at resources.genie_agents.agent
+  in databricks.yml:7:7
+
+This genie agent has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local genie agent definition matches what you intend to deploy
+before proceeding with the deployment.
+
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be lost.
+
+
+=== Explicit overwrite restores the bundle definition
+
+>>> [CLI] bundle deploy --force
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-genie-agent-test-[UNIQUE_NAME]/default/files...
+Updated genie_agents.agent
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] genie-agents get-genie-agent agents/[AGENT_ID]
+{
+  "config": {
+    "sample_questions": [
+      {
+        "id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+        "question": "What was the average trip distance last month?"
+      }
+    ]
+  },
+  "resources": {
+    "tables": [
+      {
+        "description": "NYC taxi trip records",
+        "identifier": "samples.nyctaxi.trips"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== A definition edit after saving a plan rejects that plan's update
+
+>>> update_file.py databricks.yml Agent grounded in taxi trip data Updated bundle description
+
+>>> [CLI] bundle plan -o json
+
+>>> update_file.py remote.json average trip distance total fare amount
+
+>>> [CLI] genie-agents update-genie-agent agents/[AGENT_ID] * --json @remote.json
+{
+  "config": {
+    "sample_questions": [
+      {
+        "id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+        "question": "What was the total fare amount last month?"
+      }
+    ]
+  },
+  "resources": {
+    "tables": [
+      {
+        "description": "NYC taxi trip records",
+        "identifier": "samples.nyctaxi.trips"
+      }
+    ]
+  }
+}
+
+>>> contains.py API error_code: ABORTED
+
+>>> [CLI] genie-agents get-genie-agent agents/[AGENT_ID]
+{
+  "config": {
+    "sample_questions": [
+      {
+        "id": "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+        "question": "What was the total fare amount last month?"
+      }
+    ]
+  },
+  "resources": {
+    "tables": [
+      {
+        "description": "NYC taxi trip records",
+        "identifier": "samples.nyctaxi.trips"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_agents.agent
+
+This action will result in the deletion of the following Genie agents.
+The conversation history attached to them is permanently lost:
+  delete resources.genie_agents.agent
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-genie-agent-test-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

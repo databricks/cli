@@ -1,0 +1,13 @@
+trace $CLI bundle deploy
+AGENT=$(read_id.py agent)
+
+title "Move in the workspace browser without changing the echoed parent_path"
+MSYS_NO_PATHCONV=1 trace $CLI api post "/__testserver/genie/agents/$AGENT/move" --json '{"parent_path":"/Shared/moved"}'
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | jq '{parent_path, effective_parent_path}'
+trace $CLI bundle plan -o json | plan_filter.py resources.genie_agents.agent
+
+title "Deploy restores the configured folder"
+trace $CLI bundle deploy
+trace $CLI genie-agents get-genie-agent "agents/$AGENT" | jq '{parent_path, effective_parent_path}'
+trace $CLI bundle plan
+trace $CLI bundle destroy --auto-approve

@@ -29,6 +29,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/dataquality"
+	"github.com/databricks/databricks-sdk-go/service/genieagents"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -336,6 +337,34 @@ var testConfig map[string]any = map[string]any{
 		SerializedSpace: "{}",
 	},
 
+	"genie_agents": &resources.GenieAgent{
+		GenieAgentId: "01f0a1b2c3d4e5f60718293a4b5c6d7e",
+		DisplayName:  "my-genie-agent",
+		Description:  "Test genie agent",
+		WarehouseId:  "test-warehouse-id",
+		ParentPath:   "/Workspace/Users/user@example.com",
+		Definition: genieagents.GenieAgentDefinition{
+			Config: &genieagents.GenieAgentConfig{
+				SampleQuestions: []genieagents.GenieAgentSampleQuestion{
+					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7e", Question: "What was the average trip distance last month?"},
+				},
+			},
+			Resources: &genieagents.GenieAgentResources{
+				Tables: []genieagents.GenieAgentTable{
+					{Identifier: "samples.nyctaxi.trips", Description: "NYC taxi trip records"},
+				},
+				SqlFunctions: []genieagents.GenieAgentSqlFunction{
+					{Id: "01f0a1b2c3d4e5f60718293a4b5c6d70", Identifier: "main.default.trip_distance"},
+				},
+			},
+			Instructions: &genieagents.GenieAgentInstructions{
+				TextInstruction: &genieagents.GenieAgentTextInstruction{
+					Id: "01f0a1b2c3d4e5f60718293a4b5c6d7f", Content: "Report average trip distance.",
+				},
+			},
+		},
+	},
+
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
 		Name:         "my-endpoint",
 		EndpointType: vectorsearch.EndpointTypeStandard,
@@ -632,6 +661,33 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/genie/" + resp.SpaceId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"genie_agents.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.GenieAgents.CreateGenieAgent(ctx, genieagents.CreateGenieAgentRequest{
+			GenieAgent: genieagents.GenieAgent{
+				DisplayName: "genie-agent-permissions",
+				WarehouseId: "test-warehouse-id",
+				Definition: genieagents.GenieAgentDefinition{
+					Config: &genieagents.GenieAgentConfig{
+						SampleQuestions: []genieagents.GenieAgentSampleQuestion{
+							{Id: "01f0a1b2c3d4e5f60718293a4b5c6d7e", Question: "What were total sales?"},
+						},
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/genie/" + strings.TrimPrefix(resp.Name, "agents/"),
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",

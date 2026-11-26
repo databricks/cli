@@ -1,0 +1,18 @@
+trace $CLI bundle deploy
+
+title "Delete the resource out of band"
+trace $CLI genie-agents delete-genie-agent agents/01f0a1b2c3d4e5f60718293a4b5c6d7e
+
+title "Plan detects the resource is gone"
+trace $CLI bundle plan
+
+# Deleting an agent moves it to trash, where its pinned ID remains reserved.
+title "Deploy cannot reuse the pinned ID"
+trace musterr $CLI bundle deploy
+
+trace $CLI bundle destroy --auto-approve
+
+# Destroy clears bundle state, but the trashed agent still reserves its ID.
+trace musterr $CLI bundle deploy
+
+trace $CLI bundle destroy --auto-approve

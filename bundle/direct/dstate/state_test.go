@@ -284,6 +284,15 @@ func TestExportStateFromDataDashboardEtag(t *testing.T) {
 	assert.Empty(t, result["resources.dashboards.my_dash.permissions"].ETag)
 }
 
+func TestExportStateFromDataGenieAgentEtag(t *testing.T) {
+	data := NewDatabase("lineage", 1)
+	data.State["resources.genie_agents.agent"] = ResourceEntry{ID: "agent-id", State: json.RawMessage(`{"etag": "v1"}`)}
+	data.State["resources.genie_agents.agent.permissions"] = ResourceEntry{ID: "agent-id", State: json.RawMessage(`{"etag": "v2"}`)}
+	result := ExportStateFromData(data)
+	assert.Equal(t, "v1", result["resources.genie_agents.agent"].ETag)
+	assert.Empty(t, result["resources.genie_agents.agent.permissions"].ETag)
+}
+
 func TestPanicOnDoubleOpen(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 

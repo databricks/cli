@@ -54,6 +54,7 @@ var createRecoveryOptOut = map[string]string{
 
 	// Candidates: these could recover, each with a change of its own.
 	"job_runs":             "candidate: DoCreate mints the run-now idempotency token per request; repeating the request with the same token would return the run it started",
+	"genie_agents":         "candidate: the backend assigns the agent id when omitted; recovery with an explicitly supplied id is not implemented",
 	"materialization_sets": "candidate: DoCreate mints the request_id per request; repeating the request with the same request_id would return the set it created",
 	"cluster_policies":     "candidate: policy names are unique and the read response has created_at_timestamp, but the backend assigns the id, so the lookup has to go by name",
 	"apps":                 "candidate: app names are unique and the read response has create_time, but DoCreate already handles an app that is being deleted, and recovery has to fit with that",

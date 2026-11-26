@@ -226,6 +226,9 @@ func TestResourcesBindSupport(t *testing.T) {
 		GenieSpaces: map[string]*resources.GenieSpace{
 			"my_genie_space": {},
 		},
+		GenieAgents: map[string]*resources.GenieAgent{
+			"my_genie_agent": {},
+		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {
 				CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{},
@@ -446,6 +449,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockClusterPoliciesAPI().EXPECT().GetByPolicyId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockGenieAPI().EXPECT().GetSpace(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockGenieAgentsAPI().EXPECT().GetGenieAgent(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)

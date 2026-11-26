@@ -21,6 +21,7 @@ var resourceURLPatterns = map[string]string{
 	"features":                "explore/data/features/%s",
 	"feature_specs":           "explore/data/functions/%s",
 	"genie_spaces":            "genie/rooms/%s",
+	"genie_agents":            "genie/rooms/%s",
 	"jobs":                    "jobs/%s",
 	"mcp_services":            "explore/data/mcp-services/%s",
 	"models":                  "ml/models/%s",
