@@ -8,6 +8,7 @@
     "source": "serverless",
     "envKey": "serverless/serverless-v5"
   },
+  "artifactSource": "network",
   "hasPythonVersion": true,
   "phases": [
     "preflight: ok",

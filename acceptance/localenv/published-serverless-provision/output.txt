@@ -7,6 +7,7 @@
     "source": "serverless",
     "envKey": "serverless/serverless-v5"
   },
+  "artifactSource": "network",
   "hasPythonVersion": true,
   "hasDBConnectVersion": true,
   "phases": [
@@ -18,6 +19,9 @@
     "validate: ok"
   ]
 }
+
+=== Files in the project
+.venv
+pyproject.toml
+uv.lock
 venv python: present
-pyproject.toml: present
-uv.lock: present
