@@ -1,0 +1,1 @@
+trace $CLI experimental aitools tools query --output csv "SELECT 1"

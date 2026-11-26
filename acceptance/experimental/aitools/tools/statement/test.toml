@@ -1,0 +1,3 @@
+# SQL result types, parameter binding and failures are backend facts: run on every
+# cloud. Locally each case stubs the response the real warehouse returns.
+Cloud = true

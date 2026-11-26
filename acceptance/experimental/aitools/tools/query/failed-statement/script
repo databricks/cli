@@ -1,0 +1,6 @@
+# The real message goes on with advice and the workspace's search path; keep the
+# stable parts: error code, error class, the relation and the SQLSTATE.
+musterr $CLI experimental aitools tools query --output csv "SELECT * FROM a_table_that_does_not_exist_zzz" 2> err.txt
+grep -o 'query failed: BAD_REQUEST \[TABLE_OR_VIEW_NOT_FOUND\] The table or view `a_table_that_does_not_exist_zzz` cannot be found' err.txt
+grep -o 'SQLSTATE: [0-9A-Z]*' err.txt
+rm err.txt

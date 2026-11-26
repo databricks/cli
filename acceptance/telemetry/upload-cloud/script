@@ -1,0 +1,22 @@
+# The real /telemetry-ext endpoint accepts the CLI's frontend logs. Locally the
+# parent test.toml stubs the endpoint with the same response.
+# A host that disables telemetry would upload nothing.
+unset DATABRICKS_CLI_DISABLE_TELEMETRY
+
+title "raw response to two test events"
+# The response body as the API returns it: every log a success, an empty error list.
+event() {
+    jq -cn --arg id "$(uuid)" --arg name "$1" '{frontend_log_event_id: $id, entry: {databricks_cli_log: {cli_test_event: {name: $name}}}}'
+}
+jq -n --arg a "$(event VALUE1)" --arg b "$(event VALUE2)" --argjson t "$(date +%s)000" \
+    '{uploadTime: $t, items: [], protoLogs: [$a, $b]}' > body.json
+trace $CLI api post /telemetry-ext --json @body.json | jq '{errors, numProtoSuccess}'
+rm body.json
+
+title "the CLI's own upload"
+# Only the final result: the upload retries 5xx responses on its own, and the real
+# response has more fields than the stub. A generous timeout avoids a timeout retry.
+export DATABRICKS_CLI_TELEMETRY_TIMEOUT=30
+$CLI selftest send-telemetry --debug 2> debug.txt
+grep -o 'All 2 logs uploaded successfully' debug.txt
+rm debug.txt

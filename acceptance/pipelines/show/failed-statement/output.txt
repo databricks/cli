@@ -1,0 +1,3 @@
+
+>>> [CLI] pipelines show main.default.missing_table
+Error: statement failed: BAD_REQUEST: unsupported statement: SELECT * FROM `main`.`default`.`missing_table` LIMIT 11

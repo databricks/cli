@@ -1,0 +1,6 @@
+
+>>> [CLI] experimental aitools tools query --output csv SELECT id, id * 2 AS doubled FROM range(3) ORDER BY id
+id,doubled
+0,0
+1,2
+2,4

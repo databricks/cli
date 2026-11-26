@@ -8,13 +8,6 @@ const (
 	GCP
 )
 
-// Implement [Requirement].
-func (c Cloud) Verify(t TestingT) {
-	if c != GetCloud(t) {
-		t.Skipf("Skipping %s-specific test", c)
-	}
-}
-
 func (c Cloud) String() string {
 	switch c {
 	case AWS:
