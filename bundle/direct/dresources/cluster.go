@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -155,17 +154,22 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	var libraries []compute.Library
 
 	// The cluster GET and the library-status GET are independent, so run them concurrently.
-	// The cluster GET error takes precedence: for a deleted cluster both endpoints fail with
-	// 400 INVALID_PARAMETER_VALUE, but the SDK maps only the cluster GET one to
-	// ErrResourceDoesNotExist, so returning whichever error came first would make a missing
-	// cluster look like a read failure at random.
+	// The cluster GET error takes precedence: it is the one the SDK maps to not-found for a
+	// deleted cluster. A library-status error that came first would make a missing cluster look
+	// like a read failure whenever readLibraries cannot recognize it.
+	librariesCtx, cancelLibraries := context.WithCancel(ctx)
+	defer cancelLibraries()
 	var detailsErr, librariesErr error
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		details, detailsErr = r.client.Clusters.GetByClusterId(ctx, id)
+		if detailsErr != nil {
+			// The library status is not needed once the cluster GET failed.
+			cancelLibraries()
+		}
 	})
 	wg.Go(func() {
-		libraries, librariesErr = r.readLibraries(ctx, id)
+		libraries, librariesErr = r.readLibraries(librariesCtx, id)
 	})
 	wg.Wait()
 	if detailsErr != nil {
@@ -205,6 +209,10 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 // https://docs.databricks.com/api/workspace/libraries/clusterstatus
 func (r *ResourceCluster) readLibraries(ctx context.Context, id string) ([]compute.Library, error) {
 	statuses, err := r.client.Libraries.ClusterStatusByClusterId(ctx, id)
+	if isClusterDoesNotExist(err, id) {
+		// The cluster was deleted after (or while) the cluster GET read it.
+		return nil, fmt.Errorf("%w: %w", apierr.ErrResourceDoesNotExist, err)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -379,22 +387,20 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 
 func (r *ResourceCluster) DoDelete(ctx context.Context, id string, _ *ClusterState) error {
 	err := r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
-	if isClusterDoesNotExist(err) {
+	if isClusterDoesNotExist(err, id) {
 		// The backend reports a missing cluster as 400 INVALID_PARAMETER_VALUE, not 404.
 		return fmt.Errorf("%w: %w", apierr.ErrResourceDoesNotExist, err)
 	}
 	return err
 }
 
-// clusterDoesNotExistMessage matches the backend message for a missing cluster; the SDK applies
-// the same match to the cluster GET only.
-var clusterDoesNotExistMessage = regexp.MustCompile(`Cluster .* does not exist`)
-
-func isClusterDoesNotExist(err error) bool {
+// isClusterDoesNotExist reports whether err is the backend's answer for a missing cluster id. The
+// SDK maps the same answer to ErrResourceDoesNotExist for the cluster GET only.
+func isClusterDoesNotExist(err error, id string) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && apiErr.StatusCode == http.StatusBadRequest &&
 		apiErr.ErrorCode == "INVALID_PARAMETER_VALUE" &&
-		clusterDoesNotExistMessage.MatchString(apiErr.Message)
+		apiErr.Message == "Cluster "+id+" does not exist"
 }
 
 func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *ClusterRemote) error {
