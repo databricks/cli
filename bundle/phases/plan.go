@@ -21,10 +21,11 @@ import (
 // Note, it is not run in "bundle migrate" so it must not modify the config
 func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool) {
 	bundle.ApplySeqContext(ctx, b,
-		// Rejects references to fields the target resource type does not have, before deploy uploads anything.
-		validate.ReferenceFieldsAfterBuild(),
 		deploy.CheckDashboardsModifiedRemotely(isPlan),
 		resourcemutator.SecretScopeFixups(),
+		// Rejects references to fields the target resource type does not have, before deploy uploads
+		// anything. After SecretScopeFixups, which adds the permissions that the plan also sees.
+		validate.ReferenceFieldsAfterBuild(),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		statemgmt.CheckRunningResource(),

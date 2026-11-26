@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> musterr [CLI] bundle plan
+Error: cannot resolve "${resources.secret_scopes.s.permissions[0].nope}": resource type "secret_scopes" has no field "permissions[0].nope"
+  at resources.jobs.j.name
+  in databricks.yml:11:13
+
+
+>>> musterr [CLI] bundle deploy
+Error: cannot resolve "${resources.secret_scopes.s.permissions[0].nope}": resource type "secret_scopes" has no field "permissions[0].nope"
+  at resources.jobs.j.name
+  in databricks.yml:11:13
+

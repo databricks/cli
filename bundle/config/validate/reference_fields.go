@@ -18,8 +18,8 @@ type referenceFields struct {
 }
 
 // ReferenceFields rejects references to resource fields that do not exist, such as
-// ${resources.volumes.bar.non_existent}. The plan rejects them too, but only after deploy has
-// uploaded the files.
+// ${resources.volumes.bar.non_existent}, the same references the plan rejects. "bundle validate"
+// runs it before the build; plan and deploy run [ReferenceFieldsAfterBuild] instead.
 func ReferenceFields() bundle.ReadOnlyMutator {
 	return &referenceFields{}
 }
