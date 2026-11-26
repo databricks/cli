@@ -145,3 +145,10 @@ func RuntimeVersion(ctx context.Context) Version {
 
 	return ParseVersion(v.(Environment).Version)
 }
+
+// FUSESupportsNotebooks reports whether the workspace FUSE mount can read and write
+// notebooks. Only serverless client version 2.5+ was verified to support this.
+func FUSESupportsNotebooks(ctx context.Context) bool {
+	v := RuntimeVersion(ctx)
+	return v.Type == ClusterTypeServerless && (v.Major > 2 || (v.Major == 2 && v.Minor >= 5))
+}
