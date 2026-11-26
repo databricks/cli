@@ -1,0 +1,2 @@
+# The sizes in output.txt are byte counts: keep these files as committed on every checkout.
+* -text

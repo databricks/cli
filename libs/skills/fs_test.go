@@ -69,6 +69,19 @@ func TestReadFiles(t *testing.T) {
 	assert.Contains(t, string(data), "# Beta")
 }
 
+func TestFileSizes(t *testing.T) {
+	src := fixtureSource().(FileSizer)
+
+	size, err := src.FileSize(t.Context(), "alpha", "references/guide.md")
+	require.NoError(t, err)
+	data, err := fixtureSource().ReadFile(t.Context(), "alpha", "references/guide.md")
+	require.NoError(t, err)
+	assert.Equal(t, int64(len(data)), size)
+
+	_, err = src.FileSize(t.Context(), "alpha", "missing.md")
+	assert.ErrorIs(t, err, ErrUnknownFile)
+}
+
 func TestUnknownSkillAndFile(t *testing.T) {
 	src := fixtureSource()
 

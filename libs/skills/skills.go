@@ -35,6 +35,13 @@ type Skill struct {
 	Experimental bool
 }
 
+// FileSizer is implemented by a source that knows the size of a skill file
+// without reading the file. A source that does not implement it lists files
+// without sizes.
+type FileSizer interface {
+	FileSize(ctx context.Context, skill, path string) (int64, error)
+}
+
 // Catalog is the set of skills a source serves.
 type Catalog struct {
 	// Skills are sorted by name. Install also skips non-portable names and

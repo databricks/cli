@@ -2,9 +2,8 @@
 trace $CLI skills --help
 trace $CLI --help | contains.py "!  skills " > /dev/null
 
-# Each subcommand is a stub that exits non-zero with the not-implemented message.
+# Each remaining stub exits non-zero with the not-implemented message. list-files
+# and read-file are covered in acceptance/cmd/skills/files.
 musterr trace $CLI skills list
 musterr trace $CLI skills read demo-skill
-musterr trace $CLI skills list-files demo-skill
-musterr trace $CLI skills read-file demo-skill SKILL.md
 musterr trace $CLI skills search skill words

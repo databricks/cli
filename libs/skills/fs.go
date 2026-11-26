@@ -53,22 +53,44 @@ func (s *fsSource) Catalog(_ context.Context) (*Catalog, error) {
 }
 
 func (s *fsSource) ReadFile(_ context.Context, skill, file string) ([]byte, error) {
-	m, err := s.manifest()
+	name, err := s.filePath(skill, file)
 	if err != nil {
 		return nil, err
 	}
-	meta, ok := m.Skills[skill]
-	if !ok {
-		return nil, fmt.Errorf("%w: %q", ErrUnknownSkill, skill)
-	}
-	if !slices.Contains(meta.Files, file) {
-		return nil, fmt.Errorf("%w: %q in skill %q", ErrUnknownFile, file, skill)
-	}
-	data, err := fs.ReadFile(s.fsys, path.Join(meta.RepoDir, skill, file))
+	data, err := fs.ReadFile(s.fsys, name)
 	if err != nil {
 		return nil, fmt.Errorf("read %q in skill %q: %w", file, skill, err)
 	}
 	return data, nil
+}
+
+func (s *fsSource) FileSize(_ context.Context, skill, file string) (int64, error) {
+	name, err := s.filePath(skill, file)
+	if err != nil {
+		return 0, err
+	}
+	info, err := fs.Stat(s.fsys, name)
+	if err != nil {
+		return 0, fmt.Errorf("stat %q in skill %q: %w", file, skill, err)
+	}
+	return info.Size(), nil
+}
+
+// filePath returns the path of a skill file in the release. The manifest must
+// list the file for the skill.
+func (s *fsSource) filePath(skill, file string) (string, error) {
+	m, err := s.manifest()
+	if err != nil {
+		return "", err
+	}
+	meta, ok := m.Skills[skill]
+	if !ok {
+		return "", fmt.Errorf("%w: %q", ErrUnknownSkill, skill)
+	}
+	if !slices.Contains(meta.Files, file) {
+		return "", fmt.Errorf("%w: %q in skill %q", ErrUnknownFile, file, skill)
+	}
+	return path.Join(meta.RepoDir, skill, file), nil
 }
 
 // manifest reads and checks the release manifest. Every path it names, the

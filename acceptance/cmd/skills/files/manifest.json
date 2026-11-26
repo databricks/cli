@@ -1,0 +1,6 @@
+{
+  "version": "0.0.2",
+  "skills": {
+    "demo-skill": {"version": "0.0.2", "description": "A skill with supporting files.", "files": ["SKILL.md", "references/guide.md", "assets/logo.png"]}
+  }
+}
