@@ -483,6 +483,7 @@ func TestApplyChangeAddToExistingKey(t *testing.T) {
 		{"null", "parameters:\n  - name: p\n    value:\n", "parameters[0].value", "parameters: [{name: p, value: value}]"},
 		{"sequence index inserts", "parent:\n  - a\n", "parent[0]", "parent: [value, a]"},
 		{"merge key adds", "defaults: &d\n  job_cluster_key: old\ntasks:\n  - <<: *d\n    task_key: main\n", "tasks[0].job_cluster_key", "defaults: {job_cluster_key: old}\ntasks: [{task_key: main, job_cluster_key: value}]"},
+		{"through an alias", "defaults: &d\n  k: old\njob: *d\n", "job.k", "defaults: {k: value}\njob: {k: value}"},
 		{"under an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n", "parameters[0].value", "parameters: [{name: p, value: value}, {name: q, value: value}]"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

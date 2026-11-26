@@ -257,6 +257,28 @@ func (r *blockResolver) replacesKey(change resolvedChange) bool {
 	return r.writesKey(*destinations[0].block, destinations[0].path)
 }
 
+// addLandsOnKey reports whether an add routed as change would reach a key a block writes
+// itself, which applyChange replaces. An unrouted add tries the resource file's top-level
+// path, then the target's.
+func (r *blockResolver) addLandsOnKey(change resolvedChange, resourceFile string) bool {
+	destinations, err := routeChange(r, change, false)
+	if err != nil {
+		return false
+	}
+	for _, destination := range destinations {
+		blocks := []sourceBlock{{file: resourceFile}, {override: true, file: resourceFile}}
+		if destination.block != nil {
+			blocks = []sourceBlock{*destination.block}
+		}
+		for _, block := range blocks {
+			if (!block.override || r.target != "") && r.writesKey(block, destination.path) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // writesKey reports whether block writes the key at path itself, with no anchor on or
 // inside its value.
 func (r *blockResolver) writesKey(block sourceBlock, path *structpath.PatternNode) bool {

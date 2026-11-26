@@ -3,7 +3,9 @@ bundle:
 
 # The task is split between both blocks and each declares job_cluster_key.
 # cluster_id makes OverrideCompute clear it, so the merged leaf has no location;
-# the target's copy wins the merge, so that is the one to replace.
+# the target's copy wins the merge, so that is the one to replace. The merged task's
+# target copy comes from a merge key, so its change is left unapplied rather than
+# written into the losing top-level copy.
 
 resources:
   jobs:
@@ -22,6 +24,10 @@ resources:
           job_cluster_key: shared
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/nb
+        - task_key: merged
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
 
 targets:
   dev:
@@ -34,3 +40,6 @@ targets:
             - task_key: main
               job_cluster_key: shared
               max_retries: 1
+            - <<: &dev_compute
+                job_cluster_key: shared
+              task_key: merged

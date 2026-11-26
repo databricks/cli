@@ -315,6 +315,12 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					if blocks.replacesKey(replaced) {
 						resolved = replaced
 						configChange.Operation = OperationReplace
+					} else if blocks.addLandsOnKey(resolved, b.Config.GetLocationOf(resourcePath).File) {
+						// The add would replace a copy of the key that does not win, which
+						// changes nothing for this target and changes what others deploy.
+						log.Debugf(ctx, "config-remote-sync: skipping %s: the key it wins with cannot be replaced", fullPath)
+						skipped++
+						continue
 					}
 				}
 			}

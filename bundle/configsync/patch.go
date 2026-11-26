@@ -429,6 +429,10 @@ func yamlKeyReplaceable(content []byte, fieldPath string) bool {
 	}
 	current := doc.Content[0]
 	for _, part := range pattern.AsSlice() {
+		// A patch writes through an alias into its anchor's content.
+		if current.Kind == yaml.AliasNode {
+			current = current.Alias
+		}
 		current, _ = yamlChild(current, (*structpath.PathNode)(part))
 		if current == nil {
 			return false

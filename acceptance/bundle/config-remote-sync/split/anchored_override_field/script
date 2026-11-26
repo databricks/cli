@@ -8,6 +8,7 @@ title "Change the fields remotely"
 edit_resource.py jobs $job_id <<PYEDIT
 r["max_concurrent_runs"] = 10
 r["description"] = "edited"
+r["schedule"]["quartz_cron_expression"] = "0 0 2 * * ?"
 PYEDIT
 
 title "Sync edits under the anchored mapping and leaves the anchored value unapplied"
