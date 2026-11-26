@@ -1,0 +1,21 @@
+
+=== deploy: the cluster is removed from config
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_state.py
+[]
+
+=== destroy
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 0 deleted
+
+>>> print_state.py
+
+>>> print_requests.py //clusters/permanent-delete

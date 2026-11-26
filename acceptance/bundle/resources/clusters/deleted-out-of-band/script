@@ -1,0 +1,29 @@
+# The state points at a cluster that was deleted out of band. The backend answers every
+# cluster endpoint for it with 400 INVALID_PARAMETER_VALUE "does not exist"; the stub in
+# test.toml delays the cluster GET so the library-status GET answers first.
+seed_state() {
+    mkdir -p .databricks/bundle/default
+    cp state.json .databricks/bundle/default/resources.json
+    $CLI workspace mkdirs /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default
+}
+
+title "deploy: the cluster is removed from config"
+seed_state
+cp databricks.yml databricks.yml.orig
+update_file.py databricks.yml "  clusters:
+    foo:
+      cluster_name: foo
+      spark_version: 13.3.x-scala2.12
+      node_type_id: i3.xlarge
+      num_workers: 1
+" "  {}
+"
+trace $CLI bundle deploy --auto-approve
+trace print_state.py | jq -c ".state | keys"
+
+title "destroy"
+mv databricks.yml.orig databricks.yml
+seed_state
+trace $CLI bundle destroy --auto-approve
+trace print_state.py | jq -c ".state | keys"
+trace print_requests.py //clusters/permanent-delete

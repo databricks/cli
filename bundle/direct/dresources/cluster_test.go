@@ -1,10 +1,16 @@
 package dresources
 
 import (
+	"encoding/json"
+	"net/http"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,4 +71,54 @@ func TestClusterOverrideChangeDescLibraries(t *testing.T) {
 			assert.Equal(t, tt.reason, change.Reason)
 		})
 	}
+}
+
+func clusterDoesNotExistResponse(id string) testserver.Response {
+	return testserver.Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "Cluster " + id + " does not exist",
+		},
+	}
+}
+
+// For a deleted cluster the backend answers every cluster endpoint with 400
+// INVALID_PARAMETER_VALUE; only the cluster GET is mapped to not-found by the SDK.
+func newMissingClusterResource(t *testing.T) *ResourceCluster {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.1/clusters/get", func(req testserver.Request) any {
+		// Answer after the library-status GET, so its unmapped error comes first.
+		time.Sleep(100 * time.Millisecond)
+		return clusterDoesNotExistResponse(req.URL.Query().Get("cluster_id"))
+	})
+	server.Handle("GET", "/api/2.0/libraries/cluster-status", func(req testserver.Request) any {
+		return clusterDoesNotExistResponse(req.URL.Query().Get("cluster_id"))
+	})
+	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req testserver.Request) any {
+		var request compute.PermanentDeleteCluster
+		require.NoError(t, json.Unmarshal(req.Body, &request))
+		return clusterDoesNotExistResponse(request.ClusterId)
+	})
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+	return (&ResourceCluster{}).New(client).(*ResourceCluster)
+}
+
+func TestClusterDoReadMissingCluster(t *testing.T) {
+	r := newMissingClusterResource(t)
+	_, err := r.DoRead(t.Context(), "1126-000000-abcdefgh")
+	require.Error(t, err)
+	assert.True(t, apierr.IsMissing(err), "expected a not-found error, got %v", err)
+}
+
+func TestClusterDoDeleteMissingCluster(t *testing.T) {
+	r := newMissingClusterResource(t)
+	err := r.DoDelete(t.Context(), "1126-000000-abcdefgh", nil)
+	require.Error(t, err)
+	assert.True(t, apierr.IsMissing(err), "expected a not-found error, got %v", err)
 }

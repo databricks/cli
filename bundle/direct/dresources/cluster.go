@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -17,7 +20,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"golang.org/x/sync/errgroup"
 )
 
 // librariesWaitTimeout bounds how long we poll for libraries to finish installing.
@@ -153,19 +155,24 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	var libraries []compute.Library
 
 	// The cluster GET and the library-status GET are independent, so run them concurrently.
-	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		var err error
-		details, err = r.client.Clusters.GetByClusterId(ctx, id)
-		return err
+	// The cluster GET error takes precedence: for a deleted cluster both endpoints fail with
+	// 400 INVALID_PARAMETER_VALUE, but the SDK maps only the cluster GET one to
+	// ErrResourceDoesNotExist, so returning whichever error came first would make a missing
+	// cluster look like a read failure at random.
+	var detailsErr, librariesErr error
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		details, detailsErr = r.client.Clusters.GetByClusterId(ctx, id)
 	})
-	g.Go(func() error {
-		var err error
-		libraries, err = r.readLibraries(ctx, id)
-		return err
+	wg.Go(func() {
+		libraries, librariesErr = r.readLibraries(ctx, id)
 	})
-	if err := g.Wait(); err != nil {
-		return nil, err
+	wg.Wait()
+	if detailsErr != nil {
+		return nil, detailsErr
+	}
+	if librariesErr != nil {
+		return nil, librariesErr
 	}
 
 	remote := &ClusterRemote{
@@ -371,7 +378,23 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 }
 
 func (r *ResourceCluster) DoDelete(ctx context.Context, id string, _ *ClusterState) error {
-	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
+	err := r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
+	if isClusterDoesNotExist(err) {
+		// The backend reports a missing cluster as 400 INVALID_PARAMETER_VALUE, not 404.
+		return fmt.Errorf("%w: %w", apierr.ErrResourceDoesNotExist, err)
+	}
+	return err
+}
+
+// clusterDoesNotExistMessage matches the backend message for a missing cluster; the SDK applies
+// the same match to the cluster GET only.
+var clusterDoesNotExistMessage = regexp.MustCompile(`Cluster .* does not exist`)
+
+func isClusterDoesNotExist(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode == http.StatusBadRequest &&
+		apiErr.ErrorCode == "INVALID_PARAMETER_VALUE" &&
+		clusterDoesNotExistMessage.MatchString(apiErr.Message)
 }
 
 func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *ClusterRemote) error {
