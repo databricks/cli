@@ -1,0 +1,13 @@
+export DATABRICKS_SKILLS_DIR=$TESTDIR/../release
+
+# Text output: matches in the skills list line format, then how to read a skill.
+trace $CLI skills search pipelines
+trace $CLI skills search PIPELINES
+trace $CLI skills search skill pipelines
+
+# A word that matches nothing exits zero and points at skills list.
+trace $CLI skills search nothing-here
+
+# JSON output has the fields of skills list.
+trace $CLI skills search --output json pipelines
+trace $CLI skills search --output json nothing-here

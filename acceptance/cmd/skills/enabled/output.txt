@@ -38,4 +38,4 @@ Error: databricks skills list-files is not implemented yet
 Error: databricks skills read-file is not implemented yet
 
 >>> [CLI] skills search skill words
-Error: databricks skills search is not implemented yet
+Error: no skills source is available in this build

@@ -1,0 +1,36 @@
+
+>>> [CLI] skills search pipelines
+pipeline-guide: Build and debug data pipelines.
+To read a skill, run: databricks skills read <name>
+
+>>> [CLI] skills search PIPELINES
+pipeline-guide: Build and debug data pipelines.
+To read a skill, run: databricks skills read <name>
+
+>>> [CLI] skills search skill pipelines
+demo-skill: A skill for tests.
+pipeline-guide: Build and debug data pipelines.
+To read a skill, run: databricks skills read <name>
+
+>>> [CLI] skills search nothing-here
+No skill matches. Run databricks skills list to see every skill.
+
+>>> [CLI] skills search --output json pipelines
+[
+  {
+    "name": "pipeline-guide",
+    "description": "Build and debug data pipelines.",
+    "version": "0.0.1",
+    "files": [
+      "SKILL.md"
+    ],
+    "commands": [
+      "pipelines"
+    ],
+    "source": "[TESTROOT]/cmd/skills/search/../release",
+    "release_version": "0.0.1"
+  }
+]
+
+>>> [CLI] skills search --output json nothing-here
+[]
