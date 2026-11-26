@@ -1,6 +1,0 @@
-# The throttle markers live in the file cache, which a host could disable.
-Env.DATABRICKS_CACHE_ENABLED = "true"
-# Skill hints on: the hint names `databricks skills list` instead of the install command.
-Env.DATABRICKS_SKILLS_PREVIEW = "1"
-Env.DATABRICKS_SKILLS_HINTS = "1"
-Ignore = ["home"]

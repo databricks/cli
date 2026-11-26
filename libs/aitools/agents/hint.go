@@ -94,6 +94,11 @@ var (
 	// reads in every tool output it lands in.
 	textHintThrottle = hintThrottle{component: "aitools-hint", ttl: time.Hour}
 
+	// skillsTextHintThrottle throttles the skills list text on its own marker
+	// bucket. An install-text marker left within the hour must not hide the
+	// skills text when skill hints are turned on, and the reverse.
+	skillsTextHintThrottle = hintThrottle{component: "aitools-skills-hint", ttl: time.Hour}
+
 	// nativeHintThrottle throttles the agent-native line on its own, shorter
 	// clock. The session id doesn't tell the main loop from a subagent or a
 	// hook (a subagent's commands carry the parent's session id and the
@@ -125,8 +130,8 @@ type agentHint struct {
 
 	// text is the agent's install recommendation, the model-facing text unless
 	// skills.HintsEnabled is true (see message). It is printed at most once per
-	// textHintThrottle per session (see sessionEnv), or per agent on this
-	// machine when there is no session id (see fallbackKey).
+	// text throttle (see textThrottle) per session (see sessionEnv), or per
+	// agent on this machine when there is no session id (see fallbackKey).
 	text string
 
 	// textKind tags the hint-shown event logged when text prints.
@@ -144,7 +149,7 @@ type agentHint struct {
 	sessionKeyPrefix string
 
 	// fallbackKey keys the throttle when there is no session id, so the hint
-	// prints at most once per textHintThrottle on this machine. Empty means no
+	// prints at most once per text throttle on this machine. Empty means no
 	// throttle without a session id (Claude Code).
 	fallbackKey string
 
@@ -257,7 +262,7 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if native != "" && nativeHintThrottle.seen(ctx, key) {
 		native = ""
 	}
-	textDue := !textHintThrottle.seen(ctx, key)
+	textDue := !textThrottle(ctx).seen(ctx, key)
 	if native == "" && !textDue {
 		return nil
 	}
@@ -317,11 +322,21 @@ func (h *agentHint) message(ctx context.Context) string {
 // claim records the text's throttle key and reports whether the text may
 // print. A durable throttle allows it only once the marker has persisted.
 func (h *agentHint) claim(ctx context.Context, key string) bool {
+	throttle := textThrottle(ctx)
 	if h.durableThrottle {
-		return claimHintMarker(ctx, key)
+		return claimHintMarker(ctx, throttle, key)
 	}
-	textHintThrottle.record(ctx, key)
+	throttle.record(ctx, key)
 	return true
+}
+
+// textThrottle returns the throttle of the text message() prints: the skills
+// list text's own when skills.HintsEnabled is true, else the install text's.
+func textThrottle(ctx context.Context) hintThrottle {
+	if skills.HintsEnabled(ctx) {
+		return skillsTextHintThrottle
+	}
+	return textHintThrottle
 }
 
 // claudeNativeHintLine returns claudeNativeHint when Claude Code itself spawned

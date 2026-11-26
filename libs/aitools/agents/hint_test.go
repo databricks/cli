@@ -321,6 +321,31 @@ func TestMaybeHint_SkillsCommandExemptFollowsGuard(t *testing.T) {
 	}
 }
 
+// The install text's marker, left within the hour before skill hints were
+// turned on, must not hide the skills text; the skills text keeps its own
+// throttle.
+func TestMaybeHint_SkillsTextNotHiddenByInstallMarker(t *testing.T) {
+	setClaudeAgent(t)
+	home, cacheDir := t.TempDir(), t.TempDir()
+
+	ctx1, stderr1 := sessionCtx(t, home, cacheDir, false)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	assert.Equal(t, hintText+"\n", stderr1.String())
+
+	ctx2, stderr2 := sessionCtx(t, home, cacheDir, false)
+	ctx2 = env.Set(ctx2, "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx2 = env.Set(ctx2, "DATABRICKS_SKILLS_HINTS", "1")
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	assert.Equal(t, skillsHintText+"\n", stderr2.String())
+
+	// Same session, second command with hints on: the skills text is throttled.
+	ctx3, stderr3 := sessionCtx(t, home, cacheDir, false)
+	ctx3 = env.Set(ctx3, "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx3 = env.Set(ctx3, "DATABRICKS_SKILLS_HINTS", "1")
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr3.String())
+}
+
 // commandAt builds a command tree under a "databricks" root and returns the
 // command at the space-separated path, e.g. "current-user me".
 func commandAt(path string) *cobra.Command {
