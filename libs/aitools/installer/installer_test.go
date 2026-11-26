@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -1112,6 +1113,97 @@ func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
 	assert.NoError(t, err, "agent2 should have databricks-sql")
 }
 
+func TestInstallSkillsForAgentsReportsAgentWithUnwritableSkillsDir(t *testing.T) {
+	tests := []struct {
+		name       string
+		withOther  bool
+		wantPrints bool
+	}{
+		// One agent gets copies of the skill files.
+		{name: "only agent", withOther: false, wantPrints: false},
+		// Two agents get symlinks; the other agent still gets the skills.
+		{name: "with another agent", withOther: true, wantPrints: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := setupTestHome(t)
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			setupFetchMock(t)
+			t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+			// A file where the skills directory belongs cannot be written to on
+			// any OS, unlike a directory without write permission on Windows.
+			broken := testAgent(tmp)
+			require.NoError(t, os.WriteFile(filepath.Join(tmp, ".test-agent", "skills"), nil, 0o644))
+			targets := []*agents.Agent{broken}
+			otherDir := filepath.Join(tmp, ".other-agent")
+			if tc.withOther {
+				require.NoError(t, os.MkdirAll(otherDir, 0o755))
+				targets = append(targets, &agents.Agent{
+					Name:        "other-agent",
+					DisplayName: "Other Agent",
+					ConfigDir:   func(context.Context) (string, error) { return otherDir, nil },
+				})
+			}
+
+			err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, targets, InstallOptions{})
+
+			agentsErr, ok := errors.AsType[*AgentSkillsError](err)
+			require.True(t, ok, "want *AgentSkillsError, got %v", err)
+			require.Len(t, agentsErr.Failures, 1)
+			assert.Equal(t, broken, agentsErr.Failures[0].Agent)
+			assert.Equal(t, 2, agentsErr.Failures[0].Skills)
+			assert.Contains(t, agentsErr.Failures[0].Reason(), "could not install 2 skills: ")
+
+			// The skills are installed and recorded for the agents that got them.
+			state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+			require.NoError(t, err)
+			require.NotNil(t, state)
+			assert.Len(t, state.Skills, 2)
+			if tc.withOther {
+				assert.FileExists(t, filepath.Join(otherDir, "skills", "databricks-sql", "SKILL.md"))
+			}
+			assert.Equal(t, tc.wantPrints, strings.Contains(stderr.String(), "Installed 2 skills in "))
+		})
+	}
+}
+
+// An agent that got some of the skills counts toward the summary, and its
+// failure names how many skills it is missing.
+func TestInstallSkillsForAgentsReportsAgentMissingSomeSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	// A skill of another tool is in the way of databricks-jobs, and it cannot
+	// be moved aside.
+	agent := testAgent(tmp)
+	inTheWay := filepath.Join(tmp, ".test-agent", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(inTheWay, 0o755))
+	orig := renamePathFn
+	t.Cleanup(func() { renamePathFn = orig })
+	renamePathFn = func(oldpath, newpath string) error {
+		if oldpath == inTheWay {
+			return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: fs.ErrPermission}
+		}
+		return os.Rename(oldpath, newpath)
+	}
+
+	err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{agent}, InstallOptions{})
+
+	agentsErr, ok := errors.AsType[*AgentSkillsError](err)
+	require.True(t, ok, "want *AgentSkillsError, got %v", err)
+	require.Len(t, agentsErr.Failures, 1)
+	f := agentsErr.Failures[0]
+	assert.True(t, f.Partial())
+	assert.Equal(t, 1, f.Skills)
+	assert.Equal(t, 2, f.Total)
+	assert.True(t, strings.HasPrefix(f.Notice(), "Test Agent is missing 1 of 2 skills: "), f.Notice())
+	assert.FileExists(t, filepath.Join(tmp, ".test-agent", "skills", "databricks-sql", "SKILL.md"))
+	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
+}
+
 func TestLegacyTargetedInstallBlocked(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
@@ -1702,6 +1794,38 @@ func TestInstallAllSkillsWithNoSkillToInstall(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	require.NoError(t, InstallAllSkills(ctx))
 	assert.Contains(t, stderr.String(), NoSkillsResolvedMessage)
+}
+
+// apps init prints each agent that did not get the skills with a step to fix
+// it, after the summary of the agents that got them, instead of a warning that
+// names neither.
+func TestInstallAllSkillsReportsAgentThatGotNoSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	clearAgentDirOverrides(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, ".cursor", "skills"), nil, 0o644))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/test-ref/manifest.json" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = io.WriteString(w, `{"version": "2", "skills": {"databricks-sql": {"version": "1.0.0", "files": ["SKILL.md"], "repo_dir": "skills"}}}`)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("DATABRICKS_SKILLS_REF", "test-ref")
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", srv.URL)
+	setupFetchMock(t)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	require.NoError(t, InstallAllSkills(ctx))
+
+	assert.FileExists(t, filepath.Join(tmp, ".claude", "skills", "databricks-sql", "SKILL.md"))
+	out := stderr.String()
+	assert.Contains(t, out, "Installed 1 skill in ")
+	assert.Contains(t, out, "Skipped Cursor: could not install 1 skill: ")
+	assert.Contains(t, out, "  Fix the error above, then run 'databricks aitools install --scope=global --agents=cursor --skills-only'.")
+	assert.Less(t, strings.Index(out, "Installed 1 skill in "), strings.Index(out, "Skipped Cursor: "))
 }
 
 // TestLegacyTargetedInstallBlockedWithMCPOnlyState checks that MCP records in the state file do not

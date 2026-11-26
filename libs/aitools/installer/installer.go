@@ -335,7 +335,9 @@ func checkSkillsDowngrade(installedRef, ref string, explicit bool) error {
 
 // InstallSkillsForAgents fetches the manifest and installs skills for the given agents.
 // This is the core installation function. Callers are responsible for agent detection,
-// prompting, and printing the "Installing..." header.
+// prompting, and printing the "Installing..." header. Agents that did not get
+// every skill are reported in an *AgentSkillsError, after the install state is
+// saved.
 func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent, opts InstallOptions) error {
 	scope := opts.Scope
 	if scope == "" {
@@ -427,6 +429,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// (already-installed) skills keep their existing records via the merge below.
 	fileRecords := map[string]FileRecord{}
 	var refetched []string
+	failures := map[*agents.Agent]*AgentSkillsFailure{}
 
 	for _, name := range skillNames {
 		meta := targetSkills[name]
@@ -442,9 +445,17 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		}
 
 		sp.Update("Installing " + name + "...")
-		records, err := installSkillForAgents(ctx, name, meta, targetAgents, params)
+		records, failed, err := installSkillForAgents(ctx, name, meta, targetAgents, params)
 		if err != nil {
 			return err
+		}
+		for a, agentErr := range failed {
+			f := failures[a]
+			if f == nil {
+				f = &AgentSkillsFailure{Agent: a, Total: len(targetSkills), Err: agentErr}
+				failures[a] = f
+			}
+			f.Skills++
 		}
 		maps.Copy(fileRecords, records)
 		refetched = append(refetched, name)
@@ -504,14 +515,31 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// above the persistent "Installed N skills." output.
 	sp.Close()
 
-	noun := "skills"
-	if len(targetSkills) == 1 {
-		noun = "skill"
+	// When no agent got any skill, the summary would read as a success. An
+	// agent that got some of them counts: its own line names what is missing.
+	gotAny := slices.ContainsFunc(targetAgents, func(a *agents.Agent) bool {
+		f := failures[a]
+		return f == nil || f.Partial()
+	})
+	if gotAny {
+		noun := "skills"
+		if len(targetSkills) == 1 {
+			noun = "skill"
+		}
+		// Name the directory so an agent can open the installed SKILL.md files
+		// instead of searching the filesystem for them.
+		cmdio.LogProgress(ctx, fmt.Sprintf("Installed %d %s in %s.", len(targetSkills), noun, filepath.ToSlash(baseDir)))
 	}
-	// Name the directory so an agent can open the installed SKILL.md files
-	// instead of searching the filesystem for them.
-	cmdio.LogProgress(ctx, fmt.Sprintf("Installed %d %s in %s.", len(targetSkills), noun, filepath.ToSlash(baseDir)))
-	return nil
+	if len(failures) == 0 {
+		return nil
+	}
+	agentsErr := &AgentSkillsError{}
+	for _, a := range targetAgents {
+		if f := failures[a]; f != nil {
+			agentsErr.Failures = append(agentsErr.Failures, *f)
+		}
+	}
+	return agentsErr
 }
 
 // skillsDir returns the base skills directory for the given scope.
@@ -601,6 +629,8 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 
 // InstallAllSkills fetches the manifest and installs all skills for detected agents.
 // The signature is func(context.Context) error to satisfy the callback in cmd/apps/init.go.
+// Agents that did not get the skills are printed with a step to fix them,
+// not returned.
 func InstallAllSkills(ctx context.Context) error {
 	installed := agents.DetectInstalled(ctx)
 	if len(installed) == 0 {
@@ -615,6 +645,15 @@ func InstallAllSkills(ctx context.Context) error {
 	// failure for it.
 	if errors.Is(err, ErrNoSkillsResolved) {
 		cmdio.LogString(ctx, NoSkillsResolvedMessage)
+		return nil
+	}
+	// The caller's warning would name no agent and no step, so each agent
+	// that did not get the skills is reported here with its own step.
+	if agentsErr, ok := errors.AsType[*AgentSkillsError](err); ok {
+		for _, f := range agentsErr.Failures {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, f.Notice()))
+			cmdio.LogString(ctx, fmt.Sprintf("  Fix the error above, then run 'databricks aitools install --scope=global --agents=%s --skills-only'.", f.Agent.Name))
+		}
 		return nil
 	}
 	return err
@@ -673,12 +712,16 @@ type installParams struct {
 	ref     string
 }
 
-func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta, detectedAgents []*agents.Agent, params installParams) (map[string]FileRecord, error) {
+// installSkillForAgents installs one skill in the canonical directory and
+// exposes it to each agent. An agent that cannot get it is logged and returned
+// in failed with its error; the other agents still get the skill.
+func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta, detectedAgents []*agents.Agent, params installParams) (records map[string]FileRecord, failed map[*agents.Agent]error, err error) {
 	canonicalDir := filepath.Join(params.baseDir, skillName)
-	records, err := installSkillToDir(ctx, params.ref, meta.RepoDir, meta.SourceName, canonicalDir, meta.Files)
+	records, err = installSkillToDir(ctx, params.ref, meta.RepoDir, meta.SourceName, canonicalDir, meta.Files)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+	failed = map[*agents.Agent]error{}
 
 	// For project scope, always symlink. For global, symlink when multiple agents.
 	useSymlinks := params.scope == ScopeProject || len(detectedAgents) > 1
@@ -687,6 +730,7 @@ func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta
 		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, params.scope, params.cwd)
 		if err != nil {
 			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
+			failed[agent] = err
 			continue
 		}
 
@@ -694,6 +738,7 @@ func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta
 
 		if err := backupThirdPartySkill(ctx, destDir, canonicalDir, skillName, agent.DisplayName); err != nil {
 			log.Warnf(ctx, "Failed to back up existing skill for %s: %v", agent.DisplayName, err)
+			failed[agent] = err
 			continue
 		}
 
@@ -710,6 +755,7 @@ func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta
 				log.Debugf(ctx, "Symlink failed for %s, copying instead: %v", agent.DisplayName, err)
 				if err := copyDir(canonicalDir, destDir); err != nil {
 					log.Warnf(ctx, "Failed to install for %s: %v", agent.DisplayName, err)
+					failed[agent] = err
 					continue
 				}
 			}
@@ -718,13 +764,14 @@ func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta
 			// Copy from canonical dir instead of re-downloading.
 			if err := copyDir(canonicalDir, destDir); err != nil {
 				log.Warnf(ctx, "Failed to install for %s: %v", agent.DisplayName, err)
+				failed[agent] = err
 				continue
 			}
 			log.Debugf(ctx, "Installed %q for %s", skillName, agent.DisplayName)
 		}
 	}
 
-	return records, nil
+	return records, failed, nil
 }
 
 // agentSkillsDirForScope returns the agent's skills directory for the given scope.

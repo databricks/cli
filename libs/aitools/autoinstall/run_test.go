@@ -140,16 +140,19 @@ func TestRecordClearsInstallingWhenSettled(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 
 	require.NoError(t, MarkInstalling(ctx))
+	require.NoError(t, SaveInstallStateDigest(ctx, "digest"))
 	// A failed attempt leaves the marker for the next run.
 	require.NoError(t, Record(ctx, "1.30.0", 1, "machine", time.Now()))
 	s, err := Load(ctx)
 	require.NoError(t, err)
 	assert.True(t, s.Installing)
+	assert.Equal(t, "digest", s.InstallStateDigest)
 
 	require.NoError(t, Record(ctx, "1.30.0", 0, "machine", time.Now()))
 	s, err = Load(ctx)
 	require.NoError(t, err)
 	assert.False(t, s.Installing)
+	assert.Empty(t, s.InstallStateDigest)
 }
 
 func TestRecordStoresTheLastFailedAttempt(t *testing.T) {
