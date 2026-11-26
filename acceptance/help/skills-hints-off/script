@@ -1,0 +1,5 @@
+export DATABRICKS_SKILLS_DIR="$TESTDIR/../../cmd/skills/release"
+
+# Hints are off: neither the root help nor a group the fixture skill covers changes.
+trace $CLI --help | contains.py "!databricks skills" > /dev/null
+trace $CLI fs --help | contains.py "!databricks skills" > /dev/null

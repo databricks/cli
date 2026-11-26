@@ -1,0 +1,4 @@
+# No skills folder is set, so no group gets a footer. The base URL is unreachable
+# and help must not read it.
+trace env -u DATABRICKS_SKILLS_DIR $CLI fs --help | contains.py "!databricks skills read" > /dev/null
+trace env -u DATABRICKS_SKILLS_DIR $CLI --help | tail -n 2

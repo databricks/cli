@@ -1,0 +1,6 @@
+
+>>> env -u DATABRICKS_SKILLS_DIR [CLI] fs --help
+
+>>> env -u DATABRICKS_SKILLS_DIR [CLI] --help
+
+Coding agents: run `databricks skills list` to find skills for the commands you use.
