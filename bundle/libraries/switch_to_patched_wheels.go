@@ -8,7 +8,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/patchwheel"
 )
@@ -22,98 +24,72 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 		return nil
 	}
 
-	for jobName, jobRef := range b.Config.Resources.Jobs {
-		if jobRef == nil {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		var err error
+		for _, pw := range patchedWheelPatterns() {
+			v, err = dyn.MapByPattern(v, pw.pattern, func(p dyn.Path, wheel dyn.Value) (dyn.Value, error) {
+				return switchToPatchedWheel(ctx, replacements, pw.withExtras, p, wheel), nil
+			})
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+		}
+		return v, nil
+	})
+	return diag.FromErr(err)
+}
+
+type patchedWheelPattern struct {
+	pattern dyn.Pattern
+
+	// withExtras says that a value may carry a pip extras suffix.
+	withExtras bool
+}
+
+// patchedWheelPatterns returns the patterns of the wheels that are switched to
+// patched wheels: the "whl" entries of the libraries in a list and every
+// dependency in a list, except in locations that skip patched wheels. They are
+// in the order of [locationsByKind], which is the order of the debug logs.
+func patchedWheelPatterns() []patchedWheelPattern {
+	var out []patchedWheelPattern
+	for _, l := range locationsByKind() {
+		if l.SkipPatchedWheels {
 			continue
 		}
-
-		job := &jobRef.JobSettings
-
-		for taskInd, task := range job.Tasks {
-			// Update resources.jobs.*.task[*].libraries[*].whl
-			for libInd, lib := range task.Libraries {
-				repl := replacements[lib.Whl]
-				if repl != "" {
-					log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].libraries[%d].whl from %s to %s", jobName, taskInd, libInd, lib.Whl, repl)
-					job.Tasks[taskInd].Libraries[libInd].Whl = repl
-				} else {
-					log.Debugf(ctx, "Not updating resources.jobs.%s.task[%d].libraries[%d].whl from %s. Available replacements: %v", jobName, taskInd, libInd, lib.Whl, slices.Sorted(maps.Keys(replacements)))
-				}
-			}
-
-			// Update resources.jobs.*.task[*].for_each_task.task.libraries[*].whl
-
-			foreachptr := task.ForEachTask
-			if foreachptr != nil {
-				for libInd, lib := range foreachptr.Task.Libraries {
-					repl := replacements[lib.Whl]
-					if repl != "" {
-						log.Debugf(ctx, "Updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s to %s", jobName, taskInd, libInd, lib.Whl, repl)
-						foreachptr.Task.Libraries[libInd].Whl = repl
-					} else {
-						log.Debugf(ctx, "Not updating resources.jobs.%s.task[%d].for_each_task.task.libraries[%d].whl from %s. Available replacements: %v", jobName, taskInd, libInd, lib.Whl, slices.Sorted(maps.Keys(replacements)))
-					}
-				}
-			}
-		}
-
-		// Update resources.jobs.*.environments.*.spec.dependencies[*]
-		for envInd, env := range job.Environments {
-			specptr := env.Spec
-			if specptr == nil {
-				continue
-			}
-			for depInd, dep := range specptr.Dependencies {
-				// A dependency may carry a pip extras suffix (e.g. "foo.whl[train]");
-				// the patched-wheel replacements are keyed by the bare path, so strip
-				// it for the lookup and re-append it to the patched path.
-				base, extras := patchwheel.SplitWheelExtras(dep)
-				repl := replacements[base]
-				if repl != "" {
-					log.Debugf(ctx, "Updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s to %s", jobName, envInd, depInd, dep, repl+extras)
-					specptr.Dependencies[depInd] = repl + extras
-				} else {
-					log.Debugf(ctx, "Not updating resources.jobs.%s.environments[%d].spec.dependencies[%d] from %s. Available replacements: %v", jobName, envInd, depInd, dep, slices.Sorted(maps.Keys(replacements)))
-				}
-			}
+		switch l.Kind {
+		case resources.LibraryList:
+			out = append(out, patchedWheelPattern{pattern: l.pattern.Append(dyn.AnyIndex(), dyn.Key("whl"))})
+		case resources.DependencyList:
+			out = append(out, patchedWheelPattern{pattern: l.pattern.Append(dyn.AnyIndex()), withExtras: true})
+		case resources.LibraryFile:
+			// Not switched; see [resources.LibraryFile].
 		}
 	}
+	return out
+}
 
-	// Update resources.clusters.*.libraries[*].whl
-	for clusterName, clusterRef := range b.Config.Resources.Clusters {
-		if clusterRef == nil {
-			continue
-		}
-		for libInd, lib := range clusterRef.Libraries {
-			repl := replacements[lib.Whl]
-			if repl != "" {
-				log.Debugf(ctx, "Updating resources.clusters.%s.libraries[%d].whl from %s to %s", clusterName, libInd, lib.Whl, repl)
-				clusterRef.Libraries[libInd].Whl = repl
-			} else {
-				log.Debugf(ctx, "Not updating resources.clusters.%s.libraries[%d].whl from %s. Available replacements: %v", clusterName, libInd, lib.Whl, slices.Sorted(maps.Keys(replacements)))
-			}
-		}
+func switchToPatchedWheel(ctx context.Context, replacements map[string]string, withExtras bool, p dyn.Path, v dyn.Value) dyn.Value {
+	value, ok := v.AsString()
+	if !ok {
+		return v
 	}
 
-	// Update resources.pipelines.*.testing.environment.dependencies[*]
-	for pipelineName, pipelineRef := range b.Config.Resources.Pipelines {
-		if pipelineRef == nil || pipelineRef.Testing == nil || pipelineRef.Testing.Environment == nil {
-			continue
-		}
-		deps := pipelineRef.Testing.Environment.Dependencies
-		for depInd, dep := range deps {
-			base, extras := patchwheel.SplitWheelExtras(dep)
-			repl := replacements[base]
-			if repl != "" {
-				log.Debugf(ctx, "Updating resources.pipelines.%s.testing.environment.dependencies[%d] from %s to %s", pipelineName, depInd, dep, repl+extras)
-				deps[depInd] = repl + extras
-			} else {
-				log.Debugf(ctx, "Not updating resources.pipelines.%s.testing.environment.dependencies[%d] from %s. Available replacements: %v", pipelineName, depInd, dep, slices.Sorted(maps.Keys(replacements)))
-			}
-		}
+	base, extras := value, ""
+	if withExtras {
+		// A dependency may carry a pip extras suffix (e.g. "foo.whl[train]");
+		// the patched-wheel replacements are keyed by the bare path, so strip
+		// it for the lookup and re-append it to the patched path.
+		base, extras = patchwheel.SplitWheelExtras(value)
 	}
 
-	return nil
+	repl := replacements[base]
+	if repl == "" {
+		log.Debugf(ctx, "Not updating %s from %s. Available replacements: %v", p, value, slices.Sorted(maps.Keys(replacements)))
+		return v
+	}
+
+	log.Debugf(ctx, "Updating %s from %s to %s", p, value, repl+extras)
+	return dyn.NewValue(repl+extras, v.Locations())
 }
 
 func getReplacements(ctx context.Context, artifacts config.Artifacts, root string) map[string]string {

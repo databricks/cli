@@ -153,3 +153,25 @@ func TestUploadPatternsOrder(t *testing.T) {
 		"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.code_source_path",
 	}, patternStrings(uploadPatterns()))
 }
+
+// TestPatchedWheelPatterns pins which wheels are switched to patched wheels, and
+// whether their values may carry pip extras.
+func TestPatchedWheelPatterns(t *testing.T) {
+	type patchedWheel struct {
+		pattern    string
+		withExtras bool
+	}
+
+	var actual []patchedWheel
+	for _, pw := range patchedWheelPatterns() {
+		actual = append(actual, patchedWheel{pw.pattern.String(), pw.withExtras})
+	}
+
+	assert.Equal(t, []patchedWheel{
+		{"resources.jobs.*.tasks[*].libraries[*].whl", false},
+		{"resources.jobs.*.tasks[*].for_each_task.task.libraries[*].whl", false},
+		{"resources.clusters.*.libraries[*].whl", false},
+		{"resources.jobs.*.environments[*].spec.dependencies[*]", true},
+		{"resources.pipelines.*.testing.environment.dependencies[*]", true},
+	}, actual)
+}
