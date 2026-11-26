@@ -1,0 +1,34 @@
+
+=== Deploy a schema and rename it out of band; the recorded name is not readable
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Destroy finds the renamed schema by its schema_id and deletes it there
+
+>>> [CLI] bundle destroy --auto-approve
+Warn: planning resources.schemas.schema1: reading resources.schemas.schema1 id="main.myschema": User does not have USE SCHEMA on the schema
+The following resources will be deleted:
+  delete resources.schemas.schema1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.moved_schema",
+  "q": {
+    "force": "true"
+  }
+}
+
+>>> musterr [CLI] schemas get main.moved_schema
+Error: Schema 'main.moved_schema' does not exist.

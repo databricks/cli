@@ -122,7 +122,9 @@ type IResource interface {
 
 	// [Optional] IDFromState returns the ID the state gives the resource, for resource types whose ID
 	// is built from their own fields (a UC full name). With it, an update_id that only follows a
-	// parent's rename is applied without calling DoUpdateWithID (see PlanEntry.StateOnly).
+	// parent's rename is applied without calling DoUpdateWithID (see PlanEntry.StateOnly). The ID
+	// must be a UC full name: dot-joined, parent first, compared case-insensitively; the plan finds
+	// the resources in a renamed parent by it (see findInMovedParents).
 	// Example: func (*ResourceVolume) IDFromState(state *VolumeState) string
 	IDFromState(state any) string
 

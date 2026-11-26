@@ -28,7 +28,11 @@ func makeGraph(plan *deployplan.Plan) (*dagrun.Graph, error) {
 
 		for _, dep := range entry.DependsOn {
 			if _, exists := plan.Plan[dep.Node]; exists {
-				if isDelete {
+				if isDelete && dep.Node == entry.WithParent {
+					// No delete is sent for it: its state is dropped only once its parent's
+					// delete, which removes it, has succeeded.
+					g.AddDirectedEdge(dep.Node, resourceKey, dep.Label)
+				} else if isDelete {
 					g.AddDirectedEdge(resourceKey, dep.Node, dep.Label)
 				} else {
 					g.AddDirectedEdge(dep.Node, resourceKey, dep.Label)

@@ -15,20 +15,34 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   "schema_id": "[SCHEMA_ID]"
 }
 
-=== The model and the secret have no internal ID to find them by, so destroy lists them as going with the schema it found, and sends a delete only for the schema
+=== Out of band, delete the secret, and create another schema under the old name with a model of the same name
+
+>>> [CLI] secrets-uc delete-secret main.test-schema-renamed-[UNIQUE_NAME].mysecret
+
+>>> [CLI] schemas create test-schema-[UNIQUE_NAME] main
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME]",
+  "schema_id": "[UUID]"
+}
+
+>>> [CLI] registered-models create --catalog-name main --schema-name test-schema-[UNIQUE_NAME] --name mymodel
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME].mymodel"
+}
+
+=== The model has no internal ID to find it by, so destroy lists it as going with the schema it found, and sends a delete only for that schema. The secret is gone, and nothing at the old name is touched
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.registered_models.model1
   delete resources.schemas.schema1
-  delete resources.secrets.secret1
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
   delete resources.schemas.schema1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted
+Destroy: 2 deleted
 
 >>> print_requests.py //unity-catalog
 {
@@ -41,3 +55,8 @@ Destroy: 3 deleted
 
 >>> musterr [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
 Error: Schema 'main.test-schema-renamed-[UNIQUE_NAME]' does not exist.
+
+>>> [CLI] registered-models get main.test-schema-[UNIQUE_NAME].mymodel
+{
+  "full_name": "main.test-schema-[UNIQUE_NAME].mymodel"
+}

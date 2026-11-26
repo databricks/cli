@@ -283,3 +283,18 @@ func TestFilterToSelected_DeletionLeavesDependencies(t *testing.T) {
 	assert.Contains(t, p.Plan, "resources.jobs.gone")
 	assert.NotContains(t, p.Plan, "resources.jobs.lib")
 }
+
+func TestFilterToSelected_WithParentBringsItsParent(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	schemaDep := deployplan.DependsOnEntry{Node: "resources.schemas.s"}
+	p.Plan["resources.schemas.s"] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: "main.moved"}
+	p.Plan["resources.volumes.v"] = &deployplan.PlanEntry{Action: deployplan.Delete, Gone: true, WithParent: "resources.schemas.s", DependsOn: []deployplan.DependsOnEntry{schemaDep}}
+	p.Plan["resources.volumes.other"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+
+	// Its parent's delete is what removes it, so selecting it brings the parent, and the parent brings
+	// it back.
+	require.NoError(t, p.FilterToSelected(t.Context(), []string{"volumes.v"}))
+	assert.Contains(t, p.Plan, "resources.schemas.s")
+	assert.Contains(t, p.Plan, "resources.volumes.v")
+	assert.NotContains(t, p.Plan, "resources.volumes.other")
+}
