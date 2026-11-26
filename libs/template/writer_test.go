@@ -44,6 +44,19 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 	assert.IsType(t, &filer.WorkspaceFilesExtensionsClient{}, w.outputFiler)
 }
 
+func TestDefaultWriterConfigureOnServerless(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows")
+	}
+
+	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{IsDbr: true, Version: "client.4.10"})
+	w := &defaultWriter{}
+	err := w.Configure(ctx, "/foo/bar", "/Workspace/out/abc")
+	assert.NoError(t, err)
+
+	assert.IsType(t, &filer.LocalClient{}, w.outputFiler)
+}
+
 func TestWriterWithFullTelemetryTemplateEnumArgs(t *testing.T) {
 	// Enum values can be strings, integers or numbers; booleans are always
 	// reported. Non-enum, non-boolean values are not reported.

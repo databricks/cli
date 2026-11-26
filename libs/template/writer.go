@@ -75,14 +75,10 @@ func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, e
 		return nil, err
 	}
 
-	// If the CLI is running on DBR and we're writing to the workspace file system,
-	// use the extension-aware workspace filesystem filer to instantiate the template.
-	//
-	// It is not possible to write notebooks through the workspace filesystem's FUSE mount.
-	// Therefore this is the only way we can initialize templates that contain notebooks
-	// when running the CLI on DBR and initializing a template to the workspace.
-	//
-	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
+	// On DBR, templates with notebooks can only be written to the workspace file system through
+	// the extension-aware workspace filer, since FUSE cannot write notebooks before serverless
+	// client 2.5. On 2.5+ use FUSE like the bundle commands: mixing the two can fail with AsyncFlushError.
+	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) && !dbr.FUSESupportsNotebooks(ctx) {
 		return filer.NewWorkspaceFilesExtensionsClient(cmdctx.WorkspaceClient(ctx), outputDir)
 	}
 
