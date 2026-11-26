@@ -38,7 +38,7 @@ Uninstalled 1 skill.
 >>> cursor_skills
 (no skills)
 
-=== first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried
+=== first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried for this version
 
 >>> [CLI] jobs list
 
@@ -56,7 +56,7 @@ SKILL.md
 my own skill
 
 >>> settled_version
-{"last_version":"1.30.0"}
+{"last_version":"1.30.0","installing":true}
 
 === first run with the user's own skill under another name in an agent's skills directory: installs
 

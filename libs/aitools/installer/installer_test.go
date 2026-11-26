@@ -467,13 +467,6 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 // that is not a link to or a copy of that skill in the global directory. An
 // entry with any other name is left alone, so it installs.
 func TestInstallSkillsForAgentsKeepsHandPlacedSkills(t *testing.T) {
-	writeFiles := func(t *testing.T, dir string, files map[string]string) {
-		for name, content := range files {
-			path := filepath.Join(dir, name)
-			require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
-			require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
-		}
-	}
 	// canonical is what an install that did not finish left in the global
 	// directory: the files the fetch mock serves.
 	canonical := map[string]string{"SKILL.md": "# databricks-sql/SKILL.md", "references/a.md": "a"}
@@ -575,6 +568,47 @@ func TestInstallSkillsForAgentsKeepsHandPlacedSkills(t *testing.T) {
 			assert.Nil(t, state)
 			assert.Equal(t, before, snapshotDir(t, agentSkillsDir))
 		})
+	}
+}
+
+// One hand-placed entry refuses the install for every target agent, including
+// one whose skills directory has nothing in the way: the install state records
+// the skills for all of them at once.
+func TestInstallSkillsForAgentsKeepsHandPlacedSkillsForEveryAgent(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	first := testAgent(tmp)
+	second := &agents.Agent{
+		Name:        "other-agent",
+		DisplayName: "Other Agent",
+		ConfigDir: func(_ context.Context) (string, error) {
+			return filepath.Join(tmp, ".other-agent"), nil
+		},
+	}
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".other-agent"), 0o755))
+	firstSkillsDir := filepath.Join(tmp, ".test-agent", "skills")
+	writeFiles(t, filepath.Join(firstSkillsDir, "databricks-sql"), map[string]string{"NOTES.md": "my notes"})
+	before := snapshotDir(t, firstSkillsDir)
+
+	err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{first, second}, InstallOptions{KeepHandPlacedSkills: true})
+	assert.ErrorAs(t, err, new(*RefusedError))
+	assert.ErrorContains(t, err, "databricks-sql skill in the skills directory of Test Agent")
+	assert.Equal(t, before, snapshotDir(t, firstSkillsDir))
+	assert.NoDirExists(t, filepath.Join(tmp, ".other-agent", "skills"))
+	state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Nil(t, state)
+}
+
+// writeFiles writes files, keyed by their path relative to dir, under dir.
+func writeFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 	}
 }
 

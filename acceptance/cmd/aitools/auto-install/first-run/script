@@ -42,7 +42,9 @@ settled_version() {
     jq -c 'del(.id)' "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
 }
 
-title "first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried"
+# The version is settled, but the install stays unfinished, so a later version
+# installs once the user has moved the skill out.
+title "first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried for this version"
 trace $CLI jobs list
 trace auto_install_outcome
 trace cursor_skills

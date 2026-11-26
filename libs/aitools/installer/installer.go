@@ -233,8 +233,13 @@ type InstallOptions struct {
 	// KeepHandPlacedSkills refuses the install with a *RefusedError, before
 	// it writes anything, when a target agent's skills directory has an entry
 	// named after a skill to install that is neither a link to that skill in
-	// the base directory nor a copy of it. The install would move such an
-	// entry aside: the user or another tool put it there.
+	// the base directory nor a copy of a subset of its files. The install
+	// would move such an entry aside: the user or another tool put it there.
+	// One such entry refuses the whole install, for every target agent and
+	// skill: the install state records the skills for all of them at once,
+	// so installing the rest would record skills that an agent lacks, and
+	// a later update, which reinstalls only skills whose version changed,
+	// would never give them to it.
 	KeepHandPlacedSkills bool
 }
 
@@ -828,11 +833,9 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 }
 
 // handPlacedSkill returns the first target agent and skill whose entry in the
-// agent's skills directory installSkillForAgents would move aside and that is
-// not a copy of the skill in the base directory, which an earlier install that
-// did not finish may have made. A directory whose files all match the files of
-// the same skill in the base directory is such a copy, or holds nothing that
-// the copy lacks.
+// agent's skills directory is neither a link to the canonical skill nor a copy
+// of a subset of its files. installSkillForAgents would move such an entry
+// aside; a link or a copy is what an earlier install that did not finish left.
 func handPlacedSkill(ctx context.Context, targetAgents []*agents.Agent, skillNames []string, params installParams) (*agents.Agent, string, bool) {
 	for _, agent := range targetAgents {
 		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, params.scope, params.cwd)
@@ -855,6 +858,10 @@ func handPlacedSkill(ctx context.Context, targetAgents []*agents.Agent, skillNam
 
 // linksTo reports whether path is a symlink whose target is canonicalDir.
 func linksTo(path, canonicalDir string) bool {
+	fi, err := os.Lstat(path)
+	if err != nil || fi.Mode()&os.ModeSymlink == 0 {
+		return false
+	}
 	target, err := os.Readlink(path)
 	if err != nil {
 		return false

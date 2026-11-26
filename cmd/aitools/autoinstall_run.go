@@ -340,17 +340,19 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		runCtx, cancel := context.WithTimeout(qctx, installTimeout)
 		result, err = tools.install(runCtx)
 		cancel()
-		if err != nil && tools.fresh() {
+		if tools.fresh() && (err != nil || result.unfinished) {
 			saveInstallStateDigest(ctx, tools.globalDir)
 		}
 	}
 	if _, refused := errors.AsType[*installer.RefusedError](err); refused {
 		// The installed skills are newer than the release this CLI would
-		// install (the downgrade guard), or an agent's skills directory has a
-		// skill the user put there. Retrying changes nothing until a newer
-		// release, which a later version gets, or the user replaces it.
+		// install (the downgrade guard), or a skills agent's directory has an
+		// entry named after a skill to install that the user or another tool
+		// put there. Retrying this version changes nothing: a later version
+		// tries again, and installs once a newer release is out or the user
+		// has moved that entry out of the agent's skills directory.
 		log.Debugf(ctx, "auto-install: kept the installed tools: %v", err)
-		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept}, nil
+		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept, unfinished: tools.fresh()}, nil
 	}
 	switch {
 	case err != nil:
@@ -365,7 +367,11 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 			cmdio.LogString(ctx, "Could not install Databricks AI tools. To install them, run: databricks aitools install")
 		}
 	default:
-		r.settle(ctx, result.outcome)
+		if result.unfinished {
+			r.settleUnfinished(ctx, result.outcome)
+		} else {
+			r.settle(ctx, result.outcome)
+		}
 		if result.outcome == protos.AitoolsAutoInstallOutcomeInstalled && len(result.agents) > 0 {
 			verb := "Installed"
 			if result.updated {
@@ -537,6 +543,17 @@ func (r autoInstallRun) settle(ctx context.Context, outcome protos.AitoolsAutoIn
 	r.report(ctx, outcome, protos.AitoolsErrorCategoryUnspecified)
 }
 
+// settleUnfinished settles the version as settle does, but keeps the first
+// install unfinished: it was refused the skills, so a later version finishes
+// it as a first install instead of updating what it recorded.
+func (r autoInstallRun) settleUnfinished(ctx context.Context, outcome protos.AitoolsAutoInstallOutcome) {
+	log.Debugf(ctx, "auto-install: %s, the first install is unfinished", strings.ToLower(string(outcome)))
+	if err := autoinstall.RecordUnfinished(ctx, r.version, r.id); err != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+	}
+	r.report(ctx, outcome, protos.AitoolsErrorCategoryUnspecified)
+}
+
 // report buffers the auto-install event; cmd/root uploads it at exit when the
 // command resolved auth.
 func (r autoInstallRun) report(ctx context.Context, outcome protos.AitoolsAutoInstallOutcome, category protos.AitoolsErrorCategory) {
@@ -568,6 +585,9 @@ type installResult struct {
 	updated bool
 	// agents names the agents that got new or updated tools.
 	agents []string
+	// unfinished is set when a first install was refused the skills: an
+	// agent did not get its tools.
+	unfinished bool
 }
 
 // toolsPlan is what an auto-install attempt does: update the existing global
@@ -709,12 +729,14 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 			names = append(names, o.agent.DisplayName)
 		}
 	}
-	// The skills are refused after the plugins were installed, so a refusal
-	// still reports the agents that got a plugin. Without them the caller
-	// reports it as kept.
+	// executePlan installs the skills before the plugins, and the skills
+	// refusal does not stop the plugin installs: it is returned after them.
+	// So a refusal still reports the agents that got a plugin, and leaves the
+	// install unfinished for the skills agents. Without any such agent the
+	// caller reports it as kept.
 	if _, refused := errors.AsType[*installer.RefusedError](err); refused && len(names) > 0 {
 		log.Debugf(ctx, "auto-install: kept the skills: %v", err)
-		err = nil
+		return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names, unfinished: true}, nil
 	}
 	return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names}, err
 }

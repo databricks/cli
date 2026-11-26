@@ -552,6 +552,73 @@ func TestAutoInstallRetriesAnAgentThatGotNoSkills(t *testing.T) {
 	assert.FileExists(t, filepath.Join(skillsDir, "databricks-test", "SKILL.md"))
 }
 
+// A first install that gives Claude Code its plugin but is refused Cursor's
+// skills, because the user put a skill of that name into Cursor's skills
+// directory, stays unfinished: a later version finishes it once the user has
+// moved that skill out, instead of updating the install state that holds only
+// the plugin, which would never give Cursor the skills.
+func TestAutoInstallFinishesAMixedInstallRefusedTheSkills(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude"), 0o755))
+	fakeBinsOnPath(t, "claude")
+	setAgentCLIsStoppable(t, true)
+	orig := installPluginForAgentFn
+	t.Cleanup(func() { installPluginForAgentFn = orig })
+	installPluginForAgentFn = func(_ context.Context, _ *agents.Agent, scope, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: scope, Version: "0.2.6"}, nil
+	}
+	handPlaced := filepath.Join(home, ".cursor", "skills", "databricks-test")
+	require.NoError(t, os.MkdirAll(handPlaced, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(handPlaced, "NOTES.md"), []byte("my notes"), 0o644))
+	installed := []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, installed, outcomes)
+	installState, err := installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	require.NotNil(t, installState, "the plugin is recorded")
+	assert.Contains(t, installState.Plugins, "claude-code")
+	assert.Empty(t, installState.Skills)
+	digest, err := installStateDigest(installState)
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: digest, ID: "treatment-machine"}, state)
+	assert.NoFileExists(t, filepath.Join(handPlaced, "SKILL.md"))
+
+	require.NoError(t, os.RemoveAll(handPlaced))
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
+	outcomes, state = runAutoInstallAt(t, 0)
+	assert.Equal(t, installed, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+	assert.FileExists(t, filepath.Join(handPlaced, "SKILL.md"))
+}
+
+// A first install that did not finish left skills without install state in
+// the global directory. When a retry is refused the skills because of a skill
+// the user put into Cursor's skills directory, the install stays unfinished,
+// so a later version finishes it instead of keeping the skills it left as the
+// user's.
+func TestAutoInstallKeepsAnUnfinishedInstallRefusedTheSkills(t *testing.T) {
+	home := setupAutoInstallHome(t, `{"id": "treatment-machine", "installing": true}`, "CLAUDECODE", "1")
+	left := filepath.Join(home, ".databricks", "aitools", "skills", "databricks-test")
+	require.NoError(t, os.MkdirAll(left, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(left, "SKILL.md"), []byte("---\nname: databricks-test\n---\n"), 0o644))
+	handPlaced := filepath.Join(home, ".cursor", "skills", "databricks-test")
+	require.NoError(t, os.MkdirAll(handPlaced, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(handPlaced, "NOTES.md"), []byte("my notes"), 0o644))
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeKept}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Installing: true, ID: "treatment-machine"}, state)
+	assert.NoFileExists(t, filepath.Join(handPlaced, "SKILL.md"))
+
+	require.NoError(t, os.RemoveAll(handPlaced))
+	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
+	outcomes, state = runAutoInstallAt(t, 0)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+	assert.FileExists(t, filepath.Join(handPlaced, "SKILL.md"))
+}
+
 // runAutoInstallAt runs the hook at autoInstallTestNow plus elapsed and returns
 // the reported outcomes and the stored state.
 func runAutoInstallAt(t *testing.T, elapsed time.Duration) ([]protos.AitoolsAutoInstallOutcome, autoinstall.State) {

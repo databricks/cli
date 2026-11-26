@@ -278,7 +278,9 @@ enabled = true
 
 // A first install keeps a skill that the user put into a skills agent's own
 // directory: the installer refuses the skills, which the run reports as kept,
-// unless a plugin agent got its plugin.
+// unless a plugin agent got its plugin. Either way the install is unfinished
+// (see TestAutoInstallFinishesAMixedInstallRefusedTheSkills for the run after
+// it).
 func TestInstallKeepsHandPlacedSkills(t *testing.T) {
 	home := autoInstallHome(t)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.1.0")
@@ -298,6 +300,7 @@ func TestInstallKeepsHandPlacedSkills(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, protos.AitoolsAutoInstallOutcomeInstalled, result.outcome)
 	assert.Equal(t, []string{"Claude Code"}, result.agents)
+	assert.True(t, result.unfinished, "Cursor did not get the skills")
 	assert.Len(t, *plugins, 1)
 
 	require.NoError(t, os.RemoveAll(filepath.Join(home, ".claude")))
