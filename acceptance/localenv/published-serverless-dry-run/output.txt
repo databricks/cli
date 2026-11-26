@@ -1,0 +1,32 @@
+
+=== Published version: the plan resolves and fetches, and nothing is written
+{
+  "ok": true,
+  "dryRun": true,
+  "command": "environments setup-local",
+  "compute": {
+    "source": "serverless",
+    "envKey": "serverless/serverless-v5"
+  },
+  "hasPythonVersion": true,
+  "phases": [
+    "preflight: ok",
+    "resolve: ok",
+    "fetch: ok",
+    "merge: ok",
+    "provision: ok",
+    "validate: ok"
+  ]
+}
+files in project: 0
+
+=== Unpublished version: fetch fails with E_ENV_UNSUPPORTED, and nothing is written
+
+Exit code: 1
+{
+  "ok": false,
+  "dryRun": true,
+  "code": "E_ENV_UNSUPPORTED",
+  "failurePhase": "fetch"
+}
+files in project: 0

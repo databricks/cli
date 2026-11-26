@@ -1,0 +1,28 @@
+if [ -z "${CLOUD_ENV:-}" ]; then
+  echo "SKIP_TEST needs the published databricks/environments artifacts and a package index"
+  exit 0
+fi
+
+# `uv python install` rewrites the minor-version links of every managed Python in
+# its install dir (junctions on Windows), which breaks concurrent uv users of a
+# shared dir, so give it a private one.
+export UV_PYTHON_INSTALL_DIR="$PWD/uv-python/installs"
+export UV_PYTHON_BIN_DIR="$PWD/uv-python/bin"
+export UV_PYTHON_INSTALL_REGISTRY=0
+
+mkdir project
+cd project
+
+$CLI environments setup-local --serverless-version 5 --output json > ../LOG.provision.json
+jq '{ok, dryRun, command, mode, compute: {source: .compute.source, envKey: .compute.envKey}, hasPythonVersion: (.resolved.pythonVersion != ""), hasDBConnectVersion: ((.resolved.dbconnectVersion // "") != ""), phases: [.phases[] | "\(.phase): \(.status)"]}' ../LOG.provision.json
+
+for f in .venv/bin/python .venv/Scripts/python.exe; do
+  if [ -f "$f" ]; then
+    echo "venv python: present"
+  fi
+done
+for f in pyproject.toml uv.lock; do
+  if [ -f "$f" ]; then
+    echo "$f: present"
+  fi
+done

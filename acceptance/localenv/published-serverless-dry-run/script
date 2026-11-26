@@ -1,0 +1,18 @@
+if [ -z "${CLOUD_ENV:-}" ]; then
+  export DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE="$DATABRICKS_HOST"
+fi
+
+# Run in an empty project dir so "writes nothing" is a plain file count. The JSON
+# goes to LOG files outside it: resolved versions follow the published repo.
+mkdir project
+cd project
+
+title "Published version: the plan resolves and fetches, and nothing is written"
+$CLI environments setup-local --serverless-version 5 --dry-run --output json > ../LOG.v5.json
+jq '{ok, dryRun, command, compute: {source: .compute.source, envKey: .compute.envKey}, hasPythonVersion: (.resolved.pythonVersion != ""), phases: [.phases[] | "\(.phase): \(.status)"]}' ../LOG.v5.json
+echo "files in project: $(ls -A | wc -l | tr -d ' ')"
+
+title "Unpublished version: fetch fails with E_ENV_UNSUPPORTED, and nothing is written"
+errcode $CLI environments setup-local --serverless-version 9999 --dry-run --output json > ../LOG.v9999.json
+jq '{ok, dryRun, code: .error.code, failurePhase: .error.failurePhase}' ../LOG.v9999.json
+echo "files in project: $(ls -A | wc -l | tr -d ' ')"

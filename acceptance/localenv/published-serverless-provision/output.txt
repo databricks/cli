@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "dryRun": false,
+  "command": "environments setup-local",
+  "mode": "default",
+  "compute": {
+    "source": "serverless",
+    "envKey": "serverless/serverless-v5"
+  },
+  "hasPythonVersion": true,
+  "hasDBConnectVersion": true,
+  "phases": [
+    "preflight: ok",
+    "resolve: ok",
+    "fetch: ok",
+    "merge: ok",
+    "provision: ok",
+    "validate: ok"
+  ]
+}
+venv python: present
+pyproject.toml: present
+uv.lock: present
