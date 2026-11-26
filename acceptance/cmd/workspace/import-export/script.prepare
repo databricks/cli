@@ -1,0 +1,31 @@
+# workspace_object_fields is the allow-list of get-status fields this test asserts on.
+workspace_object_fields() {
+    jq -c '{object_type, language}'
+}
+
+# workspace_list_fields prints one line per listed object, sorted by path.
+workspace_list_fields() {
+    jq -c 'sort_by(.path) | .[] | {path, object_type, language}'
+}
+
+# jupyter_fields reports whether an exported notebook has the top-level ipynb fields.
+jupyter_fields() {
+    jq -c '{has_cells: has("cells"), has_metadata: has("metadata")}' "$@"
+}
+
+# Prints the object type and language of a workspace object, then its SOURCE export.
+show() {
+    echo "--- $1"
+    $CLI workspace get-status "$1" | workspace_object_fields
+    $CLI workspace export "$1"
+    echo
+}
+
+# Prints a captured stream only when it is not empty, so the golden shows it.
+assert_empty() {
+    test ! -s "$1" || { echo "unexpected output in $1:"; cat "$1"; }
+}
+
+b64() {
+    printf '%s' "$1" | base64 | tr -d '\n'
+}

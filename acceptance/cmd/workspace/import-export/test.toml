@@ -1,0 +1,19 @@
+Cloud = true
+
+Env.MSYS_NO_PATHCONV = "1"
+
+Ignore = ["export", "tmp-*"]
+
+# export-dir and import-dir print local paths with the OS separator. Only the
+# local side is normalized, so a backslash in a workspace path still shows.
+[[Repls]]
+Old = '(\[TEST_TMP_DIR\])\\export\\(all|keep|overwrite)\\'
+New = '${1}/export/${2}/'
+
+[[Repls]]
+Old = '(\[TEST_TMP_DIR\]/export/all/)a\\b\\c\\'
+New = '${1}a/b/c/'
+
+[[Repls]]
+Old = '(?m)^a\\b\\c\\file-b'
+New = 'a/b/c/file-b'

@@ -1,0 +1,147 @@
+DIR="/Users/$CURRENT_USER_NAME/import-export-$UNIQUE_NAME"
+
+cleanup() {
+    errcode $CLI workspace delete --recursive "$DIR" >> LOG.cleanup 2>&1
+}
+trap cleanup EXIT
+
+# The leading backtick is kept from the original integration test: the marker
+# does not have to start the content for the workspace to detect a notebook.
+NB_CONTENT='`# Databricks notebook source
+print(1)'
+
+title "list prints the table header and nothing on stderr"
+$CLI workspace list / > tmp-list.txt 2> tmp-stderr.txt
+head -n1 tmp-list.txt | tr -s " "
+assert_empty tmp-stderr.txt
+
+for sub in content-source content-auto file-source file-auto export import-dir import-dir-keep import-dir-overwrite; do
+    $CLI workspace mkdirs "$DIR/$sub"
+done
+
+title "import --content with --language creates a notebook"
+trace $CLI workspace import "$DIR/content-source/pyScript" --content "$(b64 'print(1)')" --language PYTHON
+trace $CLI workspace import "$DIR/content-source/pyNb" --content "$(b64 "$NB_CONTENT")" --language PYTHON
+show "$DIR/content-source/pyScript"
+show "$DIR/content-source/pyNb"
+
+title "import --content --format AUTO: a notebook only for a source extension and notebook content"
+trace $CLI workspace import "$DIR/content-auto/py-nb-as-file" --content "$(b64 "$NB_CONTENT")" --format AUTO
+trace $CLI workspace import "$DIR/content-auto/py-nb-as-notebook.py" --content "$(b64 "$NB_CONTENT")" --format AUTO
+trace $CLI workspace import "$DIR/content-auto/not-a-notebook.py" --content "$(b64 'print(1)')" --format AUTO
+trace $CLI workspace list "$DIR/content-auto" -o json | workspace_list_fields
+show "$DIR/content-auto/py-nb-as-file"
+show "$DIR/content-auto/py-nb-as-notebook"
+show "$DIR/content-auto/not-a-notebook.py"
+
+title "import --file with --language creates a notebook"
+trace $CLI workspace import "$DIR/file-source/pyNotebook" --file import_dir/pyNotebook.py --language PYTHON
+trace $CLI workspace import "$DIR/file-source/scalaNotebook" --file import_dir/scalaNotebook.scala --language SCALA
+show "$DIR/file-source/pyNotebook"
+show "$DIR/file-source/scalaNotebook"
+
+title "import --file without --language or --format expects a zip archive"
+trace musterr $CLI workspace import "$DIR/file-source/scalaNotebook-error" --file import_dir/scalaNotebook.scala
+
+title "import --file --format AUTO: a notebook only for a source extension and notebook content"
+trace $CLI workspace import "$DIR/file-auto/py-nb-as-file" --file import_dir/pyNotebook.py --format AUTO
+trace $CLI workspace import "$DIR/file-auto/py-nb-as-notebook.py" --file import_dir/pyNotebook.py --format AUTO
+trace $CLI workspace import "$DIR/file-auto/not-a-notebook.py" --file import_dir/file-a --format AUTO
+trace $CLI workspace list "$DIR/file-auto" -o json | workspace_list_fields
+show "$DIR/file-auto/py-nb-as-file"
+show "$DIR/file-auto/py-nb-as-notebook"
+show "$DIR/file-auto/not-a-notebook.py"
+
+title "export prints a file or notebook on stdout, or writes it with --file"
+for name in script.sh file-a pyNotebook.py sqlNotebook.sql rNotebook.r scalaNotebook.scala; do
+    $CLI workspace import "$DIR/export/$name" --file "fixtures/$name" --format AUTO
+done
+# No trace on commands whose stdout and stderr are captured: trace writes to stderr.
+echo "export script.sh: stdout is the uploaded file, stderr is empty"
+$CLI workspace export "$DIR/export/script.sh" > tmp-stdout.txt 2> tmp-stderr.txt
+cmp fixtures/script.sh tmp-stdout.txt
+assert_empty tmp-stderr.txt
+echo "export file-a: stdout is the uploaded file"
+$CLI workspace export "$DIR/export/file-a" > tmp-stdout.txt
+cmp fixtures/file-a tmp-stdout.txt
+echo "export pyNotebook: stdout is the uploaded notebook"
+$CLI workspace export "$DIR/export/pyNotebook" > tmp-stdout.txt
+cmp fixtures/pyNotebook.py tmp-stdout.txt
+echo "export pyNotebook --format JUPYTER: stdout is a Jupyter notebook"
+$CLI workspace export "$DIR/export/pyNotebook" --format JUPYTER > tmp-stdout.txt
+jupyter_fields tmp-stdout.txt
+
+mkdir -p "$TEST_TMP_DIR/export"
+echo "export --file: stdout is empty, the file has the content"
+$CLI workspace export "$DIR/export/file-a" --file "$TEST_TMP_DIR/export/file.txt" > tmp-stdout.txt
+assert_empty tmp-stdout.txt
+cmp fixtures/file-a "$TEST_TMP_DIR/export/file.txt"
+$CLI workspace export "$DIR/export/pyNotebook" --file "$TEST_TMP_DIR/export/pyNb.py" > tmp-stdout.txt
+assert_empty tmp-stdout.txt
+cmp fixtures/pyNotebook.py "$TEST_TMP_DIR/export/pyNb.py"
+$CLI workspace export "$DIR/export/pyNotebook" --format JUPYTER --file "$TEST_TMP_DIR/export/jupyterNb.ipynb" > tmp-stdout.txt
+assert_empty tmp-stdout.txt
+jupyter_fields "$TEST_TMP_DIR/export/jupyterNb.ipynb"
+
+title "import-dir imports files and notebooks of every language"
+# The debug log goes to a LOG file (it differs between runs), so stderr holds only the command's own output.
+echo "import-dir --log-level=debug: stdout below, stderr is empty"
+$CLI workspace import-dir ./import_dir "$DIR/import-dir" --log-level=debug --log-file LOG.import-dir 2> tmp-stderr.txt
+assert_empty tmp-stderr.txt
+for name in file-a a/b/c/file-b pyNotebook sqlNotebook rNotebook scalaNotebook jupyterNotebook; do
+    show "$DIR/import-dir/$name"
+done
+
+for mode in keep overwrite; do
+    $CLI workspace import "$DIR/import-dir-$mode/file-a" --file fixtures/old-file-a --format AUTO
+    $CLI workspace import "$DIR/import-dir-$mode/pyNotebook.py" --file fixtures/old-pyNotebook.py --format AUTO
+done
+
+title "import-dir keeps existing objects without --overwrite"
+show "$DIR/import-dir-keep/file-a"
+show "$DIR/import-dir-keep/pyNotebook"
+trace $CLI workspace import-dir ./import_dir "$DIR/import-dir-keep"
+for name in file-a pyNotebook a/b/c/file-b sqlNotebook rNotebook scalaNotebook jupyterNotebook; do
+    show "$DIR/import-dir-keep/$name"
+done
+
+title "import-dir --overwrite replaces existing objects"
+show "$DIR/import-dir-overwrite/file-a"
+show "$DIR/import-dir-overwrite/pyNotebook"
+trace $CLI workspace import-dir ./import_dir "$DIR/import-dir-overwrite" --overwrite
+for name in file-a pyNotebook a/b/c/file-b sqlNotebook rNotebook scalaNotebook jupyterNotebook; do
+    show "$DIR/import-dir-overwrite/$name"
+done
+
+title "export-dir exports files and notebooks with their source extension"
+echo "export-dir: stdout below, stderr is empty"
+$CLI workspace export-dir "$DIR/import-dir" "$TEST_TMP_DIR/export/all" 2> tmp-stderr.txt
+assert_empty tmp-stderr.txt
+for name in file-a a/b/c/file-b pyNotebook.py sqlNotebook.sql rNotebook.r scalaNotebook.scala jupyterNotebook.py; do
+    echo "--- $name"
+    cat "$TEST_TMP_DIR/export/all/$name"
+    echo
+done
+
+title "export-dir keeps existing local files without --overwrite"
+mkdir -p "$TEST_TMP_DIR/export/keep" "$TEST_TMP_DIR/export/overwrite"
+cp fixtures/local-file-a "$TEST_TMP_DIR/export/keep/file-a"
+cp fixtures/local-file-a "$TEST_TMP_DIR/export/overwrite/file-a"
+trace $CLI workspace export-dir "$DIR/export" "$TEST_TMP_DIR/export/keep"
+trace cat "$TEST_TMP_DIR/export/keep/file-a"
+echo
+
+title "export-dir --overwrite replaces existing local files"
+trace $CLI workspace export-dir "$DIR/export" "$TEST_TMP_DIR/export/overwrite" --overwrite
+cmp fixtures/file-a "$TEST_TMP_DIR/export/overwrite/file-a"
+echo "header-only notebooks are exported with their language's header:"
+for name in pyNotebook.py sqlNotebook.sql rNotebook.r scalaNotebook.scala; do
+    echo "--- $name"
+    cat "$TEST_TMP_DIR/export/overwrite/$name"
+    cmp "fixtures/$name" "$TEST_TMP_DIR/export/overwrite/$name"
+done
+
+title "delete removes the test directory"
+trap - EXIT
+trace $CLI workspace delete --recursive "$DIR"
+trace musterr $CLI workspace get-status "$DIR"
