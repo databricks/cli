@@ -135,7 +135,7 @@ func TestStateToBundleKeepsConfiguredFields(t *testing.T) {
 func declaredResourceTypes() []config.ResourceType {
 	internal := map[string]bool{}
 	for field := range reflect.TypeFor[config.Resources]().Fields() {
-		if field.Tag.Get("bundle") == "internal" {
+		if structtag.BundleTag(field.Tag.Get("bundle")).Internal() {
 			internal[structtag.JSONTag(field.Tag.Get("json")).Name()] = true
 		}
 	}
