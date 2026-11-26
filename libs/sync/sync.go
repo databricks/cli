@@ -72,7 +72,8 @@ type Sync struct {
 	// caller supplies an OutputHandler.
 	fileCounts FileCounts
 
-	// deleted holds the remote names the most recent run deleted.
+	// deleted holds the remote names the most recent run deleted; empty for a dry run
+	// or a run that failed.
 	deleted []string
 
 	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
@@ -195,7 +196,7 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 		return files, err
 	}
 	s.fileCounts = FileCounts{Uploaded: len(change.put), Deleted: len(change.delete)}
-	s.deleted = slices.Clone(change.delete)
+	s.deleted = nil
 
 	s.notifyStart(ctx, change)
 	if change.IsEmpty() && !change.resetMtimes {
@@ -214,6 +215,7 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 			log.Errorf(ctx, "cannot store snapshot: %s", err)
 			return files, err
 		}
+		s.deleted = slices.Clone(change.delete)
 	}
 
 	s.notifyComplete(ctx, change)
