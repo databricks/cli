@@ -166,7 +166,13 @@ func (*ResourceSchema) IDFromState(state *SchemaState) string {
 
 // DoFindByInternalID lists the schemas in the catalog for the one with the recorded schema_id.
 func (r *ResourceSchema) DoFindByInternalID(ctx context.Context, state *SchemaState) (string, error) {
-	iter := r.client.Schemas.List(ctx, catalog.ListSchemasRequest{CatalogName: state.CatalogName})
+	iter := r.client.Schemas.List(ctx, catalog.ListSchemasRequest{
+		CatalogName:     state.CatalogName,
+		IncludeBrowse:   false,
+		MaxResults:      0, // The server's page size; the iterator follows the pages.
+		PageToken:       "",
+		ForceSendFields: nil,
+	})
 	for iter.HasNext(ctx) {
 		schema, err := iter.Next(ctx)
 		if err != nil {

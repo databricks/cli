@@ -169,7 +169,14 @@ func (*ResourceVolume) IDFromState(state *VolumeState) string {
 // volume whose schema was renamed is not found; when the schema is in the bundle too, deleting it
 // deletes the volume.
 func (r *ResourceVolume) DoFindByInternalID(ctx context.Context, state *VolumeState) (string, error) {
-	iter := r.client.Volumes.List(ctx, catalog.ListVolumesRequest{CatalogName: state.CatalogName, SchemaName: state.SchemaName})
+	iter := r.client.Volumes.List(ctx, catalog.ListVolumesRequest{
+		CatalogName:     state.CatalogName,
+		SchemaName:      state.SchemaName,
+		IncludeBrowse:   false,
+		MaxResults:      0, // The server's page size; the iterator follows the pages.
+		PageToken:       "",
+		ForceSendFields: nil,
+	})
 	for iter.HasNext(ctx) {
 		volume, err := iter.Next(ctx)
 		if err != nil {
