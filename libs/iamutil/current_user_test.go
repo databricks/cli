@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -330,4 +331,163 @@ func TestListCurrentUserParentGroupsRejectsRepeatedPageToken(t *testing.T) {
 	_, err = listCurrentUserParentGroups(t.Context(), w)
 	assert.ErrorContains(t, err, "repeated page token")
 	assert.Equal(t, int32(2), calls.Load())
+}
+
+// awaitRequest reports whether the request signalled on ch arrived within a few seconds.
+// The concurrency tests wait on each other's arrival, so a serial implementation fails here.
+func awaitRequest(ch <-chan struct{}) bool {
+	select {
+	case <-ch:
+		return true
+	case <-time.After(10 * time.Second):
+		return false
+	}
+}
+
+// getWithin runs get and fails the test if it has not returned in time, so a read left
+// running shows up as a failure instead of a hung test.
+func getWithin[T any](t *testing.T, get func() (T, error)) (T, error) {
+	t.Helper()
+	type result struct {
+		v   T
+		err error
+	}
+	done := make(chan result, 1)
+	go func() {
+		v, err := get()
+		done <- result{v, err}
+	}()
+	select {
+	case r := <-done:
+		return r.v, r.err
+	case <-time.After(10 * time.Second):
+		t.Fatal("the call did not return; a read it started was not cancelled")
+		var zero T
+		return zero, nil
+	}
+}
+
+// blockUntilCancelled holds a request open until the client cancels it, as a slow
+// groups read would, so a test can see whether the caller cancels it.
+func blockUntilCancelled(req testserver.Request) {
+	select {
+	case <-req.Context.Done():
+	case <-time.After(20 * time.Second):
+	}
+}
+
+// Both reads are in flight at once: each handler waits for the other's request to arrive,
+// so a serial implementation times out here. The order of arrival is not asserted.
+func TestGetUserPrincipalAndGroupsRunsBothReadsConcurrently(t *testing.T) {
+	meSeen := make(chan struct{})
+	groupsSeen := make(chan struct{})
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", identityMePath, func(testserver.Request) any {
+		close(meSeen)
+		if !awaitRequest(groupsSeen) {
+			return testserver.Response{StatusCode: http.StatusGatewayTimeout}
+		}
+		return map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user", "account_user_status": "ACTIVE"}}
+	})
+	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(testserver.Request) any {
+		close(groupsSeen)
+		if !awaitRequest(meSeen) {
+			return testserver.Response{StatusCode: http.StatusGatewayTimeout}
+		}
+		return map[string]any{"me_transitive_parent_groups": []map[string]any{
+			{"group_id": "22", "group_name": "users"},
+			{"group_id": "11", "group_name": "eng"},
+		}}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	res, err := getWithin(t, func() (*CurrentUserAndGroups, error) {
+		return GetUserPrincipalAndGroups(t.Context(), w)
+	})
+	require.NoError(t, err)
+	require.NoError(t, res.GroupsErr)
+	assert.Equal(t, "test-user", res.User.UserName)
+	assert.Equal(t, []iam.ComplexValue{
+		{Value: "11", Display: "eng"},
+		{Value: "22", Display: "users"},
+	}, res.Groups)
+}
+
+// An identity/me error is returned even though the groups read also failed, and the
+// groups read is cancelled rather than waited for.
+func TestGetUserPrincipalAndGroupsIdentityErrorWinsAndCancelsGroups(t *testing.T) {
+	groupsSeen := make(chan struct{})
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", identityMePath, func(testserver.Request) any {
+		if !awaitRequest(groupsSeen) {
+			return testserver.Response{StatusCode: http.StatusGatewayTimeout}
+		}
+		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "Me API is not enabled."}}
+	})
+	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(req testserver.Request) any {
+		close(groupsSeen)
+		blockUntilCancelled(req)
+		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "groups denied"}}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	res, err := getWithin(t, func() (*CurrentUserAndGroups, error) {
+		return GetUserPrincipalAndGroups(t.Context(), w)
+	})
+	assert.Nil(t, res)
+	require.ErrorIs(t, err, ErrMeNotEnabled)
+	assert.NotContains(t, err.Error(), "groups denied")
+}
+
+// A groups failure is reported beside the user, never as the error, so the caller can fall
+// back to the principal.
+func TestGetUserPrincipalAndGroupsReportsGroupsErrorSeparately(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", identityMePath, func(testserver.Request) any {
+		return map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user"}}
+	})
+	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(testserver.Request) any {
+		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "groups denied"}}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	res, err := GetUserPrincipalAndGroups(t.Context(), w)
+	require.NoError(t, err)
+	assert.Equal(t, "test-user", res.User.UserName)
+	assert.Nil(t, res.Groups)
+	require.ErrorContains(t, res.GroupsErr, "groups denied")
+}
+
+// An assumed group is rejected even when the groups read fails, and the groups read is
+// cancelled rather than left running.
+func TestGetUserPrincipalAndGroupsRejectsAssumedGroupAndCancelsGroups(t *testing.T) {
+	groupsSeen := make(chan struct{})
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("GET", identityMePath, func(testserver.Request) any {
+		if !awaitRequest(groupsSeen) {
+			return testserver.Response{StatusCode: http.StatusGatewayTimeout}
+		}
+		return map[string]any{"group": map[string]any{"group_id": "3000033333", "group_name": "data-engineers"}}
+	})
+	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(req testserver.Request) any {
+		close(groupsSeen)
+		blockUntilCancelled(req)
+		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "groups denied"}}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	res, err := getWithin(t, func() (*CurrentUserAndGroups, error) {
+		return GetUserPrincipalAndGroups(t.Context(), w)
+	})
+	assert.Nil(t, res)
+	require.ErrorIs(t, err, ErrGroupPrincipal)
+	assert.NotContains(t, err.Error(), "groups denied")
 }

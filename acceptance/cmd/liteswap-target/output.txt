@@ -46,7 +46,7 @@ Workspace:
 
 Validation OK!
 
->>> print_requests.py --get //identity/me
+>>> print_requests.py --get --sort //identity/me
 {
   "headers": {
     "X-Databricks-Traffic-Id": [

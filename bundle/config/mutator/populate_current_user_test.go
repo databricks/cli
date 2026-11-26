@@ -137,3 +137,43 @@ func TestPopulateCurrentUserReportsIdentityMeNotEnabled(t *testing.T) {
 	assert.ErrorContains(t, diags.Error(), "the identity/me API is not enabled in this workspace")
 	assert.Nil(t, b.Config.Workspace.CurrentUser)
 }
+
+// A not-enabled identity/me error is the diagnostic the user sees, even when the parallel
+// groups read also fails.
+func TestPopulateCurrentUserIdentityErrorWinsOverGroupsError(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+		return testserver.Response{StatusCode: http.StatusNotFound, Body: map[string]any{"error_code": "ENDPOINT_NOT_FOUND", "message": "Me API is not enabled."}}
+	})
+	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(testserver.Request) any {
+		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "groups denied"}}
+	})
+	b := newPopulateBundle(t, server)
+
+	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
+	require.Error(t, diags.Error())
+	assert.ErrorContains(t, diags.Error(), "the identity/me API is not enabled in this workspace")
+	assert.NotContains(t, diags.Error().Error(), "groups denied")
+	assert.False(t, b.CurrentUserGroupsUnknown)
+	assert.Nil(t, b.Config.Workspace.CurrentUser)
+}
+
+// An assumed group is rejected with the same error whether or not its groups read fails,
+// and the failed groups read does not turn into the unknown-groups state.
+func TestPopulateCurrentUserRejectsGroupPrincipalWhenGroupsReadFails(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/identity/me", func(testserver.Request) any {
+		return map[string]any{"group": map[string]any{"group_id": "3000033333", "group_name": "data-engineers"}}
+	})
+	server.Handle("GET", "/api/2.0/identity/me/transitive-parent-groups", func(testserver.Request) any {
+		return testserver.Response{StatusCode: http.StatusForbidden, Body: map[string]any{"error_code": "PERMISSION_DENIED", "message": "groups denied"}}
+	})
+	b := newPopulateBundle(t, server)
+
+	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Equal(t, iamutil.ErrGroupPrincipal.Error(), diags[0].Summary)
+	assert.False(t, b.CurrentUserGroupsUnknown)
+	assert.Nil(t, b.Config.Workspace.CurrentUser)
+}

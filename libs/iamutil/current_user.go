@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/iamv2"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -286,6 +287,11 @@ func CurrentUserGroups(ctx context.Context, w *databricks.WorkspaceClient) ([]ia
 	if err != nil {
 		return nil, err
 	}
+	return groupValues(parents), nil
+}
+
+// groupValues converts parent groups to the CurrentUserGroups shape.
+func groupValues(parents []parentGroup) []iam.ComplexValue {
 	var groups []iam.ComplexValue
 	for _, g := range parents {
 		groups = append(groups, iam.ComplexValue{Value: g.GroupId, Display: g.GroupName})
@@ -293,5 +299,53 @@ func CurrentUserGroups(ctx context.Context, w *databricks.WorkspaceClient) ([]ia
 	slices.SortFunc(groups, func(a, b iam.ComplexValue) int {
 		return strings.Compare(a.Display, b.Display)
 	})
-	return groups, nil
+	return groups
+}
+
+// CurrentUserAndGroups is the result of GetUserPrincipalAndGroups.
+type CurrentUserAndGroups struct {
+	User   *iam.User
+	Groups []iam.ComplexValue
+	// GroupsErr is set when only the groups read failed. User is still set and Groups is nil.
+	GroupsErr error
+}
+
+// GetUserPrincipalAndGroups is GetUserPrincipal and CurrentUserGroups run concurrently, so
+// a command pays one round trip for both reads instead of two.
+//
+// Only identity/me decides the result. Its error, including ErrGroupPrincipal, is returned,
+// and the groups read is cancelled and waited for before returning, so no request outlives
+// the call. A groups failure is reported in GroupsErr and never as the returned error.
+func GetUserPrincipalAndGroups(ctx context.Context, w *databricks.WorkspaceClient) (*CurrentUserAndGroups, error) {
+	g, gctx := errgroup.WithContext(ctx)
+
+	var principal *currentPrincipal
+	g.Go(func() error {
+		p, err := pollIdentityMe(gctx, w)
+		if err != nil {
+			return err
+		}
+		if p.group {
+			return ErrGroupPrincipal
+		}
+		principal = p
+		return nil
+	})
+
+	var parents []parentGroup
+	var groupsErr error
+	g.Go(func() error {
+		// Returns nil on purpose: a groups failure must neither cancel nor replace the identity/me result.
+		parents, groupsErr = listCurrentUserParentGroups(gctx, w)
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	res := &CurrentUserAndGroups{User: principal.user, GroupsErr: groupsErr}
+	if groupsErr == nil {
+		res.Groups = groupValues(parents)
+	}
+	return res, nil
 }

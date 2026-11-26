@@ -2,11 +2,7 @@
 >>> [CLI] bundle run -- [CLI] bundle validate -o json
 "pat"
 
->>> print_requests.py --get //
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
+>>> print_requests.py --get --sort //
 {
   "headers": {
     "Authorization": [
@@ -43,9 +39,9 @@
       "Bearer [DATABRICKS_TOKEN]"
     ]
   },
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/pat/files"
   }
 }
@@ -55,9 +51,13 @@
       "Bearer [DATABRICKS_TOKEN]"
     ]
   },
-  "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/pat/files"
   }
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }

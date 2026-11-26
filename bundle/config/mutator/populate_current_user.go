@@ -53,17 +53,16 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	var principal *iam.User
 	var groupsErr error
 	cached, err := cache.GetOrCompute(ctx, b.Cache, key, func(ctx context.Context) (cachedCurrentUser, error) {
-		me, err := iamutil.GetUserPrincipal(ctx, w)
+		r, err := iamutil.GetUserPrincipalAndGroups(ctx, w)
 		if err != nil {
 			return cachedCurrentUser{}, err
 		}
-		principal = me
-		groups, err := iamutil.CurrentUserGroups(ctx, w)
-		if err != nil {
-			groupsErr = err
-			return cachedCurrentUser{}, err
+		principal = r.User
+		if r.GroupsErr != nil {
+			groupsErr = r.GroupsErr
+			return cachedCurrentUser{}, r.GroupsErr
 		}
-		return cachedCurrentUser{User: me, Groups: groups}, nil
+		return cachedCurrentUser{User: r.User, Groups: r.Groups}, nil
 	})
 
 	user := cached.User
