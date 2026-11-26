@@ -95,12 +95,20 @@ func TestCacheFilesAreKeyedByVersionAndStayInside(t *testing.T) {
 func TestNewCacheHonoursCacheEnabled(t *testing.T) {
 	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
 
-	disabled, err := NewCache(env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false"))
-	require.NoError(t, err)
-	assert.Nil(t, disabled, "a disabled cache stores nothing")
+	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")), "a disabled cache stores nothing")
 
-	enabled, err := NewCache(env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true"))
-	require.NoError(t, err)
+	enabled := NewCache(env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true"))
 	require.NotNil(t, enabled)
 	assert.Equal(t, filepath.Join(env.Get(ctx, "DATABRICKS_CACHE_DIR"), build.GetInfo().GetSanitizedVersion(), "skills"), enabled.dir)
+}
+
+func TestNewCacheWithoutCacheFolderStoresNothing(t *testing.T) {
+	// With no cache folder configured and no user cache dir, the cache is off
+	// rather than an error, as in libs/cache.
+	t.Setenv("HOME", "")
+	t.Setenv("XDG_CACHE_HOME", "")
+	t.Setenv("LOCALAPPDATA", "")
+	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", "")
+
+	assert.Nil(t, NewCache(ctx))
 }

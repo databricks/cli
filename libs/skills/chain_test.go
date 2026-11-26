@@ -17,6 +17,7 @@ type fakeSource struct {
 	catalog *Catalog
 	files   map[string]string
 	err     error
+	readErr error
 	calls   int
 }
 
@@ -33,6 +34,9 @@ func (f *fakeSource) ReadFile(_ context.Context, skill, file string) ([]byte, er
 	f.calls++
 	if f.err != nil {
 		return nil, f.err
+	}
+	if f.readErr != nil {
+		return nil, f.readErr
 	}
 	data, ok := f.files[skill+"/"+file]
 	if !ok {
@@ -138,16 +142,57 @@ func TestChainCachedFileReadMakesNoLiveCall(t *testing.T) {
 	assert.Equal(t, calls, live.calls, "a cached file read asks the live source for nothing")
 }
 
-func TestChainReadFileFallsBackToBundledUncached(t *testing.T) {
+func TestChainReadFileUnknownFileIsNotBundled(t *testing.T) {
 	live := &fakeSource{catalog: release("1.0.0"), files: map[string]string{}}
-	bundled := &fakeSource{files: map[string]string{"alpha/SKILL.md": "bundled body"}}
+	bundled := &fakeSource{catalog: release("1.0.0"), files: map[string]string{"alpha/SKILL.md": "bundled body"}}
+	c, _ := newTestChain(t, live, bundled)
+
+	_, err := c.ReadFile(t.Context(), "alpha", "SKILL.md")
+	require.ErrorIs(t, err, ErrUnknownFile, "the live release does not list the file, so the bundled copy is not used")
+}
+
+func TestChainReadFileFallsBackToBundledWhenUnreachable(t *testing.T) {
+	live := &fakeSource{catalog: release("1.0.0"), readErr: ErrSourceUnreachable}
+	bundled := &fakeSource{catalog: release("1.0.0"), files: map[string]string{"alpha/SKILL.md": "bundled body"}}
 	c, _ := newTestChain(t, live, bundled)
 
 	data, err := c.ReadFile(t.Context(), "alpha", "SKILL.md")
 	require.NoError(t, err)
 	assert.Equal(t, "bundled body", string(data))
+}
+
+func TestChainReadFileStaleCacheOtherBundledReleaseIsNotServed(t *testing.T) {
+	live := &fakeSource{catalog: release("1.0.0")}
+	bundled := &fakeSource{catalog: release("0.9.0"), files: map[string]string{"alpha/SKILL.md": "bundled body"}}
+	c, now := newTestChain(t, live, bundled)
+
+	_, err := c.Catalog(t.Context())
+	require.NoError(t, err)
+	live.catalog, live.err = nil, errLiveDown
+	*now = now.Add(30 * time.Minute)
+
+	_, err = c.ReadFile(t.Context(), "alpha", "SKILL.md")
+	require.Error(t, err, "0.9.0 bytes under a 1.0.0 catalog are not served")
+}
+
+func TestChainReadFileLiveReleaseChangeIsNotCachedUnderCachedCatalog(t *testing.T) {
+	live := &fakeSource{catalog: release("1.0.0")}
+	c, now := newTestChain(t, live, &fakeSource{})
+
+	_, err := c.Catalog(t.Context())
+	require.NoError(t, err)
+	// Live moves on to 2.0.0 while the 1.0.0 catalog is still fresh.
+	*now = now.Add(time.Minute)
+	live.catalog = release("2.0.0")
+	live.files = map[string]string{"alpha/SKILL.md": "2.0.0 body"}
+
+	data, err := c.ReadFile(t.Context(), "alpha", "SKILL.md")
+	require.NoError(t, err)
+	assert.Equal(t, "2.0.0 body", string(data))
 	_, ok := c.cache.readFile("1.0.0", "alpha", "SKILL.md")
-	assert.False(t, ok, "a file that was not read live is not cached")
+	assert.False(t, ok, "2.0.0 bytes are not stored under the 1.0.0 catalog")
+	_, ok = c.cache.readFile("2.0.0", "alpha", "SKILL.md")
+	assert.False(t, ok, "the catalog was not read live in this call, so the bytes are not cached")
 }
 
 func TestChainNilCacheReadsLive(t *testing.T) {

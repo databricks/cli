@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 )
 
 const (
@@ -31,18 +32,20 @@ type Cache struct {
 
 // NewCache returns the skills cache under the CLI's cache folder, beside the
 // other caches of this CLI version (see libs/cache). DATABRICKS_CACHE_ENABLED=false
-// turns it off, as it does for the other caches; the returned nil Cache stores nothing.
+// turns it off, as it does for the other caches, and so does a cache folder that
+// cannot be found; the returned nil Cache stores nothing.
 //
 //deadcode:allow the skills commands call it once they are wired to the chain
-func NewCache(ctx context.Context) (*Cache, error) {
+func NewCache(ctx context.Context) *Cache {
 	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok && !enabled {
-		return nil, nil
+		return nil
 	}
 	base, err := cache.BaseDir(ctx)
 	if err != nil {
-		return nil, err
+		log.Debugf(ctx, "[skills] cache disabled: %v", err)
+		return nil
 	}
-	return &Cache{dir: filepath.Join(base, build.GetInfo().GetSanitizedVersion(), "skills")}, nil
+	return &Cache{dir: filepath.Join(base, build.GetInfo().GetSanitizedVersion(), "skills")}
 }
 
 // Latest returns the cached catalog fetched most recently. It reads the disk only.
