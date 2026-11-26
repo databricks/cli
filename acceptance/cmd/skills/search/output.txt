@@ -53,8 +53,6 @@ No skill matches. Run databricks skills list to see every skill.
 >>> [CLI] skills search  
 Error: search words must not be blank
 
-Exit code: 1
-
 >>> [CLI] skills search pipelines
 No skill matches. Run databricks skills list to see every skill.
 
