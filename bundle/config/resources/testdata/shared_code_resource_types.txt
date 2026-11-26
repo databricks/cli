@@ -1,0 +1,22 @@
+# Shared files of the bundle implementation that name resource types, and the keys of
+# the types each one names. TestSharedCodeNamesNoNewResourceTypes fails when a file names
+# a type that is not listed here, and when a listed type is no longer named.
+# Regenerate with: go test ./bundle/config/resources -run TestSharedCodeNamesNoNewResourceTypes -update
+bundle/apps/validate.go: apps database_instances experiments jobs model_serving_endpoints postgres_projects sql_warehouses
+bundle/config/mutator/resolve_variable_references.go: schemas volumes
+bundle/config/validate/required.go: dashboards secret_scopes sql_warehouses
+bundle/config/validate/sensitive_variable_references.go: secrets
+bundle/config/validate/single_node_cluster.go: clusters jobs pipelines
+bundle/config/validate/validate_artifact_path.go: schemas volumes
+bundle/deploy/check_dashboards_modified_remotely.go: dashboards
+bundle/deploy/metadata/annotate_deployment_version.go: jobs pipelines
+bundle/deploy/metadata/annotate_jobs.go: jobs
+bundle/deploy/metadata/annotate_pipelines.go: pipelines
+bundle/deploy/snapshot/upload.go: internal_immutable_snapshots
+bundle/internal/bundletest/benchmark.go: jobs
+bundle/metrics/track_used_compute.go: jobs
+bundle/phases/dms.go: internal_immutable_snapshots
+bundle/phases/telemetry.go: internal_immutable_snapshots
+bundle/trampoline/python_dbr_warning.go: clusters jobs
+bundle/trampoline/python_wheel.go: jobs
+cmd/bundle/init_appkit.go: features
