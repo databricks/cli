@@ -73,6 +73,9 @@ func (s *fsSource) FileSize(_ context.Context, skill, file string) (int64, error
 	if err != nil {
 		return 0, fmt.Errorf("stat %q in skill %q: %w", file, skill, err)
 	}
+	if info.IsDir() {
+		return 0, fmt.Errorf("%w: %q in skill %q is a folder", ErrNoSize, file, skill)
+	}
 	return info.Size(), nil
 }
 

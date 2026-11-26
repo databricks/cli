@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -54,10 +55,14 @@ func runListFiles(cmd *cobra.Command, args []string) error {
 		entry := listedFile{Path: file}
 		if sized {
 			size, err := sizer.FileSize(ctx, skill.Name, file)
-			if err != nil {
+			switch {
+			case errors.Is(err, libskills.ErrNoSize):
+				// A folder is listed without a size.
+			case err != nil:
 				return err
+			default:
+				entry.Size = &size
 			}
-			entry.Size = &size
 		}
 		files = append(files, entry)
 	}

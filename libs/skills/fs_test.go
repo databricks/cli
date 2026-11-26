@@ -82,6 +82,22 @@ func TestFileSizes(t *testing.T) {
 	assert.ErrorIs(t, err, ErrUnknownFile)
 }
 
+func TestFolderHasNoSize(t *testing.T) {
+	// The manifest may name a folder. A folder has no size, and read-file refuses it.
+	src := NewFSSource(fstest.MapFS{
+		"manifest.json":                    {Data: []byte(`{"skills": {"alpha": {"files": ["SKILL.md", "references"]}}}`)},
+		"skills/alpha/SKILL.md":            {Data: []byte("# Alpha")},
+		"skills/alpha/references/guide.md": {Data: []byte("# Guide")},
+	}, "map")
+
+	_, err := src.(FileSizer).FileSize(t.Context(), "alpha", "references")
+	assert.ErrorIs(t, err, ErrNoSize)
+
+	size, err := src.(FileSizer).FileSize(t.Context(), "alpha", "SKILL.md")
+	require.NoError(t, err)
+	assert.Equal(t, int64(len("# Alpha")), size)
+}
+
 func TestUnknownSkillAndFile(t *testing.T) {
 	src := fixtureSource()
 
