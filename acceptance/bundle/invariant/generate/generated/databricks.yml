@@ -1,0 +1,5 @@
+bundle:
+  name: generated
+
+include:
+  - resources/*.yml

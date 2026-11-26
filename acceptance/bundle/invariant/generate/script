@@ -1,0 +1,18 @@
+# Invariant to test: every deployed resource can be generated back into a bundle that validates.
+
+invariant_setup
+
+invariant_deploy LOG.deploy $CLI bundle deploy
+
+# The job generator downloads the notebooks a job references; the configs point at this path.
+MSYS_NO_PATHCONV=1 $CLI workspace mkdirs /Shared
+MSYS_NO_PATHCONV=1 $CLI workspace import /Shared/notebook --format SOURCE --language PYTHON --file notebook.py > LOG.import
+
+generate_from_state.py --bundle-dir generated
+echo GENERATE_OK
+
+cd generated
+$CLI bundle validate > ../LOG.validate
+cd ..
+
+rm -rf generated/resources generated/src generated/.databricks
