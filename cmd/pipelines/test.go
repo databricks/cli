@@ -452,7 +452,7 @@ const testPollInterval = time.Second
 
 // waitForTestUpdate polls the update until it ends, prints each test case as it finishes, and
 // returns the final state. It takes the steps of the bundle pipeline runner's wait loop
-// (bundle/run/pipeline.go), which cannot be reused because it starts a regular update. Every read
+// (bundle/run/pipelines.go), which cannot be reused because it starts a regular update. Every read
 // uses ctx, so canceling it also interrupts a read in flight.
 func waitForTestUpdate(ctx context.Context, w *databricks.WorkspaceClient, pipelineID, updateID string, run *testRun, printer *testProgressPrinter) (pipelines.UpdateInfoState, error) {
 	lastTimestamp := ""
