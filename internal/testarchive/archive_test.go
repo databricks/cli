@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/internal/testarchive"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +14,7 @@ func TestArchive(t *testing.T) {
 		t.Skip("Skipping test in short mode")
 	}
 
+	// Downloads from the internet, so only cloud CI (CLOUD_ENV set) runs it.
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	t.Parallel()
@@ -23,11 +23,11 @@ func TestArchive(t *testing.T) {
 	binDir := t.TempDir()
 	repoRoot := "../.."
 
-	err := testarchive.CreateArchive(archiveDir, binDir, repoRoot)
+	err := CreateArchive(archiveDir, binDir, repoRoot)
 	require.NoError(t, err)
 
 	assertDir := t.TempDir()
-	err = testarchive.ExtractTarGz(filepath.Join(archiveDir, "archive.tar.gz"), assertDir)
+	err = ExtractTarGz(filepath.Join(archiveDir, "archive.tar.gz"), assertDir)
 	require.NoError(t, err)
 
 	// Go installation is a directory because it includes the
