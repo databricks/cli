@@ -1,0 +1,23 @@
+# Serverless, so no cluster start.
+Cloud = true
+CloudSlow = true
+EnvMatrix.DMS = [""]
+
+Ignore = ["databricks.yml.tmpl"]
+
+# The local server runs the notebook but returns its exit value as logs; the Jobs API returns it as
+# notebook_output.result, with no trailing newline. The cloud run checks the real response.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{
+  "notebook_output": {
+    "result": "{\"message\": \"hello from notebook\"}",
+    "truncated": false
+  }
+}
+'''
+
+[[Repls]]
+Old = '/runs/\d+'
+New = '/runs/[RUN_ID]'

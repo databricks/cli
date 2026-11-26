@@ -1,0 +1,12 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+replace_ids.py
+
+# The notebook's dbutils.notebook.exit value is the task output: the CLI prints it after the run.
+trace $CLI bundle run notebook_job
