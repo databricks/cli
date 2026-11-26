@@ -406,8 +406,10 @@ func readLocalManifest(path string) (cachedManifest, error) {
 
 // writeLocalManifest writes the fetched manifest bytes to the local cache path
 // atomically. The bytes are written as fetched, not re-encoded from the parsed
-// Manifest: a CLI that predates a field would drop it, and a newer CLI reading
-// the cache would then see the field as off.
+// Manifest, so this CLI keeps fields it does not know. A CLI that predates a
+// field still re-encodes the cache when it refreshes it and drops the field, so
+// until this CLI next refreshes the cache, a field such as skills_hints reads
+// as off here.
 func writeLocalManifest(ctx context.Context, path string, data []byte) {
 	if path == "" {
 		return

@@ -7,18 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// unsetEnv removes key from the process environment for the rest of the test,
-// so a developer's shell cannot change what the test reads.
-func unsetEnv(t *testing.T, key string) {
-	t.Helper()
-	t.Setenv(key, "")
-	require.NoError(t, os.Unsetenv(key))
-}
 
 func TestEnabled(t *testing.T) {
 	cases := []struct {
@@ -37,7 +30,7 @@ func TestEnabled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			unsetEnv(t, previewEnv)
+			testutil.CleanupEnvironment(t)
 			ctx := t.Context()
 			if c.set {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
@@ -82,11 +75,8 @@ func TestHintsEnabled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			unsetEnv(t, previewEnv)
-			unsetEnv(t, hintsEnv)
-			unsetEnv(t, "DATABRICKS_FORCE_EMBEDDED_COMPAT")
-			unsetEnv(t, "DATABRICKS_CACHE_ENABLED")
-			ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+			testutil.CleanupEnvironment(t)
+			ctx := t.Context()
 			if c.preview != "" {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.preview)
 			}
