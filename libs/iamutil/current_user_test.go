@@ -1,11 +1,13 @@
 package iamutil
 
 import (
+	"context"
 	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -171,6 +173,15 @@ func TestListCurrentUserParentGroupsFollowsPages(t *testing.T) {
 	assert.Equal(t, []string{"", "page2"}, pages)
 }
 
+// currentUserGroups returns the parent groups in the shape GetUserPrincipalAndGroups gives.
+func currentUserGroups(ctx context.Context, w *databricks.WorkspaceClient) ([]iam.ComplexValue, error) {
+	parents, err := listCurrentUserParentGroups(ctx, w)
+	if err != nil {
+		return nil, err
+	}
+	return groupValues(parents), nil
+}
+
 func TestCurrentUserGroupsResolvesNamesSorted(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
@@ -178,7 +189,7 @@ func TestCurrentUserGroupsResolvesNamesSorted(t *testing.T) {
 	require.NoError(t, err)
 	server.AddGroups("test-token", []string{"zeta", "alpha"}, nil)
 
-	groups, err := CurrentUserGroups(t.Context(), w)
+	groups, err := currentUserGroups(t.Context(), w)
 	require.NoError(t, err)
 	require.Len(t, groups, 3)
 	assert.Equal(t, "alpha", groups[0].Display)
@@ -202,7 +213,7 @@ func TestCurrentUserGroupsIncludesWorkspaceLocalGroups(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
-	groups, err := CurrentUserGroups(t.Context(), w)
+	groups, err := currentUserGroups(t.Context(), w)
 	require.NoError(t, err)
 	assert.Equal(t, []iam.ComplexValue{
 		{Value: "79621542766305", Display: "account users"},
@@ -222,29 +233,87 @@ func TestCurrentUserGroupsFailsWhenParentGroupsFail(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
-	groups, err := CurrentUserGroups(t.Context(), w)
+	groups, err := currentUserGroups(t.Context(), w)
 	require.ErrorContains(t, err, "denied")
 	assert.Nil(t, groups)
 }
 
-// A transient 500 on the parent-groups call is retried, as the identity/me call is.
-func TestCurrentUserGroupsRetriesOn500(t *testing.T) {
+// The groups read is advisory and makes one attempt: a 500 is not retried, so a failing
+// endpoint cannot stall a command for the 500 retry window. The groups become unknown.
+func TestCurrentUserGroupsReadsOnceOn500(t *testing.T) {
 	var calls atomic.Int32
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	server.Handle("GET", identityMeTransitiveParentGroupsPath, func(testserver.Request) any {
-		if calls.Add(1) == 1 {
-			return testserver.Response{StatusCode: http.StatusInternalServerError, Body: map[string]any{"error_code": "TEMPORARILY_UNAVAILABLE"}}
-		}
-		return map[string]any{"me_transitive_parent_groups": []map[string]any{{"group_id": "11", "group_name": "eng"}}}
+		calls.Add(1)
+		return testserver.Response{StatusCode: http.StatusInternalServerError, Body: map[string]any{"error_code": "TEMPORARILY_UNAVAILABLE"}}
 	})
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
-	groups, err := CurrentUserGroups(t.Context(), w)
-	require.NoError(t, err)
-	assert.Equal(t, []iam.ComplexValue{{Value: "11", Display: "eng"}}, groups)
-	assert.Equal(t, int32(2), calls.Load())
+	groups, err := currentUserGroups(t.Context(), w)
+	require.Error(t, err)
+	assert.Nil(t, groups)
+	assert.Equal(t, int32(1), calls.Load())
+}
+
+// Every request of the current-user read carries the workspace routing header when the
+// profile sets a workspace ID, on identity/me, the parent groups and the SCIM fallback.
+func TestCurrentUserRequestsCarryWorkspaceIDHeader(t *testing.T) {
+	const wsID = "4242"
+	newServer := func(me, parents, scim func(testserver.Request) any) *databricks.WorkspaceClient {
+		server := testserver.New(t)
+		t.Cleanup(server.Close)
+		server.Handle("GET", identityMePath, me)
+		server.Handle("GET", identityMeTransitiveParentGroupsPath, parents)
+		server.Handle("GET", scimMePath, scim)
+		w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: wsID})
+		require.NoError(t, err)
+		return w
+	}
+	okUser := func(testserver.Request) any {
+		return map[string]any{"user": map[string]any{"user_id": "1", "username": "test-user", "account_user_status": "ACTIVE"}}
+	}
+	emptyParents := func(testserver.Request) any { return map[string]any{"me_transitive_parent_groups": []map[string]any{}} }
+	notEnabled := func(testserver.Request) any {
+		return notEnabledResponse(http.StatusNotFound, "ENDPOINT_NOT_FOUND")
+	}
+
+	t.Run("identity/me", func(t *testing.T) {
+		var seen []string
+		record := func(h func(testserver.Request) any) func(testserver.Request) any {
+			return func(req testserver.Request) any {
+				seen = append(seen, req.Headers.Get(auth.WorkspaceIDHeader))
+				return h(req)
+			}
+		}
+		w := newServer(record(okUser), record(emptyParents), func(testserver.Request) any { return scimUserBody })
+		_, err := GetUserPrincipalAndGroups(t.Context(), w)
+		require.NoError(t, err)
+		assert.Equal(t, []string{wsID, wsID}, seen)
+	})
+
+	t.Run("SCIM fallback", func(t *testing.T) {
+		var seen []string
+		w := newServer(notEnabled, notEnabled, func(req testserver.Request) any {
+			seen = append(seen, req.Headers.Get(auth.WorkspaceIDHeader))
+			return scimUserBody
+		})
+		_, err := GetUserPrincipalAndGroups(t.Context(), w)
+		require.NoError(t, err)
+		assert.Equal(t, []string{wsID}, seen)
+	})
+
+	t.Run("SCIM groups fallback", func(t *testing.T) {
+		var seen []string
+		w := newServer(okUser, notEnabled, func(req testserver.Request) any {
+			seen = append(seen, req.Headers.Get(auth.WorkspaceIDHeader))
+			return scimUserBody
+		})
+		_, err := GetUserPrincipalAndGroups(t.Context(), w)
+		require.NoError(t, err)
+		assert.Equal(t, []string{wsID}, seen)
+	})
 }
 
 func TestGetUserPrincipalRejectsAssumedGroup(t *testing.T) {
@@ -542,8 +611,6 @@ func TestGetUserPrincipalAndGroupsRunsBothReadsConcurrently(t *testing.T) {
 	}, res.Groups)
 }
 
-// An identity/me error is returned even though the groups read also failed, and the
-// groups read is cancelled rather than waited for.
 // identity/me not enabled wins over the groups read, which is cancelled and waited for rather
 // than left running. The user and groups then come from one SCIM /Me call.
 func TestGetUserPrincipalAndGroupsFallbackCancelsGroupsRead(t *testing.T) {

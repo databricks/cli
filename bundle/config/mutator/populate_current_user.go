@@ -75,9 +75,9 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		user.Groups = cached.Groups
 		userFromSCIM, groupsFromSCIM = cached.UserFromSCIM, cached.GroupsFromSCIM
 	case read != nil && read.GroupsErr != nil && errors.Is(err, read.GroupsErr):
-		// Not a warning: `bundle validate --strict` would fail on it. The permission
-		// recommendation is withheld through CurrentUserGroupsUnknown instead.
-		log.Infof(ctx, "Could not read the groups of the current user: %v", read.GroupsErr)
+		// Debug, not a warning: the user cannot act on it, and the permission recommendation is
+		// withheld through CurrentUserGroupsUnknown.
+		log.Debugf(ctx, "Could not read the groups of the current user: %v", read.GroupsErr)
 		user = read.User
 		userFromSCIM = read.UserFromSCIM
 		b.CurrentUserGroupsUnknown = true

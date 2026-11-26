@@ -90,6 +90,9 @@ any other task such as a notebook that prepares data.
 			data.All = true
 
 			me, err := iamutil.GetUserPrincipal(ctx, w)
+			if errors.Is(err, iamutil.ErrGroupPrincipal) {
+				return renderError(ctx, cmd, "PERMISSION_DENIED", "PERMANENT", false, err)
+			}
 			if err != nil {
 				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
 					fmt.Errorf("failed to resolve current user: %w", err))

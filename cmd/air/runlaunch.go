@@ -21,8 +21,9 @@ const userWorkspaceDirEnv = "DATABRICKS_INTERNAL_USER_WORKSPACE_DIR"
 
 // currentUserEmail returns the authenticated user's email (works for any domain).
 func currentUserEmail(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	// Only userName is needed, so the groups are not read.
-	me, err := iamutil.GetUserPrincipal(ctx, w)
+	// Only userName is needed: identity/me does not read the groups, and the SCIM fallback asks
+	// for userName alone.
+	me, err := iamutil.GetUserPrincipalUserName(ctx, w)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve current user: %w", err)
 	}

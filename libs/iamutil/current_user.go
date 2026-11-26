@@ -24,6 +24,10 @@ const (
 	// meRetryTimeout bounds how long GetCurrentUser retries transient 500s.
 	meRetryTimeout = 30 * time.Second
 
+	// groupsReadTimeout bounds one groups read. The groups are advisory, so a slow read is
+	// reported as unknown groups rather than stalling the command. Groups reads are not retried.
+	groupsReadTimeout = 10 * time.Second
+
 	identityMePath                       = "/api/2.0/identity/me"
 	identityMeTransitiveParentGroupsPath = "/api/2.0/identity/me/transitive-parent-groups"
 
@@ -64,12 +68,14 @@ type currentPrincipal struct {
 // GetCurrentUser returns the current user, retrying on HTTP 500 responses. It reads the
 // authorizing principal of the current request from GET /api/2.0/identity/me, which also
 // resolves an assumed group, and falls back to SCIM /Me where identity/me is not enabled.
-// Groups, Roles and Entitlements are not set; CurrentUserGroups reads the groups.
+// A user from identity/me has no Groups, Roles or Entitlements; GetUserPrincipalAndGroups
+// reads the groups. A user from the SCIM fallback is the SCIM response as SCIM returns it, so
+// its fields depend on the API that answered.
 //
 // identity/me is read-only, so retrying a 500 is safe. The SDK retries 503 but not 500, and
 // this call runs at the start of every bundle command, so an unretried 500 would fail it.
 func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	p, err := readPrincipal(ctx, w, true)
+	p, err := readPrincipal(ctx, w, true, "")
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +85,7 @@ func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.Us
 // GetCurrentUserOnce is GetCurrentUser with a single attempt, for probes that should
 // fail fast rather than wait out transient 500s.
 func GetCurrentUserOnce(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	p, err := readPrincipal(ctx, w, false)
+	p, err := readPrincipal(ctx, w, false, "")
 	if err != nil {
 		return nil, err
 	}
@@ -88,22 +94,27 @@ func GetCurrentUserOnce(ctx context.Context, w *databricks.WorkspaceClient) (*ia
 
 // GetUserPrincipal is GetCurrentUser for commands that act as the current user, such
 // as bundle deployments and paths under /Workspace/Users. It returns ErrGroupPrincipal
-// when the caller is an assumed group.
+// when the caller is an assumed group. The SCIM fallback cannot report an assumed group,
+// so it is never rejected there.
 func GetUserPrincipal(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	p, err := readPrincipal(ctx, w, true)
-	if err != nil {
-		return nil, err
-	}
-	if p.group {
-		return nil, ErrGroupPrincipal
-	}
-	return p.user, nil
+	return userPrincipal(ctx, w, true, "")
 }
 
 // GetUserPrincipalOnce is GetUserPrincipal with a single attempt, for probes that should
 // fail fast rather than wait out transient 500s.
 func GetUserPrincipalOnce(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
-	p, err := readPrincipal(ctx, w, false)
+	return userPrincipal(ctx, w, false, "")
+}
+
+// GetUserPrincipalUserName is GetUserPrincipal for callers that need only the user name. On
+// the SCIM fallback it asks SCIM for userName alone, so the response omits the groups and
+// entitlements.
+func GetUserPrincipalUserName(ctx context.Context, w *databricks.WorkspaceClient) (*iam.User, error) {
+	return userPrincipal(ctx, w, true, "userName")
+}
+
+func userPrincipal(ctx context.Context, w *databricks.WorkspaceClient, retry bool, attributes string) (*iam.User, error) {
+	p, err := readPrincipal(ctx, w, retry, attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +127,7 @@ func GetUserPrincipalOnce(ctx context.Context, w *databricks.WorkspaceClient) (*
 // readPrincipal reads the authorizing principal from identity/me, retrying 500s when retry is set.
 // When identity/me is not enabled in the workspace it reads the user from SCIM /Me instead. Any
 // other error fails the read.
-func readPrincipal(ctx context.Context, w *databricks.WorkspaceClient, retry bool) (*currentPrincipal, error) {
+func readPrincipal(ctx context.Context, w *databricks.WorkspaceClient, retry bool, attributes string) (*currentPrincipal, error) {
 	p, err := readIdentityMe(ctx, w, retry)
 	if err == nil {
 		return p, nil
@@ -125,7 +136,7 @@ func readPrincipal(ctx context.Context, w *databricks.WorkspaceClient, retry boo
 		return nil, err
 	}
 	log.Debugf(ctx, "identity/me is not enabled in this workspace; reading the current user from SCIM /Me")
-	u, err := scimMe(ctx, w, retry)
+	u, err := scimMe(ctx, w, retry, attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -144,17 +155,23 @@ func readIdentityMe(ctx context.Context, w *databricks.WorkspaceClient, retry bo
 }
 
 // scimMe reads the current user from the SCIM /Me API, the fallback for workspaces where
-// identity/me is not enabled. The request is tagged so it is told apart from the SCIM calls
-// that stay on SCIM by design.
-func scimMe(ctx context.Context, w *databricks.WorkspaceClient, retry bool) (*iam.User, error) {
+// identity/me is not enabled. attributes, when set, limits the response to those SCIM
+// attributes. The request carries the workspace routing header, as on identity/me, and is
+// tagged so it is told apart from the SCIM calls that stay on SCIM by design.
+func scimMe(ctx context.Context, w *databricks.WorkspaceClient, retry bool, attributes string) (*iam.User, error) {
 	c, err := databricksclient.New(w.Config)
 	if err != nil {
 		return nil, err
 	}
+	var query map[string]any
+	if attributes != "" {
+		query = map[string]any{"attributes": attributes}
+	}
+	headers := auth.WorkspaceIDHeaders(w.Config)
 	ctx = useragent.InContext(ctx, currentUserAPIKey, currentUserAPISCIMFallback) //nolint:fatcontext
 	return withRetry(ctx, retry, func() (*iam.User, error) {
 		var u iam.User
-		if err := c.Do(ctx, http.MethodGet, scimMePath, nil, nil, nil, &u); err != nil {
+		if err := c.Do(ctx, http.MethodGet, scimMePath, headers, query, nil, &u); err != nil {
 			return nil, err
 		}
 		return &u, nil
@@ -302,10 +319,7 @@ func listCurrentUserParentGroups(ctx context.Context, w *databricks.WorkspaceCli
 			Groups        []parentGroup `json:"me_transitive_parent_groups"`
 			NextPageToken string        `json:"next_page_token,omitempty"`
 		}
-		_, err = retryOn500(ctx, func() (struct{}, error) {
-			return struct{}{}, c.get(ctx, identityMeTransitiveParentGroupsPath, query, &page)
-		})
-		if err != nil {
+		if err := c.get(ctx, identityMeTransitiveParentGroupsPath, query, &page); err != nil {
 			return nil, err
 		}
 		groups = append(groups, page.Groups...)
@@ -321,26 +335,6 @@ func listCurrentUserParentGroups(ctx context.Context, w *databricks.WorkspaceCli
 	}
 }
 
-// CurrentUserGroups returns the groups the current principal belongs to, directly or
-// through parent groups, as iam.ComplexValue entries with the group ID as Value and the
-// group name as Display, sorted by Display. It is one paged call and never reads the
-// account group list. Where the parent-groups endpoint is not enabled, it returns the
-// groups of the SCIM /Me response as SCIM returns them.
-func CurrentUserGroups(ctx context.Context, w *databricks.WorkspaceClient) ([]iam.ComplexValue, error) {
-	parents, err := listCurrentUserParentGroups(ctx, w)
-	if err == nil {
-		return groupValues(parents), nil
-	}
-	if !meNotEnabled(err) {
-		return nil, err
-	}
-	u, err := scimMe(ctx, w, true)
-	if err != nil {
-		return nil, err
-	}
-	return u.Groups, nil
-}
-
 // groupValues converts parent groups to the CurrentUserGroups shape.
 func groupValues(parents []parentGroup) []iam.ComplexValue {
 	var groups []iam.ComplexValue
@@ -353,7 +347,8 @@ func groupValues(parents []parentGroup) []iam.ComplexValue {
 	return groups
 }
 
-// CurrentUserAndGroups is the result of GetUserPrincipalAndGroups.
+// CurrentUserAndGroups is the result of GetUserPrincipalAndGroups. It has no Groups, Roles or
+// Entitlements on identity/me; on the SCIM fallback User is the SCIM response as SCIM returns it.
 type CurrentUserAndGroups struct {
 	User   *iam.User
 	Groups []iam.ComplexValue
@@ -366,8 +361,9 @@ type CurrentUserAndGroups struct {
 	GroupsFromSCIM bool
 }
 
-// GetUserPrincipalAndGroups is GetUserPrincipal and CurrentUserGroups run concurrently, so
-// a command pays one round trip for both reads instead of two.
+// GetUserPrincipalAndGroups is GetUserPrincipal and the groups read run concurrently, so a
+// command pays one round trip for both reads instead of two. The user read retries 500s; the
+// groups read is a single attempt bounded by groupsReadTimeout, since the groups are advisory.
 //
 // Only identity/me decides the result. Its error, including ErrGroupPrincipal, is returned,
 // and the groups read is cancelled and waited for before returning, so no request outlives
@@ -396,7 +392,9 @@ func GetUserPrincipalAndGroups(ctx context.Context, w *databricks.WorkspaceClien
 	var groupsErr error
 	g.Go(func() error {
 		// Returns nil on purpose: a groups failure must neither cancel nor replace the identity/me result.
-		parents, groupsErr = listCurrentUserParentGroups(gctx, w)
+		gc, cancel := context.WithTimeout(gctx, groupsReadTimeout)
+		defer cancel()
+		parents, groupsErr = listCurrentUserParentGroups(gc, w)
 		return nil
 	})
 
@@ -405,7 +403,7 @@ func GetUserPrincipalAndGroups(ctx context.Context, w *databricks.WorkspaceClien
 			return nil, err
 		}
 		log.Debugf(ctx, "identity/me is not enabled in this workspace; reading the current user from SCIM /Me")
-		u, err := scimMe(ctx, w, true)
+		u, err := scimMe(ctx, w, true, "")
 		if err != nil {
 			return nil, err
 		}
@@ -418,7 +416,9 @@ func GetUserPrincipalAndGroups(ctx context.Context, w *databricks.WorkspaceClien
 		res.Groups = groupValues(parents)
 	case meNotEnabled(groupsErr):
 		log.Debugf(ctx, "the identity/me parent groups are not enabled in this workspace; reading the groups from SCIM /Me")
-		u, err := scimMe(ctx, w, true)
+		gc, cancel := context.WithTimeout(ctx, groupsReadTimeout)
+		defer cancel()
+		u, err := scimMe(gc, w, false, "")
 		if err != nil {
 			res.GroupsErr = err
 		} else {

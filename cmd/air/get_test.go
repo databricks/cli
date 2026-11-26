@@ -117,7 +117,7 @@ func TestGetRunAuthFailed(t *testing.T) {
 	assert.Contains(t, err.Error(), "authentication was not successful")
 }
 
-func TestGetRunAuthTransient(t *testing.T) {
+func TestGetRunAuthProbeBadRequest(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	// A probe failure that is not a 401/403 must not be misreported as an auth
 	// error; it surfaces as a retryable internal error instead.

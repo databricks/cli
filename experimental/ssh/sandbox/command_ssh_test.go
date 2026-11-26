@@ -380,7 +380,7 @@ func TestPrepareSSHIdentityRejectsAssumedGroup(t *testing.T) {
 			return
 		}
 		assert.Equal(t, "/api/2.0/identity/me", r.URL.Path)
-		_, _ = io.WriteString(w, `{"group":{"group_id":"group-1","display_name":"admins"}}`)
+		_, _ = io.WriteString(w, `{"group":{"group_id":"group-1","group_name":"admins"}}`)
 	}))
 	defer server.Close()
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123"})

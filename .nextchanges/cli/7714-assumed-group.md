@@ -1,0 +1,1 @@
+* In workspaces that serve identity/me, `psql`, `apps import`, `apps run-local`, `sync`, and the experimental `ssh` and `postgres` commands fail with a clear error when the caller is an assumed group, since they act as a user. ([#7714](https://github.com/databricks/cli/pull/7714))
