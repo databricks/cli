@@ -96,13 +96,20 @@ jobs:
           run_id=$(jq -er '.workflow_run_id | select(type == "number")' "$RUNNER_TEMP/review-run.json")
           echo "[Review run](https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
           echo 'To request another review, comment `/review` on the PR.' >> "$GITHUB_STEP_SUMMARY"
-          # A newly dispatched run can briefly return 404 before GitHub indexes it.
+          # A newly dispatched run can briefly return 404 before GitHub indexes it,
+          # even after a successful view. Retry watch with at most one minute of delays.
           for attempt in {1..12}; do
-            if gh run view "$run_id" --repo databricks-eng/eng-dev-ecosystem --json databaseId >/dev/null 2>&1; then
-              gh run watch "$run_id" --repo databricks-eng/eng-dev-ecosystem --interval 15 --exit-status
+            if gh run watch "$run_id" --repo databricks-eng/eng-dev-ecosystem --interval 15 --exit-status 2> "$RUNNER_TEMP/review-watch.err"; then
               exit 0
+            else
+              status=$?
+            fi
+            cat "$RUNNER_TEMP/review-watch.err" >&2
+            # Match gh's run-fetch error, not 404 text in run names or other output.
+            if ! grep -q '^failed to get run: HTTP 404:' "$RUNNER_TEMP/review-watch.err"; then
+              exit "$status"
             fi
             sleep 5
           done
-          echo "::error::Dispatched review $run_id did not become visible within one minute."
+          echo "::error::Dispatched review $run_id remained unavailable after 12 attempts."
           exit 1

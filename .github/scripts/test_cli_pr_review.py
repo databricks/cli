@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -237,6 +238,131 @@ class ReviewRequestTest(unittest.TestCase):
                         self.assertIn("skipping", (root / "summary").read_text())
                     else:
                         self.assertEqual((root / "output").read_text(), "eligible=true\npr_number=7400\n")
+
+
+@unittest.skipIf(os.name == "nt", "The review workflow runs on Linux.")
+class ReviewWaitTest(unittest.TestCase):
+    def wait_for_review(self, replies):
+        workflow = Path(__file__).resolve().parents[1] / "workflows" / "cli-pr-review.yml"
+        step = workflow.read_text().split("      - name: Dispatch and wait for this review\n", 1)[1]
+        step = step.split("\n      - ", 1)[0]
+        script_lines = []
+        for line in step.split("        run: |-\n", 1)[1].splitlines():
+            if line.strip() and not line.startswith("          "):
+                break
+            script_lines.append(line)
+        script = textwrap.dedent("\n".join(script_lines))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            # Fake only the external client and retry delays; execute the real workflow shell.
+            gh = root / "gh"
+            gh.write_text(
+                "#!/usr/bin/env python3\n"
+                + textwrap.dedent("""\
+                    import json
+                    import os
+                    import sys
+                    from pathlib import Path
+
+                    root = Path(os.environ["RUNNER_TEMP"])
+                    with (root / "calls").open("a") as calls:
+                        calls.write(json.dumps(sys.argv[1:]) + "\\n")
+                    if sys.argv[1:3] == ["api", "--method"]:
+                        print(json.dumps({"workflow_run_id": 12345}))
+                    elif sys.argv[1:3] == ["run", "view"]:
+                        print(json.dumps({"databaseId": 12345}))
+                    elif sys.argv[1:3] == ["run", "watch"]:
+                        replies = json.loads((root / "replies").read_text())
+                        status, error = replies[0]
+                        (root / "replies").write_text(json.dumps(replies[1:] or replies))
+                        print(error, file=sys.stderr)
+                        sys.exit(status)
+                    else:
+                        sys.exit(99)
+                    """)
+            )
+            gh.chmod(0o755)
+            sleep = root / "sleep"
+            sleep.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$RUNNER_TEMP/sleeps"\n')
+            sleep.chmod(0o755)
+            (root / "replies").write_text(json.dumps(replies))
+            env = {
+                "PATH": str(root) + os.pathsep + os.environ["PATH"],
+                "RUNNER_TEMP": str(root),
+                "GITHUB_STEP_SUMMARY": str(root / "summary"),
+                "PR_NUMBER": "7400",
+                "COMMENT_ID": "",
+            }
+            result = subprocess.run(
+                ["bash", "--noprofile", "--norc", "-euo", "pipefail", "-c", script],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            calls = [json.loads(line) for line in (root / "calls").read_text().splitlines()]
+            self.assertEqual(sum(call[0] == "api" for call in calls), 1)
+            watches = [call for call in calls if call[:2] == ["run", "watch"]]
+            for call in watches:
+                self.assertEqual(
+                    call,
+                    [
+                        "run",
+                        "watch",
+                        "12345",
+                        "--repo",
+                        "databricks-eng/eng-dev-ecosystem",
+                        "--interval",
+                        "15",
+                        "--exit-status",
+                    ],
+                )
+            sleeps = (root / "sleeps").read_text().splitlines() if (root / "sleeps").exists() else []
+            return result, len(watches), sleeps
+
+    def test_visible_run_succeeds_without_retry(self):
+        result, watches, sleeps = self.wait_for_review([(0, "")])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(watches, 1)
+        self.assertEqual(sleeps, [])
+
+    def test_not_found_then_backend_failure_still_fails(self):
+        result, watches, sleeps = self.wait_for_review([(1, "failed to get run: HTTP 404: Not Found"), (1, "")])
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(watches, 2)
+        self.assertEqual(sleeps, ["5"])
+
+    def test_watch_not_found_then_same_run_succeeds(self):
+        result, watches, sleeps = self.wait_for_review([(1, "failed to get run: HTTP 404: Not Found"), (0, "")])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(watches, 2)
+        self.assertEqual(sleeps, ["5"])
+
+    def test_backend_failure_and_other_errors_propagate(self):
+        for status, error in [
+            (1, ""),
+            (1, "run cancelled"),
+            (1, "run timed out"),
+            (4, "HTTP 401: Bad credentials"),
+            (1, "HTTP 403: Forbidden"),
+            (1, "HTTP 500: Internal Server Error"),
+            (1, "failed to get jobs: HTTP 404: Not Found"),
+            (1, "run name: failed to get run: HTTP 404: Not Found"),
+        ]:
+            with self.subTest(error=error):
+                result, watches, sleeps = self.wait_for_review([(status, error)])
+                self.assertEqual(result.returncode, status)
+                if error:
+                    self.assertIn(error, result.stderr)
+                self.assertEqual(watches, 1)
+                self.assertEqual(sleeps, [])
+
+    def test_persistent_not_found_is_bounded(self):
+        result, watches, sleeps = self.wait_for_review([(1, "failed to get run: HTTP 404: Not Found")])
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(watches, 12)
+        self.assertEqual(sleeps, ["5"] * 12)
+        self.assertIn("remained unavailable after 12 attempts", result.stdout)
 
 
 if __name__ == "__main__":
