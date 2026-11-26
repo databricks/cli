@@ -25,6 +25,15 @@ wrapper_status
 title "The pushed deployment state still lists the wrapper, although it was not on disk"
 state_files
 
+title "Apply again in the same checkout, which keeps its cache but has no wrapper on disk (plan saved in another checkout)"
+mkdir planner
+cp databricks.yml planner/
+(cd planner && trace $CLI bundle plan -o json > ../tmp.plan.json)
+rm -rf planner
+trace $CLI bundle deploy --plan tmp.plan.json
+wrapper_status
+state_files
+
 title "Apply from a fresh checkout whose cache directory (DATABRICKS_BUNDLE_TMP) is outside the bundle"
 trace $CLI bundle deploy
 trace $CLI bundle plan -o json > tmp.plan.json

@@ -84,9 +84,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	fileList := state.Files
 	if s.keepInternalFiles {
-		var internal Filelist
-		fileList, internal = splitInternalFiles(b.Config.Bundle.Target, fileList)
-		b.KeptInternalFiles = internal.toSlice(b.SyncRoot)
+		fileList, _ = splitInternalFiles(b.Config.Bundle.Target, fileList)
 	}
 
 	log.Infof(ctx, "Creating new snapshot")

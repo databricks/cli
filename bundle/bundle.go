@@ -180,12 +180,6 @@ type Bundle struct {
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
 
-	// KeptInternalFiles are generated files (under the target's .internal directory)
-	// that the pulled deployment state lists and that applying a saved plan keeps in
-	// the workspace without having them locally. The deployment state keeps listing
-	// them, so a later deploy can still delete them.
-	KeptInternalFiles []fileset.File
-
 	// FileCounts is how many files the deploy uploaded and deleted. Unlike Files,
 	// which lists everything tracked, this counts only what actually changed.
 	FileCounts libsync.FileCounts

@@ -17,7 +17,11 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type stateUpdate struct{}
+type stateUpdate struct {
+	// keepInternalFiles keeps listing the previous state's entries under the
+	// target's .internal directory that are not on disk; see StateUpdateForSavedPlan.
+	keepInternalFiles bool
+}
 
 func (s *stateUpdate) Name() string {
 	return "deploy:state-update"
@@ -44,11 +48,11 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	kept, err := fromSlice(b.KeptInternalFiles)
-	if err != nil {
-		return diag.FromErr(err)
+	if s.keepInternalFiles {
+		_, internal := splitInternalFiles(b.Config.Bundle.Target, state.Files)
+		fl = withKeptFiles(fl, internal)
 	}
-	state.Files = withKeptFiles(fl, kept)
+	state.Files = fl
 
 	// Generate a UUID for the deployment, if one does not already exist
 	if state.ID == uuid.Nil() {
@@ -90,6 +94,14 @@ func withKeptFiles(synced, kept Filelist) Filelist {
 
 func StateUpdate() bundle.Mutator {
 	return &stateUpdate{}
+}
+
+// StateUpdateForSavedPlan is StateUpdate for applying a saved plan. The apply skips
+// the build that generates the files in the bundle's internal directory (such as
+// python_wheel_wrapper notebooks), and StatePullForSavedPlan keeps their remote
+// copies, so the state keeps listing them for a later deploy to delete.
+func StateUpdateForSavedPlan() bundle.Mutator {
+	return &stateUpdate{keepInternalFiles: true}
 }
 
 func load(ctx context.Context, b *bundle.Bundle) (*DeploymentState, error) {
