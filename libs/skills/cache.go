@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/atomicfile"
@@ -33,11 +33,17 @@ type Cache struct {
 // NewCache returns the skills cache under the CLI's cache folder, beside the
 // other caches of this CLI version (see libs/cache). DATABRICKS_CACHE_ENABLED=false
 // turns it off, as it does for the other caches, and so does a cache folder that
-// cannot be found; the returned nil Cache stores nothing.
+// cannot be found. A pinned source, DATABRICKS_SKILLS_REF or
+// DATABRICKS_SKILLS_BASE_URL, also turns it off: the cache is keyed by release
+// version only, so a catalog from another source must not be stored under it.
+// The returned nil Cache stores nothing.
 //
 //deadcode:allow the skills commands call it once they are wired to the chain
 func NewCache(ctx context.Context) *Cache {
 	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok && !enabled {
+		return nil
+	}
+	if env.Get(ctx, "DATABRICKS_SKILLS_REF") != "" || env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL") != "" {
 		return nil
 	}
 	base, err := cache.BaseDir(ctx)
@@ -77,9 +83,18 @@ func (c *Cache) putCatalog(cat *Catalog) error {
 	if err := atomicfile.Write(path, data, 0o600, atomicfile.MkDir(0o700)); err != nil {
 		return err
 	}
+	// Keep the newest versions with a readable catalog, and remove every other
+	// folder, including one whose catalog does not parse.
+	keep := map[string]bool{cat.Version: true}
 	cats := c.catalogs()
-	for _, old := range cats[min(keptVersions, len(cats)):] {
-		_ = os.RemoveAll(filepath.Join(c.dir, old.Version))
+	for _, old := range cats[:min(keptVersions, len(cats))] {
+		keep[old.Version] = true
+	}
+	entries, _ := os.ReadDir(c.dir)
+	for _, e := range entries {
+		if !keep[e.Name()] {
+			_ = os.RemoveAll(filepath.Join(c.dir, e.Name()))
+		}
 	}
 	return nil
 }
@@ -126,12 +141,8 @@ func (c *Cache) filePath(version, skill, file string) string {
 }
 
 // cacheable reports whether the names, which come from a source, stay inside
-// the cache folder of their release.
+// the cache folder of their release. The file must be clean, so that "./SKILL.md"
+// is not cached under the name "SKILL.md" and reads do not depend on the cache.
 func cacheable(version, skill, file string) bool {
-	return isName(version) && isName(skill) && !escapesDir(file)
-}
-
-// isName reports whether s is a single path element.
-func isName(s string) bool {
-	return s != "" && s != "." && s != ".." && !strings.ContainsAny(s, `/\`)
+	return isName(version) && isName(skill) && !escapesDir(file) && path.Clean(file) == file
 }

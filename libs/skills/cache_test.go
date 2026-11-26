@@ -19,6 +19,10 @@ func fetchedAt(cat *Catalog, at time.Time) *Catalog {
 	return cat
 }
 
+func release(version string) *Catalog {
+	return &Catalog{Version: version, Label: "test", Skills: []Skill{{Name: "alpha", Files: []string{"SKILL.md"}}}}
+}
+
 func TestCacheLatestIsNewestAndSkipsCorruptEntries(t *testing.T) {
 	dir := t.TempDir()
 	cache := &Cache{dir: dir}
@@ -62,10 +66,13 @@ func TestCacheRemovesOlderVersions(t *testing.T) {
 	require.NoError(t, cache.putCatalog(fetchedAt(release("1.0.0"), t0)))
 	require.NoError(t, cache.writeFile("1.0.0", "alpha", "SKILL.md", []byte("old")))
 	require.NoError(t, cache.putCatalog(fetchedAt(release("2.0.0"), t0.Add(time.Hour))))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "0.5.0", "files"), 0o700))
 	require.NoError(t, cache.putCatalog(fetchedAt(release("3.0.0"), t0.Add(2*time.Hour))))
 
 	_, err := os.Stat(filepath.Join(dir, "1.0.0"))
 	assert.ErrorIs(t, err, os.ErrNotExist, "the release before the previous one is removed with its files")
+	_, err = os.Stat(filepath.Join(dir, "0.5.0"))
+	assert.ErrorIs(t, err, os.ErrNotExist, "a folder with no readable catalog is removed")
 	_, err = os.Stat(filepath.Join(dir, "2.0.0", catalogFile))
 	assert.NoError(t, err, "the previous release is kept")
 }
@@ -84,6 +91,8 @@ func TestCacheFilesAreKeyedByVersionAndStayInside(t *testing.T) {
 		{"1.0.0", "..", "SKILL.md"},
 		{"1.0.0", "a/b", "SKILL.md"},
 		{"1.0.0", "alpha", "../../secret"},
+		{"1.0.0", "alpha", "./SKILL.md"},
+		{"1.0.0", "alpha", "references/../SKILL.md"},
 		{"../1.0.0", "alpha", "SKILL.md"},
 	} {
 		assert.Error(t, cache.writeFile(c.version, c.skill, c.file, []byte("x")), "%+v", c)
@@ -100,6 +109,14 @@ func TestNewCacheHonoursCacheEnabled(t *testing.T) {
 	enabled := NewCache(env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true"))
 	require.NotNil(t, enabled)
 	assert.Equal(t, filepath.Join(env.Get(ctx, "DATABRICKS_CACHE_DIR"), build.GetInfo().GetSanitizedVersion(), "skills"), enabled.dir)
+}
+
+func TestNewCacheOffForPinnedSource(t *testing.T) {
+	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+	assert.NotNil(t, NewCache(ctx))
+
+	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_REF", "v1.0.0")), "a pinned ref stores nothing")
+	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "http://localhost:8080")), "a custom base URL stores nothing")
 }
 
 func TestNewCacheWithoutCacheFolderStoresNothing(t *testing.T) {
