@@ -1,5 +1,7 @@
 
 === A skill with a supporting file: SKILL.md, then the file list
+
+>>> [CLI] skills read guide-skill
 ---
 name: guide-skill
 description: A skill with a supporting file.
@@ -13,6 +15,8 @@ Other files in this skill, each read with its command:
   databricks skills read-file guide-skill references/guide.md
 
 === A skill without supporting files
+
+>>> [CLI] skills read demo-skill
 ---
 name: demo-skill
 description: A skill for tests.
@@ -21,6 +25,8 @@ description: A skill for tests.
 # Demo skill
 
 === JSON output, with and without supporting files
+
+>>> [CLI] skills read guide-skill -o json
 {
   "name": "guide-skill",
   "version": "0.0.1",
@@ -30,6 +36,8 @@ description: A skill for tests.
     "references/guide.md"
   ]
 }
+
+>>> [CLI] skills read demo-skill -o json
 {
   "name": "demo-skill",
   "version": "0.0.1",
@@ -39,7 +47,11 @@ description: A skill for tests.
 }
 
 === An unknown skill exits non-zero and points at skills list
+
+>>> [CLI] skills read no-such-skill
 Error: unknown skill "no-such-skill": run "databricks skills list" to see the available skills
 
 === A skill that needs a newer CLI: the warning goes to stderr, the skill to stdout
+
+>>> [CLI] skills read future-skill
 Warning: skill "future-skill" needs CLI version 99.0.0 or newer, this CLI is [CLI_VERSION]. Update the CLI to use it.

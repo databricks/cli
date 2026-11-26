@@ -3,6 +3,7 @@ package skills
 import (
 	"fmt"
 	"io"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/shellquote"
 	libskills "github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
@@ -53,7 +55,7 @@ func runRead(cmd *cobra.Command, src libskills.Source, name string) error {
 		return err
 	}
 	if catalog.Stale {
-		fmt.Fprintln(cmd.ErrOrStderr(), readProvenance(catalog))
+		cmdio.LogString(ctx, readProvenance(catalog))
 	}
 
 	i := slices.IndexFunc(catalog.Skills, func(s libskills.Skill) bool { return s.Name == name })
@@ -64,13 +66,16 @@ func runRead(cmd *cobra.Command, src libskills.Source, name string) error {
 
 	content, err := src.ReadFile(ctx, name, skillFile)
 	if err != nil {
+		if !slices.Contains(skill.Files, skillFile) {
+			return fmt.Errorf("skill %q has no %s in this release: %w", name, skillFile, err)
+		}
 		return err
 	}
 
 	info := build.GetInfo()
 	if skill.MinCLIVer != "" && semver.Compare("v"+info.Version, "v"+skill.MinCLIVer) < 0 {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Warning: skill %q needs CLI version %s or newer, this CLI is %s. Update the CLI to use it.\n",
-			name, skill.MinCLIVer, info.Version)
+		cmdio.LogString(ctx, fmt.Sprintf("Warning: skill %q needs CLI version %s or newer, this CLI is %s. Update the CLI to use it.",
+			name, skill.MinCLIVer, info.Version))
 	}
 
 	files := otherFiles(skill.Files)
@@ -83,7 +88,7 @@ func runRead(cmd *cobra.Command, src libskills.Source, name string) error {
 			Files:   files,
 		})
 	}
-	return writeReadText(cmd.OutOrStdout(), name, content, files)
+	return writeReadText(cmd.OutOrStdout(), runtime.GOOS, name, content, files)
 }
 
 // otherFiles returns the skill's files other than SKILL.md, in manifest order.
@@ -99,9 +104,10 @@ func otherFiles(files []string) []string {
 }
 
 // writeReadText writes SKILL.md, with a trailing newline added if it is missing,
-// then the other files with the command that reads each one. Nothing else goes
-// to stdout.
-func writeReadText(w io.Writer, name string, content []byte, files []string) error {
+// then the other files with the command that reads each one. The commands are
+// quoted for the shell of goos. A name or file that no quoting keeps literal
+// is listed without its command. Nothing else goes to stdout.
+func writeReadText(w io.Writer, goos, name string, content []byte, files []string) error {
 	var b strings.Builder
 	b.Write(content)
 	if len(content) > 0 && content[len(content)-1] != '\n' {
@@ -109,24 +115,18 @@ func writeReadText(w io.Writer, name string, content []byte, files []string) err
 	}
 	if len(files) > 0 {
 		b.WriteString("\nOther files in this skill, each read with its command:\n")
+		quotedName, nameOK := shellquote.Arg(goos, name)
 		for _, f := range files {
-			fmt.Fprintf(&b, "  databricks skills read-file %s %s\n", shellQuote(name), shellQuote(f))
+			quotedFile, fileOK := shellquote.Arg(goos, f)
+			if !nameOK || !fileOK {
+				fmt.Fprintf(&b, "  %s\n", f)
+				continue
+			}
+			fmt.Fprintf(&b, "  databricks skills read-file %s %s\n", quotedName, quotedFile)
 		}
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
-}
-
-// shellWordChars are the characters a POSIX shell reads as they are.
-const shellWordChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./:"
-
-// shellQuote quotes s for a POSIX shell, so the printed command passes s as one
-// argument and runs the same way when an agent pastes it.
-func shellQuote(s string) string {
-	if s != "" && strings.Trim(s, shellWordChars) == "" {
-		return s
-	}
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // readProvenance says where a stale catalog came from. A stale catalog is a
