@@ -12,7 +12,11 @@ import (
 // cached. The snapshot is filled when release binaries are built, so the
 // repo holds only an empty manifest.
 //
-//go:embed snapshot
+// The all: prefix embeds files whose names start with "." or "_" too. Without
+// it the compiler drops them silently, and a skill file such as
+// scripts/__init__.py would be listed in the catalog but missing from the copy.
+//
+//go:embed all:snapshot
 var bundledSnapshot embed.FS
 
 // BundledLabel says where a catalog from the bundled snapshot came from.
