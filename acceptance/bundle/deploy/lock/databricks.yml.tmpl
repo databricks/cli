@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  # The state directory, and with it deploy.lock, is inside the synced files, so a local
+  # state/deploy.lock is uploaded over the lock and removing it deletes the lock mid-deploy.
+  state_path: ${workspace.file_path}/state
