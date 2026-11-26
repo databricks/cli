@@ -41,10 +41,10 @@ func (m *referenceFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 	// references.
 	skipWheelTasks := !m.afterBuild && b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper)
 
-	// After the build, plan and deploy have the state open: the plan includes the resources in it
-	// even when they are empty, and resolves their references.
+	// Plan and deploy have the state open: the plan includes the resources in it even when they are
+	// empty, and resolves their references.
 	var db *dstate.Database
-	if m.afterBuild && b.DeploymentBundle.StateDB.IsOpen() {
+	if m.afterBuild {
 		db = &b.DeploymentBundle.StateDB.Data
 	}
 
