@@ -333,7 +333,7 @@ func TestBrokenNotebookRepairedWithOlderMtime(t *testing.T) {
 		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 		require.NoError(t, os.Chtimes(path, mtime, mtime))
 	}
-	diff := func() diff {
+	syncDiff := func() diff {
 		files, err := fileSet.Files()
 		require.NoError(t, err)
 		change, err := state.diff(ctx, files)
@@ -343,19 +343,19 @@ func TestBrokenNotebookRepairedWithOlderMtime(t *testing.T) {
 
 	const validNotebook = `{"cells":[],"metadata":{"language_info":{"name":"python"}},"nbformat":4,"nbformat_minor":2}`
 	write("foo.ipynb", validNotebook, uploaded)
-	assert.Equal(t, []string{"foo.ipynb"}, diff().put)
+	assert.Equal(t, []string{"foo.ipynb"}, syncDiff().put)
 
 	// While broken, nothing is synced, but the snapshot must be saved so the
 	// reset mtime survives into the next run.
 	write("foo.ipynb", `{"cells": [`, uploaded.Add(time.Hour))
-	change := diff()
+	change := syncDiff()
 	assert.True(t, change.IsEmpty())
 	assert.True(t, change.resetMtimes)
-	assert.False(t, diff().resetMtimes)
+	assert.False(t, syncDiff().resetMtimes)
 
 	// Restored with an mtime older than the last upload: still uploaded.
 	write("foo.ipynb", validNotebook, uploaded.Add(-time.Hour))
-	change = diff()
+	change = syncDiff()
 	assert.Empty(t, change.delete)
 	assert.Equal(t, []string{"foo.ipynb"}, change.put)
 }

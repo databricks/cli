@@ -1,1 +1,1 @@
-* Fix `bundle deploy` and `sync` deleting a remote notebook when its local `.ipynb` file has invalid JSON. ([#8032](https://github.com/databricks/cli/pull/8032))
+* Fix `bundle deploy` and `sync` deleting the remote copy of a notebook or file when the local file is an `.ipynb` with invalid JSON or cannot be read. ([#8032](https://github.com/databricks/cli/pull/8032))
