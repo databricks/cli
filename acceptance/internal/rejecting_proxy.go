@@ -24,10 +24,7 @@ import (
 // hint when using a shared proxy to tell the user how to get per-test
 // attribution (e.g. "re-run with -debugsandbox").
 func StartRejectingProxy(t *testing.T, hint string) string {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("blocking proxy: listen: %v", err)
-	}
+	ln := testserver.ListenLoopback(t)
 	t.Cleanup(func() { ln.Close() })
 	go func() {
 		for {

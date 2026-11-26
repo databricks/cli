@@ -1,0 +1,2 @@
+# The profiles table pads its Host column to the IPv4 test server URL; on DBR it is [::1].
+RunsOnDbr = false

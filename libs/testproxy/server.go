@@ -55,7 +55,7 @@ func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 	s.apiClient = httpclient.NewApiClient(clientCfg)
 
 	// Set up the proxy handler as the default handler for all requests.
-	server := httptest.NewServer(http.HandlerFunc(s.proxyToUpstream))
+	server := testserver.NewLoopbackServer(t, http.HandlerFunc(s.proxyToUpstream))
 	t.Cleanup(server.Close)
 
 	s.Server = server

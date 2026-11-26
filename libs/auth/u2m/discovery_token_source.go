@@ -29,7 +29,7 @@ func DeriveHostFromIssuer(issuer string) (string, error) {
 		return "", fmt.Errorf("parsing issuer URL %q: %w", issuer, err)
 	}
 	// Allow http for localhost (consistent with validateHost in workspace_oauth_argument.go).
-	local := u.Scheme == "http" && u.Hostname() == "127.0.0.1"
+	local := u.Scheme == "http" && (u.Hostname() == "127.0.0.1" || u.Hostname() == "::1")
 	if u.Scheme != "https" && !local {
 		return "", fmt.Errorf("issuer must use https scheme: %q", issuer)
 	}

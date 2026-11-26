@@ -239,7 +239,7 @@ func New(t testutil.TestingT) *Server {
 		router.ServeHTTP(w, r)
 	})
 
-	server := httptest.NewServer(killMiddleware)
+	server := NewLoopbackServer(t, killMiddleware)
 	t.Cleanup(server.Close)
 
 	s := &Server{

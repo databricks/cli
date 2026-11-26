@@ -1,0 +1,2 @@
+# The suggested --host is shell-quoted when the test server URL is [::1], as on DBR.
+RunsOnDbr = false
