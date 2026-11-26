@@ -346,8 +346,9 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 	}
 	if _, refused := errors.AsType[*installer.RefusedError](err); refused {
 		// The installed skills are newer than the release this CLI would
-		// install (the downgrade guard). Retrying changes nothing until a
-		// newer release, which a later version gets.
+		// install (the downgrade guard), or an agent's skills directory has a
+		// skill the user put there. Retrying changes nothing until a newer
+		// release, which a later version gets, or the user replaces it.
 		log.Debugf(ctx, "auto-install: kept the installed tools: %v", err)
 		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept}, nil
 	}
@@ -633,16 +634,6 @@ func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) 
 	if len(plan) == 0 {
 		return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeSkippedNoAgents, skipWhy: "no supported coding agent has a config directory"}, nil
 	}
-	// Without install state, Databricks skills in an agent's own directory
-	// that are not links to or copies of the skills in the global directory
-	// were put there by the user or another tool, and an install would move
-	// them to a temporary directory. The unfinished-install marker does not
-	// make them ours: the user may have added them after the install stopped.
-	if slices.ContainsFunc(plan, func(it agentPlanItem) bool {
-		return it.delivery == deliverySkills && installer.HasForeignSkillsInAgentDir(ctx, it.agent, globalDir)
-	}) {
-		return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeKept, skipWhy: "an agent's skills directory has skills without install state"}, nil
-	}
 	if !agentCLIsStoppable {
 		plan = slices.DeleteFunc(plan, func(it agentPlanItem) bool {
 			return it.delivery == deliveryPlugin && !it.cliMissing
@@ -698,7 +689,13 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 	if t.existing != nil {
 		return updateTools(ctx, t.globalDir, t.existing)
 	}
-	opts := installer.InstallOptions{Scope: installer.ScopeGlobal}
+	// A skill in an agent's own directory, named after a skill the install
+	// gives that agent, that is neither a link to nor a copy of the skill in
+	// the global directory was put there by the user or another tool, and the
+	// install would move it to a temporary directory. The unfinished-install
+	// marker does not make it ours: the user may have added it after the
+	// install stopped.
+	opts := installer.InstallOptions{Scope: installer.ScopeGlobal, KeepHandPlacedSkills: true}
 	outcomes, err := executePlan(ctx, &installer.GitHubManifestSource{}, t.plan, opts, installInvocation{scope: installer.ScopeGlobal}, true)
 	topErr := topLevelFailure(err)
 	logInstallEvent(ctx, t.plan, installOpts{Scope: opts.Scope, Trigger: protos.AitoolsInstallTriggerAutoFirstRun}, classifyInstallError(topErr), outcomes)
@@ -711,6 +708,13 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 		if o.status == outcomeInstalled {
 			names = append(names, o.agent.DisplayName)
 		}
+	}
+	// The skills are refused after the plugins were installed, so a refusal
+	// still reports the agents that got a plugin. Without them the caller
+	// reports it as kept.
+	if _, refused := errors.AsType[*installer.RefusedError](err); refused && len(names) > 0 {
+		log.Debugf(ctx, "auto-install: kept the skills: %v", err)
+		err = nil
 	}
 	return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names}, err
 }

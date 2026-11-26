@@ -57,3 +57,18 @@ my own skill
 
 >>> settled_version
 {"last_version":"1.30.0"}
+
+=== first run with the user's own skill under another name in an agent's skills directory: installs
+
+>>> [CLI] jobs list
+Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+
+>>> auto_install_outcome
+INSTALLED
+
+>>> cursor_skills
+databricks-team-conventions
+databricks-test
+
+>>> cat [TEST_TMP_DIR]/own-skill-home/.cursor/skills/databricks-team-conventions/SKILL.md
+my own skill
