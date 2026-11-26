@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -203,11 +201,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	targetResourceKey, fieldPath := splitResourcePath(path)
-	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
-
-	// Translate Terraform-style field paths to DABs naming before lookup.
-	fieldPath, err := terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
+	targetResourceKey, _, fieldPath, err := referenceTarget(path)
 	if err != nil {
 		return nil, err
 	}

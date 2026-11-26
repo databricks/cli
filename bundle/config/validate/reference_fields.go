@@ -2,11 +2,11 @@ package validate
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -38,7 +38,14 @@ func (m *referenceFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 	// them, out of the job during the build, so the plan does not resolve those references.
 	skipWheelTasks := !m.afterBuild && b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper)
 
-	found, err := direct.FindUnknownReferenceFields(&b.Config)
+	// After the build, plan and deploy have the state open: the plan includes the resources in it
+	// even when they are empty, and resolves their references.
+	var db *dstate.Database
+	if m.afterBuild && b.DeploymentBundle.StateDB.IsOpen() {
+		db = &b.DeploymentBundle.StateDB.Data
+	}
+
+	found, err := direct.FindUnknownReferenceFields(&b.Config, db)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -48,22 +55,25 @@ func (m *referenceFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 		if skipWheelTasks && isInWheelTask(f.Path) {
 			continue
 		}
-		diags = append(diags, diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("cannot resolve \"${%s}\": %s", f.Reference, f.Err),
-			Locations: f.Value.Locations(),
-			Paths:     dyn.ToStructPaths(f.Path),
-		})
+		d := diag.Errorf("cannot resolve %q: %s", "${"+f.Reference+"}", f.Err)
+		d[0].Locations = f.Value.Locations()
+		d[0].Paths = dyn.ToStructPaths(f.Path)
+		diags = append(diags, d...)
 	}
 	return diags
 }
 
-// isInWheelTask reports whether path is in the python_wheel_task or the libraries of a job task,
-// the fields the python wheel wrapper moves out of the job.
+// isInWheelTask reports whether path is in the python_wheel_task or in a wheel library of a job
+// task, the fields the python wheel wrapper moves out of the job.
 func isInWheelTask(path dyn.Path) bool {
 	if len(path) < 6 || path[0].Key() != "resources" || path[1].Key() != "jobs" || path[3].Key() != "tasks" {
 		return false
 	}
-	field := path[5].Key()
-	return field == "python_wheel_task" || field == "libraries"
+	switch path[5].Key() {
+	case "python_wheel_task":
+		return true
+	case "libraries":
+		return len(path) >= 8 && path[7].Key() == "whl"
+	}
+	return false
 }

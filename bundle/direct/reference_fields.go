@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -30,16 +31,16 @@ type UnknownReferenceField struct {
 // rejects because the field they name exists neither in the state nor in the remote type of the
 // target resource. It checks the references the plan resolves (see extractReferences) with the
 // plan's own check (checkReferenceFieldExists), so it finds only references the plan rejects too.
-// It skips what the plan leaves out or reports with another error: resources that a first deploy
-// does not plan because they are empty, targets that are not planned, unsupported resource types,
+// It skips what the plan leaves out or reports with another error: empty resources without state
+// in db (nil when the state is not read), targets that are not planned, unsupported resource types,
 // resource keys it cannot read, unparsable references and Terraform-only fields.
-func FindUnknownReferenceFields(configRoot *config.Root) ([]UnknownReferenceField, error) {
+func FindUnknownReferenceFields(configRoot *config.Root, db *dstate.Database) ([]UnknownReferenceField, error) {
 	adapters, err := dresources.InitAll(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	planned := plannedNewNodes(configRoot, adapters)
+	planned := plannedNodes(configRoot, db, adapters)
 
 	var result []UnknownReferenceField
 	for _, node := range slices.Sorted(maps.Keys(planned)) {
@@ -66,10 +67,10 @@ func FindUnknownReferenceFields(configRoot *config.Root) ([]UnknownReferenceFiel
 	return result, nil
 }
 
-// plannedNewNodes returns the plan nodes of configRoot (resources and their permissions and grants)
-// that the plan includes when they have no state yet: the ones it can read whose state is not
-// empty. With state, the plan includes the empty ones too, so this is a subset either way.
-func plannedNewNodes(configRoot *config.Root, adapters map[string]*dresources.Adapter) map[string]bool {
+// plannedNodes returns the plan nodes of configRoot (resources and their permissions and grants)
+// that the plan includes: the ones it can read whose state is not empty or that have state in db.
+// Without db it treats every node as new, a subset of what the plan includes.
+func plannedNodes(configRoot *config.Root, db *dstate.Database, adapters map[string]*dresources.Adapter) map[string]bool {
 	planned := make(map[string]bool)
 	for _, pattern := range planNodePatterns {
 		_, _ = dyn.MapByPattern(configRoot.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -91,8 +92,14 @@ func plannedNewNodes(configRoot *config.Root, adapters map[string]*dresources.Ad
 			if err != nil {
 				return v, nil
 			}
-			if empty, err := adapter.IsEmptyState(newState); err != nil || empty {
-				return v, nil
+			hasState := false
+			if db != nil {
+				_, hasState = db.State[node]
+			}
+			if !hasState {
+				if empty, err := adapter.IsEmptyState(newState); err != nil || empty {
+					return v, nil
+				}
 			}
 			planned[node] = true
 			return v, nil
@@ -112,5 +119,5 @@ func checkReference(adapters map[string]*dresources.Adapter, planned map[string]
 	if err != nil || fieldPath == nil || !planned[targetResourceKey] {
 		return nil
 	}
-	return checkReferenceFieldExists(adapters[targetGroup], targetGroup, fieldPath)
+	return checkReferenceFieldExists(adapters[targetGroup], targetGroup, fieldPath, path)
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,24 +16,15 @@ func TestFindUnknownReferenceFields(t *testing.T) {
 		want []string
 	}{
 		{
-			name: "unknown_field",
-			yaml: `
-resources:
-  volumes:
-    bar: {catalog_name: c, schema_name: s, name: bar}
-    foo: {catalog_name: "${resources.volumes.bar.non_existent}", schema_name: s, name: foo}
-`,
-			want: []string{`resources.volumes.foo.catalog_name: resources.volumes.bar.non_existent: resource type "volumes" has no field "non_existent"`},
-		},
-		{
+			// Reported once per value, with the field as written (Terraform-style "task").
 			name: "unknown_nested_field",
 			yaml: `
 resources:
   jobs:
     a: {name: a, tasks: [{task_key: t}]}
-    b: {name: "x ${resources.jobs.a.tasks[0].nope} ${resources.jobs.a.tasks[0].nope}"}
+    b: {name: "x ${resources.jobs.a.task[0].nope} ${resources.jobs.a.task[0].nope}"}
 `,
-			want: []string{`resources.jobs.b.name: resources.jobs.a.tasks[0].nope: resource type "jobs" has no field "tasks[0].nope"`},
+			want: []string{`resources.jobs.b.name: resources.jobs.a.task[0].nope: resource type "jobs" has no field "task[0].nope"`},
 		},
 		{
 			// Fields in the state or only in the remote type, the id, map keys, Terraform-style
@@ -128,7 +120,7 @@ resources:
 			root, diags := config.LoadFromBytes("databricks.yml", []byte(tc.yaml))
 			require.Empty(t, diags)
 
-			found, err := FindUnknownReferenceFields(root)
+			found, err := FindUnknownReferenceFields(root, nil)
 			require.NoError(t, err)
 			var got []string
 			for _, f := range found {
@@ -137,4 +129,24 @@ resources:
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+// With state, the plan keeps an empty node and resolves its references.
+func TestFindUnknownReferenceFieldsEmptyNodeWithState(t *testing.T) {
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(`
+resources:
+  schemas:
+    s:
+      catalog_name: main
+      name: s
+      grants: "${resources.schemas.s.non_existent}"
+`))
+	require.Empty(t, diags)
+	db := &dstate.Database{State: map[string]dstate.ResourceEntry{"resources.schemas.s.grants": {ID: "main.s"}}}
+
+	found, err := FindUnknownReferenceFields(root, db)
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+	assert.Equal(t, "resources.schemas.s.grants", found[0].Path.String())
+	assert.EqualError(t, found[0].Err, `resource type "schemas" has no field "non_existent"`)
 }
