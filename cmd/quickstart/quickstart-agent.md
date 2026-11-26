@@ -88,6 +88,7 @@ Skills give you Databricks-specific patterns so you build resources correctly in
 
 ```bash
 databricks skills list                       # the catalog: each skill with its description
+databricks skills list-files <name>          # the files a skill has, with their paths
 databricks skills read <name>                # a skill's instructions
 databricks skills read-file <name> <path>    # a supporting file that the skill lists
 ```

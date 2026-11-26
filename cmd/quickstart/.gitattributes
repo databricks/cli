@@ -3,4 +3,8 @@
 # ("---\n"), so an extra \r on Windows would leave the frontmatter unstripped.
 # Always check them out with \n so the embedded content is identical on every
 # platform.
+#
+# The variant markers (<!--skills-->, <!--aitools-->, <!--end-->) in
+# quickstart-agent.md are split by variantText, which also accepts a CRLF copy.
+# The frontmatter fence still needs LF, so this rule keeps the file LF.
 *.md text eol=lf

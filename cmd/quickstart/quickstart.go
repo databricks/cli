@@ -18,11 +18,12 @@ import (
 //go:embed quickstart-human.md
 var humanQuickstart string
 
-// agentQuickstart is the denser, agent-oriented version. It is also the
-// `databricks-quickstart` skill, so it carries skill frontmatter that
-// stripFrontmatter removes before printing. Blocks split it into two variants
-// (see variantText): the skills variant points agents at `databricks skills`,
-// the other at `databricks aitools`.
+// agentQuickstart is the denser, agent-oriented version. Its frontmatter is
+// the `databricks-quickstart` skill's, and stripFrontmatter removes it before
+// printing. The raw file has marker lines inside that frontmatter, so it is
+// not a valid SKILL.md on its own: skillFor returns the skill. Blocks split it
+// into two variants (see variantText): the skills variant points agents at
+// `databricks skills`, the other at `databricks aitools`.
 //
 //go:embed quickstart-agent.md
 var agentQuickstart string
@@ -60,9 +61,11 @@ denser, agent-oriented version instead.`
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		content := quickstartFor(cmdio.IsPromptSupported(cmd.Context()), skillsVariant)
+		var content string
 		if printSkill {
 			content = skillFor()
+		} else {
+			content = quickstartFor(cmdio.IsPromptSupported(cmd.Context()), skillsVariant)
 		}
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), content)
 		return err
@@ -89,8 +92,9 @@ func skillFor() string {
 
 // variantText keeps the variant that was asked for and drops the other one,
 // along with the marker lines. Text outside blocks is kept as it is. A marker
-// matches with a trailing \r ignored, so a CRLF checkout still splits; the
-// other lines keep their \r, which keeps the output the same as before.
+// matches with a trailing \r ignored, so a CRLF copy still splits into
+// variants. The other lines keep their \r. The frontmatter fence in
+// stripFrontmatter needs LF, which cmd/quickstart/.gitattributes ensures.
 func variantText(s string, skillsVariant bool) string {
 	var out []string
 	keep := true
