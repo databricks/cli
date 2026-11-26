@@ -25,6 +25,8 @@ assets/logo.png
 ]
 
 === read a text file: stdout holds only the file
+
+>>> [CLI] skills read-file demo-skill references/guide.md
 # Guide
 
 Read this for details.
