@@ -298,6 +298,24 @@ func TestPagerModelQuitKeysInterruptDrain(t *testing.T) {
 	}
 }
 
+// The quit waits for the terminal's answer, so a fetch in flight can land
+// after it. That page is dropped and no further fetch starts.
+func TestPagerModelDropsBatchAfterQuit(t *testing.T) {
+	m := newTestPager(t, &numberIterator{n: 100}, 5)
+	m.hasPrinted = true
+	m.fetching = true
+	m.drainAll = true
+	_, cmd := m.Update(teainput.Press("q"))
+	_, ok := runCmd(t, cmd).(tea.QuitMsg)
+	require.True(t, ok)
+
+	_, cmd = m.Update(batchMsg{lines: []string{"6", "7"}, count: 2})
+	assert.Nil(t, cmd, "a page that lands after quit is neither printed nor followed by a fetch")
+	_, cmd = m.Update(batchMsg{err: errors.New("boom")})
+	assert.Nil(t, cmd)
+	assert.NoError(t, m.err, "an error that lands after quit is dropped too")
+}
+
 func TestPagerModelIgnoresKeysAfterDone(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 0}, 5)
 	m.iterDone = true

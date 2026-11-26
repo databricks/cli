@@ -3,6 +3,7 @@ package cmdio
 import (
 	"bytes"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -130,6 +131,9 @@ func (f *fakeTerminal) queriesSeen() int {
 // away, against a terminal that answers queries late. build makes the program
 // from the options. It returns what was left unread on the program's input.
 func runQuitImmediately(t *testing.T, build func(in *os.File, opts ...tea.ProgramOption) *tea.Program) string {
+	if runtime.GOOS == "windows" {
+		t.Skip("on Windows bubbletea's input reader can outlive the program and take the bytes this reads")
+	}
 	inR, inW, err := os.Pipe()
 	require.NoError(t, err)
 	t.Cleanup(func() { inR.Close(); inW.Close() })

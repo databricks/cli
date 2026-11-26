@@ -2,8 +2,6 @@ package cmdio
 
 import (
 	"context"
-	"io"
-	"os"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
@@ -27,12 +25,8 @@ func RunHuhForm(ctx context.Context, form *huh.Form) error {
 }
 
 func huhProgramOptions(ctx context.Context) []tea.ProgramOption {
-	c, _ := ctx.Value(cmdIOKey).(*cmdIO)
-	var in io.Reader = os.Stdin
-	var errW io.Writer = os.Stderr
-	if c != nil {
-		in, errW = c.in, c.err
-	}
+	c := fromContext(ctx)
+	in, errW := c.in, c.err
 	return []tea.ProgramOption{
 		tea.WithInput(in),
 		tea.WithOutput(errW),

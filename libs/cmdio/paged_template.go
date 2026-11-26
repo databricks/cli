@@ -114,7 +114,7 @@ func renderIteratorPagedTemplateCore[T any](
 	}
 	// NewTestIO's synthetic window size, at the height that keeps v1's fallback
 	// page size of 50 rows; nil in production.
-	if c, ok := ctx.Value(cmdIOKey).(*cmdIO); ok && c.teaWindowSize != nil {
+	if c := fromContext(ctx); c.teaWindowSize != nil {
 		teaOpts = append(teaOpts, tea.WithWindowSize(c.teaWindowSize.Width, pagerFallbackPageSize+pagerViewOverhead))
 	}
 	p := NewTeaProgram(m, in, teaOpts...)

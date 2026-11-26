@@ -63,10 +63,15 @@ type pagerModel[T any] struct {
 	// the page's rows are lost or reordered. Keys wait for it.
 	printing    bool
 	quitPending bool
-	drainAll    bool
-	hasPrinted  bool
-	iterDone    bool
-	err         error
+	// quitting is set once Quit is returned. Quitting waits for the
+	// terminal's answer (see NewTeaProgram), so a fetch still in flight can
+	// land in the meantime; its page is dropped and no further fetch starts,
+	// as it was when Quit ended the program at once.
+	quitting   bool
+	drainAll   bool
+	hasPrinted bool
+	iterDone   bool
+	err        error
 }
 
 // newPagerModel wires ctx into the fetch closure so nothing on the
@@ -171,6 +176,9 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case batchMsg:
 		m.fetching = false
+		if m.quitting {
+			return m, nil
+		}
 		if msg.err != nil {
 			m.err = msg.err
 			return m, tea.Quit
@@ -195,6 +203,7 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.printing = false
 		switch {
 		case m.quitPending:
+			m.quitting = true
 			return m, tea.Quit
 		case m.drainAll && !m.iterDone && m.err == nil:
 			m.fetching = true
@@ -231,6 +240,7 @@ func (m *pagerModel[T]) quit() tea.Cmd {
 		m.quitPending = true
 		return nil
 	}
+	m.quitting = true
 	return tea.Quit
 }
 

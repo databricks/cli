@@ -79,9 +79,10 @@ so this checks the theme, not the production prompt flows.`,
 			cmdio.LogString(ctx, "answer: "+answer)
 
 			// The appkit theme is a huh.ThemeFunc, so its colours depend on the
-			// background, queried once here for the probe. The blurred button is
-			// the colour the theme picks for that background.
-			dark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+			// background, queried once here for the probe on stderr, where the
+			// form draws. The blurred button is the colour the theme picks for
+			// that background.
+			dark := lipgloss.HasDarkBackground(os.Stdin, os.Stderr)
 			cmdio.LogString(ctx, fmt.Sprintf("dark_background=%t", dark))
 			fg := theme.Theme(dark).Focused.BlurredButton.GetForeground()
 			r, g, b, _ := fg.RGBA()
