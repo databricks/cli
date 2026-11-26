@@ -42,6 +42,7 @@ API error_code: DEADLINE_EXCEEDED
 API message: Fault injected by test.
 
 Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 Exit code: 1
 

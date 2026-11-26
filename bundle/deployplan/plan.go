@@ -43,7 +43,7 @@ type Plan struct {
 }
 
 // ActionCounts summarizes a plan's actions by category. A recreate counts as
-// both a create and a delete, matching how plan and deploy report changes.
+// a create and, if the resource has a backend delete operation, a delete.
 type ActionCounts struct {
 	Create    int
 	Change    int
@@ -76,9 +76,69 @@ func (p *Plan) CountActions() ActionCounts {
 			}
 			c.Delete++
 		case Recreate:
-			// A recreate counts as both a delete and a create.
-			c.Delete++
+			if !entry.StateOnly {
+				c.Delete++
+			}
 			c.Create++
+		case Skip, Undefined:
+			c.Unchanged++
+		}
+	}
+	return c
+}
+
+// AppliedCounts reports completed operations and failed attempts.
+type AppliedCounts struct {
+	ActionCounts
+	Failed int
+}
+
+// CountApplied tallies the plan by outcome rather than by plan: a create/change/delete
+// is counted in its category only if its entry was applied successfully, an eligible
+// operation that was attempted but not applied (it errored, or a failed dependency
+// skipped it) is counted as Failed, and one Apply never reached is counted as neither.
+// Skips are unchanged regardless, since they run no backend operation; state-only deletes
+// are excluded entirely and an applied re-key is unchanged, matching CountActions. A failed
+// recreate can still count a completed deletion.
+func (p *Plan) CountApplied() AppliedCounts {
+	var c AppliedCounts
+	for _, entry := range p.Plan {
+		switch entry.Action {
+		case Create:
+			if entry.Applied {
+				c.Create++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Update, UpdateWithID, Resize:
+			switch {
+			case entry.Applied && entry.StateOnly:
+				// A re-key changes nothing in the backend.
+				c.Unchanged++
+			case entry.Applied:
+				c.Change++
+			case entry.Attempted:
+				c.Failed++
+			}
+		case Delete:
+			if entry.IsStateOnly() {
+				continue
+			}
+			if entry.Applied {
+				c.Delete++
+			} else if entry.Attempted {
+				c.Failed++
+			}
+		case Recreate:
+			// The old resource can be gone even if creating its replacement failed.
+			if entry.RecreateDeleted {
+				c.Delete++
+			}
+			if entry.Applied {
+				c.Create++
+			} else if entry.Attempted {
+				c.Failed++
+			}
 		case Skip, Undefined:
 			c.Unchanged++
 		}
@@ -148,17 +208,33 @@ type PlanEntry struct {
 	//   - an Update of an otherwise unchanged resource whose state lacks its internal ID (recorded
 	//     before the ID was, or by bind): applying it records the ID from the remote state. It is
 	//     likewise left out of the textual plan and counted as unchanged.
+	// It is also set on a Recreate of a resource that implements no DoDelete, where only the
+	// delete step is state-only: the entry still creates a resource, so it stays in the textual
+	// plan and approval prompts (see IsStateOnly) but counts no deletion.
 	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
+
+	// Attempted is set when Apply starts processing this entry (the apply graph ran and
+	// reached this node); Applied is set when its operation completes. Both
+	// are runtime-only (never serialized). Together they let the deploy/destroy summaries
+	// report what actually happened - applied, or attempted-but-failed - rather than the
+	// planned count. An entry Apply never reached (e.g. a config error bailed out before
+	// the graph ran) has neither set and is reported as neither applied nor failed.
+	Attempted bool `json:"-"`
+	Applied   bool `json:"-"`
+	// RecreateDeleted records completion of a recreate's backend delete step, even if
+	// creating the replacement subsequently fails.
+	RecreateDeleted bool `json:"-"`
 }
 
 // IsStateOnly reports whether applying this entry makes no backend call and only changes the
 // state: a delete of a resource already gone remotely (Gone) or without a delete operation, or a
-// re-key (StateOnly). Such entries are omitted from human output and need no approval.
+// re-key (StateOnly). Such entries are omitted from human output and need no approval. A
+// recreate never qualifies: it creates a resource even when its delete step is state-only.
 func (e *PlanEntry) IsStateOnly() bool {
-	return e.Gone || e.StateOnly
+	return e.Action != Recreate && (e.Gone || e.StateOnly)
 }
 
 type DependsOnEntry struct {
@@ -273,6 +349,8 @@ func (p *Plan) GetActions() []Action {
 			ActionType:  entry.Action,
 			Gone:        entry.Gone,
 			StateOnly:   entry.StateOnly,
+			Attempted:   entry.Attempted,
+			Applied:     entry.Applied,
 		})
 	}
 

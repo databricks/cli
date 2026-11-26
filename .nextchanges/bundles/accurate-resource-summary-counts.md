@@ -1,0 +1,1 @@
+* Fix bundle `deploy` and `destroy` summaries to report partial successes and resource failures, including completed deletions when replacement creation fails. ([#7006](https://github.com/databricks/cli/pull/7006))

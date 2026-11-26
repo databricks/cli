@@ -441,6 +441,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		entry.Action = action
+		if action == deployplan.Recreate && !adapter.HasDoDelete() {
+			entry.StateOnly = true
+		}
 		return true
 	})
 

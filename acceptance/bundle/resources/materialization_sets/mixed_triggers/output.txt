@@ -19,3 +19,4 @@ Created features.streamfeat
 Error: cannot create resources.materialization_sets.set1: materialization set [UUID]: operation failed: [INVALID_PARAMETER_VALUE] Batch and streaming features cannot be mixed in a single materialize_features call because they require different trigger types. Issue two separate calls: one for batch features and one for streaming features. Batch features: main.myschema.batch_[UNIQUE_NAME]. Streaming features: main.myschema.batchstream_[UNIQUE_NAME]
 
 Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 1 failed

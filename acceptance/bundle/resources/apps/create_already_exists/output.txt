@@ -38,6 +38,7 @@ API error_code: RESOURCE_ALREADY_EXISTS
 API message: An app with the same name already exists: test-app-already-exists
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 >>> [CLI] apps delete test-app-already-exists
 {

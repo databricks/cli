@@ -13,6 +13,7 @@ API error_code: ALREADY_EXISTS
 API message: Data API is already enabled for this database
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 === Bind adopts the existing Data API
 

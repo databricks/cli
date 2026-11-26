@@ -73,6 +73,7 @@ API error_code: RESOURCE_DOES_NOT_EXIST
 API message: Model version 9 of registered model main.default.model2-[UNIQUE_NAME] does not exist.
 
 Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged, 1 failed
 
 >>> print_requests.py //unity-catalog
 {
