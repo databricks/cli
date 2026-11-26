@@ -1086,32 +1086,41 @@ func detectLegacyNotebook(filePath string, body []byte) (workspace.Language, boo
 }
 
 // detectJupyterNotebook reports whether body is a valid Jupyter notebook and
-// the language the workspace gives it on import: the language in its Databricks
-// metadata, else the one in metadata.language_info.name (a notebook with only
-// language_info.name "python" is imported as a PYTHON notebook).
+// the language the workspace object reports for it. The real import reports
+// PYTHON for every Jupyter notebook, whatever its metadata says; the content
+// language is jupyterContentLanguage.
 func detectJupyterNotebook(filePath string, body []byte) (workspace.Language, bool) {
-	isNotebook, language, err := notebook.DetectBytes(filePath, body)
+	isNotebook, _, err := notebook.DetectBytes(filePath, body)
 	if err != nil || !isNotebook {
 		return "", false
 	}
-	if language != "" {
-		return language, true
-	}
+	return workspace.LanguagePython, true
+}
+
+// jupyterContentLanguage returns the language the real export uses for a
+// Jupyter notebook's content (the SOURCE comment syntax and the JUPYTER
+// language metadata): metadata.language_info.name, else the language in its
+// Databricks metadata, else Python.
+func jupyterContentLanguage(body []byte) workspace.Language {
 	var nb struct {
 		Metadata struct {
 			LanguageInfo struct {
 				Name string `json:"name"`
 			} `json:"language_info"`
+			Databricks struct {
+				Language string `json:"language"`
+			} `json:"application/vnd.databricks.v1+notebook"`
 		} `json:"metadata"`
 	}
-	// The real import stores a notebook without (known) language metadata as Python.
 	if json.Unmarshal(body, &nb) != nil {
-		return workspace.LanguagePython, true
+		return workspace.LanguagePython
 	}
-	if language := notebook.LanguageFromJupyterName(strings.ToLower(nb.Metadata.LanguageInfo.Name)); language != "" {
-		return language, true
+	for _, name := range []string{nb.Metadata.LanguageInfo.Name, nb.Metadata.Databricks.Language} {
+		if language := notebook.LanguageFromJupyterName(strings.ToLower(name)); language != "" {
+			return language
+		}
 	}
-	return workspace.LanguagePython, true
+	return workspace.LanguagePython
 }
 
 // detectAutoNotebook mirrors /workspace/import with format=AUTO, which finds the

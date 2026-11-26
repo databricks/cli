@@ -75,7 +75,7 @@ func exportObject(objectPath string, entry FileEntry, format workspace.ExportFor
 	_, isJupyter := detectJupyterNotebook(objectPath+".ipynb", entry.Data)
 	if format == workspace.ExportFormatJupyter {
 		if isJupyter {
-			return normalizeJupyter(entry.Data, entry.Info.Language), Response{}
+			return normalizeJupyter(entry.Data, jupyterContentLanguage(entry.Data)), Response{}
 		}
 		return sourceToJupyter(entry.Data, entry.Info.Language), Response{}
 	}
@@ -90,7 +90,7 @@ func exportObject(objectPath string, entry FileEntry, format workspace.ExportFor
 		return entry.Data, Response{}
 	}
 	if isJupyter {
-		if source, ok := jupyterToSource(entry.Data, entry.Info.Language); ok {
+		if source, ok := jupyterToSource(entry.Data, jupyterContentLanguage(entry.Data)); ok {
 			return source, Response{}
 		}
 		return entry.Data, Response{}
@@ -124,8 +124,9 @@ func marshalNotebook(nb any) ([]byte, error) {
 	return bytes.TrimSuffix(buf.Bytes(), []byte("\n")), nil
 }
 
-// normalizeJupyter sets language_info.name to the notebook's language, which
-// the real export reports in lower case whatever the uploaded file said.
+// normalizeJupyter sets language_info.name and the Databricks metadata language
+// to the notebook's content language, which the real export reports in lower
+// case whatever the uploaded file said.
 func normalizeJupyter(data []byte, language workspace.Language) []byte {
 	var nb map[string]any
 	dec := json.NewDecoder(bytes.NewReader(data))
@@ -143,6 +144,12 @@ func normalizeJupyter(data []byte, language workspace.Language) []byte {
 	}
 	languageInfo["name"] = jupyterLanguageName(language)
 	metadata["language_info"] = languageInfo
+	databricks, _ := metadata["application/vnd.databricks.v1+notebook"].(map[string]any)
+	if databricks == nil {
+		databricks = map[string]any{}
+	}
+	databricks["language"] = jupyterLanguageName(language)
+	metadata["application/vnd.databricks.v1+notebook"] = databricks
 	nb["metadata"] = metadata
 	out, err := marshalNotebook(nb)
 	if err != nil {

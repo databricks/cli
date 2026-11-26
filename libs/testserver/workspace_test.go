@@ -111,7 +111,8 @@ func TestWorkspaceImportDetectsNotebookExtensionCaseInsensitively(t *testing.T) 
 }
 
 // import-file turns a valid Jupyter notebook into a notebook without the .ipynb
-// extension, in the language its metadata names. Other files keep their name.
+// extension. Its object info reports PYTHON whatever the metadata says, as the
+// real API does. Other files keep their name.
 func TestWorkspaceImportFileJupyter(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
@@ -137,7 +138,7 @@ func TestWorkspaceImportFileJupyter(t *testing.T) {
 
 	sql := getStatusBody(t, server.URL, "/test-dir/sql", false)
 	assert.Equal(t, "NOTEBOOK", sql["object_type"])
-	assert.Equal(t, "SQL", sql["language"])
+	assert.Equal(t, "PYTHON", sql["language"])
 
 	for _, name := range []string{"broken.ipynb", "d.designer.ipynb", "q.lwquery.ipynb"} {
 		assert.Equal(t, "FILE", getStatusBody(t, server.URL, "/test-dir/"+name, false)["object_type"], name)
@@ -538,4 +539,59 @@ func TestWorkspaceImportNotebookKeepsExistingNotebook(t *testing.T) {
 	assert.Equal(t, 200, status)
 	_, body = workspaceExport(t, server.URL, "/d/x", "SOURCE")
 	assert.Equal(t, "# Databricks notebook source\nprint(3)", body)
+}
+
+// A Jupyter notebook's object info reports PYTHON, while its export uses the
+// content language: language_info.name, else the Databricks metadata language,
+// else Python. These pairs are what the real API returned on AWS for both
+// /workspace/import with format=JUPYTER and import-file.
+func TestWorkspaceJupyterNotebookLanguage(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	mkdirs(t, server.URL, "/d")
+
+	cases := []struct {
+		name, metadata, header, jupyterName string
+	}{
+		{"kr", `"language_info":{"name":"R"}`, "# ", "r"},
+		{"kscala", `"language_info":{"name":"scala"}`, "// ", "scala"},
+		{"ksql", `"language_info":{"name":"sql"}`, "-- ", "sql"},
+		{"kpy", `"language_info":{"name":"python"}`, "# ", "python"},
+		{"dbsql", `"application/vnd.databricks.v1+notebook":{"language":"sql"},"language_info":{"name":"python"}`, "# ", "python"},
+		{"dbscala", `"application/vnd.databricks.v1+notebook":{"language":"scala"}`, "// ", "scala"},
+	}
+	for _, tc := range cases {
+		body := `{"cells":[{"cell_type":"code","execution_count":null,"metadata":{},"outputs":[],"source":["x"]}],"metadata":{` + tc.metadata + `},"nbformat":4,"nbformat_minor":2}`
+		for _, route := range []string{"import", "import-file"} {
+			path := "/d/" + route + "-" + tc.name
+			if route == "import" {
+				status, _ := workspaceImport(t, server.URL, map[string]any{"path": path, "content": body, "format": "JUPYTER"})
+				require.Equal(t, 200, status, path)
+			} else {
+				require.Equal(t, 200, importFile(t, server.URL, path+".ipynb", body), path)
+			}
+
+			info := getStatusBody(t, server.URL, path, false)
+			assert.Equal(t, "NOTEBOOK", info["object_type"], path)
+			assert.Equal(t, "PYTHON", info["language"], path)
+
+			_, source := workspaceExport(t, server.URL, path, "SOURCE")
+			assert.Equal(t, tc.header+"Databricks notebook source\nx", source, path)
+
+			_, ipynb := workspaceExport(t, server.URL, path, "JUPYTER")
+			var nb struct {
+				Metadata struct {
+					LanguageInfo struct {
+						Name string `json:"name"`
+					} `json:"language_info"`
+					Databricks struct {
+						Language string `json:"language"`
+					} `json:"application/vnd.databricks.v1+notebook"`
+				} `json:"metadata"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(ipynb), &nb), path)
+			assert.Equal(t, tc.jupyterName, nb.Metadata.LanguageInfo.Name, path)
+			assert.Equal(t, tc.jupyterName, nb.Metadata.Databricks.Language, path)
+		}
+	}
 }

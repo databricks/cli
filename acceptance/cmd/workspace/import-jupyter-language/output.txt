@@ -1,0 +1,134 @@
+
+=== import --format JUPYTER and import-dir of the same notebooks
+
+=== import databricks-scala
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+// Databricks notebook source
+x = 1
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC # hi
+{"language_info":"scala","databricks":"scala","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import databricks-sql-kernel-python
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+x = 1
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # hi
+{"language_info":"python","databricks":"python","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import kernel-python
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+x = 1
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # hi
+{"language_info":"python","databricks":"python","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import kernel-r
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+x = 1
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # hi
+{"language_info":"r","databricks":"r","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import kernel-scala
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+// Databricks notebook source
+x = 1
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC # hi
+{"language_info":"scala","databricks":"scala","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import kernel-sql
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+-- Databricks notebook source
+x = 1
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC # hi
+{"language_info":"sql","databricks":"sql","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import-dir databricks-scala
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+// Databricks notebook source
+x = 1
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC # hi
+{"language_info":"scala","databricks":"scala","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import-dir databricks-sql-kernel-python
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+x = 1
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # hi
+{"language_info":"python","databricks":"python","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import-dir kernel-python
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+x = 1
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # hi
+{"language_info":"python","databricks":"python","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import-dir kernel-r
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+x = 1
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # hi
+{"language_info":"r","databricks":"r","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import-dir kernel-scala
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+// Databricks notebook source
+x = 1
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC # hi
+{"language_info":"scala","databricks":"scala","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
+
+=== import-dir kernel-sql
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+-- Databricks notebook source
+x = 1
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC # hi
+{"language_info":"sql","databricks":"sql","cells":[{"cell_type":"code","source":["x = 1"]},{"cell_type":"markdown","source":["# hi"]}]}
