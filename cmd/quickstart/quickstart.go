@@ -88,12 +88,14 @@ func skillFor() string {
 }
 
 // variantText keeps the variant that was asked for and drops the other one,
-// along with the marker lines. Text outside blocks is kept as it is.
+// along with the marker lines. Text outside blocks is kept as it is. A marker
+// matches with a trailing \r ignored, so a CRLF checkout still splits; the
+// other lines keep their \r, which keeps the output the same as before.
 func variantText(s string, skillsVariant bool) string {
 	var out []string
 	keep := true
 	for line := range strings.SplitSeq(s, "\n") {
-		switch line {
+		switch strings.TrimRight(line, "\r") {
 		case skillsMarker:
 			keep = skillsVariant
 		case aitoolsMarker:

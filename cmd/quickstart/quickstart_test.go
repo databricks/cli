@@ -63,6 +63,21 @@ func TestVariantText(t *testing.T) {
 	assert.Equal(t, "shared\nold\nafter", variantText(in, false))
 }
 
+func TestVariantTextAcceptsCRLFMarkers(t *testing.T) {
+	// A CRLF checkout (Git for Windows with core.autocrlf=true) leaves a \r on
+	// each marker line. The markers must still match and be dropped.
+	const in = "shared\r\n<!--skills-->\r\nnew\r\n<!--aitools-->\r\nold\r\n<!--end-->\r\nafter\r\n"
+	assert.Equal(t, "shared\r\nnew\r\nafter\r\n", variantText(in, true))
+	assert.Equal(t, "shared\r\nold\r\nafter\r\n", variantText(in, false))
+}
+
+func TestVariantTextCRLFMatchesLF(t *testing.T) {
+	crlf := strings.ReplaceAll(agentQuickstart, "\n", "\r\n")
+	for _, skillsVariant := range []bool{false, true} {
+		assert.Equal(t, strings.ReplaceAll(variantText(agentQuickstart, skillsVariant), "\n", "\r\n"), variantText(crlf, skillsVariant))
+	}
+}
+
 func TestSkillFlagRegisteredOnlyWhenSkillsEnabled(t *testing.T) {
 	cases := []struct {
 		name  string
