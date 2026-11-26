@@ -34,6 +34,23 @@ func TestGetKnownHostsPathOverrideRelocatesTheDirectoryOnly(t *testing.T) {
 	assert.Equal(t, filepath.Join("/home/me", ".ssh", "databricks-cpu-6e7644d0"), path)
 }
 
+func TestGetServerKnownHostsPath(t *testing.T) {
+	dir := filepath.Join("/home/me", "known-hosts")
+	pathA, err := GetServerKnownHostsPath(t.Context(), "session1", "SHA256:abc+/../d", dir)
+	require.NoError(t, err)
+	pathB, err := GetServerKnownHostsPath(t.Context(), "session1", "SHA256:other", dir)
+	require.NoError(t, err)
+	again, err := GetServerKnownHostsPath(t.Context(), "session1", "SHA256:abc+/../d", dir)
+	require.NoError(t, err)
+
+	// Each server of the session has a file of its own next to the session's file, whatever
+	// characters its fingerprint holds.
+	assert.Equal(t, dir, filepath.Dir(pathA))
+	assert.Regexp(t, `^session1\.[0-9a-f]{16}$`, filepath.Base(pathA))
+	assert.NotEqual(t, pathA, pathB)
+	assert.Equal(t, pathA, again)
+}
+
 func TestPinHostKey(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "known-hosts", "myhost")
 

@@ -100,6 +100,25 @@ func (s *FakeWorkspace) ensureSSHTunnelHostKey() ([]byte, error) {
 	return s.sshTunnelHostKeyPEM, nil
 }
 
+// sshTunnelHostKeyFingerprint returns the SHA256 fingerprint of the workspace's tunnel host
+// key, which the real server writes to metadata.json. Callers must hold the workspace lock.
+func (s *FakeWorkspace) sshTunnelHostKeyFingerprint() (string, error) {
+	if _, err := s.ensureSSHTunnelHostKey(); err != nil {
+		return "", err
+	}
+	return sshPublicKeyFingerprint(s.sshTunnelHostPublicKey)
+}
+
+// sshPublicKeyFingerprint returns the SHA256 fingerprint of an authorized_keys public key, as
+// the real server writes it to metadata.json.
+func sshPublicKeyFingerprint(publicKey []byte) (string, error) {
+	parsed, _, _, _, err := ssh.ParseAuthorizedKey(publicKey)
+	if err != nil {
+		return "", err
+	}
+	return ssh.FingerprintSHA256(parsed), nil
+}
+
 // sshTunnelHandler stands in for a cluster's tunnel server: it upgrades /ssh to a
 // websocket and drives a real `sshd -i` over it, so `ssh connect` runs a full handshake,
 // auth, and remote exec locally. Requires sshd; the acceptance test skips when it's absent

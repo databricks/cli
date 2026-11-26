@@ -132,8 +132,9 @@ func prepareSSHDConfigWithClientKey(t *testing.T, clientPublicKey string) (strin
 		ServerPublicKeyName:     "server-public-key",
 		AuthorizedKeySecretName: "client-public-key",
 	}
-	_, err = prepareSSHDConfig(ctx, client, opts)
-	return filepath.Join(home, opts.ConfigDir), err
+	const port = 7772
+	_, _, _, err = prepareSSHDConfig(ctx, client, opts, port)
+	return filepath.Join(home, opts.ConfigDir, strconv.Itoa(port)), err
 }
 
 func TestPrepareSSHDConfigWritesCanonicalAuthorizedKey(t *testing.T) {

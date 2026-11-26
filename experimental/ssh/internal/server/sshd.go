@@ -31,47 +31,57 @@ import (
 // client has gone away after ~90s instead of holding it open until the server's shutdown delay.
 const clientAliveIntervalSeconds = 30
 
-func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
+// prepareSSHDConfig publishes a new host key to the secret scope and writes the sshd
+// configuration for the server listening on port. It returns the configuration path, the
+// host public key, and the client public key sshd authorizes.
+func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions, port int) (string, []byte, []byte, error) {
 	clientPublicKey, err := keys.GetAuthorizedKey(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
 	if err != nil {
-		return "", fmt.Errorf("failed to get client public key: %w", err)
+		return "", nil, nil, fmt.Errorf("failed to get client public key: %w", err)
 	}
 
 	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
+		return "", nil, nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
-	sshDir := path.Join(homeDir, opts.ConfigDir)
+	// Each server has a directory of its own: sshd reads its configuration and host key from
+	// here for every connection, and a server started alongside this one on the same compute
+	// shares the home directory but publishes a different host key.
+	sshDir := path.Join(homeDir, opts.ConfigDir, strconv.Itoa(port))
 
 	err = os.RemoveAll(sshDir)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return "", fmt.Errorf("failed to remove existing SSH directory: %w", err)
+		return "", nil, nil, fmt.Errorf("failed to remove existing SSH directory: %w", err)
 	}
 
 	err = os.MkdirAll(sshDir, 0o700)
 	if err != nil {
-		return "", fmt.Errorf("failed to create SSH directory: %w", err)
+		return "", nil, nil, fmt.Errorf("failed to create SSH directory: %w", err)
 	}
 
-	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, opts.SecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
+	// Every server start generates a new host key; the scope's previous contents are not
+	// read. Run writes metadata.json, which names this key, only after this returns, and
+	// clients pin the scope's key only when it is the one metadata.json names, so a key that
+	// a server started alongside this one wrote over it is never pinned for this server.
+	privateKeyBytes, publicKeyBytes, err := keys.GenerateSSHKeyPairToSecrets(ctx, client, opts.SecretScopeName, opts.ServerPrivateKeyName, opts.ServerPublicKeyName)
 	if err != nil {
-		return "", fmt.Errorf("failed to get SSH key pair from secrets: %w", err)
+		return "", nil, nil, fmt.Errorf("failed to store a new SSH host key pair in secrets: %w", err)
 	}
 
 	keyPath := filepath.Join(sshDir, "keys", opts.ServerPrivateKeyName)
 	if err := keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
-		return "", fmt.Errorf("failed to save SSH key pair: %w", err)
+		return "", nil, nil, fmt.Errorf("failed to save SSH key pair: %w", err)
 	}
 
 	sshdConfig := filepath.Join(sshDir, "sshd_config")
 	authKeysPath := filepath.Join(sshDir, "authorized_keys")
 	if err := os.WriteFile(authKeysPath, clientPublicKey, 0o600); err != nil {
-		return "", err
+		return "", nil, nil, err
 	}
 
 	setEnv := sshdSetEnv(os.Environ(), homeDir, opts)
 	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent(keyPath, authKeysPath, setEnv)), 0o600); err != nil {
-		return "", err
+		return "", nil, nil, err
 	}
 
 	if err := os.MkdirAll("/run/sshd", 0o755); err != nil {
@@ -80,7 +90,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		log.Warn(ctx, "Failed to create /run/sshd directory, SSHD may not work properly")
 	}
 
-	return sshdConfig, nil
+	return sshdConfig, publicKeyBytes, clientPublicKey, nil
 }
 
 // sshdConfigContent assembles the configuration the tunnel's sshd runs with.

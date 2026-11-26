@@ -1,0 +1,21 @@
+Cloud = false
+
+# Record requests so we can assert which key secrets the CLI reads and writes, and when.
+RecordRequests = true
+
+# Local runs stage stand-in release archives and the pre-existing key pairs here, and the CLI
+# pins the server's host key under known-hosts; none of it is golden output.
+Ignore = [
+  "releases",
+  "known-hosts",
+  "pre-existing-client",
+  "pre-existing-client.pub",
+  "pre-existing-server",
+  "pre-existing-server.pub",
+]
+
+# Linux-only: the local run drives a real sshd, reliable only there. Absent GOOS
+# keys default to enabled, so the other OSes must be disabled explicitly.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false

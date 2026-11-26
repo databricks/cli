@@ -27,6 +27,15 @@ type WorkspaceMetadata struct {
 	// reconnect can tell whether a running server honours the requested mode. False, and so
 	// absent, when the session did not ask for it.
 	KeepDetachedProcesses bool `json:"keep_detached_processes,omitempty"`
+	// HostKeyFingerprint is the SHA256 fingerprint of the host key the server published to the
+	// secret scope before it wrote this file. A server started alongside it replaces the scope's
+	// key and this file in separate writes, so clients compare the two before pinning the key.
+	HostKeyFingerprint string `json:"host_key_fingerprint"`
+	// ClientKeyFingerprint is the SHA256 fingerprint of the client public key the server read
+	// from the secret scope and authorized. Servers started alongside each other write the
+	// scope's client key pair in turn, so clients check the scope's pair against it before
+	// using the server.
+	ClientKeyFingerprint string `json:"client_key_fingerprint"`
 }
 
 // GetWorkspaceHomeDir returns the current user's workspace home folder.

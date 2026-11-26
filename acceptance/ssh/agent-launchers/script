@@ -25,9 +25,12 @@ env -i HOME="$SERVER_HOME" PATH=/usr/bin:/bin DATABRICKS_HOST="$DATABRICKS_HOST"
   $CLI ssh server --serverless --cluster=test-cluster --session-id=test-session --secret-scope-name=ssh-scope \
   --authorized-key-secret-name=client-public-key --shutdown-delay=1s 2>LOG.server
 
+# The server keeps its sshd config in a directory named after the port it listens on.
+SSHD_CONFIG="$(ls "$SERVER_HOME"/.ssh-tunnel/*/sshd_config)"
+
 # One variable per line; no value here contains a space.
 title "SetEnv appends the launcher directory to PATH"
-grep '^SetEnv ' server-home/.ssh-tunnel/sshd_config | tr ' ' '\n'
+grep '^SetEnv ' "$SSHD_CONFIG" | tr ' ' '\n'
 
 title "Each supported agent has a launcher that delegates to the agent shim"
 trace ls server-home/.agent-shim/bin
@@ -38,7 +41,7 @@ trace cat server-home/.agent-shim/bin/claude
 title "A non-interactive session finds the launchers on PATH"
 ssh -F /dev/null -i client_key -l "$(id -un)" \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
-  -o ProxyCommand="$SSHD -i -f $SERVER_HOME/.ssh-tunnel/sshd_config -o StrictModes=no" \
+  -o ProxyCommand="$SSHD -i -f $SSHD_CONFIG -o StrictModes=no" \
   localhost 'echo "$PATH"; command -v claude codex'
 
 # Dedicated clusters get the same launchers and PATH entry as serverless.
@@ -49,13 +52,15 @@ env -i HOME="$SERVER_HOME" PATH=/usr/bin:/bin DATABRICKS_HOST="$DATABRICKS_HOST"
   $CLI ssh server --cluster=test-cluster --session-id=test-session --secret-scope-name=ssh-scope \
   --authorized-key-secret-name=client-public-key --shutdown-delay=1s 2>LOG.dedicated-server
 
+SSHD_CONFIG="$(ls "$SERVER_HOME"/.ssh-tunnel/*/sshd_config)"
+
 title "SetEnv appends the launcher directory to PATH"
-grep '^SetEnv ' server-home/.ssh-tunnel/sshd_config | tr ' ' '\n' | grep '^PATH='
+grep '^SetEnv ' "$SSHD_CONFIG" | tr ' ' '\n' | grep '^PATH='
 
 trace ls server-home/.agent-shim/bin
 
 title "A non-interactive session finds the launchers on PATH"
 ssh -F /dev/null -i client_key -l "$(id -un)" \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR \
-  -o ProxyCommand="$SSHD -i -f $SERVER_HOME/.ssh-tunnel/sshd_config -o StrictModes=no" \
+  -o ProxyCommand="$SSHD -i -f $SSHD_CONFIG -o StrictModes=no" \
   localhost 'command -v claude codex'

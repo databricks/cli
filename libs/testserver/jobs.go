@@ -708,10 +708,24 @@ func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 		if t.NotebookTask == nil {
 			continue
 		}
+		// Like the real server, publish the host key first and name it in metadata.json,
+		// together with the client key it authorizes.
+		scope := t.NotebookTask.BaseParameters["secretScopeName"]
+		s.publishSSHTunnelHostKey(scope)
+		hostKeyFingerprint, err := s.sshTunnelHostKeyFingerprint()
+		if err != nil {
+			continue
+		}
+		clientKeyFingerprint, err := sshPublicKeyFingerprint([]byte(s.Secrets[scope][sshClientPublicKeySecretKey]))
+		if err != nil {
+			continue
+		}
 		metadataPath := strings.TrimSuffix(t.NotebookTask.NotebookPath, sshTunnelBootstrapNotebook) + "metadata.json"
 		metadata, err := json.Marshal(map[string]any{
-			"port":       sshTunnelServerPort,
-			"cluster_id": sshTunnelClusterID,
+			"port":                   sshTunnelServerPort,
+			"cluster_id":             sshTunnelClusterID,
+			"host_key_fingerprint":   hostKeyFingerprint,
+			"client_key_fingerprint": clientKeyFingerprint,
 		})
 		if err != nil {
 			continue
@@ -720,7 +734,6 @@ func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 			Info: workspace.ObjectInfo{ObjectType: "FILE", Path: metadataPath},
 			Data: metadata,
 		}
-		s.publishSSHTunnelHostKey(t.NotebookTask.BaseParameters["secretScopeName"])
 	}
 }
 

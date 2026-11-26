@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/agentlauncher"
+	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/env"
@@ -73,13 +74,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 
 	startFuseRegistration(ctx, client, opts.Serverless)
 
-	port, err := findAvailablePort(opts.DefaultPort, opts.PortRange)
+	// Hold the listener from here on, so the port this server writes to metadata.json stays
+	// its own. It is served only once the host key and metadata.json are published.
+	listener, port, err := listenOnAvailablePort(opts.DefaultPort, opts.PortRange)
 	if err != nil {
 		return fmt.Errorf("failed to find available port: %w", err)
 	}
+	defer listener.Close()
 
-	listenAddr := fmt.Sprintf("0.0.0.0:%d", port)
-	log.Info(ctx, "Starting server on "+listenAddr)
+	log.Info(ctx, "Starting server on "+listener.Addr().String())
 
 	// Resolved once and shared by the metadata write and the agent launchers.
 	wsHome, err := workspace.GetWorkspaceHomeDir(ctx, client)
@@ -87,21 +90,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to resolve the workspace home directory: %w", err)
 	}
 
-	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
-	metadata := &workspace.WorkspaceMetadata{
-		Port:                  port,
-		ClusterID:             opts.ClusterID,
-		UsagePolicyID:         opts.UsagePolicyID,
-		KeepDetachedProcesses: opts.KeepDetachedProcesses,
-	}
-	err = workspace.SaveWorkspaceMetadata(ctx, client, wsHome, opts.Version, opts.SessionID, metadata)
+	sshdConfigPath, err := publishHostKeyAndMetadata(ctx, client, wsHome, opts, port)
 	if err != nil {
-		return fmt.Errorf("failed to save metadata to the workspace: %w", err)
-	}
-
-	sshdConfigPath, err := prepareSSHDConfig(ctx, client, opts)
-	if err != nil {
-		return fmt.Errorf("failed to setup SSH configuration: %w", err)
+		return err
 	}
 
 	err = saveJupyterInitScript(ctx)
@@ -138,7 +129,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 
 	listenErr := make(chan error, 1)
 	go func() {
-		listenErr <- http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		listenErr <- http.Serve(listener, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
 			r.URL.Path = path.Clean(r.URL.Path)
 			http.DefaultServeMux.ServeHTTP(w, r)
@@ -163,6 +154,44 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		reportDetachedDescendants(ctx, opts, procRoot, os.Getpid())
 		return nil
 	}
+}
+
+// publishHostKeyAndMetadata publishes this server's new host key, prepares sshd to serve it,
+// and then writes metadata.json, which names the port, the key, and the client key sshd
+// authorizes. It returns the sshd configuration path.
+//
+// Another server started for the same session (on another port, or on other compute)
+// replaces the scope's keys and metadata.json in separate writes, so they can describe
+// different servers. Naming both keys in metadata.json lets clients use the scope's host key
+// and client key pair only when they belong to the server metadata.json names.
+func publishHostKeyAndMetadata(ctx context.Context, client *databricks.WorkspaceClient, wsHome string, opts ServerOptions, port int) (string, error) {
+	sshdConfigPath, hostPublicKey, clientPublicKey, err := prepareSSHDConfig(ctx, client, opts, port)
+	if err != nil {
+		return "", fmt.Errorf("failed to setup SSH configuration: %w", err)
+	}
+	hostKeyFingerprint, err := keys.PublicKeyFingerprint(hostPublicKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to fingerprint the SSH host key: %w", err)
+	}
+	clientKeyFingerprint, err := keys.PublicKeyFingerprint(clientPublicKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to fingerprint the SSH client public key: %w", err)
+	}
+
+	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
+	metadata := &workspace.WorkspaceMetadata{
+		Port:                  port,
+		ClusterID:             opts.ClusterID,
+		UsagePolicyID:         opts.UsagePolicyID,
+		KeepDetachedProcesses: opts.KeepDetachedProcesses,
+		HostKeyFingerprint:    hostKeyFingerprint,
+		ClientKeyFingerprint:  clientKeyFingerprint,
+	}
+	err = workspace.SaveWorkspaceMetadata(ctx, client, wsHome, opts.Version, opts.SessionID, metadata)
+	if err != nil {
+		return "", fmt.Errorf("failed to save metadata to the workspace: %w", err)
+	}
+	return sshdConfigPath, nil
 }
 
 // reportDetachedDescendants records what the session leaves behind when the server shuts
@@ -220,18 +249,17 @@ func serveMetadata(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func findAvailablePort(startPort, maxAttempts int) (int, error) {
+// listenOnAvailablePort listens on the first free port of the maxAttempts ports from
+// startPort and returns the listener with its port.
+func listenOnAvailablePort(startPort, maxAttempts int) (net.Listener, int, error) {
 	for i := range maxAttempts {
 		port := startPort + i
-		addr := fmt.Sprintf(":%d", port)
-
-		listener, err := net.Listen("tcp", addr)
+		listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", port))
 		if err == nil {
-			listener.Close()
-			return port, nil
+			return listener, port, nil
 		}
 	}
-	return 0, fmt.Errorf("no available port found after %d attempts starting from port %d", maxAttempts, startPort)
+	return nil, 0, fmt.Errorf("no available port found after %d attempts starting from port %d", maxAttempts, startPort)
 }
 
 func saveJupyterInitScript(ctx context.Context) error {

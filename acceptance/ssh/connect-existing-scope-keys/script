@@ -1,0 +1,64 @@
+# The session's secret scope already exists, its only ACL entry is the connecting user's
+# MANAGE, and it already holds a client key pair, whose public half carries an
+# authorized_keys command option, and a server host key pair. Starting a new server does not
+# read any of it: the client writes a new key pair before submitting the job, and the session
+# authenticates with that pair.
+#
+# The test server backs the /ssh websocket with a real sshd that authorizes the client
+# public key found in the scope, so if the pre-existing pair were still in use, the session
+# would either run its command option or fail authentication. Skip when sshd is absent.
+if [ -z "$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 2>/dev/null)" ]; then
+  echo "SKIP_TEST sshd (openssh-server) not installed"
+  exit 0
+fi
+
+# No release artifacts locally and they're never executed; stand in placeholder archives.
+mkdir -p releases
+fake_release releases/databricks_cli_linux_amd64.zip
+fake_release releases/databricks_cli_linux_arm64.zip
+CLI_RELEASES_DIR="$PWD/releases"
+
+SCOPE="$CURRENT_USER_NAME-existing-keys-ssh-tunnel-keys"
+ssh-keygen -q -t ed25519 -N '' -C pre-existing -f pre-existing-client
+ssh-keygen -q -t ed25519 -N '' -C pre-existing -f pre-existing-server
+
+title "Pre-populate the session's scope with a key pair"
+trace $CLI secrets create-scope "$SCOPE"
+trace $CLI secrets list-acls "$SCOPE"
+$CLI secrets put-secret "$SCOPE" client-private-key --string-value "$(cat pre-existing-client)"$'\n'
+$CLI secrets put-secret "$SCOPE" client-public-key --string-value "command=\"echo pre-existing key command\" $(cat pre-existing-client.pub)"
+$CLI secrets put-secret "$SCOPE" server-private-key --string-value "$(cat pre-existing-server)"$'\n'
+$CLI secrets put-secret "$SCOPE" server-public-key --string-value "$(cat pre-existing-server.pub)"
+print_requests.py //api/2.0/secrets >LOG.setup-requests
+
+# The remote command's output is the assertion that the session authenticated with a key
+# that carries no command option: with the pre-existing pair it would print "pre-existing
+# key command" instead. The tunnel's progress messages go to stderr.
+title "Connect starts a new server"
+errcode $CLI ssh connect --name existing-keys --releases-dir=$CLI_RELEASES_DIR --known-hosts-dir=known-hosts -- "echo 'Connection successful'" >out.connect.txt 2>LOG.connect
+
+# Both client secrets are overwritten before the job is submitted, and the pre-existing
+# client key is not read before that. After the submission, connect reads the pair back once
+# the new server is up, to check it is the one that server authorized, and saves it in a key
+# file of that server's. The ProxyCommand that the spawned ssh runs reuses the server with the
+# pair in that file, so it reads only the host key.
+title "Key secrets the CLI read and wrote, in order"
+jq -r 'select(.path == "/api/2.0/secrets/get" or .path == "/api/2.0/secrets/put" or .path == "/api/2.2/jobs/runs/submit")
+  | [.method, .path, (.q.key // .body.key // empty)] | join(" ")' "$OUT_REQUESTS"
+
+title "The pre-existing keys are not in use"
+client_public_key=$(awk '{print $2}' pre-existing-client.pub)
+server_public_key=$(awk '{print $2}' pre-existing-server.pub)
+$CLI secrets get-secret "$SCOPE" client-public-key | jq -r .value | base64 -d >LOG.scope-client-public-key
+if grep -q "$client_public_key" LOG.scope-client-public-key "$HOME"/.databricks/ssh-tunnel-keys/existing-keys*.pub; then
+  echo "pre-existing client key still in use"
+else
+  echo "pre-existing client key replaced in the scope and locally"
+fi
+# The test server stands in for the tunnel server and publishes its own host key when the
+# job is submitted; the real server's overwrite is covered by the server package's tests.
+if grep -q "$server_public_key" known-hosts/existing-keys.*; then
+  echo "pre-existing host key pinned"
+else
+  echo "pre-existing host key not pinned"
+fi

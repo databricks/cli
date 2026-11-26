@@ -48,11 +48,13 @@ databricks ssh connect --cluster=id
 name reuses the SSH server still running under it, and starts a new one on the same name once
 the previous server has shut down (`--shutdown-delay` after its last client disconnects).
 
-Both cases verify the server's host key. The server generates the key on first use, keeps it in
-the connection's secret scope in the workspace and reuses it for every `sshd` it launches, so
-the workspace is the authority on the key. The client reads it from there and pins it in
-`~/.databricks/ssh-tunnel-known-hosts/<name>` before each connection, and points ssh at that
-file with `StrictHostKeyChecking yes`. Tunnel host keys therefore never land in
+Both cases verify the server's host key. Each new server generates a new key when it starts,
+stores it in the connection's secret scope in the workspace and uses it for every `sshd` it
+launches, so the workspace is the authority on the key. The client reads it from there and
+pins it before each connection in a file of that server's,
+`~/.databricks/ssh-tunnel-known-hosts/<name>.<digest of the key's fingerprint>` (in
+`~/.databricks/ssh-tunnel-known-hosts/<name>` for the configuration `databricks ssh setup`
+writes), and points ssh at that file with `StrictHostKeyChecking yes`. Tunnel host keys therefore never land in
 `~/.ssh/known_hosts`, where a name - unique only within one workspace - would collide with an
 entry left by other compute.
 
@@ -169,7 +171,7 @@ flowchart TD
     n1 -. "3 - start an ssh server job" .-> n3
     n3 -. "4 - start ssh server" .-> n4
     n4 -. "5 - read the client public key and store the host key" .-> n13
-    n4 -. "6 - publish the ssh server port number" .-> n11
+    n4 -. "6 - publish the ssh server port number and host key fingerprint" .-> n11
     n1 -. "7 - get the ssh server port number" .-> n11
     n1 <-. "8 - websocket connection" .-> n2
     n2 <-. "9 - websocket connection" .-> n4
@@ -179,8 +181,37 @@ flowchart TD
 ```
 
 The client public key reaches the server through a secret scope rather than through the
-bootstrap notebook, and the server host key is persisted in the same scope so its fingerprint
-survives a restart - which is what makes `StrictHostKeyChecking accept-new` safe here.
+bootstrap notebook, and the server host key is published in the same scope, where the client
+reads it to pin it. Each server start uses its own keys, without reading what the scope held
+before: the client writes its key pair before it submits the job, and the server writes a new
+host key before it starts accepting connections. A client that reuses a running server reads
+the keys that server was started with. The client pair is also written in two requests, so two
+clients starting servers at the same time can leave halves of different pairs in the scope, or
+one server's pair while the other server runs. The server records the fingerprint of the client
+key it authorized in `metadata.json`; a client that finds a pair in the scope without that
+fingerprint replaces the running server, which it could not authenticate to, or, while waiting
+for a server it started, waits for one it can authenticate to.
+
+The server writes its host key to the scope before it writes `metadata.json`, and records the
+key's fingerprint there. Two servers started for one session at the same time each write both,
+in separate requests, so the scope can end up with one server's key while `metadata.json` names
+the other. The client pins the scope's key only when it matches the fingerprint in
+`metadata.json`. Otherwise it treats the server as not running, and waits for one or starts one.
+The ProxyCommand that a connection writes carries the fingerprint of the key it pinned, and
+re-pins the scope's key only while it has that fingerprint. The file it pins in is named after
+that fingerprint, so a connection to another server of the session never rewrites it.
+The same goes for the client key: a connection saves the pair the server authorized in
+`~/.databricks/ssh-tunnel-keys/<name>.<digest of the client key's fingerprint>`, points ssh at
+that file, and has its ProxyCommand carry the fingerprint. The ProxyCommand uses the pair in that
+file, or the scope's pair while it has that fingerprint, and otherwise treats the server as
+unusable, the way a connection without that ProxyCommand does.
+Each server keeps its sshd config and host key in a directory named after its port, so two
+servers on the same compute don't serve each other's key.
+
+A known limitation: when two servers are started for one session at the same moment, the scope
+can end up with the host key of one server while `metadata.json` describes the other. Clients
+then refuse to connect and keep waiting until the wait for the server times out. Running
+`databricks ssh connect` again starts a new server and recovers.
 
 Connection flow:
 ```mermaid
@@ -200,22 +231,23 @@ sequenceDiagram
   Note over P1,P6: Try to get a port and a remote user name of an existing server.<br/>$v is the databricks CLI version. $s is the session id:<br/>the cluster id, or the --name value for serverless.
   activate P1
   P1 ->> P4: GET /Workspace/Users/$me/.databricks/ssh-tunnel/$v/$s/metadata.json
-  P4 -->> P1: {port, cluster_id, usage_policy_id} or error
+  P4 -->> P1: {port, cluster_id, usage_policy_id, host_key_fingerprint,<br/>client_key_fingerprint} or error
   P1 ->> P6: GET /driver-proxy-api/o/$workspaceId/$cluster/$port/metadata
   P6 -->> P1: the OS user the server runs as - root - or error
-  Note over P1,P6: Start a new server if either step failed, or if the<br/>running one was started under a different usage policy.
+  P1 ->> P5: read the server host key and the client key pair
+  Note over P1,P6: Start a new server if any step failed, if the host key does not<br/>match host_key_fingerprint, if the client key pair does not match<br/>client_key_fingerprint, or if the running one was started<br/>under a different usage policy.
   opt
-    P1 ->> P5: create scope $me-$s-ssh-tunnel-keys,<br/>generate and store the client key pair unless already there
+    P1 ->> P5: create scope $me-$s-ssh-tunnel-keys,<br/>store a new client key pair (in proxy mode, the local one)
     P1 -->> P4: PUT ssh-tunnel/$v/$cliName/databricks, unless it's already there
     P1 ->> P4: PUT ssh-tunnel/$v/$s/ssh-server-bootstrap
     P1 ->> P6: jobs/runs/submit ssh-server-bootstrap $cluster
     activate P6
     P6 ->> P6: pick a free port, starting at 7772
-    P6 ->> P4: PUT ssh-tunnel/$v/$s/metadata.json<br/>{port, cluster_id, usage_policy_id}
-    P6 ->> P5: read the client public key,<br/>generate and store the server host key unless already there
+    P6 ->> P5: read the client public key,<br/>generate and store a new server host key
+    P6 ->> P4: PUT ssh-tunnel/$v/$s/metadata.json<br/>{port, cluster_id, usage_policy_id, host_key_fingerprint,<br/>client_key_fingerprint}
     P6 ->> P6: write authorized_keys and a custom sshd config<br/>start self-kill-timeout<br/>listen for /ssh, /metadata and /logs
     loop until successful or timed out - 30 attempts, 2s apart
-      P1 -> P6: Get port and remote user name of the server (sequence 1 - 4 above)
+      P1 -> P6: Get port and remote user name of the server (sequence 1 - 5 above)
     end
   end
   Note over P1,P7: We know the port and the user, spawn "ssh"

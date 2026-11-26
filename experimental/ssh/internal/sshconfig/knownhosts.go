@@ -2,6 +2,8 @@ package sshconfig
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,6 +35,24 @@ func GetKnownHostsPath(ctx context.Context, sessionID, knownHostsDir string) (st
 		knownHostsDir = filepath.Join(homeDir, ".databricks", "ssh-tunnel-known-hosts")
 	}
 	return filepath.Join(knownHostsDir, sessionID), nil
+}
+
+// GetServerKnownHostsPath returns the known_hosts file the CLI maintains for one server of a
+// session, the one whose host key has hostKeyFingerprint. It sits next to the session's file
+// (see GetKnownHostsPath), named after the session and a digest of the fingerprint; session
+// IDs contain no dot, so it cannot be another session's file.
+//
+// Servers started for a session at the same time each publish a key of their own, and a
+// connection to one of them must not find the other's key in the file it reads. The file
+// holds only the key with hostKeyFingerprint, so a connect to another server of the session
+// never rewrites it.
+func GetServerKnownHostsPath(ctx context.Context, sessionID, hostKeyFingerprint, knownHostsDir string) (string, error) {
+	sessionPath, err := GetKnownHostsPath(ctx, sessionID, knownHostsDir)
+	if err != nil {
+		return "", err
+	}
+	digest := sha256.Sum256([]byte(hostKeyFingerprint))
+	return sessionPath + "." + hex.EncodeToString(digest[:8]), nil
 }
 
 // PinHostKey makes publicKey the entry for hostName in the known_hosts file at path,

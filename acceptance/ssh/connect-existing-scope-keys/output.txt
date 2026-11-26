@@ -1,0 +1,27 @@
+
+=== Pre-populate the session's scope with a key pair
+
+>>> [CLI] secrets create-scope [USERNAME]-existing-keys-ssh-tunnel-keys
+
+>>> [CLI] secrets list-acls [USERNAME]-existing-keys-ssh-tunnel-keys
+[
+  {
+    "permission": "MANAGE",
+    "principal": "[USERNAME]"
+  }
+]
+
+=== Connect starts a new server
+
+=== Key secrets the CLI read and wrote, in order
+POST /api/2.0/secrets/put client-private-key
+POST /api/2.0/secrets/put client-public-key
+POST /api/2.2/jobs/runs/submit
+GET /api/2.0/secrets/get server-public-key
+GET /api/2.0/secrets/get client-private-key
+GET /api/2.0/secrets/get client-public-key
+GET /api/2.0/secrets/get server-public-key
+
+=== The pre-existing keys are not in use
+pre-existing client key replaced in the scope and locally
+pre-existing host key not pinned

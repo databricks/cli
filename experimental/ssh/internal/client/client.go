@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"crypto/md5"
@@ -11,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -61,6 +63,14 @@ var errPortForwardingDisabled = errors.New("port forwarding to serverless comput
 // server that is still starting produces too, retrying cannot change it: the workspace forbids the
 // connection, e.g. because an administrator disabled port forwarding to serverless compute.
 var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
+
+// errClientKeyPair marks a failure to set up the client key pair, so Run can attribute it
+// even when it happens while ensuring the server is running.
+var errClientKeyPair = errors.New("failed to set up the SSH client key pair")
+
+// errClientKeysNotAuthorized marks a client key pair in the secret scope that the running
+// server does not accept: torn, or the pair another server started for the session wrote.
+var errClientKeysNotAuthorized = errors.New("the client key pair in the secret scope is not the one the SSH server authorized")
 
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
@@ -273,16 +283,47 @@ func (o *ClientOptions) SessionIdentifier() string {
 	return o.ClusterID
 }
 
-// FormatMetadata formats the server metadata string for use in ProxyCommand.
+// FormatMetadata formats the server metadata string for use in ProxyCommand. The host key
+// fingerprint names the key of the server on serverPort, so the ProxyCommand pins the scope's
+// host key only while it is that server's (see namedServerHostKey). The client key fingerprint
+// names the client key that server authorized, so the ProxyCommand uses only that key (see
+// namedServerClientKeys).
 // Returns empty string if userName is empty or serverPort is zero.
-func FormatMetadata(userName string, serverPort int, clusterID string) string {
+func FormatMetadata(userName string, serverPort int, clusterID, hostKeyFingerprint, clientKeyFingerprint string) string {
 	if userName == "" || serverPort == 0 {
 		return ""
 	}
-	if clusterID != "" {
-		return fmt.Sprintf("%s,%d,%s", userName, serverPort, clusterID)
+	return fmt.Sprintf("%s,%d,%s,%s,%s", userName, serverPort, clusterID, hostKeyFingerprint, clientKeyFingerprint)
+}
+
+// parseServerMetadata parses the --metadata value FormatMetadata wrote:
+// "<user_name>,<port>,<cluster_id>,<host_key_fingerprint>,<client_key_fingerprint>". A
+// ProxyCommand written by an earlier CLI version has only the first two, three or four fields.
+// defaultClusterID is used when the value names no cluster.
+func parseServerMetadata(serverMetadata, defaultClusterID string) (userName string, port int, clusterID, hostKeyFingerprint, clientKeyFingerprint string, err error) {
+	metadata := strings.Split(serverMetadata, ",")
+	if len(metadata) < 2 {
+		return "", 0, "", "", "", fmt.Errorf("invalid metadata: %s, expected format: <user_name>,<port>[,<cluster_id>[,<host_key_fingerprint>[,<client_key_fingerprint>]]]", serverMetadata)
 	}
-	return fmt.Sprintf("%s,%d", userName, serverPort)
+	userName = metadata[0]
+	if userName == "" {
+		return "", 0, "", "", "", fmt.Errorf("remote user name is empty in the metadata: %s", serverMetadata)
+	}
+	port, err = strconv.Atoi(metadata[1])
+	if err != nil {
+		return "", 0, "", "", "", fmt.Errorf("cannot parse port from metadata: %s, %w", serverMetadata, err)
+	}
+	clusterID = defaultClusterID
+	if len(metadata) >= 3 && metadata[2] != "" {
+		clusterID = metadata[2]
+	}
+	if len(metadata) >= 4 {
+		hostKeyFingerprint = metadata[3]
+	}
+	if len(metadata) >= 5 {
+		clientKeyFingerprint = metadata[4]
+	}
+	return userName, port, clusterID, hostKeyFingerprint, clientKeyFingerprint, nil
 }
 
 // ToProxyCommand generates the ProxyCommand string for SSH config.
@@ -466,33 +507,52 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return fmt.Errorf("failed to create secret scope: %w", err)
 	}
 
-	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
-	if err != nil {
-		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
-		return fmt.Errorf("failed to get or generate SSH key pair from secrets: %w", err)
-	}
-
 	keyPath, err := keys.GetLocalSSHKeyPath(ctx, sessionID, opts.SSHKeysDir)
 	if err != nil {
 		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
 		return fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	err = keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes)
-	if err != nil {
-		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
-		return fmt.Errorf("failed to save SSH key pair locally: %w", err)
-	}
-	log.Infof(ctx, "Using SSH key: %s", keyPath)
-	log.Infof(ctx, "Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName)
-
 	var userName string
 	var serverPort int
 	var clusterID string
+	var hostKey []byte
+	var hostKeyFingerprint string
+	var clientKeyFingerprint string
+	// The fingerprint that names the known_hosts file ssh reads, see pinServerHostKey.
+	var knownHostsFingerprint string
 
 	version := build.GetInfo().Version
 
-	if opts.ServerMetadata == "" {
+	// --metadata names a server that is already running, so use the key pair it authorizes.
+	// When neither the local key file nor the scope holds that pair, there is no private key
+	// for the public key that server authorized, so the server is found or replaced the way a
+	// connect without --metadata does.
+	reuseNamedServer := opts.ServerMetadata != ""
+	if reuseNamedServer {
+		// The failures below are left to fall through to UNKNOWN on purpose: --metadata is a
+		// hidden flag whose value we generated ourselves in ToProxyCommand, so a parse failure
+		// here is a CLI bug rather than a per-environment blocker. Attributing them to
+		// SERVER_START_TIMEOUT would pollute the bucket that tracks unreachable servers.
+		userName, serverPort, clusterID, hostKeyFingerprint, clientKeyFingerprint, err = parseServerMetadata(opts.ServerMetadata, opts.ClusterID)
+		if err != nil {
+			return err
+		}
+		// The connect that wrote the ProxyCommand pointed ssh at the files of the server it
+		// names, even when that server is replaced below.
+		knownHostsFingerprint = hostKeyFingerprint
+
+		keyPath, err = namedServerClientKeys(ctx, client, secretScopeName, keyPath, serverPort, clientKeyFingerprint, opts)
+		if errors.Is(err, errClientKeysNotAuthorized) {
+			log.Warnf(ctx, "Not reusing the SSH server named by --metadata: %v", err)
+			reuseNamedServer = false
+		} else if err != nil {
+			outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
+			return err
+		}
+	}
+
+	if !reuseNamedServer {
 		cmdio.LogString(ctx, "Uploading binaries...")
 		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 		sp.Update("Uploading binaries...")
@@ -503,39 +563,35 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
 		serverStartTime := time.Now()
-		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
+		meta, authorizedKeyPath, err := ensureSSHServerIsRunning(ctx, client, version, secretScopeName, keyPath, opts)
 		if err != nil {
 			outcome.errorCategory = protos.SshTunnelErrorCategoryServerStartTimeout
 			if errors.Is(err, errDriverProxyForbidden) {
 				outcome.errorCategory = protos.SshTunnelErrorCategoryDriverProxyForbidden
 			}
+			if errors.Is(err, errClientKeyPair) {
+				outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
+			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
 		outcome.serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
+		userName, serverPort, clusterID, hostKey, hostKeyFingerprint = meta.UserName, meta.Port, meta.ClusterID, meta.HostKey, meta.HostKeyFingerprint
+		clientKeyFingerprint, keyPath = meta.ClientKeyFingerprint, authorizedKeyPath
+		// The ssh configuration `databricks ssh setup` writes runs us as its ProxyCommand
+		// without --metadata, and points ssh at the session's file. Otherwise we spawn ssh
+		// or write its configuration below, pointing it at the file of the server found.
+		if !opts.ProxyMode {
+			knownHostsFingerprint = hostKeyFingerprint
+		}
 	} else {
-		// The failures below are left to fall through to UNKNOWN on purpose: --metadata is a
-		// hidden flag whose value we generated ourselves in ToProxyCommand, so a parse failure
-		// here is a CLI bug rather than a per-environment blocker. Attributing them to
-		// SERVER_START_TIMEOUT would pollute the bucket that tracks unreachable servers.
-		// Metadata format: "<user_name>,<port>,<cluster_id>"
-		metadata := strings.Split(opts.ServerMetadata, ",")
-		if len(metadata) < 2 {
-			return fmt.Errorf("invalid metadata: %s, expected format: <user_name>,<port>[,<cluster_id>]", opts.ServerMetadata)
-		}
-		userName = metadata[0]
-		if userName == "" {
-			return fmt.Errorf("remote user name is empty in the metadata: %s", opts.ServerMetadata)
-		}
-		serverPort, err = strconv.Atoi(metadata[1])
+		hostKey, err = namedServerHostKey(ctx, client, secretScopeName, serverPort, hostKeyFingerprint, opts)
 		if err != nil {
-			return fmt.Errorf("cannot parse port from metadata: %s, %w", opts.ServerMetadata, err)
-		}
-		if len(metadata) >= 3 {
-			clusterID = metadata[2]
-		} else {
-			clusterID = opts.ClusterID
+			outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
+			return err
 		}
 	}
+	log.Infof(ctx, "Using SSH key: %s", keyPath)
+	log.Infof(ctx, "Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName)
 
 	// For serverless mode, we need the cluster ID from metadata for Driver Proxy connections
 	if opts.IsServerlessMode() && clusterID == "" {
@@ -551,7 +607,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// Pin the running server's host key for this session name. In proxy mode this happens
 	// before the tunnel carries a single byte, so it is in place well before the ssh client
 	// that spawned us verifies the key during the key exchange.
-	knownHostsPath, err := pinServerHostKey(ctx, client, sessionID, secretScopeName, opts)
+	knownHostsPath, err := pinServerHostKey(ctx, sessionID, knownHostsFingerprint, hostKey, opts)
 	if err != nil {
 		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
 		return err
@@ -573,30 +629,44 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		outcome.errorCategory = proxySessionEndCategory(proxyErr)
 		return proxyErr
 	} else if opts.IDE != "" {
-		return runIDE(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
+		return runIDE(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, hostKeyFingerprint, clientKeyFingerprint, opts)
 	} else {
 		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
-		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
+		return spawnSSHClient(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, hostKeyFingerprint, clientKeyFingerprint, opts)
 	}
 }
 
-// pinServerHostKey records the running server's host key as the entry ssh accepts for this
-// session, and returns the path of the known_hosts file it wrote.
+// pinServerHostKey records publicKey, the running server's host key read from the session's
+// secret scope, as the entry ssh accepts for this session, and returns the path of the
+// known_hosts file it wrote. A nil publicKey, from namedServerHostKey, keeps the entry the
+// file already holds.
 //
-// The server publishes its host key to the session's secret scope when it starts and reuses
-// it for every sshd it launches, which makes the scope the authority on the key. Reading it
-// here replaces whatever was recorded for this session name before, so a key left by an
-// earlier instance - or by the same name in another workspace, since a name is unique only
-// within one - can no longer fail an otherwise valid connection.
-func pinServerHostKey(ctx context.Context, client *databricks.WorkspaceClient, sessionID, secretScopeName string, opts ClientOptions) (string, error) {
-	knownHostsPath, err := sshconfig.GetKnownHostsPath(ctx, sessionID, opts.KnownHostsDir)
+// The file is the server's own when knownHostsFingerprint, the fingerprint of the server's
+// host key, is set (see sshconfig.GetServerKnownHostsPath), and the session's otherwise: ssh
+// configurations written by `databricks ssh setup` or by an earlier CLI version read that
+// one. A server's own file gets another key only when the server is replaced, so a connect
+// to another server started for the session at the same time cannot make ssh reject this one.
+//
+// The server publishes its host key to the scope when it starts and reuses it for every sshd
+// it launches, which makes the scope the authority on the key. Pinning it here replaces
+// whatever was recorded for this session name before, so a key left by an earlier instance -
+// or by the same name in another workspace, since a name is unique only within one - can no
+// longer fail an otherwise valid connection.
+func pinServerHostKey(ctx context.Context, sessionID, knownHostsFingerprint string, publicKey []byte, opts ClientOptions) (string, error) {
+	var knownHostsPath string
+	var err error
+	if knownHostsFingerprint != "" {
+		knownHostsPath, err = sshconfig.GetServerKnownHostsPath(ctx, sessionID, knownHostsFingerprint, opts.KnownHostsDir)
+	} else {
+		knownHostsPath, err = sshconfig.GetKnownHostsPath(ctx, sessionID, opts.KnownHostsDir)
+	}
 	if err != nil {
 		return "", err
 	}
 
-	publicKey, err := keys.GetSecret(ctx, client, secretScopeName, opts.ServerPublicKeyName)
-	if err != nil {
-		return "", fmt.Errorf("failed to read the SSH server host key: %w", err)
+	if publicKey == nil {
+		log.Infof(ctx, "Keeping the SSH server host key pinned for %s in %s", sessionID, knownHostsPath)
+		return knownHostsPath, nil
 	}
 
 	if err := sshconfig.PinHostKey(knownHostsPath, sessionID, publicKey); err != nil {
@@ -607,7 +677,7 @@ func pinServerHostKey(ctx context.Context, client *databricks.WorkspaceClient, s
 	return knownHostsPath, nil
 }
 
-func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath, knownHostsPath string, serverPort int, clusterID, hostKeyFingerprint, clientKeyFingerprint string, opts ClientOptions) error {
 	connectionName := opts.SessionIdentifier()
 	if connectionName == "" {
 		return errors.New("connection name is required for IDE integration")
@@ -625,7 +695,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 		return fmt.Errorf("failed to get SSH config path: %w", err)
 	}
 
-	err = ensureSSHConfigEntry(ctx, configPath, connectionName, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
+	err = ensureSSHConfigEntry(ctx, configPath, connectionName, userName, keyPath, knownHostsPath, serverPort, clusterID, hostKeyFingerprint, clientKeyFingerprint, opts)
 	if err != nil {
 		return fmt.Errorf("failed to ensure SSH config entry: %w", err)
 	}
@@ -633,7 +703,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, currentUser.UserName)
 }
 
-func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath, knownHostsPath string, serverPort int, clusterID, hostKeyFingerprint, clientKeyFingerprint string, opts ClientOptions) error {
 	// Ensure the Include directive exists in the main SSH config
 	err := sshconfig.EnsureIncludeDirective(ctx, configPath)
 	if err != nil {
@@ -642,7 +712,7 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 
 	// Generate ProxyCommand with server metadata
 	optsWithMetadata := opts
-	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
+	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID, hostKeyFingerprint, clientKeyFingerprint)
 
 	proxyCommand, err := optsWithMetadata.ToProxyCommand()
 	if err != nil {
@@ -674,13 +744,20 @@ type serverMetadata struct {
 	UsagePolicyID string
 	// KeepDetachedProcesses the server's run was submitted with, used the same way as UsagePolicyID.
 	KeepDetachedProcesses bool
+	// HostKey is the server's host key from the secret scope, checked against the fingerprint
+	// the server wrote to metadata.json.
+	HostKey []byte
+	// HostKeyFingerprint is the fingerprint of HostKey.
+	HostKeyFingerprint string
+	// ClientKeyFingerprint is the fingerprint of the client public key the server authorized.
+	ClientKeyFingerprint string
 }
 
 // getServerMetadata retrieves the server metadata from the workspace and validates it via Driver Proxy.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 // For dedicated clusters, clusterID should be the same as sessionID.
 // For serverless, clusterID is read from the workspace metadata.
-func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, sessionID, clusterID, version, liteswap string) (serverMetadata, error) {
+func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, sessionID, clusterID, version, secretScopeName string, opts ClientOptions) (serverMetadata, error) {
 	wsMetadata, err := sshWorkspace.GetWorkspaceMetadata(ctx, client, version, sessionID)
 	if err != nil {
 		return serverMetadata{}, errors.Join(errServerMetadata, err)
@@ -697,7 +774,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		return serverMetadata{}, errors.Join(errServerMetadata, errors.New("cluster ID not available in metadata"))
 	}
 
-	req, err := newDriverProxyRequest(ctx, client, effectiveClusterID, wsMetadata.Port, "metadata", liteswap)
+	req, err := newDriverProxyRequest(ctx, client, effectiveClusterID, wsMetadata.Port, "metadata", opts.Liteswap)
 	if err != nil {
 		return serverMetadata{}, err
 	}
@@ -720,13 +797,65 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		return serverMetadata{}, metadataResponseError(resp.StatusCode, bodyBytes)
 	}
 
+	hostKey, err := serverHostKeyNamedBy(ctx, client, secretScopeName, wsMetadata, opts)
+	if err != nil {
+		return serverMetadata{}, err
+	}
+
 	return serverMetadata{
 		Port:                  wsMetadata.Port,
 		UserName:              string(bodyBytes),
 		ClusterID:             effectiveClusterID,
 		UsagePolicyID:         wsMetadata.UsagePolicyID,
 		KeepDetachedProcesses: wsMetadata.KeepDetachedProcesses,
+		HostKey:               hostKey,
+		HostKeyFingerprint:    wsMetadata.HostKeyFingerprint,
+		ClientKeyFingerprint:  wsMetadata.ClientKeyFingerprint,
 	}, nil
+}
+
+// serverHostKeyNamedBy returns the host key in the secret scope when it is the one wsMetadata
+// names. The server publishes its key before it writes metadata.json, but another server
+// started for the same session replaces both in separate writes, so the scope can hold that
+// server's key while metadata.json still names this one. That is reported as errServerMetadata,
+// the server not being ready: callers then wait for a server that is, or start one.
+func serverHostKeyNamedBy(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName string, wsMetadata *sshWorkspace.WorkspaceMetadata, opts ClientOptions) ([]byte, error) {
+	hostKey, err := keys.GetSecret(ctx, client, secretScopeName, opts.ServerPublicKeyName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the SSH server host key: %w", err)
+	}
+	fingerprint, err := keys.PublicKeyFingerprint(hostKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the SSH server host key from secret %s of secret scope %s: %w", opts.ServerPublicKeyName, secretScopeName, err)
+	}
+	if fingerprint != wsMetadata.HostKeyFingerprint {
+		return nil, errors.Join(errServerMetadata, fmt.Errorf("the SSH server host key in secret scope %s (%s) is not the key of the server on port %d (%s), "+
+			"which happens when another SSH server for this session started at the same time",
+			secretScopeName, fingerprint, wsMetadata.Port, wsMetadata.HostKeyFingerprint))
+	}
+	return hostKey, nil
+}
+
+// namedServerHostKey returns the host key to pin for the server that --metadata names on
+// port, or nil to keep the key pinned for that server: the connect that wrote the
+// ProxyCommand pinned it already.
+//
+// The scope's key is pinned only when it has hostKeyFingerprint, the fingerprint of that
+// server's key. Another server started for the session since then replaces the scope's key,
+// and pinning it would make ssh reject the server on port. A ProxyCommand written by an
+// earlier CLI version carries no fingerprint, so its server's key cannot be told apart in the
+// scope and is not read.
+func namedServerHostKey(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName string, port int, hostKeyFingerprint string, opts ClientOptions) ([]byte, error) {
+	if hostKeyFingerprint == "" {
+		return nil, nil
+	}
+	named := &sshWorkspace.WorkspaceMetadata{Port: port, HostKeyFingerprint: hostKeyFingerprint}
+	hostKey, err := serverHostKeyNamedBy(ctx, client, secretScopeName, named, opts)
+	if errors.Is(err, errServerMetadata) {
+		log.Warnf(ctx, "Keeping the pinned SSH server host key: %v", err)
+		return nil, nil
+	}
+	return hostKey, err
 }
 
 // metadataResponseError classifies a non-200 response from the server's /metadata endpoint. A 403
@@ -1046,10 +1175,10 @@ func buildSSHArgs(userName, privateKeyPath, knownHostsPath, proxyCommand, hostNa
 	return sshArgs
 }
 
-func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath, knownHostsPath string, serverPort int, clusterID, hostKeyFingerprint, clientKeyFingerprint string, opts ClientOptions) error {
 	// Create a copy with metadata for the ProxyCommand
 	optsWithMetadata := opts
-	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
+	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID, hostKeyFingerprint, clientKeyFingerprint)
 
 	proxyCommand, err := optsWithMetadata.ToProxyCommand()
 	if err != nil {
@@ -1444,31 +1573,188 @@ func keepDetachedMatches(stored, requested bool) bool {
 	return !requested || stored
 }
 
-func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
+// storeClientKeysForNewServer stores the client key pair that a server about to be started
+// will authorize, and saves it at keyPath. Each server start uses its own key pair, so the
+// client keys the scope held before are overwritten without being read.
+func storeClientKeysForNewServer(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName, keyPath string, opts ClientOptions) error {
+	privateKeyBytes, publicKeyBytes, err := clientKeyPairForNewServer(keyPath, opts.ProxyMode)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errClientKeyPair, err)
+	}
+	err = keys.PutSSHKeyPairToSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName, privateKeyBytes, publicKeyBytes)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errClientKeyPair, err)
+	}
+	if err := keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
+		return fmt.Errorf("%w: failed to save SSH key pair locally: %w", errClientKeyPair, err)
+	}
+	return nil
+}
+
+// clientKeyPairForNewServer returns the client key pair for a new server: a new one, except
+// in proxy mode. There the ssh client that runs us as its ProxyCommand has already loaded the
+// key at keyPath (OpenSSH reads its identity files right after it starts the ProxyCommand), so
+// a server authorizing a different key would reject this very connection. The local key is
+// used as is; the scope is not read here. When there is none yet, ssh has nothing loaded and
+// reads the private key when it authenticates, after we have written it.
+func clientKeyPairForNewServer(keyPath string, proxyMode bool) ([]byte, []byte, error) {
+	if proxyMode {
+		privateKeyBytes, publicKeyBytes, err := keys.LoadSSHKeyPair(keyPath)
+		if !errors.Is(err, fs.ErrNotExist) {
+			return privateKeyBytes, publicKeyBytes, err
+		}
+	}
+	return keys.GenerateSSHKeyPair()
+}
+
+// namedServerClientKeys returns the file holding the client key pair of the server --metadata
+// names, the one that authorized the client key with clientKeyFingerprint, and saves the pair
+// there from the scope when the file does not hold it yet. It fails with
+// errClientKeysNotAuthorized when neither holds that pair.
+//
+// The file is the server's own (see keys.GetLocalServerSSHKeyPath), which the connect that
+// wrote the ProxyCommand pointed ssh at. Another server started for the session overwrites the
+// scope's pair, and a connect to it saves that pair in a file of its own, so the file still
+// holds the pair this server authorized after the scope has moved on.
+//
+// A ProxyCommand written by an earlier CLI version names no client key and points ssh at the
+// session's file, sessionKeyPath; the scope's pair is saved there unchecked, as that version did.
+func namedServerClientKeys(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName, sessionKeyPath string, port int, clientKeyFingerprint string, opts ClientOptions) (string, error) {
+	if clientKeyFingerprint == "" {
+		err := saveRunningServerClientKeys(ctx, client, secretScopeName, sessionKeyPath, opts)
+		if errors.Is(err, keys.ErrMismatchedKeyPair) {
+			return sessionKeyPath, fmt.Errorf("%w: %w", errClientKeysNotAuthorized, err)
+		}
+		return sessionKeyPath, err
+	}
+	keyPath, err := keys.GetLocalServerSSHKeyPath(ctx, opts.SessionIdentifier(), clientKeyFingerprint, opts.SSHKeysDir)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", errClientKeyPair, err)
+	}
+	// A file that is missing or does not parse is saved again from the scope below.
+	if _, publicKeyBytes, err := keys.LoadSSHKeyPair(keyPath); err == nil {
+		fingerprint, err := keys.PublicKeyFingerprint(publicKeyBytes)
+		if err == nil && fingerprint == clientKeyFingerprint {
+			return keyPath, nil
+		}
+	}
+	named := serverMetadata{Port: port, ClientKeyFingerprint: clientKeyFingerprint}
+	return keyPath, saveAuthorizedClientKeys(ctx, client, secretScopeName, keyPath, named, opts)
+}
+
+// authorizedClientKeyPath returns the file to save the client key pair that the server meta
+// describes authorized in. In proxy mode that is keyPath, the file the ssh client that runs us
+// as its ProxyCommand reads. Otherwise it is the server's own file (see
+// keys.GetLocalServerSSHKeyPath), which the ssh client or IDE configuration this connect sets
+// up is pointed at, and which a connect to another server of the session never rewrites.
+func authorizedClientKeyPath(ctx context.Context, keyPath string, meta serverMetadata, opts ClientOptions) (string, error) {
+	if opts.ProxyMode {
+		return keyPath, nil
+	}
+	path, err := keys.GetLocalServerSSHKeyPath(ctx, opts.SessionIdentifier(), meta.ClientKeyFingerprint, opts.SSHKeysDir)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", errClientKeyPair, err)
+	}
+	return path, nil
+}
+
+// saveRunningServerClientKeys saves at keyPath the client key pair that the running server
+// authorized when it started. It fails when the pair is missing from the scope rather than
+// generating a pair that server would not accept.
+func saveRunningServerClientKeys(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName, keyPath string, opts ClientOptions) error {
+	privateKeyBytes, publicKeyBytes, err := keys.GetSSHKeyPairFromSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
+	if err != nil {
+		return fmt.Errorf("%w: failed to get the SSH key pair of the running server: %w", errClientKeyPair, err)
+	}
+	if err := keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
+		return fmt.Errorf("%w: failed to save SSH key pair locally: %w", errClientKeyPair, err)
+	}
+	return nil
+}
+
+// saveAuthorizedClientKeys saves at keyPath the scope's client key pair when it is the one
+// the server meta describes authorized, and fails with errClientKeysNotAuthorized otherwise.
+//
+// Servers started for the session at the same time each write the pair to the scope in two
+// requests and read its public half when they start, so the scope can hold a torn pair, or a
+// complete one that another server authorized.
+func saveAuthorizedClientKeys(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName, keyPath string, meta serverMetadata, opts ClientOptions) error {
+	privateKeyBytes, publicKeyBytes, err := keys.GetSSHKeyPairFromSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
+	if errors.Is(err, keys.ErrMismatchedKeyPair) {
+		return fmt.Errorf("%w: %w: %w", errClientKeyPair, errClientKeysNotAuthorized, err)
+	}
+	if err != nil {
+		return fmt.Errorf("%w: failed to get the SSH key pair of the running server: %w", errClientKeyPair, err)
+	}
+	fingerprint, err := keys.PublicKeyFingerprint(publicKeyBytes)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errClientKeyPair, err)
+	}
+	if fingerprint != meta.ClientKeyFingerprint {
+		return fmt.Errorf("%w: %w: secret scope %s holds %s, the server on port %d authorized %s, "+
+			"which happens when another SSH server for this session started at the same time",
+			errClientKeyPair, errClientKeysNotAuthorized, secretScopeName, fingerprint, meta.Port, meta.ClientKeyFingerprint)
+	}
+	if err := keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
+		return fmt.Errorf("%w: failed to save SSH key pair locally: %w", errClientKeyPair, err)
+	}
+	return nil
+}
+
+func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName, keyPath string, opts ClientOptions) (serverMetadata, string, error) {
 	sessionID := opts.SessionIdentifier()
 	// For dedicated clusters, use clusterID; for serverless, it will be read from metadata
 	clusterID := opts.ClusterID
 
-	meta, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+	meta, err := getServerMetadata(ctx, client, sessionID, clusterID, version, secretScopeName, opts)
 	// This includes errDriverProxyForbidden: a new server would be refused the same way.
 	if err != nil && !errors.Is(err, errServerMetadata) {
-		return "", 0, "", err
+		return serverMetadata{}, "", err
 	}
 
-	// Start a new server when none is running, or when the running one was started under a
-	// different usage policy or without keeping detached processes. Both are fixed at
+	// Start a new server when none is running (which includes one whose host key another
+	// server replaced in the scope, see serverHostKeyNamedBy), or when the running one was
+	// started under a different usage policy or without keeping detached processes. Both are fixed at
 	// submission, so we can't retarget the existing server; the new server overwrites
 	// metadata.json, and its bootstrap terminates the running server on the cluster before
 	// starting (see cleanup() in ssh-server-bootstrap.py), which ends the previous run.
 	needNewServer := err != nil ||
 		!usagePolicyMatches(meta.UsagePolicyID, opts.UsagePolicyID) ||
 		!keepDetachedMatches(meta.KeepDetachedProcesses, opts.KeepDetachedProcesses)
+	// The host key of a running server that is replaced, so the wait below does not take it
+	// for the new one before the new server has overwritten metadata.json.
+	var replacedHostKey []byte
+	// The file the pair the server authorized is saved in, see authorizedClientKeyPath.
+	var authorizedKeyPath string
+	if !needNewServer {
+		// A running server is also replaced when the scope's client key pair is not the one it
+		// authorized (see saveAuthorizedClientKeys): no private key in the scope is then
+		// accepted by it.
+		authorizedKeyPath, err = authorizedClientKeyPath(ctx, keyPath, meta, opts)
+		if err != nil {
+			return serverMetadata{}, "", err
+		}
+		err = saveAuthorizedClientKeys(ctx, client, secretScopeName, authorizedKeyPath, meta, opts)
+		if errors.Is(err, errClientKeysNotAuthorized) {
+			log.Warnf(ctx, "Replacing the SSH server on port %d: %v", meta.Port, err)
+			needNewServer = true
+			replacedHostKey = meta.HostKey
+		} else if err != nil {
+			return serverMetadata{}, "", err
+		}
+	}
 	if needNewServer {
 		cmdio.LogString(ctx, "Starting SSH server...")
 
+		// The server reads the client public key from the scope when it starts, so the key has
+		// to be in place before the job is submitted.
+		if err := storeClientKeysForNewServer(ctx, client, secretScopeName, keyPath, opts); err != nil {
+			return serverMetadata{}, "", err
+		}
+
 		runID, submitErr := submitSSHTunnelJob(ctx, client, version, secretScopeName, opts)
 		if submitErr != nil {
-			return "", 0, "", fmt.Errorf("failed to submit and start ssh server job: %w", submitErr)
+			return serverMetadata{}, "", fmt.Errorf("failed to submit and start ssh server job: %w", submitErr)
 		}
 
 		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
@@ -1477,12 +1763,12 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 		maxRetries := int(serverMetadataTimeout / serverMetadataPollInterval)
 		for retries := range maxRetries {
 			if ctx.Err() != nil {
-				return "", 0, "", ctx.Err()
+				return serverMetadata{}, "", ctx.Err()
 			}
-			meta, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+			meta, err = getServerMetadata(ctx, client, sessionID, clusterID, version, secretScopeName, opts)
 			if errors.Is(err, errDriverProxyForbidden) {
 				cancelSSHServerRun(ctx, client, runID)
-				return "", 0, "", err
+				return serverMetadata{}, "", err
 			}
 			// Accept only once metadata reflects the requested usage policy, so we don't latch
 			// onto a server a previous connection started under a different policy before our new
@@ -1493,6 +1779,23 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			if err == nil && !keepDetachedMatches(meta.KeepDetachedProcesses, opts.KeepDetachedProcesses) {
 				err = errors.New("found a running SSH server that does not keep detached processes, waiting for the one that does")
 			}
+			if err == nil && replacedHostKey != nil && bytes.Equal(meta.HostKey, replacedHostKey) {
+				err = fmt.Errorf("found the SSH server being replaced on port %d, waiting for the new one", meta.Port)
+			}
+			// Use the server with the pair it authorized. That is the pair stored above, or one
+			// that another connect starting a server for the session at the same time stored
+			// after it, in which case its server may be the one that is up. A pair that is torn
+			// or newer than the server is waited out.
+			if err == nil {
+				authorizedKeyPath, err = authorizedClientKeyPath(ctx, keyPath, meta, opts)
+				if err != nil {
+					return serverMetadata{}, "", err
+				}
+				err = saveAuthorizedClientKeys(ctx, client, secretScopeName, authorizedKeyPath, meta, opts)
+				if err != nil && !errors.Is(err, errClientKeysNotAuthorized) {
+					return serverMetadata{}, "", err
+				}
+			}
 			if err == nil {
 				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
 				break
@@ -1501,17 +1804,17 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			// Surface the job's actual error instead of waiting out the full timeout with a
 			// generic "metadata.json doesn't exist" message.
 			if failure, terminated := runFailureIfTerminated(ctx, client, runID); terminated {
-				return "", 0, "", fmt.Errorf("ssh server bootstrap job failed:\n%s", failure)
+				return serverMetadata{}, "", fmt.Errorf("ssh server bootstrap job failed:\n%s", failure)
 			}
 			if retries < maxRetries-1 {
 				time.Sleep(serverMetadataPollInterval)
 			} else {
-				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w\n%s", err, describeRunFailure(ctx, client, runID))
+				return serverMetadata{}, "", fmt.Errorf("failed to start the ssh server: %w\n%s", err, describeRunFailure(ctx, client, runID))
 			}
 		}
 	}
 
-	return meta.UserName, meta.Port, meta.ClusterID, nil
+	return meta, authorizedKeyPath, nil
 }
 
 // connectOutcome is the observed result of a connection attempt, collected by Run for telemetry.
