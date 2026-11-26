@@ -32,19 +32,21 @@ func workspaceTmpDir(ctx context.Context, t *testing.T) string {
 	require.NoError(t, err)
 
 	timestamp := time.Now().Format("2006-01-02T15:04:05Z")
-	path := fmt.Sprintf(
+	parent := fmt.Sprintf(
 		"/Workspace/Users/%s/acceptance/%s/%s",
 		currentUser.UserName,
 		timestamp,
 		uuid.New().String(),
 	)
+	// Named like t.TempDir(); tools such as uv derive project names from it.
+	path := parent + "/001"
 
 	t.Cleanup(func() {
 		// Use FUSE for cleanup to ensure proper operation ordering.
 		// Mixing FUSE (for writes) with API (for delete) can cause
 		// AsyncFlushFailedException because FUSE may have pending
 		// async writes that try to flush after API has deleted the directory.
-		err := os.RemoveAll(path)
+		err := os.RemoveAll(parent)
 		assert.NoError(t, err)
 	})
 
