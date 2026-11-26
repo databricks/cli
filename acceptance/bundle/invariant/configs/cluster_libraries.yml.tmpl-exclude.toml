@@ -1,0 +1,7 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Cluster libraries are direct-only; the terraform deploy that seeds the migration fails for them."
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "cluster libraries (clusters.libraries) are not supported on v0.293.0"

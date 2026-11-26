@@ -1,0 +1,13 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = '''
+Cross-resource permission references (e.g. ${resources.jobs.job_b.permissions[0].level})
+don't work in terraform mode: the terraform interpolator converts the path to
+${databricks_job.job_b.permissions[0].level}, but Terraform's databricks_job resource
+does not expose permissions as output attributes (permissions are a separate
+databricks_permissions resource in terraform), so the literal unresolved string
+ends up as the permission level value.'''
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "$resources references to permissions and grants are not supported on v0.293.0"

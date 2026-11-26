@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
@@ -15,10 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	invariantConfigsDir = "bundle/invariant/configs"
-	invariantTestConfig = "bundle/invariant/test.toml"
-)
+const invariantConfigsDir = "bundle/invariant/configs"
 
 // LackingInvariantTest lists keys from config.ResourcesTypes that knowingly lack
 // a covering config in invariantConfigsDir. Keys match the ResourcesTypes
@@ -28,17 +24,6 @@ const (
 var LackingInvariantTest = map[string]bool{
 	"quality_monitors":             true,
 	"internal_immutable_snapshots": true,
-}
-
-// UnlistedInvariantConfigs lists templates in invariantConfigsDir that are not in
-// EnvMatrix["INPUT_CONFIG"] of invariantTestConfig, so the invariant suite never runs them.
-// The list may only shrink: add a template to INPUT_CONFIG and remove it here to run it.
-var UnlistedInvariantConfigs = map[string]bool{
-	"app_lifecycle_ref.yml.tmpl":          true,
-	"materialization_set.yml.tmpl":        true,
-	"mcp_service.yml.tmpl":                true,
-	"model_provider_service.yml.tmpl":     true,
-	"postgres_snapshot_schedule.yml.tmpl": true,
 }
 
 // TestInvariantConfigsCoverage ensures that the invariant test configs in
@@ -81,40 +66,6 @@ func TestInvariantConfigsCoverage(t *testing.T) {
 		}
 		assert.True(t, covered,
 			"no config in %s %s; add one or allowlist %q", invariantConfigsDir, hint, key)
-	}
-}
-
-// TestInvariantConfigsListed ensures every template in invariantConfigsDir is run by the
-// invariant matrix unless allowlisted in UnlistedInvariantConfigs, and that every matrix
-// and allowlist entry names an existing template. A template missing from the matrix is
-// silently never run.
-func TestInvariantConfigsListed(t *testing.T) {
-	matrix := internal.DoLoadConfig(t, invariantTestConfig).EnvMatrix["INPUT_CONFIG"]
-	listed := make(map[string]bool, len(matrix))
-	for _, name := range matrix {
-		listed[name] = true
-	}
-
-	existing := map[string]bool{}
-	for _, name := range invariantConfigNames(t) {
-		existing[name] = true
-
-		if UnlistedInvariantConfigs[name] {
-			assert.False(t, listed[name],
-				"%q is in INPUT_CONFIG of %s; remove it from UnlistedInvariantConfigs", name, invariantTestConfig)
-			continue
-		}
-		assert.True(t, listed[name],
-			"%q in %s is not in INPUT_CONFIG of %s, so it never runs; add it there",
-			name, invariantConfigsDir, invariantTestConfig)
-	}
-
-	for _, name := range matrix {
-		assert.True(t, existing[name], "INPUT_CONFIG entry %q has no template in %s", name, invariantConfigsDir)
-	}
-	for name := range UnlistedInvariantConfigs {
-		assert.True(t, existing[name],
-			"UnlistedInvariantConfigs entry %q has no template in %s; remove it", name, invariantConfigsDir)
 	}
 }
 

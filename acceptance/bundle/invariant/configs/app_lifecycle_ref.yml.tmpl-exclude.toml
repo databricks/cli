@@ -1,0 +1,4 @@
+[[Exclude]]
+Reason = '''
+Invalid config: apps foo and bar share source_code_path ./app, so validation fails with
+"Duplicate app source code path" and every invariant test fails at deploy.'''

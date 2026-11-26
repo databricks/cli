@@ -1,0 +1,3 @@
+[[Exclude]]
+Tests = ["excluded"]
+Reason = "Shows that a value can be excluded from one test from a file next to it."

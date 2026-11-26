@@ -1,0 +1,17 @@
+[[Exclude]]
+When = ["CONFIG_Cloud=true"]
+Reason = "Postgres resources only work on AWS"
+
+[[Exclude]]
+When = ["DMS=true"]
+Reason = '''
+Deployment history has no "postgres_data_apis." resource-key prefix, so the deploy fails before the
+resource is created; see dmsResourceTypes in libs/testserver/bundledeployments.go.'''
+
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "The Postgres Data API is direct-only; the terraform deploy that seeds the migration fails for it."
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "postgres_data_apis resource is not supported on v0.293.0"

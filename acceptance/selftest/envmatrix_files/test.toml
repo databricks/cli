@@ -1,0 +1,2 @@
+# One variant per file in values/; values/<file>-exclude.toml excludes a value from some tests.
+EnvMatrixFiles.VALUE = "values/*.txt"

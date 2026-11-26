@@ -1,0 +1,7 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "Cluster policies are direct-only; the terraform deploy that seeds the migration fails for them."
+
+[[Exclude]]
+Tests = ["continue_293"]
+Reason = "cluster_policies resource is not supported on v0.293.0"

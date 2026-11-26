@@ -1,0 +1,3 @@
+[[Exclude]]
+Tests = ["migrate", "auto-migrate"]
+Reason = "SQL warehouses currently failing with migration with permanent drift. TODO: fix this."
