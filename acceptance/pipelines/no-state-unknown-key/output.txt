@@ -52,3 +52,9 @@ Error: resource not found or not yet deployed. Did you forget to run 'databricks
 >>> musterr [CLI] pipelines dry-run my_job
 Error: resource my_job is not a pipeline
 
+
+=== pipelines dry-run without a key keeps the deploy hint
+
+>>> musterr [CLI] pipelines dry-run
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+

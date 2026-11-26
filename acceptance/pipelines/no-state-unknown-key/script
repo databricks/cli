@@ -10,3 +10,6 @@ done
 
 title "pipelines dry-run with a key that is not a pipeline"
 trace musterr $CLI pipelines dry-run my_job
+
+title "pipelines dry-run without a key keeps the deploy hint"
+trace musterr $CLI pipelines dry-run
