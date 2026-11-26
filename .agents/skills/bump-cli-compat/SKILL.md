@@ -89,7 +89,7 @@ Write the updated `internal/build/cli-compat.json` and `internal/build/clicompat
 
 Ask the user for the **minimum CLI version** that supports the new features.
 
-Add a new entry keyed to that CLI version with the new `appkit` and `"skills": "latest"`. If the previous highest entry has `"auto_install": true`, copy it to the new entry: it turns on the automatic installation of AI tools for its range, so a new entry without it turns the feature off for every newer CLI. Update `AgentSkillsFallbackVersion` in `internal/build/clicompat.go` to the tested skills version. If skills compatibility changed, replace `"latest"` in the affected older ranges with the last compatible release. Preserve unrelated AppKit and skills compatibility boundaries.
+Add a new entry keyed to that CLI version with the new `appkit` and `"skills": "latest"`. If the previous highest entry has `"auto_install": true`, copy it to the new entry: it turns on the automatic installation of AI tools for its range, so a new entry without it turns the feature off for every newer CLI. Do the same for `"skills_hints": true`, which turns on skill hints for its range. Update `AgentSkillsFallbackVersion` in `internal/build/clicompat.go` to the tested skills version. If skills compatibility changed, replace `"latest"` in the affected older ranges with the last compatible release. Preserve unrelated AppKit and skills compatibility boundaries.
 
 Write the updated `internal/build/cli-compat.json` and `internal/build/clicompat.go`.
 

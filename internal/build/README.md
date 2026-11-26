@@ -21,7 +21,7 @@ Each key is a CLI version in semver format. Each entry defines a **range floor**
 
 An entry can also set `"auto_install": true` to turn on the automatic installation of Databricks AI tools on the first run of a new CLI version in its range (`aitools auto-install`). It is off when absent. A change reaches a machine on its first run of a CLI version after the change; machines that resolve to a cached or embedded manifest keep the value they have.
 
-An entry can also set `"skills_hints": true` to turn on the hints that point agents at the skills commands. It is off when absent and needs `DATABRICKS_SKILLS_PREVIEW` as well. `DATABRICKS_SKILLS_HINTS`, when set, overrides the entry in both directions. Unlike `auto_install`, this field is read only from the local cache or the embedded manifest and is never fetched, because hints are resolved while help is printed.
+An entry can also set `"skills_hints": true` to turn on the hints that point agents at the skills commands. It is off when absent and needs `DATABRICKS_SKILLS_PREVIEW` as well. `DATABRICKS_SKILLS_HINTS`, when set, overrides the entry in both directions. Unlike `auto_install`, this field is never fetched, because hints are resolved while help is printed. It is read from the local cache only while the cache is younger than one hour; an older cache is ignored and the embedded manifest applies, which is off. So a remote change reaches a machine's hints only when a command that fetches the manifest has refreshed the cache, and a machine whose cache goes stale turns hints off again until then.
 
 This skills fallback only applies to raw-file delivery. Version checks omit update availability when latest is unknown, and plugin operations don't substitute the fallback version.
 

@@ -49,10 +49,13 @@ func redirectToServer(t *testing.T, srv *httptest.Server) {
 }
 
 // testContext returns a context with an isolated cache directory so tests don't
-// share cached manifests.
+// share cached manifests. The cache switches are pinned to their defaults, so a
+// developer's shell cannot change what the tests read.
 func testContext(t *testing.T) context.Context {
 	t.Helper()
-	return env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	return env.Set(ctx, "DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
 }
 
 // --- Resolve tests ---
@@ -146,15 +149,8 @@ func TestFetchManifest_RemoteFailFallsBackToEmbedded(t *testing.T) {
 func TestFetchManifest_RemoteFailFallsBackToStaleCache(t *testing.T) {
 	ctx := testContext(t)
 
-	// Pre-populate the local cache with a stale manifest.
-	staleManifest := Manifest{
-		"0.296.0": {AppKit: "0.88.0", AgentSkills: "0.8.8"},
-	}
-	localPath := manifestLocalPath(ctx)
-	writeLocalManifest(ctx, localPath, staleManifest)
-	// Make it stale by setting mod time to 2 hours ago.
-	past := time.Now().Add(-2 * time.Hour)
-	require.NoError(t, os.Chtimes(localPath, past, past))
+	// Pre-populate the local cache with a manifest that is 2 hours old, so stale.
+	writeCachedManifestFile(t, ctx, `{"0.296.0": {"appkit": "0.88.0", "skills": "0.8.8"}}`, time.Now().Add(-2*time.Hour))
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -456,17 +452,36 @@ func TestManifestLocalPath(t *testing.T) {
 
 func TestReadWriteLocalManifest(t *testing.T) {
 	ctx := testContext(t)
-	m := Manifest{
-		"0.300.0": {AppKit: "0.50.0", AgentSkills: "0.5.0"},
-	}
+	data := []byte(`{"0.300.0": {"appkit": "0.50.0", "skills": "0.5.0"}}`)
 
 	path := manifestLocalPath(ctx)
-	writeLocalManifest(ctx, path, m)
+	writeLocalManifest(ctx, path, data)
 
 	cached, err := readLocalManifest(path)
 	require.NoError(t, err)
 	assert.Equal(t, "0.50.0", cached.manifest["0.300.0"].AppKit)
 	assert.True(t, cached.isFresh(cacheTTL), "just-written file should be fresh")
+}
+
+// TestFetchManifest_RemoteSuccessKeepsFieldsUnknownToTheCLI checks that the
+// cache holds the fetched bytes as they came, so a field this CLI does not
+// know, such as skills_hints for a CLI that predates it, survives the refresh.
+func TestFetchManifest_RemoteSuccessKeepsFieldsUnknownToTheCLI(t *testing.T) {
+	ctx := testContext(t)
+	body := `{"0.300.0": {"appkit": "0.50.0", "skills": "0.5.0", "skills_hints": true, "future_field": 1}}`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	_, err := FetchManifest(ctx)
+	require.NoError(t, err)
+
+	cached, err := os.ReadFile(manifestLocalPath(ctx))
+	require.NoError(t, err)
+	assert.JSONEq(t, body, string(cached))
 }
 
 // --- IsNotFoundError tests ---
@@ -659,7 +674,8 @@ func TestResolveSkillsHintsNeverFetches(t *testing.T) {
 		{name: "no cache, remote on", status: http.StatusOK, want: false},
 		{name: "no cache, remote fails", status: http.StatusInternalServerError, want: false},
 		{name: "fresh cache", cached: true, status: http.StatusOK, want: true},
-		{name: "stale cache, remote fails", cached: true, age: 2 * cacheTTL, status: http.StatusInternalServerError, want: true},
+		{name: "stale cache, remote fails", cached: true, age: 2 * cacheTTL, status: http.StatusInternalServerError, want: false},
+		{name: "stale cache, remote on", cached: true, age: 2 * cacheTTL, status: http.StatusOK, want: false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

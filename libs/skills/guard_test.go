@@ -12,6 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// unsetEnv removes key from the process environment for the rest of the test,
+// so a developer's shell cannot change what the test reads.
+func unsetEnv(t *testing.T, key string) {
+	t.Helper()
+	t.Setenv(key, "")
+	require.NoError(t, os.Unsetenv(key))
+}
+
 func TestEnabled(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -29,6 +37,7 @@ func TestEnabled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			unsetEnv(t, previewEnv)
 			ctx := t.Context()
 			if c.set {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
@@ -64,7 +73,7 @@ func TestHintsEnabled(t *testing.T) {
 		{name: "preview on, hints one", preview: "1", hints: "1", want: true},
 		{name: "preview on, no cache, embedded manifest", preview: "true", want: false},
 		{name: "preview on, entry on", preview: "true", manifest: entryOn, want: true},
-		{name: "preview on, entry on, stale cache", preview: "true", manifest: entryOn, stale: true, want: true},
+		{name: "preview on, entry on, stale cache ignored", preview: "true", manifest: entryOn, stale: true, want: false},
 		{name: "preview on, entry without the field", preview: "true", manifest: entryOff, want: false},
 		{name: "preview on, env false over entry on", preview: "true", hints: "false", manifest: entryOn, want: false},
 		{name: "preview on, env invalid over entry on", preview: "true", hints: "maybe", manifest: entryOn, want: false},
@@ -73,6 +82,10 @@ func TestHintsEnabled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			unsetEnv(t, previewEnv)
+			unsetEnv(t, hintsEnv)
+			unsetEnv(t, "DATABRICKS_FORCE_EMBEDDED_COMPAT")
+			unsetEnv(t, "DATABRICKS_CACHE_ENABLED")
 			ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
 			if c.preview != "" {
 				ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.preview)

@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 )
 
 const (
@@ -28,8 +29,8 @@ func Enabled(ctx context.Context) bool {
 // HintsEnabled reports whether skill hints are on. Hints need the feature on.
 // Then DATABRICKS_SKILLS_HINTS, when set, decides in both directions; otherwise
 // the skills_hints entry of the compatibility manifest that applies to this CLI
-// version does. It reads the local manifest cache or the embedded manifest and
-// never fetches, because it is called while help is printed.
+// version does. It reads a fresh local manifest cache or the embedded manifest
+// and never fetches, because it is called while help is printed.
 func HintsEnabled(ctx context.Context) bool {
 	if !Enabled(ctx) {
 		return false
@@ -38,7 +39,11 @@ func HintsEnabled(ctx context.Context) bool {
 		return on
 	}
 	on, err := clicompat.ResolveSkillsHints(ctx, build.GetInfo().Version)
-	return err == nil && on
+	if err != nil {
+		log.Debugf(ctx, "Skill hints stay off: %v", err)
+		return false
+	}
+	return on
 }
 
 func envTrue(ctx context.Context, key string) bool {
