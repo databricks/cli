@@ -14,6 +14,7 @@ Installed Databricks AI tools for Kiro. Disable: databricks aitools auto-install
   "attempts": 1,
   "last_attempt": "[TIMESTAMP]",
   "installing": true,
+  "install_state_digest": "[DIGEST]",
   "id": "treatment-machine"
 }
 
@@ -31,6 +32,7 @@ Installed Databricks AI tools for Kiro. Disable: databricks aitools auto-install
   "attempts": 2,
   "last_attempt": "[TIMESTAMP]",
   "installing": true,
+  "install_state_digest": "[DIGEST]",
   "id": "treatment-machine"
 }
 

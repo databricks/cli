@@ -1168,6 +1168,42 @@ func TestInstallSkillsForAgentsReportsAgentWithUnwritableSkillsDir(t *testing.T)
 	}
 }
 
+// An agent that got some of the skills counts toward the summary, and its
+// failure names how many skills it is missing.
+func TestInstallSkillsForAgentsReportsAgentMissingSomeSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	// A skill of another tool is in the way of databricks-jobs, and it cannot
+	// be moved aside.
+	agent := testAgent(tmp)
+	inTheWay := filepath.Join(tmp, ".test-agent", "skills", "databricks-jobs")
+	require.NoError(t, os.MkdirAll(inTheWay, 0o755))
+	orig := renamePathFn
+	t.Cleanup(func() { renamePathFn = orig })
+	renamePathFn = func(oldpath, newpath string) error {
+		if oldpath == inTheWay {
+			return &os.LinkError{Op: "rename", Old: oldpath, New: newpath, Err: fs.ErrPermission}
+		}
+		return os.Rename(oldpath, newpath)
+	}
+
+	err := InstallSkillsForAgents(ctx, &mockManifestSource{manifest: testManifest()}, []*agents.Agent{agent}, InstallOptions{})
+
+	agentsErr, ok := errors.AsType[*AgentSkillsError](err)
+	require.True(t, ok, "want *AgentSkillsError, got %v", err)
+	require.Len(t, agentsErr.Failures, 1)
+	f := agentsErr.Failures[0]
+	assert.True(t, f.Partial())
+	assert.Equal(t, 1, f.Skills)
+	assert.Equal(t, 2, f.Total)
+	assert.True(t, strings.HasPrefix(f.Notice(), "Test Agent is missing 1 of 2 skills: "), f.Notice())
+	assert.FileExists(t, filepath.Join(tmp, ".test-agent", "skills", "databricks-sql", "SKILL.md"))
+	assert.Contains(t, stderr.String(), "Installed 2 skills in ")
+}
+
 func TestLegacyTargetedInstallBlocked(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
@@ -1256,10 +1292,10 @@ func TestInstallAllSkillsSignaturePreserved(t *testing.T) {
 
 func testProjectAgent(tmpHome string) *agents.Agent {
 	return &agents.Agent{
-		Name:                 "test-project-agent",
-		DisplayName:          "Test Project Agent",
-		SupportsProjectScope: true,
-		ProjectConfigDir:     ".test-project-agent",
+		Name:                  "test-project-agent",
+		DisplayName:           "Test Project Agent",
+		SupportsProjectSkills: true,
+		ProjectConfigDir:      ".test-project-agent",
 		ConfigDir: func(_ context.Context) (string, error) {
 			return filepath.Join(tmpHome, ".test-project-agent"), nil
 		},
@@ -1441,24 +1477,26 @@ func TestInstallKeepsNameWhenRepoDirChanges(t *testing.T) {
 	assert.Contains(t, fetchedFrom, filepath.Join(experimentalRepoPath, "databricks-jobs", "SKILL.md"))
 }
 
-func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
-	expected := map[string]bool{
-		"claude-code": true,
-		"cursor":      false,
-		"codex":       false,
-		"opencode":    false,
-		"copilot":     false,
-		"antigravity": false,
-		"pi":          true,
-		"gemini":      true,
-		"goose":       true,
-		"kiro":        true,
+func TestProjectScopeCapabilitiesSetCorrectly(t *testing.T) {
+	type capabilities struct{ plugin, skills bool }
+	expected := map[string]capabilities{
+		"claude-code": {plugin: true, skills: true},
+		"cursor":      {},
+		"codex":       {skills: true},
+		"opencode":    {},
+		"copilot":     {},
+		"antigravity": {},
+		"pi":          {skills: true},
+		"gemini":      {skills: true},
+		"goose":       {skills: true},
+		"kiro":        {skills: true},
 	}
 
 	for _, agent := range agents.Registry {
 		want, ok := expected[agent.Name]
 		require.True(t, ok, "missing expected entry for %s", agent.Name)
-		assert.Equal(t, want, agent.SupportsProjectScope, "SupportsProjectScope for %s", agent.Name)
+		assert.Equal(t, want.plugin, agent.SupportsProjectPlugin, "SupportsProjectPlugin for %s", agent.Name)
+		assert.Equal(t, want.skills, agent.SupportsProjectSkills, "SupportsProjectSkills for %s", agent.Name)
 	}
 }
 

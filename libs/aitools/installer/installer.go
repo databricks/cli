@@ -515,8 +515,13 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// above the persistent "Installed N skills." output.
 	sp.Close()
 
-	// With no agent set up, the summary would read as a success.
-	if len(failures) < len(targetAgents) {
+	// When no agent got any skill, the summary would read as a success. An
+	// agent that got some of them counts: its own line names what is missing.
+	gotAny := slices.ContainsFunc(targetAgents, func(a *agents.Agent) bool {
+		f := failures[a]
+		return f == nil || f.Partial()
+	})
+	if gotAny {
 		noun := "skills"
 		if len(targetSkills) == 1 {
 			noun = "skill"
@@ -549,7 +554,7 @@ func skillsDir(ctx context.Context, scope string) (string, error) {
 func filterProjectAgents(ctx context.Context, targetAgents []*agents.Agent) []*agents.Agent {
 	var compatible []*agents.Agent
 	for _, a := range targetAgents {
-		if a.SupportsProjectScope {
+		if a.SupportsProjectSkills {
 			compatible = append(compatible, a)
 		} else {
 			cmdio.LogProgress(ctx, "Skipped "+a.DisplayName+": does not support project-scoped skills.")
@@ -562,7 +567,7 @@ func filterProjectAgents(ctx context.Context, targetAgents []*agents.Agent) []*a
 func incompatibleAgentNames(targetAgents []*agents.Agent) []string {
 	var names []string
 	for _, a := range targetAgents {
-		if !a.SupportsProjectScope {
+		if !a.SupportsProjectSkills {
 			names = append(names, a.DisplayName)
 		}
 	}
@@ -646,7 +651,7 @@ func InstallAllSkills(ctx context.Context) error {
 	// that did not get the skills is reported here with its own step.
 	if agentsErr, ok := errors.AsType[*AgentSkillsError](err); ok {
 		for _, f := range agentsErr.Failures {
-			cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %s", f.Agent.DisplayName, f.Reason())))
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, f.Notice()))
 			cmdio.LogString(ctx, fmt.Sprintf("  Fix the error above, then run 'databricks aitools install --scope=global --agents=%s --skills-only'.", f.Agent.Name))
 		}
 		return nil

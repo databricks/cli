@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -97,9 +96,9 @@ func Record(ctx context.Context, version string, attempts int, id string, now ti
 // by then, and reports whether it did. A run counts the attempt right before
 // it installs, so an opt-out stored after the run read the state (during the
 // gate lookup or the install prompt, say) still stops it. update clears
-// State.Installing in the same write: the attempt updates the existing
-// installation instead of finishing the first install, so the retries of this
-// version update too.
+// State.Installing and State.InstallStateDigest in the same write: the
+// attempt updates the existing installation instead of finishing the first
+// install, so the retries of this version update too.
 func StartAttempt(ctx context.Context, version string, attempt int, id string, now time.Time, update bool) (started bool, err error) {
 	err = updateState(ctx, func(s *State) {
 		if s.OptedOut {
@@ -108,6 +107,7 @@ func StartAttempt(ctx context.Context, version string, attempt int, id string, n
 		record(s, version, attempt, id, now)
 		if update {
 			s.Installing = false
+			s.InstallStateDigest = ""
 		}
 		started = true
 	})
@@ -120,6 +120,7 @@ func record(s *State, version string, attempts int, id string, now time.Time) {
 	s.Attempts = attempts
 	if attempts == 0 {
 		s.Installing = false
+		s.InstallStateDigest = ""
 		s.LastAttempt = time.Time{}
 	} else {
 		s.LastAttempt = now.UTC()
@@ -134,28 +135,10 @@ func MarkInstalling(ctx context.Context) error {
 	return updateState(ctx, func(s *State) { s.Installing = true })
 }
 
-// ClearInstalling clears State.Installing after a global `databricks aitools
-// install` that sets an agent up, which makes the installation the user's. It writes nothing when the marker is not set, and
-// without a state file it takes no lock either.
-func ClearInstalling(ctx context.Context) error {
-	path, err := statePath(ctx)
-	if err != nil {
-		return err
-	}
-	if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-		return nil
-	}
-	unlock, err := lock(ctx, stateLockFileName, stateLockWait)
-	if err != nil {
-		return err
-	}
-	defer unlock()
-	s, err := load(ctx)
-	if err != nil || !s.Installing {
-		return err
-	}
-	s.Installing = false
-	return save(ctx, s)
+// SaveInstallStateDigest sets State.InstallStateDigest after a first install
+// that did not finish.
+func SaveInstallStateDigest(ctx context.Context, digest string) error {
+	return updateState(ctx, func(s *State) { s.InstallStateDigest = digest })
 }
 
 // SaveID stores id as the machine identifier unless one is stored already,

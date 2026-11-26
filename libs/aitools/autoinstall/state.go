@@ -56,10 +56,18 @@ type State struct {
 	// Installing is set while auto-install makes a first install, and stays
 	// set when the install did not finish. The skills such an install left
 	// have no install state, like the ones the user put there, so a later run
-	// uses it to finish the install instead of leaving the skills alone. A
-	// global `databricks aitools install` that sets an agent up, or an update
-	// on a later version, clears it.
+	// uses it to finish the install instead of leaving the skills alone.
+	// Settling a version clears it, and so does an attempt that updates the
+	// installation instead of finishing the install.
 	Installing bool `json:"installing,omitempty"`
+
+	// InstallStateDigest is the digest of the install state that an
+	// unfinished first install saved (one that failed only for some agents).
+	// While the install state still has it, nothing else wrote it, so a later
+	// run finishes the install as a first install instead of updating it.
+	// Install state that anything else wrote is updated. It is cleared with
+	// Installing.
+	InstallStateDigest string `json:"install_state_digest,omitempty"`
 
 	// ID is a random per-machine identifier, created on the first run that
 	// decides anything. Only its Bucket is used, and it never leaves the

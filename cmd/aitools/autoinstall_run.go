@@ -2,6 +2,9 @@ package aitools
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -338,6 +341,9 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		runCtx, cancel := context.WithTimeout(qctx, installTimeout)
 		result, err = tools.install(runCtx)
 		cancel()
+		if err != nil && tools.fresh() {
+			saveInstallStateDigest(ctx, tools.globalDir)
+		}
 	}
 	if _, refused := errors.AsType[*installer.RefusedError](err); refused {
 		// The installed skills are newer than the release this CLI would
@@ -371,6 +377,27 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		cmdio.LogString(ctx, fmt.Sprintf("%s Databricks AI tools for %s. Disable: %s", verb, strings.Join(result.agents, ", "), autoInstallDisable))
 	}
 	return nil
+}
+
+// saveInstallStateDigest records the digest of the install state that a first
+// install that did not finish saved, so that a later run can tell it from
+// install state that anything else wrote. Without the digest, a later run
+// updates that state instead of finishing the install.
+func saveInstallStateDigest(ctx context.Context, globalDir string) {
+	existing, err := installer.LoadState(globalDir)
+	if err == nil && existing == nil {
+		return
+	}
+	var digest string
+	if err == nil {
+		digest, err = installStateDigest(existing)
+	}
+	if err == nil {
+		err = autoinstall.SaveInstallStateDigest(ctx, digest)
+	}
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+	}
 }
 
 // autoInstallAsks reports whether auto-install asks before a first install:
@@ -537,7 +564,8 @@ func holdoutArm(bucket int) protos.AitoolsHoldoutArm {
 
 // installResult is what one auto-install attempt did.
 type installResult struct {
-	// outcome is the reported outcome of an attempt that did not fail.
+	// outcome is the reported outcome of an attempt that did not fail, or
+	// Installed for one that set up some agents but failed for others.
 	outcome protos.AitoolsAutoInstallOutcome
 	// updated is set when an existing installation was updated.
 	updated bool
@@ -573,7 +601,13 @@ func (t toolsPlan) fresh() bool {
 // modified at their version, and does not migrate skills to plugins.
 // An unfinished first install of auto-install is finished instead, for the
 // agents it left without the tools, by the runs for the version that started
-// it. Finishing it installs each skill such an agent is missing again, which
+// it, as long as nothing else rewrote its install state since (see
+// autoinstall.State.InstallStateDigest) and the run need not ask: update
+// reinstalls only the skills whose version changed, so it would never give
+// the skills to an agent that did not get them. A run that would have to ask
+// updates instead: a coding agent may have made the first install without a
+// question, and a person must not be asked about an installation that exists.
+// Finishing it installs each skill such an agent is missing again, which
 // rewrites its shared copy: an edit the user made to that copy since the
 // first attempt is lost. Only the retries of that version do this, while the
 // skills are still auto-install's own, so this is kept over comparing each
@@ -588,14 +622,23 @@ func planTools(ctx context.Context, prior autoinstall.State, version string) (to
 	if err != nil {
 		return toolsPlan{}, err
 	}
+	// What an unfinished first install of auto-install left is its own: skills
+	// without install state, or install state nothing else rewrote since.
+	unfinished := prior.Installing
+	if unfinished && existing != nil {
+		digest, err := installStateDigest(existing)
+		if err != nil {
+			return toolsPlan{}, err
+		}
+		unfinished = digest == prior.InstallStateDigest
+	}
 	if existing != nil {
-		// The install state of an unfinished first install is auto-install's
-		// own. The update only refreshes the agents that have the tools, so
-		// the agents that did not get them (their skills directory could not
-		// be written, or their CLI failed) are installed for first. A later
+		// The update only refreshes the agents that have the tools, so the
+		// agents that did not get them (their skills directory could not be
+		// written, or their CLI failed) are installed for first. A later
 		// version updates the installation instead: an agent that never gets
 		// the tools must not keep the others from their update.
-		if prior.Installing && prior.LastVersion == version {
+		if unfinished && prior.LastVersion == version && (!autoInstallAsks() || prior.AcceptedVersion == version) {
 			if plan := unfinishedInstallPlan(ctx, existing); len(plan) > 0 {
 				return toolsPlan{globalDir: globalDir, plan: plan, finishing: true}, nil
 			}
@@ -607,9 +650,8 @@ func planTools(ctx context.Context, prior autoinstall.State, version string) (to
 		return toolsPlan{globalDir: globalDir, existing: existing}, nil
 	}
 	// Skills without install state have no checksums to tell the user's edits
-	// from ours, and an install would replace them. The ones an unfinished
-	// install of auto-install left are its own.
-	if !prior.Installing && installer.HasUntrackedSkills(ctx, installer.ScopeGlobal) {
+	// from ours, and an install would replace them.
+	if !unfinished && installer.HasUntrackedSkills(ctx, installer.ScopeGlobal) {
 		return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeKept, skipWhy: "skills without install state are on disk"}, nil
 	}
 	plan := buildPlan(ctx, agents.DetectInstalled(ctx), installer.ScopeGlobal, false, false)
@@ -623,6 +665,19 @@ func planTools(ctx context.Context, prior autoinstall.State, version string) (to
 		}
 	}
 	return toolsPlan{globalDir: globalDir, plan: plan}, nil
+}
+
+// installStateDigest returns a digest of the install state without its MCP
+// section, which the mcp commands write.
+func installStateDigest(s *installer.InstallState) (string, error) {
+	c := *s
+	c.MCP = nil
+	data, err := json.Marshal(&c)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
 }
 
 // withoutAgentCLIs drops the plugin installs from plan, which run the agent's

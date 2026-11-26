@@ -3,7 +3,6 @@ package autoinstall
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -141,16 +140,19 @@ func TestRecordClearsInstallingWhenSettled(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 
 	require.NoError(t, MarkInstalling(ctx))
+	require.NoError(t, SaveInstallStateDigest(ctx, "digest"))
 	// A failed attempt leaves the marker for the next run.
 	require.NoError(t, Record(ctx, "1.30.0", 1, "machine", time.Now()))
 	s, err := Load(ctx)
 	require.NoError(t, err)
 	assert.True(t, s.Installing)
+	assert.Equal(t, "digest", s.InstallStateDigest)
 
 	require.NoError(t, Record(ctx, "1.30.0", 0, "machine", time.Now()))
 	s, err = Load(ctx)
 	require.NoError(t, err)
 	assert.False(t, s.Installing)
+	assert.Empty(t, s.InstallStateDigest)
 }
 
 func TestRecordStoresTheLastFailedAttempt(t *testing.T) {
@@ -166,19 +168,6 @@ func TestRecordStoresTheLastFailedAttempt(t *testing.T) {
 	s, err = Load(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, State{LastVersion: "1.30.0", ID: "machine"}, s, "a settled version has no last attempt")
-}
-
-func TestClearInstalling(t *testing.T) {
-	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
-
-	at := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
-
-	require.NoError(t, MarkInstalling(ctx))
-	require.NoError(t, Record(ctx, "1.30.0", 1, "machine", at))
-	require.NoError(t, ClearInstalling(ctx))
-	s, err := Load(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: at, ID: "machine"}, s)
 }
 
 func TestStartAttemptOfAnUpdateClearsInstalling(t *testing.T) {
@@ -199,15 +188,6 @@ func TestStartAttemptOfAnUpdateClearsInstalling(t *testing.T) {
 	s, err = Load(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 2, LastAttempt: at, ID: "machine"}, s)
-}
-
-func TestClearInstallingWritesNothingWhenUnset(t *testing.T) {
-	home := t.TempDir()
-	ctx := env.WithUserHomeDir(t.Context(), home)
-
-	require.NoError(t, ClearInstalling(ctx))
-	assert.NoFileExists(t, filepath.Join(home, ".databricks", "aitools", stateFileName))
-	assert.NoFileExists(t, filepath.Join(home, ".databricks", "aitools", stateLockFileName), "no state, no lock")
 }
 
 func TestNextAttempt(t *testing.T) {

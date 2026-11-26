@@ -1,0 +1,4 @@
+# The digest covers the install state's timestamp.
+[[Repls]]
+Old = '"install_state_digest": "[0-9a-f]{64}"'
+New = '"install_state_digest": "[DIGEST]"'

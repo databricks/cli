@@ -182,6 +182,14 @@ func (f AgentSkillsFailure) Reason() string {
 	return fmt.Sprintf("could not install %d %s: %v", f.Skills, noun, f.Err)
 }
 
+// Notice is the line that reports the failure under the agent's name.
+func (f AgentSkillsFailure) Notice() string {
+	if f.Partial() {
+		return fmt.Sprintf("%s is missing %d of %d skills: %v", f.Agent.DisplayName, f.Skills, f.Total, f.Err)
+	}
+	return fmt.Sprintf("Skipped %s: %s", f.Agent.DisplayName, f.Reason())
+}
+
 func (e *AgentSkillsError) Error() string {
 	msgs := make([]string, len(e.Failures))
 	for i, f := range e.Failures {

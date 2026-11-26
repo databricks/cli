@@ -13,7 +13,7 @@ import (
 
 func TestDetectProjectInstalled(t *testing.T) {
 	cwd := t.TempDir()
-	for _, name := range []string{NamePi, NameGemini, NameGoose, NameKiro} {
+	for _, name := range []string{NamePi, NameGemini, NameGoose, NameKiro, NameCodex} {
 		dir := filepath.Join(ByName(name).ProjectSkillsDir(cwd), "databricks-core")
 		require.NoError(t, os.MkdirAll(dir, 0o755))
 	}
@@ -24,12 +24,12 @@ func TestDetectProjectInstalled(t *testing.T) {
 	for _, a := range DetectProjectInstalled(cwd) {
 		names = append(names, a.Name)
 	}
-	assert.ElementsMatch(t, []string{NamePi, NameGemini, NameGoose, NameKiro}, names)
+	assert.ElementsMatch(t, []string{NamePi, NameGemini, NameGoose, NameKiro, NameCodex}, names)
 }
 
 // TestRegistryContract pins each registry agent's name, display name, the
 // binary probed on PATH, the plugin installed for it, its marker file, where
-// its skills are written and whether it supports project scope. Adding,
+// its skills are written and whether its plugin and skills support project scope. Adding,
 // removing or changing one of these fields must update this table. The MCP
 // spec and plugin manifest readers are not covered here.
 func TestRegistryContract(t *testing.T) {
@@ -63,19 +63,21 @@ func TestRegistryContract(t *testing.T) {
 		plugin        *PluginSpec
 		mandatoryFile string
 		globalDir     string
-		// projectDir is empty for agents without project scope.
+		// projectPlugin is whether the plugin installs in project scope.
+		projectPlugin bool
+		// projectDir is empty for agents without project-scoped skills.
 		projectDir string
 	}{
-		{"claude-code", "Claude Code", "claude", claude, "", filepath.Join(home, ".claude", "skills"), filepath.Join(cwd, ".claude", "skills")},
-		{"cursor", "Cursor", "cursor-agent", nil, "", filepath.Join(home, ".cursor", "skills"), ""},
-		{"codex", "Codex CLI", "codex", databricks, "", filepath.Join(home, ".codex", "skills"), ""},
-		{"opencode", "OpenCode", "opencode", nil, "", openCodeGlobalDir, ""},
-		{"copilot", "GitHub Copilot", "copilot", databricks, "", filepath.Join(home, ".copilot", "skills"), ""},
-		{"antigravity", "Antigravity", "", nil, "", filepath.Join(home, ".gemini", "antigravity", "global_skills"), ""},
-		{"pi", "Pi", "pi", nil, "", filepath.Join(home, ".pi", "agent", "skills"), filepath.Join(cwd, ".pi", "skills")},
-		{"gemini", "Gemini CLI", "gemini", nil, "projects.json", filepath.Join(home, ".gemini", "skills"), filepath.Join(cwd, ".gemini", "skills")},
-		{"goose", "Goose", "goose", nil, "", gooseGlobalDir, filepath.Join(cwd, ".goose", "skills")},
-		{"kiro", "Kiro", "kiro", nil, "", filepath.Join(home, ".kiro", "skills"), filepath.Join(cwd, ".kiro", "skills")},
+		{"claude-code", "Claude Code", "claude", claude, "", filepath.Join(home, ".claude", "skills"), true, filepath.Join(cwd, ".claude", "skills")},
+		{"cursor", "Cursor", "cursor-agent", nil, "", filepath.Join(home, ".cursor", "skills"), false, ""},
+		{"codex", "Codex CLI", "codex", databricks, "", filepath.Join(home, ".codex", "skills"), false, filepath.Join(cwd, ".agents", "skills")},
+		{"opencode", "OpenCode", "opencode", nil, "", openCodeGlobalDir, false, ""},
+		{"copilot", "GitHub Copilot", "copilot", databricks, "", filepath.Join(home, ".copilot", "skills"), false, ""},
+		{"antigravity", "Antigravity", "", nil, "", filepath.Join(home, ".gemini", "antigravity", "global_skills"), false, ""},
+		{"pi", "Pi", "pi", nil, "", filepath.Join(home, ".pi", "agent", "skills"), false, filepath.Join(cwd, ".pi", "skills")},
+		{"gemini", "Gemini CLI", "gemini", nil, "projects.json", filepath.Join(home, ".gemini", "skills"), false, filepath.Join(cwd, ".gemini", "skills")},
+		{"goose", "Goose", "goose", nil, "", gooseGlobalDir, false, filepath.Join(cwd, ".goose", "skills")},
+		{"kiro", "Kiro", "kiro", nil, "", filepath.Join(home, ".kiro", "skills"), false, filepath.Join(cwd, ".kiro", "skills")},
 	}
 
 	var names []string
@@ -101,7 +103,8 @@ func TestRegistryContract(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.globalDir, globalDir)
 
-			assert.Equal(t, tc.projectDir != "", a.SupportsProjectScope)
+			assert.Equal(t, tc.projectPlugin, a.SupportsProjectPlugin)
+			assert.Equal(t, tc.projectDir != "", a.SupportsProjectSkills)
 			if tc.projectDir != "" {
 				assert.Equal(t, tc.projectDir, a.ProjectSkillsDir(cwd))
 			}

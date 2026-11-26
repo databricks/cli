@@ -12,7 +12,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
-	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -391,16 +390,6 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}()
 
 			outcomes, runErr = executePlan(ctx, src, plan, opts, rerun, jsonMode)
-			// A global installation this run sets an agent up in is the
-			// user's, so a later auto-install updates it instead of finishing
-			// an unfinished first install of its own for the agents the user
-			// left out. A run that set no agent up leaves that install
-			// unfinished.
-			if opts.Scope == installer.ScopeGlobal && anyInstalled(outcomes) {
-				if err := autoinstall.ClearInstalling(ctx); err != nil {
-					log.Debugf(ctx, "Could not update the auto-install state: %v", err)
-				}
-			}
 			for _, s := range deliverySteps(outcomes) {
 				funnel.step(ctx, s)
 			}
@@ -708,7 +697,7 @@ func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly,
 		// Raw-skills delivery (no-plugin agents, or --skills-only). Only some agents
 		// support project-scoped skills, so skip the rest up front instead of
 		// offering an option that fails at install time.
-		if scope == installer.ScopeProject && !a.SupportsProjectScope {
+		if scope == installer.ScopeProject && !a.SupportsProjectSkills {
 			item.delivery = deliverySkip
 			item.reason = "does not support project-scoped skills"
 			item.skipErrorCategory = protos.AitoolsErrorCategoryUnsupportedScope
@@ -935,11 +924,12 @@ func skillsBatchError(ctx context.Context, rerun installInvocation, skillsAgents
 
 // forgetStalePluginRecords drops the CLI's plugin records of plugin agents
 // that were just given skill files, whether or not every file could be
-// written: those whose CLI is missing, and those under --skills-only. They have no plugin (see pluginAlreadyInstalled and
-// planItemFor), so a record left by a removal with the agent's own CLI, or in
-// the agent itself, is stale, and list and update would keep treating them as
-// plugin agents and never refresh their skill files. The skills are already
-// installed, so a failure here is only a warning.
+// written: those whose CLI is missing, and those under --skills-only. They
+// have no plugin (see pluginAlreadyInstalled and planItemFor), so a record
+// left by a removal with the agent's own CLI, or in the agent itself, is
+// stale, and list and update would keep treating them as plugin agents and
+// never refresh their skill files. The skills are already installed, so a
+// failure here is only a warning.
 func forgetStalePluginRecords(ctx context.Context, scope string, items []agentPlanItem) {
 	if len(items) == 0 {
 		return
@@ -1072,7 +1062,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 				reason := f.Reason()
 				recovery := installRecovery(ctx, skillsAgentRerun(rerun, it), f.Err)
 				if !quiet {
-					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %s", it.agent.DisplayName, reason)))
+					cmdio.LogString(ctx, cmdio.Yellow(ctx, f.Notice()))
 					cmdio.LogString(ctx, "  "+recovery)
 				}
 				outcomes = append(outcomes, agentOutcome{

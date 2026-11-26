@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -119,6 +120,52 @@ func TestPlanToolsKeepsSkillsWithoutInstallState(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, tools.skip)
 	assert.True(t, tools.fresh())
+}
+
+// Install state that an unfinished first install of auto-install saved is
+// finished as a first install. Install state that anything else wrote, such
+// as a later `aitools install --skills-only`, is updated: a first install
+// would put Claude Code on the plugin and drop the user's choices.
+func TestPlanToolsUpdatesInstallStateAnUnfinishedInstallDidNotWrite(t *testing.T) {
+	autoInstallHome(t)
+	dir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	saved := &installer.InstallState{
+		SchemaVersion: installer.CurrentSchemaVersion,
+		Release:       "v0.2.6",
+		Skills:        map[string]string{"databricks-sql": "1.0.0"},
+		Scope:         installer.ScopeGlobal,
+	}
+	require.NoError(t, installer.SaveState(dir, saved))
+	loaded, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	digest, err := installStateDigest(loaded)
+	require.NoError(t, err)
+	prior := autoinstall.State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: digest, AcceptedVersion: "1.30.0"}
+
+	tools, err := planTools(t.Context(), prior, "1.30.0")
+	require.NoError(t, err)
+	assert.True(t, tools.fresh(), "the install state is the unfinished install's own")
+
+	// The MCP section is written by the mcp commands and does not count.
+	require.NoError(t, installer.SaveMCPState(dir, &installer.MCPState{Servers: []installer.MCPEntry{{Name: "databricks"}}}))
+	tools, err = planTools(t.Context(), prior, "1.30.0")
+	require.NoError(t, err)
+	assert.True(t, tools.fresh(), "an MCP record keeps the install state the unfinished install's own")
+
+	saved.SkillsOnlyAgents = []string{agents.NameClaudeCode}
+	require.NoError(t, installer.SaveState(dir, saved))
+	tools, err = planTools(t.Context(), prior, "1.30.0")
+	require.NoError(t, err)
+	assert.False(t, tools.fresh())
+	require.NotNil(t, tools.existing, "the user's install state is updated")
+	assert.Equal(t, []string{agents.NameClaudeCode}, tools.existing.SkillsOnlyAgents)
+
+	// Install state saved while Installing is set, by a CLI that recorded no
+	// digest, is not known to be the unfinished install's own either.
+	tools, err = planTools(t.Context(), autoinstall.State{LastVersion: "1.30.0", Installing: true, AcceptedVersion: "1.30.0"}, "1.30.0")
+	require.NoError(t, err)
+	require.NotNil(t, tools.existing)
 }
 
 func TestPlanToolsKeepsPluginInstalledWithAgentCLI(t *testing.T) {
@@ -235,8 +282,13 @@ func TestPlanToolsFinishesAnUnfinishedInstall(t *testing.T) {
 	home := autoInstallHome(t)
 	setAgentCLIsStoppable(t, true)
 	stubPluginAlreadyInstalled(t, false)
-	saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})
-	unfinished := autoinstall.State{LastVersion: "1.30.0", Attempts: 1, Installing: true}
+	dir := saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})
+	saved, err := installer.LoadState(dir)
+	require.NoError(t, err)
+	digest, err := installStateDigest(saved)
+	require.NoError(t, err)
+	// The user said "yes" to this version's install, so its retries do not ask.
+	unfinished := autoinstall.State{LastVersion: "1.30.0", Attempts: 1, Installing: true, InstallStateDigest: digest, AcceptedVersion: "1.30.0"}
 
 	// Install state that is not an unfinished install's is updated.
 	tools, err := planTools(t.Context(), autoinstall.State{}, "1.30.0")
@@ -250,6 +302,21 @@ func TestPlanToolsFinishesAnUnfinishedInstall(t *testing.T) {
 	assert.True(t, tools.fresh())
 	assert.True(t, tools.finishing)
 	assert.Equal(t, []string{"Claude Code", "Cursor"}, planAgentNames(tools.plan))
+
+	// A run that would have to ask updates the installation instead.
+	notAccepted := unfinished
+	notAccepted.AcceptedVersion = ""
+	tools, err = planTools(t.Context(), notAccepted, "1.30.0")
+	require.NoError(t, err)
+	assert.NotNil(t, tools.existing)
+	assert.Empty(t, tools.plan)
+
+	// A coding agent's run does not ask, so it finishes the install.
+	t.Setenv("CLAUDECODE", "1")
+	useragent.ClearCache()
+	tools, err = planTools(t.Context(), notAccepted, "1.30.0")
+	require.NoError(t, err)
+	assert.True(t, tools.finishing)
 
 	// A later version updates the install that an earlier one left unfinished.
 	tools, err = planTools(t.Context(), unfinished, "1.31.0")

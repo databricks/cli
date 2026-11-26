@@ -25,15 +25,15 @@ const (
 
 // mapAgentScope maps the CLI scope (global/project) to an agent's own plugin
 // scope. CLI global maps to the agent's user scope. CLI project maps to the
-// agent's project scope only when the agent supports it (Claude today); other
+// agent's project scope only when its plugin supports it (Claude today); other
 // agents are skipped with a reason rather than silently falling back to user
-// scope (goals Decision #1; Copilot is user-only for v1, Codex is user-only).
+// scope (the Copilot and Codex plugins are user-scope only).
 func mapAgentScope(a *agents.Agent, cliScope string) (scope string, ok bool, reason string) {
 	if cliScope == installer.ScopeProject {
-		if a.SupportsProjectScope {
+		if a.SupportsProjectPlugin {
 			return agentScopeProject, true, ""
 		}
-		return "", false, a.DisplayName + " is user-only; project scope is not supported"
+		return "", false, "the plugin is user-only; project-scoped plugins are not supported"
 	}
 	return agentScopeUser, true, ""
 }
