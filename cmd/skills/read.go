@@ -1,7 +1,6 @@
 package skills
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"slices"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	libskills "github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
@@ -75,7 +75,7 @@ func runRead(cmd *cobra.Command, src libskills.Source, name string) error {
 
 	files := otherFiles(skill.Files)
 	if root.OutputType(cmd) == flags.OutputJSON {
-		return writeReadJSON(cmd.OutOrStdout(), readOutput{
+		return cmdio.Render(ctx, readOutput{
 			Name:    name,
 			Version: skill.Version,
 			Source:  catalog.Label,
@@ -98,8 +98,9 @@ func otherFiles(files []string) []string {
 	return others
 }
 
-// writeReadText writes SKILL.md exactly as it is, then the other files with the
-// command that reads each one. Nothing else goes to stdout.
+// writeReadText writes SKILL.md, with a trailing newline added if it is missing,
+// then the other files with the command that reads each one. Nothing else goes
+// to stdout.
 func writeReadText(w io.Writer, name string, content []byte, files []string) error {
 	var b strings.Builder
 	b.Write(content)
@@ -109,17 +110,23 @@ func writeReadText(w io.Writer, name string, content []byte, files []string) err
 	if len(files) > 0 {
 		b.WriteString("\nOther files in this skill, each read with its command:\n")
 		for _, f := range files {
-			fmt.Fprintf(&b, "  databricks skills read-file %s %s\n", name, f)
+			fmt.Fprintf(&b, "  databricks skills read-file %s %s\n", shellQuote(name), shellQuote(f))
 		}
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
 }
 
-func writeReadJSON(w io.Writer, out readOutput) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(out)
+// shellWordChars are the characters a POSIX shell reads as they are.
+const shellWordChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./:"
+
+// shellQuote quotes s for a POSIX shell, so the printed command passes s as one
+// argument and runs the same way when an agent pastes it.
+func shellQuote(s string) string {
+	if s != "" && strings.Trim(s, shellWordChars) == "" {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // readProvenance says where a stale catalog came from. A stale catalog is a
