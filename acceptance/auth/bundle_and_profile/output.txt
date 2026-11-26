@@ -99,7 +99,7 @@ Exit code: 1
 
 >>> errcode [CLI] bundle validate -t staging -p baz
 Warn: [hostmetadata] failed to fetch host metadata for https://baz.test, will skip for 1m0s
-Error: Get "https://baz.test/api/2.0/preview/scim/v2/Me": (redacted)
+Error: Get "https://baz.test/api/2.0/identity/me": (redacted)
 
 Name: test-auth
 Target: staging

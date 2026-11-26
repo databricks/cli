@@ -16,3 +16,9 @@ New='Get "https://non.existing.subdomain.databricks.test/api/2.0/preview/scim/v2
 [[Repls]]
 Old='Get "https://baz.test/api/2.0/preview/scim/v2/Me\??": .*'
 New='Get "https://baz.test/api/2.0/preview/scim/v2/Me": (redacted)'
+
+# bundle validate reads the current user from identity/me. The text after the URL depends on
+# the platform and the server's response, so it is redacted, as for the SCIM lookups above.
+[[Repls]]
+Old='Get "https://baz.test/api/2.0/identity/me\??": .*'
+New='Get "https://baz.test/api/2.0/identity/me": (redacted)'
