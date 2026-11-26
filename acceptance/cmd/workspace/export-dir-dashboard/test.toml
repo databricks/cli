@@ -7,4 +7,7 @@ GOOS.windows = false
 
 Ignore = [
   "export",
+  "created.json",
+  "after.json",
+  "conflict.log",
 ]
