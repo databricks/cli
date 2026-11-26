@@ -1,0 +1,71 @@
+
+=== a named agent whose skills directory is read-only fails
+
+>>> [CLI] aitools install --skills-only --scope=global --agents=cursor
+Installing Databricks skills for Cursor...
+Using skills version test-ref
+Fetching skills manifest...
+Warn: Failed to install for Cursor: mkdir [TEST_TMP_DIR]/home/.cursor/skills/databricks-test: permission denied
+Skipped Cursor: could not install 1 skill: mkdir [TEST_TMP_DIR]/home/.cursor/skills/databricks-test: permission denied
+  Check that you own [TEST_TMP_DIR]/home/.cursor/skills/databricks-test and can write to it (an earlier run with sudo can leave it owned by root), then re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'.
+Error: Cursor: could not install 1 skill: mkdir [TEST_TMP_DIR]/home/.cursor/skills/databricks-test: permission denied
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"FAILURE","error_category":"PERMISSION_DENIED","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CURSOR"],"scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CURSOR","error_category":"PERMISSION_DENIED"}]}}
+
+=== --output json reports the agent as failed
+
+>>> [CLI] aitools install --skills-only --scope=global --agents=cursor --output json
+Warn: Failed to install for Cursor: mkdir [TEST_TMP_DIR]/home/.cursor/skills/databricks-test: permission denied
+{
+  "scope": "global",
+  "agents": [
+    {
+      "name": "cursor",
+      "delivery": "skills",
+      "status": "failed",
+      "error_category": "PERMISSION_DENIED",
+      "message": "could not install 1 skill: mkdir [TEST_TMP_DIR]/home/.cursor/skills/databricks-test: permission denied",
+      "recovery": "Check that you own [TEST_TMP_DIR]/home/.cursor/skills/databricks-test and can write to it (an earlier run with sudo can leave it owned by root), then re-run 'databricks aitools install --scope=global --agents=cursor --skills-only --output json'."
+    }
+  ]
+}
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"FAILURE","error_category":"PERMISSION_DENIED","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CURSOR"],"scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":1,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CURSOR","error_category":"PERMISSION_DENIED"}]}}
+
+=== a detected agent that gets no skills is reported while another one gets them
+
+>>> [CLI] aitools install --skills-only --scope=global
+Installing Databricks skills for Cursor, OpenCode...
+Using skills version test-ref
+Fetching skills manifest...
+Warn: Failed to install for Cursor: mkdir [TEST_TMP_DIR]/home2/.cursor/skills/databricks-test: permission denied
+Installed 1 skill in [TEST_TMP_DIR]/home2/.databricks/aitools/skills.
+Skipped Cursor: could not install 1 skill: mkdir [TEST_TMP_DIR]/home2/.cursor/skills/databricks-test: permission denied
+  Check that you own [TEST_TMP_DIR]/home2/.cursor/skills/databricks-test and can write to it (an earlier run with sudo can leave it owned by root), then re-run 'databricks aitools install --scope=global --agents=cursor --skills-only'.
+
+>>> print_telemetry
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STARTED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"FLAGS_VALIDATED","interactive":false,"install_mode":"SKILLS_ONLY"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SCOPE_RESOLVED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"AGENTS_SELECTED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"PLAN_CONFIRMED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"STEP_COMPLETED","step":"SKILLS_INSTALLED","interactive":false,"install_mode":"SKILLS_ONLY","scope":"GLOBAL"}}
+{"command":"aitools_install","exit_code":0,"aitools_install_event":{"agents":["CURSOR","OPENCODE"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CURSOR","error_category":"PERMISSION_DENIED"}]}}
+{"command":"aitools_install","exit_code":0,"aitools_command_event":{"command":"INSTALL","stage":"FINISHED","outcome":"SUCCESS","interactive":false,"install_mode":"SKILLS_ONLY","agents":["CURSOR","OPENCODE"],"scope":"GLOBAL"}}
+
+>>> ls [TEST_TMP_DIR]/home2/.config/opencode/skills
+databricks-test

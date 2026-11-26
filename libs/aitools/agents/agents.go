@@ -56,11 +56,14 @@ type Agent struct {
 	ConfigDir func(ctx context.Context) (string, error)
 	// SkillsSubdir is the subdirectory within ConfigDir for skills (default: "skills").
 	SkillsSubdir string
-	// SupportsProjectScope indicates whether this agent supports project-scoped skills.
-	// When true, skills can be installed relative to the project root.
-	SupportsProjectScope bool
+	// SupportsProjectPlugin indicates whether the agent's plugin CLI can install the
+	// databricks plugin in project scope. Only meaningful when Plugin != nil.
+	SupportsProjectPlugin bool
+	// SupportsProjectSkills indicates whether the agent reads raw skill files from a
+	// project-relative directory (ProjectConfigDir/<skills subdir>).
+	SupportsProjectSkills bool
 	// ProjectConfigDir is the config directory name relative to a project root
-	// (e.g., ".claude"). Only used when SupportsProjectScope is true.
+	// (e.g., ".claude"). Only used when SupportsProjectSkills is true.
 	ProjectConfigDir string
 	// Binary is the agent's CLI binary name on PATH, used by exec.LookPath for
 	// plugin-capability detection and as the program for the plugin probe.
@@ -208,7 +211,7 @@ func homeSubdir(subpath ...string) func(ctx context.Context) (string, error) {
 }
 
 // ProjectSkillsDir returns the project-scoped skills directory for this agent.
-// Only valid for agents where SupportsProjectScope is true.
+// Only valid for agents where SupportsProjectSkills is true.
 func (a *Agent) ProjectSkillsDir(cwd string) string {
 	subdir := a.SkillsSubdir
 	if subdir == "" {
@@ -282,14 +285,15 @@ func claudePlugin() *PluginSpec {
 // an *Agent without the &Registry[i] dance and call its pointer-receiver methods.
 var Registry = []*Agent{
 	{
-		Name:                 NameClaudeCode,
-		DisplayName:          "Claude Code",
-		ConfigDir:            claudeConfigDir,
-		SupportsProjectScope: true,
-		ProjectConfigDir:     ".claude",
-		Binary:               "claude",
-		Plugin:               claudePlugin(),
-		pluginInstalls:       claudePluginInstalls,
+		Name:                  NameClaudeCode,
+		DisplayName:           "Claude Code",
+		ConfigDir:             claudeConfigDir,
+		SupportsProjectPlugin: true,
+		SupportsProjectSkills: true,
+		ProjectConfigDir:      ".claude",
+		Binary:                "claude",
+		Plugin:                claudePlugin(),
+		pluginInstalls:        claudePluginInstalls,
 		MCP: &mcpconfig.Spec{
 			Path:       claudeMCPPath,
 			Format:     mcpconfig.FormatJSON,
@@ -321,9 +325,20 @@ var Registry = []*Agent{
 		},
 	},
 	{
-		Name:                     NameCodex,
-		DisplayName:              "Codex CLI",
-		ConfigDir:                homeSubdir(".codex"),
+		Name:        NameCodex,
+		DisplayName: "Codex CLI",
+		ConfigDir:   homeSubdir(".codex"),
+		// Codex reads repository skills from .agents/skills and follows
+		// symlinked skill folders, but its plugin (`codex plugin add`) has no
+		// scope option, so the plugin is user-only.
+		// See https://learn.chatgpt.com/docs/build-skills.
+		// Pi and Gemini CLI also read .agents/skills next to their own project
+		// dirs, so a project install for Codex and one of them exposes each
+		// skill to that agent twice (both links point at the same canonical
+		// copy). See https://docs.pi.dev/latest/skills and
+		// https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/using-agent-skills.md.
+		SupportsProjectSkills:    true,
+		ProjectConfigDir:         ".agents",
 		Binary:                   "codex",
 		Plugin:                   databricksPlugin(),
 		pluginConfigMarketplaces: codexPluginMarketplaces,
@@ -386,22 +401,22 @@ var Registry = []*Agent{
 		},
 	},
 	{
-		Name:                 NamePi,
-		DisplayName:          "Pi",
-		ConfigDir:            piConfigDir,
-		SupportsProjectScope: true,
-		ProjectConfigDir:     ".pi",
-		Binary:               "pi",
+		Name:                  NamePi,
+		DisplayName:           "Pi",
+		ConfigDir:             piConfigDir,
+		SupportsProjectSkills: true,
+		ProjectConfigDir:      ".pi",
+		Binary:                "pi",
 		// Pi reads agent skills (SKILL.md) but has no databricks plugin, so it is
 		// skills-only (Plugin nil).
 	},
 	{
-		Name:                 NameGemini,
-		DisplayName:          "Gemini CLI",
-		ConfigDir:            geminiConfigDir,
-		SupportsProjectScope: true,
-		ProjectConfigDir:     ".gemini",
-		Binary:               "gemini",
+		Name:                  NameGemini,
+		DisplayName:           "Gemini CLI",
+		ConfigDir:             geminiConfigDir,
+		SupportsProjectSkills: true,
+		ProjectConfigDir:      ".gemini",
+		Binary:                "gemini",
 		// Gemini CLI reads agent skills (SKILL.md) but has no databricks plugin, so
 		// it is skills-only (Plugin nil).
 		// Gemini writes projects.json after real use. Antigravity shares ~/.gemini,
@@ -419,22 +434,22 @@ var Registry = []*Agent{
 		mcpHomeEnvs: []string{geminiHomeEnv},
 	},
 	{
-		Name:                 NameGoose,
-		DisplayName:          "Goose",
-		ConfigDir:            gooseConfigDir,
-		SupportsProjectScope: true,
-		ProjectConfigDir:     ".goose",
-		Binary:               "goose",
+		Name:                  NameGoose,
+		DisplayName:           "Goose",
+		ConfigDir:             gooseConfigDir,
+		SupportsProjectSkills: true,
+		ProjectConfigDir:      ".goose",
+		Binary:                "goose",
 		// Goose reads agent skills (SKILL.md) but has no databricks plugin, so it is
 		// skills-only (Plugin nil).
 	},
 	{
-		Name:                 NameKiro,
-		DisplayName:          "Kiro",
-		ConfigDir:            homeSubdir(".kiro"),
-		SupportsProjectScope: true,
-		ProjectConfigDir:     ".kiro",
-		Binary:               "kiro",
+		Name:                  NameKiro,
+		DisplayName:           "Kiro",
+		ConfigDir:             homeSubdir(".kiro"),
+		SupportsProjectSkills: true,
+		ProjectConfigDir:      ".kiro",
+		Binary:                "kiro",
 		// Kiro reads agent skills (SKILL.md) but has no databricks plugin, so it is
 		// skills-only (Plugin nil). Kiro's own picker text documents both scopes:
 		// "Skills can be added to ~/.kiro/skills/ (user-level) or .kiro/skills/
@@ -846,7 +861,7 @@ func DetectInstalled(ctx context.Context) []*Agent {
 func DetectProjectInstalled(cwd string) []*Agent {
 	var installed []*Agent
 	for _, a := range Registry {
-		if a.SupportsProjectScope && HasDatabricksSkillsIn(a.ProjectSkillsDir(cwd)) {
+		if a.SupportsProjectSkills && HasDatabricksSkillsIn(a.ProjectSkillsDir(cwd)) {
 			installed = append(installed, a)
 		}
 	}

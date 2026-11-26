@@ -1,0 +1,5 @@
+
+=== The server rejects a client public key with options
+Error: failed to setup SSH configuration: failed to get client public key: secret "client-public-key" of secret scope "ssh-scope" is not in the expected format because it sets authorized_keys options. The Databricks CLI stores a single public key without options there. Delete the secret scope with 'databricks secrets delete-scope ssh-scope', using the same profile you use for 'databricks ssh connect' (for example --profile <name>), and connect again; if you cannot delete it, ask a workspace admin to remove it
+
+=== Nothing is written to the server's SSH config directory
