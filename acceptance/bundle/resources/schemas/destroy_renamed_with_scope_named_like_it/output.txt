@@ -1,0 +1,43 @@
+
+=== Deploy a schema and a secret scope whose name starts with the schema's full name, and rename the schema out of band
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created schemas.schema1
+Created secret_scopes.scope1
+Created secret_scopes.scope1.permissions
+Files: 1 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The scope is not in the schema: destroy deletes it where it is, and the schema at its new name
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.schema1
+  delete resources.secret_scopes.scope1
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.schema1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 2 deleted
+
+>>> print_requests.py --sort //unity-catalog //secrets
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.moved_schema",
+  "q": {
+    "force": "true"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/delete",
+  "body": {
+    "scope": "main.myschema.scope"
+  }
+}
+
+>>> musterr [CLI] secrets list-secrets main.myschema.scope
+Error: Scope main.myschema.scope does not exist

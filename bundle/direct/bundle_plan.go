@@ -956,8 +956,13 @@ func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployp
 		if !ok {
 			continue
 		}
-		if !entry.Gone && hasRecordedInternalID(adapter, dbentry) {
+		if !entry.Gone && entry.RemoteState != nil && hasRecordedInternalID(adapter, dbentry) {
 			// Verified at its recorded ID by its internal ID (see findDeleteTarget): it did not move.
+			continue
+		}
+		if !entry.Gone && !adapter.HasIDFromState() {
+			// Found at its recorded ID, and its ID is not known to be a UC full name (a secret scope may
+			// be named main.s.x): it is deleted there. Only a Gone one is looked for by prefix.
 			continue
 		}
 		// Any resource whose ID is a full name under the parent's can be in it, with or without

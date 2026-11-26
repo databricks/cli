@@ -6,3 +6,8 @@ resources:
     schema1:
       catalog_name: main
       name: myschema
+  volumes:
+    volume1:
+      catalog_name: main
+      schema_name: ${resources.schemas.schema1.name}
+      name: myvolume

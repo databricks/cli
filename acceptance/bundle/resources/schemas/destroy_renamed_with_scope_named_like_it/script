@@ -1,0 +1,9 @@
+title "Deploy a schema and a secret scope whose name starts with the schema's full name, and rename the schema out of band"
+trace $CLI bundle deploy
+$CLI schemas update main.myschema --new-name moved_schema > /dev/null
+print_requests.py //unity-catalog //secrets &> LOG.deploy_requests
+
+title "The scope is not in the schema: destroy deletes it where it is, and the schema at its new name"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --sort //unity-catalog //secrets
+trace musterr $CLI secrets list-secrets main.myschema.scope

@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    schema1:
+      catalog_name: main
+      name: myschema
+  secret_scopes:
+    scope1:
+      name: main.myschema.scope

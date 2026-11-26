@@ -3,12 +3,12 @@ envsubst < databricks.yml.tmpl > databricks.yml
 OLD_SCHEMA="main.myschema"
 NEW_SCHEMA="main.moved_schema"
 
-title "Deploy a schema and rename it out of band; the recorded name is not readable"
+title "Deploy a schema with a volume in it and rename the schema out of band; the recorded names are not readable"
 trace $CLI bundle deploy
 $CLI schemas update "$OLD_SCHEMA" --new-name moved_schema > /dev/null
 print_requests.py //unity-catalog &> LOG.deploy_requests
 
-title "Destroy finds the renamed schema by its schema_id and deletes it there"
+title "Destroy finds the renamed schema by its schema_id, and the volume in it by its volume_id, and deletes both there"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
 trace musterr $CLI schemas get "$NEW_SCHEMA"
