@@ -1,0 +1,19 @@
+# Runs the real "ssh server" (normally started on the cluster by the bootstrap job)
+# against the test server with a client public key that is not in the form
+# "ssh connect" stores: it is prefixed with authorized_keys options. The server
+# rejects it before writing an sshd config or authorized_keys.
+ssh-keygen -q -t ed25519 -N '' -f client_key
+$CLI secrets create-scope ssh-scope
+$CLI secrets put-secret ssh-scope client-public-key --string-value "command=\"echo marker\" $(cat client_key.pub)"
+
+SERVER_HOME="$PWD/server-home"
+mkdir -p "$SERVER_HOME"
+title "The server rejects a client public key with options"
+# GOCOVERDIR is kept so the coverage build (main CI) writes its data instead of printing a warning.
+musterr env -i HOME="$SERVER_HOME" PATH=/usr/bin:/bin DATABRICKS_HOST="$DATABRICKS_HOST" DATABRICKS_TOKEN="$DATABRICKS_TOKEN" \
+  ${GOCOVERDIR:+GOCOVERDIR="$GOCOVERDIR"} \
+  $CLI ssh server --serverless --cluster=test-cluster --session-id=test-session --secret-scope-name=ssh-scope \
+  --authorized-key-secret-name=client-public-key --shutdown-delay=1s 2>&1 | contains.py '!marker'
+
+title "Nothing is written to the server's SSH config directory"
+assert_not_exists.py server-home/.ssh-tunnel

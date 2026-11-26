@@ -2,6 +2,9 @@ package aitools
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -337,6 +340,9 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		runCtx, cancel := context.WithTimeout(qctx, installTimeout)
 		result, err = tools.install(runCtx)
 		cancel()
+		if err != nil && tools.fresh() {
+			saveInstallStateDigest(ctx, tools.globalDir)
+		}
 	}
 	if _, refused := errors.AsType[*installer.RefusedError](err); refused {
 		// The installed skills are newer than the release this CLI would
@@ -368,6 +374,27 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		}
 	}
 	return nil
+}
+
+// saveInstallStateDigest records the digest of the install state that a first
+// install that did not finish saved, so that a later run can tell it from
+// install state that anything else wrote. Without the digest, a later run
+// updates that state instead of finishing the install.
+func saveInstallStateDigest(ctx context.Context, globalDir string) {
+	existing, err := installer.LoadState(globalDir)
+	if err == nil && existing == nil {
+		return
+	}
+	var digest string
+	if err == nil {
+		digest, err = installStateDigest(existing)
+	}
+	if err == nil {
+		err = autoinstall.SaveInstallStateDigest(ctx, digest)
+	}
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+	}
 }
 
 // autoInstallAsks reports whether auto-install asks before a first install:
@@ -565,7 +592,12 @@ func (t toolsPlan) fresh() bool {
 // does instead, which keeps its downgrade guard, also keeps an installed
 // release newer than a pinned one, keeps the skills whose files the user
 // modified at their version, and does not migrate skills to plugins.
-// Planning reads only local state; prior is the auto-install state.
+// A first install of auto-install that did not finish is planned again as a
+// first install, even when it saved install state, as long as nothing else
+// rewrote that state since (see autoinstall.State.InstallStateDigest): update
+// reinstalls only the skills whose version changed, so it would never give the
+// skills to an agent that did not get them. Planning reads only local state;
+// prior is the auto-install state.
 func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) {
 	globalDir, err := installer.GlobalSkillsDir(ctx)
 	if err != nil {
@@ -575,7 +607,17 @@ func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) 
 	if err != nil {
 		return toolsPlan{}, err
 	}
-	if existing != nil {
+	// What an unfinished first install of auto-install left is its own: skills
+	// without install state, or install state nothing else rewrote since.
+	unfinished := prior.Installing
+	if unfinished && existing != nil {
+		digest, err := installStateDigest(existing)
+		if err != nil {
+			return toolsPlan{}, err
+		}
+		unfinished = digest == prior.InstallStateDigest
+	}
+	if existing != nil && !unfinished {
 		// The update runs agent CLIs to update the recorded plugins.
 		if !agentCLIsStoppable && len(existing.Plugins) > 0 {
 			return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeSkippedPlatform, skipWhy: "the update would run agent CLIs"}, nil
@@ -583,9 +625,8 @@ func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) 
 		return toolsPlan{globalDir: globalDir, existing: existing}, nil
 	}
 	// Skills without install state have no checksums to tell the user's edits
-	// from ours, and an install would replace them. The ones an unfinished
-	// install of auto-install left are its own.
-	if !prior.Installing && installer.HasUntrackedSkills(ctx, installer.ScopeGlobal) {
+	// from ours, and an install would replace them.
+	if !unfinished && installer.HasUntrackedSkills(ctx, installer.ScopeGlobal) {
 		return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeKept, skipWhy: "skills without install state are on disk"}, nil
 	}
 	plan := buildPlan(ctx, agents.DetectInstalled(ctx), installer.ScopeGlobal, false, false)
@@ -601,6 +642,19 @@ func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) 
 		}
 	}
 	return toolsPlan{globalDir: globalDir, plan: plan}, nil
+}
+
+// installStateDigest returns a digest of the install state without its MCP
+// section, which the mcp commands write.
+func installStateDigest(s *installer.InstallState) (string, error) {
+	c := *s
+	c.MCP = nil
+	data, err := json.Marshal(&c)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
 }
 
 // newAgents names the agents a fresh install gives tools to: skills, or a

@@ -59,6 +59,14 @@ type State struct {
 	// uses it to finish the install instead of leaving the skills alone.
 	Installing bool `json:"installing,omitempty"`
 
+	// InstallStateDigest is the digest of the install state that an
+	// unfinished first install saved (one that failed only for some agents).
+	// While the install state still has it, nothing else wrote it, so a later
+	// run finishes the install as a first install instead of updating it.
+	// Install state that anything else wrote is updated. It is cleared with
+	// Installing.
+	InstallStateDigest string `json:"install_state_digest,omitempty"`
+
 	// ID is a random per-machine identifier, created on the first run that
 	// decides anything. Only its Bucket is used, and it never leaves the
 	// machine. The CLI has no other stable machine identifier.

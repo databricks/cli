@@ -1,0 +1,15 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "install --scope=project skips the user-only Codex plugin and points at --skills-only"
+errcode trace $CLI aitools install --scope=project --agents=codex --output json
+
+title "install --skills-only --scope=project installs Codex skills into .agents/skills"
+# The Codex plugin is user-only, but Codex reads repository skills from
+# .agents/skills, so a skills-only project install covers it.
+trace $CLI aitools install --skills-only --scope=project --agents=codex --output json
+if [ -f .agents/skills/test-stable/SKILL.md ]; then echo "Codex project skill installed"; else echo "Codex project skill missing"; fi
+
+title "uninstall --scope=project removes the Codex project skill"
+trace $CLI aitools uninstall --scope=project
+if [ -e .agents/skills/test-stable ]; then echo "Codex project skill still present"; else echo "Codex project skill removed"; fi
