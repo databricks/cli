@@ -186,6 +186,12 @@ func DisplaySkillsVersion(ref string) string {
 	return strings.TrimPrefix(ref, "v")
 }
 
+// LatestSkillsReleaseRef returns the tag of the skills repo's latest release. The
+// release build uses it to choose the skills it bundles.
+func LatestSkillsReleaseRef(ctx context.Context) (string, error) {
+	return fetchLatestSkillsReleaseRef(ctx)
+}
+
 // GetSkillsBaseURL returns the manifest and skill fetch base URL.
 // DATABRICKS_SKILLS_BASE_URL overrides GitHub raw URLs for acceptance tests.
 func GetSkillsBaseURL(ctx context.Context) string {
