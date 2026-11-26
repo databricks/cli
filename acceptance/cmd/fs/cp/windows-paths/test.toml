@@ -1,0 +1,3 @@
+# Drive letters and backslash separators exist only on Windows.
+GOOS.linux = false
+GOOS.darwin = false

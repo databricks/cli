@@ -1,0 +1,40 @@
+# fs cp from a $SRC directory to a $DST directory, each one of local, DBFS or UC Volume.
+# The test's src/ tree is uploaded to [SRC], and its target/ tree (files the copies run into) to [DST].
+CATALOG_NAME="main"
+SCHEMA_NAME="default"
+VOLUME_NAME="fs-cp-matrix-${UNIQUE_NAME}"
+
+root_of() {
+  case $1 in
+    local) echo "local" ;;
+    dbfs) echo "dbfs:/tmp/fs-cp-matrix-${UNIQUE_NAME}" ;;
+    volume) echo "dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}" ;;
+  esac
+}
+
+SRC_DIR="$(root_of $SRC)/src"
+DST_DIR="$(root_of $DST)/dst"
+
+cleanup() {
+  if [ "$SRC" = volume ] || [ "$DST" = volume ]; then
+    $CLI volumes delete "${CATALOG_NAME}.${SCHEMA_NAME}.${VOLUME_NAME}" 2>/dev/null || true
+  fi
+  if [ "$SRC" = dbfs ] || [ "$DST" = dbfs ]; then
+    $CLI fs rm -r "$(root_of dbfs)" 2>/dev/null || true
+  fi
+  rm -rf local
+}
+trap cleanup EXIT
+
+if [ "$SRC" = volume ] || [ "$DST" = volume ]; then
+  $CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${VOLUME_NAME}" MANAGED >/dev/null
+fi
+
+$CLI fs mkdir $SRC_DIR
+$CLI fs cp -r src $SRC_DIR >/dev/null
+$CLI fs mkdir $DST_DIR
+$CLI fs cp -r target $DST_DIR >/dev/null
+
+# Error messages print remote paths without the dbfs: scheme; test.toml folds dbfs:[SRC] into [SRC].
+add_repl "${SRC_DIR#dbfs:}" SRC
+add_repl "${DST_DIR#dbfs:}" DST
