@@ -32,5 +32,25 @@ No skill matches. Run databricks skills list to see every skill.
   }
 ]
 
+>>> [CLI] skills search --output json demo
+[
+  {
+    "name": "demo-skill",
+    "description": "A skill for tests.",
+    "version": "0.0.1",
+    "files": [
+      "SKILL.md"
+    ],
+    "commands": [],
+    "source": "[TESTROOT]/cmd/skills/search/../release",
+    "release_version": "0.0.1"
+  }
+]
+
 >>> [CLI] skills search --output json nothing-here
 []
+
+>>> [CLI] skills search  
+Error: search words must not be blank
+
+Exit code: 1

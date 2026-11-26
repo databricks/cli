@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"errors"
 	"slices"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 
 // searchTemplate prints the matches in the line format of skills list, then the
 // line that says how to read a skill. With no match it points at skills list.
-const searchTemplate = `{{if .}}{{range .}}{{.Name}}: {{.Description}}
+const searchTemplate = `{{if .}}{{range .}}{{.Name}}:{{with .Description}} {{.}}{{end}}
 {{end}}To read a skill, run: databricks skills read <name>
 {{else}}No skill matches. Run databricks skills list to see every skill.
 {{end}}`
@@ -37,6 +38,9 @@ func newSearchCmd() *cobra.Command {
 }
 
 func runSearch(cmd *cobra.Command, words []string) error {
+	if err := checkWords(words); err != nil {
+		return err
+	}
 	ctx := cmd.Context()
 	src, err := skills.Resolve(ctx)
 	if err != nil {
@@ -53,13 +57,28 @@ func runSearch(cmd *cobra.Command, words []string) error {
 			Name:           s.Name,
 			Description:    s.Description,
 			Version:        s.Version,
-			Files:          s.Files,
-			Commands:       s.Commands,
+			Files:          copyList(s.Files),
+			Commands:       copyList(s.Commands),
 			Source:         catalog.Label,
 			ReleaseVersion: catalog.Version,
 		})
 	}
 	return cmdio.RenderWithTemplate(ctx, results, "", searchTemplate)
+}
+
+// checkWords rejects a blank word, which would otherwise match every skill.
+func checkWords(words []string) error {
+	for _, w := range words {
+		if strings.TrimSpace(w) == "" {
+			return errors.New("search words must not be blank")
+		}
+	}
+	return nil
+}
+
+// copyList returns a non-nil copy of list, so that JSON prints [] rather than null.
+func copyList(list []string) []string {
+	return append(make([]string, 0, len(list)), list...)
 }
 
 // matchSkills returns the skills that match at least one of words, the most
@@ -70,7 +89,7 @@ func runSearch(cmd *cobra.Command, words []string) error {
 func matchSkills(all []skills.Skill, words []string) []skills.Skill {
 	lower := make([]string, len(words))
 	for i, w := range words {
-		lower[i] = strings.ToLower(w)
+		lower[i] = strings.ToLower(strings.TrimSpace(w))
 	}
 	type scored struct {
 		skill skills.Skill
