@@ -1,0 +1,1 @@
+* `databricks auth login --use-device-code` is no longer experimental: it no longer requires `DATABRICKS_CLI_DEVICE_CODE=true`, and the flag is shown in `databricks auth login --help`. Device code login lets you log in from a machine that cannot open a browser, by approving the login in a browser on another device. ([#8069](https://github.com/databricks/cli/pull/8069))
