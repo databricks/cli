@@ -186,6 +186,8 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 // Returns the list of files tracked (and synchronized) by the syncer during the run,
 // and an error if any occurred.
 func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
+	s.deleted = nil
+
 	files, err := s.GetFileList(ctx)
 	if err != nil {
 		return files, err
@@ -196,7 +198,6 @@ func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 		return files, err
 	}
 	s.fileCounts = FileCounts{Uploaded: len(change.put), Deleted: len(change.delete)}
-	s.deleted = nil
 
 	s.notifyStart(ctx, change)
 	if change.IsEmpty() && !change.resetMtimes {

@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -487,13 +488,13 @@ func TestSplitInternalFiles(t *testing.T) {
 		}
 		return out
 	}
-	require.Equal(t, []string{
+	assert.Equal(t, []string{
 		"a.py",
 		".databricks/bundle/prod/.internal/w.py",
 		"src/dev/.internal-other/w.py",
 		"src/notdev/.internal/w.py",
 	}, paths(rest))
-	require.Equal(t, []string{
+	assert.Equal(t, []string{
 		".databricks/bundle/dev/.internal/notebook_3_job_task.py",
 		"cache/dev/.internal/notebook_3_job_task.py",
 		"project/.databricks/bundle/dev/.internal/w.py",

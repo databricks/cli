@@ -79,29 +79,36 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	return nil
 }
 
-// withKeptFiles appends the kept entries that the synced files don't already list
-// and that the sync did not delete (deleted holds remote names).
+// withKeptFiles appends the kept entries whose remote name no synced file uses and
+// the sync did not delete (deleted holds remote names). Comparing remote names
+// rather than local paths keeps the list loadable: a snapshot rejects two local
+// files with the same remote name (x.py and x.ipynb notebooks).
 func withKeptFiles(synced, kept Filelist, deleted []string) Filelist {
-	seen := make(map[string]bool, len(synced))
+	taken := make(map[string]bool, len(synced)+len(deleted))
 	for _, f := range synced {
-		seen[filepath.ToSlash(f.LocalPath)] = true
+		taken[f.remoteName()] = true
 	}
-	isDeleted := make(map[string]bool, len(deleted))
 	for _, name := range deleted {
-		isDeleted[name] = true
+		taken[name] = true
 	}
 	for _, f := range kept {
 		// States written by CLI versions <= v0.220.0 on Windows use backslashes.
 		f.LocalPath = filepath.ToSlash(f.LocalPath)
-		remoteName := f.LocalPath
-		if f.IsNotebook {
-			remoteName = notebook.StripExtension(remoteName)
-		}
-		if !seen[f.LocalPath] && !isDeleted[remoteName] {
+		if !taken[f.remoteName()] {
 			synced = append(synced, f)
 		}
 	}
 	return synced
+}
+
+// remoteName is the file's name in the workspace, relative to workspace.file_path,
+// as the file sync computes it.
+func (f File) remoteName() string {
+	name := filepath.ToSlash(f.LocalPath)
+	if f.IsNotebook {
+		name = notebook.StripExtension(name)
+	}
+	return name
 }
 
 func StateUpdate() bundle.Mutator {
