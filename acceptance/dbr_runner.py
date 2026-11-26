@@ -1,11 +1,12 @@
 # Databricks notebook source
 
-# This notebook runs CLI cloud acceptance tests on a DBR cluster.
+# This notebook runs CLI acceptance tests on a DBR cluster.
 # It is meant to be submitted as a job task from the TestDbrAcceptance* tests.
 #
 # The notebook expects the following parameters:
 # - archive_path: Path to the archive.tar.gz file in the workspace
-# - cloud_env: Cloud environment (e.g., "aws", "azure", "gcp")
+# - test_type: "cloud" (real workspace, default) or "local" (fake server)
+# - cloud_env: Cloud environment (e.g., "aws", "azure", "gcp"); cloud tests only
 # - test_filter: Optional regex filter for test names (e.g., "bundle/generate")
 # - test_default_warehouse_id: Default SQL warehouse ID
 # - test_default_cluster_id: Default cluster ID
@@ -160,6 +161,7 @@ class TestResult:
 def run_tests(
     extract_dir: Path,
     env: dict,
+    test_type: str = "cloud",
     test_filter: str = "",
     cloud_env: str = "",
     test_default_warehouse_id: str = "",
@@ -170,7 +172,7 @@ def run_tests(
     test_sp_application_id: str = "",
     debug_log_path: str = "",
 ) -> TestResult:
-    """Run CLI cloud acceptance tests."""
+    """Run CLI acceptance tests."""
     cli_dir = extract_dir / "cli"
 
     # Get the workspace FUSE path for the pre-created debug log file
@@ -191,8 +193,12 @@ def run_tests(
     else:
         cmd.extend(["-run", "^TestAccept"])
 
-    # Cloud tests: run with CLOUD_ENV set and workspace access
-    env["CLOUD_ENV"] = cloud_env
+    if test_type == "local":
+        # Local tests run against the fake server; CLOUD_ENV would switch them to the real workspace.
+        env.pop("CLOUD_ENV", None)
+    else:
+        # Cloud tests: run with CLOUD_ENV set and workspace access
+        env["CLOUD_ENV"] = cloud_env
 
     if test_default_warehouse_id:
         env["TEST_DEFAULT_WAREHOUSE_ID"] = test_default_warehouse_id
@@ -211,7 +217,8 @@ def run_tests(
     with open(workspace_log_path, "w") as log_file:
         log_file.write(f"Command: {' '.join(cmd)}\n")
         log_file.write(f"Working directory: {cli_dir}\n")
-        log_file.write(f"CLOUD_ENV: {cloud_env}\n")
+        log_file.write(f"Test type: {test_type}\n")
+        log_file.write(f"CLOUD_ENV: {env.get('CLOUD_ENV', '')}\n")
         log_file.write(f"Test filter: {test_filter or '(all tests)'}\n")
         log_file.write(f"PATH: {env.get('PATH', '')[:200]}...\n")
         log_file.write(f"GOROOT: {env.get('GOROOT', '')}\n")
@@ -220,7 +227,8 @@ def run_tests(
         log_file.write("=" * 60 + "\n")
     print(f"Running command: {' '.join(cmd)}")
     print(f"Working directory: {cli_dir}")
-    print(f"CLOUD_ENV: {cloud_env}")
+    print(f"Test type: {test_type}")
+    print(f"CLOUD_ENV: {env.get('CLOUD_ENV', '')}")
     print(f"Test filter: {test_filter or '(all tests)'}")
     print("Go version: ", end="", flush=True)
 
@@ -278,6 +286,7 @@ def main():
     """Main entry point for the notebook."""
     # Get parameters from widgets
     dbutils.widgets.text("archive_path", "")
+    dbutils.widgets.text("test_type", "cloud")
     dbutils.widgets.text("cloud_env", "")
     dbutils.widgets.text("test_filter", "")
     dbutils.widgets.text("test_default_warehouse_id", "")
@@ -289,6 +298,7 @@ def main():
     dbutils.widgets.text("debug_log_path", "")
 
     archive_path = dbutils.widgets.get("archive_path")
+    test_type = dbutils.widgets.get("test_type")
     cloud_env = dbutils.widgets.get("cloud_env")
     test_filter = dbutils.widgets.get("test_filter")
     test_default_warehouse_id = dbutils.widgets.get("test_default_warehouse_id")
@@ -301,16 +311,18 @@ def main():
 
     if not archive_path:
         raise ValueError("archive_path parameter is required")
-    if not cloud_env:
-        raise ValueError("cloud_env parameter is required")
+    if test_type not in ("cloud", "local"):
+        raise ValueError(f"test_type must be 'cloud' or 'local', got {test_type!r}")
+    if test_type == "cloud" and not cloud_env:
+        raise ValueError("cloud_env parameter is required for cloud tests")
     if not debug_log_path:
         raise ValueError("debug_log_path parameter is required")
 
     print("=" * 60)
-    print("DBR Cloud Test Runner")
+    print(f"DBR Test Runner ({test_type})")
     print("=" * 60)
     print(f"Archive path: {archive_path}")
-    print(f"Cloud environment: {cloud_env}")
+    print(f"Cloud environment: {cloud_env or '(none)'}")
     print(f"Test filter: {test_filter or '(none)'}")
     print("=" * 60)
 
@@ -324,6 +336,7 @@ def main():
     result = run_tests(
         extract_dir=extract_dir,
         env=env,
+        test_type=test_type,
         test_filter=test_filter,
         cloud_env=cloud_env,
         test_default_warehouse_id=test_default_warehouse_id,
@@ -343,7 +356,7 @@ def main():
         # Include relevant output in the exception for debugging
         stdout_preview = result.stdout[-100000:] if result.stdout else "(no stdout)"
         stderr_preview = result.stderr[-100000:] if result.stderr else "(no stderr)"
-        error_msg = f"""Cloud tests failed with return code {result.return_code}
+        error_msg = f"""{test_type.capitalize()} tests failed with return code {result.return_code}
 
 === STDOUT (last 100000 chars) ===
 {stdout_preview}
