@@ -50,3 +50,31 @@ func TestMakeGraphDeletesWithParentAfterItsParent(t *testing.T) {
 		}
 	}
 }
+
+func TestMakeGraphWithParentReferencingASibling(t *testing.T) {
+	const (
+		schemaKey  = "resources.schemas.schema1"
+		volume1Key = "resources.volumes.volume1"
+		volume2Key = "resources.volumes.volume2"
+	)
+	plan := deployplan.NewPlanDirect()
+	plan.Plan[schemaKey] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: "main.moved"}
+	plan.Plan[volume1Key] = &deployplan.PlanEntry{Action: deployplan.Delete, ID: "main.moved.v1", DependsOn: []deployplan.DependsOnEntry{{Node: schemaKey}}}
+	// volume2 names its schema through volume1: deleted before volume1 as usual, it would close a
+	// cycle through the schema it goes with.
+	plan.Plan[volume2Key] = &deployplan.PlanEntry{
+		Action: deployplan.Delete, Gone: true, WithParent: schemaKey,
+		DependsOn: []deployplan.DependsOnEntry{{Node: volume1Key}, {Node: schemaKey}},
+	}
+
+	g, err := makeGraph(plan)
+	require.NoError(t, err)
+	require.NoError(t, g.DetectCycle())
+
+	var order []string
+	g.Run(1, func(key string, failedDependency *string) bool {
+		order = append(order, key)
+		return true
+	})
+	assert.Equal(t, []string{volume1Key, schemaKey, volume2Key}, order)
+}

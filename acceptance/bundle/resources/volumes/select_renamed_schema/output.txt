@@ -54,8 +54,8 @@ Resources: 0 created, 0 changed, 2 deleted, 0 unchanged
   }
 }
 
->>> musterr [CLI] volumes read main.test-schema-renamed-[UNIQUE_NAME].myvolume2
-Error: Volume 'main.test-schema-renamed-[UNIQUE_NAME].myvolume2' does not exist.
+>>> musterr [CLI] schemas get main.test-schema-renamed-[UNIQUE_NAME]
+Error: Schema 'main.test-schema-renamed-[UNIQUE_NAME]' does not exist.
 
 >>> [CLI] bundle summary --output json
 {}
