@@ -14,6 +14,7 @@ const TestDefaultClusterId = "0123-456789-cluster0"
 func init() {
 	registerRoutes("clusters", addClustersRoutes)
 	registerStore("clusters", newClustersStore)
+	registerPermissionsObjectType("clusters", "cluster")
 }
 
 type clustersStore struct {

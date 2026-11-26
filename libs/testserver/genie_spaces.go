@@ -13,6 +13,7 @@ import (
 func init() {
 	registerRoutes("genie_spaces", addGenieSpacesRoutes)
 	registerStore("genie_spaces", newGenieSpacesStore)
+	registerPermissionsObjectType("genie", "genie-space")
 }
 
 type genieSpacesStore struct {

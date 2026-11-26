@@ -23,6 +23,7 @@ import (
 func init() {
 	registerRoutes("jobs", addJobsRoutes)
 	registerStore("jobs", newJobsStore)
+	registerPermissionsObjectType("jobs", "job")
 }
 
 type jobsStore struct {

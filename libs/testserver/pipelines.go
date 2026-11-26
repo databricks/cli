@@ -11,6 +11,7 @@ import (
 func init() {
 	registerRoutes("pipelines", addPipelinesRoutes)
 	registerStore("pipelines", newPipelinesStore)
+	registerPermissionsObjectType("pipelines", "pipelines")
 }
 
 type pipelinesStore struct {

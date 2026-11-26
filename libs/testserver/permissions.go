@@ -13,6 +13,28 @@ import (
 func init() {
 	registerRoutes("permissions", addPermissionsRoutes)
 	registerStore("permissions", newPermissionsStore)
+
+	// Object types the fake server serves permissions for without modelling their API.
+	registerPermissionsObjectType("authorization", "tokens") // maps to both "tokens" and "passwords"
+	registerPermissionsObjectType("dbsql-dashboards", "dashboard")
+	registerPermissionsObjectType("sql/alerts", "alert")
+	registerPermissionsObjectType("sql/queries", "query")
+}
+
+// permissionsObjectTypes maps the object type in the path of a permissions request
+// to the object type the API returns.
+// source: https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go
+var permissionsObjectTypes = map[string]string{}
+
+// registerPermissionsObjectType makes the fake permissions API serve objects of
+// requestObjectType, returning them with objectType. Call it from the init function
+// of the file of the API that owns the objects. A map lookup does not depend on the
+// order init functions run in.
+func registerPermissionsObjectType(requestObjectType, objectType string) {
+	if _, ok := permissionsObjectTypes[requestObjectType]; ok {
+		panic("permissions object type registered twice: " + requestObjectType)
+	}
+	permissionsObjectTypes[requestObjectType] = objectType
 }
 
 type permissionsStore struct {
@@ -49,39 +71,10 @@ func addPermissionsRoutes(server *Server) {
 	})
 }
 
-// source: https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go
-
-var requestObjectTypeToObjectType = map[string]string{
-	"cluster-policies":        "cluster-policy",
-	"instance-pools":          "instance-pool",
-	"clusters":                "cluster",
-	"pipelines":               "pipelines",
-	"jobs":                    "job",
-	"notebooks":               "notebook",
-	"directories":             "directory",
-	"files":                   "file",
-	"repos":                   "repo",
-	"authorization":           "tokens", // maps to both "tokens" and "passwords"
-	"sql/warehouses":          "warehouses",
-	"dbsql-dashboards":        "dashboard",
-	"sql/alerts":              "alert",
-	"sql/queries":             "query",
-	"dashboards":              "dashboard",
-	"genie":                   "genie-space",
-	"experiments":             "mlflowExperiment",
-	"registered-models":       "registered-model",
-	"serving-endpoints":       "serving-endpoint",
-	"vector-search-endpoints": "vector-search-endpoints",
-	"apps":                    "apps",
-	"database-instances":      "database-instances",
-	"database-projects":       "database-projects",
-	"alertsv2":                "alertv2",
-}
-
 // PermissionsObjectType returns the object_type the fake permissions API returns for
 // objects of requestObjectType, for example "warehouses" for "sql/warehouses".
 func PermissionsObjectType(requestObjectType string) (string, bool) {
-	objectType, ok := requestObjectTypeToObjectType[requestObjectType]
+	objectType, ok := permissionsObjectTypes[requestObjectType]
 	return objectType, ok
 }
 
@@ -182,7 +175,7 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 		}
 	}
 
-	objectType := requestObjectTypeToObjectType[requestObjectType]
+	objectType := permissionsObjectTypes[requestObjectType]
 	if objectType == "" {
 		return Response{
 			StatusCode: 400,
@@ -261,7 +254,7 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		}
 	}
 
-	objectType := requestObjectTypeToObjectType[requestObjectType]
+	objectType := permissionsObjectTypes[requestObjectType]
 	if objectType == "" {
 		return Response{
 			StatusCode: 400,

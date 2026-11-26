@@ -12,6 +12,7 @@ const TestDefaultInstancePoolId = "0123-456789-pool0"
 func init() {
 	registerRoutes("instance_pools", addInstancePoolsRoutes)
 	registerStore("instance_pools", newInstancePoolsStore)
+	registerPermissionsObjectType("instance-pools", "instance-pool")
 }
 
 type instancePoolsStore struct {

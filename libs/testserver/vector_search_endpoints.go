@@ -11,6 +11,7 @@ import (
 func init() {
 	registerRoutes("vector_search_endpoints", addVectorSearchEndpointsRoutes)
 	registerStore("vector_search_endpoints", newVectorSearchEndpointsStore)
+	registerPermissionsObjectType("vector-search-endpoints", "vector-search-endpoints")
 }
 
 type vectorSearchEndpointsStore struct {
