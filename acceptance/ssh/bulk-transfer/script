@@ -6,7 +6,8 @@
 # is here so a re-introduction is caught before users are.
 #
 # The byte counts below are the assertion, not the exit code: the regression ended the session
-# with truncated output and, depending on which side noticed the drop first, exit code 0.
+# with truncated output and, depending on which side noticed the drop first, exit code 0. So the
+# connects tolerate a non-zero exit and the counts still print.
 #
 # 8 MiB is the size that matters: the remote IDE server pushes about 7 MiB while it starts, and
 # it is eight times the window that broke.
@@ -38,12 +39,12 @@ else
 fi
 
 title "Download $PAYLOAD_BYTES bytes over the tunnel"
-$CLI ssh connect $CONNECT_FLAGS -- "$payload_cmd" >received.bin 2>LOG.download
+$CLI ssh connect $CONNECT_FLAGS -- "$payload_cmd" >received.bin 2>LOG.download || true
 echo "received $(wc -c <received.bin | tr -d ' ') of $PAYLOAD_BYTES bytes"
 
 title "Upload $PAYLOAD_BYTES bytes over the tunnel"
 sh -c "$payload_cmd" >sent.bin
-$CLI ssh connect $CONNECT_FLAGS -- "wc -c" <sent.bin >remote-count.txt 2>LOG.upload
+$CLI ssh connect $CONNECT_FLAGS -- "wc -c" <sent.bin >remote-count.txt 2>LOG.upload || true
 # The remote count is empty when the session ended before `wc` could report; say 0 rather than
 # leaving a blank in the output.
 remote_count=$(tr -dc 0-9 <remote-count.txt)

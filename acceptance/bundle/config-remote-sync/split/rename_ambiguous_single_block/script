@@ -30,8 +30,8 @@ musterr trace grep -c "task_key: alpha" databricks.yml
 musterr trace grep -c "task_key: beta" databricks.yml
 echo
 echo "=== Checking for new task keys:"
-trace grep -c "task_key: zzz" databricks.yml || echo "zzz: NOT FOUND (BAD)"
-trace grep -c "task_key: aaa" databricks.yml || echo "aaa: NOT FOUND (BAD)"
+trace grep -c "task_key: zzz" databricks.yml
+trace grep -c "task_key: aaa" databricks.yml
 echo
 echo "=== Checking depends_on (gamma's dependencies):"
 trace grep -A5 "task_key: gamma" databricks.yml | grep -A5 "depends_on"

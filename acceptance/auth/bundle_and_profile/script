@@ -37,7 +37,7 @@ title "Bundle commands load bundle configuration with -t and -p flag, validation
 trace musterr $CLI bundle validate -t prod -p DEFAULT
 
 title "Bundle commands load bundle configuration with -t and -p flag, profile host matches bundle host up to the default port :443 (the host itself does not exist)"
-trace errcode $CLI bundle validate -t staging -p baz
+trace musterr $CLI bundle validate -t staging -p baz
 
 cd ..
 export DATABRICKS_HOST=$host

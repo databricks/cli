@@ -4,10 +4,10 @@
 # or override this in their own script.prepare or script.
 export DATABRICKS_AUTH_STORAGE=plaintext
 
-# Assert that a command fails: the test fails if it succeeds; on the expected failure the script
-# continues. Use it for every expected failure. The exit code is saved in MUSTERR_EXIT_CODE, not
-# printed. Print it only where the exact code is what the test checks (a killed process, a script
-# exit code passed through by `bundle run`):
+# Assert that a command fails: the test fails if it succeeds, also inside a pipeline (scripts run
+# with pipefail); on the expected failure the script continues. Use it for every expected failure.
+# The exit code is saved in MUSTERR_EXIT_CODE, not printed. Print it only where the exact code is
+# what the test checks (a killed process, a script exit code passed through by `bundle run`):
 #   printf '\nExit code: %s\n' "$MUSTERR_EXIT_CODE"
 # MUSTERR_EXIT_CODE is not set when musterr runs in a subshell (in a pipeline, or `trace VAR=x musterr`).
 musterr() {

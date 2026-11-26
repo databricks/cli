@@ -2,7 +2,7 @@
 sethome home
 
 title "install --scope=project skips the user-only Codex plugin and points at --skills-only"
-errcode trace $CLI aitools install --scope=project --agents=codex --output json
+musterr trace $CLI aitools install --scope=project --agents=codex --output json
 
 title "install --skills-only --scope=project installs Codex skills into .agents/skills"
 # The Codex plugin is user-only, but Codex reads repository skills from
