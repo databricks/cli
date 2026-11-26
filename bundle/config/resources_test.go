@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/url"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -87,36 +86,40 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 	}
 }
 
-func TestResourcesAllResourcesCompleteness(t *testing.T) {
-	r := Resources{}
-	rt := reflect.TypeFor[Resources]()
-
-	// Collect set of includes resource types
-	var types []string
-	for _, group := range r.AllResources() {
-		types = append(types, group.Description.PluralName)
+func TestResourcesAllResources(t *testing.T) {
+	r := Resources{
+		// A nil entry comes from a null in Python-generated configuration.
+		Jobs:      map[string]*resources.Job{"my_job": {}, "null_job": nil},
+		Snapshots: map[string]*resources.Snapshot{"my_snapshot": {}},
 	}
 
-	for field := range rt.Fields() {
-		jsonTag := field.Tag.Get("json")
+	groups := r.AllResources()
+	require.Len(t, groups, len(AllResourceTypes()))
 
-		if idx := strings.Index(jsonTag, ","); idx != -1 {
-			jsonTag = jsonTag[:idx]
+	nonEmpty := map[string]map[string]ConfigResource{}
+	for i, rt := range AllResourceTypes() {
+		assert.Equal(t, rt.Key, groups[i].Description.PluralName)
+		if len(groups[i].Resources) > 0 {
+			nonEmpty[rt.Key] = groups[i].Resources
 		}
-
-		assert.Contains(t, types, jsonTag, "Field %s is missing in AllResources", field.Name)
 	}
+	assert.Equal(t, map[string]map[string]ConfigResource{
+		"jobs":                         {"my_job": r.Jobs["my_job"], "null_job": (*resources.Job)(nil)},
+		"internal_immutable_snapshots": {"my_snapshot": r.Snapshots["my_snapshot"]},
+	}, nonEmpty)
+
+	// The nil entry is kept as a typed nil, which lifecycle.depends_on validation relies on.
+	nullJob, ok := nonEmpty["jobs"]["null_job"]
+	require.True(t, ok)
+	require.IsType(t, (*resources.Job)(nil), nullJob)
+	assert.True(t, reflect.ValueOf(nullJob).IsNil())
 }
 
 func TestSupportedResources(t *testing.T) {
-	// Please add your resource to the SupportedResources() function in resources.go if you add a new resource.
 	actual := SupportedResources()
-
-	typ := reflect.TypeFor[Resources]()
-	for field := range typ.Fields() {
-		jsonTags := strings.Split(field.Tag.Get("json"), ",")
-		pluralName := jsonTags[0]
-		assert.Equal(t, actual[pluralName].PluralName, pluralName)
+	assert.Len(t, actual, len(AllResourceTypes()))
+	for _, rt := range AllResourceTypes() {
+		assert.Equal(t, rt.Description, actual[rt.Key])
 	}
 }
 
