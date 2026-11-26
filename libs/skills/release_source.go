@@ -53,15 +53,19 @@ func openRelease(ctx context.Context) (Source, error) {
 	base := GetSkillsBaseURL(ctx) + "/" + ref
 	return &fsSource{
 		read: func(ctx context.Context, name string) ([]byte, error) {
-			return fetchRelease(ctx, base+"/"+name)
+			// Only the manifest is capped, as the installer caps it. Skill
+			// files are read whole.
+			return fetchRelease(ctx, base+"/"+name, name == manifestFile)
 		},
 		label: base,
 	}, nil
 }
 
 // fetchRelease downloads one file of a release. Every failure to get the file
-// is ErrSourceUnreachable.
-func fetchRelease(ctx context.Context, url string) ([]byte, error) {
+// is ErrSourceUnreachable, except a capped read of a body over MaxFetchBodySize,
+// which is ErrManifestTooLarge. The capped read stops one byte past the cap, so
+// an oversized body is told apart from one that fits exactly.
+func fetchRelease(ctx context.Context, url string, capped bool) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
@@ -74,9 +78,16 @@ func fetchRelease(ctx context.Context, url string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%w: HTTP %d", ErrSourceUnreachable, resp.StatusCode)
 	}
-	data, err := io.ReadAll(resp.Body)
+	var body io.Reader = resp.Body
+	if capped {
+		body = io.LimitReader(resp.Body, MaxFetchBodySize+1)
+	}
+	data, err := io.ReadAll(body)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
+	}
+	if capped && len(data) > MaxFetchBodySize {
+		return nil, ErrManifestTooLarge
 	}
 	return data, nil
 }

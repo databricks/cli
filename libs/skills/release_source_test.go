@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -96,6 +97,20 @@ func TestReleaseSourceRefusedConnectionIsUnreachable(t *testing.T) {
 
 	_, err := NewReleaseSource().Catalog(t.Context())
 	assert.ErrorIs(t, err, ErrSourceUnreachable)
+}
+
+func TestReleaseSourceOversizedManifestIsTooLarge(t *testing.T) {
+	// The body is past the cap and would parse as JSON if it were read whole, so
+	// the refusal comes from the size check.
+	body := strings.Repeat(" ", MaxFetchBodySize) + "{}"
+	serveReleaseFS(t, fstest.MapFS{"manifest.json": {Data: []byte(body)}})
+
+	_, err := NewReleaseSource().Catalog(t.Context())
+	assert.ErrorIs(t, err, ErrManifestTooLarge)
+	assert.NotErrorIs(t, err, ErrSourceUnreachable)
+
+	_, err = NewReleaseSource().ReadFile(t.Context(), "alpha", "SKILL.md")
+	assert.ErrorIs(t, err, ErrManifestTooLarge)
 }
 
 func TestReleaseSourceRejectsManifestPathsOutsideRelease(t *testing.T) {
