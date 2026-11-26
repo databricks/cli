@@ -8,19 +8,6 @@ const (
 	GCP
 )
 
-func (c Cloud) String() string {
-	switch c {
-	case AWS:
-		return "AWS"
-	case Azure:
-		return "Azure"
-	case GCP:
-		return "GCP"
-	default:
-		return "unknown"
-	}
-}
-
 func (c Cloud) NodeTypeID() string {
 	switch c {
 	case AWS:
