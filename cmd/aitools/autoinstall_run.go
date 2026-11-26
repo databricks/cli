@@ -351,8 +351,15 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		// put there. Retrying this version changes nothing: a later version
 		// tries again, and installs once a newer release is out or the user
 		// has moved that entry out of the agent's skills directory.
+		//
+		// The first install stays unfinished only when this attempt or an
+		// earlier one left something behind: a refusal before anything was
+		// written leaves nothing for a later run to finish, and the marker
+		// would make it take skills without install state in the global
+		// directory for its own.
 		log.Debugf(ctx, "auto-install: kept the installed tools: %v", err)
-		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept, unfinished: tools.fresh()}, nil
+		unfinished := tools.fresh() && (prior.Installing || installStateSaved(tools.globalDir))
+		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept, unfinished: unfinished, refusal: err}, nil
 	}
 	switch {
 	case err != nil:
@@ -379,8 +386,20 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 			}
 			cmdio.LogString(ctx, fmt.Sprintf("%s Databricks AI tools for %s. Disable: %s", verb, strings.Join(result.agents, ", "), autoInstallDisable))
 		}
+		if asked && result.refusal != nil {
+			// The user said yes and waits for the skills; the refusal names
+			// what was kept and the command that replaces it.
+			cmdio.LogString(ctx, "Did not install the Databricks AI tools skills: "+result.refusal.Error())
+		}
 	}
 	return nil
+}
+
+// installStateSaved reports whether the global directory has install state.
+// State that cannot be read counts as saved: something wrote it.
+func installStateSaved(globalDir string) bool {
+	existing, err := installer.LoadState(globalDir)
+	return err != nil || existing != nil
 }
 
 // saveInstallStateDigest records the digest of the install state that a first
@@ -585,9 +604,11 @@ type installResult struct {
 	updated bool
 	// agents names the agents that got new or updated tools.
 	agents []string
-	// unfinished is set when a first install was refused the skills: an
-	// agent did not get its tools.
+	// unfinished is set when a first install was refused the skills after
+	// it left something behind: an agent did not get its tools.
 	unfinished bool
+	// refusal is why the skills were refused, if they were.
+	refusal error
 }
 
 // toolsPlan is what an auto-install attempt does: update the existing global
@@ -653,6 +674,17 @@ func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) 
 	plan := buildPlan(ctx, agents.DetectInstalled(ctx), installer.ScopeGlobal, false, false)
 	if len(plan) == 0 {
 		return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeSkippedNoAgents, skipWhy: "no supported coding agent has a config directory"}, nil
+	}
+	if unfinished {
+		// An agent that got its plugin before the install stopped has its
+		// tools: installing the plugin again would rerun its CLI and announce
+		// the agent on every version until the install finishes.
+		plan = slices.DeleteFunc(plan, func(it agentPlanItem) bool {
+			return it.delivery == deliveryPlugin && pluginAlreadyInstalledFn(ctx, it.agent, installer.ScopeGlobal)
+		})
+		if len(plan) == 0 {
+			return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeUpToDate, skipWhy: "every agent got its tools before the install stopped"}, nil
+		}
 	}
 	if !agentCLIsStoppable {
 		plan = slices.DeleteFunc(plan, func(it agentPlanItem) bool {
@@ -736,7 +768,7 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 	// caller reports it as kept.
 	if _, refused := errors.AsType[*installer.RefusedError](err); refused && len(names) > 0 {
 		log.Debugf(ctx, "auto-install: kept the skills: %v", err)
-		return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names, unfinished: true}, nil
+		return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names, unfinished: true, refusal: err}, nil
 	}
 	return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names}, err
 }

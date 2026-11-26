@@ -56,7 +56,7 @@ SKILL.md
 my own skill
 
 >>> settled_version
-{"last_version":"1.30.0","installing":true}
+{"last_version":"1.30.0"}
 
 === first run with the user's own skill under another name in an agent's skills directory: installs
 

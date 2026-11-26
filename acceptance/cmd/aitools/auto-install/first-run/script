@@ -42,8 +42,9 @@ settled_version() {
     jq -c 'del(.id)' "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
 }
 
-# The version is settled, but the install stays unfinished, so a later version
-# installs once the user has moved the skill out.
+# The install was refused before it wrote anything, so the version is settled
+# with nothing left to finish: a later version installs once the user has moved
+# the skill out, and keeps it if they moved it into the global directory.
 title "first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried for this version"
 trace $CLI jobs list
 trace auto_install_outcome

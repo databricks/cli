@@ -311,6 +311,38 @@ func TestInstallKeepsHandPlacedSkills(t *testing.T) {
 	assert.ErrorAs(t, err, new(*installer.RefusedError))
 }
 
+// An unfinished first install is planned again without the plugin agents that
+// got their plugin: their CLI is not run again, and the agents are not named
+// as installed again. A first install that is not unfinished keeps them.
+func TestPlanToolsLeavesOutPluginsAnUnfinishedInstallGave(t *testing.T) {
+	autoInstallHome(t)
+	setAgentCLIsStoppable(t, true)
+	stubPluginAlreadyInstalled(t, true)
+
+	tools, err := planTools(t.Context(), autoinstall.State{Installing: true})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Cursor"}, planAgentNames(tools.plan))
+	assert.Equal(t, []string{"Cursor"}, tools.newAgents())
+
+	tools, err = planTools(t.Context(), autoinstall.State{})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Claude Code", "Cursor"}, planAgentNames(tools.plan))
+}
+
+// When every agent left in an unfinished first install got its plugin, there
+// is nothing to finish.
+func TestPlanToolsFinishesAnUnfinishedInstallThatGaveEveryPlugin(t *testing.T) {
+	home := autoInstallHome(t)
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".cursor")))
+	setAgentCLIsStoppable(t, true)
+	stubPluginAlreadyInstalled(t, true)
+
+	tools, err := planTools(t.Context(), autoinstall.State{Installing: true})
+	require.NoError(t, err)
+	assert.Equal(t, protos.AitoolsAutoInstallOutcomeUpToDate, tools.skip)
+	assert.False(t, tools.fresh())
+}
+
 func TestChangedAgents(t *testing.T) {
 	autoInstallHome(t)
 	dir := saveGlobalState(t, map[string]string{"databricks-sql": "0.1.0"})
