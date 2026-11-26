@@ -1,0 +1,55 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# The task is split between both blocks and each declares job_cluster_key.
+# cluster_id makes OverrideCompute clear it, so the merged leaf has no location;
+# the target's copy wins the merge, so that is the one to replace. The other tasks'
+# target copies come from a merge key or are anchored, so their changes are left
+# unapplied rather than written into a top-level copy that does not win.
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
+        - job_cluster_key: other
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 2
+      tasks:
+        - task_key: main
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - task_key: merged
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - task_key: anchored
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - task_key: inherited
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    cluster_id: 0101-000000-override
+    resources:
+      jobs:
+        my_job:
+          tasks:
+            - task_key: main
+              job_cluster_key: shared
+              max_retries: 1
+            - <<: &dev_compute
+                job_cluster_key: shared
+              task_key: merged
+            - task_key: anchored
+              job_cluster_key: &dev_key shared
+            - <<: *dev_compute
+              task_key: inherited
