@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -81,10 +82,21 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 	case string(workspace.ImportFormatRaw):
 		resp = w.WorkspaceImportRawFile(form.Path, form.Content, form.Overwrite)
 	case string(workspace.ImportFormatSource):
+		// Without a language, the real endpoint reads the content as a zip
+		// archive of source notebooks.
+		if form.Language == "" {
+			return sourceArchiveImport(form.Content)
+		}
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspace.Language(form.Language), form.Overwrite)
 	case string(workspace.ImportFormatJupyter):
 		// The real endpoint reads the language from the notebook metadata.
-		language, _ := detectJupyterNotebook(form.Path+notebook.ExtensionJupyter, form.Content)
+		language, ok := detectJupyterNotebook(form.Path+notebook.ExtensionJupyter, form.Content)
+		if !ok {
+			return Response{
+				StatusCode: http.StatusInternalServerError,
+				Body:       "internal error: The test server only supports importing a valid Jupyter notebook with format=JUPYTER.",
+			}
+		}
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, language, form.Overwrite)
 	case string(workspace.ImportFormatAuto):
 		if strings.HasSuffix(strings.ToLower(form.Path), ".zip") {
@@ -109,6 +121,26 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		return importAlreadyExists(fmt.Sprintf("Path (%s) already exists.", form.Path))
 	}
 	return resp
+}
+
+// sourceArchiveImport answers a format=SOURCE import without a language. The
+// real endpoint rejects content that is not a zip with items (recorded for
+// source files); extracting an archive of notebooks is not modeled.
+func sourceArchiveImport(content []byte) Response {
+	zr, err := zip.NewReader(bytes.NewReader(content), int64(len(content)))
+	if err != nil || len(zr.File) == 0 {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "BAD_REQUEST",
+				"message":    "The zip archive contains no items.",
+			},
+		}
+	}
+	return Response{
+		StatusCode: http.StatusInternalServerError,
+		Body:       "internal error: The test server does not support importing a zip archive with format=SOURCE.",
+	}
 }
 
 // importAlreadyExists is the /workspace/import response for a path collision.
@@ -277,7 +309,10 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/workspace/export", func(req Request) any {
 		path := req.URL.Query().Get("path")
-		data := req.Workspace.WorkspaceExport(path)
+		data, errResp := req.Workspace.WorkspaceExport(path, workspace.ExportFormat(req.URL.Query().Get("format")))
+		if errResp.StatusCode != 0 {
+			return errResp
+		}
 
 		// A missing object returns 404, matching the real API; returning the nil
 		// body otherwise trips the response normalizer.
