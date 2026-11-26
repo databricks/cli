@@ -1,10 +1,8 @@
 
-=== Copying a directory needs --recursive
+=== Copying a directory needs --recursive, even an empty one
 
->>> [CLI] fs cp [SRC] [SRC]/foobar
-Error: source path [SRC] is a directory. Please specify the --recursive flag
-
-Exit code: 1
+>>> musterr [CLI] fs cp [SRC]/empty [SRC]/empty/foobar
+Error: source path [SRC]/empty is a directory. Please specify the --recursive flag
 
 === Copy a directory into an existing one
 
@@ -42,7 +40,7 @@ existing content
 
 === --overwrite replaces an existing file
 
->>> [CLI] fs cp -r --overwrite [SRC] [DST]/overwrite
+>>> [CLI] fs cp --recursive --overwrite [SRC] [DST]/overwrite
 [SRC]/a/b/c/hello.txt -> [DST]/overwrite/a/b/c/hello.txt
 [SRC]/pyNb.py -> [DST]/overwrite/pyNb.py
 [SRC]/query.sql -> [DST]/overwrite/query.sql

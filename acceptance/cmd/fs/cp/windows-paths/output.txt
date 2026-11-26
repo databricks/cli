@@ -17,12 +17,8 @@ abc
 
 === A trailing backslash or slash on a missing directory fails
 
->>> [CLI] fs cp [TEST_TMP_DIR]\foo.txt [TEST_TMP_DIR]\nonexistent\mydir\
+>>> musterr [CLI] fs cp [TEST_TMP_DIR]\foo.txt [TEST_TMP_DIR]\nonexistent\mydir\
 Error: no such directory: [TEST_TMP_DIR]\nonexistent\mydir
 
-Exit code: 1
-
->>> [CLI] fs cp [TEST_TMP_DIR]/foo.txt [TEST_TMP_DIR]/nonexistent2/mydir2/
+>>> musterr [CLI] fs cp [TEST_TMP_DIR]/foo.txt [TEST_TMP_DIR]/nonexistent2/mydir2/
 Error: no such directory: [TEST_TMP_DIR]\nonexistent2\mydir2
-
-Exit code: 1

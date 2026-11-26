@@ -1,6 +1,8 @@
 title "Copy a file to a new file"
 trace $CLI fs cp $SRC_DIR/foo.txt $DST_DIR/bar.txt
 trace $CLI fs cat $DST_DIR/bar.txt
+# The output comparison normalizes line endings; cmp checks the exact bytes.
+$CLI fs cat $DST_DIR/bar.txt | cmp - src/foo.txt
 
 title "Copy a file into an existing directory"
 trace $CLI fs cp $SRC_DIR/foo.txt $DST_DIR

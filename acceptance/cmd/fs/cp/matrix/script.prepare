@@ -1,40 +1,51 @@
 # fs cp from a $SRC directory to a $DST directory, each one of local, DBFS or UC Volume.
 # The test's src/ tree is uploaded to [SRC], and its target/ tree (files the copies run into) to [DST].
+# Volumes are used at their root, and Volume to Volume uses two volumes, as the integration tests did.
 CATALOG_NAME="main"
 SCHEMA_NAME="default"
-VOLUME_NAME="fs-cp-matrix-${UNIQUE_NAME}"
+SRC_VOLUME="fs-cp-src-${UNIQUE_NAME}"
+DST_VOLUME="fs-cp-dst-${UNIQUE_NAME}"
+DBFS_ROOT="dbfs:/tmp/fs-cp-matrix-${UNIQUE_NAME}"
 
 root_of() {
   case $1 in
-    local) echo "local" ;;
-    dbfs) echo "dbfs:/tmp/fs-cp-matrix-${UNIQUE_NAME}" ;;
-    volume) echo "dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}" ;;
+    local) echo "local/$2" ;;
+    dbfs) echo "${DBFS_ROOT}/$2" ;;
+    volume) echo "dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/fs-cp-$2-${UNIQUE_NAME}" ;;
   esac
 }
 
-SRC_DIR="$(root_of $SRC)/src"
-DST_DIR="$(root_of $DST)/dst"
+SRC_DIR="$(root_of $SRC src)"
+DST_DIR="$(root_of $DST dst)"
+
+volumes() {
+  [ "$SRC" = volume ] && echo $SRC_VOLUME
+  [ "$DST" = volume ] && echo $DST_VOLUME
+  true
+}
 
 cleanup() {
-  if [ "$SRC" = volume ] || [ "$DST" = volume ]; then
-    $CLI volumes delete "${CATALOG_NAME}.${SCHEMA_NAME}.${VOLUME_NAME}" 2>/dev/null || true
-  fi
+  for v in $(volumes); do
+    $CLI volumes delete "${CATALOG_NAME}.${SCHEMA_NAME}.$v" >>LOG.cleanup 2>&1 || true
+  done
   if [ "$SRC" = dbfs ] || [ "$DST" = dbfs ]; then
-    $CLI fs rm -r "$(root_of dbfs)" 2>/dev/null || true
+    $CLI fs rm -r "${DBFS_ROOT}" >>LOG.cleanup 2>&1 || true
   fi
   rm -rf local
 }
 trap cleanup EXIT
 
-if [ "$SRC" = volume ] || [ "$DST" = volume ]; then
-  $CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${VOLUME_NAME}" MANAGED >/dev/null
-fi
+for v in $(volumes); do
+  $CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "$v" MANAGED >>LOG.setup
+done
 
 $CLI fs mkdir $SRC_DIR
-$CLI fs cp -r src $SRC_DIR >/dev/null
+$CLI fs cp -r src $SRC_DIR >>LOG.setup
+$CLI fs mkdir $SRC_DIR/empty
 $CLI fs mkdir $DST_DIR
-$CLI fs cp -r target $DST_DIR >/dev/null
+$CLI fs cp -r target $DST_DIR >>LOG.setup
 
-# Error messages print remote paths without the dbfs: scheme; test.toml folds dbfs:[SRC] into [SRC].
-add_repl "${SRC_DIR#dbfs:}" SRC
-add_repl "${DST_DIR#dbfs:}" DST
+# Only full paths go to add_repl: Git Bash would rewrite a bare /tmp/... argument into a Windows
+# path. Error messages print remote paths without the dbfs: scheme; test.toml handles those.
+add_repl "$SRC_DIR" SRC
+add_repl "$DST_DIR" DST

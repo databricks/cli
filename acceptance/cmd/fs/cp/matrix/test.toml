@@ -7,6 +7,7 @@ EnvMatrix.DST = ["local", "dbfs", "volume"]
 EnvRepl.SRC = false
 EnvRepl.DST = false
 
+# Error messages name remote paths without the dbfs: scheme.
 [[Repls]]
-Old = 'dbfs:\[(SRC|DST)\]'
-New = '[$1]'
+Old = 'source path /(?:tmp|Volumes)/\S+/empty is'
+New = 'source path [SRC]/empty is'
