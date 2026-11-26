@@ -576,6 +576,20 @@ func TestApplyChangeKeepsAnchors(t *testing.T) {
 			want:      "b: &inner 2\nc: &outer\n  x: 1\nd: *inner\n",
 		},
 		{
+			name:      "remove node with inner alias",
+			content:   "a:\n  x: &x 1\n  y: *x\nb: *x\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "b: &x 1\n",
+		},
+		{
+			name:      "replace node with inner alias",
+			content:   "a:\n  x: &x\n    - 1\n  y: *x # same\nb: *x\nc: *x\n",
+			operation: OperationReplace,
+			path:      "a",
+			want:      "a: 2\nb: &x\n  - 1\nc: *x\n",
+		},
+		{
 			name:      "anchored key",
 			content:   "a: 1\n&k b: 2\nc: *k\n",
 			operation: OperationRemove,

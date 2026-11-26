@@ -329,6 +329,15 @@ func isolateAnchors(content []byte, fieldPath string, operation OperationType) (
 		}
 	}
 	visit(&doc, nil)
+	// The patcher still parses the dropped node, so its aliases to a moved anchor become copies.
+	if dropped != nil {
+		walkYAML(dropped, func(n *yaml.Node) {
+			if n.Kind == yaml.AliasNode && n.Alias.Anchor == "" {
+				replaceYAMLNode(n, nil, inlineYAMLNode(n.Alias))
+				changed = true
+			}
+		})
+	}
 	if !changed {
 		return content, nil
 	}
