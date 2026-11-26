@@ -1,0 +1,112 @@
+
+=== mkdir
+
+>>> [CLI] fs mkdir dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME] -o json
+{"name":"a","is_directory":true,"size":0}
+
+>>> [CLI] fs mkdir dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+
+>>> [CLI] fs mkdir dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/x/y/z
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/x -o json
+{"name":"y","is_directory":true,"size":0}
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/x/y -o json
+{"name":"z","is_directory":true,"size":0}
+
+=== ls and cat on empty directories
+
+>>> streams [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/x/y/z -o json
+stdout:
+[]
+
+stderr:
+
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+Error: not a file: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+
+=== cat
+
+>>> streams [CLI] fs cat dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a/hello.txt
+stdout:
+abcd
+stderr:
+fs cat stdout is byte-identical to hello.txt
+
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/non-existent-file
+Error: file does not exist: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/non-existent-file
+
+=== ls
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+hello.txt
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME] -o json
+{"name":"a","is_directory":true,"size":0}
+{"name":"bye.txt","is_directory":false,"size":3}
+{"name":"x","is_directory":true,"size":0}
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME] -o json --absolute
+{"name":"dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a","is_directory":true,"size":0}
+{"name":"dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/bye.txt","is_directory":false,"size":3}
+{"name":"dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/x","is_directory":true,"size":0}
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a/hello.txt -o json
+Error: not a directory: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/a/hello.txt
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/nonexistent -o json
+Error: no such directory: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/nonexistent
+
+=== mkdir over a file
+
+>>> [CLI] fs mkdir dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/bye.txt
+Error: file already exists: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/bye.txt
+
+=== completion offers directories only
+
+>>> streams [CLI] __complete fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/
+stdout:
+dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a/
+dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/x/
+:2
+
+stderr:
+Completion ended with directive: ShellCompDirectiveNoSpace
+
+=== rm
+
+>>> [CLI] fs rm dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/bye.txt
+
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/bye.txt
+Error: file does not exist: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/bye.txt
+
+>>> [CLI] fs mkdir dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/empty
+
+>>> [CLI] fs rm dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/empty
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME] -o json
+{"name":"a","is_directory":true,"size":0}
+{"name":"x","is_directory":true,"size":0}
+
+>>> [CLI] fs rm dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+Error: directory not empty: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+hello.txt
+
+>>> [CLI] fs rm dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/does-not-exist
+Error: file does not exist: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/does-not-exist
+
+>>> [CLI] fs rm dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a --recursive
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+Error: no such directory: /Volumes/main/default/fs-basic-[UNIQUE_NAME]/a
+
+>>> [CLI] fs ls dbfs:/Volumes/main/default/fs-basic-[UNIQUE_NAME]
+x
+
+=== cleanup
+
+>>> [CLI] volumes delete main.default.fs-basic-[UNIQUE_NAME]

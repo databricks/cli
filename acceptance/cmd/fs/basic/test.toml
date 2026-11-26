@@ -1,0 +1,7 @@
+Cloud = true
+
+# DBFS answers mkdir over an existing file with a different message per cloud and backend
+# (the testserver's included); the CLI passes it through unchanged.
+[[Repls]]
+Old = 'Error: ([^\n]*: )?(Path is a file: [^\n]*|Cannot create directory [^\n]* because [^\n]* is an existing file\.|mkdirs\(hadoopPath: [^\n]*, permission: rwxrwxrwx\): failed|"The specified path already exists\."[^\n]*|A file or directory already exists at the input path [^\n]*)'
+New = 'Error: [DBFS_MKDIR_OVER_FILE_ERROR]'
