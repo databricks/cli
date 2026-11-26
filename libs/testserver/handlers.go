@@ -404,6 +404,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.FsListDirectory(req.Vars["path"])
 	})
 
+	server.Handle("DELETE", "/api/2.0/fs/directories/{path...}", func(req Request) any {
+		return req.Workspace.FsDeleteDirectory(req.Vars["path"])
+	})
+
 	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		if req.Workspace.FileExists(path) {

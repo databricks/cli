@@ -95,6 +95,21 @@ Found 1 error
 
 Exit code: 1
 
+=== Bundle commands load bundle configuration with -t and -p flag, profile host matches bundle host up to the default port :443 (the host itself does not exist)
+
+>>> errcode [CLI] bundle validate -t staging -p baz
+Warn: [hostmetadata] failed to fetch host metadata for https://baz.test, will skip for 1m0s
+Error: Get "https://baz.test/api/2.0/preview/scim/v2/Me": (redacted)
+
+Name: test-auth
+Target: staging
+Workspace:
+  Host: https://baz.test
+
+Found 1 error
+
+Exit code: 1
+
 === Outside the bundle, no flags
 
 >>> errcode [CLI] current-user me
