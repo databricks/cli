@@ -100,7 +100,7 @@ Exit code: [KILLED]
     "changes": {
       "schema_name": {
         "action": "recreate",
-        "reason": "id_field",
+        "reason": "parent",
         "old": "test-schema-[UNIQUE_NAME]",
         "new": "test-schema-renamed-[UNIQUE_NAME]"
       },

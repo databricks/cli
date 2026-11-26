@@ -116,7 +116,7 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
+	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `URI of the location where the artifacts of the experiment's runs are stored, such as a Unity Catalog volume path of the form dbfs:/Volumes/<catalog>/<schema>/<volume>/<path>.`)
 	// TODO: array: tags
 	// TODO: complex arg: trace_location
 
@@ -134,7 +134,8 @@ func newCreateExperiment() *cobra.Command {
   safe, clients should check for both error codes.
 
   Arguments:
-    NAME: Experiment name.`
+    NAME: Name of the experiment, as an absolute path in the workspace. Experiments
+      cannot be created under /Repos.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -430,9 +431,8 @@ func newCreateRun() *cobra.Command {
 	cmd.Long = `Create a run.
 
   Creates a new run within an experiment. A run is usually a single execution of
-  a machine learning or data ETL pipeline. MLflow uses runs to track the
-  mlflowParam, mlflowMetric, and mlflowRunTag associated with a single
-  execution.`
+  a machine learning or data ETL pipeline. MLflow uses runs to track the params,
+  metrics, and tags associated with a single execution.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -504,7 +504,8 @@ func newDeleteExperiment() *cobra.Command {
 
   Marks an experiment and associated metadata, runs, metrics, params, and tags
   for deletion. If the experiment uses FileStore, artifacts associated with the
-  experiment are also deleted.
+  experiment are also deleted. Only workspace experiments can be deleted through
+  this method.
 
   Arguments:
     EXPERIMENT_ID: ID of the associated experiment.`
@@ -1653,7 +1654,8 @@ func newListExperiments() *cobra.Command {
 	cmd.Short = `List experiments.`
 	cmd.Long = `List experiments.
 
-  Gets a list of all experiments.`
+  Gets a list of all experiments, ordered by creation time with the newest
+  first.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -2355,6 +2357,8 @@ func newRestoreExperiment() *cobra.Command {
   metadata, runs, metrics, params, and tags. If experiment uses FileStore,
   underlying artifacts associated with experiment are also restored.
 
+  Only workspace experiments can be restored through this method.
+
   Throws RESOURCE_DOES_NOT_EXIST if experiment was never created or was
   permanently deleted.
 
@@ -2621,8 +2625,8 @@ func newSearchExperiments() *cobra.Command {
 
 	cmd.Flags().Var(&searchExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&searchExperimentsReq.Filter, "filter", searchExperimentsReq.Filter, `String representing a SQL filter condition (e.g.`)
-	cmd.Flags().Int64Var(&searchExperimentsReq.MaxResults, "max-results", searchExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
+	cmd.Flags().StringVar(&searchExperimentsReq.Filter, "filter", searchExperimentsReq.Filter, `Filter condition on the experiment name and tags.`)
+	cmd.Flags().Int64Var(&searchExperimentsReq.MaxResults, "max-results", searchExperimentsReq.MaxResults, `Maximum number of experiments to return per page.`)
 	// TODO: array: order_by
 	cmd.Flags().Var(&searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
 
@@ -2908,7 +2912,7 @@ func newSearchRuns() *cobra.Command {
 
   Searches for runs that satisfy expressions.
 
-  Search expressions can use mlflowMetric and mlflowParam keys.`
+  Search expressions can use metric, param, and tag keys.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -2985,9 +2989,10 @@ func newSetExperimentTag() *cobra.Command {
 
   Arguments:
     EXPERIMENT_ID: ID of the experiment under which to log the tag. Must be provided.
-    KEY: Name of the tag. Keys up to 250 bytes in size are supported.
-    VALUE: String value of the tag being logged. Values up to 64KB in size are
-      supported.`
+    KEY: Key of the tag. Keys are at most 255 characters long. Setting a key that
+      already exists replaces its value. System tags such as mlflow.ownerId,
+      mlflow.ownerEmail and mlflow.experimentType cannot be set.
+    VALUE: Value of the tag. Values are at most 65535 characters long.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -3310,13 +3315,14 @@ func newUpdateExperiment() *cobra.Command {
 
 	cmd.Flags().Var(&updateExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateExperimentReq.NewName, "new-name", updateExperimentReq.NewName, `If provided, the experiment's name is changed to the new name.`)
+	cmd.Flags().StringVar(&updateExperimentReq.NewName, "new-name", updateExperimentReq.NewName, `New name for the experiment, as an absolute path in the workspace.`)
 
 	cmd.Use = "update-experiment EXPERIMENT_ID"
 	cmd.Short = `Update an experiment.`
 	cmd.Long = `Update an experiment.
 
-  Updates experiment metadata.
+  Updates experiment metadata. Only workspace experiments can be updated; a
+  notebook experiment takes its name from its notebook.
 
   Arguments:
     EXPERIMENT_ID: ID of the associated experiment.`

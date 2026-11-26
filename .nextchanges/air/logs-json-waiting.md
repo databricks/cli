@@ -1,1 +1,0 @@
-* `databricks air logs -o json` and `databricks air run --watch -o json` now emit a `WAITING` event, for example `{"type":"WAITING","message":"Waiting for accelerator compute capacity..."}`, when the reported waiting status changes. ([#7695](https://github.com/databricks/cli/pull/7695))

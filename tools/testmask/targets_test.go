@@ -39,6 +39,13 @@ func TestGetTargets(t *testing.T) {
 			targets: []string{"test-exp-aitools"},
 		},
 		{
+			name: "hostenv_triggers_test",
+			files: []string{
+				"internal/testutil/hostenv/hostenv.go",
+			},
+			targets: []string{"test"},
+		},
+		{
 			name: "sandbox",
 			files: []string{
 				"cmd/sandbox/create.go",

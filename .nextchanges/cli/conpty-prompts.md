@@ -1,1 +1,0 @@
-* Interactive prompts and pagers now work in Git for Windows' bash and other MSYS2 shells when they run under ConPTY (the default since Git for Windows 2.47) or directly in a Windows console. ([#7699](https://github.com/databricks/cli/pull/7699))

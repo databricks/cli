@@ -250,6 +250,9 @@ type FakeWorkspace struct {
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ModelServices         map[string]catalog.ModelService
 	McpServices           map[string]catalog.McpService
+	// McpUserCredentials holds the caller's sign-in to each MCP service, keyed by the service full name. The fake has one
+	// caller.
+	McpUserCredentials    map[string]catalog.McpServiceUserMappedCredential
 	ModelProviderServices map[string]catalog.ModelProviderService
 
 	// RegisteredModelVersions counts the versions registered on each model, keyed by its full name.
@@ -547,6 +550,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
 		ModelServices:         map[string]catalog.ModelService{},
 		McpServices:           map[string]catalog.McpService{},
+		McpUserCredentials:    map[string]catalog.McpServiceUserMappedCredential{},
 		ModelProviderServices: map[string]catalog.ModelProviderService{},
 		Features:              map[string]ml.Feature{},
 		MaterializationSets:   map[string]ml.MaterializationSet{},
@@ -869,6 +873,41 @@ func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
 	}
 
 	delete(s.files, filePath)
+	return Response{}
+}
+
+// FsDeleteDirectory implements DELETE /api/2.0/fs/directories/{path}. Like the
+// real API it deletes only empty directories: a non-empty one gets 400 with the
+// FILES_API_DIRECTORY_IS_NOT_EMPTY reason, and a missing one gets 404.
+func (s *FakeWorkspace) FsDeleteDirectory(dirPath string) Response {
+	if !strings.HasPrefix(dirPath, "/") {
+		dirPath = "/" + dirPath
+	}
+
+	defer s.LockUnlock()()
+
+	if _, isDir := s.directories[dirPath]; !isDir {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"error_code": "NOT_FOUND", "message": "directory does not exist"},
+		}
+	}
+
+	if s.hasChildren(dirPath) {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]any{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "directory is not empty",
+				"details": []map[string]any{{
+					"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+					"reason": "FILES_API_DIRECTORY_IS_NOT_EMPTY",
+				}},
+			},
+		}
+	}
+
+	delete(s.directories, dirPath)
 	return Response{}
 }
 

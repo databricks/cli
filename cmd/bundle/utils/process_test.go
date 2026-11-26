@@ -2,11 +2,41 @@ package utils
 
 import (
 	"testing"
+	"time"
 
+	"github.com/databricks/cli/libs/dms"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCheckAutoEnrollmentGivesUpAfterTheTimeout(t *testing.T) {
+	server := testserver.New(t)
+	entered := make(chan struct{}, 1)
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	server.Handle("GET", "/api/2.0/bundle/enrollments:check", func(testserver.Request) any {
+		select {
+		case entered <- struct{}{}:
+		default:
+		}
+		<-release
+		return map[string]any{"enrollments": map[string]bool{dms.FeatureRecordHistoryAuto: true}}
+	})
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	result := checkAutoEnrollment(t.Context(), w, time.Second)
+	select {
+	case <-entered:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the check never reached the server")
+	}
+	// The handler is still blocked, so only the timeout can have produced an answer.
+	assert.False(t, <-result)
+}
 
 func TestIsNewerVersion(t *testing.T) {
 	tests := []struct {

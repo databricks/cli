@@ -226,6 +226,9 @@ type InstallOptions struct {
 	IncludeExperimental bool
 	SpecificSkills      []string // empty = all skills
 	Scope               string   // ScopeGlobal or ScopeProject (default: global)
+	// SkillsOnly records the target agents that could have had the plugin in
+	// InstallState.SkillsOnlyAgents: the user chose raw skills for them.
+	SkillsOnly bool
 }
 
 func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath string) ([]byte, error) {
@@ -451,7 +454,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// previous installs (e.g., experimental skills from a prior run) are preserved.
 	if state == nil {
 		state = &InstallState{
-			SchemaVersion: schemaVersionV2,
+			SchemaVersion: CurrentSchemaVersion,
 			Skills:        make(map[string]string, len(targetSkills)),
 			RepoDirs:      make(map[string]string, len(targetSkills)),
 		}
@@ -472,6 +475,17 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// enabled; this field does not retroactively remove them.
 	state.IncludeExperimental = opts.IncludeExperimental
 	state.Scope = scope
+	if opts.SkillsOnly {
+		for _, a := range targetAgents {
+			// Without its CLI on PATH the agent could not have had the plugin:
+			// install suggests --skills-only for that case too, and update
+			// should migrate the agent once the CLI is there.
+			if a.Plugin != nil && a.HasBinary(ctx) && !slices.Contains(state.SkillsOnlyAgents, a.Name) {
+				state.SkillsOnlyAgents = append(state.SkillsOnlyAgents, a.Name)
+			}
+		}
+		slices.Sort(state.SkillsOnlyAgents)
+	}
 	for name, meta := range targetSkills {
 		state.Skills[name] = meta.Version
 		state.RepoDirs[name] = meta.RepoDir

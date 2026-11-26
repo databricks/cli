@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -697,8 +698,8 @@ func TestAnyInstalledAndFirstFailureCategory(t *testing.T) {
 // agent (isolateAgents), the remaining config dir overrides derived from that
 // HOME, and a no-op telemetry auth resolver, so it reads no host state and
 // contacts nothing.
-func isolateCommandEnv(t *testing.T) {
-	isolateAgents(t)
+func isolateCommandEnv(t *testing.T, agentEnv ...string) {
+	isolateAgents(t, agentEnv...)
 	noTelemetryAuth(t)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -738,6 +739,52 @@ func TestUninstallDeclinedIsCancelled(t *testing.T) {
 	events := funnelEvents(ctx)
 	assert.Equal(t, []string{"STARTED", "FINISHED:CANCELLED:"}, funnelShape(events))
 	assert.True(t, events[0].Interactive)
+}
+
+// A coding agent in a pseudo-terminal cannot answer "Proceed?", so the
+// uninstall proceeds unprompted, as it does without a terminal.
+func TestUninstallAgentCallerIsNotAskedToConfirm(t *testing.T) {
+	isolateCommandEnv(t, "CODEX_CI", "1")
+	globalDir, err := installer.GlobalSkillsDir(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, installer.SaveState(globalDir, &installer.InstallState{
+		SchemaVersion: 1,
+		Release:       "v0.2.6",
+		Skills:        map[string]string{"databricks-test": "1.0.0"},
+	}))
+	calls := setupUninstallMock(t)
+
+	// Declines if asked, so a confirm shown by mistake fails the test.
+	var stderr bytes.Buffer
+	ioCtx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader("n\n"), io.Discard, &stderr))
+	ctx := telemetry.WithNewLogger(ioCtx)
+	cmd := NewUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{})
+	require.NoError(t, cmd.Execute())
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, installer.ScopeGlobal, (*calls)[0].Scope)
+	assert.Equal(t, "This will remove 1 skill from all agents (global scope).\nNo prompts shown because a coding agent (codex) was detected.\n", stderr.String())
+	events := funnelEvents(ctx)
+	require.NotEmpty(t, events)
+	assert.False(t, events[0].Interactive)
+}
+
+// A --skills value that names no skill must not widen the uninstall to every
+// skill.
+func TestUninstallSkillsNamingNoSkillIsRejected(t *testing.T) {
+	isolateCommandEnv(t)
+	calls := setupUninstallMock(t)
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	cmd := NewUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--skills", ","})
+	err := cmd.Execute()
+	require.EqualError(t, err, "--skills names no skill; pass one or more skill names, or omit --skills to remove every skill")
+	assert.Equal(t, protos.AitoolsErrorCategoryInvalidFlags, classifyInstallError(err))
+	assert.Empty(t, *calls)
 }
 
 // Update and uninstall with nothing installed keep their error (and exit code)

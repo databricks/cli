@@ -261,7 +261,7 @@ func TestDetailedDisplayRunStatus(t *testing.T) {
 		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}}},
 	}
 	assert.Equal(t, "Waiting for GPU capacity...", detailedDisplayRunStatus(waiting, "Waiting for GPU capacity..."))
-	assert.Equal(t, waitingForComputeStatus, detailedDisplayRunStatus(waiting, ""))
+	assert.Equal(t, waitingForWorkloadStatus, detailedDisplayRunStatus(waiting, ""))
 
 	started := &jobs.Run{
 		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
@@ -383,4 +383,23 @@ func TestMaxRetriesFromDecodedRunGet(t *testing.T) {
 
 	explicitZero := decode(`{"run_type": "SUBMIT_RUN", "tasks": [{"max_retries": 0, "ai_runtime_task": {}}]}`)
 	assert.Equal(t, "0", display(explicitZero, []byte("experiment_name: e\n")))
+}
+
+func TestLegacyExperimentAndAcceleratorsSkipNonAirTasks(t *testing.T) {
+	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{
+		notebookTask("prep", 51),
+		{TaskKey: "train", RunId: 52, GenAiComputeTask: &jobs.GenAiComputeTask{
+			TrainingScriptPath:   "/train.py",
+			MlflowExperimentName: "/Users/me@example.com/legacy-exp",
+			Compute:              &jobs.ComputeConfig{GpuType: "H100", NumGpus: 8},
+		}},
+	}}
+	run = defaultTaskRun(run)
+	name := experimentName(run)
+	require.NotNil(t, name)
+	assert.Equal(t, "legacy-exp", *name)
+	gpu, n := jobCompute(run)
+	assert.Equal(t, "H100", gpu)
+	assert.Equal(t, 8, n)
+	assert.Equal(t, "8x H100", buildGetData(run).AcceleratorsDisplay)
 }

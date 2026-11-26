@@ -71,11 +71,11 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
-	cmd.Flags().StringVar(&createReq.ApplicationId, "application-id", createReq.ApplicationId, `UUID relating to the service principal.`)
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
-	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID.`)
+	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `Indicates whether the service principal is active.`)
+	cmd.Flags().StringVar(&createReq.ApplicationId, "application-id", createReq.ApplicationId, `Sets the application ID of a Microsoft Entra ID service principal.`)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `Sets the human-readable name of the service principal.`)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `Sets the identifier of the service principal in an external identity provider.`)
+	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Identifies the service principal within Databricks.`)
 	// TODO: array: roles
 
 	cmd.Use = "create"
@@ -149,7 +149,7 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a service principal.`
 	cmd.Long = `Delete a service principal.
 
-  Delete a single service principal in the Databricks account.
+  Deletes a single service principal from the Databricks account.
 
   Arguments:
     ID: Unique ID for a service principal in the Databricks account.`
@@ -207,8 +207,7 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get service principal details.`
 	cmd.Long = `Get service principal details.
 
-  Gets the details for a single service principal define in the Databricks
-  account.
+  Gets the details for a single service principal in the Databricks account.
 
   Arguments:
     ID: Unique ID for a service principal in the Databricks account.`
@@ -353,7 +352,7 @@ func newPatch() *cobra.Command {
   account.
 
   Arguments:
-    ID: Unique ID in the Databricks workspace.`
+    ID: Unique ID for a service principal in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -419,10 +418,10 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)
-	cmd.Flags().StringVar(&updateReq.ApplicationId, "application-id", updateReq.ApplicationId, `UUID relating to the service principal.`)
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
+	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `Indicates whether the service principal is active.`)
+	cmd.Flags().StringVar(&updateReq.ApplicationId, "application-id", updateReq.ApplicationId, `Sets the application ID of a Microsoft Entra ID service principal.`)
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `Sets the human-readable name of the service principal.`)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `Sets the identifier of the service principal in an external identity provider.`)
 	// TODO: array: roles
 
 	cmd.Use = "update ID"
@@ -431,10 +430,10 @@ func newUpdate() *cobra.Command {
 
   Updates the details of a single service principal.
 
-  This action replaces the existing service principal with the same name.
+  This action replaces the existing service principal that has the given ID.
 
   Arguments:
-    ID: Databricks service principal ID.`
+    ID: Identifies the service principal within Databricks.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

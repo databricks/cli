@@ -24,7 +24,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --del-body project_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
->>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+>>> retry [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
 {
   "autoscaling_limit_max_cu": 8,
   "autoscaling_limit_min_cu": 0.5,

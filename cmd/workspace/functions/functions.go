@@ -141,7 +141,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteFunctionRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is not empty.`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a function.`
@@ -156,7 +156,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-      __catalog_name__.__schema_name__.__function__name__) .`
+      __catalog_name__.__schema_name__.__function_name__).`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -175,14 +175,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 		}
 		deleteReq.Name = args[0]
 
@@ -235,7 +235,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-      __catalog_name__.__schema_name__.__function__name__).`
+      __catalog_name__.__schema_name__.__function_name__).`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -254,14 +254,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 		}
 		getReq.Name = args[0]
 
@@ -412,7 +412,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-      __catalog_name__.__schema_name__.__function__name__).`
+      __catalog_name__.__schema_name__.__function_name__).`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -443,14 +443,14 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return errors.New("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function_name__)")
 		}
 		updateReq.Name = args[0]
 

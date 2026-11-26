@@ -43,6 +43,7 @@ func buildCommand(ctx context.Context, cmd *cobra.Command) {
 	cmd.AddCommand(newCreateCatalogConfig())
 	cmd.AddCommand(newDeleteCatalogConfig())
 	cmd.AddCommand(newGetCatalogConfig())
+	cmd.AddCommand(newRescanCatalog())
 	cmd.AddCommand(newUpdateCatalogConfig())
 
 	// Apply optional overrides to this command.
@@ -81,10 +82,11 @@ func newCreateCatalogConfig() *cobra.Command {
   Create Data Classification configuration for a catalog.
 
   Creates a new config resource, which enables Data Classification for the
-  specified catalog. - The config must not already exist for the catalog.
+  specified catalog. The catalog must not already have a config. Creating the
+  config starts a scan of the selected schemas and schedules recurring scans.
 
   Arguments:
-    PARENT: Parent resource in the format: catalogs/{catalog_name}`
+    PARENT: Name of the catalog to enable, in the format catalogs/{catalog_name}.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -154,8 +156,12 @@ func newDeleteCatalogConfig() *cobra.Command {
 
   Delete Data Classification configuration for a catalog.
 
+  Deleting the config disables Data Classification for the catalog and stops its
+  scheduled scans. Tags that auto-tagging already applied to columns are not
+  removed. Deleting a config that does not exist succeeds.
+
   Arguments:
-    NAME: Resource name in the format: catalogs/{catalog_name}/config`
+    NAME: Resource name of the config, in the format catalogs/{catalog_name}/config.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -213,7 +219,7 @@ func newGetCatalogConfig() *cobra.Command {
   Get the Data Classification configuration for a catalog.
 
   Arguments:
-    NAME: Resource name in the format: catalogs/{catalog_name}/config`
+    NAME: Resource name of the config, in the format catalogs/{catalog_name}/config.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -251,6 +257,77 @@ func newGetCatalogConfig() *cobra.Command {
 	return cmd
 }
 
+// start rescan-catalog command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var rescanCatalogOverrides []func(
+	*cobra.Command,
+	*dataclassification.RescanCatalogRequest,
+)
+
+func newRescanCatalog() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var rescanCatalogReq dataclassification.RescanCatalogRequest
+
+	cmd.Use = "rescan-catalog NAME"
+	cmd.Short = `*Beta* Rescan a catalog.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Rescan a catalog.
+
+  Rescan the tables in a catalog's Data Classification scope that changed since
+  their last scan.
+
+  The rescan uses the catalog's current classifiers and follows its config
+  (schema selection) and SKIP tags. Tables with no commits since their last scan
+  are skipped. Views and tables without a Delta commit history keep their
+  regular rescan schedule. The call returns once the rescan is scheduled;
+  scanning runs in the background. If a scan of the catalog is running, the call
+  cancels it and starts a new run. - Data Classification must be enabled for the
+  catalog. - The call must come from the workspace where Data Classification was
+  enabled.
+
+  Arguments:
+    NAME: Resource name of the catalog, in the format: catalogs/{catalog_name}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		rescanCatalogReq.Name = args[0]
+
+		response, err := w.DataClassification.RescanCatalog(ctx, rescanCatalogReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range rescanCatalogOverrides {
+		fn(cmd, &rescanCatalogReq)
+	}
+
+	return cmd
+}
+
 // start update-catalog-config command
 
 // Slice with functions to override default command behavior.
@@ -278,13 +355,15 @@ func newUpdateCatalogConfig() *cobra.Command {
 	cmd.Short = `Update config for a catalog.`
 	cmd.Long = `Update config for a catalog.
 
-  Update the Data Classification configuration for a catalog. - The config must
-  already exist for the catalog. - Updates fields specified in the update_mask.
-  Use update_mask field to perform partial updates of the configuration.
+  Update the Data Classification configuration for a catalog.
+
+  The config must already exist for the catalog. Only the fields named in
+  update_mask change; the other fields keep their current values.
 
   Arguments:
     NAME: Resource name in the format: catalogs/{catalog_name}/config.
-    UPDATE_MASK: Field mask specifying which fields to update.`
+    UPDATE_MASK: Comma-separated list of the fields of catalog_config to update, for
+      example included_schemas or auto_tag_configs.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

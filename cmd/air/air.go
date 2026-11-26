@@ -37,8 +37,8 @@ func buildCommand(ctx context.Context, cmd *cobra.Command) {
 	cmd.Long = `Run GPU workloads on Databricks serverless compute.
 
 Describe a workload in a YAML file and submit it with "databricks air run".
-Follow a run with "databricks air logs" and "databricks air get", or see your
-active runs with "databricks air list".`
+Follow a run with "databricks air logs --follow" and "databricks air get", or
+see your active runs with "databricks air list".`
 
 	cmd.AddGroup(
 		&cobra.Group{ID: runGroupID, Title: "Run workloads:"},

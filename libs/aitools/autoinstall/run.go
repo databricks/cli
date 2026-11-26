@@ -35,10 +35,6 @@ const (
 	// and rewritten.
 	stateLockFileName = "auto-install.json.lock"
 
-	// stateLockWait bounds the wait for the state lock. A live holder keeps it
-	// only to read or rewrite a small file.
-	stateLockWait = time.Second
-
 	// lockRetryInterval is how often a held lock is tried again.
 	lockRetryInterval = 10 * time.Millisecond
 )
@@ -88,20 +84,42 @@ func Bucket(id string) int {
 }
 
 // Record stores the outcome of a run for version: attempts is 0 when the
-// version is settled, or the number of failed attempts so far. It re-reads the
-// state and changes only the fields a run owns, so an opt-out stored while the
-// run was installing is kept.
-func Record(ctx context.Context, version string, attempts int, id string) error {
-	return updateState(ctx, func(s *State) {
-		s.LastVersion = version
-		s.Attempts = attempts
-		if attempts == 0 {
-			s.Installing = false
+// version is settled, or the number of failed attempts so far. now is when the
+// last of them started, or zero when no install started. It re-reads the state
+// and changes only the fields a run owns, so an opt-out stored while the run
+// was installing is kept.
+func Record(ctx context.Context, version string, attempts int, id string, now time.Time) error {
+	return updateState(ctx, func(s *State) { record(s, version, attempts, id, now) })
+}
+
+// StartAttempt records attempt as Record does, unless the state is opted out
+// by then, and reports whether it did. A run counts the attempt right before
+// it installs, so an opt-out stored after the run read the state (during the
+// gate lookup or the install prompt, say) still stops it.
+func StartAttempt(ctx context.Context, version string, attempt int, id string, now time.Time) (started bool, err error) {
+	err = updateState(ctx, func(s *State) {
+		if s.OptedOut {
+			return
 		}
-		if s.ID == "" {
-			s.ID = id
-		}
+		record(s, version, attempt, id, now)
+		started = true
 	})
+	return started, err
+}
+
+// record is the change of Record.
+func record(s *State, version string, attempts int, id string, now time.Time) {
+	s.LastVersion = version
+	s.Attempts = attempts
+	if attempts == 0 {
+		s.Installing = false
+		s.LastAttempt = time.Time{}
+	} else {
+		s.LastAttempt = now.UTC()
+	}
+	if s.ID == "" {
+		s.ID = id
+	}
 }
 
 // MarkInstalling sets State.Installing before a first install starts.
@@ -143,6 +161,20 @@ func TryLock(ctx context.Context) (unlock func(), ok bool) {
 	return unlock, true
 }
 
+// Lock takes the lock TryLock takes, without waiting, so that a command that
+// removes what a run installs (a global uninstall) never runs while a run
+// installs. It fails when a run holds it. Where the lock cannot be taken at
+// all (a filesystem without locks), no run can take it either, so Lock
+// returns an unlock that does nothing.
+func Lock(ctx context.Context) (unlock func(), err error) {
+	unlock, err = lock(ctx, lockFileName, 0)
+	if err != nil && !errors.Is(err, errLockHeld) {
+		log.Debugf(ctx, "Going ahead without the auto-install lock: %v", err)
+		return func() {}, nil
+	}
+	return unlock, err
+}
+
 // lock takes the exclusive lock file name next to the state. It retries for
 // up to wait, so a holder that is stopped (a suspended process, say) delays
 // the caller by at most wait, then fails it. The file is never removed: a
@@ -180,6 +212,10 @@ func lock(ctx context.Context, name string, wait time.Duration) (unlock func(), 
 		time.Sleep(lockRetryInterval)
 	}
 }
+
+// stateLockWait bounds the wait for the state lock. A live holder keeps it
+// only to read or rewrite a small file. Tests that queue many holders raise it.
+var stateLockWait = time.Second
 
 // errLockHeld is the error of tryLockFile when another process holds the lock.
 var errLockHeld = errors.New("held by another CLI process")

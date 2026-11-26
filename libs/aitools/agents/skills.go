@@ -4,7 +4,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -23,12 +25,19 @@ const (
 // HasDatabricksToolingInstalled reports whether every detected agent already
 // has Databricks tooling, so `apps init` has nothing to recommend. Skills in
 // the shared canonical (or legacy) dir cover every agent. Otherwise each
-// detected agent needs the databricks plugin in its own plugin manifest,
-// installed for every project or for the working directory (see
-// pluginInstall.appliesTo): a plugin installed for another project does not
-// load for the app being created. It also reports true when no agent is
-// detected.
-func HasDatabricksToolingInstalled(ctx context.Context) bool {
+// detected agent needs the databricks plugin. For an agent with a plugin
+// manifest reader (Claude Code) that is its own plugin manifest, installed for
+// every project or for the working directory (see pluginInstall.appliesTo): a
+// plugin installed for another project does not load for the app being
+// created. For Codex and Copilot it is the plugin their own config records
+// (see Agent.DatabricksPluginConfigured), installed for the user and so for
+// every project, or one the CLI install state records, so a plugin later
+// removed with the agent's own CLI still counts until the record is cleared.
+// installedPlugins is a parameter because this package cannot import the
+// installer; callers pass installer.InstalledPluginAgents. It is called only
+// once a detected agent has no plugin manifest reader and no plugin in its
+// config. It also reports true when no agent is detected.
+func HasDatabricksToolingInstalled(ctx context.Context, installedPlugins func(context.Context) []string) bool {
 	installed := DetectInstalled(ctx)
 	if len(installed) == 0 || hasSharedSkills(ctx) {
 		return true
@@ -37,9 +46,17 @@ func HasDatabricksToolingInstalled(ctx context.Context) bool {
 	if wd, err := os.Getwd(); err == nil {
 		cwd = resolvePath(wd)
 	}
+	recorded := sync.OnceValue(func() []string { return installedPlugins(ctx) })
 	for _, a := range installed {
 		if a.pluginInstalls == nil {
-			return false
+			// An unreadable config counts as no plugin, as for the manifest.
+			if configured, _ := a.DatabricksPluginConfigured(ctx); configured {
+				continue
+			}
+			if !slices.Contains(recorded(), a.Name) {
+				return false
+			}
+			continue
 		}
 		// An unreadable manifest counts as no plugin, as before.
 		if active, _ := a.DatabricksPluginActiveIn(ctx, cwd); !active {

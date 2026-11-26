@@ -71,8 +71,8 @@ class Secret(Resource):
 
     owner: VariableOrOptional[str] = None
     """
-    The owner of the secret. Defaults to the creating principal on creation. Can be updated to
-    transfer ownership of the secret to another principal.
+    The owner of the secret. It cannot be set when creating a secret and defaults to the creating
+    principal. Set it in UpdateSecret to transfer ownership of the secret to another principal.
     """
 
     @classmethod
@@ -128,8 +128,8 @@ class SecretDict(TypedDict, total=False):
 
     owner: VariableOrOptional[str]
     """
-    The owner of the secret. Defaults to the creating principal on creation. Can be updated to
-    transfer ownership of the secret to another principal.
+    The owner of the secret. It cannot be set when creating a secret and defaults to the creating
+    principal. Set it in UpdateSecret to transfer ownership of the secret to another principal.
     """
 
 

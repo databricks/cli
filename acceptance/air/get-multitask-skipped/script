@@ -1,0 +1,5 @@
+title "get (text): the skipped AI Runtime task's own status, with no duration"
+trace $CLI air get 123
+
+title "get (json)"
+trace $CLI air get 123 -o json

@@ -106,7 +106,7 @@ func TestAiRuntimeEnvironment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := runGetServer(t, `{"run_id": 5, "environments": [{"environment_key": "default", "spec": `+tt.spec+`}]}`)
-			version, base := aiRuntimeEnvironment(t.Context(), newTestWorkspaceClient(t, srv.URL), 5)
+			version, base := aiRuntimeEnvironment(t.Context(), newTestWorkspaceClient(t, srv.URL), 5, aiRuntimeEnvironmentKey)
 			assert.Equal(t, tt.wantVersion, version)
 			assert.Equal(t, tt.wantBase, base)
 			assert.Equal(t, tt.wantLabel, environmentLabel(version, base))
@@ -321,4 +321,24 @@ func TestStatusStyleSelectors(t *testing.T) {
 	assert.True(t, isFailedStatus("FAILED"))
 	assert.True(t, isFailedStatus("TIMEDOUT"))
 	assert.False(t, isFailedStatus("RUNNING"))
+}
+
+func TestAiRuntimeEnvironmentUsesTheSelectedTasksKey(t *testing.T) {
+	srv := runGetServer(t, `{"run_id": 5, "environments": [
+		{"environment_key": "default", "spec": {"environment_version": "4"}},
+		{"environment_key": "eval_env", "spec": {"environment_version": "6"}}
+	]}`)
+	train := aiRuntimeTask("train", 11, "e", "GPU_1xA10", 1)
+	eval := aiRuntimeTask("eval", 12, "e", "GPU_1xA10", 1)
+	eval.EnvironmentKey = "eval_env"
+	run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{train, eval}}
+
+	assert.Equal(t, aiRuntimeEnvironmentKey, taskEnvironmentKey(taskRun(run, "train")), "a task without a key uses air run's")
+	assert.Equal(t, "eval_env", taskEnvironmentKey(taskRun(run, "eval")))
+
+	version, _ := aiRuntimeEnvironment(t.Context(), newTestWorkspaceClient(t, srv.URL), 5, taskEnvironmentKey(taskRun(run, "eval")))
+	assert.Equal(t, "6", version, "--task-key eval shows eval's environment, not default's")
+
+	sweep := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{{TaskKey: "sweep", ForEachTask: &jobs.RunForEachTask{Task: jobs.Task{EnvironmentKey: "eval_env"}}}}}
+	assert.Equal(t, "eval_env", taskEnvironmentKey(sweep), "a sweep uses its iterated task's key")
 }

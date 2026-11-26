@@ -56,8 +56,8 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 
 	var getPublishedDashboardTokenInfoReq dashboards.GetPublishedDashboardTokenInfoRequest
 
-	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", getPublishedDashboardTokenInfoReq.ExternalValue, `Provided external value to be included in the custom claim.`)
-	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Provided external viewer id to be included in the custom claim.`)
+	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalValue, "external-value", getPublishedDashboardTokenInfoReq.ExternalValue, `Value to carry in the token for this viewer, such as a tenant or region key.`)
+	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Identifier of the viewer in the external application.`)
 
 	cmd.Use = "get-published-dashboard-token-info DASHBOARD_ID"
 	cmd.Short = `*Public Preview* Read information of a published dashboard to mint an OAuth token.`
@@ -65,14 +65,20 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 
 Read information of a published dashboard to mint an OAuth token.
 
-  Get a required authorization details and scopes of a published dashboard to
-  mint an OAuth token.
+  Get the OAuth scope and authorization details needed to mint a token that is
+  scoped to viewing the published dashboard, for example to embed it in an
+  external application. Pass the response fields, with authorization_details
+  serialized as a JSON string, to the workspace OAuth token endpoint with the
+  client_credentials grant to mint the token. See [Embedding for external
+  users].
 
   The caller must be a workspace user with one of the following entitlements:
   Workspace access, Databricks SQL access, or Consumer access.
 
   Account-level users who are not members of the workspace cannot call this
   endpoint, even if the dashboard has been shared with them.
+
+  [Embedding for external users]: https://docs.databricks.com/dashboards/share/embedding/external-embed
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`

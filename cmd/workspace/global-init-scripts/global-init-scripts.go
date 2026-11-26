@@ -81,11 +81,13 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create init script.`
 	cmd.Long = `Create init script.
 
-  Creates a new global init script in this workspace.
+  Creates a new global init script in this workspace. The number of global init
+  scripts per workspace is limited.
 
   Arguments:
-    NAME: The name of the script
-    SCRIPT: The Base64-encoded content of the script.`
+    NAME: The name of the script. The name must be unique within the workspace.
+    SCRIPT: The Base64-encoded content of the script. The decoded content must not be
+      empty and cannot exceed 64 KB.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -377,8 +379,9 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     SCRIPT_ID: The ID of the global init script.
-    NAME: The name of the script
-    SCRIPT: The Base64-encoded content of the script.`
+    NAME: The name of the script. The name must be unique within the workspace.
+    SCRIPT: The Base64-encoded content of the script. The decoded content must not be
+      empty and cannot exceed 64 KB.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

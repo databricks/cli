@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -16,10 +16,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 )
-
-// lookPath resolves a binary on PATH. It is a package-level var so tests can
-// inject a fake resolver without depending on the host PATH.
-var lookPath = exec.LookPath
 
 const (
 	// pluginProbeTimeout bounds the `<agent> plugin --help` capability check.
@@ -127,20 +123,6 @@ func stderrOf(err error) string {
 		return stderr
 	}
 	return err.Error()
-}
-
-// resolveAgentBinary resolves the agent's CLI binary to an absolute path.
-// It refuses a binary that resolves only relative to the current directory
-// (exec.ErrDot), so a malicious ./claude is never executed.
-func resolveAgentBinary(agent *agents.Agent) (string, error) {
-	if agent.Binary == "" {
-		return "", fmt.Errorf("%s has no CLI binary", agent.DisplayName)
-	}
-	path, err := lookPath(agent.Binary)
-	if err != nil {
-		return "", fmt.Errorf("could not resolve %s on PATH: %w", agent.Binary, err)
-	}
-	return path, nil
 }
 
 // installTarget is the `<plugin>@<marketplace>` argument the agent CLIs accept,
@@ -295,6 +277,13 @@ func pluginUninstallArgs(agent *agents.Agent, rec PluginRecord) []string {
 	}
 }
 
+// PluginUninstallCommand is the command that removes the databricks plugin
+// from the given marketplace with the agent's own CLI in the agent-native
+// scope, for a plugin the CLI has no record of.
+func PluginUninstallCommand(agent *agents.Agent, marketplace, agentScope string) string {
+	return strings.Join(prepend(agent.Binary, pluginUninstallArgs(agent, PluginRecord{Marketplace: marketplace, Scope: agentScope})), " ")
+}
+
 func pluginDisableArgs(agent *agents.Agent, rec PluginRecord) []string {
 	if agent.Name != agents.NameClaudeCode {
 		return nil
@@ -313,7 +302,7 @@ func appendScopeArg(args []string, scope string) []string {
 // plugin subcommand, so we don't register a marketplace on a CLI that can't
 // install plugins. Returns the resolved absolute path.
 func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
-	bin, err := resolveAgentBinary(agent)
+	bin, err := agents.ResolveBinary(agent)
 	if err != nil {
 		return "", &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
@@ -445,7 +434,7 @@ func UpdatePluginForAgent(ctx context.Context, agent *agents.Agent, rec PluginRe
 	if agent.Plugin == nil {
 		return nil, &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
-	bin, err := resolveAgentBinary(agent)
+	bin, err := agents.ResolveBinary(agent)
 	if err != nil {
 		return nil, &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
@@ -469,7 +458,7 @@ func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec Plugi
 	if agent.Plugin == nil {
 		return &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
-	bin, err := resolveAgentBinary(agent)
+	bin, err := agents.ResolveBinary(agent)
 	if err != nil {
 		return &BlockedError{Agent: agent.Name, Reason: ReasonCLINotOnPath, Detail: err.Error()}
 	}
@@ -512,7 +501,7 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		// Initialize all maps so a later skills install/update can assign into a
 		// plugin-only state without hitting a nil map.
 		state = &InstallState{
-			SchemaVersion: schemaVersionV2,
+			SchemaVersion: CurrentSchemaVersion,
 			Skills:        map[string]string{},
 			RepoDirs:      map[string]string{},
 			Files:         map[string]FileRecord{},
@@ -522,6 +511,11 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 		state.Plugins = make(map[string]PluginRecord, len(records))
 	}
 	maps.Copy(state.Plugins, records)
+	// An agent with the plugin is no longer on raw skills by choice.
+	state.SkillsOnlyAgents = slices.DeleteFunc(state.SkillsOnlyAgents, func(name string) bool {
+		_, ok := records[name]
+		return ok
+	})
 	// An unresolved release keeps the one recorded by earlier installs.
 	if ref != "" {
 		state.Release = ref
@@ -535,20 +529,33 @@ func RecordPluginInstalls(ctx context.Context, cliScope string, records map[stri
 // databricks plugin install for the agent. A scope without state, or a state
 // that cannot be read, has no record.
 func PluginRecorded(ctx context.Context, cliScope, agentName string) bool {
+	_, ok := RecordedPlugin(ctx, cliScope, agentName)
+	return ok
+}
+
+// RecordedPlugin returns the agent's databricks plugin record in the CLI
+// install state for cliScope, with the marketplace filled in for records
+// written before it was stored. ok is false as for PluginRecorded.
+func RecordedPlugin(ctx context.Context, cliScope, agentName string) (rec PluginRecord, ok bool) {
 	dir, err := skillsDir(ctx, cliScope)
 	if err != nil {
-		return false
+		return PluginRecord{}, false
 	}
 	state, err := LoadState(dir)
 	if err != nil {
 		log.Debugf(ctx, "Could not load AI tools install state in %s: %v", dir, err)
-		return false
+		return PluginRecord{}, false
 	}
 	if state == nil {
-		return false
+		return PluginRecord{}, false
 	}
-	_, ok := state.Plugins[agentName]
-	return ok
+	rec, ok = state.Plugins[agentName]
+	if ok {
+		if agent := agents.ByName(agentName); agent != nil && agent.Plugin != nil {
+			rec.Marketplace = recordedMarketplace(agent, rec)
+		}
+	}
+	return rec, ok
 }
 
 // ForgetPluginInstalls removes the plugin install records of the named agents
@@ -572,6 +579,30 @@ func ForgetPluginInstalls(ctx context.Context, cliScope string, agentNames []str
 		}
 	}
 	if !changed {
+		return nil
+	}
+	return SaveState(dir, state)
+}
+
+// ForgetSkillsOnlyChoice removes the named agents from the agents the user put
+// on raw skills with `install --skills-only`, in the state file for the given
+// CLI scope. Install calls it for agents whose plugin install it attempted and
+// that failed, so update tries the plugin again. Agents not in the list, or a
+// scope without state, are left as they are.
+func ForgetSkillsOnlyChoice(ctx context.Context, cliScope string, agentNames []string) error {
+	dir, err := skillsDir(ctx, cliScope)
+	if err != nil {
+		return err
+	}
+	state, err := LoadState(dir)
+	if err != nil || state == nil {
+		return err
+	}
+	n := len(state.SkillsOnlyAgents)
+	state.SkillsOnlyAgents = slices.DeleteFunc(state.SkillsOnlyAgents, func(name string) bool {
+		return slices.Contains(agentNames, name)
+	})
+	if len(state.SkillsOnlyAgents) == n {
 		return nil
 	}
 	return SaveState(dir, state)

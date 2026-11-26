@@ -47,42 +47,47 @@ class DataProfilingConfig:
 
     output_schema_id: VariableOr[str]
     """
-    ID of the schema where output tables are created.
+    The UUID of the Unity Catalog schema where the profile and drift metrics tables
+    are created.
     """
 
     assets_dir: VariableOrOptional[str] = None
     """
-    Field for specifying the absolute path to a custom directory to store data-monitoring
-    assets. Normally prepopulated to a default user location via UI and Python APIs.
+    The absolute workspace path of the directory where the monitor's assets, such as
+    the dashboard, are stored. The UI and the Python APIs normally prepopulate a default user location.
     """
 
     baseline_table_name: VariableOrOptional[str] = None
     """
-    Baseline table name.
-    Baseline data is used to compute drift from the data in the monitored `table_name`.
-    The baseline table and the monitored table shall have the same schema.
+    The fully qualified name of a baseline table. Format: `catalog.schema.table_name`.
+    Drift metrics compare the monitored table against the baseline data, so the two tables must have the same
+    schema.
     """
 
     custom_metrics: VariableOrList[DataProfilingCustomMetric] = field(
         default_factory=list
     )
     """
-    Custom metrics.
+    Custom metrics to compute in addition to the built-in ones. See
+    [custom metrics](https://docs.databricks.com/aws/en/data-governance/unity-catalog/data-quality-monitoring/data-profiling/custom-metrics).
     """
 
     inference_log: VariableOrOptional[InferenceLogConfig] = None
     """
-    `Analysis Configuration` for monitoring inference log tables.
+    Profiles an inference log table, which stores the requests and predictions of a model. Metrics are
+    computed per time window and include model quality metrics.
     """
 
     notification_settings: VariableOrOptional[NotificationSettings] = None
     """
-    Field for specifying notification settings.
+    Who to notify about this monitor's refreshes. Only `on_failure` with
+    `email_addresses` is supported here.
     """
 
     schedule: VariableOrOptional[CronSchedule] = None
     """
-    The cron schedule.
+    The schedule on which the monitor refreshes its metrics. Refreshes can also be
+    triggered on demand through the Refresh resource.
     """
 
     skip_builtin_dashboard: VariableOrOptional[bool] = None
@@ -94,26 +99,27 @@ class DataProfilingConfig:
     """
     List of column expressions to slice data with for targeted analysis. The data is grouped by
     each expression independently, resulting in a separate slice for each predicate and its
-    complements. For example `slicing_exprs=[“col_1”, “col_2 > 10”]` will generate the following
+    complements. For example `slicing_exprs=["col_1", "col_2 > 10"]` will generate the following
     slices: two slices for `col_2 > 10` (True and False), and one slice per unique value in
-    `col1`. For high-cardinality columns, only the top 100 unique values by frequency will
+    `col_1`. For high-cardinality columns, only the top 100 unique values by frequency will
     generate slices.
     """
 
     snapshot: VariableOrOptional[SnapshotConfig] = None
     """
-    `Analysis Configuration` for monitoring snapshot tables.
+    Profiles the full contents of the table. Metrics are computed over all rows at each refresh.
     """
 
     time_series: VariableOrOptional[TimeSeriesConfig] = None
     """
-    `Analysis Configuration` for monitoring time series tables.
+    Profiles a time series table. Metrics are computed per time window, as defined by `timestamp_column`
+    and `granularities`.
     """
 
     warehouse_id: VariableOrOptional[str] = None
     """
-    Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
-    warehouse will be used.
+    The ID of the SQL warehouse used to create the dashboard. If not specified, the first running warehouse the
+    caller can access is used.
     """
 
     @classmethod
@@ -129,40 +135,45 @@ class DataProfilingConfigDict(TypedDict, total=False):
 
     output_schema_id: VariableOr[str]
     """
-    ID of the schema where output tables are created.
+    The UUID of the Unity Catalog schema where the profile and drift metrics tables
+    are created.
     """
 
     assets_dir: VariableOrOptional[str]
     """
-    Field for specifying the absolute path to a custom directory to store data-monitoring
-    assets. Normally prepopulated to a default user location via UI and Python APIs.
+    The absolute workspace path of the directory where the monitor's assets, such as
+    the dashboard, are stored. The UI and the Python APIs normally prepopulate a default user location.
     """
 
     baseline_table_name: VariableOrOptional[str]
     """
-    Baseline table name.
-    Baseline data is used to compute drift from the data in the monitored `table_name`.
-    The baseline table and the monitored table shall have the same schema.
+    The fully qualified name of a baseline table. Format: `catalog.schema.table_name`.
+    Drift metrics compare the monitored table against the baseline data, so the two tables must have the same
+    schema.
     """
 
     custom_metrics: VariableOrList[DataProfilingCustomMetricParam]
     """
-    Custom metrics.
+    Custom metrics to compute in addition to the built-in ones. See
+    [custom metrics](https://docs.databricks.com/aws/en/data-governance/unity-catalog/data-quality-monitoring/data-profiling/custom-metrics).
     """
 
     inference_log: VariableOrOptional[InferenceLogConfigParam]
     """
-    `Analysis Configuration` for monitoring inference log tables.
+    Profiles an inference log table, which stores the requests and predictions of a model. Metrics are
+    computed per time window and include model quality metrics.
     """
 
     notification_settings: VariableOrOptional[NotificationSettingsParam]
     """
-    Field for specifying notification settings.
+    Who to notify about this monitor's refreshes. Only `on_failure` with
+    `email_addresses` is supported here.
     """
 
     schedule: VariableOrOptional[CronScheduleParam]
     """
-    The cron schedule.
+    The schedule on which the monitor refreshes its metrics. Refreshes can also be
+    triggered on demand through the Refresh resource.
     """
 
     skip_builtin_dashboard: VariableOrOptional[bool]
@@ -174,26 +185,27 @@ class DataProfilingConfigDict(TypedDict, total=False):
     """
     List of column expressions to slice data with for targeted analysis. The data is grouped by
     each expression independently, resulting in a separate slice for each predicate and its
-    complements. For example `slicing_exprs=[“col_1”, “col_2 > 10”]` will generate the following
+    complements. For example `slicing_exprs=["col_1", "col_2 > 10"]` will generate the following
     slices: two slices for `col_2 > 10` (True and False), and one slice per unique value in
-    `col1`. For high-cardinality columns, only the top 100 unique values by frequency will
+    `col_1`. For high-cardinality columns, only the top 100 unique values by frequency will
     generate slices.
     """
 
     snapshot: VariableOrOptional[SnapshotConfigParam]
     """
-    `Analysis Configuration` for monitoring snapshot tables.
+    Profiles the full contents of the table. Metrics are computed over all rows at each refresh.
     """
 
     time_series: VariableOrOptional[TimeSeriesConfigParam]
     """
-    `Analysis Configuration` for monitoring time series tables.
+    Profiles a time series table. Metrics are computed per time window, as defined by `timestamp_column`
+    and `granularities`.
     """
 
     warehouse_id: VariableOrOptional[str]
     """
-    Optional argument to specify the warehouse for dashboard creation. If not specified, the first running
-    warehouse will be used.
+    The ID of the SQL warehouse used to create the dashboard. If not specified, the first running warehouse the
+    caller can access is used.
     """
 
 

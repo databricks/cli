@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -223,5 +224,186 @@ func TestUploadReleasesSendsEachArchiveOnce(t *testing.T) {
 			defer mu.Unlock()
 			assert.Equal(t, tt.want, imports)
 		})
+	}
+}
+
+func TestWithPyPIFallback(t *testing.T) {
+	errGithub := errors.New("dial tcp: lookup github.com: no such host")
+	errPyPI := errors.New("failed to fetch the databricks package from pypi.org: HTTP 403")
+
+	provider := func(name string, err error, calls *[]string) releaseProvider {
+		return func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+			*calls = append(*calls, name)
+			if err != nil {
+				return nil, err
+			}
+			return io.NopCloser(strings.NewReader(name)), nil
+		}
+	}
+
+	tests := []struct {
+		name      string
+		version   string
+		githubErr error
+		pypiErr   error
+		// cancelled cancels the command before the download.
+		cancelled bool
+		wantCalls []string
+		want      string
+		wantErrs  []error
+	}{
+		{
+			name:      "GitHub works",
+			version:   testWheelVersion,
+			wantCalls: []string{"github"},
+			want:      "github",
+		},
+		{
+			name:      "GitHub fails",
+			version:   testWheelVersion,
+			githubErr: errGithub,
+			wantCalls: []string{"github", "pypi"},
+			want:      "pypi",
+		},
+		{
+			name:      "both fail",
+			version:   testWheelVersion,
+			githubErr: errGithub,
+			pypiErr:   errPyPI,
+			wantCalls: []string{"github", "pypi"},
+			wantErrs:  []error{errGithub, errPyPI},
+		},
+		{
+			name:      "command cancelled",
+			version:   testWheelVersion,
+			githubErr: context.Canceled,
+			cancelled: true,
+			wantCalls: []string{"github"},
+			wantErrs:  []error{context.Canceled},
+		},
+		{
+			name:      "development versions are not on PyPI",
+			version:   "1.27.1-dev+abcdef123456",
+			githubErr: errGithub,
+			wantCalls: []string{"github"},
+			wantErrs:  []error{errGithub},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var calls []string
+			getRelease := withPyPIFallback(provider("github", tt.githubErr, &calls), provider("pypi", tt.pypiErr, &calls))
+			ctx, cancel := context.WithCancel(pipConfigContext(t, "", ""))
+			defer cancel()
+			if tt.cancelled {
+				cancel()
+			}
+
+			release, err := getRelease(ctx, "amd64", tt.version, "")
+			assert.Equal(t, tt.wantCalls, calls)
+			if tt.wantErrs != nil {
+				for _, wantErr := range tt.wantErrs {
+					assert.ErrorIs(t, err, wantErr)
+				}
+				return
+			}
+			require.NoError(t, err)
+			got, err := io.ReadAll(release)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, string(got))
+		})
+	}
+}
+
+func TestWithPyPIFallbackSkipsGitHubOnceItFails(t *testing.T) {
+	var calls []string
+	github := func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		calls = append(calls, "github "+architecture)
+		return nil, errors.New("dial tcp: i/o timeout")
+	}
+	pypi := func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		calls = append(calls, "pypi "+architecture)
+		return io.NopCloser(strings.NewReader(architecture)), nil
+	}
+	getRelease := withPyPIFallback(github, pypi)
+	for _, arch := range []string{"amd64", "arm64"} {
+		release, err := getRelease(t.Context(), arch, testWheelVersion, "")
+		require.NoError(t, err)
+		require.NoError(t, release.Close())
+	}
+	assert.Equal(t, []string{"github amd64", "pypi amd64", "pypi arm64"}, calls)
+}
+
+func TestWithPyPIFallbackNamesWhatToAllow(t *testing.T) {
+	failing := func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		return nil, errors.New("blocked")
+	}
+
+	tests := []struct {
+		name        string
+		pipIndexURL string
+		wantErr     string
+	}{
+		{
+			name: "no index configured",
+			wantErr: "Downloading it from the Python package index failed too: blocked\n\n" +
+				"The SSH tunnel uploads the Linux build of the Databricks CLI to your workspace. " +
+				"Allow access to GitHub (github.com, release-assets.githubusercontent.com) or PyPI " +
+				"(pypi.org, files.pythonhosted.org), or set PIP_INDEX_URL, or index-url in your per-user pip config, " +
+				"to an HTTPS PyPI mirror that serves the databricks package",
+		},
+		{
+			name:        "mirror configured",
+			pipIndexURL: "https://pypi-mirror.test/simple",
+			wantErr: "Allow access to GitHub (github.com, release-assets.githubusercontent.com), or check that the " +
+				"HTTPS package index set by PIP_INDEX_URL, or index-url in your per-user pip config, serves the databricks package",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := pipConfigContext(t, tt.pipIndexURL, "")
+			_, err := withPyPIFallback(failing, failing)(ctx, "amd64", testWheelVersion, "")
+			assert.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
+// TestUploadReleasesFromPyPI uploads, with GitHub blocked, the archives built from the wheels
+// to the fake workspace, which unpacks them as the import-file endpoint does, and reads back
+// the binaries the bootstrap runs.
+func TestUploadReleasesFromPyPI(t *testing.T) {
+	binaries := testBinaries()
+	index := newTestIndex(t, testIndexFiles(t, binaries), testIndexOptions{})
+	ctx := pipConfigContext(t, index.URL+"/simple", "")
+
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	github := githubReleaseProvider
+	t.Cleanup(func() { githubReleaseProvider = github })
+	githubReleaseProvider = func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+		return nil, errors.New("failed to download: HTTP 403")
+	}
+	require.NoError(t, UploadTunnelReleases(ctx, client, testWheelVersion, ""))
+
+	versionedDir, err := workspace.GetWorkspaceVersionedDir(ctx, client, testWheelVersion)
+	require.NoError(t, err)
+	workspaceFiler, err := filer.NewWorkspaceFilesClient(client, versionedDir)
+	require.NoError(t, err)
+	for arch, binary := range binaries {
+		remoteBinaryPath := path.Join(strings.TrimSuffix(getReleaseName(arch, testWheelVersion), ".zip"), "databricks")
+		r, err := workspaceFiler.Read(ctx, remoteBinaryPath)
+		require.NoError(t, err)
+		got, err := io.ReadAll(r)
+		require.NoError(t, err)
+		require.NoError(t, r.Close())
+		assert.Equal(t, binary, got, arch)
 	}
 }

@@ -23,7 +23,11 @@ trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --user-code
 title "Profile name that marks a pending login"
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile 'test#device-code' --use-device-code
 
-title "Account host"
+title "Profile name that marks an access token part"
+trace musterr $CLI auth login --host $DATABRICKS_HOST --profile 'test#access-token-0' --use-device-code
+
+# The non-interactive login cannot prompt for the account ID.
+title "Account host without an account ID"
 trace musterr $CLI auth login --host https://accounts.cloud.databricks.test --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
 
 envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"

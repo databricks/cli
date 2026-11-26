@@ -291,7 +291,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.detailLoading = true
 				m.detailTitle = "Run Details"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
-				return m, m.fetchRunDetail(runID)
+				return m, m.fetchRunDetail(runID, m.rows[m.cursor].taskKey())
 			}
 		case "L", "l":
 			// Open the logs snapshot pane; the fetch fills it in.
@@ -300,7 +300,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.detailLoading = true
 				m.detailTitle = "Logs Snapshot"
 				runID, _ := parseRunID(m.rows[m.cursor].RunID)
-				return m, m.fetchRunLogs(runID)
+				return m, m.fetchRunLogs(runID, m.rows[m.cursor].taskKey())
 			}
 		}
 		m.offset = m.clampedOffset()
@@ -440,12 +440,13 @@ func hiddenNote(hidden []string, names bool) string {
 	}
 }
 
-// fetchRunDetail returns a tea.Cmd that fetches run details in the background.
-func (m listModel) fetchRunDetail(runID int64) tea.Cmd {
+// fetchRunDetail returns a tea.Cmd that fetches the details of the run's task
+// in the background.
+func (m listModel) fetchRunDetail(runID int64, taskKey string) tea.Cmd {
 	ctx := m.fetcher.ctx
 	w := m.fetcher.w
 	return func() tea.Msg {
-		body, err := runDetailText(ctx, w, runID)
+		body, err := runDetailText(ctx, w, runID, taskKey)
 		if err != nil {
 			return detailMsg{title: "Run Details", err: err}
 		}
@@ -454,11 +455,11 @@ func (m listModel) fetchRunDetail(runID int64) tea.Cmd {
 }
 
 // fetchRunLogs returns a tea.Cmd that fetches a log snapshot in the background.
-func (m listModel) fetchRunLogs(runID int64) tea.Cmd {
+func (m listModel) fetchRunLogs(runID int64, taskKey string) tea.Cmd {
 	ctx := m.fetcher.ctx
 	w := m.fetcher.w
 	return func() tea.Msg {
-		body, err := runLogsSnapshot(ctx, w, runID)
+		body, err := runLogsSnapshot(ctx, w, runID, taskKey)
 		if err != nil {
 			return detailMsg{title: "Logs Snapshot", err: err}
 		}

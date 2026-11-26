@@ -15,10 +15,10 @@ Error: --configure-cluster is not supported by the non-interactive device code l
 === Missing host
 
 >>> musterr [CLI] auth login --use-device-code
-Error: --use-device-code requires a workspace host. Pass it as an argument or with --host
+Error: --use-device-code requires a host. Pass it as an argument or with --host
 
 >>> musterr [CLI] auth login --profile test --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
-Error: --use-device-code requires a workspace host. Pass it as an argument or with --host
+Error: --use-device-code requires a host. Pass it as an argument or with --host
 
 === Incomplete flags of the second step
 
@@ -36,11 +36,16 @@ Error: --confirmation-code requires --use-device-code
 >>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test#device-code --use-device-code
 Error: profile name "test#device-code" must not end with #device-code, which marks pending device code logins
 
-=== Account host
+=== Profile name that marks an access token part
+
+>>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test#access-token-0 --use-device-code
+Error: profile name "test#access-token-0" must not contain #access-token-, which marks the parts of large access tokens
+
+=== Account host without an account ID
 
 >>> musterr [CLI] auth login --host https://accounts.cloud.databricks.test --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
 Warn: [hostmetadata] failed to fetch host metadata for https://accounts.cloud.databricks.test, will skip for 1m0s
-Error: --use-device-code is only supported for workspace hosts
+Error: the command is being run in a non-interactive environment, please specify an account ID using --account-id
 
 === Profile scoped to resources
 

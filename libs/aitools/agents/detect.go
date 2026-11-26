@@ -4,16 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"time"
 
 	"github.com/databricks/cli/libs/process"
 )
-
-// lookPath resolves a binary on PATH. It is a package-level var so tests can
-// inject a fake resolver without depending on the host PATH. It mirrors the
-// exec.LookPath precedent in libs/python/detect.go.
-var lookPath = exec.LookPath
 
 // pluginProbeTimeout bounds the `<agent> plugin --help` capability probe so a
 // hung agent CLI cannot stall install. It matches the probe timeout in
@@ -47,7 +41,7 @@ func (a *Agent) HasBinary(_ context.Context) bool {
 	if a.Binary == "" {
 		return false
 	}
-	_, err := lookPath(a.Binary)
+	_, err := LookPath(a.Binary)
 	return err == nil
 }
 
@@ -100,13 +94,11 @@ func (a *Agent) ProbePlugin(ctx context.Context) error {
 		return ErrPluginUnsupported
 	}
 
-	// exec.LookPath returns exec.ErrDot (along with the path) when the binary
-	// resolves only relative to the current directory. Returning on any error,
-	// including ErrDot, means we never execute a binary resolved from cwd (a
-	// malicious ./claude dropped there is refused, not run).
-	path, err := lookPath(a.Binary)
+	// ResolveBinary refuses a binary that resolves only relative to the current directory (exec.ErrDot), so a
+	// malicious ./claude dropped there is never executed.
+	path, err := ResolveBinary(a)
 	if err != nil {
-		return fmt.Errorf("could not resolve %s on PATH: %w", a.Binary, err)
+		return err
 	}
 
 	cctx, cancel := context.WithTimeout(ctx, pluginProbeTimeout)

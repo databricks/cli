@@ -23,18 +23,19 @@ type PluginRecordedFunc func(ctx context.Context, agentName string) bool
 
 // agentInstallHint returns the hint for a non-Claude registry agent. The text
 // is hintText plus --agents and --scope. An agent caller never sees install's
-// prompts (installPromptsSupported), so --agents is what matters: it targets
+// prompts (promptsSupported), so --agents is what matters: it targets
 // the calling agent even when it isn't detected on this machine, instead of
 // every detected one. --scope global only makes the non-interactive default
 // explicit.
 //
-// The hint is gated on the agent's own tooling (Agent.DatabricksTooling, with
-// pluginRecorded as the plugin source for Codex and Copilot). A plugin
-// installed outside `databricks aitools install` (with the Codex or Copilot
-// CLI, or from Cursor itself) leaves no trace there, so those users are
-// hinted; the throttle bounds that to once per session or per TTL.
+// The hint is gated on the agent's own tooling (Agent.DatabricksTooling, which
+// for Codex and Copilot reads their own config and pluginRecorded). A plugin
+// installed outside `databricks aitools install` in a way that leaves no trace
+// there (e.g. from Cursor itself) gets those users hinted; the throttle bounds
+// that to once per session or per TTL.
 func agentInstallHint(a *Agent, pluginRecorded PluginRecordedFunc) *agentHint {
 	return &agentHint{
+		agentName: a.Name,
 		installed: func(ctx context.Context) bool {
 			recorded := func() bool { return pluginRecorded(ctx, a.Name) }
 			return a.DatabricksTooling(ctx, recorded) != ToolingNone

@@ -594,7 +594,6 @@ func newCreateMaterializationSet() *cobra.Command {
 	cmd.Flags().StringVar(&createMaterializationSetReq.RequestId, "request-id", createMaterializationSetReq.RequestId, `Idempotency token for the request.`)
 	cmd.Flags().StringVar(&createMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", createMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
 	// TODO: array: materialized_features
-	// TODO: complex arg: notifications
 
 	cmd.Use = "create-materialization-set"
 	cmd.Short = `Create a materialization set.`
@@ -711,6 +710,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
+	// TODO: complex arg: operations
 	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `Deprecated: This legacy pipeline setting does not control batch job scheduling. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
@@ -2527,7 +2527,6 @@ func newUpdateMaterializationSet() *cobra.Command {
 	cmd.Flags().StringVar(&updateMaterializationSetReq.RequestId, "request-id", updateMaterializationSetReq.RequestId, `Idempotency token for the request.`)
 	cmd.Flags().StringVar(&updateMaterializationSetReq.MaterializationSet.MaterializationSetId, "materialization-set-id", updateMaterializationSetReq.MaterializationSet.MaterializationSetId, `Server-assigned unique identifier for the materialization set.`)
 	// TODO: array: materialized_features
-	// TODO: complex arg: notifications
 
 	cmd.Use = "update-materialization-set MATERIALIZATION_SET_ID UPDATE_MASK"
 	cmd.Short = `Update a materialization set.`
@@ -2671,6 +2670,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	// TODO: complex arg: notifications
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
+	// TODO: complex arg: operations
 	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `Deprecated: This legacy pipeline setting does not control batch job scheduling. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger

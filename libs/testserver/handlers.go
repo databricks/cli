@@ -404,6 +404,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.FsListDirectory(req.Vars["path"])
 	})
 
+	server.Handle("DELETE", "/api/2.0/fs/directories/{path...}", func(req Request) any {
+		return req.Workspace.FsDeleteDirectory(req.Vars["path"])
+	})
+
 	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		if req.Workspace.FileExists(path) {
@@ -562,6 +566,9 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations", func(req Request) any {
 		return req.Workspace.ListOperations(req.Vars["deployment_id"], req.Vars["version_id"])
 	})
+	server.Handle("GET", "/api/2.0/bundle/enrollments:check", func(req Request) any {
+		return dmsCheckEnrollments(req.URL.Query()["features"])
+	})
 
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
@@ -631,6 +638,22 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/oidc/v1/device/auth", func(req Request) any {
+		return server.fakeOidc.OidcDeviceAuth(req)
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/.well-known/oauth-authorization-server", func(req Request) any {
+		return server.fakeOidc.AccountOidcEndpoints(req.Vars["account_id"])
+	})
+
+	server.Handle("GET", "/oidc/accounts/{account_id}/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
+	})
+
+	server.Handle("POST", "/oidc/accounts/{account_id}/v1/device/auth", func(req Request) any {
 		return server.fakeOidc.OidcDeviceAuth(req)
 	})
 
@@ -802,6 +825,14 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.AppsGetUpdate(req, req.Vars["name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/apps/{name}/thumbnail", func(req Request) any {
+		return req.Workspace.AppsUpdateThumbnail(req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/apps/{name}/thumbnail", func(req Request) any {
+		return req.Workspace.AppsDeleteThumbnail(req.Vars["name"])
+	})
+
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req Request) any {
 		return req.Workspace.AppsGet(req.Vars["name"])
 	})
@@ -949,6 +980,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesCreate(req)
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services", func(req Request) any {
+		return req.Workspace.McpServicesList(req)
+	})
+
 	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
 	})
@@ -957,8 +992,24 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.McpServicesUpdate(req, req.Vars["name"])
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return req.Workspace.McpUserCredentialCreate(req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}/user-credentials", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.McpUserCredentials, req.Vars["name"])
+	})
+
 	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/ai-gateway/mcp-services/{name}", func(req Request) any {
+		return req.Workspace.McpEndpoint(req, req.Vars["name"])
 	})
 
 	// Feature Engineering features:
@@ -966,7 +1017,8 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.FeaturesCreate(req)
 	})
 	server.Handle("GET", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+		// Features are stored lowercased, and the cloud GET matches the name case-insensitively.
+		return MapGet(req.Workspace, req.Workspace.Features, strings.ToLower(req.Vars["full_name"]))
 	})
 	server.Handle("PATCH", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
 		return req.Workspace.FeaturesUpdate(req, req.Vars["full_name"])
@@ -1385,7 +1437,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/database/catalogs/{name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+		return req.Workspace.DatabaseCatalogDelete(req.Vars["name"])
 	})
 
 	// Synced Database Tables:

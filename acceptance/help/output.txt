@@ -44,7 +44,7 @@ Vector Search
   vector-search-indexes                  **Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.
 
 AI Search
-  ai-search                              *Public Preview* **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.
+  ai-search                              **AI Search Endpoint**: Represents the compute resources to host AI Search indexes.
 
 Identity and Access Management
   assume-group                           *Beta* Manage the workspace's restricted sharing groups.
@@ -167,7 +167,7 @@ Agent Bricks
   supervisor-agents                      *Beta* Manage legacy Supervisor Agents and related resources.
 
 AI Functions
-  ai-functions                           Transform and enrich data with AI on Databricks.
+  ai-functions                           Transform and enrich data with AI.
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.

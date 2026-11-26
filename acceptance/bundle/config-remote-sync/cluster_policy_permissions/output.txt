@@ -24,6 +24,12 @@ Resource: resources.cluster_policies.policy
 >>> [CLI] bundle validate -o json
 [{"principal":"users","level":"CAN_USE"}]
 
+=== Sync again before deploy
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
 === Deploy applies the synced ACL
 
 >>> [CLI] bundle deploy

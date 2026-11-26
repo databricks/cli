@@ -17,12 +17,12 @@ class DockerBasicAuth:
 
     password: VariableOrOptional[str] = None
     """
-    Password of the user
+    Password for authenticating to the Docker registry that hosts the image.
     """
 
     username: VariableOrOptional[str] = None
     """
-    Name of the user
+    User name for authenticating to the Docker registry that hosts the image.
     """
 
     @classmethod
@@ -38,12 +38,12 @@ class DockerBasicAuthDict(TypedDict, total=False):
 
     password: VariableOrOptional[str]
     """
-    Password of the user
+    Password for authenticating to the Docker registry that hosts the image.
     """
 
     username: VariableOrOptional[str]
     """
-    Name of the user
+    User name for authenticating to the Docker registry that hosts the image.
     """
 
 

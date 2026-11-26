@@ -257,7 +257,8 @@ Create an app space.
   Arguments:
     NAME: The name of the app space. The name must contain only lowercase
       alphanumeric characters and hyphens. It must be unique within the
-      workspace.`
+      workspace. It can't start or end with a hyphen, and it can't be changed
+      after the space is created.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -383,7 +384,8 @@ func newCreateUpdate() *cobra.Command {
     APP_NAME: The name of the app to update.
     UPDATE_MASK: Comma-separated names of the app fields to update, such as description
       or resources. A field named in the mask but absent from app is
-      cleared, except compute_size, which resets to MEDIUM.
+      cleared, except compute_size, which resets to MEDIUM. Sent in the
+      request body together with app.
 
       The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
@@ -616,7 +618,8 @@ func newDeleteSpace() *cobra.Command {
 
 Delete an app space.
 
-  Deletes an app space.
+  Deletes the app space with the supplied name. Spaces are identified by name,
+  not by id. The workspace's default space can't be deleted.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -719,11 +722,11 @@ func newDeploy() *cobra.Command {
 
 	// TODO: array: command
 	// TODO: complex arg: deployment_artifacts
-	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
+	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique ID of the deployment.`)
 	// TODO: array: env_vars
 	// TODO: complex arg: git_source
 	// TODO: complex arg: health_check
-	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
+	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode in which the deployment manages the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
 	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status
 
@@ -731,7 +734,10 @@ func newDeploy() *cobra.Command {
 	cmd.Short = `Create an app deployment.`
 	cmd.Long = `Create an app deployment.
 
-  Creates an app deployment for the app with the supplied name.
+  Creates an app deployment for the app with the supplied name. The call returns
+  while the deployment is still IN_PROGRESS; poll the deployment until it
+  reaches a terminal state. The request fails with RESOURCE_CONFLICT if another
+  deployment of the same app is still pending and has not timed out.
 
   Arguments:
     APP_NAME: The name of the app.`
@@ -1124,7 +1130,8 @@ func newGetSpace() *cobra.Command {
 
 Get an app space.
 
-  Retrieves information for the app space with the supplied name.
+  Retrieves information for the app space with the supplied name. Spaces are
+  identified by name, not by id.
 
   Arguments:
     NAME: The name of the app space.`
@@ -1465,7 +1472,8 @@ func newListDeployments() *cobra.Command {
 	cmd.Short = `List app deployments.`
 	cmd.Long = `List app deployments.
 
-  Lists all app deployments for the app with the supplied name.
+  Lists all app deployments for the app with the supplied name. The history
+  holds only the app's most recent deployments.
 
   Arguments:
     APP_NAME: The name of the app.`
@@ -2202,8 +2210,10 @@ func newUpdateSpace() *cobra.Command {
 
 Update an app space.
 
-  Updates an app space. The update process is asynchronous and the status of the
-  update can be checked with the GetSpaceOperation method.
+  Updates the app space with the supplied name. Spaces are identified by name,
+  not by id. The workspace's default space can't be updated. The update process
+  is asynchronous and the status of the update can be checked with the
+  GetSpaceOperation method.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2213,18 +2223,11 @@ Update an app space.
   Arguments:
     NAME: The name of the app space. The name must contain only lowercase
       alphanumeric characters and hyphens. It must be unique within the
-      workspace.
-    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
-      commas (no spaces). The field path is relative to the resource object,
-      using a dot (.) to navigate sub-fields (e.g., author.given_name).
-      Specification of elements in sequence or map fields is not allowed, as
-      only the entire collection field can be specified. Field names must
-      exactly match the resource field names.
-
-      A field mask of * indicates full replacement. It’s recommended to
-      always explicitly list the fields being updated and avoid using *
-      wildcards, as it can lead to unintended results if the API changes in the
-      future.`
+      workspace. It can't start or end with a hyphen, and it can't be changed
+      after the space is created.
+    UPDATE_MASK: Comma-separated names of the space fields to update, such as
+      description or resources. A field named in the mask but absent from
+      space is cleared. Sent as a query parameter, not in the space body.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

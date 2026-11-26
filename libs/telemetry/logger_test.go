@@ -24,6 +24,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// longUploadTimeout replaces the default upload timeout in tests that check
+// something other than the timeout. On a stalled CI runner, creating the client
+// alone has taken over 3s, failing the upload with a timeout instead.
+const longUploadTimeout = "60"
+
+// uploadWatchdog is how long a test waits for an Upload or Send that must stop
+// at its deadline before failing as hung. A runner stall fires that deadline and
+// a short watchdog at the same moment, so it is far longer than any stall seen.
+const uploadWatchdog = 60 * time.Second
+
 func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -61,6 +71,7 @@ func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 		Host:  server.URL,
 		Token: "token",
 	})
+	ctx = env.Set(ctx, timeoutEnvVar, longUploadTimeout)
 
 	err := Upload(ctx, protos.ExecutionContext{})
 	require.NoError(t, err)
@@ -110,6 +121,7 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 		Host:  server.URL,
 		Token: "token",
 	})
+	ctx = env.Set(ctx, timeoutEnvVar, longUploadTimeout)
 
 	err := Upload(ctx, protos.ExecutionContext{})
 	require.NoError(t, err)
@@ -159,6 +171,7 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 		Host:  server.URL,
 		Token: "token",
 	})
+	ctx = env.Set(ctx, timeoutEnvVar, longUploadTimeout)
 
 	err := Upload(ctx, protos.ExecutionContext{})
 	assert.EqualError(t, err, "failed to upload telemetry logs after three attempts")
@@ -281,7 +294,7 @@ func assertUploadTimesOut(t *testing.T, ctx context.Context) {
 	select {
 	case err := <-errc:
 		assert.ErrorIs(t, err, context.DeadlineExceeded)
-	case <-time.After(10 * time.Second):
+	case <-time.After(uploadWatchdog):
 		t.Fatal("Upload did not return after its timeout")
 	}
 }
@@ -391,7 +404,7 @@ func TestTelemetryUploadHintOnlyWithUnresolvedConfig(t *testing.T) {
 	})
 
 	ctx := WithNewLogger(t.Context())
-	ctx = env.Set(ctx, timeoutEnvVar, "")
+	ctx = env.Set(ctx, timeoutEnvVar, longUploadTimeout)
 	Log(ctx, protos.DatabricksCliLog{
 		AitoolsHintEvent: &protos.AitoolsHintEvent{HintKind: protos.AitoolsHintKindInstallText},
 	})
@@ -622,7 +635,114 @@ func TestSendTimeoutBoundsTokenAcquisition(t *testing.T) {
 		assert.ErrorIs(t, err, context.DeadlineExceeded)
 		// The token was never fetched, so nothing was sent.
 		assert.True(t, NotSent(err))
-	case <-time.After(10 * time.Second):
+	case <-time.After(uploadWatchdog):
 		t.Fatal("Send did not return after its context deadline")
 	}
+}
+
+// TestUploadUsesConfigSetByCommand checks that the upload authenticates with the config the command set, in place of the
+// one cmdctx.ConfigUsed holds.
+func TestUploadUsesConfigSetByCommand(t *testing.T) {
+	bound := testserver.New(t)
+	t.Cleanup(bound.Close)
+	other := testserver.New(t)
+	t.Cleanup(other.Close)
+	var boundCalls, otherCalls int
+	bound.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		boundCalls++
+		return ResponseBody{NumProtoSuccess: 1}
+	})
+	other.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		otherCalls++
+		return ResponseBody{NumProtoSuccess: 1}
+	})
+
+	ctx := WithNewLogger(t.Context())
+	Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1}})
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{Host: other.URL, Token: "other"})
+	SetUploadConfig(ctx, &config.Config{Host: bound.URL, Token: "bound"})
+
+	cfg, ok := UploadConfig(ctx)
+	require.True(t, ok)
+	assert.Equal(t, bound.URL, cfg.Host)
+
+	require.NoError(t, Upload(ctx, protos.ExecutionContext{}))
+	assert.Equal(t, 1, boundCalls)
+	assert.Zero(t, otherCalls)
+}
+
+// TestUploadConfigWithoutLogger checks that the upload slot is a no-op without a logger, as Log is.
+func TestUploadConfigWithoutLogger(t *testing.T) {
+	ctx := t.Context()
+	SetUploadConfig(ctx, &config.Config{Host: "https://ws.test"})
+	_, ok := UploadConfig(ctx)
+	assert.False(t, ok)
+}
+
+// TestUploadSkippedDespiteConfigUsed checks that a skipped upload sends nothing, even when the run has a config from
+// cmdctx.ConfigUsed and one set by the command before it skipped.
+func TestUploadSkippedDespiteConfigUsed(t *testing.T) {
+	bound := testserver.New(t)
+	t.Cleanup(bound.Close)
+	used := testserver.New(t)
+	t.Cleanup(used.Close)
+	var calls int
+	for _, server := range []*testserver.Server{bound, used} {
+		server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+			calls++
+			return ResponseBody{NumProtoSuccess: 1}
+		})
+	}
+
+	ctx := WithNewLogger(t.Context())
+	Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1}})
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{Host: used.URL, Token: "used"})
+	SetUploadConfig(ctx, &config.Config{Host: bound.URL, Token: "bound"})
+	SkipUpload(ctx)
+
+	_, ok := UploadConfig(ctx)
+	assert.False(t, ok)
+	require.NoError(t, Upload(ctx, protos.ExecutionContext{}))
+	assert.Zero(t, calls)
+}
+
+// TestUploadSendsEachAcceptedEventOnce checks that an upload sends only the events logged since the earlier upload was
+// accepted, so an event is not uploaded twice.
+func TestUploadSendsEachAcceptedEventOnce(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	var uploaded []int
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		var body RequestBody
+		assert.NoError(t, json.Unmarshal(req.Body, &body))
+		uploaded = append(uploaded, len(body.ProtoLogs))
+		return ResponseBody{NumProtoSuccess: int64(len(body.ProtoLogs))}
+	})
+
+	ctx := WithNewLogger(t.Context())
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{Host: server.URL, Token: "token"})
+	Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1}})
+	require.NoError(t, Upload(ctx, protos.ExecutionContext{}))
+	Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue2}})
+	require.NoError(t, Upload(ctx, protos.ExecutionContext{}))
+
+	assert.Equal(t, []int{1, 1}, uploaded)
+	assert.Empty(t, BufferedEvents(ctx))
+}
+
+// TestUploadKeepsEventsNotAccepted checks that an upload the service does not accept leaves its events buffered, for a
+// later upload to send.
+func TestUploadKeepsEventsNotAccepted(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		return ResponseBody{NumProtoSuccess: 0}
+	})
+
+	ctx := WithNewLogger(t.Context())
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{Host: server.URL, Token: "token"})
+	Log(ctx, protos.DatabricksCliLog{CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1}})
+	require.Error(t, Upload(ctx, protos.ExecutionContext{}))
+
+	assert.Len(t, BufferedEvents(ctx), 1)
 }

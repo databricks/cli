@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle
+
+resources:
+  model_provider_services:
+    mps1:
+      parent: schemas/main.myschema
+      model_provider_service_id: myservice
+      comment: COMMENT1
+      config:
+        provider_type: EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM
+        targets:
+          - model: gpt-4o
+            native_api_types:
+              - openai/v1/chat/completions
+        custom:
+          direct:
+            base_url: https://api.example.com/v1
+            api_key:
+              plaintext: dummy-api-key

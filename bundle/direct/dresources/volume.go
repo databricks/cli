@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
@@ -63,9 +64,31 @@ func (r *ResourceVolume) DoRead(ctx context.Context, id string) (*catalog.Volume
 }
 
 func (r *ResourceVolume) DoCreate(ctx context.Context, config *VolumeState) (string, *catalog.VolumeInfo, error) {
-	response, err := r.client.Volumes.Create(ctx, config.CreateVolumeRequestContent)
+	create := func(ctx context.Context) (*catalog.VolumeInfo, error) {
+		return r.client.Volumes.Create(ctx, config.CreateVolumeRequestContent)
+	}
+	start := time.Now()
+	response, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The full name is chosen by the bundle and unique in the metastore.
+		fullName := config.CatalogName + "." + config.SchemaName + "." + config.Name
+		response, err = recoverCreate(ctx, createRecovery[catalog.VolumeInfo, *catalog.VolumeInfo]{
+			name:  "volume " + fullName,
+			start: start,
+			get: func(ctx context.Context) (*catalog.VolumeInfo, error) {
+				return r.client.Volumes.ReadByName(ctx, fullName)
+			},
+			createTime:    func(found *catalog.VolumeInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			createdByCaller: func(ctx context.Context, found *catalog.VolumeInfo) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.VolumeInfo],
+			create: repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	return response.FullName, response, nil
 }

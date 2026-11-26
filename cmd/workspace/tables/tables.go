@@ -112,9 +112,18 @@ Create a table.
 
   Arguments:
     NAME: Name of table, relative to parent schema.
-    CATALOG_NAME: Name of parent catalog.
-    SCHEMA_NAME: Name of parent schema relative to its parent catalog.
-    TABLE_TYPE:
+    CATALOG_NAME: Name of parent catalog. Required for creation using catalog and schema
+      names.
+    SCHEMA_NAME: Name of parent schema relative to its parent catalog. Required for
+      creation using catalog and schema names.
+    TABLE_TYPE: The type of the table. MANAGED tables store their data in storage that
+      Unity Catalog manages, EXTERNAL tables store it in a registered external
+      location, FOREIGN tables mirror objects of an external database through a
+      connection, and the shallow clone types reference the data files of a base
+      table. VIEW, MATERIALIZED_VIEW, STREAMING_TABLE and METRIC_VIEW are
+      defined by a view definition. See
+      https://docs.databricks.com/aws/en/tables/ for an overview of the table
+      types.
       Supported values: [
         EXTERNAL,
         EXTERNAL_SHALLOW_CLONE,
@@ -126,7 +135,9 @@ Create a table.
         STREAMING_TABLE,
         VIEW,
       ]
-    DATA_SOURCE_FORMAT:
+    DATA_SOURCE_FORMAT: The format of the data that backs the table, such as DELTA, PARQUET, CSV
+      or JSON. Foreign tables report the external system that holds them, for
+      example SNOWFLAKE_FORMAT or MYSQL_FORMAT.
       Supported values: [
         AVRO,
         BIGQUERY_FORMAT,
@@ -159,7 +170,11 @@ Create a table.
         VECTOR_INDEX_FORMAT,
         WORKDAY_RAAS_FORMAT,
       ]
-    STORAGE_LOCATION: Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).`
+    STORAGE_LOCATION: The cloud storage URL under which the data files of the table are stored.
+      For an EXTERNAL table, it must be set on creation to a path within an
+      existing external location. For a MANAGED table, the server assigns a path
+      under the managed storage location of the parent schema, catalog or
+      metastore and returns it in this field. Views have no storage location.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -647,7 +662,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of table.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The user or group that owns the table.`)
 
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a table owner.`
