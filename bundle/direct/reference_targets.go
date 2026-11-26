@@ -38,8 +38,12 @@ func checkReferenceTargets(configRoot *config.Root, plan *deployplan.Plan) error
 			target := plan.Plan[dep.Node]
 			switch {
 			case target == nil:
-				// A target that is in the config but has no plan entry (e.g. empty grants)
-				// is not a missing resource; makeGraph reports it.
+				// A Terraform-style reference (e.g. ${databricks_pipeline.x.id}) names no
+				// resource node, and a target that is in the config but has no plan entry
+				// (e.g. empty grants) is not a missing resource; makeGraph reports both.
+				if dep.Node == "" {
+					continue
+				}
 				targetPath, err := dyn.NewPathFromString(dep.Node)
 				if err != nil {
 					continue

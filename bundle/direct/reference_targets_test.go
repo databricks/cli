@@ -43,3 +43,13 @@ func TestCheckReferenceTargetsLeavesIDReferences(t *testing.T) {
 		}
 	}
 }
+
+// A Terraform-style reference has no resource node; it is left to makeGraph, which
+// reports it, instead of being reported as a resource missing from the config.
+func TestCheckReferenceTargetsLeavesTerraformReferences(t *testing.T) {
+	plan := deployplan.NewPlanDirect()
+	plan.Plan["resources.jobs.live"] = &deployplan.PlanEntry{
+		DependsOn: []deployplan.DependsOnEntry{{Node: "", Label: "${databricks_pipeline.x.id}"}},
+	}
+	assert.NoError(t, checkReferenceTargets(&config.Root{}, plan))
+}
