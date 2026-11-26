@@ -460,9 +460,11 @@ func (b *Builder) markChangedChildren(before, after dyn.Value, pattern string) b
 	if s, ok := after.AsSequence(); ok {
 		prev, _ := before.AsSequence()
 		for i, elem := range s {
-			if slices.ContainsFunc(prev, func(old dyn.Value) bool { return equalValues(old, elem) }) {
-				// Unchanged, wherever it moved: a list Python reorders or prepends
-				// to keeps the elements it received.
+			// Unchanged, wherever it moved: a list Python reorders or prepends to
+			// keeps the elements it received. The same position is checked first so
+			// that an unchanged list costs one comparison per element.
+			if i < len(prev) && equalValues(prev[i], elem) ||
+				slices.ContainsFunc(prev, func(old dyn.Value) bool { return equalValues(old, elem) }) {
 				continue
 			}
 			changed = b.markChanged(previousElement(prev, elem, i), elem, pattern+listSuffix) || changed
