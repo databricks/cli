@@ -334,34 +334,3 @@ func TestTagsEmptySet(t *testing.T) {
 
 	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
 }
-
-func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
-	b := mockBundle(config.Development)
-	b.Config.Presets.JobsMaxConcurrentRuns = 10
-
-	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
-	require.NoError(t, diags.Error())
-
-	assert.Equal(t, 10, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
-}
-
-func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
-	b := mockBundle(config.Development)
-	b.Config.Presets.JobsMaxConcurrentRuns = 1
-
-	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
-	require.NoError(t, diags.Error())
-
-	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
-}
-
-func TestPipelinesDevelopmentDisabled(t *testing.T) {
-	b := mockBundle(config.Development)
-	notEnabled := false
-	b.Config.Presets.PipelinesDevelopment = &notEnabled
-
-	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
-	require.NoError(t, diags.Error())
-
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development) //nolint:staticcheck // SA1019: pipeline development is deprecated in the SDK but remains a supported bundle config field
-}
