@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,7 +65,7 @@ func TestHintsEnabled(t *testing.T) {
 		{name: "preview on, hints invalid", preview: "true", hints: "maybe", want: false},
 		{name: "preview on, hints true", preview: "true", hints: "true", want: true},
 		{name: "preview on, hints one", preview: "1", hints: "1", want: true},
-		{name: "preview on, no cache, embedded manifest", preview: "true", want: false},
+		{name: "preview on, no cache", preview: "true", want: false},
 		{name: "preview on, entry on", preview: "true", manifest: entryOn, want: true},
 		{name: "preview on, entry on, stale cache ignored", preview: "true", manifest: entryOn, stale: true, want: false},
 		{name: "preview on, entry without the field", preview: "true", manifest: entryOff, want: false},
@@ -96,10 +97,11 @@ func TestHintsEnabled(t *testing.T) {
 }
 
 // writeCachedManifest writes manifest to the local manifest cache that
-// libs/clicompat reads from DATABRICKS_CACHE_DIR, with the given mod time.
+// libs/clicompat reads, with the given mod time.
 func writeCachedManifest(t *testing.T, ctx context.Context, manifest string, modTime time.Time) {
 	t.Helper()
-	path := filepath.Join(env.Get(ctx, "DATABRICKS_CACHE_DIR"), "compat-manifest.json")
+	path := clicompat.LocalManifestPath(ctx)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o700))
 	require.NoError(t, os.WriteFile(path, []byte(manifest), 0o600))
 	require.NoError(t, os.Chtimes(path, modTime, modTime))
 }

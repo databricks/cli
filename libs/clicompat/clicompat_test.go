@@ -452,36 +452,18 @@ func TestManifestLocalPath(t *testing.T) {
 
 func TestReadWriteLocalManifest(t *testing.T) {
 	ctx := testContext(t)
-	data := []byte(`{"0.300.0": {"appkit": "0.50.0", "skills": "0.5.0"}}`)
+	m := Manifest{
+		"0.300.0": {AppKit: "0.50.0", AgentSkills: "0.5.0", SkillsHints: true},
+	}
 
 	path := manifestLocalPath(ctx)
-	writeLocalManifest(ctx, path, data)
+	writeLocalManifest(ctx, path, m)
 
 	cached, err := readLocalManifest(path)
 	require.NoError(t, err)
 	assert.Equal(t, "0.50.0", cached.manifest["0.300.0"].AppKit)
+	assert.True(t, cached.manifest["0.300.0"].SkillsHints)
 	assert.True(t, cached.isFresh(cacheTTL), "just-written file should be fresh")
-}
-
-// TestFetchManifest_RemoteSuccessKeepsFieldsUnknownToTheCLI checks that the
-// cache holds the fetched bytes as they came, so a field this CLI does not
-// know, such as skills_hints for a CLI that predates it, survives the refresh.
-func TestFetchManifest_RemoteSuccessKeepsFieldsUnknownToTheCLI(t *testing.T) {
-	ctx := testContext(t)
-	body := `{"0.300.0": {"appkit": "0.50.0", "skills": "0.5.0", "skills_hints": true, "future_field": 1}}`
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(body))
-	}))
-	defer srv.Close()
-	redirectToServer(t, srv)
-
-	_, err := FetchManifest(ctx)
-	require.NoError(t, err)
-
-	cached, err := os.ReadFile(manifestLocalPath(ctx))
-	require.NoError(t, err)
-	assert.JSONEq(t, body, string(cached))
 }
 
 // --- IsNotFoundError tests ---
@@ -659,23 +641,25 @@ func TestResolveSkillsHints(t *testing.T) {
 	}
 }
 
-// TestResolveSkillsHintsNeverFetches checks that hints resolve from the local
-// cache or the embedded manifest without calling the remote fetcher, even when
-// the remote would turn them on or fails.
+// TestResolveSkillsHintsNeverFetches checks that hints resolve from a fresh
+// local cache without calling the remote fetcher, even when the remote would
+// turn them on or fails. Without a fresh cache they fail, and the embedded
+// manifest is not consulted.
 func TestResolveSkillsHintsNeverFetches(t *testing.T) {
 	manifest := `{"1.0.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`
 	tests := []struct {
-		name   string
-		cached bool
-		age    time.Duration
-		status int
-		want   bool
+		name    string
+		cached  bool
+		age     time.Duration
+		status  int
+		want    bool
+		wantErr bool
 	}{
-		{name: "no cache, remote on", status: http.StatusOK, want: false},
-		{name: "no cache, remote fails", status: http.StatusInternalServerError, want: false},
+		{name: "no cache, remote on", status: http.StatusOK, wantErr: true},
+		{name: "no cache, remote fails", status: http.StatusInternalServerError, wantErr: true},
 		{name: "fresh cache", cached: true, status: http.StatusOK, want: true},
-		{name: "stale cache, remote fails", cached: true, age: 2 * cacheTTL, status: http.StatusInternalServerError, want: false},
-		{name: "stale cache, remote on", cached: true, age: 2 * cacheTTL, status: http.StatusOK, want: false},
+		{name: "stale cache, remote fails", cached: true, age: 2 * cacheTTL, status: http.StatusInternalServerError, wantErr: true},
+		{name: "stale cache, remote on", cached: true, age: 2 * cacheTTL, status: http.StatusOK, wantErr: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -693,11 +677,26 @@ func TestResolveSkillsHintsNeverFetches(t *testing.T) {
 			}
 
 			got, err := ResolveSkillsHints(ctx, "1.0.0")
-			require.NoError(t, err)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Equal(t, tc.want, got)
 			assert.Zero(t, calls.Load(), "ResolveSkillsHints fetched the manifest")
 		})
 	}
+}
+
+// TestResolveSkillsHintsForceEmbedded checks that DATABRICKS_FORCE_EMBEDDED_COMPAT
+// keeps hints off even with a fresh cache that turns them on.
+func TestResolveSkillsHintsForceEmbedded(t *testing.T) {
+	ctx := env.Set(testContext(t), "DATABRICKS_FORCE_EMBEDDED_COMPAT", "true")
+	writeCachedManifestFile(t, ctx, `{"1.0.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`, time.Now())
+
+	got, err := ResolveSkillsHints(ctx, "1.0.0")
+	require.Error(t, err)
+	assert.False(t, got)
 }
 
 // TestManifestLeavesSkillsHintsOff checks that no entry of the embedded

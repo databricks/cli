@@ -66,11 +66,8 @@ type Entry struct {
 
 	// SkillsHints turns on the hints that point agents at the skills commands.
 	// Off when absent, so the switch ships off and can be turned on (or off
-	// again) remotely. It is never fetched: it is read from the local cache
-	// only while the cache is younger than cacheTTL, and otherwise from the
-	// embedded manifest, which is off. So a cache older than an hour turns the
-	// hints off until a command that fetches the manifest refreshes it. CLIs
-	// that predate the field ignore it.
+	// again) remotely. It is read from a fresh local cache only; see
+	// internal/build/README.md. CLIs that predate the field ignore it.
 	SkillsHints bool `json:"skills_hints,omitempty"`
 }
 
@@ -132,10 +129,10 @@ func fetchManifest(ctx context.Context) (m Manifest, fallback bool, err error) {
 	}
 
 	// Tier 2: fetch from remote (local file missing or stale).
-	m, raw, fetchErr := fetchRemoteWithRetry(ctx)
+	m, fetchErr := fetchRemoteWithRetry(ctx)
 	if fetchErr == nil {
 		if cacheEnabled(ctx) {
-			writeLocalManifest(ctx, localPath, raw)
+			writeLocalManifest(ctx, localPath, m)
 		}
 		return m, false, nil
 	}
@@ -321,11 +318,10 @@ func ResolveAutoInstall(ctx context.Context, cliVersion string) (bool, error) {
 }
 
 // ResolveSkillsHints reports whether the manifest entry for cliVersion turns on
-// skill hints. It never fetches: it reads the local cache while it is fresh,
-// and otherwise the embedded manifest, so it is safe to call while help is
-// printed. A stale cache is ignored, so the embedded value (off) applies.
+// skill hints. It never fetches and never uses the embedded manifest, so it
+// fails without a fresh cache; see internal/build/README.md.
 func ResolveSkillsHints(ctx context.Context, cliVersion string) (bool, error) {
-	m, err := localOrEmbeddedManifest(ctx)
+	m, err := freshLocalManifest(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -336,16 +332,20 @@ func ResolveSkillsHints(ctx context.Context, cliVersion string) (bool, error) {
 	return entry.SkillsHints, nil
 }
 
-// localOrEmbeddedManifest is the part of FetchManifest that does not fetch: the
-// local cache while it is fresh (tier 1), and then the embedded manifest. A
-// stale cache is not used here, because only a fetch can refresh it.
-func localOrEmbeddedManifest(ctx context.Context) (Manifest, error) {
-	if !forceEmbedded(ctx) {
-		if local, err := readLocalCache(ctx); err == nil && local.isFresh(cacheTTL) {
-			return local.manifest, nil
-		}
+// freshLocalManifest returns the local cache when it is fresh (tier 1 of
+// FetchManifest). A stale cache is not used, because only a fetch can refresh it.
+func freshLocalManifest(ctx context.Context) (Manifest, error) {
+	if forceEmbedded(ctx) {
+		return nil, errors.New("DATABRICKS_FORCE_EMBEDDED_COMPAT is set")
 	}
-	return parseEmbeddedManifest()
+	local, err := readLocalCache(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !local.isFresh(cacheTTL) {
+		return nil, errors.New("the cached compatibility manifest is stale")
+	}
+	return local.manifest, nil
 }
 
 // forceEmbedded reports whether DATABRICKS_FORCE_EMBEDDED_COMPAT is set.
@@ -370,6 +370,12 @@ func readLocalCache(ctx context.Context) (cachedManifest, error) {
 }
 
 // --- Local manifest cache ---
+
+// LocalManifestPath returns the path to the locally cached manifest file. Tests
+// in other packages use it to write the cache.
+func LocalManifestPath(ctx context.Context) string {
+	return manifestLocalPath(ctx)
+}
 
 // manifestLocalPath returns the path to the locally cached manifest file.
 func manifestLocalPath(ctx context.Context) string {
@@ -404,14 +410,16 @@ func readLocalManifest(path string) (cachedManifest, error) {
 	return cachedManifest{manifest: m, modTime: info.ModTime()}, nil
 }
 
-// writeLocalManifest writes the fetched manifest bytes to the local cache path
-// atomically. The bytes are written as fetched, not re-encoded from the parsed
-// Manifest, so this CLI keeps fields it does not know. A CLI that predates a
-// field still re-encodes the cache when it refreshes it and drops the field, so
-// until this CLI next refreshes the cache, a field such as skills_hints reads
-// as off here.
-func writeLocalManifest(ctx context.Context, path string, data []byte) {
+// writeLocalManifest writes the manifest to the local cache path atomically.
+// A CLI that predates a field re-encodes the cache when it refreshes it and
+// drops the field; see internal/build/README.md.
+func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 	if path == "" {
+		return
+	}
+	data, err := json.Marshal(m)
+	if err != nil {
+		log.Debugf(ctx, "Failed to marshal manifest for cache: %v", err)
 		return
 	}
 	if err := atomicfile.Write(path, data, 0o600, atomicfile.MkDir(0o700)); err != nil {
@@ -422,64 +430,57 @@ func writeLocalManifest(ctx context.Context, path string, data []byte) {
 // --- Remote fetch ---
 
 // fetchRemoteWithRetry wraps fetchRemote with retries on transient errors.
-// Client errors (4xx) are not retried since they will not recover. It returns
-// the parsed manifest and the bytes it was parsed from.
-func fetchRemoteWithRetry(ctx context.Context) (Manifest, []byte, error) {
+// Client errors (4xx) are not retried since they will not recover.
+func fetchRemoteWithRetry(ctx context.Context) (Manifest, error) {
 	var lastErr error
 	for attempt := range maxFetchAttempts {
 		if attempt > 0 {
 			log.Debugf(ctx, "Retrying manifest fetch (attempt %d/%d)", attempt+1, maxFetchAttempts)
 			select {
 			case <-ctx.Done():
-				return nil, nil, ctx.Err()
+				return nil, ctx.Err()
 			case <-time.After(fetchRetryBackoff):
 			}
 		}
-		m, raw, err := fetchRemote(ctx)
+		m, err := fetchRemote(ctx)
 		if err == nil {
-			return m, raw, nil
+			return m, nil
 		}
 		lastErr = err
 
 		// Do not retry client errors (4xx) — they won't resolve on retry.
 		if httpErr, ok := errors.AsType[*HTTPStatusError](err); ok && httpErr.StatusCode >= 400 && httpErr.StatusCode < 500 {
-			return nil, nil, lastErr
+			return nil, lastErr
 		}
 	}
-	return nil, nil, lastErr
+	return nil, lastErr
 }
 
-// fetchRemote fetches the manifest once. It returns the parsed manifest and the
-// raw bytes, so the cache can keep fields this CLI does not know.
-func fetchRemote(ctx context.Context) (Manifest, []byte, error) {
+func fetchRemote(ctx context.Context) (Manifest, error) {
 	log.Debugf(ctx, "Fetching compatibility manifest from %s", manifestURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, manifestURL, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	req.Header.Set("User-Agent", "databricks-cli/"+build.GetInfo().Version)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, nil, &HTTPStatusError{StatusCode: resp.StatusCode}
+		return nil, &HTTPStatusError{StatusCode: resp.StatusCode}
 	}
 
 	// Cap response size to guard against corrupted or malicious responses.
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	m, err := parseManifest(body)
-	if err != nil {
-		return nil, nil, err
-	}
-	return m, body, nil
+	return parseManifest(body)
 }
 
 // AgentSkillsLatest is the sentinel value the skills field may take instead of a

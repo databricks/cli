@@ -28,9 +28,8 @@ func Enabled(ctx context.Context) bool {
 
 // HintsEnabled reports whether skill hints are on. Hints need the feature on.
 // Then DATABRICKS_SKILLS_HINTS, when set, decides in both directions; otherwise
-// the skills_hints entry of the compatibility manifest that applies to this CLI
-// version does. It reads a fresh local manifest cache or the embedded manifest
-// and never fetches, because it is called while help is printed.
+// the skills_hints entry of the compatibility manifest does. It never fetches;
+// see internal/build/README.md.
 func HintsEnabled(ctx context.Context) bool {
 	if !Enabled(ctx) {
 		return false
