@@ -1,0 +1,10 @@
+Cloud = true
+
+Env.MSYS_NO_PATHCONV = "1"
+
+Ignore = ["export", "tmp-*"]
+
+# export-dir and import-dir print local paths with the OS separator.
+[[Repls]]
+Old = '\\'
+New = '/'

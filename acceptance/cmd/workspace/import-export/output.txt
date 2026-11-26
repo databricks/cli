@@ -1,0 +1,323 @@
+
+=== list prints the table header and nothing on stderr
+ID Type Language Path
+
+=== import --content with --language creates a notebook
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-source/pyScript --content cHJpbnQoMSk= --language PYTHON
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-source/pyNb --content YCMgRGF0YWJyaWNrcyBub3RlYm9vayBzb3VyY2UKcHJpbnQoMSk= --language PYTHON
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-source/pyScript
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print(1)
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-source/pyNb
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+`# Databricks notebook source
+print(1)
+
+=== import --content --format AUTO: a notebook only for a source extension and notebook content
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/py-nb-as-file --content YCMgRGF0YWJyaWNrcyBub3RlYm9vayBzb3VyY2UKcHJpbnQoMSk= --format AUTO
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/py-nb-as-notebook.py --content YCMgRGF0YWJyaWNrcyBub3RlYm9vayBzb3VyY2UKcHJpbnQoMSk= --format AUTO
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/not-a-notebook.py --content cHJpbnQoMSk= --format AUTO
+
+>>> [CLI] workspace list /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto -o json
+{"path":"/Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/not-a-notebook.py","object_type":"FILE","language":null}
+{"path":"/Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/py-nb-as-file","object_type":"FILE","language":null}
+{"path":"/Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/py-nb-as-notebook","object_type":"NOTEBOOK","language":"PYTHON"}
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/py-nb-as-file
+{"object_type":"FILE","language":null}
+`# Databricks notebook source
+print(1)
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/py-nb-as-notebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+`# Databricks notebook source
+print(1)
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/content-auto/not-a-notebook.py
+{"object_type":"FILE","language":null}
+print(1)
+
+=== import --file with --language creates a notebook
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-source/pyNotebook --file import_dir/pyNotebook.py --language PYTHON
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-source/scalaNotebook --file import_dir/scalaNotebook.scala --language SCALA
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-source/pyNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("python")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-source/scalaNotebook
+{"object_type":"NOTEBOOK","language":"SCALA"}
+// Databricks notebook source
+println("scala")
+
+
+=== import --file without --language or --format expects a zip archive
+
+>>> musterr [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-source/scalaNotebook-error --file import_dir/scalaNotebook.scala
+Error: The zip archive contains no items.
+
+=== import --file --format AUTO: a notebook only for a source extension and notebook content
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/py-nb-as-file --file import_dir/pyNotebook.py --format AUTO
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/py-nb-as-notebook.py --file import_dir/pyNotebook.py --format AUTO
+
+>>> [CLI] workspace import /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/not-a-notebook.py --file import_dir/file-a --format AUTO
+
+>>> [CLI] workspace list /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto -o json
+{"path":"/Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/not-a-notebook.py","object_type":"FILE","language":null}
+{"path":"/Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/py-nb-as-file","object_type":"FILE","language":null}
+{"path":"/Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/py-nb-as-notebook","object_type":"NOTEBOOK","language":"PYTHON"}
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/py-nb-as-file
+{"object_type":"FILE","language":null}
+# Databricks notebook source
+print("python")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/py-nb-as-notebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("python")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/file-auto/not-a-notebook.py
+{"object_type":"FILE","language":null}
+hello, world
+
+
+=== export prints a file or notebook on stdout, or writes it with --file
+export script.sh: stdout is the uploaded file, stderr is empty
+export file-a: stdout is the uploaded file
+export pyNotebook: stdout is the uploaded notebook
+export pyNotebook --format JUPYTER: stdout is a Jupyter notebook
+{"has_cells":true,"has_metadata":true}
+export --file: stdout is empty, the file has the content
+{"has_cells":true,"has_metadata":true}
+
+=== import-dir imports files and notebooks of every language
+import-dir --log-level=debug: stdout below, stderr is empty
+Importing files from ./import_dir
+a/b/c/file-b -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/a/b/c/file-b
+file-a -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/file-a
+jupyterNotebook.ipynb -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/jupyterNotebook
+pyNotebook.py -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/pyNotebook
+rNotebook.r -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/rNotebook
+scalaNotebook.scala -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/scalaNotebook
+sqlNotebook.sql -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/sqlNotebook
+Import complete
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/file-a
+{"object_type":"FILE","language":null}
+hello, world
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/a/b/c/file-b
+{"object_type":"FILE","language":null}
+file-in-dir
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/pyNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("python")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/sqlNotebook
+{"object_type":"NOTEBOOK","language":"SQL"}
+-- Databricks notebook source
+SELECT "sql"
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/rNotebook
+{"object_type":"NOTEBOOK","language":"R"}
+# Databricks notebook source
+print("r")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/scalaNotebook
+{"object_type":"NOTEBOOK","language":"SCALA"}
+// Databricks notebook source
+println("scala")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/jupyterNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("jupyter")
+
+=== import-dir keeps existing objects without --overwrite
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/file-a
+{"object_type":"FILE","language":null}
+old file
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/pyNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("old notebook")
+
+
+>>> [CLI] workspace import-dir ./import_dir /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep
+Importing files from ./import_dir
+a/b/c/file-b -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/a/b/c/file-b
+file-a -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/file-a (skipped; already exists)
+jupyterNotebook.ipynb -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/jupyterNotebook
+pyNotebook.py -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/pyNotebook (skipped; already exists)
+rNotebook.r -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/rNotebook
+scalaNotebook.scala -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/scalaNotebook
+sqlNotebook.sql -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/sqlNotebook
+Import complete
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/file-a
+{"object_type":"FILE","language":null}
+old file
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/pyNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("old notebook")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/a/b/c/file-b
+{"object_type":"FILE","language":null}
+file-in-dir
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/sqlNotebook
+{"object_type":"NOTEBOOK","language":"SQL"}
+-- Databricks notebook source
+SELECT "sql"
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/rNotebook
+{"object_type":"NOTEBOOK","language":"R"}
+# Databricks notebook source
+print("r")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/scalaNotebook
+{"object_type":"NOTEBOOK","language":"SCALA"}
+// Databricks notebook source
+println("scala")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-keep/jupyterNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("jupyter")
+
+=== import-dir --overwrite replaces existing objects
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/file-a
+{"object_type":"FILE","language":null}
+old file
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/pyNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("old notebook")
+
+
+>>> [CLI] workspace import-dir ./import_dir /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite --overwrite
+Importing files from ./import_dir
+a/b/c/file-b -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/a/b/c/file-b
+file-a -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/file-a
+jupyterNotebook.ipynb -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/jupyterNotebook
+pyNotebook.py -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/pyNotebook
+rNotebook.r -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/rNotebook
+scalaNotebook.scala -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/scalaNotebook
+sqlNotebook.sql -> /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/sqlNotebook
+Import complete
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/file-a
+{"object_type":"FILE","language":null}
+hello, world
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/pyNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("python")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/a/b/c/file-b
+{"object_type":"FILE","language":null}
+file-in-dir
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/sqlNotebook
+{"object_type":"NOTEBOOK","language":"SQL"}
+-- Databricks notebook source
+SELECT "sql"
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/rNotebook
+{"object_type":"NOTEBOOK","language":"R"}
+# Databricks notebook source
+print("r")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/scalaNotebook
+{"object_type":"NOTEBOOK","language":"SCALA"}
+// Databricks notebook source
+println("scala")
+
+--- /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir-overwrite/jupyterNotebook
+{"object_type":"NOTEBOOK","language":"PYTHON"}
+# Databricks notebook source
+print("jupyter")
+
+=== export-dir exports files and notebooks with their source extension
+export-dir: stdout below, stderr is empty
+Exporting files from /Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/a/b/c/file-b -> [TEST_TMP_DIR]/export/all/a/b/c/file-b
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/file-a -> [TEST_TMP_DIR]/export/all/file-a
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/jupyterNotebook -> [TEST_TMP_DIR]/export/all/jupyterNotebook.py
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/pyNotebook -> [TEST_TMP_DIR]/export/all/pyNotebook.py
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/rNotebook -> [TEST_TMP_DIR]/export/all/rNotebook.r
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/scalaNotebook -> [TEST_TMP_DIR]/export/all/scalaNotebook.scala
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/import-dir/sqlNotebook -> [TEST_TMP_DIR]/export/all/sqlNotebook.sql
+Export complete
+--- file-a
+hello, world
+
+--- a/b/c/file-b
+file-in-dir
+
+--- pyNotebook.py
+# Databricks notebook source
+print("python")
+
+--- sqlNotebook.sql
+-- Databricks notebook source
+SELECT "sql"
+
+--- rNotebook.r
+# Databricks notebook source
+print("r")
+
+--- scalaNotebook.scala
+// Databricks notebook source
+println("scala")
+
+--- jupyterNotebook.py
+# Databricks notebook source
+print("jupyter")
+
+=== export-dir keeps existing local files without --overwrite
+
+>>> [CLI] workspace export-dir /Users/[USERNAME]/import-export-[UNIQUE_NAME]/export [TEST_TMP_DIR]/export/keep
+Exporting files from /Users/[USERNAME]/import-export-[UNIQUE_NAME]/export
+file-a -> [TEST_TMP_DIR]/export/keep/file-a (skipped; already exists)
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/pyNotebook -> [TEST_TMP_DIR]/export/keep/pyNotebook.py
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/rNotebook -> [TEST_TMP_DIR]/export/keep/rNotebook.r
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/scalaNotebook -> [TEST_TMP_DIR]/export/keep/scalaNotebook.scala
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/script.sh -> [TEST_TMP_DIR]/export/keep/script.sh
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/sqlNotebook -> [TEST_TMP_DIR]/export/keep/sqlNotebook.sql
+Export complete
+
+>>> cat [TEST_TMP_DIR]/export/keep/file-a
+local content
+
+
+=== export-dir --overwrite replaces existing local files
+
+>>> [CLI] workspace export-dir /Users/[USERNAME]/import-export-[UNIQUE_NAME]/export [TEST_TMP_DIR]/export/overwrite --overwrite
+Exporting files from /Users/[USERNAME]/import-export-[UNIQUE_NAME]/export
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/file-a -> [TEST_TMP_DIR]/export/overwrite/file-a
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/pyNotebook -> [TEST_TMP_DIR]/export/overwrite/pyNotebook.py
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/rNotebook -> [TEST_TMP_DIR]/export/overwrite/rNotebook.r
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/scalaNotebook -> [TEST_TMP_DIR]/export/overwrite/scalaNotebook.scala
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/script.sh -> [TEST_TMP_DIR]/export/overwrite/script.sh
+/Users/[USERNAME]/import-export-[UNIQUE_NAME]/export/sqlNotebook -> [TEST_TMP_DIR]/export/overwrite/sqlNotebook.sql
+Export complete
+header-only notebooks are exported with their language's header:
+
+=== delete removes the test directory
+
+>>> [CLI] workspace delete --recursive /Users/[USERNAME]/import-export-[UNIQUE_NAME]
+
+>>> musterr [CLI] workspace get-status /Users/[USERNAME]/import-export-[UNIQUE_NAME]
+Error: Path (/Users/[USERNAME]/import-export-[UNIQUE_NAME]) doesn't exist.
