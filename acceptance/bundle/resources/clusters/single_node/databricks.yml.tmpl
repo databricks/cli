@@ -11,6 +11,7 @@ resources:
       cluster_name: test-cluster-implicit-$UNIQUE_NAME
       spark_version: $DEFAULT_SPARK_VERSION
       node_type_id: $NODE_TYPE_ID
+      instance_pool_id: $TEST_INSTANCE_POOL_ID
       is_single_node: true
       kind: CLASSIC_PREVIEW
       data_security_mode: SINGLE_USER
@@ -22,6 +23,7 @@ resources:
       cluster_name: test-cluster-explicit-$UNIQUE_NAME
       spark_version: $DEFAULT_SPARK_VERSION
       node_type_id: $NODE_TYPE_ID
+      instance_pool_id: $TEST_INSTANCE_POOL_ID
       is_single_node: true
       kind: CLASSIC_PREVIEW
       data_security_mode: SINGLE_USER
