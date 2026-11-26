@@ -11,6 +11,10 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  tasks[task_key='anchored'].existing_cluster_id: remove
+  tasks[task_key='anchored'].job_cluster_key: add
+  tasks[task_key='inherited'].existing_cluster_id: remove
+  tasks[task_key='inherited'].job_cluster_key: add
   tasks[task_key='main'].existing_cluster_id: remove
   tasks[task_key='main'].job_cluster_key: replace
   tasks[task_key='merged'].existing_cluster_id: remove
@@ -21,7 +25,7 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -39,7 +39,7 @@
+@@ -45,11 +45,11 @@
            tasks:
              - task_key: main
 -              job_cluster_key: shared
@@ -31,6 +35,11 @@ Resource: resources.jobs.my_job
 +            - !!merge <<: &dev_compute
                  job_cluster_key: shared
                task_key: merged
+             - task_key: anchored
+               job_cluster_key: &dev_key shared
+-            - <<: *dev_compute
++            - !!merge <<: *dev_compute
+               task_key: inherited
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:

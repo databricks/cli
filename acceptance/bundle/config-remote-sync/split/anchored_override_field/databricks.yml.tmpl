@@ -4,7 +4,8 @@ bundle:
 # max_concurrent_runs is declared in both blocks and the target's value wins, but it
 # is anchored and aliased there, so replacing it would leave the alias dangling. The
 # target's job mapping is anchored too, which does not stop an edit of description,
-# and an edit through the schedule alias is written into its anchor.
+# whose alias of a top-level anchor is replaced in the target. An edit through the
+# schedule alias is written into its anchor.
 
 definitions:
   nightly: &nightly
@@ -14,6 +15,7 @@ definitions:
 resources:
   jobs:
     my_job:
+      description: &description base
       max_concurrent_runs: 1
       schedule: *nightly
       tasks:
@@ -26,6 +28,6 @@ targets:
     resources:
       jobs:
         my_job: &dev_job
-          description: dev
+          description: *description
           max_concurrent_runs: &runs 2
           timeout_seconds: *runs

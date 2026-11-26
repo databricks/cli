@@ -411,21 +411,29 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 }
 
 // yamlKeyReplaceable reports whether fieldPath ends at a mapping key the YAML writes
-// itself, with no anchor on or inside its value. An add at a sequence index inserts
-// rather than replaces, and a key inherited through a merge key has no node of its own,
-// so only written keys count. Replacing a value that is or holds an anchor would leave
-// its aliases dangling; a key under an anchored mapping is replaced like any other.
+// itself, with no anchor on or inside its value. Replacing a value that is or holds an
+// anchor would leave its aliases dangling; a key under an anchored mapping is replaced
+// like any other.
 func yamlKeyReplaceable(content []byte, fieldPath string) bool {
+	value := yamlKeyValue(content, fieldPath)
+	return value != nil && !hasAnchor(value)
+}
+
+// yamlKeyValue returns the value of the mapping key fieldPath ends at, or nil when the
+// YAML does not write that key itself. An add at a sequence index inserts rather than
+// replaces, and a key inherited through a merge key has no node of its own, so only
+// written keys count.
+func yamlKeyValue(content []byte, fieldPath string) *yaml.Node {
 	pattern, err := structpath.ParsePattern(fieldPath)
 	if err != nil {
-		return false
+		return nil
 	}
 	if _, ok := pattern.StringKey(); !ok {
-		return false
+		return nil
 	}
 	var doc yaml.Node
 	if err := yaml.Unmarshal(content, &doc); err != nil || len(doc.Content) != 1 {
-		return false
+		return nil
 	}
 	current := doc.Content[0]
 	for _, part := range pattern.AsSlice() {
@@ -435,10 +443,10 @@ func yamlKeyReplaceable(content []byte, fieldPath string) bool {
 		}
 		current, _ = yamlChild(current, (*structpath.PathNode)(part))
 		if current == nil {
-			return false
+			return nil
 		}
 	}
-	return !hasAnchor(current)
+	return current
 }
 
 func hasAnchor(node *yaml.Node) bool {

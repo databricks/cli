@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"go.yaml.in/yaml/v3"
 )
 
 // Write-back has to turn a position in the merged configuration into a position in a
@@ -257,32 +258,55 @@ func (r *blockResolver) replacesKey(change resolvedChange) bool {
 	return r.writesKey(*destinations[0].block, destinations[0].path)
 }
 
-// addLandsOnKey reports whether an add routed as change would reach a key a block writes
-// itself, which applyChange replaces. An unrouted add tries the resource file's top-level
-// path, then the target's.
-func (r *blockResolver) addLandsOnKey(change resolvedChange, resourceFile string) bool {
-	destinations, err := routeChange(r, change, false)
-	if err != nil {
+// addReachesWinner reports whether add, for a field the file declares that replace
+// could not replace, lands in the block whose definition wins while neither writes the
+// key itself: the key is inherited through a merge key there, and adding it is what
+// main does. Anywhere else the add would fail on the key or write a copy that does not
+// win.
+func (r *blockResolver) addReachesWinner(add, replace resolvedChange, resourceFile string) bool {
+	adds, wins := r.candidates(add, resourceFile), r.candidates(replace, resourceFile)
+	if len(adds) == 0 || len(adds) != len(wins) {
 		return false
 	}
-	for _, destination := range destinations {
-		blocks := []sourceBlock{{file: resourceFile}, {override: true, file: resourceFile}}
-		if destination.block != nil {
-			blocks = []sourceBlock{*destination.block}
+	for i := range adds {
+		if adds[i].block == nil || wins[i].block == nil || *adds[i].block != *wins[i].block {
+			return false
 		}
-		for _, block := range blocks {
-			if (!block.override || r.target != "") && r.writesKey(block, destination.path) {
-				return true
-			}
+		if r.keyValue(*adds[i].block, adds[i].path) != nil || r.keyValue(*wins[i].block, wins[i].path) != nil {
+			return false
 		}
 	}
-	return false
+	return true
+}
+
+// candidates returns where change would be written: its route, or for a path with no
+// sequence the block its leaf comes from, else the resource file's top-level block,
+// which an unrouted add is tried in first.
+func (r *blockResolver) candidates(change resolvedChange, resourceFile string) []routeDestination {
+	if len(change.steps) > 0 {
+		destinations, err := routeChange(r, change, false)
+		if err != nil {
+			return nil
+		}
+		return destinations
+	}
+	block, ok := r.winningBlock(change.leaf)
+	if !ok {
+		block = sourceBlock{file: resourceFile}
+	}
+	return []routeDestination{{block: &block, path: change.path}}
 }
 
 // writesKey reports whether block writes the key at path itself, with no anchor on or
 // inside its value.
 func (r *blockResolver) writesKey(block sourceBlock, path *structpath.PatternNode) bool {
-	return yamlKeyReplaceable(r.sources[block.file], r.candidatePath(block, path))
+	value := r.keyValue(block, path)
+	return value != nil && !hasAnchor(value)
+}
+
+// keyValue returns the value block writes for the key at path, or nil.
+func (r *blockResolver) keyValue(block sourceBlock, path *structpath.PatternNode) *yaml.Node {
+	return yamlKeyValue(r.sources[block.file], r.candidatePath(block, path))
 }
 
 // indexWithinBlock returns the position of element inside block, where sequencePath is
@@ -412,6 +436,12 @@ func routeChange(blocks *blockResolver, resolved resolvedChange, isRename bool) 
 	if blocks == nil || len(resolved.steps) == 0 {
 		if blocks != nil && resolved.operation != OperationRemove {
 			if block, ok := blocks.winningBlock(resolved.leaf); ok {
+				// An alias carries its anchor's location, which can be in the top-level
+				// block while the target's override writes the key, and so wins.
+				override := sourceBlock{override: true, file: block.file}
+				if !block.override && blocks.target != "" && !blocks.writesKey(block, resolved.path) && blocks.writesKey(override, resolved.path) {
+					block = override
+				}
 				if !blocks.writesKey(block, resolved.path) {
 					return nil, fmt.Errorf("%w: the winning definition has no key of its own or its value holds an anchor", errAmbiguousBlock)
 				}
