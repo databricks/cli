@@ -208,8 +208,8 @@ Example usage:
 					return err
 				}
 
-				if ref.Description.SingularName == "pipeline" {
-					if err := runOptions.Pipeline.ResolveRefreshSelectors(ctx, b); err != nil {
+				if resolver, ok := runner.(run.OptionsResolver); ok {
+					if err := resolver.ResolveOptions(ctx, &runOptions); err != nil {
 						return err
 					}
 				}
