@@ -320,3 +320,34 @@ func (*Job) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]string {
 func (*Job) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
 	return &event.ResourceJobCount
 }
+
+func (j *Job) LibraryLocations() []LibraryLocation {
+	tasks := dyn.NewPattern(dyn.Key("tasks"), dyn.AnyIndex())
+	forEachTasks := tasks.Append(dyn.Key("for_each_task"), dyn.Key("task"))
+
+	return []LibraryLocation{
+		{
+			Pattern: tasks.Append(dyn.Key("libraries")),
+			Kind:    LibraryList,
+		},
+		{
+			Pattern: forEachTasks.Append(dyn.Key("libraries")),
+			Kind:    LibraryList,
+		},
+		{
+			Pattern: dyn.NewPattern(dyn.Key("environments"), dyn.AnyIndex(), dyn.Key("spec"), dyn.Key("dependencies")),
+			Kind:    DependencyList,
+		},
+		{
+			// The AI Runtime task's code_source_path is a local archive (typically an
+			// artifact-built .tar.gz) that must be uploaded and referenced by its remote
+			// path, exactly like a wheel or jar library.
+			Pattern: tasks.Append(dyn.Key("ai_runtime_task"), dyn.Key("code_source_path")),
+			Kind:    LibraryFile,
+		},
+		{
+			Pattern: forEachTasks.Append(dyn.Key("ai_runtime_task"), dyn.Key("code_source_path")),
+			Kind:    LibraryFile,
+		},
+	}
+}

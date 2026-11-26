@@ -126,33 +126,27 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 	return libs, diags
 }
 
+// uploadPatterns returns the patterns of the library values in every library
+// location, in the order of [locationsByKind]. The order decides which value
+// that is not a string is reported, and the order of the locations of a library.
+func uploadPatterns() []dyn.Pattern {
+	var out []dyn.Pattern
+	for _, l := range locationsByKind() {
+		out = append(out, l.valuePatterns()...)
+	}
+	return out
+}
+
 // Collect all libraries from the bundle configuration and their config paths.
 // By this stage all glob references are expanded and we have a list of all libraries that need to be uploaded.
-// We collect them from task libraries, foreach task libraries, environment dependencies, and artifacts.
+// We collect them from the library locations of the resources, and from artifacts.
 // We return a map of library source to a list of config paths and locations where the library is used.
 // We use map so we don't upload the same library multiple times.
 // This map is later used to upload the libraries to the remote location and update the config paths to point to the uploaded location.
 func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, error) {
 	libs := make(map[string]([]LocationToUpdate))
 
-	patterns := []dyn.Pattern{
-		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-		envDepsPattern.Append(dyn.AnyIndex()),
-		pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
-		pipelineTestingEnvDepsPattern.Append(dyn.AnyIndex()),
-		// The AI Runtime task's code_source_path is a local archive (typically an
-		// artifact-built .tar.gz) that must be uploaded and referenced by its remote
-		// path, exactly like a wheel or jar library.
-		aiRuntimeCodeSourcePattern,
-		forEachAiRuntimeCodeSourcePattern,
-	}
-
-	for _, pattern := range patterns {
+	for _, pattern := range uploadPatterns() {
 		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 			return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 				source, ok := v.AsString()

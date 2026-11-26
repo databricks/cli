@@ -288,3 +288,17 @@ func (*Pipeline) DeployTelemetryIDsField(event *protos.BundleDeployEvent) *[]str
 func (*Pipeline) DeployTelemetryCountField(event *protos.BundleDeployEvent) *int64 {
 	return &event.ResourcePipelineCount
 }
+
+func (p *Pipeline) LibraryLocations() []LibraryLocation {
+	return []LibraryLocation{
+		{
+			Pattern:           dyn.NewPattern(dyn.Key("environment"), dyn.Key("dependencies")),
+			Kind:              DependencyList,
+			SkipPatchedWheels: true,
+		},
+		{
+			Pattern: dyn.NewPattern(dyn.Key("testing"), dyn.Key("environment"), dyn.Key("dependencies")),
+			Kind:    DependencyList,
+		},
+	}
+}
