@@ -40,19 +40,20 @@ import (
 )
 
 var (
-	KeepTmp         bool
-	NoRepl          bool
-	VerboseTest     bool = os.Getenv("VERBOSE_TEST") != ""
-	Tail            bool
-	Forcerun        bool
-	LogRequests     bool
-	LogConfig       bool
-	UseVersion      string
-	CLIPath         string
-	WorkspaceTmpDir bool
-	OnlyOutTestToml bool
-	Subset          bool
-	DebugSandbox    bool
+	KeepTmp          bool
+	NoRepl           bool
+	VerboseTest      bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail             bool
+	Forcerun         bool
+	LogRequests      bool
+	LogConfig        bool
+	UseVersion       string
+	CLIPath          string
+	WorkspaceTmpDir  bool
+	WorkspaceTmpRoot string
+	OnlyOutTestToml  bool
+	Subset           bool
+	DebugSandbox     bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -84,6 +85,7 @@ func init() {
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
+	flag.StringVar(&WorkspaceTmpRoot, "workspace-tmp-root", "", "Workspace file system directory for -workspace-tmp-dir test directories; the caller deletes it.")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
 	flag.BoolVar(&DebugSandbox, "debugsandbox", false, "Use a per-test blocking proxy instead of a shared one; shows exactly which test caused unexpected internet access (slower)")
@@ -301,6 +303,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// DBR notebooks force color output, which the goldens assume is off.
 	for _, v := range []string{"CLICOLOR", "CLICOLOR_FORCE", "FORCE_COLOR"} {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
+	}
+
+	if WorkspaceTmpDir && WorkspaceTmpRoot == "" {
+		t.Fatal("-workspace-tmp-dir requires -workspace-tmp-root")
 	}
 
 	if !requirePrerequisites(t) {
@@ -938,7 +944,7 @@ func runTest(t *testing.T,
 		// If the test is being run on DBR, auth is already configured
 		// by the dbr_runner notebook by reading a token from the notebook context and
 		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
-		tmpDir = workspaceTmpDir(t.Context(), t)
+		tmpDir = workspaceTmpDir(t)
 
 		// Run DBR tests on the workspace file system to mimic usage from
 		// DABs in the workspace.

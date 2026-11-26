@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -14,47 +15,26 @@ import (
 	"github.com/databricks/cli/internal/testarchive"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// workspaceTmpDir creates a temporary directory in the workspace for running tests.
-// This is used by acceptance tests when running with the -workspace-tmp-dir flag.
-func workspaceTmpDir(ctx context.Context, t *testing.T) string {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	currentUser, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
-	require.NoError(t, err)
-
-	timestamp := time.Now().Format("2006-01-02T15:04:05Z")
-	parent := fmt.Sprintf(
-		"/Workspace/Users/%s/acceptance/%s/%s",
-		currentUser.UserName,
-		timestamp,
-		uuid.New().String(),
-	)
+// workspaceTmpDir creates a temporary directory for a test under -workspace-tmp-root.
+// It is not deleted here: TestDbrAcceptance deletes the whole root after the job, since
+// deleting from the job while FUSE still uploads files fails it with AsyncFlushFailedException.
+func workspaceTmpDir(t *testing.T) string {
 	// Named like t.TempDir(); tools such as uv derive project names from it.
-	path := parent + "/001"
-
-	t.Cleanup(func() {
-		// Use FUSE for cleanup to ensure proper operation ordering.
-		// Mixing FUSE (for writes) with API (for delete) can cause
-		// AsyncFlushFailedException because FUSE may have pending
-		// async writes that try to flush after API has deleted the directory.
-		err := os.RemoveAll(parent)
-		assert.NoError(t, err)
-	})
+	path := fmt.Sprintf("%s/%s/001", WorkspaceTmpRoot, uuid.New().String())
 
 	// Create the directory using FUSE directly via os.MkdirAll.
 	// This ensures the directory is immediately visible through the FUSE mount.
 	// Using the SDK's MkdirsByPath can cause eventual consistency issues where
 	// FUSE doesn't see the directory immediately after creation.
-	err = os.MkdirAll(path, 0o755)
+	err := os.MkdirAll(path, 0o755)
 	require.NoError(t, err, "Failed to create directory %s via FUSE", path)
 
 	// Return the FUSE path for local file operations.
@@ -220,10 +200,21 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 
 	cloudLogPath, cloudLogID := createDebugLog(ctx, t, w, debugLogsDir, "cloud")
 
+	// Parent of the test directories both tasks create. Deleted here once the job is done:
+	// deleting them from the job while FUSE still uploads files fails it with AsyncFlushFailedException.
+	tmpRoot := path.Join("/Users", currentUser.UserName, "acceptance", time.Now().Format("2006-01-02T15-04-05")+"-"+uuid.New().String()[:8])
+	t.Cleanup(func() {
+		err := w.Workspace.Delete(context.WithoutCancel(ctx), workspace.Delete{Path: tmpRoot, Recursive: true})
+		if err != nil && !errors.Is(err, apierr.ErrResourceDoesNotExist) {
+			t.Logf("Failed to delete %s: %v", tmpRoot, err)
+		}
+	})
+
 	// Build cloud test parameters (Cloud=true tests, run with CLOUD_ENV set)
 	cloudParams := buildBaseParams(testDir, archiveName, cloudLogPath)
 	cloudParams["test_type"] = "cloud"
 	cloudParams["test_filter"] = config.cloudTestFilter
+	cloudParams["workspace_tmp_root"] = "/Workspace" + tmpRoot
 
 	jobName := "DBR Tests"
 	if config.cloudTestFilter != "" {
@@ -275,10 +266,11 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 			NotebookTask: &jobs.NotebookTask{
 				NotebookPath: notebookPath,
 				BaseParameters: map[string]string{
-					"archive_path":   path.Join(testDir, archiveName),
-					"debug_log_path": localLogPath,
-					"test_type":      "local",
-					"test_filter":    config.localTestFilter,
+					"archive_path":       path.Join(testDir, archiveName),
+					"debug_log_path":     localLogPath,
+					"test_type":          "local",
+					"test_filter":        config.localTestFilter,
+					"workspace_tmp_root": "/Workspace" + tmpRoot,
 				},
 				Source: jobs.SourceWorkspace,
 			},
