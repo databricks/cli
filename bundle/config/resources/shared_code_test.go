@@ -58,13 +58,18 @@ const sharedCodeRecordHeader = `# Shared files of the bundle implementation that
 // (<key>.go or <key>_<aspect>.go). A file names a resource type if it contains:
 //
 //   - a string literal that is a resource key ("jobs"), or that holds a resource key
-//     after "resources." ("resources.jobs.%s");
+//     after "resources." ("resources.jobs.%s"). A string that only happens to equal a
+//     key is a known false positive: the record keeps cmd/bundle/init_appkit.go for
+//     "features", which there is the name of a flag;
 //   - a field of config.Resources, selected from an expression ending in Resources
-//     (b.Config.Resources.Jobs) or set in a Resources{...} literal;
+//     (b.Config.Resources.Jobs), from a variable that the same function sets to such an
+//     expression or to a pointer to one (r := &b.Config.Resources; r.Jobs), or set in a
+//     Resources{...} literal;
 //   - a config type of a resource type (resources.Job, or Job inside package resources).
 //
-// Comments do not count. References through other names (a variable holding
-// config.Resources, an SDK type, a singular name such as "job") are not detected.
+// Comments do not count. References through other names (a parameter or a variable
+// declared without a value of config.Resources, an SDK type, a singular name such as
+// "job") are not detected.
 func TestSharedCodeNamesNoNewResourceTypes(t *testing.T) {
 	found := scanSharedCode(t)
 
@@ -106,6 +111,46 @@ func TestSharedCodeNamesNoNewResourceTypes(t *testing.T) {
 	if !t.Failed() {
 		assert.Equal(t, formatSharedCodeRecord(found), record, "%s is not in its canonical form; regenerate it with "+
 			"`go test ./bundle/config/resources -run %s -update`", sharedCodeRecordName, sharedCodeTestName)
+	}
+}
+
+func TestResourceTypesNamedInSelectedFields(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want []string
+	}{
+		{
+			name: "direct selection",
+			body: `func f(b *bundle.Bundle) { _ = b.Config.Resources.Jobs }`,
+			want: []string{"jobs"},
+		},
+		{
+			name: "selection through a local",
+			body: `func f(b *bundle.Bundle) { r := b.Config.Resources; _ = r.Jobs }`,
+			want: []string{"jobs"},
+		},
+		{
+			name: "selection through a pointer assigned with =",
+			body: `func f(b *bundle.Bundle) { var r *config.Resources; r = &b.Config.Resources; _ = r.Pipelines }`,
+			want: []string{"pipelines"},
+		},
+		{
+			name: "local of the same name that is not a Resources value",
+			body: `func f(b *bundle.Bundle) { r := b.Config.Resources; _ = r }
+func g(s settings) { r := s.Limits; _ = r.Jobs }`,
+			want: nil,
+		},
+	}
+	names := newResourceTypeNames()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fset := token.NewFileSet()
+			f, err := parser.ParseFile(fset, "snippet.go", "package p\n\n"+tc.body+"\n", parser.SkipObjectResolution)
+			require.NoError(t, err)
+			got := slices.Sorted(maps.Keys(resourceTypesNamedIn(f, fset, names, false)))
+			assert.Equal(t, tc.want, got)
+		})
 	}
 }
 
@@ -249,7 +294,9 @@ func resourceTypesNamedIn(f *ast.File, fset *token.FileSet, names resourceTypeNa
 	// Identifiers that are not references to a type: selected names, field and
 	// function names, and keys of composite literals.
 	notReferences := map[*ast.Ident]bool{}
-	ast.Inspect(f, func(node ast.Node) bool {
+	// Variables of the declaration being inspected that hold a Resources value.
+	var locals map[string]bool
+	visit := func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.ImportSpec:
 			return false
@@ -264,7 +311,7 @@ func resourceTypesNamedIn(f *ast.File, fset *token.FileSet, names resourceTypeNa
 			}
 		case *ast.SelectorExpr:
 			notReferences[node.Sel] = true
-			if key, ok := names.fields[node.Sel.Name]; ok && endsInResources(node.X) {
+			if key, ok := names.fields[node.Sel.Name]; ok && isResourcesValue(node.X, locals) {
 				add(key, node.Pos(), "field Resources."+node.Sel.Name)
 			}
 			if x, ok := node.X.(*ast.Ident); ok && resourcesPkgNames[x.Name] {
@@ -303,7 +350,11 @@ func resourceTypesNamedIn(f *ast.File, fset *token.FileSet, names resourceTypeNa
 			}
 		}
 		return true
-	})
+	}
+	for _, decl := range f.Decls {
+		locals = resourcesLocals(decl)
+		ast.Inspect(decl, visit)
+	}
 
 	result := map[string]string{}
 	for key, o := range first {
@@ -322,6 +373,52 @@ func endsInResources(expr ast.Expr) bool {
 		return expr.Sel.Name == "Resources"
 	}
 	return false
+}
+
+// isResourcesValue reports whether expr ends in Resources or is one of locals.
+func isResourcesValue(expr ast.Expr, locals map[string]bool) bool {
+	if id, ok := expr.(*ast.Ident); ok && locals[id.Name] {
+		return true
+	}
+	return endsInResources(expr)
+}
+
+// resourcesLocals returns the names of the variables that decl assigns, with := or =, a
+// value that isResourcesValue recognises or a pointer to one. Assignments are matched by
+// name in source order, without resolving scopes.
+func resourcesLocals(decl ast.Decl) map[string]bool {
+	locals := map[string]bool{}
+	assign := func(lhs, rhs []ast.Expr) {
+		if len(lhs) != len(rhs) {
+			return
+		}
+		for i, value := range rhs {
+			id, ok := lhs[i].(*ast.Ident)
+			if !ok {
+				continue
+			}
+			if u, ok := value.(*ast.UnaryExpr); ok && u.Op == token.AND {
+				value = u.X
+			}
+			if isResourcesValue(value, locals) {
+				locals[id.Name] = true
+			}
+		}
+	}
+	ast.Inspect(decl, func(node ast.Node) bool {
+		switch node := node.(type) {
+		case *ast.AssignStmt:
+			assign(node.Lhs, node.Rhs)
+		case *ast.ValueSpec:
+			lhs := make([]ast.Expr, len(node.Names))
+			for i, id := range node.Names {
+				lhs[i] = id
+			}
+			assign(lhs, node.Values)
+		}
+		return true
+	})
+	return locals
 }
 
 func formatSharedCodeRecord(found map[string]map[string]string) string {
