@@ -52,7 +52,7 @@ func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.Task {
 	for k, jobTasks := range tasks {
 		for i := range jobTasks {
 			task := jobTasks[i]
-			if isTaskWithLocalLibraries(task) {
+			if IsTaskWithLocalLibraries(task) {
 				allTasks = append(allTasks, task)
 			}
 		}
@@ -65,7 +65,7 @@ func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.Task {
 	return allTasks
 }
 
-func isTaskWithLocalLibraries(task jobs.Task) bool {
+func IsTaskWithLocalLibraries(task jobs.Task) bool {
 	for _, l := range task.Libraries {
 		p, err := libraryPath(&l)
 		// If there's an error, skip the library because it's not of supported type

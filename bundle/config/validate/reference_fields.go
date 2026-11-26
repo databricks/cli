@@ -2,7 +2,6 @@ package validate
 
 import (
 	"context"
-	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -25,8 +24,9 @@ func ReferenceFields() bundle.ReadOnlyMutator {
 	return &referenceFields{}
 }
 
-// ReferenceFieldsAfterBuild is [ReferenceFields] for plan and deploy, run after the build, so it
-// checks the same config as the plan.
+// ReferenceFieldsAfterBuild is [ReferenceFields] for plan and deploy. It runs after the build, which
+// has already applied the python wheel wrapper, so it skips no wheel tasks, and it reads the open
+// state, so it also checks empty resources that have state.
 func ReferenceFieldsAfterBuild() bundle.ReadOnlyMutator {
 	return &referenceFields{afterBuild: true}
 }
@@ -82,25 +82,9 @@ func isInWheelTask(path dyn.Path) bool {
 }
 
 // mayBeWrapped reports whether the python wheel wrapper may wrap the job task at path. The wrapper
-// wraps a task with a python_wheel_task and a workspace library (see trampoline.pythonTrampoline),
-// and decides after the build, when local libraries are uploaded, so a local library counts too.
+// wraps a task with a python_wheel_task and a workspace library (see trampoline.needsTrampoline),
+// and decides after the build, which may upload a local library to the workspace.
 func mayBeWrapped(b *bundle.Bundle, path dyn.Path) bool {
-	job, ok := b.Config.Resources.Jobs[path[2].Key()]
-	index := path[4].Index()
-	if !ok || job == nil || index < 0 || index >= len(job.Tasks) {
-		// Not readable as typed config; keep skipping and leave it to the plan.
-		return true
-	}
-	task := job.Tasks[index]
-	if task.PythonWheelTask == nil {
-		return false
-	}
-	for _, l := range task.Libraries {
-		//nolint:staticcheck // SA1019: egg libraries are deprecated in the SDK but remain a supported bundle config field
-		paths := []string{l.Whl, l.Jar, l.Egg, l.Requirements}
-		if libraries.IsWorkspaceLibrary(&l) || slices.ContainsFunc(paths, libraries.IsLibraryLocal) {
-			return true
-		}
-	}
-	return false
+	task := b.Config.Resources.Jobs[path[2].Key()].Tasks[path[4].Index()]
+	return task.PythonWheelTask != nil && (libraries.IsTaskWithWorkspaceLibraries(task) || libraries.IsTaskWithLocalLibraries(task))
 }
