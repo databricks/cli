@@ -1,0 +1,4 @@
+
+>>> musterr [CLI] bundle plan
+Error: invalid dependency "${resources.schemas.schema_b.grants[0].principal}", no such node "resources.schemas.schema_b.grants"
+

@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -351,7 +350,10 @@ func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 			return nil
 		}
 	}
-	if !direct.CheckReferencesToDeleted(ctx, plan) {
+	if errs := plan.CheckReferencesToDeleted(); len(errs) > 0 {
+		for _, err := range errs {
+			logdiag.LogError(ctx, err)
+		}
 		logdiag.LogError(ctx, errors.New("planning failed"))
 		return nil
 	}

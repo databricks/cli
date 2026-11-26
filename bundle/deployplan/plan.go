@@ -430,10 +430,12 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 					p.enqueueReachable(reachable, &queue, dependent)
 				} else {
 					// Dependent is live (still in config): deleting key would leave
-					// it broken. Report a user-facing error with both names.
-					deleted := strings.TrimPrefix(key, "resources.")
-					live := strings.TrimPrefix(dependent, "resources.")
-					errs = append(errs, fmt.Sprintf("cannot delete %s: %s still references it; remove the reference or also remove %s from the config", deleted, live, live))
+					// it broken. dependents lists it once per edge, so it may repeat.
+					for _, dep := range p.Plan[dependent].DependsOn {
+						if dep.Node == key {
+							errs = append(errs, ReferenceToDeletedError(dependent, dep).Error())
+						}
+					}
 				}
 			}
 		} else {
@@ -444,6 +446,7 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 	}
 	if len(errs) > 0 {
 		slices.Sort(errs)
+		errs = slices.Compact(errs)
 		return errors.New(strings.Join(errs, "\n"))
 	}
 
@@ -455,6 +458,32 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 
 	p.NotSelected = before - len(p.Plan)
 	return nil
+}
+
+// ReferenceToDeletedError reports that node, which stays deployed, references dep.Node,
+// which was removed from the config and is planned for deletion.
+func ReferenceToDeletedError(node string, dep DependsOnEntry) error {
+	return fmt.Errorf("cannot plan %s: %s refers to %s, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove %s too, or add %s back to the configuration", node, dep.Label, dep.Node, node, dep.Node)
+}
+
+// CheckReferencesToDeleted returns an error for each reference from a resource that is
+// not being deleted to one that is. Applying such a plan would delete the target and then
+// fail to resolve the reference. Run it after FilterToSelected, so that a reference outside
+// the selection does not block it.
+func (p *Plan) CheckReferencesToDeleted() []error {
+	var errs []error
+	for _, node := range slices.Sorted(maps.Keys(p.Plan)) {
+		entry := p.Plan[node]
+		if entry.Action == Delete {
+			continue
+		}
+		for _, dep := range entry.DependsOn {
+			if target := p.Plan[dep.Node]; target != nil && target.Action == Delete {
+				errs = append(errs, ReferenceToDeletedError(node, dep))
+			}
+		}
+	}
+	return errs
 }
 
 // reverseEdges returns the reverse of the plan's DependsOn edges: for each node, the

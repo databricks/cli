@@ -252,21 +252,27 @@ func TestFilterToSelected_DeletionIncludesDependents(t *testing.T) {
 }
 
 // Deleting a resource that a live (non-delete) dependent still references is an error:
-// proceeding would leave the dependent broken. Both the deleted and the live resource
-// are named in the message without the "resources." prefix.
+// proceeding would leave the dependent broken. The message is the one a full plan gives
+// (CheckReferencesToDeleted), once per reference.
 func TestFilterToSelected_DeletionErrorsOnLiveDependent(t *testing.T) {
 	p := deployplan.NewPlanDirect()
 	p.Plan["resources.jobs.gone"] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	// live still references gone and has a pending update.
 	p.Plan["resources.jobs.live"] = &deployplan.PlanEntry{
-		Action:    deployplan.Update,
-		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.gone"}},
+		Action: deployplan.Update,
+		DependsOn: []deployplan.DependsOnEntry{
+			{Node: "resources.jobs.gone", Label: "${resources.jobs.gone.id}"},
+			{Node: "resources.jobs.gone", Label: "${resources.jobs.gone.name}"},
+		},
 	}
+
+	full := p.CheckReferencesToDeleted()
+	require.Len(t, full, 2)
 
 	err := p.FilterToSelected(t.Context(), []string{"jobs.gone"})
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "cannot delete jobs.gone")
-	assert.ErrorContains(t, err, "jobs.live still references it")
+	assert.Equal(t, full[0].Error()+"\n"+full[1].Error(), err.Error())
+	assert.Contains(t, err.Error(), "cannot plan resources.jobs.live: ${resources.jobs.gone.id} refers to resources.jobs.gone")
 }
 
 // Selecting a resource for deletion leaves its own dependencies alone: they are not

@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    # Empty grants are in the config but get no plan entry.
+    schema_b:
+      catalog_name: main
+      name: schema_b
+      grants: []
+
+    schema_a:
+      catalog_name: main
+      name: schema_a
+      comment: ${resources.schemas.schema_b.grants[0].principal}

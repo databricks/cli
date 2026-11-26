@@ -1,0 +1,2 @@
+# The grants are defined, so this is not reported as a reference to a missing resource.
+trace musterr $CLI bundle plan

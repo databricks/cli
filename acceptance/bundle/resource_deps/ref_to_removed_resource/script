@@ -1,5 +1,3 @@
-cp databricks.yml full.yml
-
 title "A reference to a resource that was never defined"
 cp no_bar.yml databricks.yml
 trace musterr $CLI bundle plan
@@ -8,7 +6,7 @@ trace musterr $CLI bundle deploy
 title "Deploy all jobs"
 cp full.yml databricks.yml
 trace $CLI bundle deploy
-print_requests.py --nostamp //jobs > /dev/null
+print_requests.py --nostamp //jobs > LOG.deploy_requests
 
 title "Remove bar while foo and baz still reference it"
 cp no_bar.yml databricks.yml
