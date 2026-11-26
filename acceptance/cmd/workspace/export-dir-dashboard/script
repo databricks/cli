@@ -60,6 +60,6 @@ trace jq -n --slurpfile b created.json --slurpfile a after.json '$b[0] as $b | $
 title "Creating a dashboard with the same name in the same folder is a conflict"
 # Create recovery treats ALREADY_EXISTS and RESOURCE_ALREADY_EXISTS alike; the backend returns
 # either, with wording that varies by version, so only the final status and the code are checked.
-musterr $CLI lakeview create --display-name "$DASHBOARD_NAME" --serialized-dashboard "$(cat imported.lvdash.json)" --json "{\"parent_path\": \"$DASHBOARD_DIR\"}" --debug 2> conflict.log
-grep -oE '< HTTP/[0-9.]+ [0-9]{3}' conflict.log | tail -n 1 | sed -E 's|^< HTTP/[0-9.]+ |HTTP status |'
-grep -oE '"error_code": "(RESOURCE_)?ALREADY_EXISTS"' conflict.log | tail -n 1 | sed -E 's|RESOURCE_ALREADY_EXISTS|ALREADY_EXISTS|'
+musterr $CLI lakeview create --display-name "$DASHBOARD_NAME" --serialized-dashboard "$(cat imported.lvdash.json)" --json "{\"parent_path\": \"$DASHBOARD_DIR\"}" --debug 2> LOG.conflict
+grep '< HTTP/' LOG.conflict | tail -n 1 | trace contains.py ' 409' > /dev/null
+trace contains.py 'ALREADY_EXISTS' < LOG.conflict > /dev/null
