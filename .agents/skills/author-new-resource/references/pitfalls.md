@@ -81,8 +81,9 @@ able to return a pending operation at least once, or the polling loop is never e
 
 ## Tests
 
-**An invariant config that is not in the matrix.** Adding the template is half the step. Register it
-under `EnvMatrix.INPUT_CONFIG`, exclude the legs it cannot run, and prove it ran.
+**An invariant config whose failing legs are papered over.** Every config in
+`invariant/configs/` runs in every invariant test. Exclude only the legs it cannot run, in its
+`-exclude.toml` with a reason each, never all of them, and prove it ran.
 
 **Many directories, one behaviour each.** Five or more directories under `resources/<plural>/`
 usually means backend refusal cases got their own tests. The canonical set is `basic`, `lifecycle`,
@@ -106,17 +107,26 @@ Teach the fake instead.
 
 ## Wiring
 
-**Approval prompt in deploy but not destroy.** Both groups must list the type, with a destroy
-message.
+**Approval prompt in deploy but not destroy.** An `Approval()` with a `Deploy` message needs a
+`Destroy` message too, unless a comment says why deletion is harmless or where destroy's message
+comes from.
+
+**A shared list or a branch on the type's name.** Shared code derives the list of resource types
+from `config.Resources`; a fact about the type is a declaration in its own file, and behaviour is a
+per-type file that registers itself. An edit to a shared file other than the field in
+`bundle/config/resources.go` (and `dmsResourceTypes`, or an opt-out entry with its reason) means a
+declaration was missed.
 
 **A type missing from the deployment-history allowlist, silently.** Either add it (and coordinate
 the backend allowlist) or exclude the `DMS=true` leg with a comment. Never leave the leg failing or
 unexplained.
 
-**The bind test in the resource directory.** It lives under `acceptance/bundle/deployment/bind/`.
+**The bind test in the resource directory.** It lives under
+`acceptance/bundle/deployment/bind/<plural>/`.
 
-**Placeholder descriptions left in `annotations.yml`.** Fill the resource-level and field
-descriptions, then regenerate the schema; do not edit `jsonschema.json` by hand.
+**Placeholder descriptions left undocumented.** Document every placeholder of
+`bundle/internal/schema/annotations/<plural>.generated.yml` in `annotations/<plural>.yml`, then
+regenerate the schema until the generated file is gone; do not edit `jsonschema.json` by hand.
 
 ## Scope and prose
 

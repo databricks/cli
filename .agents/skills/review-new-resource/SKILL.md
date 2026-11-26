@@ -31,9 +31,11 @@ If the user asks you to consider their earlier feedback, include resolved and ou
 from the requested reviewers when checking follow-ups. Exclude any reviewers the user asks you to
 ignore. Judge the current code and the replies before repeating an earlier ask.
 
-Identify the resource: its plural, the config type under `bundle/config/resources/`, the adapter
-under `bundle/direct/dresources/`, its `configs/<plural>.yml` and `.generated.yml`, the fake under
-`libs/testserver/`, and the acceptance directories.
+Identify the resource: its plural (the key under `resources:`, which names every per-type file),
+the config type `bundle/config/resources/<plural>.go`, the adapter
+`bundle/direct/dresources/<plural>.go`, its `configs/<plural>.yml` and `.generated.yml`, the fake
+under `libs/testserver/`, and the acceptance directories. `bundle/config/resources/README.md`,
+section "Adding a resource type", lists the files a new type adds.
 
 ## 2. Triage before line comments
 
@@ -41,8 +43,8 @@ Compute and write down:
 
 ```bash
 git diff --numstat "$BASE" "$TARGET" -- '*.go' ':!*_test.go' ':!*generated*' ':!python/' | awk '{a+=$1} END {print a}'
-git show "$TARGET":bundle/direct/dresources/<singular>.go | wc -l
-git show "$TARGET":libs/testserver/<plural>.go | wc -l
+git show "$TARGET":bundle/direct/dresources/<plural>.go | wc -l
+git show "$TARGET":libs/testserver/<api>.go | wc -l
 git ls-tree --name-only "$TARGET" acceptance/bundle/resources/<plural>/
 ```
 
@@ -59,7 +61,9 @@ drop anything you cannot point to.
 List every changed file that is not part of adding this resource: another resource's behaviour,
 generic mutators, engine code under `bundle/direct/*.go` or `libs/structs/`, messages for other
 types, bundle-wide syntax features. Each is a split request, made once, before reviewing its
-content.
+content. A shared hand-written file that now names the new type (anything but the field in
+`bundle/config/resources.go`, `dmsResourceTypes`, or an opt-out entry in a coverage test) is not a
+split but a missed declaration: ask for the per-type declaration or file instead.
 Table: `file | belongs to the new resource? | if not, what it changes`
 
 ### P2. API shape and plan semantics
@@ -108,18 +112,21 @@ Table: `item | finding (file:line) | verdict: fine / ask upstream / redesign at 
 Check against `bundle/direct/dresources/README.md` and the `IResource` interface in `adapter.go`:
 one SDK call per `DoCreate`/`DoUpdate`/`DoDelete`; SDK errors returned unwrapped; no nil checks on
 arguments the framework guarantees; `DoCreate` cannot return an empty id; `RemapState` is a trivial copy; remapping lives in `DoRead`;
-`Exists` uses `apierr.IsMissing`; `GetURL` returns `"", false` with a comment only when there is no
-UI page; marshal methods on the config type have the right receivers.
+`Exists` uses `apierr.IsMissing`; `WorkspaceURL()` returns `false` with a comment only when there
+is no UI page; marshal methods on the config type have the right receivers.
 Table: `method | contract point | ok? (file:line)`
 
 ### P4. Wiring completeness
 
-Walk the checklist in `../author-new-resource/references/wiring.md`. For each row: present, absent
-with a justifying comment, or absent. Pay attention to the rows that nothing enforces: state load
-fixture, invariant matrix registration, deployment-history allowlist or exclusion, deploy and
-destroy approval groups together, URL plus its command tests, UC dependency capture when the
-resource names a catalog or schema, run_as and presets decisions.
-Table: `checklist row | present? (file:line) | if absent: justified?`
+Walk the checklist in `../author-new-resource/references/wiring.md`. Coverage tests already fail
+for a missing per-type file or declaration, so a green CI says each exists; review what each
+decision of section 3 declares: run_as, presets, permissions, grants, UC names, deploy and destroy
+approval messages together, workspace URL, launch stage, bind, create recovery,
+deployment-history allowlist or exclusion, etag protection. For each: the declaration and whether
+it fits the API, or "not applicable" with a justifying comment. Then check every row of section 6, which no test
+guards, with the command given there. A new entry in a coverage test's opt-out list needs its
+reason.
+Table: `checklist row | present? (file:line) | if absent or opted out: justified?`
 
 ### P5. Fake server
 
@@ -133,9 +140,10 @@ Table: `behaviour modelled | needed by the CLI? | evidence (server ref or cloud 
 ### P6. Tests and whether they ran
 
 - Canonical set present: `basic`, `lifecycle` with `Cloud = true`, `remote-delete`,
-  `deployment/bind/<singular>`, invariant template, PyDABs support dir when eligible.
-- Invariant template registered in `acceptance/bundle/invariant/test.toml`; migrate and
-  auto-migrate exclusions added.
+  `deployment/bind/<plural>`, invariant config, PyDABs support dir when eligible.
+- Invariant config `invariant/configs/<plural>.yml.tmpl` runs in every invariant test; its
+  `-exclude.toml` excludes only the legs it cannot run (DMS, cloud, migrate and auto-migrate for a
+  direct-only type), each with its reason.
 - `out.test.toml` files show the expected `Cloud` and `DMS` values; a `DMS=true` exclusion has a
   comment.
 - The recreate is executed, not only planned; `print_requests.py` shows the delete and create.
@@ -147,9 +155,10 @@ Table: `behaviour modelled | needed by the CLI? | evidence (server ref or cloud 
 - Deployment history: if the `DMS=true` leg is excluded anywhere, the type is absent from
   `dmsResourceTypes` in `libs/testserver/bundledeployments.go`; ask whether the backend allowlist
   change is tracked and say so in the review body. An exclusion without that is a comment.
-- Unit tests: `testConfig` entry populates every field; completeness-list tests updated rather than
-  special-cased (`run_as_test.go`, `apply_bundle_permissions_test.go`, `workspace_open_test.go`,
-  `all_test.go`). A branch on the resource name inside a shared harness is a comment.
+- Unit tests: the fixture `registerTestConfig` registers in `<plural>_test.go` populates every
+  field; per-type registrations (`<plural>_bind_test.go`, `<plural>_target_mode_test.go`,
+  `<plural>_test.go`) rather than entries in shared tests. A branch on the resource name inside a
+  shared harness is a comment.
 - Cloud coverage: the `lifecycle` directory (or the directory that plays its role) has
   `Cloud = true` in its `out.test.toml`. The PR's Integration Tests check runs every changed
   `Cloud = true` test, so that check is the evidence; do not ask for a run link, an environment, or
@@ -168,13 +177,14 @@ Table: `expected test | present? | ran? (out.test.toml / CI check) | note`
 
 ### P7. Generated files and descriptions
 
-`annotations.yml` has real descriptions for the resource and its fields and was regenerated, not
+`bundle/internal/schema/annotations/<plural>.yml` has real descriptions for the fields only the
+CLI defines, no `<plural>.generated.yml` is left with placeholders, and both were regenerated, not
 pasted; `jsonschema.json`, validation files, refschema output and PyDABs models follow from a
 generator run (`./task generate-schema`, `generate-direct`, `pydabs-codegen`). Launch stage: the
-resource-level `x-databricks-launch-stage` comes only from `launchStageOverrides` in
-`bundle/internal/annotation/preview.go`, so a resource without an entry ships in PyDABs whatever
-its fields' stages, like every non-Postgres resource today. Whether that is intended is a question
-to the author, not an upstream ask.
+resource-level `x-databricks-launch-stage` comes only from a `SchemaLaunchStage()` declaration on
+the config type, so a resource without one ships in PyDABs whatever its fields' stages, like every
+non-Postgres resource today. Whether that is intended is a question to the author, not an upstream
+ask.
 
 Check the reason for a launch-stage override: repeating the API's field stage alone does not
 justify a separate bundle availability policy. Trace field labels, the resource type's stage, and
@@ -202,8 +212,8 @@ Table: `location | what the comment explains | keep / delete / move`
 ### P10. Consistency with siblings
 
 Resources copy their exemplar, so a block that repeats a sibling's (a setup function in a test
-script, a UC-name resolution loop in a mutator, an approval message, a fake handler) is the expected
-outcome, not a finding. For each repeated block, open the sibling and compare shape: same shape, no
+script, a `UCNames()` or `ApplyPresets()` declaration, an approval message, a fake handler) is the
+expected outcome, not a finding. For each repeated block, open the sibling and compare shape: same shape, no
 comment; different shape with no comment saying why, one comment that points at the sibling and asks
 for the same shape. When the repo already has a helper for the job (`acceptance/bin/`,
 `acceptance/script.prepare`, `libs/`), ask for that helper by name. Do not ask for a new shared
@@ -227,8 +237,9 @@ Any of these is a top-of-review comment and usually a redesign at the API:
 | A mirror config struct rather than the embedded SDK type | Schema drifts from the API |
 | Fake over ~150 lines, or validating field combinations | Backend policy modelled locally, unverified |
 | More than five acceptance directories for one resource | Backend refusal matrix in the tests |
-| Invariant template without a matrix entry | Dead test |
-| Approval group in `deploy.go` only | Destroy loses the warning |
+| Invariant config excluded from every invariant test | Dead test |
+| `Approval()` with a `Deploy` message and no `Destroy` message, without a comment | Destroy loses the warning |
+| The new type added to a shared list, or a branch on its name in shared code | A missed per-type declaration |
 | Engine or `libs/structs` changes in a resource PR | Workaround for an API gap; split and discuss |
 
 ## 5. Write the comments
