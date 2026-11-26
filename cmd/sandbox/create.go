@@ -1,6 +1,7 @@
 package sandbox
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,14 +49,14 @@ Examples:
 			// JSON body itself.
 			var result *createResponse
 			if wantJSON {
-				result, err = api.create(ctx, name)
+				result, err = createAndWait(ctx, api, name, nil)
 				if err != nil {
 					return fmt.Errorf("failed to create sandbox: %w", err)
 				}
 			} else {
 				s := spin(ctx, "Provisioning your sandbox…")
 				defer s.Close()
-				result, err = api.create(ctx, name)
+				result, err = createAndWait(ctx, api, name, s)
 				if err != nil {
 					s.fail("Failed to create sandbox")
 					return fmt.Errorf("failed to create sandbox: %w", err)
@@ -104,4 +105,27 @@ Examples:
 	cmd.Flags().BoolVar(&outputJSON, "json", false, "Output as JSON")
 
 	return cmd
+}
+
+func createAndWait(ctx context.Context, api *sandboxAPI, name string, s *spinner) (*createResponse, error) {
+	result, err := api.create(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	// Provisioning may fail or be cancelled after creation was accepted. Keep the
+	// ID discoverable locally without making an unready sandbox the default.
+	profile := api.c.Config.Profile
+	if profile == "" {
+		profile = api.c.Config.Host
+	}
+	_ = upsertSandbox(ctx, profile, result.SandboxID, name)
+
+	if result.Status != "Running" {
+		final, err := waitForRunning(ctx, api, s, result.SandboxID)
+		if err != nil {
+			return nil, fmt.Errorf("sandbox %s was created but is not ready: %w", result.SandboxID, err)
+		}
+		result.Status = final.Status
+	}
+	return result, nil
 }

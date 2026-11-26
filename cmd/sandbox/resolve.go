@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -124,7 +125,7 @@ func resolveSandbox(ctx context.Context, api *sandboxAPI, profile, arg string) (
 // so a separator or dot segment would move a request onto another API with the
 // caller's credentials.
 func validateSandboxID(id string) error {
-	if id == "." || id == ".." || strings.ContainsAny(id, `/\`) {
+	if id == "" || id == "." || id == ".." || strings.ContainsAny(id, `/\?#%`) || strings.ContainsFunc(id, unicode.IsSpace) {
 		return fmt.Errorf("invalid sandbox ID %q", id)
 	}
 	return nil

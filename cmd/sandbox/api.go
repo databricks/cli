@@ -8,37 +8,28 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
+	sdk "github.com/databricks/databricks-sdk-go/service/sandbox"
 )
 
-// sandboxPath returns the URL path for a single sandbox resource. The ID is
-// path-escaped so a value like `foo;rm -rf /` lands on
-// `/sandboxes/foo%3Brm%20-rf%20%2F` and gets a clean 400 from the server,
-// rather than its unescaped `/` re-routing the request to the list endpoint
-// (which silently returns an empty result the CLI then renders as an
-// all-zero sandbox record).
-func sandboxPath(id string) string {
-	return sandboxAPIPath + "/" + url.PathEscape(id)
+// Legacy SSH-key registration still uses the gateway API. Lifecycle requests
+// use the public SDK independently of the gateway's sandbox catalog.
+const sandboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
+
+func sandboxName(id string) (string, error) {
+	if err := validateSandboxID(id); err != nil {
+		return "", err
+	}
+	return "sandboxes/" + url.PathEscape(id), nil
 }
-
-// sandboxAPIRoot is the service namespace under which the sandbox and
-// ssh-key sub-collections live. Still says "lakebox" because the
-// server-side rename is pending; this is the only place in the
-// codebase that string should appear, so a future server rename is
-// a one-line change.
-const sandboxAPIRoot = "/api/2.0/lakebox"
-
-// Sub-collections under the sandbox service namespace.
-const (
-	sandboxAPIPath     = sandboxAPIRoot + "/sandboxes"
-	sandboxKeysAPIPath = sandboxAPIRoot + "/ssh-keys"
-)
 
 // max503Attempts caps attempts when the server keeps answering 503; the
 // SDK's default budget would otherwise retry for up to 5 minutes.
@@ -97,30 +88,19 @@ func validateName(name string) error {
 
 // sandboxAPI wraps the SDK ApiClient with workspace-id-aware request headers.
 type sandboxAPI struct {
-	c *client.DatabricksClient
+	c         *client.DatabricksClient
+	sandboxes sdk.SandboxInterface
 }
 
-// sandboxCreateBody is the inner `Sandbox` message in the create payload.
-// Only `name` is caller-settable; the rest are server-chosen.
-type sandboxCreateBody struct {
-	Name string `json:"name,omitempty"`
-}
-
-// createRequest is the wrapped POST body for sandbox creation.
-type createRequest struct {
-	Sandbox sandboxCreateBody `json:"sandbox"`
-}
-
-// createResponse mirrors the Sandbox proto after JSON transcoding.
-// GatewayHost is `omitempty` so old and new server versions round-trip
-// cleanly.
+// createResponse preserves the CLI's JSON output independently of the SDK's
+// resource representation.
 type createResponse struct {
 	SandboxID   string `json:"sandboxId"`
 	Status      string `json:"status"`
 	GatewayHost string `json:"gatewayHost,omitempty"`
 }
 
-// sandboxEntry mirrors the Sandbox proto after JSON transcoding.
+// sandboxEntry preserves the CLI output shape for public Sandbox resources.
 // IdleTimeout and NoAutostop are pointer-typed so we can distinguish
 // "field absent on the wire" (server uses its default) from "explicitly
 // set to 0 / false". IdleTimeout is a proto3-canonical Duration string
@@ -190,24 +170,11 @@ func formatDurationSecs(secs int64) string {
 	return fmt.Sprintf("%ds", secs)
 }
 
-// listResponse is the JSON body returned by GET /api/2.0/lakebox/sandboxes.
-type listResponse struct {
-	Sandboxes     []sandboxEntry `json:"sandboxes"`
-	NextPageToken string         `json:"nextPageToken,omitempty"`
-}
-
-// listPageSize matches the manager-side default.
 const listPageSize = 100
 
-// updateBody is the PATCH body; the server takes the inner `Sandbox`
-// message directly with no `{"sandbox": ...}` wrapping. Pointer fields
-// encode proto3 optional semantics (see sandboxEntry).
-type updateBody struct {
-	SandboxID   string  `json:"sandbox_id"`
-	Name        *string `json:"name,omitempty"`
-	IdleTimeout *string `json:"idle_timeout,omitempty"`
-	NoAutostop  *bool   `json:"no_autostop,omitempty"`
-}
+// Keep the established CLI inactivity policy; the public API otherwise
+// defaults to no auto-stop. Persistence stays omitted for server defaults.
+const defaultAutoStopSecs = 600
 
 // registerKeyRequest is the JSON body for POST /api/2.0/lakebox/ssh-keys.
 type registerKeyRequest struct {
@@ -217,7 +184,12 @@ type registerKeyRequest struct {
 
 // newSandboxAPI returns a sandboxAPI bound to the workspace client's config.
 func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
-	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
+	cfg := w.Config
+	// Generated SDK methods must not send the CLI-only workspace sentinel.
+	if cfg.WorkspaceID == profile.WorkspaceIDNone {
+		cfg.WorkspaceID = ""
+	}
+	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
 	}
@@ -228,11 +200,11 @@ func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
 		}
 		return defaultRetriable(ctx, err)
 	}
-	c, err := client.NewWithClient(w.Config, httpclient.NewApiClient(clientCfg))
+	c, err := client.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
 	}
-	return &sandboxAPI{c: c}, nil
+	return &sandboxAPI{c: c, sandboxes: sdk.NewSandbox(c)}, nil
 }
 
 // headers attaches the workspace routing identifier so multi-workspace
@@ -253,118 +225,143 @@ func (a *sandboxAPI) do(ctx context.Context, method, path string, request, respo
 	return translateError(a.c.Do(arm503Budget(ctx), method, path, a.headers(), nil, request, response))
 }
 
-// create calls POST /api/2.0/lakebox/sandboxes. An empty `name` is omitted
-// so the server treats it as "unset" rather than "explicit empty string".
-func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, error) {
-	body := createRequest{Sandbox: sandboxCreateBody{Name: name}}
-	var resp createResponse
-	err := a.do(ctx, http.MethodPost, sandboxAPIPath, body, &resp)
-	if err != nil {
-		return nil, err
+// sandboxFromSDK keeps the CLI's status vocabulary and JSON field names.
+func sandboxFromSDK(sb *sdk.Sandbox) *sandboxEntry {
+	entry := &sandboxEntry{SandboxID: strings.TrimPrefix(sb.Name, "sandboxes/"), Status: "Unknown", Name: strings.TrimSpace(sb.DisplayName)}
+	if entry.Name == "" {
+		entry.Name = entry.SandboxID
 	}
-	return &resp, nil
+	if sb.Status != nil {
+		switch sb.Status.State {
+		case sdk.SandboxStateSandboxStatePending:
+			entry.Status = "Creating"
+		case sdk.SandboxStateSandboxStateRunning:
+			entry.Status = "Running"
+		case sdk.SandboxStateSandboxStateStopping:
+			entry.Status = "Stopping"
+		case sdk.SandboxStateSandboxStateStopped:
+			entry.Status = "Stopped"
+		}
+	}
+	if sb.Spec != nil && sb.Spec.Compute != nil && sb.Spec.Compute.InactivityTimeout != nil {
+		timeout := sb.Spec.Compute.InactivityTimeout
+		raw, _ := timeout.MarshalJSON()
+		value := strings.Trim(string(raw), `"`)
+		entry.IdleTimeout = &value
+		disabled := timeout.AsDuration() == 0
+		entry.NoAutostop = &disabled
+	}
+	return entry
 }
 
-// list calls GET /api/2.0/lakebox/sandboxes, following pagination until the
-// server stops sending `next_page_token`.
+func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, error) {
+	sb, err := a.sandboxes.CreateSandbox(arm503Budget(ctx), sdk.CreateSandboxRequest{
+		SandboxId: "sandbox-" + uuid.New().String(),
+		Sandbox: sdk.Sandbox{
+			DisplayName: name,
+			Spec:        &sdk.SandboxSpec{Compute: &sdk.ComputeSpec{InactivityTimeout: duration.New(defaultAutoStopSecs * time.Second)}},
+		},
+	})
+	if err != nil {
+		return nil, translateError(err)
+	}
+	entry := sandboxFromSDK(sb)
+	return &createResponse{SandboxID: entry.SandboxID, Status: entry.Status}, nil
+}
+
 func (a *sandboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
 	var all []sandboxEntry
-	pageToken := ""
-	for {
-		page, err := a.listPage(ctx, pageToken)
+	iterator := a.sandboxes.ListSandboxes(ctx, sdk.ListSandboxesRequest{PageSize: listPageSize})
+	for iterator.HasNext(arm503Budget(ctx)) {
+		sb, err := iterator.Next(ctx)
 		if err != nil {
-			return nil, err
+			return nil, translateError(err)
 		}
-		all = append(all, page.Sandboxes...)
-		if page.NextPageToken == "" {
-			return all, nil
-		}
-		pageToken = page.NextPageToken
+		all = append(all, *sandboxFromSDK(&sb))
 	}
+	return all, nil
 }
 
-// listPage fetches a single page of sandboxes.
-//
-// `query` is passed in slot 6 (`request`), not slot 5 (`queryParams`). On
-// GET, the SDK's makeRequestBody serializes `request` into the URL query
-// string and sends an empty body. Routing through `queryParams` instead
-// makes it write a literal `null` body, which the sandbox manager rejects
-// with `INVALID_PARAMETER_VALUE: Request body must be a JSON object`. See
-// databricks-sdk-go/httpclient/request.go:makeRequestBody.
-func (a *sandboxAPI) listPage(ctx context.Context, pageToken string) (*listResponse, error) {
-	query := map[string]any{"page_size": listPageSize}
-	if pageToken != "" {
-		query["page_token"] = pageToken
-	}
-	var resp listResponse
-	err := a.do(ctx, http.MethodGet, sandboxAPIPath, query, &resp)
-	if err != nil {
-		return nil, err
-	}
-	return &resp, nil
-}
-
-// get calls GET /api/2.0/lakebox/sandboxes/{id}.
 func (a *sandboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
-	var resp sandboxEntry
-	err := a.do(ctx, http.MethodGet, sandboxPath(id), nil, &resp)
+	name, err := sandboxName(id)
 	if err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	sb, err := a.sandboxes.GetSandbox(arm503Budget(ctx), sdk.GetSandboxRequest{Name: name})
+	if err != nil {
+		return nil, translateError(err)
+	}
+	return sandboxFromSDK(sb), nil
 }
 
-// update calls PATCH /api/2.0/lakebox/sandboxes/{id} with whichever of
-// `idle_timeout` / `no_autostop` the caller chose to set. Fields left nil
-// are omitted from the wire payload, so the server preserves their current
-// values. Returns the refreshed `sandboxEntry`.
 func (a *sandboxAPI) update(ctx context.Context, id string, name *string, idleTimeoutSecs *int64, noAutostop *bool) (*sandboxEntry, error) {
-	var idleTimeout *string
-	if idleTimeoutSecs != nil {
-		s := fmt.Sprintf("%ds", *idleTimeoutSecs)
-		idleTimeout = &s
-	}
-	body := updateBody{
-		SandboxID:   id,
-		Name:        name,
-		IdleTimeout: idleTimeout,
-		NoAutostop:  noAutostop,
-	}
-	var resp sandboxEntry
-	err := a.do(ctx, http.MethodPatch, sandboxPath(id), body, &resp)
+	resourceName, err := sandboxName(id)
 	if err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	req := sdk.UpdateSandboxRequest{Name: resourceName}
+	if name != nil {
+		req.Sandbox.DisplayName = *name
+		req.Sandbox.ForceSendFields = []string{"DisplayName"}
+		req.UpdateMask.Paths = append(req.UpdateMask.Paths, "display_name")
+	}
+	if idleTimeoutSecs != nil || noAutostop != nil {
+		secs := int64(defaultAutoStopSecs)
+		if idleTimeoutSecs != nil {
+			secs = *idleTimeoutSecs
+		}
+		if noAutostop != nil && *noAutostop {
+			secs = 0
+		}
+		req.Sandbox.Spec = &sdk.SandboxSpec{Compute: &sdk.ComputeSpec{InactivityTimeout: duration.New(time.Duration(secs) * time.Second)}}
+		req.UpdateMask.Paths = append(req.UpdateMask.Paths, "spec.compute.inactivity_timeout")
+	}
+	sb, err := a.sandboxes.UpdateSandbox(arm503Budget(ctx), req)
+	if err != nil {
+		return nil, translateError(err)
+	}
+	return sandboxFromSDK(sb), nil
 }
 
-// delete calls DELETE /api/2.0/lakebox/sandboxes/{id}.
 func (a *sandboxAPI) delete(ctx context.Context, id string) error {
-	return a.do(ctx, http.MethodDelete, sandboxPath(id), nil, nil)
+	name, err := sandboxName(id)
+	if err != nil {
+		return err
+	}
+	return translateError(a.sandboxes.DeleteSandbox(arm503Budget(ctx), sdk.DeleteSandboxRequest{Name: name}))
 }
 
-// stop calls POST /api/2.0/lakebox/sandboxes/{id}/stop and returns the
-// refreshed sandbox.
 func (a *sandboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error) {
-	body := map[string]string{"sandbox_id": id}
-	var resp sandboxEntry
-	err := a.do(ctx, http.MethodPost, sandboxPath(id)+"/stop", body, &resp)
+	name, err := sandboxName(id)
 	if err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	sb, err := a.sandboxes.StopSandbox(arm503Budget(ctx), sdk.StopSandboxRequest{Name: name})
+	if err != nil {
+		return nil, translateError(err)
+	}
+	return sandboxFromSDK(sb), nil
 }
 
-// start calls POST /api/2.0/lakebox/sandboxes/{id}/start and returns the
-// refreshed sandbox.
 func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error) {
-	body := map[string]string{"sandbox_id": id}
-	var resp sandboxEntry
-	err := a.do(ctx, http.MethodPost, sandboxPath(id)+"/start", body, &resp)
+	current, err := a.get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	// The public API rejects start on running or pending sandboxes; the CLI
+	// keeps start idempotent and lets its existing readiness poll finish.
+	if current.Status == "Running" || current.Status == "Creating" {
+		return current, nil
+	}
+	name, err := sandboxName(id)
+	if err != nil {
+		return nil, err
+	}
+	sb, err := a.sandboxes.StartSandbox(arm503Budget(ctx), sdk.StartSandboxRequest{Name: name})
+	if err != nil {
+		return nil, translateError(err)
+	}
+	return sandboxFromSDK(sb), nil
 }
 
 // registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is

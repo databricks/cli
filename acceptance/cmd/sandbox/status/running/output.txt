@@ -2,6 +2,5 @@
   id         happy-panda-1234
   name       my-project
   status     running
-  gateway    uw2.dbrx.dev
   autostop   30m
 

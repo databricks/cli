@@ -122,7 +122,9 @@ func waitForState(ctx context.Context, api *sandboxAPI, s *spinner, id, targetSt
 			}
 		}
 		elapsed := time.Since(start).Round(time.Second)
-		s.Update(fmt.Sprintf("%s %s… (%s)", operation, id, elapsed))
+		if s != nil {
+			s.Update(fmt.Sprintf("%s %s… (%s)", operation, id, elapsed))
+		}
 		if time.Now().After(deadline) {
 			return nil, fmt.Errorf("sandbox %s did not reach %s within %s (last seen %s)", id, targetStatus, startWaitTimeout, sb.Status)
 		}

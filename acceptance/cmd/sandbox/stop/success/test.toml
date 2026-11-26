@@ -1,9 +1,11 @@
 [[Server]]
-Pattern = "POST /api/2.0/lakebox/sandboxes/happy-panda-1234/stop"
+Pattern = "POST /api/2.0/sandboxes/happy-panda-1234/stop"
 Response.Body = '''
 {
-  "sandboxId": "happy-panda-1234",
-  "status": "Stopped",
-  "name": "my-project"
+  "name": "sandboxes/happy-panda-1234",
+  "display_name": "my-project",
+  "status": {
+    "state": "SANDBOX_STATE_STOPPED"
+  }
 }
 '''
