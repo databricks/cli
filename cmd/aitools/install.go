@@ -697,7 +697,7 @@ func planItemFor(ctx context.Context, a *agents.Agent, scope string, skillsOnly,
 		// Raw-skills delivery (no-plugin agents, or --skills-only). Only some agents
 		// support project-scoped skills, so skip the rest up front instead of
 		// offering an option that fails at install time.
-		if scope == installer.ScopeProject && !a.SupportsProjectScope {
+		if scope == installer.ScopeProject && !a.SupportsProjectSkills {
 			item.delivery = deliverySkip
 			item.reason = "does not support project-scoped skills"
 			item.skipErrorCategory = protos.AitoolsErrorCategoryUnsupportedScope

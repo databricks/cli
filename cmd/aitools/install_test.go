@@ -180,7 +180,8 @@ func testPluginAgent(name, display, binary string) *agents.Agent {
 	spec := &agents.PluginSpec{Marketplace: "databricks-agent-skills", ID: "databricks", Source: "databricks/databricks-agent-skills"}
 	a := &agents.Agent{Name: name, DisplayName: display, Binary: binary, Plugin: spec}
 	if name == agents.NameClaudeCode {
-		a.SupportsProjectScope = true
+		a.SupportsProjectPlugin = true
+		a.SupportsProjectSkills = true
 	}
 	return a
 }
@@ -191,7 +192,7 @@ func TestBuildPlanDeliveries(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	// Cursor is a skills-only agent (no headless plugin install).
-	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectScope: true}
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectSkills: true}
 	opencode := &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
 	targets := []*agents.Agent{claude, cursor, opencode}
 
@@ -256,12 +257,12 @@ func TestAgentChoicesSkillsOnlyLabelsPluginAgentsSkills(t *testing.T) {
 
 func TestAgentChoicesSkillsOnlyLabelsSkippedPluginAgentSkills(t *testing.T) {
 	setupTestAgents(t)
-	fakeBinsOnPath(t, "codex")
+	fakeBinsOnPath(t, "copilot")
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 
-	// Codex has no project-scoped skills, so it is skipped and only listed.
+	// Copilot has no project-scoped skills, so it is skipped and only listed.
 	agentChoices(ctx, installer.ScopeProject, true)
-	assert.Regexp(t, `Codex CLI +skills · does not support project-scoped skills`, stderr.String())
+	assert.Regexp(t, `GitHub Copilot +skills · does not support project-scoped skills`, stderr.String())
 	assert.NotContains(t, stderr.String(), "plugin")
 }
 
@@ -300,11 +301,25 @@ func TestBuildPlanProjectScopeSkipsUserOnlyAgent(t *testing.T) {
 	assert.Contains(t, plan[1].reason, "user-only")
 }
 
+func TestBuildPlanSkillsOnlyProjectScopeCodex(t *testing.T) {
+	fakeBinsOnPath(t, "codex")
+	codex := agents.ByName(agents.NameCodex)
+
+	// Codex reads project skills from .agents/skills, so --skills-only installs them.
+	plan := buildPlan(t.Context(), []*agents.Agent{codex}, installer.ScopeProject, true, true)
+	assert.Equal(t, deliverySkills, plan[0].delivery)
+
+	// The Codex plugin stays user-only.
+	plan = buildPlan(t.Context(), []*agents.Agent{codex}, installer.ScopeProject, false, true)
+	assert.Equal(t, deliverySkip, plan[0].delivery)
+	assert.Equal(t, "the plugin is user-only; project-scoped plugins are not supported", plan[0].reason)
+}
+
 func TestBuildPlanProjectScopeSkipsFilesOnlyAgent(t *testing.T) {
 	// A files-only agent that does not support project scope is skipped up front,
 	// so the picker never offers an option that fails at install time.
 	opencode := &agents.Agent{Name: agents.NameOpenCode, DisplayName: "OpenCode", Binary: "opencode"}
-	projectSkills := &agents.Agent{Name: "proj-skills", DisplayName: "Proj", Binary: "proj", SupportsProjectScope: true}
+	projectSkills := &agents.Agent{Name: "proj-skills", DisplayName: "Proj", Binary: "proj", SupportsProjectSkills: true}
 
 	plan := buildPlan(t.Context(), []*agents.Agent{opencode, projectSkills}, installer.ScopeProject, false, false)
 	assert.Equal(t, deliverySkip, plan[0].delivery)
@@ -329,7 +344,7 @@ func TestBuildPlanSkillsOnlySkipsAgentWithPlugin(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
 	stubPluginAlreadyInstalled(t, true)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
-	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectScope: true}
+	cursor := &agents.Agent{Name: agents.NameCursor, DisplayName: "Cursor", Binary: "cursor-agent", SupportsProjectSkills: true}
 
 	for _, scope := range []string{installer.ScopeGlobal, installer.ScopeProject} {
 		plan := buildPlan(t.Context(), []*agents.Agent{claude, cursor}, scope, true, false)
@@ -590,8 +605,10 @@ func TestBuildPlanSkillsOnlyProjectScopeIgnoresAgentConfigPlugin(t *testing.T) {
 	assert.Equal(t, "remove the plugin first with 'codex plugin remove databricks@databricks-agent-skills' (this CLI did not install it)", global.pluginRemoval)
 
 	project := planItemFor(t.Context(), codex, installer.ScopeProject, true, true)
-	assert.Equal(t, deliverySkip, project.delivery)
-	assert.Equal(t, "does not support project-scoped skills", project.reason)
+	// Codex reads project skills from .agents/skills and its plugin is user-only,
+	// so the user-scope plugin does not block the project skills.
+	assert.Equal(t, deliverySkills, project.delivery)
+	assert.Empty(t, project.reason)
 	assert.Empty(t, project.pluginRemoval)
 }
 
@@ -1152,7 +1169,7 @@ func TestPlanItemForAgentWithoutCLI(t *testing.T) {
 		{name: "CLI missing", agent: agents.NameClaudeCode, scope: installer.ScopeGlobal, wantDelivery: deliverySkills, wantCLIMissing: true, wantLabel: "skills · CLI not found"},
 		{name: "CLI missing, plugin installed", agent: agents.NameClaudeCode, scope: installer.ScopeGlobal, pluginInstalled: true, wantDelivery: deliveryPlugin, wantCLIMissing: true, wantLabel: "plugin installed · CLI not found"},
 		{name: "CLI missing, named via --agents", agent: agents.NameClaudeCode, scope: installer.ScopeGlobal, explicit: true, wantDelivery: deliveryPlugin, wantLabel: "plugin · CLI not found"},
-		{name: "CLI missing, scope unsupported", agent: agents.NameCodex, scope: installer.ScopeProject, wantDelivery: deliverySkip, wantLabel: "plugin · CLI not found · Codex CLI is user-only; project scope is not supported"},
+		{name: "CLI missing, scope unsupported", agent: agents.NameCodex, scope: installer.ScopeProject, wantDelivery: deliverySkip, wantLabel: "plugin · CLI not found · the plugin is user-only; project-scoped plugins are not supported"},
 		// Neither its config dir nor its CLI exists: the picker still lists it,
 		// but picking it must not write skill files for an agent that is not
 		// installed.

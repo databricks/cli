@@ -1200,10 +1200,10 @@ func TestInstallAllSkillsSignaturePreserved(t *testing.T) {
 
 func testProjectAgent(tmpHome string) *agents.Agent {
 	return &agents.Agent{
-		Name:                 "test-project-agent",
-		DisplayName:          "Test Project Agent",
-		SupportsProjectScope: true,
-		ProjectConfigDir:     ".test-project-agent",
+		Name:                  "test-project-agent",
+		DisplayName:           "Test Project Agent",
+		SupportsProjectSkills: true,
+		ProjectConfigDir:      ".test-project-agent",
 		ConfigDir: func(_ context.Context) (string, error) {
 			return filepath.Join(tmpHome, ".test-project-agent"), nil
 		},
@@ -1385,24 +1385,26 @@ func TestInstallKeepsNameWhenRepoDirChanges(t *testing.T) {
 	assert.Contains(t, fetchedFrom, filepath.Join(experimentalRepoPath, "databricks-jobs", "SKILL.md"))
 }
 
-func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
-	expected := map[string]bool{
-		"claude-code": true,
-		"cursor":      false,
-		"codex":       false,
-		"opencode":    false,
-		"copilot":     false,
-		"antigravity": false,
-		"pi":          true,
-		"gemini":      true,
-		"goose":       true,
-		"kiro":        true,
+func TestProjectScopeCapabilitiesSetCorrectly(t *testing.T) {
+	type capabilities struct{ plugin, skills bool }
+	expected := map[string]capabilities{
+		"claude-code": {plugin: true, skills: true},
+		"cursor":      {},
+		"codex":       {skills: true},
+		"opencode":    {},
+		"copilot":     {},
+		"antigravity": {},
+		"pi":          {skills: true},
+		"gemini":      {skills: true},
+		"goose":       {skills: true},
+		"kiro":        {skills: true},
 	}
 
 	for _, agent := range agents.Registry {
 		want, ok := expected[agent.Name]
 		require.True(t, ok, "missing expected entry for %s", agent.Name)
-		assert.Equal(t, want, agent.SupportsProjectScope, "SupportsProjectScope for %s", agent.Name)
+		assert.Equal(t, want.plugin, agent.SupportsProjectPlugin, "SupportsProjectPlugin for %s", agent.Name)
+		assert.Equal(t, want.skills, agent.SupportsProjectSkills, "SupportsProjectSkills for %s", agent.Name)
 	}
 }
 
