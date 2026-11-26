@@ -6,6 +6,3 @@ Badness = "bundle deploy deletes the remote notebook n when the local n.ipynb ha
 EnvMatrix.DMS = [""]
 
 Ignore = ["databricks.yml"]
-
-# Keep MSYS2 from rewriting the absolute workspace path passed to workspace list.
-Env.MSYS_NO_PATHCONV = "1"
