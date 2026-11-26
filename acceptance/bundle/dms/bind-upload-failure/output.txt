@@ -19,6 +19,28 @@ API message: Fault injected by test.
 
 >>> [CLI] bundle summary -o json
 {
+  "history_failed": null,
+  "kept": "[JOB_ID]",
+  "upload_failed": null
+}
+
+=== A history upload failure only warns: the binding is committed, so its version succeeds as a deploy's would
+
+>>> fault.py PATCH /api/2.0/bundle/deployments/*/versions/*/operations/* 500 0 1
+
+>>> [CLI] bundle deployment bind history_failed [JOB_ID] --auto-approve
+Warn: Failed to record deployment history for bind: recording operation for resources.jobs.history_failed: Fault injected by test.
+Successfully bound job with an id '[JOB_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> print_requests.py --dms //complete --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+
+=== Remote state contains the binding whose history upload failed
+
+>>> [CLI] bundle summary -o json
+{
+  "history_failed": "[JOB_ID]",
   "kept": "[JOB_ID]",
   "upload_failed": null
 }

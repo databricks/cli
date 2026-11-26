@@ -52,9 +52,10 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 	}
 
 	var history *bindingHistory
-	var historyErr error
 	defer func() {
-		completeBindingHistory(ctx, b, history, historyErr == nil && !logdiag.HasError(ctx))
+		// Completion reflects the bind's outcome, as deploy's does: a failed history upload is
+		// only a warning, since the state was committed either way.
+		completeBindingHistory(ctx, b, history, !logdiag.HasError(ctx))
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
@@ -131,6 +132,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *BindOptions, stateDesc *s
 		return
 	}
 
+	var historyErr error
 	history, historyErr = recordBindHistory(ctx, b, resourceKey, result.DMSMetadata)
 	if historyErr != nil {
 		log.Warnf(ctx, "Failed to record deployment history for bind: %s", historyErr)

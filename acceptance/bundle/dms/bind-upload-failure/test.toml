@@ -1,1 +1,1 @@
-Cloud = false # Inject a remote state-upload failure.
+Cloud = false # Injects state-upload and history-upload failures.

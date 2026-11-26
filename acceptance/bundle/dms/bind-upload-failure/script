@@ -13,3 +13,13 @@ rm -rf .databricks
 title "Remote state still contains only the successful bindings"
 trace $CLI bundle summary -o json | jq '.resources.jobs | map_values(.id // null)'
 rm -f "$OUT_REQUESTS"
+
+title "A history upload failure only warns: the binding is committed, so its version succeeds as a deploy's would"
+trace fault.py "PATCH /api/2.0/bundle/deployments/*/versions/*/operations/*" 500 0 1
+trace $CLI bundle deployment bind history_failed "$job_id" --auto-approve
+trace print_requests.py --dms //complete --oneline
+
+rm -rf .databricks
+title "Remote state contains the binding whose history upload failed"
+trace $CLI bundle summary -o json | jq '.resources.jobs | map_values(.id // null)'
+rm -f "$OUT_REQUESTS"

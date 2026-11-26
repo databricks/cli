@@ -16,7 +16,5 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
 {
-  "workspace_info": {
-    "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-bind-immutable-[UNIQUE_NAME]/default"
-  }
+  "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-bind-immutable-[UNIQUE_NAME]/default"
 }
