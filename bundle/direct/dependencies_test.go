@@ -1,9 +1,12 @@
 package direct
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -115,4 +118,29 @@ resources:
 			assert.Equal(t, tc.cycle, cycle.Error())
 		})
 	}
+}
+
+func TestDetectDependencyCycleLeavesStateUnchanged(t *testing.T) {
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(`
+resources:
+  jobs:
+    a: {name: "a"}
+`))
+	require.Empty(t, diags)
+
+	// A job removed from the config is planned for deletion with the dependencies recorded in
+	// state; one of them points at a resource that is in neither the config nor the state.
+	db := &dstate.Database{State: map[string]dstate.ResourceEntry{
+		"resources.jobs.gone": {
+			ID: "1",
+			DependsOn: []deployplan.DependsOnEntry{
+				{Node: "resources.jobs.missing", Label: "${resources.jobs.missing.id}"},
+				{Node: "resources.jobs.a", Label: "${resources.jobs.a.id}"},
+			},
+		},
+	}}
+	want := slices.Clone(db.State["resources.jobs.gone"].DependsOn)
+
+	assert.Nil(t, DetectDependencyCycle(t.Context(), root, db))
+	assert.Equal(t, want, db.State["resources.jobs.gone"].DependsOn)
 }

@@ -51,18 +51,13 @@ func (m *dependencyCycle) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		return nil
 	}
 
-	d := diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  cycle.Error(),
-	}
+	diags := diag.Errorf("%s", cycle.Error())
 	// Point at the resource the message names first: the one holding the reference that starts
 	// the cycle (in a cycle of one, Nodes[0] refers to itself).
-	if len(cycle.Nodes) > 0 {
-		node := cycle.Nodes[min(1, len(cycle.Nodes)-1)]
-		if path, err := structpath.ParsePath(node); err == nil {
-			d.Locations = b.Config.GetLocationsOf(path)
-			d.Paths = []*structpath.PathNode{path}
-		}
+	node := cycle.Nodes[min(1, len(cycle.Nodes)-1)]
+	if path, err := structpath.ParsePath(node); err == nil {
+		diags[0].Locations = b.Config.GetLocationsOf(path)
+		diags[0].Paths = []*structpath.PathNode{path}
 	}
-	return diag.Diagnostics{d}
+	return diags
 }
