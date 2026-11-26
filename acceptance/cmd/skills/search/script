@@ -15,3 +15,8 @@ trace $CLI skills search --output json nothing-here
 
 # A blank word is rejected rather than matching every skill.
 errcode trace $CLI skills search " "
+
+# Experimental skills are hidden unless --experimental is set, as skills list hides them.
+export DATABRICKS_SKILLS_DIR=$TESTDIR/experimental-release
+trace $CLI skills search pipelines
+trace $CLI skills search --experimental pipelines

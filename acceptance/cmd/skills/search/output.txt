@@ -54,3 +54,11 @@ No skill matches. Run databricks skills list to see every skill.
 Error: search words must not be blank
 
 Exit code: 1
+
+>>> [CLI] skills search pipelines
+No skill matches. Run databricks skills list to see every skill.
+
+>>> [CLI] skills search --experimental pipelines
+pipeline-bare
+pipeline-lab: An experimental pipeline skill.
+To read a skill, run: databricks skills read <name>

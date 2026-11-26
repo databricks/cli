@@ -18,8 +18,8 @@ func names(list []skills.Skill) []string {
 
 var searchCatalog = []skills.Skill{
 	{Name: "jobs-helper", Description: "Run and monitor jobs.", Commands: []string{"jobs"}},
-	{Name: "pipeline-guide", Description: "Build and debug data pipelines.", Commands: []string{"pipelines"}},
-	{Name: "warehouse-sql", Description: "Query SQL warehouses.", Commands: []string{"warehouses", "sql"}},
+	{Name: "pipeline-guide", Description: "Build and debug data flows.", Commands: []string{"pipelines"}},
+	{Name: "warehouse-sql", Description: "Query SQL endpoints.", Commands: []string{"warehouses", "sql"}},
 	// Its command group appears in neither the name nor the description, so only
 	// a match on Commands finds it.
 	{Name: "cluster-ops", Description: "Manage compute.", Commands: []string{"clusters"}},
@@ -36,7 +36,7 @@ func TestMatchSkills(t *testing.T) {
 		{name: "one word matches a command group", words: []string{"warehouses"}, want: []string{"warehouse-sql"}},
 		{name: "several words match several skills", words: []string{"jobs", "sql"}, want: []string{"jobs-helper", "warehouse-sql"}},
 		{name: "case is ignored", words: []string{"JOBS", "Pipelines"}, want: []string{"jobs-helper", "pipeline-guide"}},
-		{name: "a word matches inside a command group", words: []string{"pipe"}, want: []string{"pipeline-guide"}},
+		{name: "a part of a command group matches", words: []string{"lines"}, want: []string{"pipeline-guide"}},
 		{name: "a command group matches when the name and description do not", words: []string{"clusters"}, want: []string{"cluster-ops"}},
 		{name: "no match", words: []string{"nothing-here"}, want: []string{}},
 	}
@@ -67,6 +67,27 @@ func TestMatchSkillsCountsAWordOnceForEachSkill(t *testing.T) {
 	// both skills have one hit and the name decides: "other" sorts first.
 	got := names(matchSkills(catalog, []string{"pipeline"}))
 	assert.Equal(t, []string{"other", "pipeline-guide"}, got)
+}
+
+func TestMatchSkillsCountsARepeatedWordOnce(t *testing.T) {
+	catalog := []skills.Skill{
+		{Name: "a-skill", Description: "two"},
+		{Name: "b-skill", Description: "one"},
+	}
+	// "one" repeated (in another case too) is one word, so b-skill has one hit,
+	// the same as a-skill, and the name decides.
+	got := names(matchSkills(catalog, []string{"one", " ONE ", "two"}))
+	assert.Equal(t, []string{"a-skill", "b-skill"}, got)
+}
+
+func TestVisibleSkillsHidesExperimentalUnlessAsked(t *testing.T) {
+	catalog := []skills.Skill{
+		{Name: "stable"},
+		{Name: "beta", Experimental: true},
+	}
+	assert.Equal(t, []string{"stable"}, names(visibleSkills(catalog, false)))
+	assert.Equal(t, []string{"stable", "beta"}, names(visibleSkills(catalog, true)))
+	assert.Empty(t, names(matchSkills(visibleSkills(catalog, false), []string{"beta"})))
 }
 
 func TestCheckWordsRejectsBlankWord(t *testing.T) {
