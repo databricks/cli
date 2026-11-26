@@ -298,6 +298,11 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// so a host value would add skill/ pairs to recorded user agents.
 	os.Unsetenv("DATABRICKS_SKILLS_INVOKED") //nolint:usetesting // t.Setenv cannot unset
 
+	// DBR notebooks force color output, which the goldens assume is off.
+	for _, v := range []string{"CLICOLOR", "CLICOLOR_FORCE", "FORCE_COLOR"} {
+		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
+	}
+
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
 		// has already marked the parent test as failed.
@@ -513,6 +518,11 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	repls.SetPath(cwd, "[TESTROOT]")
 
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
+
+	// On DBR the SDK appends runtime/<version> to the user agent.
+	if v := os.Getenv("DATABRICKS_RUNTIME_VERSION"); v != "" {
+		repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile(" runtime/" + regexp.QuoteMeta(v)), New: ""})
+	}
 
 	// Matches defaultSparkVersion in ../integration/bundle/helpers_test.go
 	t.Setenv("DEFAULT_SPARK_VERSION", "13.3.x-snapshot-scala2.12")
