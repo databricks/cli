@@ -1,0 +1,16 @@
+# The same agents as agent-hints, with skill hints on. The skills subcommands are stubs until their own
+# changes land, so `skills list` fails with its not-implemented message; the point is that it prints no hint.
+sethome ./home
+unset XDG_CONFIG_HOME GEMINI_CLI_HOME CODEX_THREAD_ID
+
+title "Codex is hinted once per thread, with the skills list command"
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI jobs list
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI jobs list
+
+title "Cursor is hinted once per machine"
+trace CURSOR_AGENT=1 $CLI jobs list
+trace CURSOR_AGENT=1 $CLI jobs list
+
+title "Skills commands print no hint"
+musterr trace CODEX_CI=1 CODEX_THREAD_ID=thread-2 $CLI skills list
+trace CODEX_CI=1 CODEX_THREAD_ID=thread-2 $CLI skills --help

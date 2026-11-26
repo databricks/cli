@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/useragent"
@@ -21,6 +22,11 @@ const (
 	// is deliberately chosen to be effective at helping agents; change it only
 	// after thorough testing.
 	hintText = "Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install"
+
+	// skillsHintText replaces hintText when skills.HintsEnabled is true. Agents
+	// acknowledged the install text without acting on it, and reading a skill
+	// through `databricks skills` needs no install step, so it asks for that.
+	skillsHintText = "Before you work with Databricks, run: databricks skills list"
 
 	// claudeAgentProvider is the useragent.AgentProvider() value for Claude Code.
 	// The SDK maps the CLAUDECODE env var to this product name.
@@ -285,9 +291,18 @@ func (h *agentHint) show(ctx context.Context, key, native string, textDue bool) 
 		nativeEventThrottle.set(ctx, key, false)
 	}
 	if textDue {
-		cmdio.LogString(ctx, h.text)
+		cmdio.LogString(ctx, h.message(ctx))
 		logHintShown(ctx, h.textKind)
 	}
+}
+
+// message returns the model-facing text: the skills list recommendation when
+// skills.HintsEnabled is true, else the agent's install text.
+func (h *agentHint) message(ctx context.Context) string {
+	if skills.HintsEnabled(ctx) {
+		return skillsHintText
+	}
+	return h.text
 }
 
 // claim records the text's throttle key and reports whether the text may
@@ -358,6 +373,7 @@ func IsCredentialHelperCommand(cmd *cobra.Command) bool {
 var hintExemptCommands = []string{
 	"aitools",
 	"experimental aitools",
+	"skills", // Reading a skill is the task itself: the hint would only repeat it.
 	"auth",
 	"configure",
 	"current-user me",

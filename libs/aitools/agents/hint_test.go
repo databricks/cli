@@ -242,6 +242,56 @@ func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	assert.Empty(t, hintKinds(t, ctx))
 }
 
+func TestMaybeHint_SkillsHintTextFollowsGuard(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		preview string
+		hints   string
+		want    string
+	}{
+		{"both on names skills list", "1", "1", skillsHintText + "\n"},
+		{"preview without hints keeps install text", "1", "", hintText + "\n"},
+		{"hints without preview keeps install text", "", "1", hintText + "\n"},
+		{"both unset keeps install text", "", "", hintText + "\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", tc.preview)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", tc.hints)
+
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Equal(t, tc.want, stderr.String())
+		})
+	}
+}
+
+func TestMaybeHint_SkillsHintReplacesAgentInstallText(t *testing.T) {
+	// The per-agent install text names the agent in its --agents flag; with
+	// hints on, neither the install command nor that flag is printed.
+	testutil.SetAgentEnv(t, "CODEX_CI", "1")
+	ctx, stderr := claudeCtx(t, t.TempDir())
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Equal(t, skillsHintText+"\n", stderr.String())
+	assert.NotContains(t, stderr.String(), "aitools")
+}
+
+func TestMaybeHint_SkillsCommandSilentWithHintsOn(t *testing.T) {
+	setClaudeAgent(t)
+	ctx, stderr := claudeCtx(t, t.TempDir())
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+
+	MaybeHint(ctx, commandAt("skills read-file"), noPluginRecorded)
+	assert.Empty(t, stderr.String())
+	assert.Empty(t, hintKinds(t, ctx))
+}
+
 // commandAt builds a command tree under a "databricks" root and returns the
 // command at the space-separated path, e.g. "current-user me".
 func commandAt(path string) *cobra.Command {
@@ -261,6 +311,10 @@ func TestIsHintExemptCommand(t *testing.T) {
 	}{
 		{"aitools install", true},
 		{"experimental aitools skills install", true},
+		{"skills", true},
+		{"skills list", true},
+		{"skills read-file", true},
+		{"skillsfoo", false},
 		{"feedback", true},
 		{"auth login", true},
 		{"auth token", true},
