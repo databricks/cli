@@ -182,8 +182,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 	b.Plan = plan
 
-	if !checkReferenceTargets(ctx, configRoot, plan) {
-		return nil, errors.New("planning failed")
+	if err := checkReferenceTargets(configRoot, plan); err != nil {
+		return nil, err
 	}
 
 	g, err := makeGraph(plan)

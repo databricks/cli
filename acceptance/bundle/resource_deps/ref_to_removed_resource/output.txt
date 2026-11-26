@@ -3,21 +3,15 @@
 
 >>> musterr [CLI] bundle plan
 Error: cannot plan resources.jobs.baz: ${resources.jobs.bar.name} refers to resources.jobs.bar, which is not defined in the bundle configuration
-
-Error: cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which is not defined in the bundle configuration
-
-Error: planning failed
+cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which is not defined in the bundle configuration
 
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot plan resources.jobs.baz: ${resources.jobs.bar.name} refers to resources.jobs.bar, which is not defined in the bundle configuration
+cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which is not defined in the bundle configuration
 
-Error: cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which is not defined in the bundle configuration
-
-Error: planning failed
-
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 
 === Deploy all jobs
 
@@ -35,14 +29,10 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 >>> musterr [CLI] bundle plan
 Error: cannot plan resources.jobs.baz: ${resources.jobs.bar.name} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.baz too, or add resources.jobs.bar back to the configuration
 
-Error: planning failed
-
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot plan resources.jobs.baz: ${resources.jobs.bar.name} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.baz too, or add resources.jobs.bar back to the configuration
-
-Error: planning failed
 
 Files: 2 uploaded, 0 deleted
 
@@ -51,22 +41,16 @@ Files: 2 uploaded, 0 deleted
 >>> musterr [CLI] bundle plan
 Error: cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.foo too, or add resources.jobs.bar back to the configuration
 
-Error: planning failed
-
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.foo too, or add resources.jobs.bar back to the configuration
-
-Error: planning failed
 
 Files: 1 uploaded, 0 deleted
 
 >>> musterr [CLI] bundle deploy --select jobs.foo
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot plan resources.jobs.foo: ${resources.jobs.bar.id} refers to resources.jobs.bar, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.foo too, or add resources.jobs.bar back to the configuration
-
-Error: planning failed
 
 Files: 0 uploaded, 0 deleted
 

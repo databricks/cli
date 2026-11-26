@@ -24,8 +24,6 @@ Files: 1 uploaded, 0 deleted
 >>> [CLI] bundle plan
 Error: cannot plan resources.jobs.consumer: ${resources.jobs.producer.id} refers to resources.jobs.producer, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.consumer too, or add resources.jobs.producer back to the configuration
 
-Error: planning failed
-
 
 >>> [CLI] bundle plan --select jobs.producer
 delete jobs.consumer

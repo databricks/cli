@@ -350,11 +350,8 @@ func RunPlan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
 			return nil
 		}
 	}
-	if errs := plan.CheckReferencesToDeleted(); len(errs) > 0 {
-		for _, err := range errs {
-			logdiag.LogError(ctx, err)
-		}
-		logdiag.LogError(ctx, errors.New("planning failed"))
+	if err := plan.CheckReferencesToDeleted(); err != nil {
+		logdiag.LogError(ctx, err)
 		return nil
 	}
 	return plan

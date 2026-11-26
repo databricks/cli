@@ -416,25 +416,23 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 		queue = queue[1:]
 		if p.Plan[key].Action == Delete {
 			for _, dependent := range dependents[key] {
-				// Sub-nodes (grants/permissions, 4-part key) are not user-facing dependents
-				// and never trigger the live-dependent error. If they are themselves being
-				// deleted, they must be pulled in alongside their parent.
-				if strings.Count(dependent, ".") >= 3 {
-					if p.Plan[dependent].Action == Delete {
-						p.enqueueReachable(reachable, &queue, dependent)
-					}
+				if p.Plan[dependent].Action == Delete {
+					// Dependent is also being deleted: pull it in. This includes the
+					// grants/permissions sub-nodes (4-part key) of key itself.
+					p.enqueueReachable(reachable, &queue, dependent)
 					continue
 				}
-				if p.Plan[dependent].Action == Delete {
-					// Dependent is also being deleted: pull it in.
-					p.enqueueReachable(reachable, &queue, dependent)
-				} else {
-					// Dependent is live (still in config): deleting key would leave
-					// it broken. dependents lists it once per edge, so it may repeat.
-					for _, dep := range p.Plan[dependent].DependsOn {
-						if dep.Node == key {
-							errs = append(errs, ReferenceToDeletedError(dependent, dep).Error())
-						}
+				// key's own grants/permissions sub-node depends on key, but is not a
+				// user-facing dependent.
+				if strings.Count(dependent, ".") >= 3 && strings.HasPrefix(dependent, key+".") {
+					continue
+				}
+				// Dependent is live (still in config), possibly the grants or permissions
+				// of another resource: deleting key would leave it broken. dependents
+				// lists it once per edge, so it may repeat.
+				for _, dep := range p.Plan[dependent].DependsOn {
+					if dep.Node == key {
+						errs = append(errs, ReferenceToDeletedError(dependent, dep).Error())
 					}
 				}
 			}
@@ -444,10 +442,8 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 			}
 		}
 	}
-	if len(errs) > 0 {
-		slices.Sort(errs)
-		errs = slices.Compact(errs)
-		return errors.New(strings.Join(errs, "\n"))
+	if err := joinErrorMessages(errs); err != nil {
+		return err
 	}
 
 	for key := range p.Plan {
@@ -466,24 +462,33 @@ func ReferenceToDeletedError(node string, dep DependsOnEntry) error {
 	return fmt.Errorf("cannot plan %s: %s refers to %s, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove %s too, or add %s back to the configuration", node, dep.Label, dep.Node, node, dep.Node)
 }
 
-// CheckReferencesToDeleted returns an error for each reference from a resource that is
-// not being deleted to one that is. Applying such a plan would delete the target and then
-// fail to resolve the reference. Run it after FilterToSelected, so that a reference outside
-// the selection does not block it.
-func (p *Plan) CheckReferencesToDeleted() []error {
-	var errs []error
-	for _, node := range slices.Sorted(maps.Keys(p.Plan)) {
-		entry := p.Plan[node]
+// CheckReferencesToDeleted reports every reference from a resource that is not being
+// deleted to one that is, in one error. Applying such a plan would delete the target and
+// then fail to resolve the reference. Run it after FilterToSelected, so that a reference
+// outside the selection does not block it.
+func (p *Plan) CheckReferencesToDeleted() error {
+	var errs []string
+	for node, entry := range p.Plan {
 		if entry.Action == Delete {
 			continue
 		}
 		for _, dep := range entry.DependsOn {
 			if target := p.Plan[dep.Node]; target != nil && target.Action == Delete {
-				errs = append(errs, ReferenceToDeletedError(node, dep))
+				errs = append(errs, ReferenceToDeletedError(node, dep).Error())
 			}
 		}
 	}
-	return errs
+	return joinErrorMessages(errs)
+}
+
+// joinErrorMessages returns one error with the sorted, distinct messages on separate
+// lines, or nil if there are none.
+func joinErrorMessages(msgs []string) error {
+	if len(msgs) == 0 {
+		return nil
+	}
+	slices.Sort(msgs)
+	return errors.New(strings.Join(slices.Compact(msgs), "\n"))
 }
 
 // reverseEdges returns the reverse of the plan's DependsOn edges: for each node, the

@@ -267,12 +267,36 @@ func TestFilterToSelected_DeletionErrorsOnLiveDependent(t *testing.T) {
 	}
 
 	full := p.CheckReferencesToDeleted()
-	require.Len(t, full, 2)
+	require.Error(t, full)
 
 	err := p.FilterToSelected(t.Context(), []string{"jobs.gone"})
 	require.Error(t, err)
-	assert.Equal(t, full[0].Error()+"\n"+full[1].Error(), err.Error())
+	assert.Equal(t, full.Error(), err.Error())
 	assert.Contains(t, err.Error(), "cannot plan resources.jobs.live: ${resources.jobs.gone.id} refers to resources.jobs.gone")
+	assert.Contains(t, err.Error(), "cannot plan resources.jobs.live: ${resources.jobs.gone.name} refers to resources.jobs.gone")
+}
+
+// The grants or permissions of another, live resource that reference the deleted resource
+// are live dependents too. The deleted resource's own sub-nodes are not.
+func TestFilterToSelected_DeletionErrorsOnLiveSubNodeDependent(t *testing.T) {
+	p := deployplan.NewPlanDirect()
+	p.Plan["resources.jobs.gone"] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	p.Plan["resources.jobs.gone.permissions"] = &deployplan.PlanEntry{
+		Action:    deployplan.Delete,
+		DependsOn: []deployplan.DependsOnEntry{{Node: "resources.jobs.gone", Label: "${resources.jobs.gone.id}"}},
+	}
+	p.Plan["resources.jobs.live"] = &deployplan.PlanEntry{Action: deployplan.Skip}
+	p.Plan["resources.jobs.live.permissions"] = &deployplan.PlanEntry{
+		Action: deployplan.Update,
+		DependsOn: []deployplan.DependsOnEntry{
+			{Node: "resources.jobs.live", Label: "${resources.jobs.live.id}"},
+			{Node: "resources.jobs.gone", Label: "${resources.jobs.gone.id}"},
+		},
+	}
+
+	err := p.FilterToSelected(t.Context(), []string{"jobs.gone"})
+	require.Error(t, err)
+	assert.Equal(t, "cannot plan resources.jobs.live.permissions: ${resources.jobs.gone.id} refers to resources.jobs.gone, which was removed from the bundle configuration and is planned for deletion; remove the reference, remove resources.jobs.live.permissions too, or add resources.jobs.gone back to the configuration", err.Error())
 }
 
 // Selecting a resource for deletion leaves its own dependencies alone: they are not

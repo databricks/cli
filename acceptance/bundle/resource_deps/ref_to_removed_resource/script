@@ -4,7 +4,7 @@ trace musterr $CLI bundle plan
 trace musterr $CLI bundle deploy
 
 title "Deploy all jobs"
-cp full.yml databricks.yml
+cp "$TESTDIR/databricks.yml" databricks.yml
 trace $CLI bundle deploy
 print_requests.py --nostamp //jobs > LOG.deploy_requests
 
@@ -24,6 +24,6 @@ trace $CLI bundle plan --select jobs.keep
 
 title "Nothing was deleted or updated"
 trace print_requests.py --nostamp //jobs
-cp full.yml databricks.yml
+cp "$TESTDIR/databricks.yml" databricks.yml
 trace $CLI bundle plan
 trace $CLI bundle destroy --auto-approve

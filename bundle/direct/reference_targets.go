@@ -1,7 +1,7 @@
 package direct
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -9,8 +9,9 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // checkReferenceTargets reports references to resources that are not defined in the config.
@@ -18,24 +19,22 @@ import (
 // the planner. If the target is still in the state (it was removed from the config since the
 // last deploy), the planner plans it for deletion and has no new state to read the field from.
 //
-// An ${resources.<type>.<name>.id} reference to a resource planned for deletion is left to
+// A reference to the id of a resource planned for deletion is left to
 // [deployplan.Plan.CheckReferencesToDeleted]: its resolution is delayed until apply, so it
 // only matters when the referring resource stays in the plan after --select.
-func checkReferenceTargets(ctx context.Context, configRoot *config.Root, plan *deployplan.Plan) bool {
+func checkReferenceTargets(configRoot *config.Root, plan *deployplan.Plan) error {
+	// Destroy plans without a config: every entry is a delete.
 	if configRoot == nil {
-		return true
+		return nil
 	}
 
-	ok := true
+	var errs []error
 	for _, node := range slices.Sorted(maps.Keys(plan.Plan)) {
 		entry := plan.Plan[node]
 		if entry.Action == deployplan.Delete {
 			continue
 		}
 		for _, dep := range entry.DependsOn {
-			if dep.Label == lifecycleDependsOnLabel || !strings.HasPrefix(dep.Node, "resources.") {
-				continue
-			}
 			target := plan.Plan[dep.Node]
 			switch {
 			case target == nil:
@@ -48,14 +47,24 @@ func checkReferenceTargets(ctx context.Context, configRoot *config.Root, plan *d
 				if v, _ := dyn.GetByPath(configRoot.Value(), targetPath); v.IsValid() {
 					continue
 				}
-				logdiag.LogError(ctx, fmt.Errorf("cannot plan %s: %s refers to %s, which is not defined in the bundle configuration", node, dep.Label, dep.Node))
-			case target.Action == deployplan.Delete && dep.Label != "${"+dep.Node+".id}":
-				logdiag.LogError(ctx, deployplan.ReferenceToDeletedError(node, dep))
-			default:
-				continue
+				errs = append(errs, fmt.Errorf("cannot plan %s: %s refers to %s, which is not defined in the bundle configuration", node, dep.Label, dep.Node))
+			case target.Action == deployplan.Delete && !isIDReference(dep.Label):
+				errs = append(errs, deployplan.ReferenceToDeletedError(node, dep))
 			}
-			ok = false
 		}
 	}
-	return ok
+	return errors.Join(errs...)
+}
+
+// isIDReference reports whether ref ("${resources.<type>.<name>...}") reads the target's
+// id, after the same Terraform-style path translation as [DeploymentBundle.LookupReferencePreDeploy]
+// (e.g. "spec.id" of a postgres project is its "id").
+func isIDReference(ref string) bool {
+	path, err := structpath.ParsePath(strings.TrimSuffix(strings.TrimPrefix(ref, "${"), "}"))
+	if err != nil {
+		return false
+	}
+	targetKey, fieldPath := splitResourcePath(path)
+	fieldPath, err = terraform_dabs_map.TerraformPathToDABs(config.GetResourceTypeFromKey(targetKey), fieldPath)
+	return err == nil && fieldPath.String() == "id"
 }
