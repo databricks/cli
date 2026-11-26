@@ -11,3 +11,12 @@ Run 'bundle deploy' to deploy changes to your workspace
     "resource_key": "jobs.foo"
   }
 ]
+
+=== Bind uploads no files, so the deployment records no file_path
+
+>>> MSYS_NO_PATHCONV=1 [CLI] api get /api/2.0/bundle/deployments/[DEPLOYMENT_ID]
+{
+  "workspace_info": {
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-bind-immutable-[UNIQUE_NAME]/default"
+  }
+}
