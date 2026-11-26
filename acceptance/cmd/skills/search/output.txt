@@ -27,8 +27,9 @@ No skill matches. Run databricks skills list to see every skill.
     "commands": [
       "pipelines"
     ],
-    "source": "[TESTROOT]/cmd/skills/search/../release",
-    "release_version": "0.0.1"
+    "source": "[TESTROOT]/cmd/skills/search/release",
+    "release_version": "0.0.1",
+    "experimental": false
   }
 ]
 
@@ -42,8 +43,9 @@ No skill matches. Run databricks skills list to see every skill.
       "SKILL.md"
     ],
     "commands": [],
-    "source": "[TESTROOT]/cmd/skills/search/../release",
-    "release_version": "0.0.1"
+    "source": "[TESTROOT]/cmd/skills/search/release",
+    "release_version": "0.0.1",
+    "experimental": false
   }
 ]
 
@@ -60,3 +62,35 @@ No skill matches. Run databricks skills list to see every skill.
 pipeline-bare
 pipeline-lab: An experimental pipeline skill.
 To read a skill, run: databricks skills read <name>
+
+>>> [CLI] skills search --experimental --output json pipelines
+[
+  {
+    "name": "pipeline-bare",
+    "description": "",
+    "version": "0.0.1",
+    "files": [
+      "SKILL.md"
+    ],
+    "commands": [
+      "pipelines"
+    ],
+    "source": "[TESTROOT]/cmd/skills/search/experimental-release",
+    "release_version": "0.0.1",
+    "experimental": true
+  },
+  {
+    "name": "pipeline-lab",
+    "description": "An experimental pipeline skill.",
+    "version": "0.0.1",
+    "files": [
+      "SKILL.md"
+    ],
+    "commands": [
+      "pipelines"
+    ],
+    "source": "[TESTROOT]/cmd/skills/search/experimental-release",
+    "release_version": "0.0.1",
+    "experimental": true
+  }
+]

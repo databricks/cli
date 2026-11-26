@@ -1,7 +1,6 @@
 package skills
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/databricks/cli/libs/skills"
@@ -63,8 +62,9 @@ func TestMatchSkillsCountsAWordOnceForEachSkill(t *testing.T) {
 		{Name: "pipeline-guide", Description: "pipeline tips", Commands: []string{"pipelines"}},
 		{Name: "other", Description: "pipeline"},
 	}
-	// "pipeline" appears in both fields of pipeline-guide, but it counts once, so
-	// both skills have one hit and the name decides: "other" sorts first.
+	// "pipeline" appears in the name, the description and the command group of
+	// pipeline-guide, but it counts once, so both skills have one hit and the name
+	// decides: "other" sorts first.
 	got := names(matchSkills(catalog, []string{"pipeline"}))
 	assert.Equal(t, []string{"other", "pipeline-guide"}, got)
 }
@@ -99,10 +99,4 @@ func TestCheckWordsRejectsBlankWord(t *testing.T) {
 func TestMatchSkillsTrimsWords(t *testing.T) {
 	got := names(matchSkills(searchCatalog, []string{" jobs "}))
 	assert.Equal(t, []string{"jobs-helper"}, got)
-}
-
-func TestCopyListIsNeverNil(t *testing.T) {
-	out, err := json.Marshal(copyList(nil))
-	assert.NoError(t, err)
-	assert.Equal(t, "[]", string(out))
 }

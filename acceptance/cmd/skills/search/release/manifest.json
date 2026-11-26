@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "skills": {
+    "demo-skill": {"version": "0.0.1", "description": "A skill for tests.", "files": ["SKILL.md"]},
+    "pipeline-guide": {"version": "0.0.1", "description": "Build and debug data pipelines.", "files": ["SKILL.md"], "commands": ["pipelines"]}
+  }
+}

@@ -1,4 +1,4 @@
-export DATABRICKS_SKILLS_DIR=$TESTDIR/../release
+export DATABRICKS_SKILLS_DIR=$TESTDIR/release
 
 # Text output: matches in the skills list line format, then how to read a skill.
 trace $CLI skills search pipelines
@@ -20,3 +20,4 @@ musterr trace $CLI skills search " "
 export DATABRICKS_SKILLS_DIR=$TESTDIR/experimental-release
 trace $CLI skills search pipelines
 trace $CLI skills search --experimental pipelines
+trace $CLI skills search --experimental --output json pipelines

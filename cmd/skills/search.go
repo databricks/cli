@@ -2,6 +2,7 @@ package skills
 
 import (
 	"errors"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -17,7 +18,8 @@ const searchTemplate = `{{if .}}{{range .}}{{.Name}}{{with .Description}}: {{.}}
 {{else}}No skill matches. Run databricks skills list to see every skill.
 {{end}}`
 
-// searchResult is one matching skill. Its JSON fields are the fields of skills list.
+// searchResult is one matching skill. Its JSON fields are the fields of skills
+// list, plus experimental, which tells apart the skills that --experimental adds.
 type searchResult struct {
 	Name           string   `json:"name"`
 	Description    string   `json:"description"`
@@ -26,6 +28,7 @@ type searchResult struct {
 	Commands       []string `json:"commands"`
 	Source         string   `json:"source"`
 	ReleaseVersion string   `json:"release_version"`
+	Experimental   bool     `json:"experimental"`
 }
 
 func newSearchCmd() *cobra.Command {
@@ -64,8 +67,9 @@ func runSearch(cmd *cobra.Command, words []string, experimental bool) error {
 			Version:        s.Version,
 			Files:          copyList(s.Files),
 			Commands:       copyList(s.Commands),
-			Source:         catalog.Label,
+			Source:         filepath.ToSlash(catalog.Label),
 			ReleaseVersion: catalog.Version,
+			Experimental:   s.Experimental,
 		})
 	}
 	return cmdio.RenderWithTemplate(ctx, results, "", searchTemplate)
