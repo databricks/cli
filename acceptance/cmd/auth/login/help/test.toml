@@ -1,0 +1,4 @@
+# The default config path in the help depends on the OS.
+[[Repls]]
+Old = '(~/|%USERPROFILE%\\)\.databrickscfg'
+New = '[DATABRICKS_CONFIG_FILE]'
