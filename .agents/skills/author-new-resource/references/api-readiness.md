@@ -27,7 +27,7 @@ Each check ends in one of three verdicts:
   `acceptance/bundle/refschema/output/<plural>.txt` as `STATE` or `ALL`) get rules.
 - The generator picks the API type for a resource by field overlap and writes it to
   `apitypes.generated.yml`. When the heuristic picks a request type instead of the resource type,
-  pin the right one in `apitypes.yml` with a one-line reason.
+  pin the right one with `api_type` in `configs/<plural>.yml`, with a one-line reason.
 - Everything else is hand-written in `configs/<plural>.yml`: `provided_id_fields`,
   `updatable_id_fields`, `stable_output_fields`, `backend_defaults`, `ignore_local_changes`. Each
   hand-written rule is a fact about the API the proto could not express. Keep them few, and give
@@ -259,10 +259,10 @@ create-then-plan prove it against a real workspace. A 404 observed after create 
 **Check.** New fields carry a `stage` in the proto; it reaches `cli.json` as `launch_stage` on the
 field and renders as a `[Private Preview]` or `[Public Preview]` tag on the field in the schema.
 The resource itself has no stage in `cli.json`. Its `x-databricks-launch-stage` in
-`bundle/schema/jsonschema.json` comes only from `launchStageOverrides` in
-`bundle/internal/annotation/preview.go`, which is a CLI-side decision: PyDABs generates a Python
-package for every resource without an entry there, whatever its fields' stages, and skips resources
-whose entry is `PRIVATE_PREVIEW` or `PUBLIC_BETA`.
+`bundle/schema/jsonschema.json` comes only from a `SchemaLaunchStage()` declaration on the config
+type (`resources.SchemaLaunchStageDeclarer`), which is a CLI-side decision: PyDABs generates a
+Python package for every resource without one, whatever its fields' stages, and skips resources
+that declare `PRIVATE_PREVIEW` or `PUBLIC_BETA`.
 
 **Verify.** `rg -n launch_stage .codegen/cli.json` around the resource's fields for the field
 stages. After `./task generate-schema`, read the resource's entry in `jsonschema.json` for
@@ -270,7 +270,7 @@ stages. After `./task generate-schema`, read the resource's entry in `jsonschema
 The Postgres resources are the precedent for an override; every other resource ships without one.
 
 **Verdicts.** This is a CLI decision, not an API ask. The resource is meant to be public in PyDABs
-now: **NOTE**, no override. It is not: **NOTE**, add it to `launchStageOverrides` with the stage and
+now: **NOTE**, no override. It is not: **NOTE**, declare `SchemaLaunchStage()` with the stage and
 a one-line reason, regenerate, and confirm the Python package is gone. Fields with no `stage` while
 the API is in preview: **ASK** for the field annotation so the schema tags them.
 
@@ -300,9 +300,10 @@ planning alone protects only the interval from that read to Update; it does not 
 prevent overwriting earlier edits.
 
 Trace persistence through successful create/update, `dstate.ExportStateFromData`, state loading,
-and bind. Dashboards inject the persisted token into typed config in `statemgmt/state_load.go`
-and send `config.Etag` on Update. Genie Spaces persist it for drift detection but omit the
-precondition because backend migrations change it. Follow the intended sibling policy, including
+and bind. Dashboards name the token in `etag_field` in `configs/dashboards.yml`, inject the
+persisted token into typed config through `LoadDeployedState()` (called by
+`statemgmt/state_load.go`), and send `config.Etag` on Update. Genie Spaces persist it for drift
+detection but omit the precondition because backend migrations change it. Follow the intended sibling policy, including
 explicit overwrite handling; do not silently replace the last deployment's baseline during a GET
 or plan. Comparing old and remote etags in `OverrideChangeDesc` is an existing exception to the
 usual preference for YAML rules.
@@ -331,8 +332,8 @@ the destroy race in a comment on `DoDelete`.
 **Check.** A singleton (one per parent, no id) defines Get and Update only (AIP-156).
 
 **Verdicts.** Clean singleton: **NOTE**. Create means update and Delete means reset; say so in the
-adapter's doc comment. Check `apitypes.generated.yml` picked the resource type and pin it in
-`apitypes.yml` if it picked a request type.
+adapter's doc comment. Check `apitypes.generated.yml` picked the resource type and pin it with
+`api_type` in `configs/<plural>.yml` if it picked a request type.
 
 ## 3. What the API linter already covers
 
