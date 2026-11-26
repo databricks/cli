@@ -1,6 +1,7 @@
 # fs cp from a $SRC directory to a $DST directory, each one of local, DBFS or UC Volume.
 # The test's src/ tree is uploaded to [SRC], and its target/ tree (files the copies run into) to [DST].
-# Volumes are used at their root, and Volume to Volume uses two volumes, as the integration tests did.
+# Volumes are used at their root, and Volume to Volume uses two volumes, so a copy that resolves
+# the target against the source volume, or mishandles a volume root, fails.
 CATALOG_NAME="main"
 SCHEMA_NAME="default"
 SRC_VOLUME="fs-cp-src-${UNIQUE_NAME}"
