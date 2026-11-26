@@ -34,7 +34,8 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-const internalFolder = ".internal"
+// InternalDirName is the name of the directory InternalDir returns, under the target's cache directory.
+const InternalDirName = ".internal"
 
 // QuietLevel is how much of the informational output to suppress, controlled by
 // repeating -q. Warnings and errors are never suppressed.
@@ -393,7 +394,7 @@ func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	dir := filepath.Join(cacheDir, internalFolder)
+	dir := filepath.Join(cacheDir, InternalDirName)
 	err = os.MkdirAll(dir, 0o700)
 	if err != nil {
 		return dir, err

@@ -84,7 +84,7 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspace.Language(form.Language), form.Overwrite)
 	case string(workspace.ImportFormatJupyter):
 		// The real endpoint reads the language from the notebook metadata.
-		_, language, _ := notebook.DetectBytes(form.Path+notebook.ExtensionJupyter, form.Content)
+		language, _ := detectJupyterNotebook(form.Path+notebook.ExtensionJupyter, form.Content)
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, language, form.Overwrite)
 	case string(workspace.ImportFormatAuto):
 		if strings.HasSuffix(strings.ToLower(form.Path), ".zip") {
@@ -412,6 +412,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.FsListDirectory(req.Vars["path"])
 	})
 
+	server.Handle("DELETE", "/api/2.0/fs/directories/{path...}", func(req Request) any {
+		return req.Workspace.FsDeleteDirectory(req.Vars["path"])
+	})
+
 	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		if req.Workspace.FileExists(path) {
@@ -453,7 +457,7 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
-		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
+		return req.Workspace.FilesUpload(path, req.Body, overwrite)
 	})
 
 	server.Handle("DELETE", "/api/2.0/fs/files/{path...}", func(req Request) any {

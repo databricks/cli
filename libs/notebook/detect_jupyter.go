@@ -42,7 +42,14 @@ func resolveLanguage(nb *jupyter) workspace.Language {
 		return ""
 	}
 
-	switch metadata.Language {
+	return LanguageFromJupyterName(metadata.Language)
+}
+
+// LanguageFromJupyterName returns the workspace language for a language name
+// in Jupyter notebook metadata ("python", "r", "scala" or "sql"), or "" for any
+// other name.
+func LanguageFromJupyterName(name string) workspace.Language {
+	switch name {
 	case "python":
 		return workspace.LanguagePython
 	case "r":

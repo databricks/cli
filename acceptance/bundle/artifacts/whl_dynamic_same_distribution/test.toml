@@ -1,0 +1,6 @@
+# Plain deploy and deploy --plan both keep the two patched wheels.
+EnvMatrix.READPLAN = ["", "1"]
+
+[[Repls]]
+Old = '\\\\'
+New = '/'

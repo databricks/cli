@@ -407,8 +407,8 @@ func newUpdateGenieAgent() *cobra.Command {
       the Genie Agent. definition is replaced as a whole.
 
       The one supported path inside definition is
-      definition.data_sources.sub_agents, and only alongside definition.
-      Naming it makes the sub-agent list exact, so an empty list detaches every
+      definition.resources.sub_agents, and only alongside definition. Naming
+      it makes the sub-agent list exact, so an empty list detaches every
       sub-agent. Without it, including with *, an empty list keeps them.
 
       The special value * replaces the whole Genie Agent, as if every

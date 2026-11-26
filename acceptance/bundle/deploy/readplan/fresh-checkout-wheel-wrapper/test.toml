@@ -1,0 +1,4 @@
+Badness = "Applying a saved plan from a fresh checkout skips the build that generates the python_wheel_wrapper notebook, so the deployment state that bundle deploy --plan pushes lists only databricks.yml, not the wrapper notebook the job still runs (.internal/notebook_3_whl_test_task). A file the state does not list is never deleted by later deploys. The state should list the wrapper notebook, as a plain bundle deploy does."
+
+# Applying a saved plan skips the build that generates python_wheel_wrapper notebooks.
+Ignore = ["tmp.plan.json"]

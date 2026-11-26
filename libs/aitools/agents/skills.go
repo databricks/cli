@@ -29,13 +29,14 @@ const (
 // manifest reader (Claude Code) that is its own plugin manifest, installed for
 // every project or for the working directory (see pluginInstall.appliesTo): a
 // plugin installed for another project does not load for the app being
-// created. For Codex and Copilot the CLI install state is the only plugin
-// source, so a plugin installed with the agent's own CLI is missed, and a
-// plugin later removed with it still counts until the record is cleared.
+// created. For Codex and Copilot it is the plugin their own config records
+// (see Agent.DatabricksPluginConfigured), installed for the user and so for
+// every project, or one the CLI install state records, so a plugin later
+// removed with the agent's own CLI still counts until the record is cleared.
 // installedPlugins is a parameter because this package cannot import the
 // installer; callers pass installer.InstalledPluginAgents. It is called only
-// once a detected agent has no plugin manifest reader. It also reports true
-// when no agent is detected.
+// once a detected agent has no plugin manifest reader and no plugin in its
+// config. It also reports true when no agent is detected.
 func HasDatabricksToolingInstalled(ctx context.Context, installedPlugins func(context.Context) []string) bool {
 	installed := DetectInstalled(ctx)
 	if len(installed) == 0 || hasSharedSkills(ctx) {
@@ -48,6 +49,10 @@ func HasDatabricksToolingInstalled(ctx context.Context, installedPlugins func(co
 	recorded := sync.OnceValue(func() []string { return installedPlugins(ctx) })
 	for _, a := range installed {
 		if a.pluginInstalls == nil {
+			// An unreadable config counts as no plugin, as for the manifest.
+			if configured, _ := a.DatabricksPluginConfigured(ctx); configured {
+				continue
+			}
 			if !slices.Contains(recorded(), a.Name) {
 				return false
 			}

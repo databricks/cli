@@ -52,6 +52,9 @@ func TestAutoInstallPrompt(t *testing.T) {
 		input string
 		// installState replaces the global install state file.
 		installState string
+		// unwritableSkillsDir puts a file where Cursor's skills directory
+		// belongs, so Cursor cannot get the skills.
+		unwritableSkillsDir bool
 		// env is set on top of a terminal with color.
 		env map[string]string
 		// agent is a coding agent's env var, set to 1: the run is that
@@ -126,6 +129,16 @@ func TestAutoInstallPrompt(t *testing.T) {
 			wantStderr:  []string{"Could not install Databricks AI tools. To install them, run: databricks aitools install"},
 			wantState:   autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, AcceptedVersion: "1.30.0", Installing: true, ID: "treatment-machine"},
 			wantOutcome: protos.AitoolsAutoInstallOutcomeFailed,
+		},
+		{
+			name:                "an agent that got no skills is a failed attempt, retried later",
+			unwritableSkillsDir: true,
+			agent:               "CLAUDECODE",
+			stdinPiped:          true,
+			stdoutRedirected:    true,
+			stderrRedirected:    true,
+			wantState:           autoinstall.State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: autoInstallTestNow, Installing: true, ID: "treatment-machine"},
+			wantOutcome:         protos.AitoolsAutoInstallOutcomeFailed,
 		},
 		{
 			name:        "NO_COLOR still asks",
@@ -277,6 +290,9 @@ func TestAutoInstallPrompt(t *testing.T) {
 			if tc.inContainer {
 				inContainer = func() bool { return true }
 			}
+			if tc.unwritableSkillsDir {
+				require.NoError(t, os.WriteFile(filepath.Join(home, ".cursor", "skills"), nil, 0o644))
+			}
 			t.Setenv("TERM", "xterm")
 			for k, v := range tc.env {
 				t.Setenv(k, v)
@@ -305,9 +321,15 @@ func TestAutoInstallPrompt(t *testing.T) {
 
 			_, err := os.Stat(filepath.Join(home, ".cursor", "skills", "databricks-test", "SKILL.md"))
 			assert.Equal(t, tc.wantSkills, err == nil, "Cursor has the skill")
+			assert.Equal(t, tc.wantSkills, strings.Contains(stderr.String(), "Installed Databricks AI tools for Cursor."), "notice names Cursor")
 
 			state, err := autoinstall.Load(ctx)
 			require.NoError(t, err)
+			// Only an install that saved install state and did not finish
+			// records its digest; TestAutoInstallRetriesAnAgentThatGotNoSkills
+			// checks the value.
+			assert.Equal(t, tc.unwritableSkillsDir, state.InstallStateDigest != "", "install state digest")
+			state.InstallStateDigest = ""
 			assert.Equal(t, tc.wantState, state)
 
 			var outcomes []protos.AitoolsAutoInstallOutcome
@@ -503,6 +525,31 @@ func TestAutoInstallWaitsBeforeARetry(t *testing.T) {
 	outcomes, state = runAutoInstallAt(t, -time.Hour)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
 	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", ID: "treatment-machine"}, state)
+}
+
+// A first install that saved install state but did not give Cursor the skills
+// is retried as a first install, so Cursor gets them once its skills
+// directory can be written.
+func TestAutoInstallRetriesAnAgentThatGotNoSkills(t *testing.T) {
+	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
+	skillsDir := filepath.Join(home, ".cursor", "skills")
+	require.NoError(t, os.WriteFile(skillsDir, nil, 0o644))
+
+	outcomes, state := runAutoInstallAt(t, 0)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed}, outcomes)
+	installState, err := installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	require.NotNil(t, installState, "the skills are recorded")
+	want := failedAttempts(1, 0)
+	want.InstallStateDigest, err = installStateDigest(installState)
+	require.NoError(t, err)
+	assert.Equal(t, want, state)
+
+	require.NoError(t, os.Remove(skillsDir))
+	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
+	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	assert.FileExists(t, filepath.Join(skillsDir, "databricks-test", "SKILL.md"))
 }
 
 // runAutoInstallAt runs the hook at autoInstallTestNow plus elapsed and returns

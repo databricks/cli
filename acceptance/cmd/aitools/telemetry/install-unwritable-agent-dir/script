@@ -1,0 +1,28 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+# Agent config overrides from the host would make auto-detection find agents
+# outside the isolated HOME; keep every agent's config dir inside it.
+unset CLAUDE_CONFIG_DIR PI_CODING_AGENT_DIR GEMINI_CLI_HOME GOOSE_PATH_ROOT
+export XDG_CONFIG_HOME="$HOME/.config"
+# A skills directory left owned by root by an earlier run with sudo.
+mkdir -p "$HOME/.cursor/skills"
+chmod 555 "$HOME/.cursor/skills"
+
+title "a named agent whose skills directory is read-only fails"
+musterr trace $CLI aitools install --skills-only --scope=global --agents=cursor
+trace print_telemetry
+
+title "--output json reports the agent as failed"
+musterr trace $CLI aitools install --skills-only --scope=global --agents=cursor --output json
+trace print_telemetry
+chmod 755 "$HOME/.cursor/skills"
+
+title "a detected agent that gets no skills is reported while another one gets them"
+sethome home2
+export XDG_CONFIG_HOME="$HOME/.config"
+mkdir -p "$HOME/.cursor/skills" "$HOME/.config/opencode"
+chmod 555 "$HOME/.cursor/skills"
+trace $CLI aitools install --skills-only --scope=global
+trace print_telemetry
+chmod 755 "$HOME/.cursor/skills"
+trace ls "$HOME/.config/opencode/skills"

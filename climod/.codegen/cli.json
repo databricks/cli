@@ -13757,10 +13757,6 @@
         "materialized_features": {
           "go": "MaterializedFeatures",
           "ref": "features/v1.MaterializedFeature"
-        },
-        "notifications": {
-          "go": "Notifications",
-          "ref": "features/v1.MaterializationNotifications"
         }
       }
     },
@@ -16381,22 +16377,6 @@
         }
       }
     },
-    "genieagents/v1.GenieAgentDataSources": {
-      "fields": {
-        "mcp_connections": {
-          "go": "McpConnections",
-          "ref": "genieagents/v1.GenieAgentMcpConnection"
-        },
-        "tables": {
-          "go": "Tables",
-          "ref": "genieagents/v1.GenieAgentTable"
-        },
-        "volumes": {
-          "go": "Volumes",
-          "ref": "genieagents/v1.GenieAgentVolume"
-        }
-      }
-    },
     "genieagents/v1.GenieAgentDefinition": {
       "fields": {
         "benchmarks": {
@@ -16407,13 +16387,13 @@
           "go": "Config",
           "ref": "genieagents/v1.GenieAgentConfig"
         },
-        "data_sources": {
-          "go": "DataSources",
-          "ref": "genieagents/v1.GenieAgentDataSources"
-        },
         "instructions": {
           "go": "Instructions",
           "ref": "genieagents/v1.GenieAgentInstructions"
+        },
+        "resources": {
+          "go": "Resources",
+          "ref": "genieagents/v1.GenieAgentResources"
         }
       }
     },
@@ -16447,16 +16427,12 @@
           "go": "JoinSpecs",
           "ref": "genieagents/v1.GenieAgentJoinSpec"
         },
-        "sql_functions": {
-          "go": "SqlFunctions",
-          "ref": "genieagents/v1.GenieAgentSqlFunction"
-        },
         "sql_snippets": {
           "go": "SqlSnippets",
           "ref": "genieagents/v1.GenieAgentSqlSnippets"
         },
-        "text_instructions": {
-          "go": "TextInstructions",
+        "text_instruction": {
+          "go": "TextInstruction",
           "ref": "genieagents/v1.GenieAgentTextInstruction"
         }
       }
@@ -16502,6 +16478,26 @@
       "fields": {
         "mcp_connection": {
           "go": "McpConnection"
+        }
+      }
+    },
+    "genieagents/v1.GenieAgentResources": {
+      "fields": {
+        "mcp_connections": {
+          "go": "McpConnections",
+          "ref": "genieagents/v1.GenieAgentMcpConnection"
+        },
+        "sql_functions": {
+          "go": "SqlFunctions",
+          "ref": "genieagents/v1.GenieAgentSqlFunction"
+        },
+        "tables": {
+          "go": "Tables",
+          "ref": "genieagents/v1.GenieAgentTable"
+        },
+        "volumes": {
+          "go": "Volumes",
+          "ref": "genieagents/v1.GenieAgentVolume"
         }
       }
     },
@@ -16721,6 +16717,412 @@
         },
         "update_mask": {
           "go": "UpdateMask"
+        }
+      }
+    },
+    "geniemigrate/v1.AddProjectFilesRequest": {
+      "fields": {
+        "name": {
+          "go": "Name"
+        },
+        "sources": {
+          "go": "Sources",
+          "ref": "geniemigrate/v1.SourceFileRef"
+        }
+      }
+    },
+    "geniemigrate/v1.AddProjectFilesResponse": {
+      "fields": {
+        "files": {
+          "go": "Files",
+          "ref": "geniemigrate/v1.ProjectFile"
+        }
+      }
+    },
+    "geniemigrate/v1.ApiError": {
+      "fields": {
+        "details": {
+          "go": "Details"
+        },
+        "error_code": {
+          "go": "ErrorCode"
+        },
+        "message": {
+          "go": "Message"
+        },
+        "stack_trace": {
+          "go": "StackTrace"
+        }
+      }
+    },
+    "geniemigrate/v1.CancelOperationRequest": {
+      "fields": {
+        "name": {
+          "go": "Name"
+        }
+      }
+    },
+    "geniemigrate/v1.ConversionRun": {
+      "fields": {
+        "create_time": {
+          "go": "CreateTime"
+        },
+        "end_time": {
+          "go": "EndTime"
+        },
+        "error_code": {
+          "go": "ErrorCode"
+        },
+        "files": {
+          "go": "Files",
+          "ref": "geniemigrate/v1.ConversionRunFile"
+        },
+        "project": {
+          "go": "Project"
+        },
+        "skill_paths": {
+          "go": "SkillPaths"
+        },
+        "state": {
+          "go": "State"
+        }
+      }
+    },
+    "geniemigrate/v1.ConversionRunFile": {
+      "fields": {
+        "name": {
+          "go": "Name"
+        },
+        "status": {
+          "go": "Status"
+        }
+      }
+    },
+    "geniemigrate/v1.ConvertProjectFilesRequest": {
+      "fields": {
+        "names": {
+          "go": "Names"
+        },
+        "parent": {
+          "go": "Parent"
+        },
+        "skill_paths": {
+          "go": "SkillPaths"
+        },
+        "start_over": {
+          "go": "StartOver"
+        }
+      }
+    },
+    "geniemigrate/v1.ConvertProjectFilesResponse": {
+      "fields": {
+        "run": {
+          "go": "Run",
+          "ref": "geniemigrate/v1.ConversionRun"
+        }
+      }
+    },
+    "geniemigrate/v1.CreateProjectRequest": {
+      "fields": {
+        "project": {
+          "go": "Project",
+          "ref": "geniemigrate/v1.Project"
+        }
+      }
+    },
+    "geniemigrate/v1.DeleteProjectRequest": {
+      "fields": {
+        "name": {
+          "go": "Name"
+        }
+      }
+    },
+    "geniemigrate/v1.DestinationResource": {
+      "fields": {
+        "job_id": {
+          "go": "JobId"
+        },
+        "pipeline_id": {
+          "go": "PipelineId"
+        }
+      }
+    },
+    "geniemigrate/v1.GetOperationRequest": {
+      "fields": {
+        "name": {
+          "go": "Name"
+        }
+      }
+    },
+    "geniemigrate/v1.GetProjectFileRequest": {
+      "fields": {
+        "name": {
+          "go": "Name"
+        }
+      }
+    },
+    "geniemigrate/v1.GetProjectRequest": {
+      "fields": {
+        "name": {
+          "go": "Name"
+        }
+      }
+    },
+    "geniemigrate/v1.ListProjectFilesRequest": {
+      "fields": {
+        "page_size": {
+          "go": "PageSize"
+        },
+        "page_token": {
+          "go": "PageToken"
+        },
+        "parent": {
+          "go": "Parent"
+        }
+      }
+    },
+    "geniemigrate/v1.ListProjectFilesResponse": {
+      "fields": {
+        "next_page_token": {
+          "go": "NextPageToken"
+        },
+        "project_files": {
+          "go": "ProjectFiles",
+          "ref": "geniemigrate/v1.ProjectFile"
+        }
+      }
+    },
+    "geniemigrate/v1.ListProjectsRequest": {
+      "fields": {
+        "filter": {
+          "go": "Filter"
+        },
+        "page_size": {
+          "go": "PageSize"
+        },
+        "page_token": {
+          "go": "PageToken"
+        }
+      }
+    },
+    "geniemigrate/v1.ListProjectsResponse": {
+      "fields": {
+        "next_page_token": {
+          "go": "NextPageToken"
+        },
+        "projects": {
+          "go": "Projects",
+          "ref": "geniemigrate/v1.Project"
+        }
+      }
+    },
+    "geniemigrate/v1.Location": {
+      "fields": {
+        "workspace": {
+          "go": "Location.Workspace",
+          "oneof_variant": "Location_Location_Workspace",
+          "ref": "geniemigrate/v1.WorkspaceLocation"
+        }
+      }
+    },
+    "geniemigrate/v1.Operation": {
+      "fields": {
+        "done": {
+          "go": "Done"
+        },
+        "error": {
+          "go": "Result.Error",
+          "oneof_variant": "Operation_Result_Error",
+          "ref": "geniemigrate/v1.ApiError"
+        },
+        "metadata": {
+          "go": "Metadata"
+        },
+        "name": {
+          "go": "Name"
+        },
+        "response": {
+          "go": "Result.Response",
+          "oneof_variant": "Operation_Result_Response"
+        }
+      }
+    },
+    "geniemigrate/v1.Project": {
+      "fields": {
+        "changes_locked": {
+          "go": "ChangesLocked"
+        },
+        "create_time": {
+          "go": "CreateTime"
+        },
+        "display_name": {
+          "go": "DisplayName"
+        },
+        "folder": {
+          "go": "Folder"
+        },
+        "name": {
+          "go": "Name"
+        },
+        "project_config": {
+          "go": "ProjectConfig",
+          "ref": "geniemigrate/v1.ProjectConfig"
+        },
+        "update_time": {
+          "go": "UpdateTime"
+        }
+      }
+    },
+    "geniemigrate/v1.ProjectConfig": {
+      "fields": {
+        "destination_location": {
+          "go": "DestinationLocation",
+          "ref": "geniemigrate/v1.Location"
+        },
+        "lineage_location": {
+          "go": "LineageLocation",
+          "ref": "geniemigrate/v1.Location"
+        },
+        "source_dialect": {
+          "go": "SourceDialect"
+        },
+        "target_framework": {
+          "go": "TargetFramework"
+        }
+      }
+    },
+    "geniemigrate/v1.ProjectFile": {
+      "fields": {
+        "blockers": {
+          "go": "Blockers"
+        },
+        "changes": {
+          "go": "Changes"
+        },
+        "derived_from": {
+          "go": "DerivedFrom",
+          "ref": "geniemigrate/v1.Location"
+        },
+        "destination": {
+          "go": "Destination",
+          "ref": "geniemigrate/v1.Location"
+        },
+        "destination_kind": {
+          "go": "DestinationKind"
+        },
+        "destination_resource": {
+          "go": "DestinationResource",
+          "ref": "geniemigrate/v1.DestinationResource"
+        },
+        "error_message": {
+          "go": "ErrorMessage"
+        },
+        "has_notes": {
+          "go": "HasNotes"
+        },
+        "name": {
+          "go": "Name"
+        },
+        "notes": {
+          "go": "Notes"
+        },
+        "source": {
+          "go": "Source",
+          "ref": "geniemigrate/v1.Location"
+        },
+        "status": {
+          "go": "Status"
+        },
+        "todos": {
+          "go": "Todos"
+        }
+      }
+    },
+    "geniemigrate/v1.RemoveProjectFilesRequest": {
+      "fields": {
+        "name": {
+          "go": "Name"
+        },
+        "names": {
+          "go": "Names"
+        }
+      }
+    },
+    "geniemigrate/v1.RemoveProjectFilesResponse": {
+      "fields": {
+        "files": {
+          "go": "Files",
+          "ref": "geniemigrate/v1.ProjectFile"
+        }
+      }
+    },
+    "geniemigrate/v1.ReviewProjectFilesRequest": {
+      "fields": {
+        "names": {
+          "go": "Names"
+        },
+        "parent": {
+          "go": "Parent"
+        }
+      }
+    },
+    "geniemigrate/v1.ReviewProjectFilesResponse": {
+      "fields": {
+        "project_files": {
+          "go": "ProjectFiles",
+          "ref": "geniemigrate/v1.ProjectFile"
+        }
+      }
+    },
+    "geniemigrate/v1.SourceFileRef": {
+      "fields": {
+        "derived_from": {
+          "go": "DerivedFrom",
+          "ref": "geniemigrate/v1.Location"
+        },
+        "workspace": {
+          "go": "Ref.Workspace",
+          "oneof_variant": "SourceFileRef_Ref_Workspace",
+          "ref": "geniemigrate/v1.WorkspaceLocation"
+        }
+      }
+    },
+    "geniemigrate/v1.UnreviewProjectFilesRequest": {
+      "fields": {
+        "names": {
+          "go": "Names"
+        },
+        "parent": {
+          "go": "Parent"
+        }
+      }
+    },
+    "geniemigrate/v1.UnreviewProjectFilesResponse": {
+      "fields": {
+        "project_files": {
+          "go": "ProjectFiles",
+          "ref": "geniemigrate/v1.ProjectFile"
+        }
+      }
+    },
+    "geniemigrate/v1.UpdateProjectRequest": {
+      "fields": {
+        "project": {
+          "go": "Project",
+          "ref": "geniemigrate/v1.Project"
+        },
+        "update_mask": {
+          "go": "UpdateMask"
+        }
+      }
+    },
+    "geniemigrate/v1.WorkspaceLocation": {
+      "fields": {
+        "object_id": {
+          "go": "ObjectId"
+        },
+        "path": {
+          "go": "Path"
         }
       }
     },
