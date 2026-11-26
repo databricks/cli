@@ -419,6 +419,19 @@ func TestWorkspaceExportNotebookCellShapes(t *testing.T) {
 	assert.Contains(t, body, `"x = 1\n"`)
 	assert.Contains(t, body, `"# MAGICAL = 1 < 2"`)
 
+	// An empty markdown line is the bare MAGIC prefix (recorded on AWS).
+	const markdown = `{"cells":[{"cell_type":"markdown","metadata":{},"source":["# hi\n","\n","more"]}],"metadata":{"language_info":{"name":"python"}},"nbformat":4,"nbformat_minor":2}`
+	status, _ = workspaceImport(t, server.URL, map[string]any{"path": "/d/md", "content": markdown, "format": "JUPYTER"})
+	require.Equal(t, 200, status)
+	_, body = workspaceExport(t, server.URL, "/d/md", "SOURCE")
+	assert.Equal(t, "# Databricks notebook source\n# MAGIC %md\n# MAGIC # hi\n# MAGIC\n# MAGIC more", body)
+
+	// HTML, DBC and R_MARKDOWN exports of a notebook are not modeled.
+	for _, format := range []string{"HTML", "DBC", "R_MARKDOWN"} {
+		status, _ = workspaceExport(t, server.URL, "/d/md", format)
+		assert.Equal(t, 500, status, format)
+	}
+
 	// A body that is not a Jupyter notebook is not stored by a JUPYTER import.
 	status, _ = workspaceImport(t, server.URL, map[string]any{"path": "/d/bad", "content": "hello", "format": "JUPYTER"})
 	assert.Equal(t, 500, status)

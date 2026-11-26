@@ -16,8 +16,8 @@ import (
 // Recorded against the real API: the header line, COMMAND separators and
 // "MAGIC %md" markdown cells of a SOURCE export, the cells and language_info of
 // a JUPYTER export, and the error for a JUPYTER export of a file. Not modeled:
-// cell metadata and outputs, other cell types, and formats other than SOURCE
-// and JUPYTER (they return the stored body).
+// cell metadata and outputs, other cell types, and HTML, DBC and R_MARKDOWN
+// exports of a notebook (an explicit 500).
 
 // notebookCommentPrefixes are the line comment markers source notebooks use.
 var notebookCommentPrefixes = map[workspace.Language]string{
@@ -27,9 +27,8 @@ var notebookCommentPrefixes = map[workspace.Language]string{
 	workspace.LanguageSql:    "--",
 }
 
-// commentPrefix returns the line comment marker for language. A notebook the
-// fake stored without a language (a Jupyter notebook without language metadata)
-// is treated as Python.
+// commentPrefix returns the line comment marker for language, and Python's
+// for a language the fake does not know.
 func commentPrefix(language workspace.Language) string {
 	if prefix, ok := notebookCommentPrefixes[language]; ok {
 		return prefix
@@ -80,7 +79,14 @@ func exportObject(objectPath string, entry FileEntry, format workspace.ExportFor
 		}
 		return sourceToJupyter(entry.Data, entry.Info.Language), Response{}
 	}
-	if format != "" && format != workspace.ExportFormatSource {
+	switch format {
+	case workspace.ExportFormatHtml, workspace.ExportFormatDbc, workspace.ExportFormatRMarkdown:
+		return nil, Response{
+			StatusCode: http.StatusInternalServerError,
+			Body:       fmt.Sprintf("internal error: The test server does not support exporting a notebook with format=%s.", format),
+		}
+	case "", workspace.ExportFormatSource:
+	default:
 		return entry.Data, Response{}
 	}
 	if isJupyter {
@@ -176,7 +182,8 @@ func jupyterToSource(data []byte, language workspace.Language) ([]byte, bool) {
 		if strings.HasPrefix(text, "%") {
 			lines := strings.Split(text, "\n")
 			for i, line := range lines {
-				lines[i] = comment + " MAGIC " + line
+				// An empty line is the bare prefix, without a trailing space.
+				lines[i] = strings.TrimSuffix(comment+" MAGIC "+line, " ")
 			}
 			text = strings.Join(lines, "\n")
 		}

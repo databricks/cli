@@ -1143,8 +1143,8 @@ type importConflicts struct {
 	nameTaken func(requestPath, name string) Response
 	// notebookTaken is returned when a file's path is an existing notebook's source name.
 	notebookTaken func(filePath string) Response
-	// notebookExists is returned when a notebook import without overwrite finds an
-	// object at the notebook's path.
+	// notebookExists is returned when a notebook import without overwrite finds a
+	// file or notebook at the notebook's path.
 	notebookExists func(requestPath, notebookPath string) Response
 }
 
@@ -1435,8 +1435,8 @@ func (s *FakeWorkspace) importFile(filePath string, body []byte, overwrite bool,
 }
 
 // storeNotebook stores a notebook at notebookPath unless a file or directory
-// holds its source name, or an object is at notebookPath and overwrite is not
-// set. The caller must hold the lock.
+// holds its source name, or a file or notebook is at notebookPath and overwrite
+// is not set. The caller must hold the lock.
 func (s *FakeWorkspace) storeNotebook(requestPath, notebookPath string, body []byte, language workspace.Language, overwrite bool, conflicts importConflicts) Response {
 	if _, exists := s.files[notebookPath]; exists && !overwrite {
 		return conflicts.notebookExists(requestPath, notebookPath)
