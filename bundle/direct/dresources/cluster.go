@@ -151,6 +151,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
 	var details *compute.ClusterDetails
 	var libraries []compute.Library
+	var librariesErr error
 
 	// The cluster GET and the library-status GET are independent, so run them concurrently.
 	g, ctx := errgroup.WithContext(ctx)
@@ -160,12 +161,17 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 		return err
 	})
 	g.Go(func() error {
-		var err error
-		libraries, err = r.readLibraries(ctx, id)
-		return err
+		// Store the error instead of failing the group: for a deleted cluster library-status
+		// answers 400 INVALID_PARAMETER_VALUE, which would otherwise hide the cluster GET's
+		// not-found whenever it arrives first, and the plan would fail instead of recreating.
+		libraries, librariesErr = r.readLibraries(ctx, id)
+		return nil
 	})
 	if err := g.Wait(); err != nil {
 		return nil, err
+	}
+	if librariesErr != nil {
+		return nil, librariesErr
 	}
 
 	remote := &ClusterRemote{

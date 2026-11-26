@@ -1,0 +1,16 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Permanently delete the cluster outside the bundle"
+trace $CLI clusters permanent-delete "$(read_id.py mycluster)"
+
+title "Plan recreates the missing cluster"
+trace $CLI bundle plan
+
+title "Deploy recreates it"
+trace $CLI bundle deploy
+trace $CLI bundle plan
