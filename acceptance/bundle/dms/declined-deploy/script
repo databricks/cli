@@ -13,7 +13,7 @@ title "A destructive change without --auto-approve is declined: this console can
 # Changing the catalog recreates the schema, which needs approval.
 # Unity Catalog has no catalog called "other", so make one to move the schema into.
 other_catalog="dms_other_${UNIQUE_NAME}"
-$CLI catalogs create "$other_catalog" &> LOG.catalog
+dms_create_catalog "$other_catalog" &> LOG.catalog
 trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1; rm -f "$OUT_REQUESTS"' EXIT
 trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
 trace musterr $CLI bundle deploy
