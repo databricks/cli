@@ -36,5 +36,21 @@ Warn: Patched whl: lib2-2-py3-none-any.whl -> lib2-2+[UNIX_TIME_NANOS]-py3-none-
 >>> [CLI] selftest patchwhl readme-1.0-py3-none-any.whl
 Warn: Failed to patch whl: readme-1.0-py3-none-any.whl: unexpected version in METADATA: Version: 0.9 (expected 1.0)
 
->>> ls readme-1.0-py3-none-any.whl
-readme-1.0-py3-none-any.whl
+>>> unzip -p readme-1.0+*-py3-none-any.whl */METADATA
+
+Exit code: 9
+
+=== Wheel whose description contains a Version: line equal to the version:
+
+>>> [CLI] selftest patchwhl samever-1.0-py3-none-any.whl
+Warn: Patched whl: samever-1.0-py3-none-any.whl -> samever-1.0+[UNIX_TIME_NANOS]-py3-none-any.whl
+
+>>> unzip -p samever-1.0+[UNIX_TIME_NANOS]-py3-none-any.whl */METADATA
+Metadata-Version: 2.1
+Name: samever
+Version: 1.0+[UNIX_TIME_NANOS]
+
+Changelog
+
+Version: 1.0+[UNIX_TIME_NANOS]
+- first release

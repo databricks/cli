@@ -3,7 +3,8 @@
 Write small wheels that exercise parts of the wheel format the prebuilt test wheel lacks:
 - mypkg: an executable file inside the package and a <dist>-<version>.data/scripts/ entry;
 - lib2: a distribution name that contains its own version ("lib2", version "2");
-- readme: a description body (after the blank line ending the headers) with a "Version:" line.
+- readme: a description body (after the blank line ending the headers) with a "Version:" line;
+- samever: a description body with a "Version:" line equal to the real version.
 """
 
 import base64
@@ -53,4 +54,11 @@ write_wheel("lib2", "2", {"lib2/__init__.py": (b"", 0o644)})
 
 write_wheel(
     "readme", "1.0", {"readme/__init__.py": (b"", 0o644)}, description="\nChangelog\n\nVersion: 0.9\n- fixed bugs\n"
+)
+
+write_wheel(
+    "samever",
+    "1.0",
+    {"samever/__init__.py": (b"", 0o644)},
+    description="\nChangelog\n\nVersion: 1.0\n- first release\n",
 )
