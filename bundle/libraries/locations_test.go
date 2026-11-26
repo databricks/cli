@@ -135,3 +135,21 @@ func TestSameNamePatternsOrder(t *testing.T) {
 		"resources.pipelines.*.testing.environment.dependencies[*]",
 	}, patternStrings(sameNamePatterns()))
 }
+
+// TestUploadPatternsOrder pins the order in which local libraries are collected
+// for upload. Artifacts are collected after these.
+func TestUploadPatternsOrder(t *testing.T) {
+	assert.Equal(t, []string{
+		"resources.jobs.*.tasks[*].libraries[*].whl",
+		"resources.jobs.*.tasks[*].libraries[*].jar",
+		"resources.jobs.*.tasks[*].for_each_task.task.libraries[*].whl",
+		"resources.jobs.*.tasks[*].for_each_task.task.libraries[*].jar",
+		"resources.clusters.*.libraries[*].whl",
+		"resources.clusters.*.libraries[*].jar",
+		"resources.jobs.*.environments[*].spec.dependencies[*]",
+		"resources.pipelines.*.environment.dependencies[*]",
+		"resources.pipelines.*.testing.environment.dependencies[*]",
+		"resources.jobs.*.tasks[*].ai_runtime_task.code_source_path",
+		"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.code_source_path",
+	}, patternStrings(uploadPatterns()))
+}
