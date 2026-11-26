@@ -24,7 +24,7 @@ API message: Fault injected by test.
   "upload_failed": null
 }
 
-=== A history upload failure only warns: the binding is committed, so its version succeeds as a deploy's would
+=== A history upload failure only warns the bind, but fails its version: the service holds no record of the binding
 
 >>> fault.py PATCH /api/2.0/bundle/deployments/*/versions/*/operations/* 500 0 1
 
@@ -34,7 +34,7 @@ Successfully bound job with an id '[JOB_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> print_requests.py --dms //complete --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
 
 === Remote state contains the binding whose history upload failed
 
