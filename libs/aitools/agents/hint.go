@@ -134,7 +134,8 @@ type agentHint struct {
 	// agent on this machine when there is no session id (see fallbackKey).
 	text string
 
-	// textKind tags the hint-shown event logged when text prints.
+	// textKind tags the hint-shown event logged when text prints. With
+	// skills.HintsEnabled on, messageKind logs the skills list kind instead.
 	textKind protos.AitoolsHintKind
 
 	// sessionEnv names the env var carrying the agent's session id, which keys
@@ -323,7 +324,9 @@ func (h *agentHint) message(ctx context.Context) string {
 }
 
 // messageKind returns the hint-shown kind of message: the skills list kind
-// when skills.HintsEnabled is true, else the agent's install text kind.
+// when skills.HintsEnabled is true, else the agent's install text kind. It must
+// follow the same guard as message, so the hint-shown event names the text
+// that was printed.
 func (h *agentHint) messageKind(ctx context.Context) protos.AitoolsHintKind {
 	if skills.HintsEnabled(ctx) {
 		return protos.AitoolsHintKindSkillsListText

@@ -291,6 +291,7 @@ func TestMaybeHint_SkillsHintKindFollowsGuard(t *testing.T) {
 		{"claude, both on: skills list kind", "", "1", "1", protos.AitoolsHintKindSkillsListText},
 		{"codex, both on: skills list kind, not agent install text", "CODEX_CI", "1", "1", protos.AitoolsHintKindSkillsListText},
 		{"claude, hints off: install text kind", "", "1", "", protos.AitoolsHintKindInstallText},
+		{"claude, hints without preview: install text kind", "", "", "1", protos.AitoolsHintKindInstallText},
 		{"claude, both unset: install text kind", "", "", "", protos.AitoolsHintKindInstallText},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

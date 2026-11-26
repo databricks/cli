@@ -1,7 +1,7 @@
 package protos
 
 // AitoolsHintKind mirrors AitoolsHintKind.Type in the databricks_cli lumberjack
-// proto: which recommendation to install Databricks AI tools was shown.
+// proto: which Databricks AI tools hint was shown.
 type AitoolsHintKind string
 
 const (
@@ -28,7 +28,7 @@ const (
 	AitoolsHintKindAppsInitPrompt AitoolsHintKind = "APPS_INIT_PROMPT"
 )
 
-// AitoolsHintEvent is emitted once for each install-hint line the CLI prints
+// AitoolsHintEvent is emitted once for each hint line the CLI prints
 // for a coding agent (Claude Code's native and text lines are one event each)
 // and for the `apps init` skills tip or install prompt; other messages that
 // mention `databricks aitools install` log nothing. It carries no
