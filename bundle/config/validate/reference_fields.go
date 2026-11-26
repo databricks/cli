@@ -34,20 +34,20 @@ func (*referenceFields) Name() string {
 }
 
 func (m *referenceFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// The python wheel wrapper moves wheel task parameters, and the references in them, out of
-	// the job during the build, so before the build the config can have references the plan does
-	// not resolve.
-	if !m.afterBuild && b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper) {
-		return nil
-	}
+	// The python wheel wrapper moves wheel tasks and their wheel libraries, and the references in
+	// them, out of the job during the build, so the plan does not resolve those references.
+	skipWheelTasks := !m.afterBuild && b.Config.Experimental != nil && config.IsExplicitlyEnabled(b.Config.Experimental.PythonWheelWrapper)
 
-	found, err := direct.FindUnknownReferenceFields(b.Config.Value())
+	found, err := direct.FindUnknownReferenceFields(&b.Config)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	var diags diag.Diagnostics
 	for _, f := range found {
+		if skipWheelTasks && isInWheelTask(f.Path) {
+			continue
+		}
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("cannot resolve \"${%s}\": %s", f.Reference, f.Err),
@@ -56,4 +56,14 @@ func (m *referenceFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 		})
 	}
 	return diags
+}
+
+// isInWheelTask reports whether path is in the python_wheel_task or the libraries of a job task,
+// the fields the python wheel wrapper moves out of the job.
+func isInWheelTask(path dyn.Path) bool {
+	if len(path) < 6 || path[0].Key() != "resources" || path[1].Key() != "jobs" || path[3].Key() != "tasks" {
+		return false
+	}
+	field := path[5].Key()
+	return field == "python_wheel_task" || field == "libraries"
 }

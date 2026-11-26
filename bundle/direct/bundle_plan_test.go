@@ -562,7 +562,7 @@ func TestLookupReferencePreDeploy_FinishedJobRun(t *testing.T) {
 	assert.Equal(t, jobs.RunResultStateSuccess, value)
 }
 
-// The plan and validate (checkReferenceField) reject a reference to a missing field with the same
+// The plan and validate (checkReference) reject a reference to a missing field with the same
 // error.
 func TestLookupReferencePreDeploy_UnknownField(t *testing.T) {
 	b := bundleWithSkippedJobRun(t, &dresources.JobRunRemote{RunId: 123})
@@ -571,7 +571,7 @@ func TestLookupReferencePreDeploy_UnknownField(t *testing.T) {
 	_, err := b.LookupReferencePreDeploy(t.Context(), structpath.MustParsePath(ref))
 
 	require.EqualError(t, err, `resource type "job_runs" has no field "non_existent"`)
-	assert.Equal(t, err, checkReferenceField(b.Adapters, ref))
+	assert.Equal(t, err, checkReference(b.Adapters, map[string]bool{jobRunKey: true}, ref))
 }
 
 // jobRunResultStateAction classifies the result_state drift of a run in the given

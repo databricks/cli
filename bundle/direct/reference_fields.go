@@ -1,16 +1,14 @@
 package direct
 
 import (
-	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dresources"
-	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -28,43 +26,33 @@ type UnknownReferenceField struct {
 	Err error
 }
 
-// FindUnknownReferenceFields returns the references in the resources of root that the plan
+// FindUnknownReferenceFields returns the references in the resources of configRoot that the plan
 // rejects because the field they name exists neither in the state nor in the remote type of the
-// target resource. It checks the references the plan resolves (see extractReferences) the way
-// LookupReferencePreDeploy does, so it finds only references the plan rejects too. It skips what
-// the plan reports with another error: unsupported resource types, resource keys it cannot read,
-// unparsable references and Terraform-only fields.
-func FindUnknownReferenceFields(root dyn.Value) ([]UnknownReferenceField, error) {
+// target resource. It checks the references the plan resolves (see extractReferences) with the
+// plan's own check (checkReferenceFieldExists), so it finds only references the plan rejects too.
+// It skips what the plan leaves out or reports with another error: resources that a first deploy
+// does not plan because they are empty, targets that are not planned, unsupported resource types,
+// resource keys it cannot read, unparsable references and Terraform-only fields.
+func FindUnknownReferenceFields(configRoot *config.Root) ([]UnknownReferenceField, error) {
 	adapters, err := dresources.InitAll(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var nodes []string
-	for _, pattern := range planNodePatterns {
-		_, _ = dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			nodes = append(nodes, p.String())
-			return v, nil
-		})
-	}
-	// MapByPattern visits map keys in random order.
-	slices.Sort(nodes)
+	planned := plannedNewNodes(configRoot, adapters)
 
 	var result []UnknownReferenceField
-	for _, node := range nodes {
-		adapter, ok := adapters[config.GetResourceTypeFromKey(node)]
-		if !ok {
-			continue
-		}
-		// An error here (for example a resource key with a dot) is the plan's to report.
-		_ = walkReferences(root, node, adapter.StateType(), func(path dyn.Path, _ *structpath.PathNode, v dyn.Value, ref dynvar.Ref) {
+	for _, node := range slices.Sorted(maps.Keys(planned)) {
+		adapter := adapters[config.GetResourceTypeFromKey(node)]
+		// An error here is the plan's to report.
+		_ = walkReferences(configRoot.Value(), node, adapter.StateType(), func(path dyn.Path, _ *structpath.PathNode, v dyn.Value, ref dynvar.Ref) {
 			seen := make(map[string]bool)
 			for _, target := range ref.References() {
 				if seen[target] || !strings.HasPrefix(target, "resources.") {
 					continue
 				}
 				seen[target] = true
-				if err := checkReferenceField(adapters, target); err != nil {
+				if err := checkReference(adapters, planned, target); err != nil {
 					result = append(result, UnknownReferenceField{
 						Reference: target,
 						Value:     v,
@@ -78,29 +66,51 @@ func FindUnknownReferenceFields(root dyn.Value) ([]UnknownReferenceField, error)
 	return result, nil
 }
 
-// checkReferenceField returns the error LookupReferencePreDeploy returns for a reference to a field
-// that the target resource type does not have, or nil.
-func checkReferenceField(adapters map[string]*dresources.Adapter, target string) error {
+// plannedNewNodes returns the plan nodes of configRoot (resources and their permissions and grants)
+// that the plan includes when they have no state yet: the ones it can read whose state is not
+// empty. With state, the plan includes the empty ones too, so this is a subset either way.
+func plannedNewNodes(configRoot *config.Root, adapters map[string]*dresources.Adapter) map[string]bool {
+	planned := make(map[string]bool)
+	for _, pattern := range planNodePatterns {
+		_, _ = dyn.MapByPattern(configRoot.Value(), pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			node := p.String()
+			// The plan reads each node back by its key's string form, which a key with a dot does
+			// not survive.
+			if parsed, err := dyn.NewPathFromString(node); err != nil || !parsed.Equal(p) {
+				return v, nil
+			}
+			adapter, ok := adapters[config.GetResourceTypeFromKey(node)]
+			if !ok {
+				return v, nil
+			}
+			inputConfig, err := configRoot.GetResourceConfig(node)
+			if err != nil {
+				return v, nil
+			}
+			_, newState, err := prepareNodeState(adapter, inputConfig, node)
+			if err != nil {
+				return v, nil
+			}
+			if empty, err := adapter.IsEmptyState(newState); err != nil || empty {
+				return v, nil
+			}
+			planned[node] = true
+			return v, nil
+		})
+	}
+	return planned
+}
+
+// checkReference returns the plan's error for a reference to a field that the target resource type
+// does not have, or nil, also when the plan reports the reference with another error.
+func checkReference(adapters map[string]*dresources.Adapter, planned map[string]bool, target string) error {
 	path, err := structpath.ParsePath(target)
 	if err != nil {
 		return nil
 	}
-	targetResourceKey, fieldPath := splitResourcePath(path)
-	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
-	adapter, ok := adapters[targetGroup]
-	if !ok {
+	targetResourceKey, targetGroup, fieldPath, err := referenceTarget(path)
+	if err != nil || fieldPath == nil || !planned[targetResourceKey] {
 		return nil
 	}
-	fieldPath, err = terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
-	if err != nil || fieldPath == nil || fieldPath.String() == "id" {
-		return nil
-	}
-	if structaccess.ValidatePath(adapter.StateType(), fieldPath) == nil || structaccess.ValidatePath(adapter.RemoteType(), fieldPath) == nil {
-		return nil
-	}
-	return unknownReferenceFieldError(targetGroup, fieldPath)
-}
-
-func unknownReferenceFieldError(group string, fieldPath *structpath.PathNode) error {
-	return fmt.Errorf("resource type %q has no field %q", group, fieldPath.String())
+	return checkReferenceFieldExists(adapters[targetGroup], targetGroup, fieldPath)
 }

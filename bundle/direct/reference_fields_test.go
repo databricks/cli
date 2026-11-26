@@ -99,6 +99,28 @@ resources:
     "foo.bar": {name: "${resources.jobs.a.non_existent}"}
 `,
 		},
+		{
+			// The plan reports a missing resource as "no such node".
+			name: "missing_target_resource",
+			yaml: `
+resources:
+  jobs:
+    a: {name: "${resources.jobs.absent.non_existent}"}
+`,
+		},
+		{
+			// A reference standing for all grants becomes empty grants, which a first deploy
+			// does not plan, so it never resolves the reference.
+			name: "reference_in_empty_new_node",
+			yaml: `
+resources:
+  schemas:
+    s:
+      catalog_name: main
+      name: s
+      grants: "${resources.schemas.s.non_existent}"
+`,
+		},
 	}
 
 	for _, tc := range tests {
@@ -106,7 +128,7 @@ resources:
 			root, diags := config.LoadFromBytes("databricks.yml", []byte(tc.yaml))
 			require.Empty(t, diags)
 
-			found, err := FindUnknownReferenceFields(root.Value())
+			found, err := FindUnknownReferenceFields(root)
 			require.NoError(t, err)
 			var got []string
 			for _, f := range found {

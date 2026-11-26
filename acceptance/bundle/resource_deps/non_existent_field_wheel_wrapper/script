@@ -1,0 +1,8 @@
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+title "The wrapper does not move a reference outside the wheel task"
+update_file.py databricks.yml "name: wheel-job" "name: \${resources.jobs.whl.non_existent}"
+trace musterr $CLI bundle validate
+trace musterr $CLI bundle deploy

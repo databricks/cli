@@ -1358,14 +1358,32 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 	return path.Prefix(3).String(), path.SkipPrefix(3)
 }
 
-func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+// referenceTarget splits a reference path into the target resource key, its resource type and the
+// field path, translated from Terraform-style naming to DABs naming (e.g. "task" → "tasks",
+// "git_source.branch" → "git_source.git_branch"; a no-op for DABs paths). It returns an error for
+// a Terraform-only field with no DABs equivalent.
+func referenceTarget(path *structpath.PathNode) (string, string, *structpath.PathNode, error) {
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
-
-	// Translate Terraform-style field paths to DABs naming (e.g. "task" → "tasks",
-	// "git_source.branch" → "git_source.git_branch"). No-op for already-DABs paths.
-	// Returns an error for paths that are Terraform-only with no DABs equivalent.
 	fieldPath, err := terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
+	return targetResourceKey, targetGroup, fieldPath, err
+}
+
+// checkReferenceFieldExists returns the error for a reference to a field that the target resource
+// type has neither in its state nor in its remote type, so no deploy can resolve it. The id is
+// always available.
+func checkReferenceFieldExists(adapter *dresources.Adapter, group string, fieldPath *structpath.PathNode) error {
+	if fieldPath.String() == "id" {
+		return nil
+	}
+	if structaccess.ValidatePath(adapter.StateType(), fieldPath) == nil || structaccess.ValidatePath(adapter.RemoteType(), fieldPath) == nil {
+		return nil
+	}
+	return fmt.Errorf("resource type %q has no field %q", group, fieldPath.String())
+}
+
+func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	targetResourceKey, targetGroup, fieldPath, err := referenceTarget(path)
 	if err != nil {
 		return nil, err
 	}
@@ -1421,13 +1439,13 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return nil, fmt.Errorf("internal error: %s: %w", targetResourceKey, err)
 	}
 
+	if err := checkReferenceFieldExists(adapter, targetGroup, fieldPath); err != nil {
+		return nil, err
+	}
+
 	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
 	remoteValidErr := structaccess.ValidatePath(adapter.RemoteType(), fieldPath)
 	// Note: using adapter.RemoteType() over reflect.TypeOf(remoteState) because remoteState might be untyped nil
-
-	if configValidErr != nil && remoteValidErr != nil {
-		return nil, unknownReferenceFieldError(targetGroup, fieldPath)
-	}
 
 	if configValidErr == nil && remoteValidErr != nil {
 		// The field is only present in local schema; it must be resolved here.
@@ -1610,12 +1628,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", prefix, err)
-		}
-
-		newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
+		inputStructVar, newStateConfig, err := prepareNodeState(adapter, inputConfig, node)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
@@ -1762,6 +1775,19 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	return p, nil
+}
+
+// prepareNodeState returns the input and the new state the plan builds for node from its config.
+func prepareNodeState(adapter *dresources.Adapter, inputConfig any, node string) (*structvar.StructVar, any, error) {
+	inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
+	if err != nil {
+		return nil, nil, err
+	}
+	newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
+	if err != nil {
+		return nil, nil, err
+	}
+	return inputStructVar, newStateConfig, nil
 }
 
 // ExtractReferences extracts variable references from the config subtree rooted at node,
