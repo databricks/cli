@@ -1,3 +1,6 @@
+# Listens on IPv4 loopback, which serverless DBR blocks.
+RunsOnDbr = false
+
 # The server and its signal handling run inside Linux sandboxes.
 GOOS.windows = false
 GOOS.darwin = false

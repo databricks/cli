@@ -1,3 +1,6 @@
+# The OAuth callback listens on IPv4 localhost:8021, which serverless DBR blocks.
+RunsOnDbr = false
+
 Ignore = [
     "home"
 ]

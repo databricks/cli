@@ -1,3 +1,6 @@
+# On DBR, a bare `databricks` resolves to the image's own CLI wrapper.
+RunsOnDbr = false
+
 RecordRequests = true
 IncludeRequestHeaders = ["X-Databricks-Workspace-Id"]
 

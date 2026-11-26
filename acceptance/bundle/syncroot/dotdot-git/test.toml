@@ -1,3 +1,6 @@
+# git init does not work on the workspace file system.
+RunsOnDbr = false
+
 [[Repls]]
 Old = '\\\\myrepo'
 New = '/myrepo'

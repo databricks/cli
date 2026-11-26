@@ -1,0 +1,2 @@
+# AI tools hints and auto-install behave differently on DBR.
+RunsOnDbr = false

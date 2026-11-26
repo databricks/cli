@@ -1,1 +1,4 @@
+# envsubst is not installed on DBR.
+RunsOnDbr = false
+
 Env.CONTENT1 = ""

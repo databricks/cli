@@ -1,0 +1,2 @@
+# git init does not work on the workspace file system.
+RunsOnDbr = false
