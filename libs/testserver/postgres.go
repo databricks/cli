@@ -17,6 +17,7 @@ import (
 func init() {
 	registerRoutes("postgres", addPostgresRoutes)
 	registerStore("postgres", newPostgresStore)
+	registerPermissionsObjectType("database-projects", "database-projects")
 }
 
 type postgresStore struct {

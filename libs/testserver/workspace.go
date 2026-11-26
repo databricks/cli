@@ -18,6 +18,9 @@ import (
 
 func init() {
 	registerRoutes("workspace", addWorkspaceRoutes)
+	registerPermissionsObjectType("notebooks", "notebook")
+	registerPermissionsObjectType("directories", "directory")
+	registerPermissionsObjectType("files", "file")
 }
 
 func addWorkspaceRoutes(server *Server) {

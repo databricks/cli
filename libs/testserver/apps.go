@@ -15,6 +15,7 @@ import (
 func init() {
 	registerRoutes("apps", addAppsRoutes)
 	registerStore("apps", newAppsStore)
+	registerPermissionsObjectType("apps", "apps")
 }
 
 type appsStore struct {

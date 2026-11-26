@@ -95,8 +95,9 @@ func TestPermissionsObjectIDFieldIsReadable(t *testing.T) {
 	}
 }
 
-// The fake server keeps its own table of permissions object types, since it does not
-// depend on the bundle configuration.
+// The fake server declares its own permissions object types, since it does not depend
+// on the bundle configuration. Each one is registered with registerPermissionsObjectType
+// from the file in libs/testserver that serves its API.
 func TestPermissionsObjectTypesMatchTestServer(t *testing.T) {
 	for key, d := range config.ResourceTypesImplementing[resources.PermissionsDeclarer]() {
 		s := d.PermissionsSupport()
@@ -104,7 +105,7 @@ func TestPermissionsObjectTypesMatchTestServer(t *testing.T) {
 			continue
 		}
 		objectType, ok := testserver.PermissionsObjectType(s.RequestObjectType)
-		assert.True(t, ok, "%s: the test server does not serve permissions for %q", key, s.RequestObjectType)
+		assert.True(t, ok, "%s: the test server does not serve permissions for %q; register it with registerPermissionsObjectType in the libs/testserver file of its API", key, s.RequestObjectType)
 		assert.Equal(t, s.ResponseObjectType, objectType, key)
 	}
 }

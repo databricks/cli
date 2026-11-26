@@ -16,6 +16,7 @@ import (
 func init() {
 	registerRoutes("alerts", addAlertsRoutes)
 	registerStore("alerts", newAlertsStore)
+	registerPermissionsObjectType("alertsv2", "alertv2")
 }
 
 type alertsStore struct {

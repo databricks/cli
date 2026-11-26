@@ -11,6 +11,7 @@ import (
 func init() {
 	registerRoutes("models", addModelsRoutes)
 	registerStore("models", newModelsStore)
+	registerPermissionsObjectType("registered-models", "registered-model")
 }
 
 type modelsStore struct {
