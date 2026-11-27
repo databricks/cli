@@ -2,7 +2,6 @@ package skills
 
 import (
 	"errors"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -17,23 +16,6 @@ const searchTemplate = `{{if .Skills}}{{range .Skills}}{{.Name}}{{with .Descript
 {{end}}To read a skill, run: databricks skills read <name>
 {{else}}No skill matches. Run databricks skills list to see every skill.
 {{end}}`
-
-// searchJSON is the JSON output of skills search. It has the envelope and the
-// per-skill fields of skills list, so one parser reads both. skills list defines
-// the same shape in its own file; the two should share one type once both land.
-type searchJSON struct {
-	Source         string            `json:"source"`
-	ReleaseVersion string            `json:"release_version"`
-	Skills         []searchJSONSkill `json:"skills"`
-}
-
-type searchJSONSkill struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Version     string   `json:"version"`
-	Files       []string `json:"files"`
-	Commands    []string `json:"commands"`
-}
 
 func newSearchCmd() *cobra.Command {
 	var experimental bool
@@ -63,20 +45,7 @@ func runSearch(cmd *cobra.Command, words []string, experimental bool) error {
 		return err
 	}
 	matches := matchSkills(searchableSkills(catalog.Skills, experimental), words)
-	out := searchJSON{
-		Source:         filepath.ToSlash(catalog.Label),
-		ReleaseVersion: catalog.Version,
-		Skills:         make([]searchJSONSkill, 0, len(matches)),
-	}
-	for _, s := range matches {
-		out.Skills = append(out.Skills, searchJSONSkill{
-			Name:        s.Name,
-			Description: s.Description,
-			Version:     s.Version,
-			Files:       copyList(s.Files),
-			Commands:    copyList(s.Commands),
-		})
-	}
+	out := newCatalogJSON(catalog, matches)
 	return cmdio.RenderWithTemplate(ctx, out, "", searchTemplate)
 }
 
@@ -88,11 +57,6 @@ func checkWords(words []string) error {
 		}
 	}
 	return nil
-}
-
-// copyList returns a non-nil copy of list, so that JSON prints [] rather than null.
-func copyList(list []string) []string {
-	return append(make([]string, 0, len(list)), list...)
 }
 
 // searchableSkills returns the skills that search covers. Experimental skills are

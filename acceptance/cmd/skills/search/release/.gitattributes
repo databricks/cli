@@ -1,0 +1,3 @@
+# The skill files are printed verbatim, so their line endings must stay \n on every OS.
+# A Windows checkout would otherwise turn them into \r\n and change what `skills read` prints.
+* text eol=lf

@@ -53,7 +53,7 @@ func runList(cmd *cobra.Command, src libskills.Source, experimental bool) error 
 
 	list := visibleSkills(catalog.Skills, experimental)
 	if root.OutputType(cmd) == flags.OutputJSON {
-		return cmdio.Render(cmd.Context(), newListJSON(catalog, list))
+		return cmdio.Render(cmd.Context(), newCatalogJSON(catalog, list))
 	}
 	text := renderText(catalog.Rules, list)
 	if len(list) == 0 && len(catalog.Skills) > 0 {
@@ -174,44 +174,4 @@ func cutWords(desc string, width int) string {
 		}
 	}
 	return ""
-}
-
-type listJSON struct {
-	Source         string          `json:"source"`
-	ReleaseVersion string          `json:"release_version"`
-	Skills         []listJSONSkill `json:"skills"`
-}
-
-type listJSONSkill struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Version     string   `json:"version"`
-	Files       []string `json:"files"`
-	Commands    []string `json:"commands"`
-}
-
-// nonNilList keeps an absent list as [] in JSON rather than null.
-func nonNilList(list []string) []string {
-	if list == nil {
-		return make([]string, 0)
-	}
-	return list
-}
-
-func newListJSON(catalog *libskills.Catalog, list []libskills.Skill) listJSON {
-	out := listJSON{
-		Source:         filepath.ToSlash(catalog.Label),
-		ReleaseVersion: catalog.Version,
-		Skills:         make([]listJSONSkill, 0, len(list)),
-	}
-	for _, s := range list {
-		out.Skills = append(out.Skills, listJSONSkill{
-			Name:        s.Name,
-			Description: s.Description,
-			Version:     s.Version,
-			Files:       nonNilList(s.Files),
-			Commands:    nonNilList(s.Commands),
-		})
-	}
-	return out
 }
