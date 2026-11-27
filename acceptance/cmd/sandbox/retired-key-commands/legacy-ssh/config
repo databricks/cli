@@ -1,0 +1,6 @@
+# >>> databricks sandbox >>>
+Include ~/.ssh/databricks-sandbox
+# <<< databricks sandbox <<<
+
+Host personal-host
+    HostName personal.example.test

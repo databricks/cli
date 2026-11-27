@@ -22,16 +22,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 update vector_search_endpoints.my_endpoint
-update vector_search_endpoints.my_endpoint.permissions
 
-Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Updated vector_search_endpoints.my_endpoint
-Updated vector_search_endpoints.my_endpoint.permissions
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //vector-search/endpoints //permissions
 

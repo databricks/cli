@@ -22,6 +22,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -2504,4 +2505,46 @@ func TestTopLevelFailureKeepsErrorsOutsideAgents(t *testing.T) {
 	top := topLevelFailure(errors.Join(agentErr, signInErr))
 	require.ErrorIs(t, top, signInErr)
 	assert.Equal(t, signInErr.Error(), top.Error())
+}
+
+// A global install that set an agent up is the user's consent to keeping the
+// tools up to date, unless the user answered before.
+func TestInstallStoresTheConsent(t *testing.T) {
+	tests := []struct {
+		name    string
+		consent autoinstall.Consent
+		args    []string
+		// failSkills makes the skills install fail, so no agent is set up.
+		failSkills bool
+		want       autoinstall.Consent
+	}{
+		{name: "global install", args: []string{"--scope=global"}, want: autoinstall.ConsentGiven},
+		{name: "an opt-out stays", consent: autoinstall.ConsentOptedOut, args: []string{"--scope=global"}, want: autoinstall.ConsentOptedOut},
+		{name: "project install", args: []string{"--scope=project"}, want: autoinstall.ConsentUnknown},
+		{name: "a global install that set no agent up", args: []string{"--scope=global"}, failSkills: true, want: autoinstall.ConsentUnknown},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			isolateAgents(t, "CURSOR_AGENT", "1")
+			setupTestAgents(t)
+			t.Chdir(t.TempDir())
+			setupInstallMock(t)
+			if tc.failSkills {
+				installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+					return errors.New("download failed")
+				}
+			}
+			ctx := cmdio.MockDiscard(t.Context())
+			if tc.consent != autoinstall.ConsentUnknown {
+				_, err := autoinstall.SetConsent(ctx, tc.consent)
+				require.NoError(t, err)
+			}
+
+			ctx, err := runInstall(t, ctx, append(tc.args, "--skills-only")...)
+			assert.Equal(t, tc.failSkills, err != nil, "install fails: %v", err)
+			state, err := autoinstall.Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, state.Consent())
+		})
+	}
 }

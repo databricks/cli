@@ -115,10 +115,12 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 	if repoDir == "" {
 		repoDir = stableSkillsRepoPath
 	}
-	url := fmt.Sprintf("%s/%s/%s/%s/%s",
-		GetSkillsBaseURL(ctx), ref, repoDir, skillName, filePath)
+	// The skill name is escaped with the file path, as the release source does,
+	// so a '#' or '?' in either one stays part of the path.
+	fileURL := fmt.Sprintf("%s/%s/%s",
+		GetSkillsBaseURL(ctx), ref, skills.EscapeFilePath(repoDir+"/"+skillName+"/"+filePath))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fileURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

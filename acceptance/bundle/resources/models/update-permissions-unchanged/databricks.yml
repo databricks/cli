@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+resources:
+  models:
+    mymodel:
+      name: test-model
+      description: initial
+      permissions:
+        - level: CAN_READ
+          user_name: viewer@example.com

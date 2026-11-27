@@ -63,6 +63,12 @@ type Entry struct {
 	// change reaches a machine on its first run of a version after the change.
 	// CLIs that predate the field ignore it.
 	AutoInstall bool `json:"auto_install,omitempty"`
+
+	// SkillsHints turns on the hints that point agents at the skills commands.
+	// Off when absent, so the switch ships off and can be turned on (or off
+	// again) remotely. It is read from a fresh local cache only; see
+	// internal/build/README.md. CLIs that predate the field ignore it.
+	SkillsHints bool `json:"skills_hints,omitempty"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
@@ -105,27 +111,16 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 // local cache both failed and the manifest is the embedded one, which may be
 // older than either.
 func fetchManifest(ctx context.Context) (m Manifest, fallback bool, err error) {
-	if force, ok := env.GetBool(ctx, "DATABRICKS_FORCE_EMBEDDED_COMPAT"); ok && force {
+	if forceEmbedded(ctx) {
 		log.Debugf(ctx, "Using embedded manifest (DATABRICKS_FORCE_EMBEDDED_COMPAT=true)")
 		m, err := parseEmbeddedManifest()
 		return m, false, err
 	}
 
-	cacheEnabled := true
-	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok {
-		cacheEnabled = enabled
-	}
-
 	localPath := manifestLocalPath(ctx)
 
 	// Read local file once — reuse across tiers.
-	var local cachedManifest
-	var localErr error
-	if cacheEnabled {
-		local, localErr = readLocalManifest(localPath)
-	} else {
-		localErr = errors.New("cache disabled")
-	}
+	local, localErr := readLocalCache(ctx)
 
 	// Tier 1: local file is fresh.
 	if localErr == nil && local.isFresh(cacheTTL) {
@@ -136,7 +131,7 @@ func fetchManifest(ctx context.Context) (m Manifest, fallback bool, err error) {
 	// Tier 2: fetch from remote (local file missing or stale).
 	m, fetchErr := fetchRemoteWithRetry(ctx)
 	if fetchErr == nil {
-		if cacheEnabled {
+		if cacheEnabled(ctx) {
 			writeLocalManifest(ctx, localPath, m)
 		}
 		return m, false, nil
@@ -322,7 +317,65 @@ func ResolveAutoInstall(ctx context.Context, cliVersion string) (bool, error) {
 	return entry.AutoInstall, nil
 }
 
+// ResolveSkillsHints reports whether the manifest entry for cliVersion turns on
+// skill hints. It never fetches and never uses the embedded manifest, so it
+// fails without a fresh cache; see internal/build/README.md.
+func ResolveSkillsHints(ctx context.Context, cliVersion string) (bool, error) {
+	m, err := freshLocalManifest(ctx)
+	if err != nil {
+		return false, err
+	}
+	entry, err := Resolve(m, cliVersion)
+	if err != nil {
+		return false, err
+	}
+	return entry.SkillsHints, nil
+}
+
+// freshLocalManifest returns the local cache when it is fresh (tier 1 of
+// FetchManifest). A stale cache is not used, because only a fetch can refresh it.
+func freshLocalManifest(ctx context.Context) (Manifest, error) {
+	if forceEmbedded(ctx) {
+		return nil, errors.New("DATABRICKS_FORCE_EMBEDDED_COMPAT is set")
+	}
+	local, err := readLocalCache(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !local.isFresh(cacheTTL) {
+		return nil, errors.New("the cached compatibility manifest is stale")
+	}
+	return local.manifest, nil
+}
+
+// forceEmbedded reports whether DATABRICKS_FORCE_EMBEDDED_COMPAT is a true value.
+func forceEmbedded(ctx context.Context) bool {
+	force, ok := env.GetBool(ctx, "DATABRICKS_FORCE_EMBEDDED_COMPAT")
+	return ok && force
+}
+
+// cacheEnabled is true unless DATABRICKS_CACHE_ENABLED is a false value.
+func cacheEnabled(ctx context.Context) bool {
+	enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED")
+	return !ok || enabled
+}
+
+// readLocalCache reads the locally cached manifest, fresh or stale. It fails
+// when the cache is disabled or there is no cached file.
+func readLocalCache(ctx context.Context) (cachedManifest, error) {
+	if !cacheEnabled(ctx) {
+		return cachedManifest{}, errors.New("cache disabled")
+	}
+	return readLocalManifest(manifestLocalPath(ctx))
+}
+
 // --- Local manifest cache ---
+
+// LocalManifestPath returns the path to the locally cached manifest file. Tests
+// in other packages use it to write the cache.
+func LocalManifestPath(ctx context.Context) string {
+	return manifestLocalPath(ctx)
+}
 
 // manifestLocalPath returns the path to the locally cached manifest file.
 func manifestLocalPath(ctx context.Context) string {
@@ -358,6 +411,8 @@ func readLocalManifest(path string) (cachedManifest, error) {
 }
 
 // writeLocalManifest writes the manifest to the local cache path atomically.
+// A CLI that predates a field re-encodes the cache when it refreshes it and
+// drops the field; see internal/build/README.md.
 func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 	if path == "" {
 		return

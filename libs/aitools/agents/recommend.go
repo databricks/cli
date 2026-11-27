@@ -61,7 +61,8 @@ func noInstalledPlugins(context.Context) []string { return nil }
 // or the databricks plugin) installed. Callers pass installer.InstalledPluginAgents as
 // installedPlugins (see HasDatabricksToolingInstalled).
 // In interactive mode, prompts the user to install now using installFn; a "no" also turns
-// auto-install off. In non-interactive mode, prints a hint.
+// auto-install off, and a "yes" stores the consent to keep the tools up to date unless the
+// user answered before. In non-interactive mode, prints a hint.
 func RecommendSkillsInstall(ctx context.Context, installedPlugins func(context.Context) []string, installFn func(context.Context) error) error {
 	if HasDatabricksToolingInstalled(ctx, installedPlugins) {
 		return nil
@@ -80,13 +81,19 @@ func RecommendSkillsInstall(ctx context.Context, installedPlugins func(context.C
 	if !yes {
 		// The automatic install after this command (and after later upgrades)
 		// must not install what the user just turned down.
-		if err := autoinstall.Decline(ctx); err != nil {
+		if _, err := autoinstall.Decline(ctx); err != nil {
 			log.Warnf(ctx, "Could not turn off the automatic installation of Databricks AI tools: %v", err)
 			return nil
 		}
 		// The prompt asked about now; say that the answer also holds later.
 		cmdio.LogString(ctx, "Databricks AI tools won't be installed automatically either. To turn that back on, run: databricks aitools auto-install enable")
 		return nil
+	}
+
+	// The user asked for the tools, so the automatic install may keep them up to
+	// date, also when this install fails. An earlier opt-out stays.
+	if _, err := autoinstall.GiveConsentIfUnknown(ctx); err != nil {
+		log.Debugf(ctx, "Could not save the consent to install Databricks AI tools automatically: %v", err)
 	}
 
 	if err := installFn(ctx); err != nil {

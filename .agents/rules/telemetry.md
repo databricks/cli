@@ -2,14 +2,14 @@
 description: How to add or extend bundle deploy telemetry metrics
 globs:
   - "libs/telemetry/**/*.go"
+  - "bundle/telemetry.go"
   - "bundle/phases/telemetry.go"
   - "bundle/phases/resources_metadata.go"
-  - "bundle/metrics/**/*.go"
 paths:
   - "libs/telemetry/**/*.go"
+  - "bundle/telemetry.go"
   - "bundle/phases/telemetry.go"
   - "bundle/phases/resources_metadata.go"
-  - "bundle/metrics/**/*.go"
 ---
 
 # Extending bundle deploy telemetry
@@ -34,7 +34,7 @@ The deploy payload is declared twice: the proto in the universe repo (`proto/log
 
 Other things worth knowing:
 
-- A one-off boolean needs no proto change: add a key constant to `bundle/metrics/metrics.go` (snake_case, matching the constant name) and call `b.Metrics.SetBoolValue(...)`. It lands in `experimental.bool_values`.
+- A one-off boolean needs no proto change: add a field to `bundle.Telemetry` (`bundle/telemetry.go`) and set it. Pick the type by what is measured: `bool` for a flag recorded only when true, `*bool` for a measured value (nil when not measured), `BoolSet` for a measurement taken several times (e.g. once per artifact; record each with `SetBool`; the bitmap records each value taken). It lands in the bundle bitmap (`bundle_deploy_event.bundle_bitmap`) as `telemetry.<field name in snake_case>`; run `./task generate-bitmap-schema` to append it to the bitmap schema. Do not rename the field once released: that renames its bits. Do not add a `metric:"..."` tag to a new field: the tag exists only for the fields that also go to the legacy `experimental.bool_values` map. The schema is append-only because bitmaps already sent are decoded by bit position: on a merge conflict in `schema.deflate`, take main's version and rerun the task. CI fails if main's schema is not a prefix of the branch's.
 - Metrics that may be removed later belong in `BundleDeployExperimental`, which carries no compatibility guarantees.
 - Positional encodings such as the `upload_file_sizes` histogram are frozen once the metric has adoption: changing a bucket bound silently changes the meaning of every previously reported entry.
 - Per-resource state sizes come from the direct engine's state in `resources.json`.

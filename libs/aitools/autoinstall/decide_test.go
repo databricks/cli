@@ -71,6 +71,7 @@ func TestDecide(t *testing.T) {
 		{name: "CI before the opt-out", modify: func(in *Inputs) { in.CI = true; in.EnvOptOut = true }, want: ReasonSkippedCI},
 		{name: "env opt-out", modify: func(in *Inputs) { in.EnvOptOut = true }, want: ReasonSkippedOptOut},
 		{name: "persisted opt-out", modify: func(in *Inputs) { in.State.OptedOut = true }, want: ReasonSkippedOptOut},
+		{name: "env opt-out over a stored consent", modify: func(in *Inputs) { in.EnvOptOut = true; in.State.Consented = true }, want: ReasonSkippedOptOut},
 		{name: "opt-out before the gate", modify: func(in *Inputs) { in.State.OptedOut = true; in.GateOn = false }, want: ReasonSkippedOptOut},
 		{name: "gate off", modify: func(in *Inputs) { in.GateOn = false }, want: ReasonGateOff},
 		{name: "gate off hides the holdout", modify: func(in *Inputs) { in.GateOn = false; in.Bucket = 0 }, want: ReasonGateOff},

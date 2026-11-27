@@ -1,0 +1,31 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Remove the libraries of the task that defines the anchor and move an aliased task to the large cluster"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "setup":
+        del task["libraries"]
+    if task["task_key"] == "transform":
+        task["job_cluster_key"] = "large"
+EOF
+
+title "Detect and save changes"
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Only the changed tasks differ"
+trace $CLI bundle validate -o json | jq -c '.resources.jobs.my_job.tasks[] | {task_key, job_cluster_key, libraries}'
