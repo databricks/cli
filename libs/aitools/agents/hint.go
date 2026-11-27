@@ -209,7 +209,9 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 }
 
 // MaybeHint nudges a supported agent toward Databricks AI tooling when it drives
-// the CLI without it installed. It is a no-op for human callers,
+// the CLI without it installed. It is a no-op when
+// DATABRICKS_AGENT_FEATURES_DISABLED is set, and it then logs nothing either.
+// It is also a no-op for human callers,
 // unsupported agents, hint-exempt commands (isHintExemptCommand), the
 // `databricks skills` commands when skills.HintsEnabled is true, the `auth
 // token` and `auth docker token` credential helpers, a CLI process the CLI
@@ -233,6 +235,9 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 // is installed by then. A failed command, a gate that turns out off or a
 // failed install then still gets the hint. Otherwise it returns nil.
 func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRecordedFunc) (deferred func()) {
+	if skills.AgentFeaturesDisabled(ctx) {
+		return nil
+	}
 	hint := hintForAgent(useragent.AgentProvider(), pluginRecorded)
 	if hint == nil {
 		return nil

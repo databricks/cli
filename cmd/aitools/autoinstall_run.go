@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/log/handler"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/versioncheck"
@@ -114,8 +115,14 @@ const autoInstallDisable = "databricks aitools auto-install disable"
 // lookup. It records what it must first. The root command then ends the CLI
 // by the signal, so that the shell stops the script, loop or command list
 // that ran the command, as it would have without auto-install.
+//
+// It does nothing when DATABRICKS_AGENT_FEATURES_DISABLED is set: it neither
+// prompts nor installs.
 func AutoInstall(cmd *cobra.Command) os.Signal {
 	ctx := cmd.Context()
+	if skills.AgentFeaturesDisabled(ctx) {
+		return nil
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debugf(ctx, "auto-install: panic: %v", r)

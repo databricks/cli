@@ -752,6 +752,45 @@ func TestAutoInstallSkipsTheGateLookup(t *testing.T) {
 	}
 }
 
+// DATABRICKS_AGENT_FEATURES_DISABLED turns auto-install off: the run neither
+// looks the gate up nor installs, though the same coding agent's call installs
+// without it.
+func TestAutoInstallOffWithAgentFeaturesDisabled(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		disabled []string
+		install  bool
+	}{
+		{name: "unset", install: true},
+		{name: "true", disabled: []string{"DATABRICKS_AGENT_FEATURES_DISABLED", "1"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			agentEnv := append([]string{"CLAUDECODE", "1"}, tc.disabled...)
+			home := setupAutoInstallHome(t, "", agentEnv...)
+			lookups := 0
+			t.Cleanup(func() { gateOn = autoinstall.GateOn })
+			gateOn = func(context.Context, string) (bool, error) {
+				lookups++
+				return true, nil
+			}
+			ctx := cmdio.MockDiscard(t.Context())
+			ctx = telemetry.WithNewLogger(ctx)
+			runAutoInstallHook(ctx)
+			if tc.install {
+				assert.Equal(t, 1, lookups)
+				assert.FileExists(t, filepath.Join(home, ".cursor", "skills", "databricks-test", "SKILL.md"))
+				return
+			}
+			assert.Zero(t, lookups)
+			assert.NoDirExists(t, filepath.Join(home, ".cursor", "skills"))
+			assert.Empty(t, telemetry.BufferedEvents(ctx))
+			state, err := autoinstall.Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, autoinstall.State{ID: "treatment-machine"}, state, "the version is not settled")
+		})
+	}
+}
+
 // Root running in a user's home (sudo with HOME kept) leaves the home alone:
 // it takes no lock, reads and writes no state, looks no gate up and installs
 // nothing, so the user's own runs can still write there. The same run as the

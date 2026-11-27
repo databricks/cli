@@ -1,0 +1,13 @@
+export DATABRICKS_SKILLS_DIR="$TESTDIR/../../../cmd/skills/release"
+
+# DATABRICKS_AGENT_FEATURES_DISABLED is set, with the preview and the hints on
+# and a coding agent calling: the skills group is not registered, so it is an
+# unknown command.
+musterr trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI skills list
+
+# Help shows no skills footer, on the root or on a group the fixture skill covers.
+trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI --help | contains.py "!databricks skills" > /dev/null
+trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI fs --help | contains.py "!databricks skills" > /dev/null
+
+# With the variable unset, the same group gets its footer, so the checks above can fail.
+trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI fs --help | contains.py "databricks skills read" > /dev/null
