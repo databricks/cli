@@ -50,7 +50,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       },
       "schema_name": {
         "action": "skip",
-        "reason": "id_field"
+        "reason": "parent"
       },
       "storage_location": {
         "action": "skip",

@@ -36,6 +36,13 @@ type UpdateOptions struct {
 	// no record to check against), instead of replacing it. Automatic updates
 	// set it: they must never overwrite what the user changed.
 	KeepModified bool
+
+	// NoDowngrade refuses a release older than the installed one even when
+	// the ref is pinned (by DATABRICKS_SKILLS_REF or the compatibility
+	// manifest). A pinned branch or commit SHA is still installed. Automatic
+	// updates set it: a newer release the user installed is theirs to roll
+	// back.
+	NoDowngrade bool
 }
 
 // UpdateResult describes what UpdateSkills did (or would do in check mode).
@@ -78,6 +85,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		}
 		incompatible := incompatibleAgentNames(targetAgents)
 		targetAgents = filterProjectAgents(ctx, targetAgents)
+		if len(targetAgents) == 0 && len(incompatible) == 0 {
+			return nil, errors.New("no agents have project-scoped skills to update. Run 'databricks aitools install --scope project' to install them; Codex CLI gets project skill files only with --skills-only --agents=codex")
+		}
 		if len(targetAgents) == 0 {
 			return nil, fmt.Errorf("no agents support project-scoped skills. The following detected agents are global-only: %s", strings.Join(incompatible, ", "))
 		}
@@ -107,6 +117,12 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	if explicit && state.Release == latestTag && !opts.Force {
 		cmdio.LogString(ctx, "Already up to date.")
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
+	}
+
+	// A pinned ref is the ref installed, so it is compared before fetching its
+	// manifest. A branch or commit SHA has no release order to compare.
+	if explicit && opts.NoDowngrade && semver.IsValid(latestTag) && semver.Compare(latestTag, installedRef) < 0 {
+		return nil, &RefusedError{Err: fmt.Errorf("keeping the installed skills %s, which are newer than the pinned %s; run 'databricks aitools update' to install %s", DisplaySkillsVersion(installedRef), DisplaySkillsVersion(latestTag), DisplaySkillsVersion(latestTag))}
 	}
 
 	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, allowFallback && !explicit)
@@ -221,7 +237,14 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
 		sp.Update("Installing " + change.Name + "...")
-		records, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
+		// The update result has no per-agent entry to report a failed agent
+		// in, and update reinstalls only the skills whose version changed, so
+		// it cannot repair an agent that is missing other skills. An agent
+		// that cannot get the skill stays a logged warning: install, which
+		// reinstalls a skill for every agent that is missing it (see
+		// allAgentsHaveSkill), is the fix, and auto-install retries its first
+		// install with it (see planTools in cmd/aitools).
+		records, _, err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params)
 		if err != nil {
 			return nil, err
 		}
@@ -342,7 +365,7 @@ func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, s
 		return false
 	}
 	for _, agent := range agents.Registry {
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
@@ -362,7 +385,7 @@ func skillPrunable(ctx context.Context, baseDir, skillName, scope, cwd string, s
 func removeSkillExposures(ctx context.Context, baseDir, skillName, scope, cwd string, state *InstallState) {
 	canonicalDir := filepath.Join(baseDir, skillName)
 	for _, agent := range agents.Registry {
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
@@ -381,6 +404,27 @@ func removeSkillExposures(ctx context.Context, baseDir, skillName, scope, cwd st
 	if err := os.RemoveAll(canonicalDir); err != nil {
 		log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
 	}
+}
+
+// HasOwnSkillsIn reports whether agentDir holds a databricks skill the CLI
+// wrote from baseDir: a symlink into baseDir or an unmodified copy (see
+// exposureRemovable). A databricks skill another tool put in a shared
+// directory such as .agents/skills does not count.
+func HasOwnSkillsIn(agentDir, baseDir string, state *InstallState) bool {
+	entries, err := os.ReadDir(agentDir)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasPrefix(name, "databricks") {
+			continue
+		}
+		if exposureRemovable(filepath.Join(agentDir, name), filepath.Join(baseDir, name), name, state) {
+			return true
+		}
+	}
+	return false
 }
 
 // exposureRemovable reports whether an agent's skill entry is ours and safe to

@@ -1960,7 +1960,8 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 
   Arguments:
     NAME: Full three-part (catalog, schema, table) name of the table.
-    UPDATE_MASK: The list of fields to update. Setting this field is not yet supported.`
+    UPDATE_MASK: The list of fields to update. Updatable paths include
+      spec.accelerated_sync and *.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

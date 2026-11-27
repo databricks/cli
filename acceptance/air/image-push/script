@@ -28,6 +28,14 @@ trace databricks air images push -p docker-test -s example/image:v1 --catalog ma
 # Parsing the complete stdout fails if Docker progress or human-readable text leaks into it.
 trace jq -e '{v, data}' "$HOME/result.json"
 
+title "image with WORKDIR warns but is pushed"
+export DOCKER_TEST_MODE=workdir
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
+title "image with WORKDIR / does not warn"
+export DOCKER_TEST_MODE=workdir-root
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
 title "daemon failure must not pull"
 export DOCKER_TEST_MODE=daemon-error
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
@@ -36,12 +44,20 @@ title "inspect failure must not pull"
 export DOCKER_TEST_MODE=inspect-error
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
+title "unreadable image sizes warn but the image is pushed"
+export DOCKER_TEST_MODE=bad-size
+trace databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+
 title "incompatible local image must not be pushed"
 export DOCKER_TEST_MODE=arm64
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
 title "incompatible pulled image must not be pushed"
 trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
+
+title "rejected push still links the registry limits"
+export DOCKER_TEST_MODE=push-error
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
 
 title "pull failure must not be pushed"
 export DOCKER_TEST_MODE=pull-error

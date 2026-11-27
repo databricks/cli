@@ -1,2 +1,1 @@
-Badness = "target.prod.permissions has no effect on job permissions (?). requests are different for tf and direct; direct sends unnecessary requests"
 RecordRequests = true

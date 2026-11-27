@@ -188,6 +188,11 @@ Supported agents: ` + strings.Join(mcpAgentNames(), ", "),
 				Servers: []addServerOutput{},
 			}
 			runErr := runMcpAdd(ctx, cmd, f, jsonMode, out)
+			logMcpEvent(ctx, protos.AitoolsMcpEvent{
+				CallingAgent: callingAgentType(),
+				Operation:    protos.AitoolsMcpOperationAdd,
+				Servers:      addServerResults(out.Servers),
+			})
 			if !jsonMode {
 				return runErr
 			}
@@ -232,7 +237,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err := validateMCPAddFlags(ctx, f, names, agentNames, jsonMode); err != nil {
 		return err
 	}
-	interactive := !jsonMode && installPromptsSupported(ctx)
+	interactive := !jsonMode && promptsSupported(ctx)
 	location, fullNames, err := resolveServices(f.location, names)
 	if err != nil {
 		return err
@@ -301,7 +306,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	// and the agents are chosen before the first request.
 	pickingServices := len(names) == 0
 	var w *databricks.WorkspaceClient
-	var workspaceID string
+	var workspaceID, authorization string
 	var picked []mcp.Service
 	if pickingServices {
 		if err := mcp.CheckProfile(profileName, configFile); err != nil {
@@ -327,7 +332,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	}
 	// Without --names the services are picked from the workspace, and then checked like the named ones.
 	if pickingServices {
-		w, workspaceID, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
+		w, workspaceID, authorization, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
 		if err != nil {
 			return err
 		}
@@ -361,9 +366,8 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if err := planningRefusals(plans, targets, refused); err != nil {
 		return err
 	}
-
 	if !pickingServices {
-		w, workspaceID, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
+		w, workspaceID, authorization, err = connectWorkspace(ctx, out, profileName, configFile, pinned)
 		if err != nil {
 			return err
 		}
@@ -427,6 +431,7 @@ func runMcpAdd(ctx context.Context, cmd *cobra.Command, f mcpAddFlags, jsonMode 
 	if req.login || req.askLogin {
 		signErr = signInInstalled(ctx, cmd.ErrOrStderr(), w, req, plans, servers)
 	}
+	setUploadConfig(ctx, profileName, configFile, w.Config, authorization)
 	return errors.Join(recordErr, signErr, agentFailureError(req, servers))
 }
 
@@ -439,18 +444,18 @@ func serviceFullNames(services []mcp.Service) []string {
 	return names
 }
 
-// connectWorkspace returns a client for the profile and the ID of its workspace, and sets the host in out.
-func connectWorkspace(ctx context.Context, out *addOutput, profileName, configFile, pinned string) (*databricks.WorkspaceClient, string, error) {
-	w, err := profileClient(ctx, profileName, configFile, pinned)
+// connectWorkspace returns the bound client, workspace ID and Authorization header, and sets the host in out.
+func connectWorkspace(ctx context.Context, out *addOutput, profileName, configFile, pinned string) (*databricks.WorkspaceClient, string, string, error) {
+	w, authorization, err := profileClient(ctx, profileName, configFile, pinned)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	out.Host = w.Config.Host
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
-		return nil, "", describeRequestError(profileName, pinned, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
+		return nil, "", "", describeRequestError(profileName, pinned, fmt.Errorf("cannot read the workspace ID of %s: %w", w.Config.Host, err))
 	}
-	return w, workspaceID, nil
+	return w, workspaceID, authorization, nil
 }
 
 // checkBindings returns the first failure of CheckBinding for the services, which makes no request.
@@ -510,7 +515,7 @@ func validateMCPAddFlags(ctx context.Context, f mcpAddFlags, names, agentNames [
 		}
 		return nil
 	}
-	if len(names) == 0 && !installPromptsSupported(ctx) {
+	if len(names) == 0 && !promptsSupported(ctx) {
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--names is required so the command runs without interactive prompts")
 	}
 	// The picker chooses services in a terminal, and --name needs exactly one of them, which only --names can give.
@@ -560,15 +565,15 @@ func withExistingProfiles(ctx context.Context, state *mcp.State, profileName str
 	return fmt.Errorf("%w\nExisting profiles: %s", err, strings.Join(profiles.Names(), ", "))
 }
 
-// profileClient returns a workspace client bound to exactly the named profile in configFile. Its config is the one
-// Bind builds, so the environment's credentials are never sent to the profile's host.
-func profileClient(ctx context.Context, name, configFile, pinnedFile string) (*databricks.WorkspaceClient, error) {
+// profileClient returns a workspace client bound to exactly the named profile
+// in configFile, alongside the Authorization header obtained during binding.
+func profileClient(ctx context.Context, name, configFile, pinnedFile string) (*databricks.WorkspaceClient, string, error) {
 	cfg, err := mcp.BoundConfig(name, configFile)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if err := checkWorkspaceProfile(name, configFile, cfg); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	return boundClient(ctx, cfg, name, pinnedFile)
 }
@@ -583,16 +588,17 @@ func checkWorkspaceProfile(name, configFile string, cfg *config.Config) error {
 	return nil
 }
 
-// boundClient returns a workspace client for cfg, a bound config of the named profile, once cfg has a credential.
-func boundClient(ctx context.Context, cfg *config.Config, name, pinnedFile string) (*databricks.WorkspaceClient, error) {
+// boundClient returns the workspace client and Authorization header for the bound config.
+func boundClient(ctx context.Context, cfg *config.Config, name, pinnedFile string) (*databricks.WorkspaceClient, string, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	if err := mcp.AuthenticateBound(ctx, cfg, name, pinnedFile); err != nil {
-		return nil, err
+	authorization, err := mcp.AuthenticateBound(ctx, cfg, name, pinnedFile)
+	if err != nil {
+		return nil, "", err
 	}
-	return w, nil
+	return w, authorization, nil
 }
 
 // describeRequestError classifies a failed request to the profile's workspace. A credential the workspace
@@ -616,9 +622,9 @@ func describeListError(profileName string, err error) error {
 	var category protos.AitoolsErrorCategory
 	switch listErr.Kind {
 	case mcp.ListErrLocationNotFound:
-		category = categoryLocationNotFound
+		category = protos.AitoolsErrorCategoryMCPLocationNotFound
 	case mcp.ListErrPermissionDenied:
-		category = categoryPermissionDenied
+		category = protos.AitoolsErrorCategoryMCPPermissionDenied
 	case mcp.ListErrRateLimited:
 		category = protos.AitoolsErrorCategoryRateLimited
 	default:
@@ -807,13 +813,13 @@ func pickServices(location string, names []string, services []mcp.Service) ([]mc
 		i := slices.IndexFunc(services, func(s mcp.Service) bool { return strings.EqualFold(s.FullName, name) })
 		if i < 0 {
 			if len(services) == 0 {
-				return nil, failure(categoryServiceNotFound, "%s is not an MCP service in %s, which has none", name, location)
+				return nil, failure(protos.AitoolsErrorCategoryMCPServiceNotFound, "%s is not an MCP service in %s, which has none", name, location)
 			}
 			available := make([]string, 0, len(services))
 			for _, s := range services {
 				available = append(available, s.FullName)
 			}
-			return nil, failure(categoryServiceNotFound, "%s is not an MCP service in %s. Available: %s", name, location, strings.Join(available, ", "))
+			return nil, failure(protos.AitoolsErrorCategoryMCPServiceNotFound, "%s is not an MCP service in %s. Available: %s", name, location, strings.Join(available, ", "))
 		}
 		picked = append(picked, services[i])
 	}
@@ -895,7 +901,7 @@ func planAdds(ctx context.Context, in planInput, state *mcp.State, fullNames []s
 		}
 		// A name recovered from an agent entry can repeat across services only through a hand edit; two plans must not share it.
 		if chosen[name] {
-			return nil, failure(categoryNameConflict, "%s and another requested server both use %s; remove one of the entries first", fullName, name)
+			return nil, failure(protos.AitoolsErrorCategoryMCPNameConflict, "%s and another requested server both use %s; remove one of the entries first", fullName, name)
 		}
 		chosen[name] = true
 		taken[name] = true
@@ -953,7 +959,7 @@ func chooseName(ctx context.Context, in planInput, state *mcp.State, fullName st
 		}
 		// The agents must hold the state's name, or the run would add a second name for the same server beside theirs.
 		if slices.ContainsFunc(owned, func(name string) bool { return name != stored }) {
-			return "", nil, "", failure(categoryNameConflict, "%s is installed on profile %s as %s, but agents hold it as %s; remove the extra entries", fullName, b.profile, stored, strings.Join(owned, ", "))
+			return "", nil, "", failure(protos.AitoolsErrorCategoryMCPNameConflict, "%s is installed on profile %s as %s, but agents hold it as %s; remove the extra entries", fullName, b.profile, stored, strings.Join(owned, ", "))
 		}
 	} else {
 		switch len(owned) {
@@ -961,7 +967,7 @@ func chooseName(ctx context.Context, in planInput, state *mcp.State, fullName st
 		case 1:
 			stored = owned[0]
 		default:
-			return "", nil, "", failure(categoryNameConflict, "%s is installed on profile %s under more than one name in the agents (%s); remove the extra entries", fullName, b.profile, strings.Join(owned, ", "))
+			return "", nil, "", failure(protos.AitoolsErrorCategoryMCPNameConflict, "%s is installed on profile %s under more than one name in the agents (%s); remove the extra entries", fullName, b.profile, strings.Join(owned, ", "))
 		}
 	}
 
@@ -977,7 +983,7 @@ func chooseName(ctx context.Context, in planInput, state *mcp.State, fullName st
 			return "", nil, "", failure(protos.AitoolsErrorCategoryInvalidFlags, "%s is already installed on profile %s as %s; remove it before using --name %s", fullName, b.profile, stored, in.nameFlag)
 		}
 		if stateHolds(state, stored, entry) {
-			return "", nil, "", failure(categoryNameConflict, "%s is installed as %s, but another server in the state holds %s; remove that entry first", fullName, stored, stored)
+			return "", nil, "", failure(protos.AitoolsErrorCategoryMCPNameConflict, "%s is installed as %s, but another server in the state holds %s; remove that entry first", fullName, stored, stored)
 		}
 		failed, err := nameFailures(ctx, in, fullName, stored, true)
 		return stored, failed, "", err
@@ -1087,7 +1093,7 @@ func holderConflict(ctx context.Context, in planInput, a *agents.Agent, fullName
 		if in.force {
 			return nil, nil
 		}
-		return failure(categoryNameConflict, "%s already has a server named %s that this CLI did not write; pass --force to replace it", a.DisplayName, name), nil
+		return failure(protos.AitoolsErrorCategoryMCPNameConflict, "%s already has a server named %s that this CLI did not write; pass --force to replace it", a.DisplayName, name), nil
 	}
 	serves, err := mcp.EntryServes(ctx, entry, fullName, in.binding.profile, in.binding.configFile)
 	if err != nil {
@@ -1097,7 +1103,7 @@ func holderConflict(ctx context.Context, in planInput, a *agents.Agent, fullName
 	case serves:
 		return nil, nil
 	case stored:
-		return failure(categoryNameConflict, "%s is installed as %s, but %s holds %s for another server; remove that entry first", fullName, name, a.Name, name), nil
+		return failure(protos.AitoolsErrorCategoryMCPNameConflict, "%s is installed as %s, but %s holds %s for another server; remove that entry first", fullName, name, a.Name, name), nil
 	default:
 		return failure(protos.AitoolsErrorCategoryInvalidFlags, "--name %s is used by another server in %s; pick a different name", name, a.Name), nil
 	}
@@ -1250,6 +1256,7 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			if signedIn(ctx, w, plans[i].service.FullName) {
 				server.SignIn = &addSignInOutput{State: signInStateActive}
 				reportSignedIn(errOut, plans[i].service, req.profile, true)
+				logMcpEvent(ctx, signInEventOf(server.Service, signInStateActive, true, nil))
 				continue
 			}
 			yes, err := promptSignInNow(server.Service)
@@ -1264,11 +1271,16 @@ func signInInstalled(ctx context.Context, errOut io.Writer, w *databricks.Worksp
 			}
 		}
 		var state string
+		var alreadySignedIn bool
+		// A sign-in whose URL cannot be built is logged as a failed sign-in. The install record keeps no state for it.
+		eventState := signInStateFailed
 		url, err := mcp.SignInURL(w.Config.Host, plans[i].service.FullName, req.workspaceID)
 		if err == nil {
-			state, _, _, err = signIn(ctx, errOut, w, req.pinned, url, plans[i].service, signInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
+			state, alreadySignedIn, _, err = signIn(ctx, errOut, w, req.pinned, url, plans[i].service, signInOptions{Profile: req.profile, Open: browser.OpenOutputToStderr})
+			eventState = state
 		}
 		server.SignIn = &addSignInOutput{State: state}
+		logMcpEvent(ctx, signInEventOf(server.Service, eventState, alreadySignedIn, err))
 		if err != nil {
 			server.SignIn.ErrorCategory = errorCategory(err)
 			server.SignIn.Error = err.Error()

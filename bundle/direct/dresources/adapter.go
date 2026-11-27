@@ -526,7 +526,7 @@ func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
 			return true
 		}
 	}
-	for _, p := range a.resourceConfig.ProvidedIDFields {
+	for _, p := range a.resourceConfig.ProvidedIDRules() {
 		if path.HasPatternPrefix(p.Field) {
 			return true
 		}

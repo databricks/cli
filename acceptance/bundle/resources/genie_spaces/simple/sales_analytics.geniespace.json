@@ -1,3 +1,10 @@
 {
-  "version": 1
+  "version": 1,
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "samples.nyctaxi.trips"
+      }
+    ]
+  }
 }

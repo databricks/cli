@@ -224,6 +224,7 @@ func TestReleaseLookupRecoveryNamesOverriddenHost(t *testing.T) {
 
 func TestPluginFailureText(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
+	stubPluginAlreadyInstalled(t, false)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	claude.Plugin.Source = "anthropics/claude-plugins-official"
 	claude.Plugin.Marketplace = "claude-plugins-official"
@@ -281,6 +282,7 @@ func TestPluginFailureTextKeepsTheRunsFlags(t *testing.T) {
 	// The fallback after a plugin failure must not drop --experimental or
 	// --output json, and must name only the failed agent.
 	t.Setenv("PATH", t.TempDir())
+	stubPluginAlreadyInstalled(t, false)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	item := agentPlanItem{agent: claude, delivery: deliveryPlugin, scope: agentScopeUser}
 	inv := installInvocation{scope: installer.ScopeGlobal, agents: "claude-code,codex", experimental: true, jsonOutput: true}
@@ -289,14 +291,47 @@ func TestPluginFailureTextKeepsTheRunsFlags(t *testing.T) {
 	assert.Equal(t, "Install or update the Claude Code CLI so 'claude' is on PATH, then re-run 'databricks aitools install --scope=global --agents=claude-code --experimental --output json'. Or install skill files instead: databricks aitools install --scope=global --agents=claude-code --skills-only --experimental --output json", recovery)
 }
 
+// An agent that already has the plugin is skipped under --skills-only, so the
+// skill files alternative starts with removing the plugin.
+func TestPluginFailureTextForAgentWithPlugin(t *testing.T) {
+	fakeBinsOnPath(t, "claude")
+	stubPluginAlreadyInstalled(t, true)
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	item := agentPlanItem{agent: claude, delivery: deliveryPlugin, scope: agentScopeUser}
+	inv := installInvocation{scope: installer.ScopeGlobal, agents: agents.NameClaudeCode}
+
+	_, recovery := pluginFailureText(t.Context(), inv, item, errors.New("boom"))
+	assert.Equal(t, "Re-run 'databricks aitools install --scope=global --agents=claude-code --debug' to see details, or install skill files instead: remove the plugin first with 'databricks aitools uninstall --scope=global --agents=claude-code', then run: databricks aitools install --scope=global --agents=claude-code --skills-only", recovery)
+}
+
+func TestSkipRecoveryForAgentWithPluginKeepsTheScope(t *testing.T) {
+	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
+	inv := installInvocation{scope: installer.ScopeProject, agents: "claude-code,cursor", skillsOnly: true, skills: "databricks-jobs"}
+	it := agentPlanItem{agent: claude, delivery: deliverySkip, pluginRemoval: "remove the plugin first with 'databricks aitools uninstall --scope=project --agents=claude-code'"}
+	assert.Equal(t, "To use skill files instead, remove the plugin first with 'databricks aitools uninstall --scope=project --agents=claude-code', then run: databricks aitools install --scope=project --agents=claude-code --skills-only --skills=databricks-jobs", skipRecovery(inv, it))
+}
+
 func TestSkipRecoveryNamesOnlyTheAgentInTheGlobalScope(t *testing.T) {
 	cursor := agents.ByName(agents.NameCursor)
 	inv := installInvocation{scope: installer.ScopeProject, agents: "claude-code,cursor", skillsOnly: true, experimental: true}
 	assert.Equal(t, "To set up Cursor in the global scope, run: databricks aitools install --scope=global --agents=cursor --skills-only --experimental", skipRecovery(inv, agentPlanItem{agent: cursor, delivery: deliverySkip}))
 
-	inv = installInvocation{scope: installer.ScopeProject, agents: "codex", jsonOutput: true}
-	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex")
-	assert.Equal(t, "To set up Codex CLI in the global scope, run: databricks aitools install --scope=global --agents=codex --output json", skipRecovery(inv, agentPlanItem{agent: codex, delivery: deliverySkip}))
+	inv = installInvocation{scope: installer.ScopeProject, agents: "copilot", jsonOutput: true}
+	copilot := agents.ByName(agents.NameCopilot)
+	assert.Equal(t, "To set up GitHub Copilot in the global scope, run: databricks aitools install --scope=global --agents=copilot --output json", skipRecovery(inv, agentPlanItem{agent: copilot, delivery: deliverySkip}))
+}
+
+func TestSkipRecoveryForUserOnlyPluginKeepsTheProjectScopeForSkillFiles(t *testing.T) {
+	// The Codex plugin is user-only, but Codex reads project skill files, so a
+	// project install it skipped recovers with --skills-only in the same scope.
+	fakeBinsOnPath(t, "codex")
+	codex := agents.ByName(agents.NameCodex)
+	plan := buildPlan(t.Context(), []*agents.Agent{codex}, installer.ScopeProject, false, true)
+	require.Len(t, plan, 1)
+	assert.Equal(t, deliverySkip, plan[0].delivery)
+
+	inv := installInvocation{scope: installer.ScopeProject, agents: "codex", jsonOutput: true}
+	assert.Equal(t, "To install skill files for Codex CLI in the project scope instead, run: databricks aitools install --scope=project --agents=codex --skills-only --output json", skipRecovery(inv, plan[0]))
 }
 
 func TestBuildInstallOutputIncludesRecovery(t *testing.T) {
@@ -320,6 +355,7 @@ func TestBuildInstallOutputIncludesRecovery(t *testing.T) {
 
 func TestPluginFailureTextCLIWithoutPluginCommand(t *testing.T) {
 	fakeBinsOnPath(t, "claude")
+	stubPluginAlreadyInstalled(t, false)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	err := &installer.BlockedError{Agent: claude.Name, Reason: installer.ReasonCLINotOnPath, Detail: "unknown command 'plugin'"}
 
@@ -333,6 +369,7 @@ func TestRecoveryCommandsKeepTheProjectScope(t *testing.T) {
 	// A project-scoped run must not be told to run a command that defaults to
 	// the global scope or to every detected agent.
 	t.Setenv("PATH", t.TempDir())
+	stubPluginAlreadyInstalled(t, false)
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	item := agentPlanItem{agent: claude, delivery: deliveryPlugin, scope: agentScopeProject}
 	inv := installInvocation{scope: installer.ScopeProject}

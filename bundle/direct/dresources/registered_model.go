@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -73,9 +74,31 @@ func (*ResourceRegisteredModel) KeyedSlices() map[string]any {
 }
 
 func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.CreateRegisteredModelRequest) (string, *catalog.RegisteredModelInfo, error) {
-	response, err := r.client.RegisteredModels.Create(ctx, *config)
+	create := func(ctx context.Context) (*catalog.RegisteredModelInfo, error) {
+		return r.client.RegisteredModels.Create(ctx, *config)
+	}
+	start := time.Now()
+	response, err := create(ctx)
 	if err != nil {
-		return "", nil, err
+		// The full name is chosen by the bundle and unique in the metastore.
+		fullName := config.CatalogName + "." + config.SchemaName + "." + config.Name
+		response, err = recoverCreate(ctx, createRecovery[catalog.RegisteredModelInfo, *catalog.RegisteredModelInfo]{
+			name:  "registered model " + fullName,
+			start: start,
+			get: func(ctx context.Context) (*catalog.RegisteredModelInfo, error) {
+				return r.client.RegisteredModels.GetByFullName(ctx, fullName)
+			},
+			createTime:    func(found *catalog.RegisteredModelInfo) (time.Time, bool) { return unixMilliTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			createdByCaller: func(ctx context.Context, found *catalog.RegisteredModelInfo) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[catalog.RegisteredModelInfo],
+			create: repeatCreate(create),
+		}, err)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	return response.FullName, response, nil
@@ -91,20 +114,27 @@ func (r *ResourceRegisteredModel) WaitAfterCreate(ctx context.Context, id string
 // See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
 var registeredModelForceSend = []string{"Comment"}
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) (*catalog.RegisteredModelInfo, error) {
-	updateRequest := catalog.UpdateRegisteredModelRequest{
-		FullName:        id,
+func makeUpdateRegisteredModel(fullName, newName string, config *catalog.CreateRegisteredModelRequest) catalog.UpdateRegisteredModelRequest {
+	// UC rejects an update that sets both name and new_name, even an empty name: a config read back
+	// from a saved plan force-sends it.
+	name := config.Name
+	notSent := []string{"Owner", "NewName"}
+	if newName != "" {
+		name = ""
+		notSent = append(notSent, "Name")
+	}
+	return catalog.UpdateRegisteredModelRequest{
+		FullName:        fullName,
 		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), notSent...),
 
 		// Owner is settable in the config (it comes from the embedded
 		// CreateRegisteredModelRequest) and create sends it, but update never has: a
 		// change to it is silently dropped rather than applied.
 		Owner: "",
 
-		// Name updates are not supported yet without recreating. Can be added as a follow-up.
-		// Note: TF also does not support changing name without a recreate so the current behavior matches TF.
-		NewName: "",
+		// Set by DoUpdateWithID when the name changes.
+		NewName: newName,
 
 		// The update API ignores aliases; syncAliases applies them through the alias API.
 		Aliases: nil,
@@ -117,27 +147,60 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 		UpdatedBy:       config.UpdatedBy,
 		SchemaName:      config.SchemaName,
 		StorageLocation: config.StorageLocation,
-		Name:            config.Name,
+		Name:            name,
 		CatalogName:     config.CatalogName,
 	}
+}
 
-	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) (*catalog.RegisteredModelInfo, error) {
+	response, err := r.client.RegisteredModels.Update(ctx, makeUpdateRegisteredModel(id, "", config))
 	if err != nil {
 		return nil, err
 	}
+	return response, r.syncChangedAliases(ctx, id, config, entry)
+}
 
-	if entry.Changes.HasChange(registeredModelAliasesPath) {
-		remote, ok := entry.RemoteState.(*catalog.RegisteredModelInfo)
-		if !ok {
-			return nil, fmt.Errorf("internal error: unexpected remote state type %T", entry.RemoteState)
-		}
-		err = r.syncAliases(ctx, id, config.Aliases, remote.Aliases)
-		if err != nil {
-			return nil, err
-		}
+// DoUpdateWithID renames the model in place when the name changes, keeping its versions; the ID is
+// the full name, so it changes too.
+func (r *ResourceRegisteredModel) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) (string, *catalog.RegisteredModelInfo, error) {
+	nameFromID, err := getNameFromID(id)
+	if err != nil {
+		return "", nil, err
 	}
 
-	return response, nil
+	// The catalog and schema come from config: a renamed parent moves the model with it (see
+	// followsParentRename).
+	current := config.CatalogName + "." + config.SchemaName + "." + nameFromID
+
+	// Aliases go first, under the current name: if they fail, the model is not renamed yet, so the
+	// state still points at it.
+	err = r.syncChangedAliases(ctx, current, config, entry)
+	if err != nil {
+		return "", nil, err
+	}
+
+	newName := ""
+	if config.Name != nameFromID {
+		newName = config.Name
+	}
+
+	response, err := r.client.RegisteredModels.Update(ctx, makeUpdateRegisteredModel(current, newName, config))
+	if err != nil {
+		return "", nil, err
+	}
+	return response.FullName, response, nil
+}
+
+// syncChangedAliases applies the configured aliases when the plan changes them.
+func (r *ResourceRegisteredModel) syncChangedAliases(ctx context.Context, fullName string, config *catalog.CreateRegisteredModelRequest, entry *PlanEntry) error {
+	if !entry.Changes.HasChange(registeredModelAliasesPath) {
+		return nil
+	}
+	remote, ok := entry.RemoteState.(*catalog.RegisteredModelInfo)
+	if !ok {
+		return fmt.Errorf("internal error: unexpected remote state type %T", entry.RemoteState)
+	}
+	return r.syncAliases(ctx, fullName, config.Aliases, remote.Aliases)
 }
 
 // syncAliases makes the model's aliases match desired, given the ones it has remotely. The alias API

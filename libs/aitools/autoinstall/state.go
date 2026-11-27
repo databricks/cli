@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync/atomic"
+	"time"
 
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
@@ -35,6 +36,12 @@ type State struct {
 	// for LastVersion succeeded or was skipped for good.
 	Attempts int `json:"attempts,omitempty"`
 
+	// LastAttempt is when the last of Attempts started. The next attempt
+	// waits until a delay after it has passed (see Decide). It is zero once
+	// LastVersion is settled, and when no install started (a failed gate
+	// lookup uses up the attempts of LastVersion without one).
+	LastAttempt time.Time `json:"last_attempt,omitzero"`
+
 	// OptedOut turns auto-install off for every later version. It is set by
 	// `databricks aitools auto-install disable`, by a global-scope
 	// `databricks aitools uninstall`, by declining the install prompt and by a
@@ -51,6 +58,14 @@ type State struct {
 	// have no install state, like the ones the user put there, so a later run
 	// uses it to finish the install instead of leaving the skills alone.
 	Installing bool `json:"installing,omitempty"`
+
+	// InstallStateDigest is the digest of the install state that an
+	// unfinished first install saved (one that failed only for some agents).
+	// While the install state still has it, nothing else wrote it, so a later
+	// run finishes the install as a first install instead of updating it.
+	// Install state that anything else wrote is updated. It is cleared with
+	// Installing.
+	InstallStateDigest string `json:"install_state_digest,omitempty"`
 
 	// ID is a random per-machine identifier, created on the first run that
 	// decides anything. Only its Bucket is used, and it never leaves the
@@ -95,6 +110,10 @@ func load(ctx context.Context) (State, error) {
 	var s State
 	if err := json.Unmarshal(data, &s); err != nil {
 		return State{}, fmt.Errorf("parse %s: %w", filepath.ToSlash(path), err)
+	}
+	// The retry wait shifts by the count, which panics when it is negative.
+	if s.Attempts < 0 {
+		return State{}, fmt.Errorf("parse %s: negative attempts %d", filepath.ToSlash(path), s.Attempts)
 	}
 	return s, nil
 }

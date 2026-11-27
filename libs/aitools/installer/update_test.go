@@ -3,6 +3,7 @@ package installer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -25,6 +26,45 @@ func TestUpdateNoStateReturnsInstallHint(t *testing.T) {
 	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
 	assert.ErrorIs(t, err, ErrNothingInstalled)
 	assert.EqualError(t, err, "no skills or plugins installed. Run 'databricks aitools install' to install")
+}
+
+// With no agents to update, there is no global-only agent to name, so the
+// error points at the install that gives agents project skills instead.
+func TestUpdateProjectNoAgentsReturnsInstallHint(t *testing.T) {
+	setupTestHome(t)
+	t.Chdir(t.TempDir())
+	ctx := cmdio.MockDiscard(t.Context())
+
+	src := &mockManifestSource{manifest: testManifest()}
+	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{Scope: ScopeProject})
+	assert.EqualError(t, err, "no agents have project-scoped skills to update. Run 'databricks aitools install --scope project' to install them; Codex CLI gets project skill files only with --skills-only --agents=codex")
+}
+
+// HasOwnSkillsIn counts a symlink into the canonical dir and an unmodified
+// copy, not a databricks skill dir another tool wrote.
+func TestHasOwnSkillsIn(t *testing.T) {
+	root := t.TempDir()
+	baseDir := filepath.Join(root, "canonical")
+	canonical := filepath.Join(baseDir, "databricks-core")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(canonical, "SKILL.md"), []byte("core"), 0o644))
+	state := &InstallState{Files: map[string]FileRecord{"databricks-core/SKILL.md": {SHA256: sha("core")}}}
+
+	foreign := filepath.Join(root, "foreign")
+	require.NoError(t, os.MkdirAll(filepath.Join(foreign, "databricks-core"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(foreign, "databricks-core", "SKILL.md"), []byte("other"), 0o644))
+	assert.False(t, HasOwnSkillsIn(foreign, baseDir, state))
+	assert.False(t, HasOwnSkillsIn(filepath.Join(root, "missing"), baseDir, state))
+
+	linked := filepath.Join(root, "linked")
+	require.NoError(t, os.MkdirAll(linked, 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(linked, "databricks-core")))
+	assert.True(t, HasOwnSkillsIn(linked, baseDir, state))
+
+	copied := filepath.Join(root, "copied")
+	require.NoError(t, os.MkdirAll(filepath.Join(copied, "databricks-core"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(copied, "databricks-core", "SKILL.md"), []byte("core"), 0o644))
+	assert.True(t, HasOwnSkillsIn(copied, baseDir, state))
 }
 
 func TestUpdateLegacyInstallDetected(t *testing.T) {
@@ -161,6 +201,73 @@ func TestUpdateKeepModifiedKeepsEditedSkill(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.2.0", state.Skills["databricks-jobs"])
+}
+
+func TestUpdateNoDowngradeRefusesAnOlderPinnedRelease(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// A pinned older release, as the compatibility manifest pins one. It is
+	// refused before its manifest is fetched.
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+	unfetchable := &mockManifestSource{fetchErr: errors.New("the manifest was fetched")}
+	_, err := UpdateSkills(ctx, unfetchable, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
+	assert.ErrorAs(t, err, new(*RefusedError))
+	assert.ErrorContains(t, err, "keeping the installed skills 0.2.0, which are newer than the pinned 0.1.5; run 'databricks aitools update' to install 0.1.5")
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, "v0.2.0", state.Release)
+
+	// Without it, the pinned ref is the user's choice.
+	_, err = UpdateSkills(ctx, src, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+	state, err = LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, testSkillsRef, state.Release)
+}
+
+func TestUpdateNoDowngradeInstallsANewerPinnedRelease(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+	_, err := UpdateSkills(ctx, src, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
+	require.NoError(t, err)
+	state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Equal(t, "v0.2.0", state.Release)
+}
+
+func TestUpdateNoDowngradeInstallsAPinnedBranch(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// A branch has no release order, so it is not a downgrade.
+	t.Setenv("DATABRICKS_SKILLS_REF", "main")
+	_, err := UpdateSkills(ctx, src, []*agents.Agent{agent}, UpdateOptions{NoDowngrade: true})
+	require.NoError(t, err)
+	state, err := LoadState(filepath.Join(tmp, ".databricks", "aitools", "skills"))
+	require.NoError(t, err)
+	assert.Equal(t, "main", state.Release)
 }
 
 func TestUpdateCheckDryRun(t *testing.T) {

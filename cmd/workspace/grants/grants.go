@@ -90,8 +90,11 @@ func newGet() *cobra.Command {
   indication that the end of results has been reached.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
-    FULL_NAME: Full name of securable.`
+    SECURABLE_TYPE: Type of the securable, such as catalog, schema, table or volume.
+      The value is case-insensitive.
+    FULL_NAME: Full name of the securable. Tables, views, volumes and functions use the
+      three-level name catalog.schema.object; a metastore uses its metastore
+      ID.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -380,7 +383,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
-	cmd.Flags().BoolVar(&updateReq.OmitPermissionsInResponse, "omit-permissions-in-response", updateReq.OmitPermissionsInResponse, `Optional, default false.`)
+	cmd.Flags().BoolVar(&updateReq.OmitPermissionsInResponse, "omit-permissions-in-response", updateReq.OmitPermissionsInResponse, `Whether to omit the privilege assignments from the response.`)
 
 	cmd.Use = "update SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Update permissions.`
@@ -389,8 +392,11 @@ func newUpdate() *cobra.Command {
   Updates the permissions for a securable.
 
   Arguments:
-    SECURABLE_TYPE: Type of securable.
-    FULL_NAME: Full name of securable.`
+    SECURABLE_TYPE: Type of the securable, such as catalog, schema, table or volume.
+      The value is case-insensitive.
+    FULL_NAME: Full name of the securable. Tables, views, volumes and functions use the
+      three-level name catalog.schema.object; a metastore uses its metastore
+      ID.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

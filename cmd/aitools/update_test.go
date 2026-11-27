@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -529,6 +530,108 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	assert.Contains(t, names, agents.NameKiro)
 }
 
+// A default project install skips Codex, whose plugin is user-only, so Codex
+// gets project skill files only from an explicit --skills-only install. A
+// project update refreshes them where that install put them, and does not add
+// them to a project that never gave Codex any, even though Codex reads project
+// skills and is detected on the machine. .agents/skills is shared with other
+// tools, so a databricks skill dir the CLI did not write there does not count.
+func TestUpdateProjectAddsCodexOnlyWithItsProjectSkills(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		codexSkills   string // "", "foreign" (a plain dir) or "ours" (a symlink into the canonical dir)
+		skillsOnly    bool
+		wantCodexSeen bool
+	}{
+		{name: "no codex project skills"},
+		{name: "another tool's skill in .agents/skills", codexSkills: "foreign"},
+		{name: "codex project skills", codexSkills: "ours", wantCodexSeen: true},
+		{name: "codex recorded as skills-only", skillsOnly: true, wantCodexSeen: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			noTelemetryAuth(t)
+			home := setupTestAgents(t)
+			require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o755))
+			fakeBinsOnPath(t, "codex")
+			t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+			resetUpdatePluginSeams(t)
+			projectRoot := t.TempDir()
+			t.Chdir(projectRoot)
+
+			ctx := cmdio.MockDiscard(t.Context())
+			dir, err := installer.ProjectSkillsDir(ctx)
+			require.NoError(t, err)
+			state := &installer.InstallState{
+				SchemaVersion: 2,
+				Release:       "v0.2.5",
+				Scope:         installer.ScopeProject,
+				Skills:        map[string]string{"databricks-core": "0.2.5"},
+			}
+			if tc.skillsOnly {
+				state.SkillsOnlyAgents = []string{agents.NameCodex}
+			}
+			require.NoError(t, installer.SaveState(dir, state))
+
+			codexDir := filepath.Join(projectRoot, ".agents", "skills")
+			switch tc.codexSkills {
+			case "foreign":
+				require.NoError(t, os.MkdirAll(filepath.Join(codexDir, "databricks-core"), 0o755))
+			case "ours":
+				canonical := filepath.Join(dir, "databricks-core")
+				require.NoError(t, os.MkdirAll(canonical, 0o755))
+				require.NoError(t, os.MkdirAll(codexDir, 0o755))
+				require.NoError(t, os.Symlink(canonical, filepath.Join(codexDir, "databricks-core")))
+			}
+
+			origUpdateSkills := updateSkillsFn
+			t.Cleanup(func() { updateSkillsFn = origUpdateSkills })
+			var names []string
+			updateSkillsFn = func(_ context.Context, _ installer.ManifestSource, targetAgents []*agents.Agent, _ installer.UpdateOptions) (*installer.UpdateResult, error) {
+				for _, agent := range targetAgents {
+					names = append(names, agent.Name)
+				}
+				return &installer.UpdateResult{}, nil
+			}
+			updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) { return nil, nil }
+			hasManagedRawSkillsForAgentFn = func(context.Context, *agents.Agent, string) (bool, error) { return false, nil }
+
+			cmd := NewUpdateCmd()
+			cmd.SetContext(ctx)
+			cmd.SetArgs([]string{"--scope", "project"})
+			require.NoError(t, cmd.Execute())
+			assert.Contains(t, names, agents.NameClaudeCode)
+			assert.Equal(t, tc.wantCodexSeen, slices.Contains(names, agents.NameCodex), "agents: %v", names)
+		})
+	}
+}
+
+// projectUpdateAgents drops only a user-only-plugin agent that reads project
+// skills (Codex) and has none the CLI wrote. Agents without project skills
+// (Copilot) stay, so UpdateSkills names them when it skips them, and every
+// other agent with project skills is added.
+func TestProjectUpdateAgentsKeepsOtherAgents(t *testing.T) {
+	project := t.TempDir()
+	baseDir := filepath.Join(project, ".databricks", "aitools", "skills")
+	claude := agents.ByName(agents.NameClaudeCode)
+	cursor := agents.ByName(agents.NameCursor)
+	codex := agents.ByName(agents.NameCodex)
+	copilot := agents.ByName(agents.NameCopilot)
+	pi := agents.ByName(agents.NamePi)
+	installed := []*agents.Agent{claude, cursor, codex, copilot}
+	state := &installer.InstallState{}
+
+	assert.Equal(t, []*agents.Agent{claude, cursor, copilot}, projectUpdateAgents(installed, project, baseDir, state))
+	// The detected list is not modified.
+	assert.Equal(t, []*agents.Agent{claude, cursor, codex, copilot}, installed)
+
+	canonical := filepath.Join(baseDir, "databricks-core")
+	require.NoError(t, os.MkdirAll(canonical, 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(project, ".agents", "skills"), 0o755))
+	require.NoError(t, os.Symlink(canonical, filepath.Join(project, ".agents", "skills", "databricks-core")))
+	require.NoError(t, os.MkdirAll(filepath.Join(project, ".pi", "skills", "databricks-core"), 0o755))
+	assert.Equal(t, []*agents.Agent{claude, cursor, codex, copilot, pi}, projectUpdateAgents(installed, project, baseDir, state))
+}
+
 func TestHasKnownPluginRecord(t *testing.T) {
 	assert.False(t, hasKnownPluginRecord(&installer.InstallState{}))
 	assert.False(t, hasKnownPluginRecord(&installer.InstallState{Plugins: map[string]installer.PluginRecord{"aider": {}}}))
@@ -629,6 +732,42 @@ func TestExcludePluginAgentsReadsTheAgentsManifest(t *testing.T) {
 	assert.Equal(t, []*agents.Agent{claude}, fileAgents)
 }
 
+// Install keeps a Codex or Copilot plugin installed with the agent's own CLI
+// when that CLI is missing, so update must not write the raw skills back next
+// to it, and removes the ones an earlier install left. The plugin is the
+// user's own, so it does not exclude the agent from a project update.
+func TestExcludePluginAgentsReadsTheAgentsConfig(t *testing.T) {
+	for _, name := range []string{agents.NameCodex, agents.NameCopilot} {
+		t.Run(name, func(t *testing.T) {
+			isolateAgents(t)
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			t.Setenv("USERPROFILE", home)
+			t.Chdir(t.TempDir())
+			a := agents.ByName(name)
+			cursor := agents.ByName(agents.NameCursor)
+			all := []*agents.Agent{a, cursor}
+			writeAgentCLIPlugin(t, home, name)
+
+			fakeBinsOnPath(t)
+			fileAgents, manifestPlugins := excludePluginAgents(t.Context(), installer.ScopeGlobal, all, nil)
+			assert.Equal(t, []*agents.Agent{cursor}, fileAgents)
+			assert.Equal(t, []*agents.Agent{a}, manifestPlugins)
+
+			fileAgents, manifestPlugins = excludePluginAgents(t.Context(), installer.ScopeProject, all, nil)
+			assert.Equal(t, all, fileAgents)
+			assert.Empty(t, manifestPlugins)
+
+			// With the CLI on PATH, raw skills next to the plugin are the
+			// user's choice, as for Claude Code.
+			fakeBinsOnPath(t, a.Binary)
+			fileAgents, manifestPlugins = excludePluginAgents(t.Context(), installer.ScopeGlobal, all, nil)
+			assert.Equal(t, all, fileAgents)
+			assert.Empty(t, manifestPlugins)
+		})
+	}
+}
+
 // A project whose only project-capable agent has a project-scope plugin of its
 // own has no agent to reconcile file skills for. The update used to fail with
 // "no agents support project-scoped skills"; it now skips the reconcile and
@@ -679,6 +818,9 @@ func TestUpdateProjectScopeSkipsWhenOnlyPluginAgentsRemain(t *testing.T) {
 func TestUpdateWithoutStateKeepsTheInstallGuidance(t *testing.T) {
 	noTelemetryAuth(t)
 	isolateAgents(t)
+	// isolateAgents clears TestMain's DATABRICKS_FORCE_EMBEDDED_COMPAT; pin
+	// the ref so update does not fetch the compatibility manifest.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)

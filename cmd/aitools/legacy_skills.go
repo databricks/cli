@@ -39,7 +39,7 @@ func newLegacySkillsInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:        "install [skill-name]",
 		Short:      "Install Databricks skills for detected coding agents",
-		Deprecated: `use "databricks aitools install --skills <name>" instead.`,
+		Deprecated: `use "databricks aitools install --skills-only --skills <name>" instead.`,
 		Args:       cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Its --skills-only is not the user's choice, so it is not recorded.

@@ -50,6 +50,15 @@ type SignInRequest struct {
 // cancelled. Its error is the answer's text.
 type SignInFunc func(ctx context.Context, req SignInRequest) (alreadySignedIn, urlShown bool, err error)
 
+// Recorder receives the proxy's telemetry events. The command implements it, so the proxy does not
+// build telemetry events itself.
+type Recorder interface {
+	// SignInPrompted runs after the wait of an authenticate call that showed the sign-in page: one it opened, or one an
+	// earlier cancelled call opened, which the user may still have open. signedIn reports whether the credential became
+	// ACTIVE. A retry after a cancelled call reports its own outcome.
+	SignInPrompted(ctx context.Context, signedIn bool)
+}
+
 // Challenge turns on sign-in handling for a service that needs a provider sign-in.
 type Challenge struct {
 	// Service is the full name of the MCP service, for example system.ai.github.
@@ -73,6 +82,8 @@ type Challenge struct {
 	// SignIn runs the sign-in. The command provides it, so the proxy never polls or opens a browser itself. Its error is
 	// the answer's text, so it names the service, the profile and the fix.
 	SignIn SignInFunc
+	// Recorder logs the sign-in prompt. The command provides it; it must not be nil.
+	Recorder Recorder
 }
 
 // signInHooks applies the sign-in rules to the bridge. Services without a challenge get no hooks.
@@ -506,13 +517,19 @@ func (h *signInHooks) authenticate(ctx context.Context, id, progressToken json.R
 		return nil
 	}
 
+	open := !h.pageCancelled
 	alreadySignedIn, urlShown, err := h.c.SignIn(ctx, SignInRequest{
-		Open: !h.pageCancelled,
+		Open: open,
 		Progress: func(pageURL string) {
 			p.report(ctx, pageURL)
 		},
 		Stderr: h.stderr,
 	})
+	// A prompt is a page the user was shown. A caller that was already signed in, or a sign-in that failed before its
+	// URL was printed, prompted nobody.
+	if !alreadySignedIn && urlShown {
+		h.c.Recorder.SignInPrompted(ctx, err == nil)
+	}
 	h.pageCancelled = urlShown && err != nil && ctx.Err() != nil
 	h.stateMu.Lock()
 	h.alreadySignedIn = err == nil && alreadySignedIn

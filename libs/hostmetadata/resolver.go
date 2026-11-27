@@ -9,13 +9,16 @@ package hostmetadata
 import (
 	"context"
 	"errors"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 )
 
 const (
@@ -87,11 +90,12 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		// The Warn text is stable (host only) for user visibility. The raw
 		// error is env-dependent (DNS vs TLS vs HTTP) and would make
 		// acceptance goldens brittle, so it stays at Debug.
-		// A host that accepts the connection but doesn't answer in time is
-		// still cached, so the next commands don't wait on it again, but the
-		// timeout says nothing about the host's config and the SDK falls back
-		// to the user config, so it is logged at Debug too.
-		if isSDKInactivityTimeout(err) {
+		// A host that doesn't answer in time or answers with a transient
+		// status (408, 429, 5xx other than 501) is still cached, so the next commands don't wait
+		// on it again, but such a failure says nothing about the host's config
+		// and the SDK falls back to the user config, so it is logged at Debug
+		// too.
+		if isSDKInactivityTimeout(err) || isTransientHTTPError(err) {
 			log.Debugf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
 		} else {
 			log.Warnf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
@@ -117,4 +121,37 @@ func isSDKInactivityTimeout(err error) bool {
 		return false
 	}
 	return strings.HasPrefix(uerr.Err.Error(), sdkInactivityTimeoutPrefix)
+}
+
+// transientAPIErrors are the sentinels the SDK's refresh client unwraps a
+// transient HTTP status to (see tokenError in the SDK's config package).
+var transientAPIErrors = []error{
+	apierr.ErrTooManyRequests,
+	apierr.ErrInternalError,
+	apierr.ErrTemporarilyUnavailable,
+	apierr.ErrDeadlineExceeded,
+}
+
+// isTransientHTTPError reports whether err is an HTTP response with a status
+// that a later attempt may not repeat: 408, 429 or 5xx other than 501. The
+// SDK's refresh client unwraps statuses it knows to an apierr sentinel and
+// leaves others (e.g. 502) as an [httpclient.HttpError].
+func isTransientHTTPError(err error) bool {
+	for _, sentinel := range transientAPIErrors {
+		if errors.Is(err, sentinel) {
+			return true
+		}
+	}
+	herr, ok := errors.AsType[*httpclient.HttpError](err)
+	if !ok || herr.Response == nil {
+		return false
+	}
+	switch herr.StatusCode {
+	case http.StatusRequestTimeout, http.StatusTooManyRequests:
+		return true
+	case http.StatusNotImplemented:
+		return false
+	default:
+		return herr.StatusCode >= 500
+	}
 }
