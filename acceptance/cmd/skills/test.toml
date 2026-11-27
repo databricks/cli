@@ -1,1 +1,2 @@
+Cloud = false
 Env.DATABRICKS_SKILLS_PREVIEW = "1"
