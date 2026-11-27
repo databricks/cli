@@ -1,0 +1,10 @@
+{
+    "properties": {
+        "ratio": {
+            "type": "number",
+            "description": "Ratio",
+            "enum": [0.5, null],
+            "default": 0.5
+        }
+    }
+}

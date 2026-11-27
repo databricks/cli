@@ -1,0 +1,49 @@
+
+=== number property set to null in the config file
+
+>>> errcode [CLI] bundle init . --config-file ratio-null.json --output-dir rendered
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [CLI_VERSION]
+
+Panic Payload: runtime error: invalid memory address or nil pointer dereference
+
+Stack Trace:
+Exit code: 1
+
+=== integer property set to null in the config file
+
+>>> errcode [CLI] bundle init . --config-file count-null.json --output-dir rendered
+Error: failed to load config from file count-null.json: failed to parse property count: cannot convert <nil> to an integer
+
+Exit code: 1
+
+=== null in the enum of a number property
+
+>>> errcode [CLI] bundle init ./enum-null --output-dir rendered
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [CLI_VERSION]
+
+Panic Payload: runtime error: invalid memory address or nil pointer dereference
+
+Stack Trace:
+Exit code: 1
+
+=== integer property declared only in anyOf set to null in the config file
+
+>>> errcode [CLI] bundle init ./any-of --config-file extra-null.json --output-dir rendered
+The Databricks CLI unexpectedly had a fatal error.
+Please report this issue to Databricks in the form of a GitHub issue at:
+https://github.com/databricks/cli
+
+CLI Version: [CLI_VERSION]
+
+Panic Payload: runtime error: invalid memory address or nil pointer dereference
+
+Stack Trace:
+Exit code: 1
