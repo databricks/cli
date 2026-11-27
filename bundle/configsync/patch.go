@@ -558,7 +558,7 @@ const blankLineMarker = "# __YAMLPATCH_BLANK_LINE__"
 // [|>]  — literal or folded block scalar indicator
 // [-+0-9]* — optional chomp (+/-) and indent indicators
 // (?:#.*)? — optional comment
-var blockScalarRe = regexp.MustCompile(`[-:]\s+[|>][-+0-9]*\s*(?:#.*)?$`)
+var blockScalarRe = regexp.MustCompile(`[-:]\s+[|>]([-+0-9]*)\s*(?:#.*)?$`)
 
 // preserveBlankLines replaces blank lines with marker comments that survive yaml.v3 round-trips
 func preserveBlankLines(content []byte) []byte {
@@ -567,6 +567,8 @@ func preserveBlankLines(content []byte) []byte {
 
 	inBlockScalar := false
 	blockScalarIndent := 0
+	blockContentIndent := -1
+	keepsTrailingLines := false
 	var pendingBlanks []string
 
 	for i, line := range lines {
@@ -583,6 +585,20 @@ func preserveBlankLines(content []byte) []byte {
 		// Exit block scalar when indentation decreases.
 		if inBlockScalar && indent <= blockScalarIndent {
 			inBlockScalar = false
+			// Blank lines up to the scalar's last content line still belong to it. A whitespace-only
+			// line is content when it has a tab or more spaces than the content indentation, and
+			// keep chomping (+) keeps every trailing line.
+			n := 0
+			for j, blank := range pendingBlanks {
+				if keepsTrailingLines || strings.Contains(blank, "\t") || (blockContentIndent >= 0 && len(blank) > blockContentIndent) {
+					n = j + 1
+				}
+			}
+			result = append(result, pendingBlanks[:n]...)
+			pendingBlanks = pendingBlanks[n:]
+		}
+		if inBlockScalar && blockContentIndent < 0 {
+			blockContentIndent = indent
 		}
 
 		// Flush buffered blank lines: keep literal inside block scalars,
@@ -596,9 +612,13 @@ func preserveBlankLines(content []byte) []byte {
 		}
 		pendingBlanks = nil
 
-		if !inBlockScalar && blockScalarRe.MatchString(trimmed) {
-			inBlockScalar = true
-			blockScalarIndent = indent
+		if !inBlockScalar {
+			if m := blockScalarRe.FindStringSubmatch(trimmed); m != nil {
+				inBlockScalar = true
+				blockScalarIndent = indent
+				blockContentIndent = -1
+				keepsTrailingLines = strings.Contains(m[1], "+")
+			}
 		}
 
 		result = append(result, line)
