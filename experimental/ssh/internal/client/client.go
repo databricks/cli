@@ -476,7 +476,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		}
 	}
 
-	secretScopeName, err := keys.CreateKeysSecretScope(ctx, client, sessionID)
+	secretScopeName, err := keys.CreateKeysSecretScope(ctx, client, sessionID, opts.IsServerlessMode())
 	if err != nil {
 		outcome.errorCategory = protos.SshTunnelErrorCategorySecretScopeFailed
 		return fmt.Errorf("failed to create secret scope: %w", err)

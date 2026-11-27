@@ -1,0 +1,28 @@
+
+>>> [CLI] secrets create-scope [USERNAME]-scope-not-owned-ssh-tunnel-keys
+
+>>> [CLI] secrets put-acl [USERNAME]-scope-not-owned-ssh-tunnel-keys other-user@example.test MANAGE
+
+>>> [CLI] secrets put-secret [USERNAME]-scope-not-owned-ssh-tunnel-keys client-private-key --string-value existing-private-key
+
+>>> [CLI] secrets put-secret [USERNAME]-scope-not-owned-ssh-tunnel-keys client-public-key --string-value ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICTzJweKcgiNoBUAyuvCY2Qu1Od8mKBON5aJeA03Nl+D
+
+=== CLI ssh connect
+
+>>> musterr [CLI] ssh connect --name scope-not-owned -- echo 'Connection successful'
+Connecting to scope-not-owned...
+Error: failed to create secret scope: secret scope [USERNAME]-scope-not-owned-ssh-tunnel-keys already exists and is not exclusively owned by [USERNAME] (the scope must grant MANAGE to [USERNAME] and no access to other principals). Delete the scope with `databricks secrets delete-scope [USERNAME]-scope-not-owned-ssh-tunnel-keys` (this needs MANAGE permission on the scope; otherwise ask a workspace admin) and connect again once no SSH server for this session is running: a running server keeps the keys of the deleted scope and shuts down --shutdown-delay after its last client disconnects. You can instead connect with a different --name
+
+=== Reported error category
+
+>>> jq -r select(.path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.ssh_tunnel_event.error_category [OUTPUT_DIR]/out.requests.txt
+SECRET_SCOPE_FAILED
+
+=== Requests made by ssh connect
+
+>>> print_requests.py --get --oneline //api
+{"method": "GET", "path": "/api/2.1/settings/port_fwd_serverless_enabled"}
+{"method": "GET", "path": "/api/2.0/preview/scim/v2/Me"}
+{"method": "GET", "path": "/api/2.0/secrets/list", "q": {"scope": "[USERNAME]-scope-not-owned-ssh-tunnel-keys"}}
+{"method": "GET", "path": "/api/2.0/secrets/scopes/list"}
+{"method": "GET", "path": "/api/2.0/secrets/acls/list", "q": {"scope": "[USERNAME]-scope-not-owned-ssh-tunnel-keys"}}
