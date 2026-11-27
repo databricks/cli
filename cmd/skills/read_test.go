@@ -32,6 +32,16 @@ func TestWriteReadTextEndsFlagsBeforeLeadingHyphenFile(t *testing.T) {
 	err := writeReadText(&out, "linux", "guide-skill", []byte("# Guide\n"), []string{"-notes.md", "references/ok.md"})
 	require.NoError(t, err)
 	assert.Contains(t, out.String(), "  databricks skills read-file -- guide-skill -notes.md\n  databricks skills read-file guide-skill references/ok.md\n")
+
+	out.Reset()
+	err = writeReadText(&out, "linux", "guide-skill", []byte("# Guide\n"), []string{"-my notes.md"})
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "  databricks skills read-file -- guide-skill '-my notes.md'\n")
+
+	out.Reset()
+	err = writeReadText(&out, "windows", "guide-skill", []byte("# Guide\n"), []string{"-my notes.md"})
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "  databricks skills read-file -- guide-skill \"-my notes.md\"\n")
 }
 
 func TestWriteReadTextPrintsPathWithoutCommandWhenItCannotBeQuoted(t *testing.T) {
