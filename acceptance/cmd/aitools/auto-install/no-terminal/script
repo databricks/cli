@@ -1,15 +1,14 @@
 use_home home
 gate true
-unset AGENT
+trace $CLI aitools auto-install enable
 
-title "no terminal and no coding agent: cannot ask, so nothing is installed or reported, and the version is not settled"
+title "no terminal and no coding agent: installs without asking"
 trace $CLI jobs list
 trace print_telemetry
 trace cursor_skills
 trace auto_install_state
 
-title "the version is still due: a coding agent's call installs without asking"
-trace AGENT=test-agent $CLI jobs list
+title "a coding agent's call on the next version: the update runs without asking"
+trace AGENT=test-agent DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 $CLI jobs list
 trace print_telemetry
-trace cursor_skills
 trace auto_install_state

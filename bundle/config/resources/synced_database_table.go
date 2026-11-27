@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
@@ -49,7 +50,9 @@ func (s *SyncedDatabaseTable) GetName() string {
 }
 
 func (s *SyncedDatabaseTable) InitializeURL(baseURL url.URL) {
-	if s.Name == "" {
+	// The URL needs a resolved catalog.schema.table name; an unresolved ${...}
+	// reference would produce a misleading URL.
+	if strings.Count(s.Name, ".") != 2 || strings.Contains(s.Name, "${") {
 		return
 	}
 	s.URL = workspaceurls.ResourceURL(baseURL, "synced_database_tables", s.Name)

@@ -1,0 +1,40 @@
+bundle:
+  name: summary-resolution
+
+variables:
+  secret_value:
+    description: secret
+
+resources:
+  secrets:
+    s:
+      catalog_name: main
+      schema_name: default
+      name: test_secret
+      value: ${var.secret_value}
+
+  jobs:
+    a:
+      name: job-a
+    b:
+      name: job-b
+    ref_id:
+      name: ref ${resources.jobs.a.id}
+    ref_name:
+      name: after ${resources.jobs.a.name}
+    # A reference to a secret's value is not shown, directly or through other references.
+    ref_secret:
+      name: secret ${resources.secrets.s.value}
+      tags:
+        k: tag ${resources.secrets.s.value}
+    ref_secret_chain:
+      name: chain ${resources.jobs.ref_secret.name}
+    ref_secret_tags:
+      name: tags
+      tags: ${resources.jobs.ref_secret.tags}
+    ref_secret_tag:
+      name: tag ${resources.jobs.ref_secret_tags.tags.k}
+
+  job_runs:
+    run:
+      job_id: ${resources.jobs.a.id}

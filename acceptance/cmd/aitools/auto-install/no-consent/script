@@ -1,0 +1,24 @@
+# Claude Code calls the CLI on a machine whose user never agreed to
+# auto-install. Its config dir exists and its CLI is not on PATH, so an install
+# would give it skill files.
+unset CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION
+use_home home
+"$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
+# use_home wrote the state file by hand: a write by the CLI would indent it.
+gate true
+
+title "the user never answered: nothing installed, written or reported, the gate is not looked up, and the agent gets the install hint"
+trace CLAUDECODE=1 $CLI jobs list --log-file LOG.no-consent --log-level debug
+# The gate lookup would read the compatibility manifest from the cache.
+contains.py "auto-install: skipped: no_consent" "!Using cached manifest" < LOG.no-consent > LOG.no-consent-checked
+trace print_telemetry
+trace cursor_skills
+trace auto_install_state
+
+title "the user agrees: the next command of the same version installs"
+trace $CLI aitools auto-install enable
+trace CLAUDECODE=1 $CLI jobs list --log-file LOG.consent --log-level debug
+contains.py "Using cached manifest" < LOG.consent > LOG.consent-checked
+trace print_telemetry
+trace cursor_skills
+trace auto_install_state

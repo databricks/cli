@@ -77,9 +77,11 @@ func TestLoadStateOfEarlierVersions(t *testing.T) {
 			want: State{LastVersion: "1.27.0", OptedOut: true, ID: "machine"},
 		},
 		{
+			// accepted_version, the version whose question after a command
+			// was answered yes, is ignored.
 			name: "1.27 after a yes at the install prompt",
 			data: `{"last_version": "1.27.0", "accepted_version": "1.27.0", "installing": true, "id": "machine"}`,
-			want: State{LastVersion: "1.27.0", AcceptedVersion: "1.27.0", Installing: true, ID: "machine"},
+			want: State{LastVersion: "1.27.0", Installing: true, ID: "machine"},
 		},
 		{
 			name: "1.28 opted out during retries",
@@ -100,6 +102,16 @@ func TestLoadStateOfEarlierVersions(t *testing.T) {
 				want = ConsentOptedOut
 			}
 			assert.Equal(t, want, s.Consent())
+
+			// A write keeps only the fields this CLI knows.
+			_, err = SaveID(ctx, "other")
+			require.NoError(t, err)
+			data, err := os.ReadFile(filepath.Join(home, ".databricks", "aitools", stateFileName))
+			require.NoError(t, err)
+			assert.NotContains(t, string(data), "accepted_version")
+			s, err = Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, s)
 		})
 	}
 }
@@ -187,7 +199,6 @@ func TestGiveConsentIfUnknown(t *testing.T) {
 		want  State
 	}{
 		{"unknown", State{LastVersion: "1.2.3"}, State{LastVersion: "1.2.3", Consented: true}},
-		{"unknown after an install without consent", State{InstalledWithoutConsent: true}, State{Consented: true}},
 		{"given", State{Consented: true}, State{Consented: true}},
 		{"an opt-out stays", State{OptedOut: true}, State{OptedOut: true}},
 	} {
