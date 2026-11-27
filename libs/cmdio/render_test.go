@@ -124,6 +124,17 @@ func makeTestCases() []testCase {
 			expected:     `1  a\u001b[2J\rb` + "\n",
 		},
 		{
+			// 20 items fill the iterator renderer's buffer, which is then flushed.
+			name: "Workspace Iterator with control characters in a full batch",
+			v: &dummyIterator{items: append(
+				[]*provisioning.Workspace{{WorkspaceId: 1, WorkspaceName: "a\x1b[2J\rb"}},
+				makeWorkspaces(19)...,
+			)},
+			outputFormat: flags.OutputText,
+			template:     "{{range .}}{{.WorkspaceId}}\t{{.WorkspaceName}}\n{{end}}",
+			expected:     `1    a\u001b[2J\rb` + "\n" + makeBigOutput(19),
+		},
+		{
 			name:         "Workspace with control characters as JSON",
 			v:            provisioning.Workspace{WorkspaceId: 1, WorkspaceName: "a\x1b[2J\rb"},
 			outputFormat: flags.OutputJSON,
