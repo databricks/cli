@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -35,8 +36,16 @@ func (e ErrResourceAlreadyBound) Error() string {
 		e.ResourceKey, e.ExistingID)
 }
 
+// DMSBindMetadata holds binding data to publish after the bind commits.
+type DMSBindMetadata struct {
+	Serial        int
+	ResourceState dstate.ResourceEntry
+}
+
 // BindResult contains the result of a bind operation including any detected changes.
 type BindResult struct {
+	// DMSMetadata is nil when deployment history is disabled.
+	DMSMetadata *DMSBindMetadata
 	// HasChanges is true if deploying after bind would make changes to the resource
 	HasChanges bool
 	// Action is the planned action for the bound resource (e.g., "skip", "update", "recreate")
@@ -96,6 +105,23 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
+	}
+	var configured *bool
+	if configRoot.Experimental != nil {
+		configured = configRoot.Experimental.DeploymentHistory
+	}
+	// An explicit setting wins; otherwise bind follows the loaded state, like other non-deploy
+	// commands. Only deploy and plan consult the workspace's enrollment.
+	recordsHistory, explicit := bundleenv.DeploymentHistoryChoice(ctx, configured)
+	if !explicit {
+		recordsHistory = b.StateDB.RecordsHistory()
+	}
+	if recordsHistory {
+		if b.StateDB.Data.Features == nil {
+			b.StateDB.Data.Features = make(map[string]struct{})
+		}
+		// Keep the history marker, but leave the recorder detached until approval.
+		b.StateDB.Data.Features[dstate.FeatureDeploymentHistoryShadow] = struct{}{}
 	}
 	if err := b.StateDB.UpgradeToWrite(); err != nil {
 		os.Remove(tmpStatePath)
@@ -197,6 +223,11 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
+	var dmsMetadata *DMSBindMetadata
+	if b.StateDB.RecordsHistory() {
+		resourceState, _ := b.StateDB.GetResourceEntry(resourceKey)
+		dmsMetadata = &DMSBindMetadata{Serial: b.StateDB.Data.Serial, ResourceState: resourceState}
+	}
 	plan, err = b.CalculatePlan(ctx, client, configRoot)
 	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", ferr)
@@ -208,6 +239,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 
 	// Check if the bound resource has changes
 	result := &BindResult{
+		DMSMetadata:   dmsMetadata,
 		HasChanges:    false,
 		Action:        deployplan.Skip,
 		Plan:          plan,

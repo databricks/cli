@@ -85,6 +85,10 @@ def main():
     def state(cwd):
         return json.loads((cwd / ".databricks/bundle/default/resources.json").read_text())
 
+    # A newer local checkpoint can hide a skipped upload, so read the remote file directly.
+    def remote_state(cwd, root):
+        return json.loads(run(cwd, "workspace", "export", root + "/state/resources.json", "--format", "RAW").stdout)
+
     # Check the history marker and file-backed state, then collect and label resource IDs.
     def ids(cwd, history=True):
         data = state(cwd)
@@ -210,6 +214,7 @@ def main():
             assert resource not in state(cwd)["state"]
             generate(cwd, kind, key, current[resource], bind=True)
             assert ids(cwd)[resource] == current[resource]
+            assert remote_state(cwd, root)["state"][resource]["__id__"] == current[resource]
             if kind == "pipeline":
                 assert (cwd / "src/pipeline.sql").read_text() == (cwd / "pipeline.sql").read_text()
         run(cwd, "bundle", "validate")
