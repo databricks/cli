@@ -1,0 +1,18 @@
+{
+    "properties": {
+        "owner_email": {
+            "type": "string",
+            "format": "email",
+            "description": "Owner email",
+            "default": "owner@example.com",
+            "order": 1
+        },
+        "retries": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of retries",
+            "default": 3,
+            "order": 2
+        }
+    }
+}
