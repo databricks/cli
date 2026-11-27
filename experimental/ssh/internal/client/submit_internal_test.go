@@ -75,6 +75,17 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		assert.Equal(t, compute.HardwareAcceleratorType("GPU_1xA10"), got.Tasks[0].Compute.HardwareAccelerator)
 	})
 
+	t.Run("serverless with unknown accelerator", func(t *testing.T) {
+		opts := ClientOptions{
+			ConnectionName: "conn",
+			Accelerator:    "GPU_2xA10",
+			ServerTimeout:  time.Hour,
+		}
+		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
+
+		assert.Equal(t, compute.HardwareAcceleratorType("GPU_2xA10"), got.Tasks[0].Compute.HardwareAccelerator)
+	})
+
 	t.Run("serverless with base environment", func(t *testing.T) {
 		opts := ClientOptions{
 			ConnectionName:     "conn",
