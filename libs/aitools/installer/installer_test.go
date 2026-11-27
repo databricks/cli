@@ -1935,22 +1935,20 @@ func TestFetchErrorsCarryStage(t *testing.T) {
 }
 
 func TestFetchSkillFileEscapesFileName(t *testing.T) {
-	var gotPath, gotEscapedPath, gotRawQuery string
+	var gotPath, gotEscapedPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotEscapedPath = r.URL.EscapedPath()
-		gotRawQuery = r.URL.RawQuery
 		_, _ = w.Write([]byte("skill content"))
 	}))
 	t.Cleanup(server.Close)
 	t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
 
-	data, err := fetchSkillFile(t.Context(), "v1.0.0", "", "databricks-sql", "references/a#b?c.md")
+	data, err := fetchSkillFile(t.Context(), "v1.0.0", "", "databricks-sql", "references/a#b%20c.md")
 	require.NoError(t, err)
 	assert.Equal(t, "skill content", string(data))
-	assert.Equal(t, "/v1.0.0/"+stableSkillsRepoPath+"/databricks-sql/references/a#b?c.md", gotPath)
-	assert.Equal(t, "/v1.0.0/"+stableSkillsRepoPath+"/databricks-sql/references/a%23b%3Fc.md", gotEscapedPath)
-	assert.Empty(t, gotRawQuery)
+	assert.Equal(t, "/v1.0.0/"+stableSkillsRepoPath+"/databricks-sql/references/a#b%20c.md", gotPath)
+	assert.Equal(t, "/v1.0.0/"+stableSkillsRepoPath+"/databricks-sql/references/a%23b%2520c.md", gotEscapedPath)
 }
 
 // A release whose every skill is filtered out installs nothing and says so, so
