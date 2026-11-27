@@ -1,0 +1,4 @@
+# The error diagnostic quotes the API's message, which has an OSC
+# set-window-title sequence, a CSI clear-screen sequence and a carriage return
+# in it. They must be shown escaped; show_control.py would show a raw one as <0x1b>.
+trace musterr $CLI bundle deploy 2>&1 | show_control.py

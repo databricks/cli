@@ -241,7 +241,7 @@ func TestRenderRowHyperlinks(t *testing.T) {
 	assert.NotContains(t, plain, "\x1b]8;;", "no links when links are disabled")
 }
 
-func TestRenderRowStripsControlCharacters(t *testing.T) {
+func TestRenderRowEscapesControlCharacters(t *testing.T) {
 	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
 	styles := newListStyles(r)
 	row := listRow{
@@ -254,13 +254,13 @@ func TestRenderRowStripsControlCharacters(t *testing.T) {
 	cols := computeListCols([]listRow{row})
 
 	out := styles.renderRow(cols, row, false, false)
-	assert.Contains(t, out, "experiment")
-	assert.Contains(t, out, "user@example.com")
-	assert.Contains(t, out, "my-run")
+	assert.Contains(t, out, `\x1b]0;pwned\aexp\x1b[2Jeriment`)
+	assert.Contains(t, out, `user\r@example.com`)
+	assert.Contains(t, out, `my\x1b[31m-run`)
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "\r")
-	// Stripping happens before width is measured, so the columns stay aligned.
-	assert.Equal(t, cols.experiment, lipgloss.Width(stripControl(row.Experiment)))
+	// The width is measured on the escaped text, so the columns stay aligned.
+	assert.Equal(t, cols.experiment, lipgloss.Width(oneLine(row.Experiment)))
 }
 
 func TestListModelInfoKeyOpensDetail(t *testing.T) {

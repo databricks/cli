@@ -1,0 +1,14 @@
+# The control characters are \u escapes in the JSON files, and the server sends
+# them back decoded: an OSC set-window-title sequence, a CSI clear-screen
+# sequence, an SGR color code and a carriage return. Text output must show them
+# escaped; show_control.py would show a raw one as <0x1b>.
+
+title "API error message: the server quotes the scope name"
+trace musterr $CLI secrets put-secret --json @secret.json 2>&1 | show_control.py
+
+title "list as a table"
+add_repl "$($CLI jobs create --json @job.json | jq -r .job_id)" JOB_ID
+trace $CLI jobs list | show_control.py
+
+title "list as JSON: unchanged, the JSON encoder escapes the name itself"
+trace $CLI jobs list -o json | show_control.py | jq '.[].settings.name'

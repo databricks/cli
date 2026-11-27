@@ -366,7 +366,7 @@ func (m *selectModel) View() string {
 	// shutdown, so we park the cursor on an empty row below the content.
 	if m.submitted {
 		if !m.hideSelected {
-			if err := m.selectedTpl.Execute(&b, m.items[m.originalIndex()]); err != nil {
+			if err := executeTemplate(m.selectedTpl, &b, m.items[m.originalIndex()]); err != nil {
 				fmt.Fprintf(&b, "[selected template error: %v]", err)
 			}
 			b.WriteString("\n")
@@ -393,7 +393,7 @@ func (m *selectModel) View() string {
 		b.WriteString("\n")
 	}
 
-	if err := m.labelTpl.Execute(&b, m.label); err != nil {
+	if err := executeTemplate(m.labelTpl, &b, m.label); err != nil {
 		fmt.Fprintf(&b, "[label template error: %v]", err)
 	}
 	b.WriteString("\n")
@@ -421,7 +421,7 @@ func (m *selectModel) View() string {
 		if i == m.cursor {
 			tpl = m.activeTpl
 		}
-		if err := tpl.Execute(&b, m.items[m.matches[i]]); err != nil {
+		if err := executeTemplate(tpl, &b, m.items[m.matches[i]]); err != nil {
 			fmt.Fprintf(&b, "[template error: %v]", err)
 		}
 		b.WriteString("\n")

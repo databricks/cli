@@ -34,6 +34,14 @@ func TestLogStringNotAffectedByQuiet(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Resources: 1 created")
 }
 
+func TestLogStringEscapesControlCharacters(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+
+	cmdio.LogString(ctx, "\x1b[32mRun\x1b[0m failed: no such file \"a\x1b]0;title\x07\x1b[2J\rb\"\nsecond line")
+
+	assert.Equal(t, "\x1b[32mRun\x1b[0m"+` failed: no such file "a\x1b]0;title\a\x1b[2J\rb"`+"\nsecond line\n", stderr.String())
+}
+
 func TestIsQuiet(t *testing.T) {
 	ctx := t.Context()
 	assert.False(t, cmdio.IsQuiet(ctx))

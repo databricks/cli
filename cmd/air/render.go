@@ -11,12 +11,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/muesli/termenv"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -145,7 +145,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	}
 	sections = append(sections, renderBox(p, metadataBoxTitle, renderFields(p, colorOn, view)))
 	if data.TerminationReason != nil {
-		sections = append(sections, p.red.Render("Failure reason: ")+p.n12.Render(*data.TerminationReason))
+		sections = append(sections, p.red.Render("Failure reason: ")+p.n12.Render(textutil.EscapeControl(*data.TerminationReason)))
 	}
 
 	// A single write: a blank line before the first box and after the last, and
@@ -162,7 +162,7 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 		fmt.Fprintf(out, "Run URL:    %s\n", view.dashboardURL)
 	}
 	if view.mlflowURL != "" {
-		fmt.Fprintf(out, "MLflow URL: %s\n", view.mlflowURL)
+		fmt.Fprintf(out, "MLflow URL: %s\n", oneLine(view.mlflowURL))
 	}
 }
 
@@ -357,12 +357,14 @@ func synthConfigYAML(task *jobs.GenAiComputeTask) string {
 	return strings.TrimRight(reformatYAMLForDisplay(b), "\n")
 }
 
-// colorizeConfig styles a YAML config block line by line.
+// colorizeConfig styles a YAML config block line by line. The config is a file
+// the run's owner wrote, and one the YAML parser rejects is shown as stored, so
+// control characters in it are escaped first.
 func colorizeConfig(p palette, body string) string {
 	if body == "" {
 		return ""
 	}
-	lines := strings.Split(body, "\n")
+	lines := strings.Split(textutil.EscapeControl(body), "\n")
 	for i, line := range lines {
 		lines[i] = colorizeConfigLine(p, line)
 	}
@@ -453,20 +455,23 @@ func renderBox(p palette, title, body string) string {
 
 // renderFields draws the two-column summary: muted labels right-padded to the
 // longest one, neutral values, a status-colored Status, and blue Run ID / MLflow
-// Run hyperlinks. The experiment, MLflow run, user and environment values are
-// server-supplied, so they are stripped of control characters before they reach
+// Run hyperlinks. The status (which can be a server-set progress message),
+// experiment, MLflow run, user, accelerator and environment values are
+// server-supplied, so control characters in them are escaped before they reach
 // the terminal.
 func renderFields(p palette, colorOn bool, v runView) string {
-	v.experiment = stripControl(v.experiment)
-	v.mlflowLabel = stripControl(v.mlflowLabel)
-	v.user = stripControl(v.user)
-	v.environment = stripControl(v.environment)
+	v.status = oneLine(v.status)
+	v.accelerators = oneLine(v.accelerators)
+	v.experiment = oneLine(v.experiment)
+	v.mlflowLabel = oneLine(v.mlflowLabel)
+	v.user = oneLine(v.user)
+	v.environment = oneLine(v.environment)
 	status := statusStyle(p, v.status).Render("● " + v.status)
 	rows := []string{
 		field(p, "Run ID", link(colorOn, p.blue, v.runID, v.dashboardURL)),
 	}
 	if v.task != "" {
-		rows = append(rows, field(p, "Task", p.n12.Render(stripControl(v.task))))
+		rows = append(rows, field(p, "Task", p.n12.Render(oneLine(v.task))))
 	}
 	rows = append(rows,
 		field(p, "Status", status),
@@ -509,7 +514,7 @@ func link(colorOn bool, style lipgloss.Style, label, url string) string {
 	// through lipgloss.Render instead corrupts it: lipgloss re-styles each rune
 	// and splits the "\x1b]8;;" introducer, so the terminal can't parse the
 	// sequence and prints it literally.
-	return termenv.Hyperlink(url, style.Underline(true).Render(label))
+	return osc8(url, style.Underline(true).Render(label))
 }
 
 // statusStyle maps a run status to its accent color: green for success, red for

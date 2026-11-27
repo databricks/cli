@@ -4,26 +4,28 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/charmbracelet/x/ansi"
+	"github.com/databricks/cli/libs/textutil"
+	"github.com/muesli/termenv"
 )
 
-// stripControl removes terminal escape sequences (CSI, OSC, DCS, ...) and C0/C1
-// control characters from s, so a server-supplied string such as an MLflow run
-// name can be shown without letting whoever chose it clear the screen, retitle
-// the window, write the clipboard or overwrite a line of output. Printable text,
-// including non-ASCII, is kept. Apply it to display values only: JSON output and
-// link targets are left as the server sent them.
-func stripControl(s string) string {
-	// Drop whole escape sequences first, so "\x1b[2J" does not leave "[2J"
-	// behind once the ESC is removed below.
-	s = ansi.Strip(s)
-	if !strings.ContainsFunc(s, unicode.IsControl) {
-		return s
+// oneLine escapes a server-supplied string such as an MLflow run name for a
+// one-line slot (a table cell, a box field): terminal control characters as
+// [textutil.EscapeControl] does, and also line breaks and tabs, which would
+// break the layout. Apply it to display values only: JSON output and link
+// targets are left as the server sent them.
+func oneLine(s string) string {
+	if strings.ContainsAny(s, "\r\n\t") {
+		s = strings.NewReplacer("\r", `\r`, "\n", `\n`, "\t", `\t`).Replace(s)
 	}
-	return strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) {
-			return -1
-		}
-		return r
-	}, s)
+	return textutil.EscapeControl(s)
+}
+
+// osc8 wraps label in an OSC 8 terminal hyperlink to url. A control character
+// in url would end the sequence early and let the rest of url act on the
+// terminal, so such a url gets no link.
+func osc8(url, label string) string {
+	if strings.ContainsFunc(url, unicode.IsControl) {
+		return label
+	}
+	return termenv.Hyperlink(url, label)
 }

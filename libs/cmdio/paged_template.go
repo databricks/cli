@@ -57,7 +57,7 @@ func (p *templatePager) flushLines(buf []any) ([]string, error) {
 		rendered.WriteByte('\n')
 	}
 	if len(buf) > 0 {
-		if err := p.rowT.Execute(&rendered, buf); err != nil {
+		if err := executeTemplate(p.rowT, &rendered, buf); err != nil {
 			return nil, err
 		}
 	}

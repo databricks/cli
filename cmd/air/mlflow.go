@@ -142,7 +142,7 @@ func mlflowExperimentURL(host string, ids *mlflowIdentifiers) string {
 
 // fetchMLflowRunName fetches a run's MLflow run_name via the MLflow REST API,
 // returning "" if it can't be obtained. Best-effort, like the rest of the MLflow
-// enrichment. The name is stripped of control characters here, before it is
+// enrichment. Control characters in the name are escaped here, before it is
 // shortened to a column width or cached, so no caller can show it raw.
 func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlflowRunID string) string {
 	resp, err := w.Experiments.GetRun(ctx, ml.GetRunRequest{RunId: mlflowRunID})
@@ -153,7 +153,7 @@ func fetchMLflowRunName(ctx context.Context, w *databricks.WorkspaceClient, mlfl
 	if resp.Run == nil || resp.Run.Info == nil {
 		return ""
 	}
-	return stripControl(resp.Run.Info.RunName)
+	return oneLine(resp.Run.Info.RunName)
 }
 
 // mlflowRunLabel is the text shown for the MLflow Run cell: the run's name, or

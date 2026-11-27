@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/spf13/cobra"
 )
 
@@ -238,7 +239,8 @@ Stack Trace:
 		if cmdctx.HasWorkspaceClient(cmd.Context()) {
 			err = auth.AppendAccountHostHint(cmdctx.WorkspaceClient(cmd.Context()).Config, err)
 		}
-		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
+		// The message of an API error is the server's text.
+		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", textutil.EscapeControl(err.Error()))
 	}
 
 	// After auto-install, which runs only when the command succeeded, and

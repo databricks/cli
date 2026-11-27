@@ -1,0 +1,6 @@
+RecordRequests = false
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.StatusCode = 400
+Response.Body = '{"error_code": "INVALID_PARAMETER_VALUE", "message": "Invalid job name foo\u001b]0;title\u0007\u001b[2J\rbar."}'

@@ -230,9 +230,9 @@ func TestFetchMLflowRunName(t *testing.T) {
 		assert.Empty(t, fetchMLflowRunName(ctx, newTestWorkspaceClient(t, srv.URL), "run1"))
 	})
 
-	t.Run("strips control characters from the name", func(t *testing.T) {
+	t.Run("escapes control characters in the name", func(t *testing.T) {
 		// A set-window-title OSC, a clear-screen CSI and a carriage return.
 		srv := mlflowServer(`{"run":{"info":{"run_name":"\u001b]0;pwned\u0007sunny\u001b[2J-cat\r-42"}}}`)
-		assert.Equal(t, "sunny-cat-42", fetchMLflowRunName(ctx, newTestWorkspaceClient(t, srv.URL), "run1"))
+		assert.Equal(t, `\x1b]0;pwned\asunny\x1b[2J-cat\r-42`, fetchMLflowRunName(ctx, newTestWorkspaceClient(t, srv.URL), "run1"))
 	})
 }

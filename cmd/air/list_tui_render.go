@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 )
 
 // DuBois dark-first palette. Neutrals (n7..n12) carry structure; the state
@@ -90,12 +89,12 @@ func computeListCols(rows []listRow) listCols {
 	}
 	for _, r := range rows {
 		c.runID = max(c.runID, lipgloss.Width(r.runIDLabel()))
-		c.experiment = min(columnCap, max(c.experiment, lipgloss.Width(r.Experiment)))
+		c.experiment = min(columnCap, max(c.experiment, lipgloss.Width(oneLine(r.Experiment))))
 		c.status = max(c.status, lipgloss.Width("● "+listRowStatus(r)))
 		c.started = max(c.started, lipgloss.Width(startedDisplay(r)))
 		c.duration = max(c.duration, lipgloss.Width(r.Duration))
 		c.progress = max(c.progress, lipgloss.Width(progressDisplay(r)))
-		c.user = min(columnCap, max(c.user, lipgloss.Width(r.User)))
+		c.user = min(columnCap, max(c.user, lipgloss.Width(oneLine(r.User))))
 		c.accel = max(c.accel, lipgloss.Width(r.Accelerators))
 	}
 	return c
@@ -320,19 +319,19 @@ func listRowStatus(r listRow) string {
 	return r.Status
 }
 
-// cell renders one padded, colored cell. The text is stripped of control
-// characters (it may come from the server, or from a cache written before this
-// stripping existed), truncated to width, then padded with (background-only)
+// cell renders one padded, colored cell. Control characters in the text are
+// escaped (it may come from the server, or from a cache written before this
+// escaping existed), then it is truncated to width and padded with (background-only)
 // spaces so columns align even when the text is styled or hyperlinked.
 func (s listStyles) cell(base lipgloss.Style, text string, width int, fg lipgloss.Color, right, underline bool, link string) string {
-	text = truncate(stripControl(text), width)
+	text = truncate(oneLine(text), width)
 	style := base.Foreground(fg)
 	if underline {
 		style = style.Underline(true)
 	}
 	rendered := style.Render(text)
 	if link != "" {
-		rendered = termenv.Hyperlink(link, rendered)
+		rendered = osc8(link, rendered)
 	}
 	gap := max(width-lipgloss.Width(text), 0)
 	padStr := base.Render(strings.Repeat(" ", gap))

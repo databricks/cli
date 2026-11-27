@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 	"time"
+
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // seenRecord keys the dedup set. Older responses without record IDs fall back
@@ -282,7 +284,12 @@ func emitNoLogs(out io.Writer, req logRequest, status logRunStatus) {
 		msg = fmt.Sprintf("No logs available yet for %s, which is still in state %s", subject, status.displayState())
 	}
 	if status.stateMessage != "" {
-		msg = fmt.Sprintf("%s: %s", msg, status.stateMessage)
+		// The JSON encoder escapes the message itself.
+		stateMessage := status.stateMessage
+		if !req.jsonOutput {
+			stateMessage = textutil.EscapeControl(stateMessage)
+		}
+		msg = fmt.Sprintf("%s: %s", msg, stateMessage)
 	}
 	// Only the latest attempt was checked; earlier ones may have logs.
 	if req.attempt < 0 && status.terminal() && status.latestAttempt > 0 {

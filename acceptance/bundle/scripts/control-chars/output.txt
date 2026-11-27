@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle validate
+Executing 'preinit' script
+progress 1/2<0x0d>progress 2/2<0x1b>[K
+<0x1b>[32mdone<0x1b>[0m
+Name: scripts_control_chars
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/scripts_control_chars/default
+
+Validation OK!

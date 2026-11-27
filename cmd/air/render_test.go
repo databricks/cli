@@ -282,11 +282,11 @@ func TestRenderFields(t *testing.T) {
 	assert.NotContains(t, out, "\n\n")
 }
 
-func TestRenderFieldsStripsControlCharacters(t *testing.T) {
+func TestRenderFieldsEscapesControlCharacters(t *testing.T) {
 	p := asciiPalette(t)
 	out := renderFields(p, false, runView{
 		runID:        "1",
-		status:       "SUCCESS",
+		status:       "Waiting\x1b[2J for capacity\n...",
 		submitted:    "2026-06-03 04:17 UTC",
 		maxRetries:   "3",
 		duration:     "1m 13s",
@@ -294,14 +294,16 @@ func TestRenderFieldsStripsControlCharacters(t *testing.T) {
 		mlflowLabel:  "run\rname",
 		mlflowURL:    "https://h.test/ml/experiments/E1/runs/R1",
 		user:         "user\x1b[31m@example.com",
-		accelerators: "1x A10",
+		accelerators: "1x A10\x07",
 		environment:  "\x1b]8;;https://attacker.test/\x07databricks_ai_v6\x1b]8;;\x07",
 	})
 
-	assert.Contains(t, out, "Experiment    experiment")
-	assert.Contains(t, out, "MLflow Run    runname")
-	assert.Contains(t, out, "User          user@example.com")
-	assert.Contains(t, out, "Environment   databricks_ai_v6")
+	assert.Contains(t, out, `Status        ● Waiting\x1b[2J for capacity\n...`)
+	assert.Contains(t, out, `Experiment    \x1b]0;pwned\aexp\x1b[2Jeriment`)
+	assert.Contains(t, out, `MLflow Run    run\rname`)
+	assert.Contains(t, out, `User          user\x1b[31m@example.com`)
+	assert.Contains(t, out, `Accelerators  1x A10\a`)
+	assert.Contains(t, out, `Environment   \x1b]8;;https://attacker.test/\adatabricks_ai_v6\x1b]8;;\a`)
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "\r")
 }

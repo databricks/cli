@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // readLine reads a line from the reader and returns it without the trailing newline characters.
@@ -45,8 +47,8 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	}
 	question += `: `
 
-	// Print prompt.
-	_, err := io.WriteString(c.err, question)
+	// Print prompt. The question can name a remote object; see LogString.
+	_, err := io.WriteString(c.err, textutil.EscapeControlKeepColors(question))
 	if err != nil {
 		return "", err
 	}

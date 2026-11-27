@@ -246,12 +246,12 @@ func displayCancelPreview(ctx context.Context, rows []listRow, taskKeys map[stri
 	tw := tabwriter.NewWriter(&sb, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "Run ID\tExperiment\tAI Runtime tasks\tStarted")
 	for i := range rows {
-		experiment := orNA(rows[i].Experiment)
+		experiment := orNA(oneLine(rows[i].Experiment))
 		started := na
 		if rows[i].StartedAt != nil {
 			started = *rows[i].StartedAt
 		}
-		tasks := orNA(strings.Join(taskKeys[rows[i].RunID], ", "))
+		tasks := orNA(oneLine(strings.Join(taskKeys[rows[i].RunID], ", ")))
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", rows[i].RunID, experiment, tasks, started)
 	}
 	tw.Flush()
