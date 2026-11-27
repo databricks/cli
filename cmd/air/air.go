@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +24,10 @@ Learn more:
   Quickstart (Azure)       https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/quickstart
 `
 
-// airSkillLine is the hard-coded pointer to the air skill. It is printed only
-// when the local skills catalog has no footer for air, so the two never show together.
-const airSkillLine = "  Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime\n"
+// airSkillLine is the hard-coded pointer to the air skill. It is always printed
+// for air, even when the local catalog maps air to a skill, because removing it
+// is a launch change. A skill footer, when there is one, follows it.
+const airSkillLine = "  Coding agent skill       " + skillInstallCommand + "\n"
 
 // Spec declares the air command.
 var Spec = root.CommandSpec{
@@ -66,9 +66,7 @@ see your active runs with "databricks air list".`
 		if c == cmd {
 			w := c.OutOrStdout()
 			fmt.Fprint(w, airHelpLinks)
-			if len(skills.GroupSkills(c.Context(), cmd.Name())) == 0 {
-				fmt.Fprint(w, airSkillLine)
-			}
+			fmt.Fprint(w, airSkillLine)
 		}
 		// air sets its own help func, so the root's wrapper does not reach it. This adds
 		// the skills footer for air and for its nested groups, such as air pools.

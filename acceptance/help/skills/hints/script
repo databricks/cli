@@ -6,7 +6,7 @@ trace $CLI --help | tail -n 3
 # A group that the fixture skill covers ends with a footer naming the skill.
 trace $CLI fs --help | tail -n 4
 
-# air builds its own help. A skill mapped to air replaces the hard-coded skill line with the footer.
+# air builds its own help. A skill mapped to air adds its footer after the hard-coded skill line, which stays.
 trace $CLI air --help | tail -n 4
 
 # A group no skill covers gets no footer.

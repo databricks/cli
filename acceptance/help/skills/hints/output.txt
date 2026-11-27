@@ -11,7 +11,7 @@ Coding agents: read the skills for this command group before you use it.
   databricks skills read demo-skill
 
 >>> [CLI] air --help
-  Quickstart (Azure)       https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/quickstart
+  Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
 
 Coding agents: read the skills for this command group before you use it.
   databricks skills read demo-skill
