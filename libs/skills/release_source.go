@@ -2,6 +2,7 @@ package skills
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -53,7 +54,7 @@ func (releaseSource) ReadFile(ctx context.Context, skill, file string) ([]byte, 
 func openRelease(ctx context.Context) (Source, error) {
 	ref, _, err := GetSkillsRef(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
+		return nil, unreachable(err)
 	}
 	base := GetSkillsBaseURL(ctx) + "/" + ref
 	return &fsSource{
@@ -77,11 +78,23 @@ func releaseFileURL(base, name string) string {
 	return base + "/" + strings.Join(segments, "/")
 }
 
+// unreachable marks err as ErrSourceUnreachable. It leaves err alone when err
+// already carries the mark, so an error is not wrapped twice, and when the caller
+// cancelled the call: a cancel is the caller's choice, not a source that cannot
+// be reached, so a fallback caller must not try another source after it.
+func unreachable(err error) error {
+	if errors.Is(err, ErrSourceUnreachable) || errors.Is(err, context.Canceled) {
+		return err
+	}
+	return fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
+}
+
 // errReleaseNotFound reports a release file the server does not have (HTTP 404).
 // It matches fs.ErrNotExist and not ErrSourceUnreachable, so a caller that falls
 // back on unreachable sources does not serve other content for a missing file
-// or for a ref that names no release.
-var errReleaseNotFound = fmt.Errorf("release file not found: %w", fs.ErrNotExist)
+// or for a ref that names no release. The error names the file's URL, which
+// carries the ref.
+var errReleaseNotFound = errors.New("release file not found")
 
 // fetchRelease downloads one file of a release. A 404 is errReleaseNotFound.
 // Every other failure to get the file is ErrSourceUnreachable, except a capped
@@ -91,18 +104,18 @@ var errReleaseNotFound = fmt.Errorf("release file not found: %w", fs.ErrNotExist
 func fetchRelease(ctx context.Context, fileURL string, capped bool) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fileURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
+		return nil, unreachable(err)
 	}
 	resp, err := HTTPClient().Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
+		return nil, unreachable(err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, errReleaseNotFound
+		return nil, fmt.Errorf("%w at %s: %w", errReleaseNotFound, fileURL, fs.ErrNotExist)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: HTTP %d", ErrSourceUnreachable, resp.StatusCode)
+		return nil, fmt.Errorf("%w: HTTP %d from %s", ErrSourceUnreachable, resp.StatusCode, fileURL)
 	}
 	var body io.Reader = resp.Body
 	if capped {
@@ -110,7 +123,7 @@ func fetchRelease(ctx context.Context, fileURL string, capped bool) ([]byte, err
 	}
 	data, err := io.ReadAll(body)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
+		return nil, unreachable(err)
 	}
 	if capped && len(data) > MaxFetchBodySize {
 		return nil, ErrManifestTooLarge

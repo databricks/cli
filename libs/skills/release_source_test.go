@@ -96,6 +96,8 @@ func TestReleaseSourceServerErrorIsUnreachable(t *testing.T) {
 
 	_, err := NewReleaseSource().Catalog(t.Context())
 	assert.ErrorIs(t, err, ErrSourceUnreachable)
+	// The mark is added once, not once per layer that reports the failure.
+	assert.Equal(t, 1, strings.Count(err.Error(), ErrSourceUnreachable.Error()), err.Error())
 }
 
 func TestReleaseSourceNotFoundIsNotUnreachable(t *testing.T) {
@@ -106,6 +108,8 @@ func TestReleaseSourceNotFoundIsNotUnreachable(t *testing.T) {
 	_, err := NewReleaseSource().Catalog(t.Context())
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 	assert.NotErrorIs(t, err, ErrSourceUnreachable)
+	// The message names the file, and so the ref, that is missing.
+	assert.ErrorContains(t, err, "/v1.2.0/manifest.json")
 
 	// A file the manifest lists but the release lacks is missing, too.
 	serveReleaseFS(t, fstest.MapFS{
@@ -115,6 +119,24 @@ func TestReleaseSourceNotFoundIsNotUnreachable(t *testing.T) {
 
 	_, err = NewReleaseSource().ReadFile(t.Context(), "alpha", "references/gone.md")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.NotErrorIs(t, err, ErrSourceUnreachable)
+	assert.ErrorContains(t, err, "/v1.2.0/skills/alpha/references/gone.md")
+}
+
+func TestReleaseSourceCallerCancelIsNotUnreachable(t *testing.T) {
+	// A cancel by the caller, such as Ctrl-C, is not a source that cannot be
+	// reached. A fallback caller that checks ErrSourceUnreachable must not move
+	// on to another source after it.
+	serveReleaseFS(t, os.DirFS("testdata/release"))
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	_, err := NewReleaseSource().Catalog(ctx)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.NotErrorIs(t, err, ErrSourceUnreachable)
+
+	_, err = NewReleaseSource().ReadFile(ctx, "alpha", "SKILL.md")
+	assert.ErrorIs(t, err, context.Canceled)
 	assert.NotErrorIs(t, err, ErrSourceUnreachable)
 }
 

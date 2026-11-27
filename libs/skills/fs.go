@@ -82,7 +82,7 @@ func (s *fsSource) manifest(ctx context.Context) (*Manifest, error) {
 		return nil, err
 	}
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
+		return nil, unreachable(err)
 	}
 	var m Manifest
 	if err := json.Unmarshal(data, &m); err != nil {
