@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
 	"slices"
@@ -306,6 +307,19 @@ func moveDroppedAnchors(content []byte, fieldPath string, operation OperationTyp
 		return content, nil
 	}
 
+	// A copy keeps its aliases to anchors that stay, so it still follows them, unless
+	// another anchor reuses the name and could take the alias at the copy's place.
+	names := map[string]int{}
+	walkYAML(&doc, func(n *yaml.Node) {
+		if n.Anchor != "" {
+			names[n.Anchor]++
+		}
+	})
+	droppedAnchors := maps.Clone(anchors)
+	keepAlias := func(alias *yaml.Node) bool {
+		return !droppedAnchors[alias.Alias] && names[alias.Alias.Anchor] == 1
+	}
+
 	changed := false
 	var visit func(node, key *yaml.Node)
 	visit = func(node, key *yaml.Node) {
@@ -315,7 +329,7 @@ func moveDroppedAnchors(content []byte, fieldPath string, operation OperationTyp
 		if node.Kind == yaml.AliasNode && anchors[node.Alias] {
 			anchored := node.Alias
 			delete(anchors, anchored)
-			replacement := inlineYAMLNode(anchored)
+			replacement := inlineYAMLNode(anchored, keepAlias)
 			replacement.Anchor = anchored.Anchor
 			anchored.Anchor = ""
 			replaceYAMLNode(node, key, replacement)
@@ -337,7 +351,7 @@ func moveDroppedAnchors(content []byte, fieldPath string, operation OperationTyp
 	// The patcher still parses the dropped node, so its aliases to a moved anchor become copies.
 	walkYAML(dropped, func(n *yaml.Node) {
 		if n.Kind == yaml.AliasNode && n.Alias.Anchor == "" {
-			replaceYAMLNode(n, nil, inlineYAMLNode(n.Alias))
+			replaceYAMLNode(n, nil, inlineYAMLNode(n.Alias, keepAlias))
 			changed = true
 		}
 	})
@@ -354,17 +368,21 @@ func walkYAML(node *yaml.Node, fn func(*yaml.Node)) {
 	}
 }
 
-// inlineYAMLNode copies node with its aliases expanded and its anchors dropped, so the
-// copy cannot rebind an anchor name for the aliases that follow it.
-func inlineYAMLNode(node *yaml.Node) *yaml.Node {
+// inlineYAMLNode copies node with its anchors dropped, so the copy cannot rebind an
+// anchor name for the aliases that follow it, and expands the aliases keep rejects.
+func inlineYAMLNode(node *yaml.Node, keep func(alias *yaml.Node) bool) *yaml.Node {
 	if node.Kind == yaml.AliasNode {
-		return inlineYAMLNode(node.Alias)
+		if keep(node) {
+			c := *node
+			return &c
+		}
+		return inlineYAMLNode(node.Alias, keep)
 	}
 	c := *node
 	c.Anchor = ""
 	c.Content = make([]*yaml.Node, len(node.Content))
 	for i, child := range node.Content {
-		c.Content[i] = inlineYAMLNode(child)
+		c.Content[i] = inlineYAMLNode(child, keep)
 	}
 	return &c
 }

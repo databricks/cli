@@ -668,6 +668,20 @@ func TestApplyChangeKeepsAnchors(t *testing.T) {
 			path:      "b",
 			want:      "a: &x 1\nb: 2\n",
 		},
+		{
+			name:      "alias to kept anchor",
+			content:   "c: &c 1\na: &x\n  k: *c\nb: *x\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "c: &c 1\nb: &x\n  k: *c\n",
+		},
+		{
+			name:      "alias to reused anchor name",
+			content:   "c: &c 1\na: &x\n  k: *c\nd: &c 2\nb: *x\n",
+			operation: OperationRemove,
+			path:      "a",
+			want:      "c: &c 1\nd: &c 2\nb: &x\n  k: 1\n",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
