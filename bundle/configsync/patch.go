@@ -15,9 +15,10 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/yamlutil"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // ApplyChangesToYAML generates YAML files for the given field changes.
@@ -374,7 +375,7 @@ func replaceYAMLNode(alias, key, replacement *yaml.Node) {
 	replacement.LineComment = ""
 	replacement.FootComment = alias.FootComment
 	// A block container would pass the alias's inline comment on to the next line, and
-	// yaml.v3 cannot encode an anchored one after a key's inline comment, so it goes above.
+	// go-yaml cannot encode an anchored one after a key's inline comment, so it goes above.
 	switch {
 	case alias.LineComment == "":
 	case replacement.Kind == yaml.ScalarNode || replacement.Style&yaml.FlowStyle != 0:
@@ -508,12 +509,10 @@ func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, er
 // encodeYAML uses the same indentation as the YAML patcher.
 func encodeYAML(doc *yaml.Node) ([]byte, error) {
 	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(doc); err != nil {
+	if err := yamlutil.Encode(&buf, doc); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), enc.Close()
+	return buf.Bytes(), nil
 }
 
 // yamlChild returns the child and its mapping key so callers can preserve comments.
@@ -540,6 +539,73 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 		return nil, nil
 	}
 	return nil, nil
+}
+
+// sourceDocs caches files parsed as nodes, which unlike the merged configuration do not
+// hold keys inherited through a merge key ('<<: *anchor'): the patcher cannot reach those.
+type sourceDocs map[string]*yaml.Node
+
+// written reports whether the key is written at either path, and the path whose mapping
+// can take the key instead: writePath, unless only altWritePath has such a mapping or
+// a key at writePath would not take effect (shadowed), which also discounts one written
+// there. An unreadable file counts as written, leaving the outcome to the patcher.
+func (d sourceDocs) written(file, writePath, altWritePath string, shadowed bool) (key bool, addPath string) {
+	doc, ok := d[file]
+	if !ok {
+		doc = &yaml.Node{}
+		content, err := os.ReadFile(file)
+		if err != nil || yaml.Unmarshal(content, doc) != nil || len(doc.Content) != 1 {
+			doc = nil
+		}
+		d[file] = doc
+	}
+	if doc == nil {
+		return true, ""
+	}
+	key, parent := keyWrittenAt(doc.Content[0], writePath)
+	var altKey, altParent bool
+	if altWritePath != "" {
+		altKey, altParent = keyWrittenAt(doc.Content[0], altWritePath)
+	}
+	if shadowed {
+		key = false
+	}
+	switch {
+	case altParent && (shadowed || !parent):
+		addPath = altWritePath
+	case parent && !shadowed:
+		addPath = writePath
+	}
+	return key || altKey, addPath
+}
+
+// keyWrittenAt follows aliases like the patcher does, but a parent reached through one, or
+// under an anchor, is shared with whatever merges it and is no place to add the key.
+func keyWrittenAt(root *yaml.Node, fieldPath string) (key, parent bool) {
+	path, err := structpath.ParsePath(fieldPath)
+	if err != nil {
+		return true, true
+	}
+	parts := path.AsSlice()
+	current := root
+	shared := false
+	for i, part := range parts {
+		if current.Kind == yaml.AliasNode {
+			current = current.Alias
+			shared = true
+		}
+		if current.Anchor != "" {
+			shared = true
+		}
+		if i == len(parts)-1 {
+			parent = current.Kind == yaml.MappingNode && !shared
+		}
+		current, _ = yamlChild(current, part)
+		if current == nil {
+			return false, parent
+		}
+	}
+	return true, parent
 }
 
 // yamlKeyReplaceable reports whether fieldPath ends at a mapping key the YAML writes
@@ -625,7 +691,7 @@ const blankLineMarker = "# __YAMLPATCH_BLANK_LINE__"
 // (?:#.*)? — optional comment
 var blockScalarRe = regexp.MustCompile(`[-:]\s+[|>][-+0-9]*\s*(?:#.*)?$`)
 
-// preserveBlankLines replaces blank lines with marker comments that survive yaml.v3 round-trips
+// preserveBlankLines replaces blank lines with marker comments that survive YAML round-trips
 func preserveBlankLines(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	result := make([]string, 0, len(lines))
@@ -673,7 +739,7 @@ func preserveBlankLines(content []byte) []byte {
 }
 
 // flushBlanks appends blank lines to result. When markers are present,
-// it emits exactly that many blanks (dropping yaml.v3-added duplicates);
+// it emits exactly that many blanks (dropping encoder-added duplicates);
 // otherwise it keeps all blanks as-is.
 func flushBlanks(result []string, blanks, markers int) []string {
 	n := blanks

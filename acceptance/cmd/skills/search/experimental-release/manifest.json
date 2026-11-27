@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "skills": {
+    "pipeline-bare": {"version": "0.0.1", "files": ["SKILL.md"], "commands": ["pipelines"], "repo_dir": "experimental"},
+    "pipeline-lab": {"version": "0.0.1", "description": "An experimental pipeline skill.", "files": ["SKILL.md"], "commands": ["pipelines"], "repo_dir": "experimental"}
+  }
+}
