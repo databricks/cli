@@ -6,11 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
@@ -291,6 +294,165 @@ func TestMaybeVersionCheckTip(t *testing.T) {
 			} else {
 				assert.Empty(t, stderr.String())
 			}
+		})
+	}
+}
+
+// withAgentFeaturesDisabled sets DATABRICKS_AGENT_FEATURES_DISABLED on ctx when
+// value is not empty; empty leaves it unset.
+func withAgentFeaturesDisabled(ctx context.Context, value string) context.Context {
+	if value == "" {
+		return ctx
+	}
+	return env.Set(ctx, skills.AgentFeaturesDisabledEnv, value)
+}
+
+// DATABRICKS_AGENT_FEATURES_DISABLED turns the apps init tip off with the rest
+// of the agent features: no tip, no event, and nothing installed. Unset, the
+// same call prints the tip.
+func TestRecommendSkillsInstallAgentFeaturesDisabled(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		disabled string
+		wantTip  bool
+	}{
+		{name: "unset", wantTip: true},
+		{name: "set", disabled: "1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			testutil.SetAgentEnv(t, "HOME", home, "USERPROFILE", home, "CLAUDECODE", "1")
+			claudeDir := filepath.Join(home, ".claude")
+			require.NoError(t, os.MkdirAll(claudeDir, 0o755))
+			origRegistry := Registry
+			Registry = []*Agent{agentWithConfigDir(claudeDir)}
+			defer func() { Registry = origRegistry }()
+
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = withAgentFeaturesDisabled(ctx, tc.disabled)
+
+			installed := false
+			err := RecommendSkillsInstall(ctx, noInstalledPlugins, func(context.Context) error {
+				installed = true
+				return nil
+			})
+			require.NoError(t, err)
+			assert.False(t, installed)
+			if tc.wantTip {
+				assert.Contains(t, stderr.String(), "databricks aitools install")
+				assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindAppsInitTip}, hintKinds(t, ctx))
+				return
+			}
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, hintKinds(t, ctx))
+		})
+	}
+}
+
+// With DATABRICKS_AGENT_FEATURES_DISABLED set, an interactive run does not
+// prompt: the call returns at once, installs nothing and stores no consent.
+func TestRecommendSkillsInstallAgentFeaturesDisabledDoesNotPrompt(t *testing.T) {
+	home := t.TempDir()
+	testutil.SetAgentEnv(t, "HOME", home, "USERPROFILE", home, "CLAUDECODE", "1")
+	claudeDir := filepath.Join(home, ".claude")
+	require.NoError(t, os.MkdirAll(claudeDir, 0o755))
+	origRegistry := Registry
+	Registry = []*Agent{agentWithConfigDir(claudeDir)}
+	defer func() { Registry = origRegistry }()
+
+	ctx, testIO := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer testIO.Done()
+	ctx = telemetry.WithNewLogger(ctx)
+	ctx = withAgentFeaturesDisabled(ctx, "1")
+	require.True(t, cmdio.IsPromptSupported(ctx))
+
+	stderr := make(chan string, 1)
+	go func() {
+		b, _ := io.ReadAll(testIO.Stderr)
+		stderr <- string(b)
+	}()
+
+	installed := false
+	errc := make(chan error, 1)
+	go func() {
+		errc <- RecommendSkillsInstall(ctx, noInstalledPlugins, func(context.Context) error {
+			installed = true
+			return nil
+		})
+	}()
+	select {
+	case err := <-errc:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("RecommendSkillsInstall waits for an answer to a prompt")
+	}
+	testIO.Done()
+	assert.Empty(t, <-stderr)
+	assert.False(t, installed)
+	assert.Empty(t, hintKinds(t, ctx))
+	state, err := autoinstall.Load(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, autoinstall.ConsentUnknown, state.Consent())
+	assert.False(t, state.OptedOut)
+}
+
+// PrintSkillsTip prints nothing and logs no event while
+// DATABRICKS_AGENT_FEATURES_DISABLED is set; unset, it prints the tip.
+func TestPrintSkillsTipAgentFeaturesDisabled(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		disabled string
+		want     bool
+	}{
+		{name: "unset", want: true},
+		{name: "set", disabled: "1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = withAgentFeaturesDisabled(ctx, tc.disabled)
+
+			PrintSkillsTip(ctx)
+			if tc.want {
+				assert.Equal(t, skillsTipText+"\n", stderr.String())
+				assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindAppsInitTip}, hintKinds(t, ctx))
+				return
+			}
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, hintKinds(t, ctx))
+		})
+	}
+}
+
+// `databricks version --check` prints no tip while DATABRICKS_AGENT_FEATURES_DISABLED
+// is set, though the same coding agent without tooling gets one when it is unset.
+func TestMaybeVersionCheckTipAgentFeaturesDisabled(t *testing.T) {
+	noPlugins := func(context.Context) []string { return nil }
+	for _, tc := range []struct {
+		name     string
+		disabled string
+		wantTip  bool
+	}{
+		{name: "unset", wantTip: true},
+		{name: "set", disabled: "1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			testutil.SetAgentEnv(t, "HOME", home, "USERPROFILE", home)
+			t.Chdir(t.TempDir())
+			require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o755))
+
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = withAgentFeaturesDisabled(ctx, tc.disabled)
+
+			MaybeVersionCheckTip(ctx, noPlugins)
+			if tc.wantTip {
+				assert.Equal(t, skillsTipText+"\n", stderr.String())
+				return
+			}
+			assert.Empty(t, stderr.String())
 		})
 	}
 }

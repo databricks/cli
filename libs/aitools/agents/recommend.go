@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
@@ -16,8 +17,12 @@ const skillsTipText = "Tip: coding agents detected without Databricks skills. Ru
 
 // PrintSkillsTip prints the non-interactive `apps init` tip to install skills
 // and records that it was shown. Callers decide whether the tooling is missing
-// (see HasDatabricksToolingInstalled).
+// (see HasDatabricksToolingInstalled). It prints nothing when
+// DATABRICKS_AGENT_FEATURES_DISABLED is set.
 func PrintSkillsTip(ctx context.Context) {
+	if skills.AgentFeaturesDisabled(ctx) {
+		return
+	}
 	cmdio.LogString(ctx, skillsTipText)
 	logHintShown(ctx, protos.AitoolsHintKindAppsInitTip)
 }
@@ -30,8 +35,12 @@ func PrintSkillsTip(ctx context.Context) {
 // cannot import the installer; callers pass installer.InstalledPluginAgents,
 // which counts a plugin recorded in the CLI install state with or without a
 // known version. No telemetry is logged: `databricks version` never resolves
-// auth, so the event would not be uploaded (see logHintShown).
+// auth, so the event would not be uploaded (see logHintShown). It prints
+// nothing when DATABRICKS_AGENT_FEATURES_DISABLED is set.
 func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Context) []string) {
+	if skills.AgentFeaturesDisabled(ctx) {
+		return
+	}
 	if isHintedAgent(useragent.AgentProvider()) {
 		return
 	}
@@ -62,8 +71,12 @@ func noInstalledPlugins(context.Context) []string { return nil }
 // installedPlugins (see HasDatabricksToolingInstalled).
 // In interactive mode, prompts the user to install now using installFn; a "no" also turns
 // auto-install off, and a "yes" stores the consent to keep the tools up to date unless the
-// user answered before. In non-interactive mode, prints a hint.
+// user answered before. In non-interactive mode, prints a hint. It does nothing at all when
+// DATABRICKS_AGENT_FEATURES_DISABLED is set: no hint, no prompt, no install and no consent.
 func RecommendSkillsInstall(ctx context.Context, installedPlugins func(context.Context) []string, installFn func(context.Context) error) error {
+	if skills.AgentFeaturesDisabled(ctx) {
+		return nil
+	}
 	if HasDatabricksToolingInstalled(ctx, installedPlugins) {
 		return nil
 	}

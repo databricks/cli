@@ -14,16 +14,16 @@ const (
 	// hintsEnv turns on skill hints. It only has an effect while previewEnv is set.
 	hintsEnv = "DATABRICKS_SKILLS_HINTS"
 
-	// agentFeaturesDisabledEnv turns the agent features off: the skills feature
+	// AgentFeaturesDisabledEnv turns the agent features off: the skills feature
 	// and the aitools hints and auto-install. It wins over previewEnv and hintsEnv.
-	agentFeaturesDisabledEnv = "DATABRICKS_AGENT_FEATURES_DISABLED"
+	AgentFeaturesDisabledEnv = "DATABRICKS_AGENT_FEATURES_DISABLED"
 )
 
 // AgentFeaturesDisabled reports whether DATABRICKS_AGENT_FEATURES_DISABLED is
 // set to a true value. The aitools hints and auto-install check it too. The
 // explicit `databricks aitools` commands still work.
 func AgentFeaturesDisabled(ctx context.Context) bool {
-	return envTrue(ctx, agentFeaturesDisabledEnv)
+	return envTrue(ctx, AgentFeaturesDisabledEnv)
 }
 
 // Enabled reports whether the skills feature is on. It is the gate for the

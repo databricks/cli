@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
 
@@ -70,5 +71,8 @@ func printAutoInstallSetting(ctx context.Context, enabled bool) {
 	cmdio.LogString(ctx, "Automatic installation of Databricks AI tools is enabled.")
 	if autoinstall.EnvOptedOut(ctx) {
 		cmdio.LogString(ctx, cmdio.Yellow(ctx, autoinstall.EnvVar+" still disables it in this environment; unset it to let it run."))
+	}
+	if skills.AgentFeaturesDisabled(ctx) {
+		cmdio.LogString(ctx, cmdio.Yellow(ctx, skills.AgentFeaturesDisabledEnv+" still disables it in this environment; unset it to let it run."))
 	}
 }
