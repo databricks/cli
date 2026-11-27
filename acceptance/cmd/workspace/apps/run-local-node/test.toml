@@ -1,3 +1,6 @@
+# Listens on IPv4 loopback, which serverless DBR blocks.
+RunsOnDbr = false
+
 Cloud = false
 RecordRequests = false
 

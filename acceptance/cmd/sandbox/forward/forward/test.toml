@@ -1,3 +1,6 @@
+# Listens on IPv4 loopback, which serverless DBR blocks.
+RunsOnDbr = false
+
 RecordRequests = true
 IncludeRequestHeaders = ["X-Databricks-Org-Id"]
 

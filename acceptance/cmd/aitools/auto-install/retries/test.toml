@@ -1,3 +1,6 @@
+# AI tools hints and auto-install behave differently on DBR.
+RunsOnDbr = false
+
 [[Repls]]
 Old = '"last_attempt": "[^"]+"'
 New = '"last_attempt": "[LAST_ATTEMPT]"'
