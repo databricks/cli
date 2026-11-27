@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 	"uuid"
@@ -51,6 +52,9 @@ type dbrTestConfig struct {
 	// localTestFilter is a regex filter for local acceptance tests, which run against
 	// the fake server without CLOUD_ENV in a parallel task. If empty, no local tests run.
 	localTestFilter string
+
+	// localShards is the number of parallel local tasks; each runs 1/localShards of the local tests.
+	localShards int
 
 	// timeout is the maximum duration to wait for the job to complete.
 	timeout time.Duration
@@ -252,14 +256,18 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 		},
 	}
 
-	var localLogID int64
-	if config.localTestFilter != "" {
-		var localLogPath string
-		localLogPath, localLogID = createDebugLog(ctx, t, w, debugLogsDir, "local")
+	var localLogIDs []int64
+	localShards := config.localShards
+	if config.localTestFilter == "" {
+		localShards = 0
+	}
+	for i := range localShards {
+		localLogPath, localLogID := createDebugLog(ctx, t, w, debugLogsDir, fmt.Sprintf("local-%d", i))
+		localLogIDs = append(localLogIDs, localLogID)
 
 		// Local tests talk to the fake server only, so they get no CLOUD_ENV or workspace resource IDs.
 		tasks = append(tasks, jobs.Task{
-			TaskKey:                 "local_tests",
+			TaskKey:                 fmt.Sprintf("local_tests_%d", i),
 			EnvironmentKey:          "default",
 			MaxRetries:              0,
 			DisableAutoOptimization: true,
@@ -270,6 +278,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 					"debug_log_path":     localLogPath,
 					"test_type":          "local",
 					"test_filter":        config.localTestFilter,
+					"test_shard":         fmt.Sprintf("%d/%d", i, config.localShards),
 					"workspace_tmp_root": "/Workspace" + tmpRoot,
 				},
 				Source: jobs.SourceWorkspace,
@@ -313,8 +322,8 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	t.Log("=== Job Started ===")
 	t.Logf("  Run URL: %s", runDetails.RunPageUrl)
 	t.Logf("  Cloud debug logs: %s/editor/files/%d", w.Config.Host, cloudLogID)
-	if localLogID != 0 {
-		t.Logf("  Local debug logs: %s/editor/files/%d", w.Config.Host, localLogID)
+	for i, id := range localLogIDs {
+		t.Logf("  Local debug logs (shard %d): %s/editor/files/%d", i, w.Config.Host, id)
 	}
 	t.Log("")
 	t.Logf("Waiting for completion (timeout: %v)...", config.timeout)
@@ -382,7 +391,8 @@ func runDbrAcceptanceTests(t *testing.T, config dbrTestConfig) {
 
 // TestDbrAcceptance runs acceptance tests on DBR using serverless compute.
 // Cloud tests run if they set RunsOnDbr = true. Local tests matching DBR_LOCAL_TEST_FILTER
-// (a regex under TestAccept/, "." for all) run in a parallel task unless they set RunsOnDbr = false.
+// (a regex under TestAccept/, "." for all) run unless they set RunsOnDbr = false, split across
+// DBR_LOCAL_TEST_SHARDS parallel tasks.
 //
 // Run with:
 //
@@ -398,8 +408,17 @@ func TestDbrAcceptance(t *testing.T) {
 		t.Skip("Skipping DBR test: CLOUD_ENV not set")
 	}
 
+	// A single 4-CPU serverless driver takes about 2.5h for all local tests.
+	localShards := 6
+	if v := os.Getenv("DBR_LOCAL_TEST_SHARDS"); v != "" {
+		var err error
+		localShards, err = strconv.Atoi(v)
+		require.NoError(t, err, "DBR_LOCAL_TEST_SHARDS")
+	}
+
 	runDbrAcceptanceTests(t, dbrTestConfig{
 		localTestFilter: os.Getenv("DBR_LOCAL_TEST_FILTER"),
+		localShards:     localShards,
 		timeout:         3 * time.Hour,
 		verbose:         os.Getenv("DBR_TEST_VERBOSE") != "",
 	})

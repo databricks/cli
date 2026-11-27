@@ -8,6 +8,7 @@
 # - test_type: "cloud" (real workspace, default) or "local" (fake server)
 # - cloud_env: Cloud environment (e.g., "aws", "azure", "gcp"); cloud tests only
 # - test_filter: Optional regex filter for test names (e.g., "bundle/generate")
+# - test_shard: Optional "i/N"; runs only shard i of N of the selected tests
 # - test_default_warehouse_id: Default SQL warehouse ID
 # - test_default_cluster_id: Default cluster ID
 # - test_instance_pool_id: Instance pool ID
@@ -172,6 +173,7 @@ def run_tests(
     env: dict,
     test_type: str = "cloud",
     test_filter: str = "",
+    test_shard: str = "",
     cloud_env: str = "",
     test_default_warehouse_id: str = "",
     test_default_cluster_id: str = "",
@@ -203,6 +205,9 @@ def run_tests(
         cmd.extend(["-run", f"^TestAccept/{test_filter}"])
     else:
         cmd.extend(["-run", "^TestAccept"])
+
+    if test_shard:
+        env["TESTS_SELECT_SHARD"] = test_shard
 
     if test_type == "local":
         # Local tests run against the fake server; CLOUD_ENV would switch them to the real workspace.
@@ -300,6 +305,7 @@ def main():
     dbutils.widgets.text("test_type", "cloud")
     dbutils.widgets.text("cloud_env", "")
     dbutils.widgets.text("test_filter", "")
+    dbutils.widgets.text("test_shard", "")
     dbutils.widgets.text("test_default_warehouse_id", "")
     dbutils.widgets.text("test_default_cluster_id", "")
     dbutils.widgets.text("test_instance_pool_id", "")
@@ -313,6 +319,7 @@ def main():
     test_type = dbutils.widgets.get("test_type")
     cloud_env = dbutils.widgets.get("cloud_env")
     test_filter = dbutils.widgets.get("test_filter")
+    test_shard = dbutils.widgets.get("test_shard")
     test_default_warehouse_id = dbutils.widgets.get("test_default_warehouse_id")
     test_default_cluster_id = dbutils.widgets.get("test_default_cluster_id")
     test_instance_pool_id = dbutils.widgets.get("test_instance_pool_id")
@@ -353,6 +360,7 @@ def main():
         env=env,
         test_type=test_type,
         test_filter=test_filter,
+        test_shard=test_shard,
         cloud_env=cloud_env,
         test_default_warehouse_id=test_default_warehouse_id,
         test_default_cluster_id=test_default_cluster_id,
