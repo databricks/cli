@@ -63,9 +63,8 @@ func TestExecute(t *testing.T) {
 			resp: &sql.StatementResponse{
 				StatementId: "stmt-1",
 				Status: &sql.StatementStatus{
-					State:    sql.StatementStateFailed,
-					SqlState: "42000",
-					Error:    &sql.ServiceError{ErrorCode: sql.ServiceErrorCodeBadRequest, Message: "boom"},
+					State: sql.StatementStateFailed,
+					Error: &sql.ServiceError{ErrorCode: sql.ServiceErrorCodeBadRequest, Message: "boom"},
 				},
 			},
 			errSubstr: "boom",
@@ -317,9 +316,8 @@ func TestStatementErr(t *testing.T) {
 		{
 			name: "failed with service error",
 			resp: &sql.StatementResponse{Status: &sql.StatementStatus{
-				State:    sql.StatementStateFailed,
-				SqlState: "42000",
-				Error:    &sql.ServiceError{ErrorCode: sql.ServiceErrorCodeBadRequest, Message: "bad"},
+				State: sql.StatementStateFailed,
+				Error: &sql.ServiceError{ErrorCode: sql.ServiceErrorCodeBadRequest, Message: "bad"},
 			}},
 			wantErr:  true,
 			wantCode: sql.ServiceErrorCodeBadRequest,

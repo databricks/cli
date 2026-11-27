@@ -75,7 +75,7 @@ func TestHTTPExecuteFailedReturns200(t *testing.T) {
 	// A failed statement comes back as HTTP 200 with state=FAILED, not an HTTP
 	// error; the engine must inspect the body and surface a *StatementError.
 	server.HandleSQL("SELECT * FROM nope", func(testsql.Request) testsql.Result {
-		return testsql.Result{Error: &testsql.Error{Code: sql.ServiceErrorCodeBadRequest, Message: "no such table", SQLState: "42P01"}}
+		return testsql.Result{Error: &testsql.Error{Code: sql.ServiceErrorCodeBadRequest, Message: "no such table"}}
 	})
 
 	_, err := httpClient(t, server).Execute(t.Context(), "SELECT * FROM nope")
