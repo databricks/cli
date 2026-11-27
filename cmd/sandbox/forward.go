@@ -110,7 +110,7 @@ Examples:
 				return err
 			}
 			if sb != nil {
-				if _, err := ensureRunning(ctx, api, sandboxID, sb.Status); err != nil {
+				if _, err := ensureRunning(ctx, api, sandboxID, sandboxStatus(sb)); err != nil {
 					return err
 				}
 			}

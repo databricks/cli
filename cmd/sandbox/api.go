@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -90,65 +89,6 @@ type sandboxAPI struct {
 	sandboxes sdk.SandboxInterface
 }
 
-// createResponse preserves the CLI's JSON output independently of the SDK's
-// resource representation.
-type createResponse struct {
-	SandboxID   string `json:"sandboxId"`
-	Status      string `json:"status"`
-	GatewayHost string `json:"gatewayHost,omitempty"`
-}
-
-// sandboxEntry preserves the CLI output shape for public Sandbox resources.
-// IdleTimeout and NoAutostop are pointer-typed so we can distinguish
-// "field absent on the wire" (server uses its default) from "explicitly
-// set to 0 / false". IdleTimeout is a proto3-canonical Duration string
-// (see idleTimeoutSecs).
-type sandboxEntry struct {
-	SandboxID     string  `json:"sandboxId"`
-	Status        string  `json:"status"`
-	GatewayHost   string  `json:"gatewayHost,omitempty"`
-	Name          string  `json:"name,omitempty"`
-	CreateTime    string  `json:"createTime,omitempty"`
-	LastStartTime string  `json:"lastStartTime,omitempty"`
-	IdleTimeout   *string `json:"idleTimeout,omitempty"`
-	NoAutostop    *bool   `json:"noAutostop,omitempty"`
-}
-
-// idleTimeoutSecs parses the proto3-canonical Duration string off
-// `IdleTimeout` (e.g. `"900s"` → `900`). Returns 0 when unset or when
-// the string is not a recognizable Duration. Sub-second precision is
-// dropped — the watchdog only acts on whole seconds.
-func (e *sandboxEntry) idleTimeoutSecs() int64 {
-	if e.IdleTimeout == nil {
-		return 0
-	}
-	s := *e.IdleTimeout
-	if !strings.HasSuffix(s, "s") {
-		return 0
-	}
-	d, err := time.ParseDuration(s)
-	if err != nil {
-		return 0
-	}
-	return int64(d.Seconds())
-}
-
-// autoStopLabel renders the auto-stop policy for one sandbox:
-//   - `no_autostop == true` → never auto-stops
-//   - `idle_timeout` set and positive → that many seconds
-//   - otherwise → no enforcement today; render as "never"
-//
-// If the manager later enforces an idle-grace default, render it here.
-func (e *sandboxEntry) autoStopLabel() string {
-	if e.NoAutostop != nil && *e.NoAutostop {
-		return "never"
-	}
-	if secs := e.idleTimeoutSecs(); secs > 0 {
-		return formatDurationSecs(secs)
-	}
-	return "never"
-}
-
 // formatDurationSecs prints `secs` as a compact duration (e.g. `90s`,
 // `15m`, `2h`, `1h30m`). Falls back to seconds if it's not a clean
 // minute/hour multiple.
@@ -184,18 +124,7 @@ type registerKeyRequest struct {
 func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
 	cfg := w.Config
 	if cfg.WorkspaceID == profile.WorkspaceIDNone {
-		// Config contains a mutex; use the SDK's copy operation, then normalize
-		// the CLI sentinel only after loaders have resolved the copied config.
-		var err error
-		cfg, err = w.Config.NewWithWorkspaceHost(w.Config.Host)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
-		}
-		cfg.AccountID = w.Config.AccountID
-		if err := cfg.EnsureResolved(); err != nil {
-			return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
-		}
-		cfg.WorkspaceID = ""
+		return nil, errors.New("sandbox commands require a workspace; select a workspace-scoped profile with --profile")
 	}
 	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	if err != nil {
@@ -233,37 +162,7 @@ func (a *sandboxAPI) do(ctx context.Context, method, path string, request, respo
 	return translateError(a.c.Do(arm503Budget(ctx), method, path, a.headers(), nil, request, response))
 }
 
-// sandboxFromSDK keeps the CLI's status vocabulary and JSON field names.
-func sandboxFromSDK(sb *sdk.Sandbox) *sandboxEntry {
-	// Keep the existing trimmed-label and ID-fallback behavior on reads.
-	entry := &sandboxEntry{SandboxID: strings.TrimPrefix(sb.Name, "sandboxes/"), Status: "Unknown", Name: strings.TrimSpace(sb.DisplayName)}
-	if entry.Name == "" {
-		entry.Name = entry.SandboxID
-	}
-	if sb.Status != nil {
-		switch sb.Status.State {
-		case sdk.SandboxStateSandboxStatePending:
-			entry.Status = "Creating"
-		case sdk.SandboxStateSandboxStateRunning:
-			entry.Status = "Running"
-		case sdk.SandboxStateSandboxStateStopping:
-			entry.Status = "Stopping"
-		case sdk.SandboxStateSandboxStateStopped:
-			entry.Status = "Stopped"
-		}
-	}
-	if sb.Spec != nil && sb.Spec.Compute != nil && sb.Spec.Compute.InactivityTimeout != nil {
-		timeout := sb.Spec.Compute.InactivityTimeout
-		raw, _ := timeout.MarshalJSON()
-		value := strings.Trim(string(raw), `"`)
-		entry.IdleTimeout = &value
-		disabled := timeout.AsDuration() == 0
-		entry.NoAutostop = &disabled
-	}
-	return entry
-}
-
-func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, error) {
+func (a *sandboxAPI) create(ctx context.Context, name string) (*sdk.Sandbox, error) {
 	id := generateSandboxID()
 	sb, err := a.sandboxes.CreateSandbox(arm503Budget(ctx), sdk.CreateSandboxRequest{
 		SandboxId: id,
@@ -277,24 +176,23 @@ func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, 
 		// its generated ID so callers can inspect it without retrying creation.
 		return nil, fmt.Errorf("sandbox %s: %w", id, translateError(err))
 	}
-	entry := sandboxFromSDK(sb)
-	return &createResponse{SandboxID: entry.SandboxID, Status: entry.Status}, nil
+	return sb, nil
 }
 
-func (a *sandboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
-	var all []sandboxEntry
+func (a *sandboxAPI) list(ctx context.Context) ([]sdk.Sandbox, error) {
+	var all []sdk.Sandbox
 	iterator := a.sandboxes.ListSandboxes(ctx, sdk.ListSandboxesRequest{PageSize: listPageSize})
 	for iterator.HasNext(arm503Budget(ctx)) {
 		sb, err := iterator.Next(ctx)
 		if err != nil {
 			return nil, translateError(err)
 		}
-		all = append(all, *sandboxFromSDK(&sb))
+		all = append(all, sb)
 	}
 	return all, nil
 }
 
-func (a *sandboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
+func (a *sandboxAPI) get(ctx context.Context, id string) (*sdk.Sandbox, error) {
 	name, err := sandboxName(id)
 	if err != nil {
 		return nil, err
@@ -303,10 +201,10 @@ func (a *sandboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) 
 	if err != nil {
 		return nil, translateError(err)
 	}
-	return sandboxFromSDK(sb), nil
+	return sb, nil
 }
 
-func (a *sandboxAPI) update(ctx context.Context, id string, name *string, idleTimeoutSecs *int64, noAutostop *bool) (*sandboxEntry, error) {
+func (a *sandboxAPI) update(ctx context.Context, id string, name *string, idleTimeoutSecs *int64, noAutostop *bool) (*sdk.Sandbox, error) {
 	resourceName, err := sandboxName(id)
 	if err != nil {
 		return nil, err
@@ -333,7 +231,7 @@ func (a *sandboxAPI) update(ctx context.Context, id string, name *string, idleTi
 	if err != nil {
 		return nil, translateError(err)
 	}
-	return sandboxFromSDK(sb), nil
+	return sb, nil
 }
 
 func (a *sandboxAPI) delete(ctx context.Context, id string) error {
@@ -344,7 +242,7 @@ func (a *sandboxAPI) delete(ctx context.Context, id string) error {
 	return translateError(a.sandboxes.DeleteSandbox(arm503Budget(ctx), sdk.DeleteSandboxRequest{Name: name}))
 }
 
-func (a *sandboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error) {
+func (a *sandboxAPI) stop(ctx context.Context, id string) (*sdk.Sandbox, error) {
 	name, err := sandboxName(id)
 	if err != nil {
 		return nil, err
@@ -353,17 +251,17 @@ func (a *sandboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error)
 	if err != nil {
 		return nil, translateError(err)
 	}
-	return sandboxFromSDK(sb), nil
+	return sb, nil
 }
 
-func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error) {
+func (a *sandboxAPI) start(ctx context.Context, id string) (*sdk.Sandbox, error) {
 	current, err := a.get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	// The public API rejects start on running or pending sandboxes; the CLI
 	// keeps start idempotent and lets its existing readiness poll finish.
-	if current.Status == "Running" || current.Status == "Creating" {
+	if sandboxStatus(current) == "Running" || sandboxStatus(current) == "Creating" {
 		return current, nil
 	}
 	name, err := sandboxName(id)
@@ -374,7 +272,7 @@ func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error
 	if err != nil {
 		return nil, translateError(err)
 	}
-	return sandboxFromSDK(sb), nil
+	return sb, nil
 }
 
 // registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is

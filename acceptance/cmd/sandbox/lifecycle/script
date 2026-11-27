@@ -1,0 +1,17 @@
+id=$($CLI sandbox create --name my-project 2> LOG.create)
+add_repl "$id" SANDBOX_ID
+
+trace $CLI sandbox status "$id" --json
+trace $CLI sandbox config "$id" --idle-timeout 15m
+trace $CLI sandbox config "$id" --name renamed-project
+trace $CLI sandbox config "$id" --no-autostop
+trace $CLI sandbox config "$id" --no-autostop=false
+trace $CLI sandbox stop "$id"
+trace $CLI sandbox start "$id"
+trace $CLI sandbox start "$id"
+trace $CLI sandbox list --json
+trace $CLI sandbox delete "$id" --auto-approve
+trace $CLI sandbox list
+trace musterr $CLI sandbox status "$id"
+
+trace print_requests.py //sandboxes

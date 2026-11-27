@@ -112,15 +112,14 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to update sandbox %s: %w", id, err)
 			}
-			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
-			_ = upsertSandbox(ctx, profile, updated.SandboxID, updated.Name)
+			_ = upsertSandbox(ctx, profile, sandboxResourceID(updated), sandboxLabel(updated))
 
 			blank(out)
-			field(ctx, out, "id", cmdio.Bold(ctx, updated.SandboxID))
-			if updated.Name != "" {
-				field(ctx, out, "name", updated.Name)
+			field(ctx, out, "id", cmdio.Bold(ctx, sandboxResourceID(updated)))
+			if sandboxLabel(updated) != "" {
+				field(ctx, out, "name", sandboxLabel(updated))
 			}
-			field(ctx, out, "autostop", cmdio.Faint(ctx, updated.autoStopLabel()))
+			field(ctx, out, "autostop", cmdio.Faint(ctx, autoStopLabel(updated)))
 			blank(out)
 			return nil
 		},

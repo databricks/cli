@@ -41,19 +41,14 @@ Example:
 
 			profile := cacheProfile(w)
 
-			// `list` returns the full set (the API client loops through every
-			// page), so it's the cheapest place to keep local state coherent:
-			//
-			//   - If our saved default isn't in the result, the sandbox was
-			//     deleted elsewhere — clear so the next `ssh` provisions fresh
-			//     instead of erroring against a missing ID.
-			//   - Cache the gateway hostname stamped on any returned entry so
-			//     subsequent `ssh <id>` invocations don't need their own `get`.
+			// A complete listing lets us clear defaults deleted by another client.
+
 			defaultID := getDefault(ctx, profile)
 			if defaultID != "" {
 				found := false
-				for _, e := range entries {
-					if e.SandboxID == defaultID {
+				for i := range entries {
+					e := &entries[i]
+					if sandboxResourceID(e) == defaultID {
 						found = true
 						break
 					}
@@ -64,26 +59,25 @@ Example:
 					defaultID = ""
 				}
 			}
-			for _, e := range entries {
-				if e.GatewayHost != "" {
-					_ = setGatewayHost(ctx, profile, e.GatewayHost)
-					break
-				}
-			}
 
 			// Replace the local (id, name) cache from this fresh list,
 			// so subsequent name-based commands (`sandbox ssh my-project`,
 			// etc.) resolve locally without another API call.
 			refs := make([]cachedSandbox, 0, len(entries))
-			for _, e := range entries {
-				refs = append(refs, cachedSandbox{ID: e.SandboxID, Name: e.Name})
+			for i := range entries {
+				e := &entries[i]
+				refs = append(refs, cachedSandbox{ID: sandboxResourceID(e), Name: sandboxLabel(e)})
 			}
 			_ = setSandboxes(ctx, profile, refs)
 
 			if jsonOutput(cmd, outputJSON) {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(entries)
+				var output []*sandboxJSONOutput
+				for i := range entries {
+					output = append(output, sandboxJSON(&entries[i]))
+				}
+				return enc.Encode(output)
 			}
 
 			if len(entries) == 0 {
@@ -101,17 +95,18 @@ Example:
 			idCol := 10
 			autostopCol := 8
 			nameCol := 4
-			for _, e := range entries {
-				if l := cmdio.Width(e.SandboxID); l > idCol {
+			for i := range entries {
+				e := &entries[i]
+				if l := cmdio.Width(sandboxResourceID(e)); l > idCol {
 					idCol = l
 				}
-				if l := cmdio.Width(e.autoStopLabel()); l > autostopCol {
+				if l := cmdio.Width(autoStopLabel(e)); l > autostopCol {
 					autostopCol = l
 				}
 				// A name equal to the id renders as `-`, so don't let
 				// it expand the column.
-				if e.Name != "" && e.Name != e.SandboxID {
-					if l := cmdio.Width(e.Name); l > nameCol {
+				if sandboxLabel(e) != "" && sandboxLabel(e) != sandboxResourceID(e) {
+					if l := cmdio.Width(sandboxLabel(e)); l > nameCol {
 						nameCol = l
 					}
 				}
@@ -130,27 +125,28 @@ Example:
 			ruleLen := idCol + nameCol + statusCol + autostopCol + defaultCol + 8
 			fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, strings.Repeat("─", ruleLen)))
 
-			for _, e := range entries {
-				id := e.SandboxID
+			for i := range entries {
+				e := &entries[i]
+				id := sandboxResourceID(e)
 				def := ""
 				if id == defaultID {
 					def = cmdio.Cyan(ctx, "*")
 				}
 				idStr := cmdio.Bold(ctx, id)
-				if strings.EqualFold(e.Status, "running") {
+				if strings.EqualFold(sandboxStatus(e), "running") {
 					idStr = cmdio.Bold(ctx, cmdio.Cyan(ctx, id))
 				}
 				nm := cmdio.Faint(ctx, "-")
-				if e.Name != "" && e.Name != id {
-					nm = e.Name
+				if sandboxLabel(e) != "" && sandboxLabel(e) != id {
+					nm = sandboxLabel(e)
 				}
 				// cmdio.PadRight measures visible width, so the ANSI escapes
 				// the color helpers wrap each cell in don't break alignment.
 				fmt.Fprintf(out, "  %s  %s  %s  %s  %s\n",
 					cmdio.PadRight(idStr, idCol),
 					cmdio.PadRight(nm, nameCol),
-					cmdio.PadRight(status(ctx, e.Status), statusCol),
-					cmdio.PadRight(cmdio.Faint(ctx, e.autoStopLabel()), autostopCol),
+					cmdio.PadRight(status(ctx, sandboxStatus(e)), statusCol),
+					cmdio.PadRight(cmdio.Faint(ctx, autoStopLabel(e)), autostopCol),
 					def)
 			}
 			blank(out)

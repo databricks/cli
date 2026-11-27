@@ -1,4 +1,4 @@
-  ✓ Sandbox happy-panda-1234 is running
-  default    happy-panda-1234
+  ✓ Sandbox [SANDBOX_ID] is running
+  default    [SANDBOX_ID]
 
-happy-panda-1234
+[SANDBOX_ID]

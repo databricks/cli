@@ -1,1 +1,4 @@
+fault.py "GET /api/2.0/sandboxes" 503 0 3
 errcode $CLI sandbox list
+
+print_requests.py //sandboxes --get

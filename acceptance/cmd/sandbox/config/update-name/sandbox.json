@@ -1,0 +1,8 @@
+{
+  "display_name": "renamed-project",
+  "spec": {
+    "compute": {
+      "inactivity_timeout": "900s"
+    }
+  }
+}

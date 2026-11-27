@@ -1,6 +1,1 @@
-# A persistent 503 is retried max503Attempts times, then reported as a
-# user-facing unavailability error.
-[[Server]]
-Pattern = "GET /api/2.0/sandboxes"
-Response.StatusCode = 503
-Response.Body = 'no healthy upstream'
+RecordRequests = true

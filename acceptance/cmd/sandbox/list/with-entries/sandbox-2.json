@@ -1,0 +1,8 @@
+{
+  "display_name": "sad-otter-5678",
+  "spec": {
+    "compute": {
+      "inactivity_timeout": "600s"
+    }
+  }
+}

@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/sandbox"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -468,6 +469,29 @@ func AddDefaultHandlers(server *Server) {
 			}
 		}
 		return data
+	})
+
+	// Sandbox lifecycle APIs share state across requests and command invocations.
+	server.Handle("POST", "/api/2.0/sandboxes", func(req Request) any {
+		return req.Workspace.SandboxesCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/sandboxes", func(req Request) any {
+		return req.Workspace.SandboxesList(req)
+	})
+	server.Handle("GET", "/api/2.0/sandboxes/{sandbox_id}", func(req Request) any {
+		return req.Workspace.SandboxesGet(req.Vars["sandbox_id"])
+	})
+	server.Handle("PATCH", "/api/2.0/sandboxes/{sandbox_id}", func(req Request) any {
+		return req.Workspace.SandboxesUpdate(req, req.Vars["sandbox_id"])
+	})
+	server.Handle("DELETE", "/api/2.0/sandboxes/{sandbox_id}", func(req Request) any {
+		return req.Workspace.SandboxesDelete(req.Vars["sandbox_id"])
+	})
+	server.Handle("POST", "/api/2.0/sandboxes/{sandbox_id}/start", func(req Request) any {
+		return req.Workspace.SandboxesSetState(req.Vars["sandbox_id"], sandbox.SandboxStateSandboxStateRunning)
+	})
+	server.Handle("POST", "/api/2.0/sandboxes/{sandbox_id}/stop", func(req Request) any {
+		return req.Workspace.SandboxesSetState(req.Vars["sandbox_id"], sandbox.SandboxStateSandboxStateStopped)
 	})
 
 	// Sandbox file APIs:

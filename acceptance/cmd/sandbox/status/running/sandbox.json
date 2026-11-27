@@ -1,0 +1,8 @@
+{
+  "display_name": "my-project",
+  "spec": {
+    "compute": {
+      "inactivity_timeout": "1800s"
+    }
+  }
+}

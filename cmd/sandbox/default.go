@@ -54,7 +54,7 @@ Example:
 			if err := setDefault(ctx, profile, sandboxID); err != nil {
 				return fmt.Errorf("failed to set default: %w", err)
 			}
-			_ = upsertSandbox(ctx, profile, entry.SandboxID, entry.Name)
+			_ = upsertSandbox(ctx, profile, sandboxResourceID(entry), sandboxLabel(entry))
 			fmt.Fprintf(cmd.OutOrStdout(), "Default sandbox set to: %s\n", sandboxID)
 			return nil
 		},

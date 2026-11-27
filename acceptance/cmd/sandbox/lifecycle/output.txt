@@ -1,0 +1,149 @@
+
+>>> [CLI] sandbox status [SANDBOX_ID] --json
+{
+  "sandboxId": "[SANDBOX_ID]",
+  "status": "Running",
+  "name": "my-project",
+  "idleTimeout": "600s",
+  "noAutostop": false
+}
+
+>>> [CLI] sandbox config [SANDBOX_ID] --idle-timeout 15m
+
+  id         [SANDBOX_ID]
+  name       my-project
+  autostop   15m
+
+
+>>> [CLI] sandbox config [SANDBOX_ID] --name renamed-project
+
+  id         [SANDBOX_ID]
+  name       renamed-project
+  autostop   15m
+
+
+>>> [CLI] sandbox config [SANDBOX_ID] --no-autostop
+
+  id         [SANDBOX_ID]
+  name       renamed-project
+  autostop   never
+
+
+>>> [CLI] sandbox config [SANDBOX_ID] --no-autostop=false
+
+  id         [SANDBOX_ID]
+  name       renamed-project
+  autostop   10m
+
+
+>>> [CLI] sandbox stop [SANDBOX_ID]
+  ✓ Stopped [SANDBOX_ID]
+
+>>> [CLI] sandbox start [SANDBOX_ID]
+  ✓ Started [SANDBOX_ID]
+
+>>> [CLI] sandbox start [SANDBOX_ID]
+  ✓ Already running [SANDBOX_ID]
+
+>>> [CLI] sandbox list --json
+[
+  {
+    "sandboxId": "[SANDBOX_ID]",
+    "status": "Running",
+    "name": "renamed-project",
+    "idleTimeout": "600s",
+    "noAutostop": false
+  }
+]
+
+>>> [CLI] sandbox delete [SANDBOX_ID] --auto-approve
+  ✓ Removed [SANDBOX_ID] (default cleared)
+
+>>> [CLI] sandbox list
+  No sandboxes found.
+
+>>> musterr [CLI] sandbox status [SANDBOX_ID]
+Error: no sandbox named "[SANDBOX_ID]" — `databricks sandbox list` shows available IDs
+
+>>> print_requests.py //sandboxes
+{
+  "method": "POST",
+  "path": "/api/2.0/sandboxes",
+  "q": {
+    "sandbox_id": "[SANDBOX_ID]"
+  },
+  "body": {
+    "display_name": "my-project",
+    "spec": {
+      "compute": {
+        "inactivity_timeout": "600s"
+      }
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/sandboxes/[SANDBOX_ID]",
+  "q": {
+    "update_mask": "spec.compute.inactivity_timeout"
+  },
+  "body": {
+    "spec": {
+      "compute": {
+        "inactivity_timeout": "900s"
+      }
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/sandboxes/[SANDBOX_ID]",
+  "q": {
+    "update_mask": "display_name"
+  },
+  "body": {
+    "display_name": "renamed-project"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/sandboxes/[SANDBOX_ID]",
+  "q": {
+    "update_mask": "spec.compute.inactivity_timeout"
+  },
+  "body": {
+    "spec": {
+      "compute": {
+        "inactivity_timeout": "0s"
+      }
+    }
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/sandboxes/[SANDBOX_ID]",
+  "q": {
+    "update_mask": "spec.compute.inactivity_timeout"
+  },
+  "body": {
+    "spec": {
+      "compute": {
+        "inactivity_timeout": "600s"
+      }
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/sandboxes/[SANDBOX_ID]/stop",
+  "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/sandboxes/[SANDBOX_ID]/start",
+  "body": {}
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/sandboxes/[SANDBOX_ID]"
+}

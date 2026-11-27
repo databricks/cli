@@ -52,26 +52,23 @@ Example:
 				return fmt.Errorf("failed to get sandbox %s: %w", sandboxID, err)
 			}
 
-			_ = setGatewayHost(ctx, profile, entry.GatewayHost)
-			_ = upsertSandbox(ctx, profile, entry.SandboxID, entry.Name)
+			_ = upsertSandbox(ctx, profile, sandboxResourceID(entry), sandboxLabel(entry))
 
 			if jsonOutput(cmd, outputJSON) {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(entry)
+				return enc.Encode(sandboxJSON(entry))
 			}
 
 			out := cmd.OutOrStdout()
 			blank(out)
-			field(ctx, out, "id", cmdio.Bold(ctx, entry.SandboxID))
-			if entry.Name != "" {
-				field(ctx, out, "name", entry.Name)
+			field(ctx, out, "id", cmdio.Bold(ctx, sandboxResourceID(entry)))
+			if sandboxLabel(entry) != "" {
+				field(ctx, out, "name", sandboxLabel(entry))
 			}
-			field(ctx, out, "status", status(ctx, entry.Status))
-			if entry.GatewayHost != "" {
-				field(ctx, out, "gateway", cmdio.Faint(ctx, entry.GatewayHost))
-			}
-			field(ctx, out, "autostop", cmdio.Faint(ctx, entry.autoStopLabel()))
+			field(ctx, out, "status", status(ctx, sandboxStatus(entry)))
+
+			field(ctx, out, "autostop", cmdio.Faint(ctx, autoStopLabel(entry)))
 			blank(out)
 			return nil
 		},

@@ -114,7 +114,7 @@ func TestEnsureRunningLifecycle(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				assert.Equal(t, tc.wantStatus, got.Status)
+				assert.Equal(t, tc.wantStatus, sandboxStatus(got))
 			}
 			assert.Equal(t, int32(len(tc.steps)), requestCount.Load())
 			assert.Equal(t, tc.wantStarts, startCount.Load())

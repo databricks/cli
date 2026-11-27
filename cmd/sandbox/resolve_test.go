@@ -192,7 +192,7 @@ func TestResolveSandboxUsesDefault(t *testing.T) {
 	got, sb, err := resolveSandbox(ctx, newLookupAPI(t, http.StatusOK), "profile", "")
 	require.NoError(t, err)
 	assert.Equal(t, testSandboxID, got)
-	assert.Equal(t, "Running", sb.Status)
+	assert.Equal(t, "Running", sandboxStatus(sb))
 }
 
 func TestResolveSandboxClearsMissingDefault(t *testing.T) {

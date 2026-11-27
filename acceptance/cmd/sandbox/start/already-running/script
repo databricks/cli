@@ -1,1 +1,4 @@
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/sandboxes?sandbox_id=happy-panda-1234 --json @sandbox.json > LOG.seed-0
+MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/sandboxes/happy-panda-1234 > LOG.ready-happy-panda-1234
+
 $CLI sandbox start happy-panda-1234
