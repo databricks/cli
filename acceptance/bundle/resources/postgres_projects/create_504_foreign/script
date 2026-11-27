@@ -6,7 +6,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Outside the bundle, create a project with the project_id the bundle uses"
+title "Outside the bundle, the deploying user creates a project with the project_id the bundle uses"
 trace $CLI postgres create-project test-pg-proj --json '{"spec": {"display_name": "Test Postgres Project", "pg_version": 16}}' | jq '{name}'
 
 title "Deploy fails: the project_id is taken"

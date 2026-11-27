@@ -190,10 +190,12 @@ func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *ser
 			createTime: func(found *serving.ServingEndpointDetailed) (time.Time, bool) {
 				return unixMilliTime(found.CreationTimestamp)
 			},
-			alreadyExists:   isAlreadyExists,
-			createdByCaller: nil,
-			use:             useFound[serving.ServingEndpointDetailed],
-			create:          repeatCreate(create),
+			alreadyExists: isAlreadyExists,
+			createdByCaller: func(ctx context.Context, found *serving.ServingEndpointDetailed) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.Creator)
+			},
+			use:    useFound[serving.ServingEndpointDetailed],
+			create: repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

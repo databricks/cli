@@ -129,7 +129,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 			PgVersion:                   project.Spec.PgVersion,
 			HistoryRetentionDuration:    historyRetention,
 			EnablePgNativeLogin:         false,
-			Owner:                       TestUser.UserName,
+			Owner:                       creatorOf(req),
 			BranchLogicalSizeLimitBytes: 8796093022208, // 8 TB (real API default)
 			SyntheticStorageSizeBytes:   0,
 			ForceSendFields:             []string{"EnablePgNativeLogin", "SyntheticStorageSizeBytes"},

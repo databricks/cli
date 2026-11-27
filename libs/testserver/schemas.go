@@ -48,7 +48,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.CatalogType = "MANAGED_CATALOG"
 	schema.CreatedAt = nowMilli()
 	schema.UpdatedAt = schema.CreatedAt
-	schema.CreatedBy = s.CurrentUser().UserName
+	schema.CreatedBy = creatorOf(req)
 	schema.UpdatedBy = s.CurrentUser().UserName
 	schema.EffectivePredictiveOptimizationFlag = &catalog.EffectivePredictiveOptimizationFlag{
 		InheritedFromName: testMetastoreName,

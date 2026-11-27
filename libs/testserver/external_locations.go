@@ -37,7 +37,7 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 		EncryptionDetails: createRequest.EncryptionDetails,
 		FileEventQueue:    createRequest.FileEventQueue,
 		CreatedAt:         nowMilli(),
-		CreatedBy:         s.CurrentUser().UserName,
+		CreatedBy:         creatorOf(req),
 		UpdatedBy:         s.CurrentUser().UserName,
 		MetastoreId:       nextUUID(),
 		Owner:             s.CurrentUser().UserName,

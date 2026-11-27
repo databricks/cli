@@ -63,6 +63,21 @@ var createRecoveryOptOut = map[string]string{
 	"postgres_data_apis":   "candidate: a database has one Data API, but the read response takes its spec from the status, which can be empty while it is being enabled, so a recovered Data API needs a wait the create operation would otherwise do",
 }
 
+// createRecoveryNoCreatorCheck lists the resources that recover with recoverCreate but cannot check
+// who created the resource they find, with the reason. Such a resource takes a resource that
+// another principal created under the same name within the create-time window.
+// TestCreateRecoveryRejectsResourceOfAnotherPrincipal fails for a resource that takes another
+// principal's resource and is not listed here, and for a listed resource that does not.
+var createRecoveryNoCreatorCheck = map[string]string{
+	"dashboards":             "the read response does not name the creator",
+	"postgres_branches":      "the read response does not name the creator",
+	"postgres_endpoints":     "the read response does not name the creator",
+	"postgres_roles":         "the read response does not name the creator",
+	"postgres_databases":     "the read response does not name the creator",
+	"postgres_catalogs":      "the read response does not name the creator; the Unity Catalog catalog it registers would have to be read for it",
+	"postgres_synced_tables": "the read response does not name the creator; the Unity Catalog table it registers would have to be read for it",
+}
+
 // mutatingRequest is the method and path of a request that is not a read.
 type mutatingRequest struct {
 	method string
@@ -155,6 +170,18 @@ func newFaultClient(t *testing.T) (*databricks.WorkspaceClient, *faultTransport)
 	return client, transport
 }
 
+// newGuestClient returns a client for the test server behind client that acts as another
+// principal in the same workspace: the as-test-sp guest of libs/testserver.
+func newGuestClient(t *testing.T, client *databricks.WorkspaceClient) *databricks.WorkspaceClient {
+	guest, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:               client.Config.Host,
+		Token:              testserver.GuestServicePrincipalTokenPrefix + client.Config.Token,
+		RateLimitPerSecond: math.MaxInt,
+	})
+	require.NoError(t, err)
+	return guest
+}
+
 // doCreateLikeApply calls DoCreate and, like DeploymentUnit.Create in bundle/direct/apply.go,
 // repeats it while IsRetrySafe. repeated reports whether it did.
 func doCreateLikeApply(ctx context.Context, adapter *Adapter, state any) (id string, repeated bool, err error) {
@@ -237,6 +264,46 @@ func TestCreateRecoveryCoverage(t *testing.T) {
 					}
 				})
 			}
+		})
+	}
+}
+
+// TestCreateRecoveryRejectsResourceOfAnotherPrincipal checks that a failed create request does not
+// make DoCreate take a resource that another principal created under the same name just before:
+// the create request fails with a 504 that the backend did not apply, so the deployment created
+// nothing. A resource whose read response does not name the creator cannot tell and goes in
+// createRecoveryNoCreatorCheck with the reason.
+func TestCreateRecoveryRejectsResourceOfAnotherPrincipal(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		if _, ok := createRecoveryOptOut[resourceType]; ok {
+			continue
+		}
+		t.Run(resourceType, func(t *testing.T) {
+			ctx := env.Set(t.Context(), retry.IntervalMsVariable, "1")
+			client, transport := newFaultClient(t)
+			adapter, err := NewAdapter(resource, resourceType, client)
+			require.NoError(t, err)
+			state := prepareTestState(t, resourceType, adapter, client)
+
+			// Another principal creates the resource.
+			guestAdapter, err := NewAdapter(resource, resourceType, newGuestClient(t, client))
+			require.NoError(t, err)
+			_, _, err = guestAdapter.DoCreate(ctx, state)
+			require.NoError(t, err)
+
+			transport.arm(0, false)
+			_, repeated, err := doCreateLikeApply(ctx, adapter, state)
+			if repeated || transport.injected == nil {
+				// An idempotent create sets the desired value whoever set it before, and sends no
+				// request when the value is already set.
+				return
+			}
+			if reason, ok := createRecoveryNoCreatorCheck[resourceType]; ok {
+				require.NoError(t, err, "%s does not take a resource another principal created; remove it from createRecoveryNoCreatorCheck (%s)", resourceType, reason)
+				return
+			}
+			require.Error(t, err, "%s takes a resource that another principal created; set createdByCaller in its createRecovery, or add it to createRecoveryNoCreatorCheck with the reason", resourceType)
+			require.ErrorContains(t, err, "exists but was created by another user")
 		})
 	}
 }

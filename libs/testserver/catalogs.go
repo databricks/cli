@@ -63,7 +63,7 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		Properties:   createRequest.Properties,
 		FullName:     createRequest.Name,
 		CreatedAt:    nowMilli(),
-		CreatedBy:    s.CurrentUser().UserName,
+		CreatedBy:    creatorOf(req),
 		UpdatedBy:    s.CurrentUser().UserName,
 		MetastoreId:  nextUUID(),
 		Owner:        s.CurrentUser().UserName,

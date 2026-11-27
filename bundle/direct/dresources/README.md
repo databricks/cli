@@ -48,6 +48,8 @@ A create request can fail with a timeout or a 5xx after the backend applied it. 
 
 `TestCreateRecoveryCoverage` (create_recovery_coverage_test.go) fails a create request of every resource, with and without the backend applying it. A resource that can do neither, e.g. because the backend assigns its ID, is listed in `createRecoveryOptOut` with the reason.
 
+The create time alone does not tell a resource our request created from one that someone else created under the same name in the same minute. If the read response names the creator, or an owner that starts out as the creator, set `createdByCaller` so that only a resource the deploying principal created is used. `TestCreateRecoveryRejectsResourceOfAnotherPrincipal` creates each resource as another principal first; a resource that cannot check the creator is listed in `createRecoveryNoCreatorCheck` with the reason.
+
 ## Async APIs: WaitAfterCreate / WaitAfterUpdate
 
 For resources whose create or update is asynchronous (the resource is not immediately ready after the call returns), implement `WaitAfterCreate` and/or `WaitAfterUpdate` instead of polling inline inside DoCreate/DoUpdate. These are the correct extension points in the framework, and polling inline bypasses state persistence timing.

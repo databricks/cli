@@ -56,7 +56,7 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		ExpireTime:     inputSecret.ExpireTime,
 		CreateTime:     now,
 		UpdateTime:     now,
-		CreatedBy:      s.CurrentUser().UserName,
+		CreatedBy:      creatorOf(req),
 		UpdatedBy:      s.CurrentUser().UserName,
 		EffectiveOwner: inputSecret.Owner,
 		MetastoreId:    "test-metastore-id",

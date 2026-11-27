@@ -45,11 +45,13 @@ func (r *ResourceFeature) DoCreate(ctx context.Context, config *ml.Feature) (str
 			get: func(ctx context.Context) (*ml.Feature, error) {
 				return r.client.FeatureEngineering.GetFeature(ctx, ml.GetFeatureRequest{FullName: fullName})
 			},
-			createTime:      func(found *ml.Feature) (time.Time, bool) { return sdkTime(found.CreatedAt) },
-			alreadyExists:   isAlreadyExists,
-			createdByCaller: nil,
-			use:             useFound[ml.Feature],
-			create:          repeatCreate(create),
+			createTime:    func(found *ml.Feature) (time.Time, bool) { return sdkTime(found.CreatedAt) },
+			alreadyExists: isAlreadyExists,
+			createdByCaller: func(ctx context.Context, found *ml.Feature) (bool, error) {
+				return createdByCurrentUser(ctx, r.client, found.CreatedBy)
+			},
+			use:    useFound[ml.Feature],
+			create: repeatCreate(create),
 		}, err)
 		if err != nil {
 			return "", nil, err

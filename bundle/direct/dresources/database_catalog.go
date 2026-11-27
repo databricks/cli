@@ -34,7 +34,7 @@ func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database
 		if err != nil {
 			return nil, err
 		}
-		return &foundDatabaseCatalog{catalog: result, createdAt: 0}, nil
+		return &foundDatabaseCatalog{catalog: result, createdAt: 0, createdBy: ""}, nil
 	}
 	start := time.Now()
 	found, err := create(ctx)
@@ -47,12 +47,13 @@ func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database
 	return found.catalog.Name, nil, nil
 }
 
-// foundDatabaseCatalog is a database catalog with the create time of the Unity Catalog catalog it
-// registers, which the Database API does not return. createdAt is only set on a catalog that the
-// lookup after a failed create found.
+// foundDatabaseCatalog is a database catalog with the create time and creator of the Unity Catalog
+// catalog it registers, which the Database API does not return. createdAt and createdBy are only
+// set on a catalog that the lookup after a failed create found.
 type foundDatabaseCatalog struct {
 	catalog   *database.DatabaseCatalog
 	createdAt int64
+	createdBy string
 }
 
 // recoverFailedCreate handles a create request that failed; see recoverCreate. Catalog creates
@@ -72,18 +73,20 @@ func (r *ResourceDatabaseCatalog) recoverFailedCreate(ctx context.Context, name 
 			if apierr.IsMissing(err) {
 				// The database catalog exists, so repeating the create would only fail. Without
 				// a create time it is not known to be ours, which recoverCreate reports.
-				return &foundDatabaseCatalog{catalog: dbCatalog, createdAt: 0}, nil
+				return &foundDatabaseCatalog{catalog: dbCatalog, createdAt: 0, createdBy: ""}, nil
 			}
 			if err != nil {
 				return nil, err
 			}
-			return &foundDatabaseCatalog{catalog: dbCatalog, createdAt: ucCatalog.CreatedAt}, nil
+			return &foundDatabaseCatalog{catalog: dbCatalog, createdAt: ucCatalog.CreatedAt, createdBy: ucCatalog.CreatedBy}, nil
 		},
-		createTime:      func(found *foundDatabaseCatalog) (time.Time, bool) { return unixMilliTime(found.createdAt) },
-		alreadyExists:   isAlreadyExists,
-		createdByCaller: nil,
-		use:             useFound[foundDatabaseCatalog],
-		create:          repeatCreate(create),
+		createTime:    func(found *foundDatabaseCatalog) (time.Time, bool) { return unixMilliTime(found.createdAt) },
+		alreadyExists: isAlreadyExists,
+		createdByCaller: func(ctx context.Context, found *foundDatabaseCatalog) (bool, error) {
+			return createdByCurrentUser(ctx, r.client, found.createdBy)
+		},
+		use:    useFound[foundDatabaseCatalog],
+		create: repeatCreate(create),
 	}, createErr)
 }
 

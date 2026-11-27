@@ -1,5 +1,5 @@
 
-=== Outside the bundle, create a project with the project_id the bundle uses
+=== Outside the bundle, the deploying user creates a project with the project_id the bundle uses
 
 >>> [CLI] postgres create-project test-pg-proj --json {"spec": {"display_name": "Test Postgres Project", "pg_version": 16}}
 {

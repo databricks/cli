@@ -1,0 +1,41 @@
+
+=== Another principal creates an endpoint with the name the bundle uses
+
+>>> as-test-sp [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD --no-wait
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "created_by_deploying_user": false
+}
+
+=== The bundle's create request fails with a 504 that the backend did not apply: deploy does not take the endpoint
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-principal-[UNIQUE_NAME]/default/files...
+Error: cannot create resources.vector_search_endpoints.my_endpoint: vector search endpoint vs-endpoint-[UNIQUE_NAME] exists but was created by another user: Fault injected by test. (504 TEMPORARILY_UNAVAILABLE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/vector-search/endpoints
+HTTP Status: 504 Gateway Timeout
+API error_code: TEMPORARILY_UNAVAILABLE
+API message: Fault injected by test.
+
+Files: 0 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_requests.py --get //vector-search/endpoints //scim/v2/Me
+GET /api/2.0/preview/scim/v2/Me
+POST /api/2.0/vector-search/endpoints
+GET /api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]
+GET /api/2.0/preview/scim/v2/Me
+
+=== The endpoint is not in the bundle's state, and is still there
+
+>>> [CLI] bundle plan
+create vector_search_endpoints.my_endpoint
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]"
+}

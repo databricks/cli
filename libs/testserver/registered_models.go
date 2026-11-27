@@ -42,7 +42,7 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		StorageLocation: createRequest.StorageLocation,
 		FullName:        fullName,
 		CreatedAt:       nowMilli(),
-		CreatedBy:       s.CurrentUser().UserName,
+		CreatedBy:       creatorOf(req),
 		UpdatedBy:       s.CurrentUser().UserName,
 		MetastoreId:     nextUUID(),
 		Owner:           s.CurrentUser().UserName,

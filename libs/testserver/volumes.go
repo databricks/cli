@@ -46,7 +46,7 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 
 	volume.CreatedAt = nowMilli()
 	volume.UpdatedAt = volume.CreatedAt
-	volume.CreatedBy = s.CurrentUser().UserName
+	volume.CreatedBy = creatorOf(req)
 	volume.Owner = s.CurrentUser().UserName
 
 	defer s.LockUnlock()()

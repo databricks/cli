@@ -159,9 +159,17 @@ func (r *ResourcePostgresProject) recoverFailedCreate(ctx context.Context, req p
 		get: func(ctx context.Context) (*postgres.Project, error) {
 			return r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: name})
 		},
-		createTime:      func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
-		alreadyExists:   isPostgresAlreadyExists,
-		createdByCaller: nil,
+		createTime:    func(found *postgres.Project) (time.Time, bool) { return sdkTime(found.CreateTime) },
+		alreadyExists: isPostgresAlreadyExists,
+		// A project does not name its creator. Its owner is the creator until someone changes it,
+		// which nobody has had the time to do for a project our request created.
+		createdByCaller: func(ctx context.Context, found *postgres.Project) (bool, error) {
+			owner := ""
+			if found.Status != nil {
+				owner = found.Status.Owner
+			}
+			return createdByCurrentUser(ctx, r.client, owner)
+		},
 		use: func(ctx context.Context, project *postgres.Project) (*PostgresProjectRemote, error) {
 			if err := r.waitDefaultBranchReady(ctx, project); err != nil {
 				return nil, err

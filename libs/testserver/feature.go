@@ -45,7 +45,7 @@ func (s *FakeWorkspace) FeaturesCreate(req Request) Response {
 		}
 	}
 	feature.CatalogName, feature.SchemaName, feature.Name = parts[0], parts[1], parts[2]
-	feature.CreatedBy = s.CurrentUser().UserName
+	feature.CreatedBy = creatorOf(req)
 	feature.CreatedAt = sdktime.New(time.Unix(0, nowNano()).UTC())
 
 	s.Features[feature.FullName] = feature

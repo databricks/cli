@@ -60,7 +60,7 @@ func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 		FullName:    databaseCatalog.Name,
 		CreatedAt:   now,
 		UpdatedAt:   now,
-		CreatedBy:   s.CurrentUser().UserName,
+		CreatedBy:   creatorOf(req),
 		UpdatedBy:   s.CurrentUser().UserName,
 		Owner:       s.CurrentUser().UserName,
 		MetastoreId: nextUUID(),
