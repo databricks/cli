@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
@@ -55,7 +54,7 @@ func runRead(cmd *cobra.Command, src libskills.Source, name string) error {
 		return err
 	}
 	if catalog.Stale {
-		cmdio.LogString(ctx, readProvenance(catalog))
+		cmdio.LogString(ctx, provenanceLine(catalog))
 	}
 
 	i := slices.IndexFunc(catalog.Skills, func(s libskills.Skill) bool { return s.Name == name })
@@ -127,11 +126,4 @@ func writeReadText(w io.Writer, goos, name string, content []byte, files []strin
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
-}
-
-// readProvenance says where a stale catalog came from. A stale catalog is a
-// cached copy the live source could not refresh.
-func readProvenance(catalog *libskills.Catalog) string {
-	return fmt.Sprintf("Skills come from %s (release %s, fetched %s). The source could not be refreshed, so the content may be out of date.",
-		catalog.Label, catalog.Version, catalog.FetchedAt.Format(time.RFC3339))
 }

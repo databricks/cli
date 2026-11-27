@@ -86,7 +86,28 @@ func TestRunReadStaleCatalogWritesProvenanceToStderr(t *testing.T) {
 
 	assert.Equal(t, "# Demo\n", stdout.String())
 	assert.Equal(t, "Skills come from release cache (release 0.0.1, fetched 2026-11-26T10:00:00Z). "+
-		"The source could not be refreshed, so the content may be out of date.\n", stderr.String())
+		"The source could not be refreshed, so the list may be out of date.\n", stderr.String())
+}
+
+func TestRunReadBundledCatalogOmitsFetchTime(t *testing.T) {
+	src := fakeSource{
+		catalog: &libskills.Catalog{
+			Label:   "bundled",
+			Version: "1.2.3",
+			Stale:   true,
+			Skills: []libskills.Skill{
+				{Name: "demo-skill", Version: "1.2.3", Files: []string{"SKILL.md"}},
+			},
+		},
+		files: map[string][]byte{"demo-skill/SKILL.md": []byte("# Demo\n")},
+	}
+
+	cmd, stdout, stderr := newReadTestCmd(t)
+	require.NoError(t, runRead(cmd, src, "demo-skill"))
+
+	assert.Equal(t, "# Demo\n", stdout.String())
+	assert.Equal(t, "Skills come from bundled (release 1.2.3). The source could not be refreshed, so the list may be out of date.\n",
+		stderr.String())
 }
 
 func TestRunReadNamesReleaseWhenSkillHasNoSkillFile(t *testing.T) {
