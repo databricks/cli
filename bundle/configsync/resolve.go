@@ -354,7 +354,6 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				leaveUnapplied(ctx, configChange, fullPath, "the file does not write it where it is defined")
 				skipped++
 				if isRename {
-					resourceChanges[rename.addPath].Operation = OperationSkip
 					skipped++
 				}
 				continue
