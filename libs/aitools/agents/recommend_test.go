@@ -165,6 +165,65 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	assert.Contains(t, <-stderr, "databricks aitools auto-install enable")
 }
 
+// A "yes" is the consent to keep the tools up to date, unless the user
+// answered before.
+func TestRecommendSkillsInstallInteractiveYesStoresTheConsent(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		prior autoinstall.Consent
+		want  autoinstall.Consent
+	}{
+		{name: "unknown", prior: autoinstall.ConsentUnknown, want: autoinstall.ConsentGiven},
+		{name: "an opt-out stays", prior: autoinstall.ConsentOptedOut, want: autoinstall.ConsentOptedOut},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Setenv("HOME", tmpDir)
+			t.Setenv("USERPROFILE", tmpDir)
+
+			origRegistry := Registry
+			Registry = []*Agent{
+				{
+					Name:        "test-agent",
+					DisplayName: "Test Agent",
+					ConfigDir:   func(_ context.Context) (string, error) { return tmpDir, nil },
+				},
+			}
+			defer func() { Registry = origRegistry }()
+
+			ctx, testIO := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+			defer testIO.Done()
+			ctx = telemetry.WithNewLogger(ctx)
+			if tc.prior != autoinstall.ConsentUnknown {
+				_, err := autoinstall.SetConsent(ctx, tc.prior)
+				require.NoError(t, err)
+			}
+
+			// Drain stderr so the prompt write doesn't block.
+			go func() { _, _ = io.Copy(io.Discard, testIO.Stderr) }()
+
+			installed := false
+			errc := make(chan error, 1)
+			go func() {
+				errc <- RecommendSkillsInstall(ctx, noInstalledPlugins, func(context.Context) error {
+					installed = true
+					return nil
+				})
+			}()
+
+			_, err := testIO.Stdin.WriteString("y\n")
+			require.NoError(t, err)
+			require.NoError(t, testIO.Stdin.Flush())
+
+			require.NoError(t, <-errc)
+			assert.True(t, installed)
+			state, err := autoinstall.Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, state.Consent())
+		})
+	}
+}
+
 func TestMaybeVersionCheckTip(t *testing.T) {
 	noPlugins := func(context.Context) []string { return nil }
 	recordedCodexPlugin := func(context.Context) []string { return []string{NameCodex} }

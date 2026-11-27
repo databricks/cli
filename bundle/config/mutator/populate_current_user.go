@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
@@ -85,8 +84,8 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		return diag.FromErr(err)
 	}
 
-	b.Metrics.SetBoolValue(metrics.CurrentUserFromSCIMFallback, userFromSCIM)
-	b.Metrics.SetBoolValue(metrics.CurrentUserGroupsFromSCIMFallback, groupsFromSCIM)
+	b.Telemetry.CurrentUserFromSCIMFallback = new(userFromSCIM)
+	b.Telemetry.CurrentUserGroupsFromSCIMFallback = new(groupsFromSCIM)
 
 	b.Config.Workspace.CurrentUser = &config.User{
 		ShortName:          iamutil.GetShortUserName(user),

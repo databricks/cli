@@ -123,9 +123,27 @@ func record(s *State, version string, attempts int, id string, now time.Time) {
 	}
 }
 
-// MarkInstalling sets State.Installing before a first install starts.
+// RecordUnfinished settles version as Record does with attempts 0, but keeps
+// State.Installing and State.InstallStateDigest: the first install was
+// refused the skills, so an agent did not get its tools, and a later version
+// finishes the install.
+func RecordUnfinished(ctx context.Context, version, id string) error {
+	return updateState(ctx, func(s *State) {
+		installing, digest := s.Installing, s.InstallStateDigest
+		record(s, version, 0, id, time.Time{})
+		s.Installing, s.InstallStateDigest = installing, digest
+	})
+}
+
+// MarkInstalling sets State.Installing before a first install starts, and
+// State.InstalledWithoutConsent when the user has not answered.
 func MarkInstalling(ctx context.Context) error {
-	return updateState(ctx, func(s *State) { s.Installing = true })
+	return updateState(ctx, func(s *State) {
+		s.Installing = true
+		if s.Consent() == ConsentUnknown {
+			s.InstalledWithoutConsent = true
+		}
+	})
 }
 
 // SaveInstallStateDigest sets State.InstallStateDigest after a first install

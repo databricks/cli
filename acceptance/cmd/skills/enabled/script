@@ -1,0 +1,7 @@
+# With the variable set, the group lists its five subcommands and stays hidden from the root help.
+trace $CLI skills --help
+trace $CLI --help | contains.py "!  skills " > LOG.help
+
+# The remaining stub, list, exits non-zero with the not-implemented message.
+# The other subcommands have their own acceptance tests: files/ for list-files and read-file, search/ for search.
+musterr trace $CLI skills list

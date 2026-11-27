@@ -28,6 +28,10 @@ func FormatTextOutput(changes Changes) string {
 
 		for _, path := range paths {
 			configChange := resourceChanges[path]
+			if configChange.Reason != "" {
+				fmt.Fprintf(&output, "  %s: %s (%s)\n", path, configChange.Operation, configChange.Reason)
+				continue
+			}
 			fmt.Fprintf(&output, "  %s: %s\n", path, configChange.Operation)
 		}
 

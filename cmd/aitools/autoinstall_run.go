@@ -180,6 +180,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		log.Debugf(ctx, "auto-install: skipped: %v", err)
 		return nil
 	}
+	consentExistingInstall(ctx, &in)
 	reason := autoinstall.Decide(in)
 	if !reason.Due() {
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
@@ -340,16 +341,26 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 		runCtx, cancel := context.WithTimeout(qctx, installTimeout)
 		result, err = tools.install(runCtx)
 		cancel()
-		if err != nil && tools.fresh() {
+		if tools.fresh() && (err != nil || result.unfinished) {
 			saveInstallStateDigest(ctx, tools.globalDir)
 		}
 	}
 	if _, refused := errors.AsType[*installer.RefusedError](err); refused {
 		// The installed skills are newer than the release this CLI would
-		// install (the downgrade guard). Retrying changes nothing until a
-		// newer release, which a later version gets.
+		// install (the downgrade guard), or a skills agent's directory has an
+		// entry named after a skill to install that the user or another tool
+		// put there. Retrying this version changes nothing: a later version
+		// tries again, and installs once a newer release is out or the user
+		// has moved that entry out of the agent's skills directory.
+		//
+		// The first install stays unfinished only when this attempt or an
+		// earlier one left something behind: a refusal before anything was
+		// written leaves nothing for a later run to finish, and the marker
+		// would make it take skills without install state in the global
+		// directory for its own.
 		log.Debugf(ctx, "auto-install: kept the installed tools: %v", err)
-		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept}, nil
+		unfinished := tools.fresh() && (prior.Installing || installStateSaved(tools.globalDir))
+		result, err = installResult{outcome: protos.AitoolsAutoInstallOutcomeKept, unfinished: unfinished, refusal: err}, nil
 	}
 	switch {
 	case err != nil:
@@ -364,7 +375,11 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 			cmdio.LogString(ctx, "Could not install Databricks AI tools. To install them, run: databricks aitools install")
 		}
 	default:
-		r.settle(ctx, result.outcome)
+		if result.unfinished {
+			r.settleUnfinished(ctx, result.outcome)
+		} else {
+			r.settle(ctx, result.outcome)
+		}
 		if result.outcome == protos.AitoolsAutoInstallOutcomeInstalled && len(result.agents) > 0 {
 			verb := "Installed"
 			if result.updated {
@@ -372,8 +387,61 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) os
 			}
 			cmdio.LogString(ctx, fmt.Sprintf("%s Databricks AI tools for %s. Disable: %s", verb, strings.Join(result.agents, ", "), autoInstallDisable))
 		}
+		if asked && result.refusal != nil {
+			// The user said yes and waits for the skills; the refusal names
+			// what was kept and the command that replaces it.
+			cmdio.LogString(ctx, "Did not install the Databricks AI tools skills: "+result.refusal.Error())
+		}
 	}
 	return nil
+}
+
+// installStateSaved reports whether the global directory has install state.
+// State that cannot be read counts as saved: something wrote it.
+func installStateSaved(globalDir string) bool {
+	existing, err := installer.LoadState(globalDir)
+	return err != nil || existing != nil
+}
+
+// consentExistingInstall stores the consent of a machine whose user never
+// answered but has a global installation that the CLI made (one with install
+// state): the user installed the tools, so auto-install keeps them up to date.
+// Skills without install state may be the user's own copies, and a project
+// installation belongs to the project, so neither counts. Nor does install
+// state that auto-install wrote itself without consent (a coding agent's run,
+// or a first install that did not finish). in is a run past stateFreeSkips;
+// one in CI or with auto-install turned off in the environment stores nothing.
+// in.State gets the stored consent.
+func consentExistingInstall(ctx context.Context, in *autoinstall.Inputs) {
+	if in.CI || in.EnvOptOut || in.State.Consent() != autoinstall.ConsentUnknown {
+		return
+	}
+	if in.State.Installing || in.State.InstalledWithoutConsent {
+		return
+	}
+	globalDir, err := installer.GlobalSkillsDir(ctx)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
+		return
+	}
+	existing, err := installer.LoadState(globalDir)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
+		return
+	}
+	if existing == nil {
+		return
+	}
+	previous, err := autoinstall.GiveConsentIfUnknown(ctx)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+		return
+	}
+	// An opt-out stored since the state was read stays, and the run finds it
+	// when it reads the state again under the run lock.
+	if previous != autoinstall.ConsentOptedOut {
+		in.State.Consented = true
+	}
 }
 
 // saveInstallStateDigest records the digest of the install state that a first
@@ -442,8 +510,8 @@ const skippedNotice = "Skipped. To install Databricks AI tools later, run: datab
 // version even when it is never answered: the process is killed, stdin is
 // closed, Ctrl+C is pressed, nobody answers within promptTimeout (an
 // unrecognized agent in a pseudo-terminal), or the answer is neither yes nor
-// no. "Yes" is recorded so that the version's retries do not ask again; only
-// "no" stores the opt-out.
+// no. "Yes" is recorded so that the version's retries do not ask again, and
+// stores the consent; "no" stores the opt-out.
 func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signal) {
 	if err := cmdio.DiscardInput(ctx); err != nil {
 		log.Debugf(ctx, "auto-install: could not discard the pending input: %v", err)
@@ -478,6 +546,10 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signa
 			// The install goes ahead; a retry of it asks again.
 			log.Debugf(ctx, "auto-install: could not save the answer: %v", err)
 		}
+		// The consent stays even if the install then fails or is refused.
+		if _, err := autoinstall.GiveConsentIfUnknown(ctx); err != nil {
+			log.Debugf(ctx, "auto-install: could not save the consent: %v", err)
+		}
 		return true, nil
 	case "n", "no":
 		r.decline(ctx)
@@ -493,7 +565,7 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signa
 // asks again.
 func (r autoInstallRun) decline(ctx context.Context) {
 	r.settle(ctx, protos.AitoolsAutoInstallOutcomeDeclined)
-	if err := autoinstall.Decline(ctx); err != nil {
+	if _, err := autoinstall.Decline(ctx); err != nil {
 		log.Warnf(ctx, "Could not save the answer, so a later CLI version asks again: %v", err)
 		cmdio.LogString(ctx, skippedNotice)
 		return
@@ -536,6 +608,17 @@ func (r autoInstallRun) settle(ctx context.Context, outcome protos.AitoolsAutoIn
 	r.report(ctx, outcome, protos.AitoolsErrorCategoryUnspecified)
 }
 
+// settleUnfinished settles the version as settle does, but keeps the first
+// install unfinished: it was refused the skills, so a later version finishes
+// it as a first install instead of updating what it recorded.
+func (r autoInstallRun) settleUnfinished(ctx context.Context, outcome protos.AitoolsAutoInstallOutcome) {
+	log.Debugf(ctx, "auto-install: %s, the first install is unfinished", strings.ToLower(string(outcome)))
+	if err := autoinstall.RecordUnfinished(ctx, r.version, r.id); err != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+	}
+	r.report(ctx, outcome, protos.AitoolsErrorCategoryUnspecified)
+}
+
 // report buffers the auto-install event; cmd/root uploads it at exit when the
 // command resolved auth.
 func (r autoInstallRun) report(ctx context.Context, outcome protos.AitoolsAutoInstallOutcome, category protos.AitoolsErrorCategory) {
@@ -567,6 +650,11 @@ type installResult struct {
 	updated bool
 	// agents names the agents that got new or updated tools.
 	agents []string
+	// unfinished is set when a first install was refused the skills after
+	// it left something behind: an agent did not get its tools.
+	unfinished bool
+	// refusal is why the skills were refused, if they were.
+	refusal error
 }
 
 // toolsPlan is what an auto-install attempt does: update the existing global
@@ -633,6 +721,17 @@ func planTools(ctx context.Context, prior autoinstall.State) (toolsPlan, error) 
 	if len(plan) == 0 {
 		return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeSkippedNoAgents, skipWhy: "no supported coding agent has a config directory"}, nil
 	}
+	if unfinished {
+		// An agent that got its plugin before the install stopped has its
+		// tools: installing the plugin again would rerun its CLI and announce
+		// the agent on every version until the install finishes.
+		plan = slices.DeleteFunc(plan, func(it agentPlanItem) bool {
+			return it.delivery == deliveryPlugin && pluginAlreadyInstalledFn(ctx, it.agent, installer.ScopeGlobal)
+		})
+		if len(plan) == 0 {
+			return toolsPlan{skip: protos.AitoolsAutoInstallOutcomeUpToDate, skipWhy: "every agent got its tools before the install stopped"}, nil
+		}
+	}
 	if !agentCLIsStoppable {
 		plan = slices.DeleteFunc(plan, func(it agentPlanItem) bool {
 			return it.delivery == deliveryPlugin && !it.cliMissing
@@ -688,7 +787,13 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 	if t.existing != nil {
 		return updateTools(ctx, t.globalDir, t.existing)
 	}
-	opts := installer.InstallOptions{Scope: installer.ScopeGlobal}
+	// A skill in an agent's own directory, named after a skill the install
+	// gives that agent, that is neither a link to nor a copy of the skill in
+	// the global directory was put there by the user or another tool, and the
+	// install would move it to a temporary directory. The unfinished-install
+	// marker does not make it ours: the user may have added it after the
+	// install stopped.
+	opts := installer.InstallOptions{Scope: installer.ScopeGlobal, KeepHandPlacedSkills: true}
 	outcomes, err := executePlan(ctx, &installer.GitHubManifestSource{}, t.plan, opts, installInvocation{scope: installer.ScopeGlobal}, true)
 	topErr := topLevelFailure(err)
 	logInstallEvent(ctx, t.plan, installOpts{Scope: opts.Scope, Trigger: protos.AitoolsInstallTriggerAutoFirstRun}, classifyInstallError(topErr), outcomes)
@@ -701,6 +806,15 @@ func (t toolsPlan) install(ctx context.Context) (installResult, error) {
 		if o.status == outcomeInstalled {
 			names = append(names, o.agent.DisplayName)
 		}
+	}
+	// executePlan installs the skills before the plugins, and the skills
+	// refusal does not stop the plugin installs: it is returned after them.
+	// So a refusal still reports the agents that got a plugin, and leaves the
+	// install unfinished for the skills agents. Without any such agent the
+	// caller reports it as kept.
+	if _, refused := errors.AsType[*installer.RefusedError](err); refused && len(names) > 0 {
+		log.Debugf(ctx, "auto-install: kept the skills: %v", err)
+		return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names, unfinished: true, refusal: err}, nil
 	}
 	return installResult{outcome: protos.AitoolsAutoInstallOutcomeInstalled, agents: names}, err
 }

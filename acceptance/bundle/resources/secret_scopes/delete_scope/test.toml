@@ -1,3 +1,3 @@
-Badness = "Removing a secret scope from the config makes bundle deploy delete it (POST /api/2.0/secrets/scopes/delete) without asking, which loses every secret stored in it. secret_scopes is not in the deploy approval groups (bundle/phases/deploy.go), unlike schemas and volumes. Deleting a secret scope should ask for approval, like other resources that hold data."
+Badness = "Removing a secret scope from the config makes bundle deploy delete it (POST /api/2.0/secrets/scopes/delete) without asking, which loses every secret stored in it. secret_scopes is not in the deploy approval table (bundle/phases/approval.go), unlike schemas and volumes. Deleting a secret scope should ask for approval, like other resources that hold data."
 Cloud = true
 RecordRequests = true

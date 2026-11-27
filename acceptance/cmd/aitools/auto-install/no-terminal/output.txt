@@ -26,5 +26,6 @@ databricks-test
 >>> auto_install_state
 {
   "last_version": "1.30.0",
+  "installed_without_consent": true,
   "id": "treatment-machine"
 }

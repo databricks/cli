@@ -1,0 +1,35 @@
+P   bundle
+P   bundle.name
+P   bundle.uuid
+P   resources
+P   resources.jobs
+P   resources.jobs.*
+P   resources.jobs.*.name
+P   resources.pipelines
+P   resources.pipelines.*
+P   resources.pipelines.*.name
+P   sync
+P   sync.paths
+P   sync.paths[*]
+P F telemetry.python_wheel_wrapper_is_set
+P F telemetry.presets_name_prefix_is_set
+P F telemetry.deployment_history_enabled
+P F telemetry.immutable_snapshot_used
+P F telemetry.state_path_is_shared
+P   telemetry.dms_compat_auto
+P F telemetry.permissions_section_set
+PT  telemetry.state_path_in_deployer_home
+P F telemetry.state_path_in_other_user_home
+P F telemetry.state_path_other
+P F telemetry.dms_undeclared_deploying_user
+P F telemetry.dms_undeclared_other_user
+P F telemetry.dms_undeclared_service_principal
+P F telemetry.dms_undeclared_group
+P F telemetry.skip_artifact_cleanup
+P F telemetry.experimental.use_legacy_run_as
+P F telemetry.run_as_set
+P F telemetry.has_serverless_compute
+P F telemetry.has_classic_job_compute
+P F telemetry.has_classic_interactive_compute
+P F telemetry.current_user_from_scim_fallback
+P F telemetry.current_user_groups_from_scim_fallback

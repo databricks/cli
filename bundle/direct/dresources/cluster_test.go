@@ -1,10 +1,16 @@
 package dresources
 
 import (
+	"context"
+	"net/http"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,4 +71,23 @@ func TestClusterOverrideChangeDescLibraries(t *testing.T) {
 			assert.Equal(t, tt.reason, change.Reason)
 		})
 	}
+}
+
+func TestClusterDoReadCancelsLibrariesWhenClusterIsMissing(t *testing.T) {
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/libraries/cluster-status", func(req testserver.Request) any {
+		// Answers only once the client gives up on the request.
+		<-req.Context.Done()
+		return testserver.Response{StatusCode: http.StatusServiceUnavailable}
+	})
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "testtoken"})
+	require.NoError(t, err)
+	r := (&ResourceCluster{}).New(client).(*ResourceCluster)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	_, err = r.DoRead(ctx, "1126-000000-abcdefgh")
+	assert.True(t, apierr.IsMissing(err), "expected a not-found error, got %v", err)
+	assert.NoError(t, ctx.Err(), "DoRead waited for the library status after the cluster GET failed")
 }

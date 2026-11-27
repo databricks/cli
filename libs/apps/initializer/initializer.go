@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/apps/pkgmanager"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // InitResult contains the outcome of an initialization operation.

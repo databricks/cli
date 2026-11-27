@@ -1,113 +1,138 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-✓ Deployment succeeded
 Created apps.myapp
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Created apps.stopped_app
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> cat [OUTPUT_DIR]/out.requests.txt
-{
-  "bool_values": [
-    {
-      "key": "local.cache.attempt",
-      "value": true
-    },
-    {
-      "key": "local.cache.miss",
-      "value": true
-    },
-    {
-      "key": "current_user_from_scim_fallback",
-      "value": false
-    },
-    {
-      "key": "current_user_groups_from_scim_fallback",
-      "value": false
-    },
-    {
-      "key": "experimental.use_legacy_run_as",
-      "value": false
-    },
-    {
-      "key": "run_as_set",
-      "value": false
-    },
-    {
-      "key": "presets_name_prefix_is_set",
-      "value": false
-    },
-    {
-      "key": "python_wheel_wrapper_is_set",
-      "value": false
-    },
-    {
-      "key": "skip_artifact_cleanup",
-      "value": false
-    },
-    {
-      "key": "state_path_is_shared",
-      "value": false
-    },
-    {
-      "key": "permissions_section_set",
-      "value": false
-    },
-    {
-      "key": "state_path_in_deployer_home",
-      "value": true
-    },
-    {
-      "key": "state_path_in_other_user_home",
-      "value": false
-    },
-    {
-      "key": "state_path_other",
-      "value": false
-    },
-    {
-      "key": "dms_undeclared_deploying_user",
-      "value": false
-    },
-    {
-      "key": "dms_undeclared_other_user",
-      "value": false
-    },
-    {
-      "key": "dms_undeclared_service_principal",
-      "value": false
-    },
-    {
-      "key": "dms_undeclared_group",
-      "value": false
-    },
-    {
-      "key": "dms_compat_auto",
-      "value": true
-    },
-    {
-      "key": "has_serverless_compute",
-      "value": false
-    },
-    {
-      "key": "has_classic_job_compute",
-      "value": false
-    },
-    {
-      "key": "has_classic_interactive_compute",
-      "value": false
-    },
-    {
-      "key": "deployment_history_enabled",
-      "value": false
-    },
-    {
-      "key": "immutable_snapshot_used",
-      "value": false
-    },
-    {
-      "key": "app_lifecycle_started",
-      "value": true
-    }
-  ]
-}
+=== bool_values
+
+>>> jq .experimental.bool_values LOG.event.json
+[
+  {
+    "key": "python_wheel_wrapper_is_set",
+    "value": false
+  },
+  {
+    "key": "presets_name_prefix_is_set",
+    "value": false
+  },
+  {
+    "key": "app_lifecycle_started",
+    "value": true
+  },
+  {
+    "key": "deployment_history_enabled",
+    "value": false
+  },
+  {
+    "key": "immutable_snapshot_used",
+    "value": false
+  },
+  {
+    "key": "state_path_is_shared",
+    "value": false
+  },
+  {
+    "key": "dms_compat_auto",
+    "value": true
+  },
+  {
+    "key": "permissions_section_set",
+    "value": false
+  },
+  {
+    "key": "state_path_in_deployer_home",
+    "value": true
+  },
+  {
+    "key": "state_path_in_other_user_home",
+    "value": false
+  },
+  {
+    "key": "state_path_other",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_deploying_user",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_other_user",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_service_principal",
+    "value": false
+  },
+  {
+    "key": "dms_undeclared_group",
+    "value": false
+  },
+  {
+    "key": "skip_artifact_cleanup",
+    "value": false
+  },
+  {
+    "key": "experimental.use_legacy_run_as",
+    "value": false
+  },
+  {
+    "key": "run_as_set",
+    "value": false
+  },
+  {
+    "key": "has_serverless_compute",
+    "value": false
+  },
+  {
+    "key": "has_classic_job_compute",
+    "value": false
+  },
+  {
+    "key": "has_classic_interactive_compute",
+    "value": false
+  },
+  {
+    "key": "current_user_from_scim_fallback",
+    "value": false
+  },
+  {
+    "key": "current_user_groups_from_scim_fallback",
+    "value": false
+  },
+  {
+    "key": "local.cache.attempt",
+    "value": true
+  },
+  {
+    "key": "local.cache.miss",
+    "value": true
+  }
+]
+
+=== Telemetry bits of the bundle bitmap
+P F telemetry.python_wheel_wrapper_is_set
+P F telemetry.presets_name_prefix_is_set
+PTF telemetry.app_lifecycle_started
+P F telemetry.deployment_history_enabled
+P F telemetry.immutable_snapshot_used
+P F telemetry.state_path_is_shared
+P   telemetry.dms_compat_auto
+P F telemetry.permissions_section_set
+PT  telemetry.state_path_in_deployer_home
+P F telemetry.state_path_in_other_user_home
+P F telemetry.state_path_other
+P F telemetry.dms_undeclared_deploying_user
+P F telemetry.dms_undeclared_other_user
+P F telemetry.dms_undeclared_service_principal
+P F telemetry.dms_undeclared_group
+P F telemetry.skip_artifact_cleanup
+P F telemetry.experimental.use_legacy_run_as
+P F telemetry.run_as_set
+P F telemetry.has_serverless_compute
+P F telemetry.has_classic_job_compute
+P F telemetry.has_classic_interactive_compute
+P F telemetry.current_user_from_scim_fallback
+P F telemetry.current_user_groups_from_scim_fallback

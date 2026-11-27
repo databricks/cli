@@ -19,3 +19,49 @@ trace $CLI aitools uninstall
 trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 $CLI jobs list
 trace print_telemetry
 trace cursor_skills
+
+# The user put their own copy of a Databricks skill into Cursor's skills
+# directory by hand, on a machine where nothing has run yet. Nothing records
+# it, so an install would replace it.
+use_home hand-placed-home
+hand_placed="${USERPROFILE:-$HOME}/.cursor/skills/databricks-test"
+"$mkdir_bin" -p "$hand_placed"
+echo "my own skill" > "$hand_placed/SKILL.md"
+echo "my notes" > "$hand_placed/NOTES.md"
+hand_placed_files() {
+    "$ls_bin" "$hand_placed"
+}
+# auto_install_outcome prints the outcome of each auto-install event uploaded
+# since the last print_telemetry.
+auto_install_outcome() {
+    print_telemetry | jq -r '.aitools_auto_install_event.outcome // empty'
+}
+# settled_version prints the stored auto-install state without the machine
+# identifier: a settled version has no failed attempts.
+settled_version() {
+    jq -c 'del(.id)' "${USERPROFILE:-$HOME}/.databricks/aitools/auto-install.json"
+}
+
+# The install was refused before it wrote anything, so the version is settled
+# with nothing left to finish: a later version installs once the user has moved
+# the skill out, and keeps it if they moved it into the global directory.
+title "first run with a skill placed by hand in an agent's skills directory: kept, nothing printed, not retried for this version"
+trace $CLI jobs list
+trace auto_install_outcome
+trace cursor_skills
+trace hand_placed_files
+trace cat "$hand_placed/SKILL.md"
+trace settled_version
+
+# The user's own skill has a name no Databricks skill has. The install leaves
+# it alone, so it installs.
+use_home own-skill-home
+own_skill="${USERPROFILE:-$HOME}/.cursor/skills/databricks-team-conventions"
+"$mkdir_bin" -p "$own_skill"
+echo "my own skill" > "$own_skill/SKILL.md"
+
+title "first run with the user's own skill under another name in an agent's skills directory: installs"
+trace $CLI jobs list
+trace auto_install_outcome
+trace cursor_skills
+trace cat "$own_skill/SKILL.md"

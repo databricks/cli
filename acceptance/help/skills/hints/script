@@ -1,0 +1,16 @@
+export DATABRICKS_SKILLS_DIR="$TESTDIR/../../../cmd/skills/release"
+
+# The root help ends with the generic hint for coding agents.
+trace $CLI --help | tail -n 3
+
+# A group that the fixture skill covers ends with a footer naming the skill.
+trace $CLI fs --help | tail -n 4
+
+# air builds its own help. A skill mapped to air adds its footer after the hard-coded skill line, which stays.
+trace $CLI air --help | tail -n 4
+
+# A group no skill covers gets no footer.
+trace $CLI auth --help | contains.py "!databricks skills" > /dev/null
+
+# A leaf command under a mapped group gets no footer of its own.
+trace $CLI fs ls --help | contains.py "!databricks skills" > /dev/null

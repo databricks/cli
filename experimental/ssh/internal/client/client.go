@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	_ "embed"
 	"encoding/base64"
 	"encoding/hex"
@@ -62,7 +63,10 @@ var errPortForwardingDisabled = errors.New("port forwarding to serverless comput
 // connection, e.g. because an administrator disabled port forwarding to serverless compute.
 var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel connection")
 
-var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+var (
+	connectionNameRegex  = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+	acceleratorNameRegex = regexp.MustCompile(`^GPU_[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
+)
 
 // Serverless environment versions used when --environment-version is not set. GPU stays on 4
 // because the standard version 5 and 6 environments ship no torch on GPU.
@@ -169,8 +173,11 @@ func (o *ClientOptions) Validate() error {
 	if o.UsagePolicyID != "" && o.ClusterID != "" {
 		return errors.New("--usage-policy-id flag can only be used with serverless compute (--name flag)")
 	}
-	if o.Accelerator != "" && o.Accelerator != "GPU_1xA10" && o.Accelerator != "GPU_8xH100" {
-		return fmt.Errorf("invalid accelerator value: %q, expected %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
+	// The accelerator is interpolated into the ProxyCommand. Enforce
+	// a safe shape; the backend validates available GPU types and environment versions,
+	// so new GPU types need no CLI change.
+	if o.Accelerator != "" && !acceleratorNameRegex.MatchString(o.Accelerator) {
+		return fmt.Errorf("invalid accelerator value %q: expected a GPU type name such as GPU_1xA10 (1-64 characters after GPU_: letters, numbers, dashes and underscores)", o.Accelerator)
 	}
 	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
 		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)
@@ -232,13 +239,22 @@ func GenerateDefaultConnectionName(host, accelerator, baseEnvironment string, en
 		version := cmp.Or(environmentVersion, defaultEnvironmentVersion(accelerator))
 		hashInput = host + "\x00environment_version=" + strconv.Itoa(version)
 	}
-	h := md5.Sum([]byte(hashInput))
-	hashStr := hex.EncodeToString(h[:4])
-	if accelerator != "" {
-		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
-		return fmt.Sprintf("databricks-%s-%s", acc, hashStr)
+	// Keep the original CPU and GPU names so reconnects find existing servers.
+	var label string
+	switch accelerator {
+	case "":
+		label = "cpu"
+	case "GPU_1xA10":
+		label = "gpu-1xa10"
+	case "GPU_8xH100":
+		label = "gpu-8xh100"
+	default:
+		// Hash the exact spelling and keep the user-prefixed secret scope short.
+		h := sha256.Sum256([]byte(hashInput + "\x00" + accelerator))
+		return "databricks-gpu-" + hex.EncodeToString(h[:8])
 	}
-	return "databricks-cpu-" + hashStr
+	h := md5.Sum([]byte(hashInput))
+	return "databricks-" + label + "-" + hex.EncodeToString(h[:4])
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {

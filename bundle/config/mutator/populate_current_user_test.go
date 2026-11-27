@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
@@ -125,16 +124,6 @@ func TestPopulateCurrentUserRejectsGroupPrincipal(t *testing.T) {
 	assert.Nil(t, b.Config.Workspace.CurrentUser)
 }
 
-// metricValue returns the bool recorded under key, and whether one was recorded.
-func metricValue(b *bundle.Bundle, key string) (bool, bool) {
-	for _, e := range b.Metrics.BoolValues {
-		if e.Key == key {
-			return e.Value, true
-		}
-	}
-	return false, false
-}
-
 // A workspace without identity/me reads the current user from SCIM /Me, and both source
 // metrics say so.
 func TestPopulateCurrentUserFallsBackToSCIMWhenIdentityMeNotEnabled(t *testing.T) {
@@ -151,12 +140,10 @@ func TestPopulateCurrentUserFallsBackToSCIMWhenIdentityMeNotEnabled(t *testing.T
 	assert.Empty(t, diags)
 	assert.Equal(t, "tester@databricks.com", b.Config.Workspace.CurrentUser.UserName)
 	assert.False(t, b.CurrentUserGroupsUnknown)
-	fromSCIM, ok := metricValue(b, metrics.CurrentUserFromSCIMFallback)
-	assert.True(t, ok)
-	assert.True(t, fromSCIM)
-	groupsFromSCIM, ok := metricValue(b, metrics.CurrentUserGroupsFromSCIMFallback)
-	assert.True(t, ok)
-	assert.True(t, groupsFromSCIM)
+	require.NotNil(t, b.Telemetry.CurrentUserFromSCIMFallback)
+	assert.True(t, *b.Telemetry.CurrentUserFromSCIMFallback)
+	require.NotNil(t, b.Telemetry.CurrentUserGroupsFromSCIMFallback)
+	assert.True(t, *b.Telemetry.CurrentUserGroupsFromSCIMFallback)
 }
 
 // A workspace that serves identity/me records that the user did not come from the fallback.
@@ -165,12 +152,10 @@ func TestPopulateCurrentUserRecordsIdentityMeAsSource(t *testing.T) {
 
 	diags := bundle.Apply(t.Context(), b, PopulateCurrentUser())
 	require.NoError(t, diags.Error())
-	fromSCIM, ok := metricValue(b, metrics.CurrentUserFromSCIMFallback)
-	assert.True(t, ok)
-	assert.False(t, fromSCIM)
-	groupsFromSCIM, ok := metricValue(b, metrics.CurrentUserGroupsFromSCIMFallback)
-	assert.True(t, ok)
-	assert.False(t, groupsFromSCIM)
+	require.NotNil(t, b.Telemetry.CurrentUserFromSCIMFallback)
+	assert.False(t, *b.Telemetry.CurrentUserFromSCIMFallback)
+	require.NotNil(t, b.Telemetry.CurrentUserGroupsFromSCIMFallback)
+	assert.False(t, *b.Telemetry.CurrentUserGroupsFromSCIMFallback)
 }
 
 // A cache hit reports the source of the read that filled the cache, so the metrics do not
@@ -196,9 +181,8 @@ func TestPopulateCurrentUserCacheKeepsSource(t *testing.T) {
 	require.NoError(t, bundle.Apply(t.Context(), second, PopulateCurrentUser()).Error())
 
 	assert.Equal(t, int32(1), scimCalls.Load())
-	fromSCIM, ok := metricValue(second, metrics.CurrentUserFromSCIMFallback)
-	assert.True(t, ok)
-	assert.True(t, fromSCIM)
+	require.NotNil(t, second.Telemetry.CurrentUserFromSCIMFallback)
+	assert.True(t, *second.Telemetry.CurrentUserFromSCIMFallback)
 }
 
 // Only a not-enabled identity/me falls back. A forbidden read fails the command, and SCIM is
