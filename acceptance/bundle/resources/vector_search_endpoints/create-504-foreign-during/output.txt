@@ -1,0 +1,37 @@
+
+=== The bundle's create request fails with a 504 that the backend did not apply; deploy waits 8 seconds before it repeats the request
+
+=== Meanwhile, outside the bundle, an endpoint with the name the bundle uses is created
+
+>>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD --no-wait
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+=== Deploy repeats its request, is told the endpoint exists, and takes it
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-during-[UNIQUE_NAME]/default/files...
+Created vector_search_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //vector-search/endpoints
+POST /api/2.0/vector-search/endpoints
+POST /api/2.0/vector-search/endpoints
+POST /api/2.0/vector-search/endpoints
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Destroy deletes the endpoint the bundle did not create
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-during-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> musterr [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+Error: Resource vectorsearch.EndpointInfo not found: vs-endpoint-[UNIQUE_NAME]

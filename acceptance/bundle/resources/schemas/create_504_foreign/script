@@ -14,7 +14,7 @@ title "Outside the bundle, the deploying user creates a schema with the name the
 trace $CLI schemas create "test-schema-$UNIQUE_NAME" main | jq '{full_name, created_by}'
 
 title "Deploy fails: the name is taken"
-errcode trace $CLI bundle deploy
+trace musterr $CLI bundle deploy
 rm -f "$OUT_REQUESTS"
 
 title "The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the schema"

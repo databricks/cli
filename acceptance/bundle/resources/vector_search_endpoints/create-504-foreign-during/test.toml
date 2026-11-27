@@ -1,0 +1,4 @@
+Badness = "After a create request fails with a 504, deploy looks the endpoint up by name, and repeats the request while the endpoint is missing. Here the endpoint is created outside the bundle between the failed request and the repeat. The repeat fails with 'already exists', the next lookup finds the endpoint, and deploy takes it: it was created after the first request, and by the deploying user. The bundle created nothing. Destroy then deletes the endpoint. Deploy should fail with 'already exists', as it does when its first request is answered."
+
+# Faults are injected through the testserver.
+Cloud = false

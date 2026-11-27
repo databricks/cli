@@ -8,7 +8,7 @@
 
 === Deploy fails: the project_id is taken
 
->>> [CLI] bundle deploy
+>>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: cannot create resources.postgres_projects.my_project: A project with this resource name already exists in the workspace. (400 BAD_REQUEST)
 
@@ -18,8 +18,6 @@ API error_code: BAD_REQUEST
 API message: A project with this resource name already exists in the workspace.
 
 Files: 0 uploaded, 0 deleted
-
-Exit code: 1
 
 === The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the project
 

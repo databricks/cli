@@ -14,7 +14,7 @@ title "Outside the bundle, create an endpoint with the name the bundle uses"
 trace $CLI vector-search-endpoints create-endpoint "$ENDPOINT" STANDARD --no-wait | jq '{name, endpoint_type}'
 
 title "Deploy fails: the name is taken"
-errcode trace $CLI bundle deploy
+trace musterr $CLI bundle deploy
 rm -f "$OUT_REQUESTS"
 
 title "The same deploy, but its create request fails with a 504 that the backend did not apply: deploy takes the endpoint"
