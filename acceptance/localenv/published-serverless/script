@@ -1,0 +1,66 @@
+# Locally the test server stands in for the published artifacts; on cloud the
+# CLI fetches the real ones.
+if [ -z "${CLOUD_ENV:-}" ]; then
+  export DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE="$DATABRICKS_HOST"
+else
+  unset DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE
+fi
+
+# Run in an empty project dir so "writes nothing" is a plain file count. The JSON
+# goes to LOG files outside it: resolved versions follow the published repo.
+mkdir project
+cd project
+
+title "Published version: the plan resolves and fetches, and nothing is written"
+trace $CLI environments setup-local --serverless-version 5 --dry-run --output json > ../LOG.v5.json
+jq '{ok, dryRun, command, compute: {source: .compute.source, envKey: .compute.envKey}, artifactSource: .resolved.artifactSource, hasPythonVersion: (.resolved.pythonVersion | type == "string" and length > 0), phases: [.phases[] | "\(.phase): \(.status)"]}' ../LOG.v5.json
+echo "files in project: $(ls -A | wc -l | tr -d ' ')"
+
+title "Unpublished version: fetch fails with E_ENV_UNSUPPORTED, and nothing is written"
+errcode trace $CLI environments setup-local --serverless-version 9999 --dry-run --output json > ../LOG.v9999.json
+jq '{ok, dryRun, code: .error.code, failurePhase: .error.failurePhase}' ../LOG.v9999.json
+echo "files in project: $(ls -A | wc -l | tr -d ' ')"
+cd ..
+
+# The real provision needs the published artifacts and a package index, so it
+# runs on cloud only. Its result is diffed against provision.expected.txt: a
+# mismatch prints the diff and fails the script. Locally the dry runs above and
+# the sibling tests with a fake uv cover the pipeline.
+if [ -n "${CLOUD_ENV:-}" ]; then
+  # The runner points every uv at the vendored wheels offline, which lack
+  # databricks-connect (a warm uv cache would hide that).
+  unset UV_OFFLINE UV_FIND_LINKS
+
+  # `uv python install` rewrites the minor-version links of every managed Python
+  # in its install dir (junctions on Windows), which breaks concurrent uv users
+  # of a shared dir, so give it a private one. Git Bash's $PWD is /c/..., which
+  # the native uv does not read, so use pwd -W there, as sethome does.
+  venv_python=.venv/bin/python
+  case "$OSTYPE" in
+    msys*|cygwin*|win32)
+      root="$(pwd -W)"
+      venv_python=.venv/Scripts/python.exe
+      ;;
+    *) root="$PWD" ;;
+  esac
+  export UV_PYTHON_INSTALL_DIR="$root/uv-python/installs"
+  export UV_PYTHON_BIN_DIR="$root/uv-python/bin"
+  export UV_PYTHON_INSTALL_REGISTRY=0
+
+  mkdir provision
+  cd provision
+  # Traced into the LOG file: a trace line in output.txt would be cloud-only.
+  trace $CLI environments setup-local --serverless-version 5 --output json > ../LOG.provision.json 2> ../LOG.provision.stderr
+  {
+    jq '{ok, dryRun, command, mode, compute: {source: .compute.source, envKey: .compute.envKey}, artifactSource: .resolved.artifactSource, hasPythonVersion: (.resolved.pythonVersion | type == "string" and length > 0), hasDBConnectVersion: (.resolved.dbconnectVersion | type == "string" and length > 0), phases: [.phases[] | "\(.phase): \(.status)"]}' ../LOG.provision.json
+    echo "files:" $(ls -A | sort)
+    for f in "$venv_python" pyproject.toml uv.lock; do
+      if [ -f "$f" ]; then
+        echo "${f/#$venv_python/venv python}: regular file"
+      fi
+    done
+  } > ../LOG.provision.txt
+  cd ..
+  # Native jq on Windows may end lines with CRLF.
+  diff --strip-trailing-cr provision.expected.txt LOG.provision.txt
+fi

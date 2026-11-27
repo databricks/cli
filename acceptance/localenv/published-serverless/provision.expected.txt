@@ -19,11 +19,7 @@
     "validate: ok"
   ]
 }
-
-=== Files in the project
-.venv
-pyproject.toml
-uv.lock
-venv python: present
+files: .venv pyproject.toml uv.lock
+venv python: regular file
 pyproject.toml: regular file
 uv.lock: regular file
