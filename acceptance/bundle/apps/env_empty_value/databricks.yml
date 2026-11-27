@@ -7,6 +7,13 @@ variables:
 
 resources:
   apps:
+    base:
+      name: base
+      source_code_path: ./base_app
+      config:
+        env:
+          - name: MODE
+            value: prod
     myapp:
       name: myapp
       source_code_path: ./app
@@ -18,3 +25,5 @@ resources:
             value_from: my_secret
           - name: WAREHOUSE_ID
             value: ${var.warehouse_id}
+          # A whole-entry reference resolves at deploy time; the base entry is checked instead.
+          - ${resources.apps.base.config.env[0]}
