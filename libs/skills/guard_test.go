@@ -7,9 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Each case sets both variables in the context, with "" for unset. env.Get
-// reads the context first, so an exported DATABRICKS_SKILLS_PREVIEW or
-// DATABRICKS_SKILLS_HINTS on the developer's machine does not leak in.
+// Each case sets its variables in the context, with "" for unset. env.Get
+// reads the context first, so an exported DATABRICKS_SKILLS_PREVIEW,
+// DATABRICKS_SKILLS_HINTS or DATABRICKS_AGENT_FEATURES_DISABLED on the
+// developer's machine does not leak in.
 func TestEnabled(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -26,7 +27,8 @@ func TestEnabled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_PREVIEW", c.value)
+			ctx := env.Set(t.Context(), AgentFeaturesDisabledEnv, "")
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.value)
 			assert.Equal(t, c.want, Enabled(ctx))
 		})
 	}
@@ -99,7 +101,8 @@ func TestHintsEnabled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_PREVIEW", c.preview)
+			ctx := env.Set(t.Context(), AgentFeaturesDisabledEnv, "")
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.preview)
 			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", c.hints)
 			assert.Equal(t, c.want, HintsEnabled(ctx))
 		})

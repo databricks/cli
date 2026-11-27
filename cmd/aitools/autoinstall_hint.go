@@ -19,7 +19,7 @@ import (
 // directory when a skill changed, which is only known after the manifest is
 // fetched, so it counts as installing for each of them. With
 // DATABRICKS_AGENT_FEATURES_DISABLED set, nothing is installed, so it reports
-// false, as autoInstall does.
+// false, as AutoInstall does.
 func AutoInstallsFor(cmd *cobra.Command, agentName string) bool {
 	ctx := cmd.Context()
 	if skills.AgentFeaturesDisabled(ctx) {

@@ -3,6 +3,7 @@ package aitools
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/skills"
@@ -31,4 +32,16 @@ func TestPrintAutoInstallSettingAgentFeaturesDisabled(t *testing.T) {
 	ctx = env.Set(ctx, skills.AgentFeaturesDisabledEnv, "1")
 	printAutoInstallSetting(ctx, false)
 	assert.NotContains(t, stderr.String(), skills.AgentFeaturesDisabledEnv)
+}
+
+// With both variables set, one warning names both, so unsetting only one of
+// them is not taken for a fix.
+func TestPrintAutoInstallSettingBothOverrides(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = env.Set(ctx, autoinstall.EnvVar, "false")
+	ctx = env.Set(ctx, skills.AgentFeaturesDisabledEnv, "1")
+	printAutoInstallSetting(ctx, true)
+	assert.Contains(t, stderr.String(), autoinstall.EnvVar+" and "+skills.AgentFeaturesDisabledEnv+
+		" still disable it in this environment; unset both to let it run.")
+	assert.NotContains(t, stderr.String(), "unset it to let it run")
 }

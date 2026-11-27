@@ -6,8 +6,8 @@ export DATABRICKS_SKILLS_DIR="$TESTDIR/../../../cmd/skills/release"
 musterr trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI skills list
 
 # Help shows no skills footer, on the root or on a group the fixture skill covers.
-trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI --help | contains.py "!databricks skills" > /dev/null
-trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI fs --help | contains.py "!databricks skills" > /dev/null
+trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI --help | contains.py "!databricks skills" > LOG.help
+trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI fs --help | contains.py "!databricks skills" > LOG.fs-help
 
 # With the variable unset, the same group gets its footer, so the checks above can fail.
-trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI fs --help | contains.py "databricks skills read" > /dev/null
+trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI fs --help | contains.py "databricks skills read" > LOG.fs-help-unset
