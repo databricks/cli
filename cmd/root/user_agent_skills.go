@@ -64,7 +64,8 @@ func parseSkills(ctx context.Context, raw string) []string {
 		switch {
 		case name == "":
 		case len(name) > maxSkillLength || !skillNamePattern().MatchString(name):
-			log.Debugf(ctx, "dropping invalid skill entry %q", entry)
+			// Don't log the entry: it may be a customer's own skill name.
+			log.Debugf(ctx, "dropping invalid skill entry")
 		case !matcher.isKnown(ctx, name):
 			// Don't log the name: it may be a customer's own skill.
 			log.Debugf(ctx, "dropping skill entry that is not a known Databricks skill")
