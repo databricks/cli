@@ -3,6 +3,7 @@ package skills
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
@@ -82,7 +83,7 @@ func runRead(cmd *cobra.Command, src libskills.Source, name string) error {
 		return cmdio.Render(ctx, readOutput{
 			Name:    name,
 			Version: skill.Version,
-			Source:  catalog.Label,
+			Source:  filepath.ToSlash(catalog.Label),
 			Content: string(content),
 			Files:   files,
 		})

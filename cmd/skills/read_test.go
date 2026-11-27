@@ -3,7 +3,9 @@ package skills
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -130,6 +132,30 @@ func TestRunReadBundledCatalogOmitsFetchTime(t *testing.T) {
 	assert.Equal(t, "# Demo\n", stdout.String())
 	assert.Equal(t, "Skills come from bundled (release 1.2.3). The source could not be refreshed, so the skills may be out of date.\n",
 		stderr.String())
+}
+
+func TestRunReadJSONSourceUsesSlashes(t *testing.T) {
+	src := fakeSource{
+		catalog: &libskills.Catalog{
+			Label:   filepath.Join("skills", "release"),
+			Version: "1.2.3",
+			Skills: []libskills.Skill{
+				{Name: "demo-skill", Version: "1.2.3", Files: []string{"SKILL.md"}},
+			},
+		},
+		files: map[string][]byte{"demo-skill/SKILL.md": []byte("# Demo\n")},
+	}
+
+	ctx, stdout := cmdio.NewTestContextWithStdout(t.Context())
+	output := flags.OutputJSON
+	cmd := &cobra.Command{}
+	cmd.Flags().Var(&output, "output", "")
+	cmd.SetContext(ctx)
+	require.NoError(t, runRead(cmd, src, "demo-skill"))
+
+	var got readOutput
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	assert.Equal(t, "skills/release", got.Source)
 }
 
 func TestRunReadNamesReleaseWhenSkillHasNoSkillFile(t *testing.T) {
