@@ -1,0 +1,2 @@
+title "--timeout stops waiting and leaves the update running"
+trace musterr $CLI pipelines start-update $pipeline_id --wait --timeout 2s

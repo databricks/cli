@@ -1,0 +1,2 @@
+title "--wait fails with the update's error when the update fails"
+trace musterr $CLI pipelines start-update $pipeline_id --wait

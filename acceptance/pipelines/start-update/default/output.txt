@@ -1,0 +1,29 @@
+
+=== Without --wait, start-update returns the update ID right away
+
+>>> [CLI] pipelines start-update [UUID][0]
+{
+  "update_id": "[UUID][1]"
+}
+
+=== --no-wait is the default
+
+>>> [CLI] pipelines start-update [UUID][0] --no-wait
+{
+  "update_id": "[UUID][2]"
+}
+
+=== --wait and --no-wait cannot be combined
+
+>>> musterr [CLI] pipelines start-update [UUID][0] --wait --no-wait
+Error: if any flags in the group [wait no-wait] are set none of the others can be; [no-wait wait] were all set
+
+=== --timeout requires --wait
+
+>>> musterr [CLI] pipelines start-update [UUID][0] --timeout 5m
+Error: --timeout requires --wait
+
+=== --timeout must not be negative
+
+>>> musterr [CLI] pipelines start-update [UUID][0] --wait --timeout=-1s
+Error: --timeout must not be negative

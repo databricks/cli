@@ -1,0 +1,1 @@
+pipeline_id=$($CLI pipelines create --json '{"name": "reviews"}' | jq -r .pipeline_id)

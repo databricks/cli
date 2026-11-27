@@ -1,0 +1,10 @@
+
+=== --wait prints the update ID, logs progress and returns when the update completes
+
+>>> [CLI] pipelines start-update [UUID][0] --wait
+{
+  "update_id": "[UUID][1]"
+}
+[TIMESTAMP] update_progress INFO "Update 000000 is CREATED."
+[TIMESTAMP] update_progress INFO "Update 000000 is RUNNING."
+[TIMESTAMP] update_progress INFO "Update 000000 is COMPLETED."

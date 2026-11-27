@@ -1,0 +1,14 @@
+
+=== --wait fails with the update's error when the update fails
+
+>>> musterr [CLI] pipelines start-update [UUID][0] --wait
+{
+  "update_id": "[UUID][1]"
+}
+[TIMESTAMP] update_progress ERROR "Update 000000 is FAILED."
+[TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`reviews` cannot be found.
+Error: [update_progress]  Update 000000 is FAILED.
+trace for most recent exception: 
+[TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`reviews` cannot be found.
+
+Error: update failed

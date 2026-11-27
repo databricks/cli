@@ -1,0 +1,16 @@
+[[Server]]
+Pattern = "POST /api/2.0/pipelines/{pipeline_id}/updates"
+Response.Body = '{"update_id": "00000000-0000-0000-0000-0000000000a1"}'
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/updates/{update_id}"
+Response.Body = '{"update": {"update_id": "00000000-0000-0000-0000-0000000000a1", "state": "FAILED"}}'
+
+# Only the error event: the CLI asks for ERROR events, and the test server ignores that filter.
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/events"
+Response.Body = '''
+{"events": [
+  {"id": "e1", "event_type": "update_progress", "timestamp": "2026-01-01T00:00:00.000Z", "level": "ERROR", "message": "Update 000000 is FAILED.", "origin": {"update_id": "00000000-0000-0000-0000-0000000000a1"}, "error": {"fatal": true, "exceptions": [{"class_name": "AnalysisException", "message": "[TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`reviews` cannot be found."}]}}
+]}
+'''
