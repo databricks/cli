@@ -55,9 +55,9 @@ type FileSizer interface {
 
 // Catalog is the set of skills a source serves.
 type Catalog struct {
-	// Skills are sorted by name. A name IsSkillName rejects, the Agent Skills
-	// name format, is left out. Install also skips reserved Windows device names
-	// and non-portable paths; the catalog checks neither yet.
+	// Skills are sorted by name. A skill whose name is not in the Agent Skills
+	// name format (see IsSkillName) is left out. Install also skips reserved
+	// Windows device names and non-portable paths; the catalog checks neither yet.
 	Skills []Skill
 
 	// Version is the release version.

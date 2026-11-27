@@ -2,6 +2,7 @@
   "version": "0.0.1",
   "skills": {
     "-foo": {"version": "0.0.1", "description": "A skill whose name starts with a hyphen.", "files": ["SKILL.md"], "commands": ["jobs"]},
+    "a b": {"version": "0.0.1", "description": "A skill whose name has a space.", "files": ["SKILL.md"], "commands": ["jobs"]},
     "alpha": {"version": "0.0.1", "description": "A valid skill.", "files": ["SKILL.md"], "commands": ["jobs"]}
   }
 }

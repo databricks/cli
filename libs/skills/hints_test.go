@@ -16,21 +16,25 @@ func TestWriteGroupHint(t *testing.T) {
 	const footer = "\nCoding agents: read the skills for this command group before you use it.\n" +
 		"  databricks skills read alpha\n"
 	cases := []struct {
-		name  string
-		hints string
-		dir   string
-		group string
-		want  string
+		name    string
+		preview string
+		hints   string
+		dir     string
+		group   string
+		want    string
 	}{
-		{name: "hints off", hints: "0", dir: dir, group: "jobs"},
-		{name: "no source", hints: "1", dir: "", group: "jobs"},
-		{name: "unmapped group", hints: "1", dir: dir, group: "fs"},
-		{name: "mapped group", hints: "1", dir: dir, group: "jobs", want: footer},
+		{name: "hints off", preview: "1", hints: "0", dir: dir, group: "jobs"},
+		{name: "no source", preview: "1", hints: "1", dir: "", group: "jobs"},
+		{name: "unmapped group", preview: "1", hints: "1", dir: dir, group: "fs"},
+		{name: "mapped group", preview: "1", hints: "1", dir: dir, group: "jobs", want: footer},
+		// Without DATABRICKS_SKILLS_PREVIEW the feature is off, so the footer
+		// stays off even with hints on and a source that maps the group.
+		{name: "preview off", preview: "", hints: "1", dir: dir, group: "jobs"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", c.dir)
-			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", c.preview)
 			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", c.hints)
 
 			var buf bytes.Buffer
@@ -55,22 +59,4 @@ func TestWriteGroupHintLeavesOutSkillNameTheInstallerRejects(t *testing.T) {
 	WriteGroupHint(ctx, &buf, "jobs")
 	require.Equal(t, "\nCoding agents: read the skills for this command group before you use it.\n"+
 		"  databricks skills read alpha\n", buf.String())
-}
-
-// With DATABRICKS_SKILLS_PREVIEW unset the feature is off, so the footer stays
-// off even with hints on and the same manifest.
-func TestWriteGroupHintIsOffWithoutPreview(t *testing.T) {
-	dir := t.TempDir()
-	const manifest = `{"version": "1.0.0", "skills": {
-		"-foo": {"version": "1.0.0", "description": "A skill whose name starts with a hyphen.", "files": ["SKILL.md"], "commands": ["jobs"]},
-		"alpha": {"version": "1.0.0", "description": "A valid skill.", "files": ["SKILL.md"], "commands": ["jobs"]}}}`
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(manifest), 0o644))
-
-	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", dir)
-	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "")
-	ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
-
-	var buf bytes.Buffer
-	WriteGroupHint(ctx, &buf, "jobs")
-	require.Empty(t, buf.String())
 }
