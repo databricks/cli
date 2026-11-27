@@ -13,6 +13,10 @@ trace CLAUDECODE=1 $CLI jobs list
 trace CLAUDECODE=1 $CLI fs --help | tail -n 3
 trace CLAUDECODE=1 $CLI quickstart | contains.py 'databricks skills list' > /dev/null
 
+# The positive control above recorded session-1's hint throttle. The variable steps
+# get a fresh session, so a build that ignored the variable would print the hint here.
+export CLAUDE_CODE_SESSION_ID=session-2
+
 title "With the variable set, no hint is printed"
 trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI jobs list
 

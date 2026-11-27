@@ -18,6 +18,9 @@ const skillsTipText = "Tip: coding agents detected without Databricks skills. Ru
 // and records that it was shown. Callers decide whether the tooling is missing
 // (see HasDatabricksToolingInstalled).
 func PrintSkillsTip(ctx context.Context) {
+	if agent.NotAnAgent(ctx) {
+		return
+	}
 	cmdio.LogString(ctx, skillsTipText)
 	logHintShown(ctx, protos.AitoolsHintKindAppsInitTip)
 }
@@ -32,7 +35,7 @@ func PrintSkillsTip(ctx context.Context) {
 // known version. No telemetry is logged: `databricks version` never resolves
 // auth, so the event would not be uploaded (see logHintShown).
 func MaybeVersionCheckTip(ctx context.Context, installedPlugins func(context.Context) []string) {
-	if isHintedAgent(agent.Provider(ctx)) {
+	if agent.NotAnAgent(ctx) || isHintedAgent(agent.Provider(ctx)) {
 		return
 	}
 	if dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx) {
@@ -64,7 +67,8 @@ func noInstalledPlugins(context.Context) []string { return nil }
 // auto-install off, and a "yes" stores the consent to keep the tools up to date unless the
 // user answered before. In non-interactive mode, prints a hint.
 func RecommendSkillsInstall(ctx context.Context, installedPlugins func(context.Context) []string, installFn func(context.Context) error) error {
-	if HasDatabricksToolingInstalled(ctx, installedPlugins) {
+	// Under DATABRICKS_NOT_AN_AGENT the run is a baseline: no prompt, no tip and no install.
+	if agent.NotAnAgent(ctx) || HasDatabricksToolingInstalled(ctx, installedPlugins) {
 		return nil
 	}
 

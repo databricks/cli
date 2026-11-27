@@ -13,6 +13,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/env"
@@ -213,14 +214,24 @@ func TestLogMcpEventLogsRejectedCredential(t *testing.T) {
 	assert.True(t, uploads)
 }
 
-// With DATABRICKS_NOT_AN_AGENT set, the event is logged without the calling agent.
-func TestLogMcpEventOmitsCallingAgentUnderNotAnAgent(t *testing.T) {
+// Under DATABRICKS_NOT_AN_AGENT the detected agent is left out, and an explicit --agent is kept.
+func TestCallingAgentNotAnAgent(t *testing.T) {
+	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
+	ctx := env.Set(t.Context(), "DATABRICKS_NOT_AN_AGENT", "1")
+	assert.Equal(t, protos.AitoolsAgentTypeClaudeCode, callingAgentType(t.Context()))
+	assert.Equal(t, protos.AitoolsAgentTypeUnspecified, callingAgentType(ctx))
+	assert.Equal(t, protos.AitoolsAgentTypeUnspecified, proxyAgentType(ctx, ""))
+	assert.Equal(t, protos.AitoolsAgentTypeCodex, proxyAgentType(ctx, agents.NameCodex))
+}
+
+func TestLogMcpEventKeepsExplicitAgentNotAnAgent(t *testing.T) {
+	testutil.SetAgentEnv(t, "CLAUDECODE", "1")
 	withHome(t)
 	ctx := env.Set(telemetry.WithNewLogger(t.Context()), "DATABRICKS_CLI_DISABLE_TELEMETRY", "")
 	telemetry.SetUploadConfig(ctx, &config.Config{Profile: "logfood", Host: "https://adb-1.test"})
 	ctx = env.Set(ctx, "DATABRICKS_NOT_AN_AGENT", "1")
 	event := protos.AitoolsMcpEvent{
-		CallingAgent: protos.AitoolsAgentTypeClaudeCode,
+		CallingAgent: proxyAgentType(ctx, agents.NameCodex),
 		Operation:    protos.AitoolsMcpOperationSignIn,
 		Servers: []protos.AitoolsMcpServerResult{{
 			Service: protos.AitoolsMcpServiceGitHub,
@@ -230,7 +241,7 @@ func TestLogMcpEventOmitsCallingAgentUnderNotAnAgent(t *testing.T) {
 	require.True(t, logMcpEvent(ctx, event))
 	buffered := telemetry.BufferedEvents(ctx)
 	require.Len(t, buffered, 1)
-	assert.Equal(t, protos.AitoolsAgentTypeUnspecified, buffered[0].AitoolsMcpEvent.CallingAgent)
+	assert.Equal(t, protos.AitoolsAgentTypeCodex, buffered[0].AitoolsMcpEvent.CallingAgent)
 }
 
 func TestLogMcpEventWithoutLogger(t *testing.T) {
@@ -355,14 +366,14 @@ func TestBoundProfileCount(t *testing.T) {
 func TestSignInEventOf(t *testing.T) {
 	// An ACTIVE credential that the add found signed in is UNCHANGED, as add --login reports it.
 	assert.Equal(t, protos.AitoolsMcpEvent{
-		CallingAgent: callingAgentType(),
+		CallingAgent: callingAgentType(t.Context()),
 		Operation:    protos.AitoolsMcpOperationSignIn,
 		Servers: []protos.AitoolsMcpServerResult{{
 			Service:     protos.AitoolsMcpServiceGitHub,
 			Outcome:     protos.AitoolsTargetOutcomeUnchanged,
 			SignInState: protos.AitoolsMcpSignInStateActive,
 		}},
-	}, signInEventOf("system.ai.github", signInStateActive, true, nil))
+	}, signInEventOf(t.Context(), "system.ai.github", signInStateActive, true, nil))
 }
 
 // TestSignInInstalledURLFailureLogsFailedSignIn checks that an add --login whose sign-in URL cannot be built logs the

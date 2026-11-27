@@ -223,7 +223,7 @@ func runMcpServe(cmd *cobra.Command, f mcpServeFlags) error {
 	if err != nil {
 		return serveFailure(cmd, err, serveBindStatus)
 	}
-	agent := proxyAgentType(f.agent)
+	agent := proxyAgentType(cmd.Context(), f.agent)
 	var authorization string
 	cfg, entry, err := mcp.Bind(cmd.Context(), mcp.BindOptions{
 		Profile:              profileName,

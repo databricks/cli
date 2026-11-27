@@ -171,8 +171,9 @@ type agentHint struct {
 	nativeKind protos.AitoolsHintKind
 }
 
-// hintForAgent returns the hint for an agent, keyed by its
-// useragent.AgentProvider() value, or nil when that agent is not hinted.
+// hintForAgent returns the hint for an agent, keyed by its agent.Provider name
+// (the SDK's useragent.AgentProvider value, or "" under DATABRICKS_NOT_AN_AGENT),
+// or nil when that agent is not hinted.
 func hintForAgent(provider string, pluginRecorded PluginRecordedFunc) *agentHint {
 	switch provider {
 	case claudeAgentProvider:
@@ -194,7 +195,7 @@ func hintForAgent(provider string, pluginRecorded PluginRecordedFunc) *agentHint
 }
 
 // isHintedAgent reports whether MaybeHint hints the agent with this
-// useragent.AgentProvider() value. It defers to hintForAgent so both follow
+// agent.Provider name. It defers to hintForAgent so both follow
 // the same dispatch; pluginRecorded is only read when the hint's installed
 // check runs, so none is needed here.
 func isHintedAgent(provider string) bool {
@@ -210,8 +211,8 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 }
 
 // MaybeHint nudges a supported agent toward Databricks AI tooling when it drives
-// the CLI without it installed. It is a no-op for human callers,
-// unsupported agents, hint-exempt commands (isHintExemptCommand), the
+// the CLI without it installed. It is a no-op for human callers (including
+// every caller under DATABRICKS_NOT_AN_AGENT), unsupported agents, hint-exempt commands (isHintExemptCommand), the
 // `databricks skills` commands when skills.HintsEnabled is true, the `auth
 // token` and `auth docker token` credential helpers, a CLI process the CLI
 // started itself, when there is no output stream, and once the tooling is

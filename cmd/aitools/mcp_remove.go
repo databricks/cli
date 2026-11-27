@@ -152,7 +152,7 @@ func writeRemoveJSON(cmd *cobra.Command, out *removeOutput, runErr error) error 
 // output is written. A run that logged no event touched no server, so it has nothing to upload and sets no config.
 func logRemoveEvent(ctx context.Context, out *removeOutput) {
 	if !logMcpEvent(ctx, protos.AitoolsMcpEvent{
-		CallingAgent: callingAgentType(),
+		CallingAgent: callingAgentType(ctx),
 		Operation:    protos.AitoolsMcpOperationRemove,
 		Servers:      out.results,
 	}) {

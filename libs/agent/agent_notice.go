@@ -13,15 +13,15 @@ import (
 const notAnAgentEnv = "DATABRICKS_NOT_AN_AGENT"
 
 // NotAnAgent reports whether DATABRICKS_NOT_AN_AGENT is set to a true value in the context or the environment. An
-// invalid value counts as not set, as other boolean variables do.
+// invalid value counts as false.
 func NotAnAgent(ctx context.Context) bool {
 	on, _ := env.GetBool(ctx, notAnAgentEnv)
 	return on
 }
 
 // Provider returns the agent name that useragent.AgentProvider reports, or "" when no agent is detected or
-// NotAnAgent holds. Code that reads the calling agent for output or telemetry goes through it, so the variable
-// reaches every such path.
+// NotAnAgent holds. The CLI's own readers of the calling agent (output, telemetry, the User-Agent) go through it.
+// The SDK's agent request header still reads useragent.AgentProvider directly, so NotAnAgent does not reach it.
 func Provider(ctx context.Context) string {
 	if NotAnAgent(ctx) {
 		return ""
