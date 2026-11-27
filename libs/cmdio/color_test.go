@@ -160,7 +160,7 @@ func TestColorHelpersStyleEachLine(t *testing.T) {
 
 	assert.Equal(t, yellow+"one"+reset, cmdio.Yellow(ctx, "one"))
 	assert.Equal(t, yellow+"one"+reset+"\n\n"+yellow+"two"+reset+"\n", cmdio.Yellow(ctx, "one\n\ntwo\n"))
-	assert.Equal(t, yellow+"one"+reset+"\r\n"+yellow+"two"+reset, cmdio.Yellow(ctx, "one\r\ntwo"))
+	assert.Equal(t, yellow+"one"+reset+"\r\n"+yellow+"two\r"+reset, cmdio.Yellow(ctx, "one\r\ntwo\r"))
 	// So that the text is unchanged when it is written to the terminal.
 	assert.Equal(t, cmdio.Yellow(ctx, "one\ntwo"), textutil.EscapeControlKeepColors(cmdio.Yellow(ctx, "one\ntwo")))
 }

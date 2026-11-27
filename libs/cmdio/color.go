@@ -56,7 +56,10 @@ func render(ctx context.Context, code, msg string) string {
 	lines := strings.Split(msg, "\n")
 	for i, line := range lines {
 		// The carriage return of a CRLF stays next to its newline.
-		line, cr := strings.CutSuffix(line, "\r")
+		cr := false
+		if i < len(lines)-1 {
+			line, cr = strings.CutSuffix(line, "\r")
+		}
 		if line != "" {
 			line = code + line + ansiReset
 		}

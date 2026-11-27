@@ -299,7 +299,7 @@ func TestJobRunnerLogsFailedTaskTraceWithItsColors(t *testing.T) {
 	jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 456}).Return(&jobs.Run{
 		State: &jobs.RunState{ResultState: jobs.RunResultStateFailed},
 		Tasks: []jobs.RunTask{{
-			TaskKey: "main",
+			TaskKey: "main\ttask",
 			RunId:   789,
 			State:   &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateInternalError, ResultState: jobs.RunResultStateFailed},
 		}},
@@ -314,6 +314,6 @@ func TestJobRunnerLogsFailedTaskTraceWithItsColors(t *testing.T) {
 	runner.logFailedTasks(ctx, 456)
 
 	// Colors are off here: the trace keeps its own, nothing else gets through.
-	require.Equal(t, "Task main FAILED:\n"+`Unable to access the notebook "/a\u001b[2J\u001b[31m\rb"`+"\n"+
+	require.Equal(t, `Task main\ttask FAILED:`+"\n"+`Unable to access the notebook "/a\u001b[2J\u001b[31m\rb"`+"\n"+
 		"\x1b[0;31m----\x1b[0m\n\x1b[0;31mValueError\x1b[0m: boom"+`\u001b[2J`+"\n\n", stderr.String())
 }
