@@ -241,23 +241,31 @@ func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle
 func errorForAppEnvWithoutSource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	for key, app := range b.Config.Resources.Apps {
-		if app.Config == nil {
-			continue
-		}
-		for i, env := range app.Config.Env {
-			if env.Value != "" || env.ValueFrom != "" {
-				continue
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("apps"), dyn.AnyKey(), dyn.Key("config"), dyn.Key("env"), dyn.AnyIndex()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// A whole-entry reference (e.g. "${resources.apps.base.config.env[0]}") is resolved
+			// at deploy time; the referenced entry is checked where it is defined.
+			if s, ok := v.AsString(); ok && dynvar.IsPureVariableReference(s) {
+				return v, nil
 			}
-			path := structpath.NewPath(nil, "resources", "apps", key, "config", "env", i)
+			if !isMissingOrEmptyString(v.Get("value")) || !isMissingOrEmptyString(v.Get("value_from")) {
+				return v, nil
+			}
+			name, _ := v.Get("name").AsString()
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("app environment variable %q must set value or value_from", env.Name),
+				Summary:   fmt.Sprintf("app environment variable %q must set value or value_from", name),
 				Detail:    "Set a non-empty value, or set value_from to reference an app resource. A value that resolves to an empty string is not supported",
-				Locations: b.Config.GetLocationsOf(path),
-				Paths:     []*structpath.PathNode{path},
+				Locations: v.Locations(),
+				Paths:     dyn.ToStructPaths(p),
 			})
-		}
+			return v, nil
+		},
+	)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	sortDiagnostics(diags)

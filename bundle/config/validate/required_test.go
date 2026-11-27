@@ -48,6 +48,10 @@ func TestRequiredAppEnvSource(t *testing.T) {
 			env:  `{name: A, value: "${resources.apps.other.name}"}`,
 		},
 		{
+			name: "whole-entry reference",
+			env:  `"${resources.apps.other.config.env[0]}"`,
+		},
+		{
 			name: "empty value",
 			env:  `{name: A, value: ""}`,
 			want: []string{"resources.apps.myapp.config.env[0]"},
