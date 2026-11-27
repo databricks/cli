@@ -1,0 +1,4 @@
+# Unset, the skills group is not registered: it is an unknown command.
+musterr trace env -u DATABRICKS_SKILLS_PREVIEW $CLI skills list
+# The group is hidden, so this only checks the help text. The gate is the line above.
+trace env -u DATABRICKS_SKILLS_PREVIEW $CLI --help | contains.py "!  skills " > LOG.help
