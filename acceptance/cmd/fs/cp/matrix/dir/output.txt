@@ -1,0 +1,61 @@
+
+=== Copying a directory needs --recursive, even an empty one
+
+>>> musterr [CLI] fs cp [SRC]/empty [SRC]/empty/foobar
+Error: source path [SRC]/empty is a directory. Please specify the --recursive flag
+
+=== Copy a directory into an existing one
+
+>>> [CLI] fs cp -r [SRC] [DST]/copy
+[SRC]/a/b/c/hello.txt -> [DST]/copy/a/b/c/hello.txt
+[SRC]/pyNb.py -> [DST]/copy/pyNb.py
+[SRC]/query.sql -> [DST]/copy/query.sql
+
+>>> [CLI] fs cat [DST]/copy/pyNb.py
+# Databricks notebook source
+print(123)
+
+>>> [CLI] fs cat [DST]/copy/query.sql
+SELECT 1
+
+>>> [CLI] fs cat [DST]/copy/a/b/c/hello.txt
+hello, world
+
+=== An existing file is skipped without --overwrite
+
+>>> [CLI] fs cp -r [SRC] [DST]/skip
+[SRC]/a/b/c/hello.txt -> [DST]/skip/a/b/c/hello.txt (skipped; already exists)
+[SRC]/pyNb.py -> [DST]/skip/pyNb.py
+[SRC]/query.sql -> [DST]/skip/query.sql
+
+>>> [CLI] fs cat [DST]/skip/pyNb.py
+# Databricks notebook source
+print(123)
+
+>>> [CLI] fs cat [DST]/skip/query.sql
+SELECT 1
+
+>>> [CLI] fs cat [DST]/skip/a/b/c/hello.txt
+existing content
+
+=== --overwrite replaces an existing file
+
+>>> [CLI] fs cp --recursive --overwrite [SRC] [DST]/overwrite
+[SRC]/a/b/c/hello.txt -> [DST]/overwrite/a/b/c/hello.txt
+[SRC]/pyNb.py -> [DST]/overwrite/pyNb.py
+[SRC]/query.sql -> [DST]/overwrite/query.sql
+
+>>> [CLI] fs cat [DST]/overwrite/pyNb.py
+# Databricks notebook source
+print(123)
+
+>>> [CLI] fs cat [DST]/overwrite/query.sql
+SELECT 1
+
+>>> [CLI] fs cat [DST]/overwrite/a/b/c/hello.txt
+hello, world
+
+=== Copying a directory onto a file fails and leaves the file alone
+
+>>> [CLI] fs cat [DST]/my_target
+existing content

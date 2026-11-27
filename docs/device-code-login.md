@@ -1,24 +1,18 @@
-# Device code login (experimental)
+# Device code login
 
 Device code login authenticates the Databricks CLI on machines that cannot open
 a browser, such as headless servers, SSH sessions, and web terminals. You
 approve the login in a browser on another device (for example your laptop or
 phone), and type the confirmation code it shows you back into the CLI.
 
-> [!WARNING]
-> Device code login is experimental. It is disabled by default and may change
-> without notice.
-
 ## Prerequisites
 
 - The workspace or account must have device code login enabled. If it is
   not, the CLI fails with `device code login is not enabled for this host`.
-- Enable the feature in the CLI by setting `DATABRICKS_CLI_DEVICE_CODE=true`.
 
 ## Log in from a headless machine
 
 ```console
-$ export DATABRICKS_CLI_DEVICE_CODE=true
 $ databricks auth login --host https://<workspace-host> --profile my-profile --use-device-code
 Using a browser on another device, visit:
 https://<workspace-host>/device/verification
@@ -124,7 +118,6 @@ fail with a token refresh error and you need to run the login again.
 
 | Error or symptom | Likely cause | What to do |
 | --- | --- | --- |
-| `--use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it` | The feature is not enabled in the CLI. | Set `DATABRICKS_CLI_DEVICE_CODE=true`. |
 | `device code login is not enabled for this host` | The workspace or account does not advertise device code login. | Use a workspace or account where the feature is enabled. |
 | `the command is being run in a non-interactive environment, please specify an account ID using --account-id` | The non-interactive login to an account or unified host cannot prompt for the account ID. | Pass `--account-id`, or log in with a profile that has `account_id`. |
 | The browser says the code is invalid or expired | The code was mistyped, or more than ~10 minutes passed. | Re-enter the code carefully, or run the login again for a new code. Codes never contain `0`, `1`, `2`, `O`, `Z`, or `I`. |

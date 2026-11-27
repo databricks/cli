@@ -1,0 +1,51 @@
+
+=== destroy
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 0 deleted
+
+>>> print_state.py
+
+>>> print_requests.py --get --sort //clusters //libraries
+{
+  "method": "GET",
+  "path": "/api/2.0/libraries/cluster-status",
+  "q": {
+    "cluster_id": "1126-000000-deleted0"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/clusters/get",
+  "q": {
+    "cluster_id": "1126-000000-deleted0"
+  }
+}
+
+=== deploy: the cluster is removed from config
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_state.py
+[]
+
+>>> print_requests.py --get --sort //clusters //libraries
+{
+  "method": "GET",
+  "path": "/api/2.0/libraries/cluster-status",
+  "q": {
+    "cluster_id": "1126-000000-deleted0"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/clusters/get",
+  "q": {
+    "cluster_id": "1126-000000-deleted0"
+  }
+}
