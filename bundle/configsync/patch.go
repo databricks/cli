@@ -73,7 +73,6 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 type parentNode struct {
 	path        yamlpatch.Path
 	missingPath yamlpatch.Path
-	source      []byte
 }
 
 // applyChange applies a single field change to YAML content.
@@ -93,7 +92,7 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			return nil, fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
 		}
 
-		source, err := isolateAnchors(content, fieldPathCandidate, fieldChange.Change.Operation)
+		source, err := moveDroppedAnchors(content, fieldPathCandidate, fieldChange.Change.Operation)
 		if err != nil {
 			return nil, err
 		}
@@ -118,10 +117,10 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			opType := yamlpatch.OperationAdd
 			// A key the file writes as null is absent from the merged config, so the change
 			// arrives as an add; it replaces the existing key, as in RFC 6902.
-			if yamlKeyReplaceable(source, fieldPathCandidate) {
+			if yamlKeyReplaceable(content, fieldPathCandidate) {
 				opType = yamlpatch.OperationReplace
 			}
-			modifiedContent, patchErr = patcher.Apply(source, yamlpatch.Patch{yamlpatch.Operation{
+			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 				Type:  opType,
 				Path:  path,
 				Value: fieldChange.Change.Value,
@@ -130,7 +129,7 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			// Collect parent path errors for later retry
 			if patchErr != nil && isParentPathError(patchErr) {
 				if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
-					parentNodesToCreate = append(parentNodesToCreate, parentNode{path, missingPath, source})
+					parentNodesToCreate = append(parentNodesToCreate, parentNode{path, missingPath})
 				}
 			}
 		default:
@@ -171,7 +170,7 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			nestedValue := buildNestedMaps(errInfo.path, errInfo.missingPath, fieldChange.Change.Value)
 
 			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
-			modifiedContent, patchErr := patcher.Apply(errInfo.source, yamlpatch.Patch{yamlpatch.Operation{
+			modifiedContent, patchErr := patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 				Type:  yamlpatch.OperationAdd,
 				Path:  errInfo.missingPath,
 				Value: nestedValue,
@@ -261,11 +260,14 @@ func addThroughNullAncestor(content []byte, fieldPath string, value any) ([]byte
 	return nil, nil
 }
 
-// isolateAnchors rewrites content so that a change at fieldPath affects only that field.
-// An alias on the path becomes a copy of its anchored node. An anchored node that the
-// change edits or drops hands its anchor to its first alias elsewhere, which becomes a
-// copy of the old value, so the aliases after it keep that value.
-func isolateAnchors(content []byte, fieldPath string, operation OperationType) ([]byte, error) {
+// moveDroppedAnchors rewrites content so that removing or replacing the node at
+// fieldPath leaves no alias dangling. An anchor on or inside that node moves to its
+// first alias elsewhere, which becomes a copy of the old value, so the aliases after
+// it keep that value. Like the patcher, the path follows aliases into their anchors.
+func moveDroppedAnchors(content []byte, fieldPath string, operation OperationType) ([]byte, error) {
+	if operation != OperationRemove && operation != OperationReplace {
+		return content, nil
+	}
 	var doc yaml.Node
 	if err := yaml.Unmarshal(content, &doc); err != nil {
 		return nil, err
@@ -278,36 +280,32 @@ func isolateAnchors(content []byte, fieldPath string, operation OperationType) (
 		return nil, err
 	}
 
-	changed := false
-	anchors := map[*yaml.Node]bool{}
 	node, key := doc.Content[0], (*yaml.Node)(nil)
 	for _, part := range pattern.AsSlice() {
 		if node.Kind == yaml.AliasNode {
-			replaceYAMLNode(node, key, inlineYAMLNode(node.Alias))
-			changed = true
-		}
-		if node.Anchor != "" {
-			anchors[node] = true
+			node = node.Alias
 		}
 		node, key = yamlChild(node, (*structpath.PathNode)(part))
 		if node == nil {
-			break
+			return content, nil
 		}
 	}
+	dropped := node
 
-	var dropped *yaml.Node
-	if node != nil && (operation == OperationRemove || operation == OperationReplace) {
-		dropped = node
-		walkYAML(dropped, func(n *yaml.Node) {
-			if n.Anchor != "" {
-				anchors[n] = true
-			}
-		})
-		if operation == OperationRemove && key != nil && key.Anchor != "" {
-			anchors[key] = true
+	anchors := map[*yaml.Node]bool{}
+	walkYAML(dropped, func(n *yaml.Node) {
+		if n.Anchor != "" {
+			anchors[n] = true
 		}
+	})
+	if operation == OperationRemove && key != nil && key.Anchor != "" {
+		anchors[key] = true
+	}
+	if len(anchors) == 0 {
+		return content, nil
 	}
 
+	changed := false
 	var visit func(node, key *yaml.Node)
 	visit = func(node, key *yaml.Node) {
 		if node == dropped {
@@ -336,14 +334,12 @@ func isolateAnchors(content []byte, fieldPath string, operation OperationType) (
 	}
 	visit(&doc, nil)
 	// The patcher still parses the dropped node, so its aliases to a moved anchor become copies.
-	if dropped != nil {
-		walkYAML(dropped, func(n *yaml.Node) {
-			if n.Kind == yaml.AliasNode && n.Alias.Anchor == "" {
-				replaceYAMLNode(n, nil, inlineYAMLNode(n.Alias))
-				changed = true
-			}
-		})
-	}
+	walkYAML(dropped, func(n *yaml.Node) {
+		if n.Kind == yaml.AliasNode && n.Alias.Anchor == "" {
+			replaceYAMLNode(n, nil, inlineYAMLNode(n.Alias))
+			changed = true
+		}
+	})
 	if !changed {
 		return content, nil
 	}

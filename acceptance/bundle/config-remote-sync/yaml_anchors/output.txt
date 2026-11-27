@@ -3,13 +3,12 @@ Created jobs.my_job
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Remove the libraries of the task that defines the anchor, change the library of one aliased task and move another to the large cluster
+=== Remove the libraries of the task that defines the anchor and move an aliased task to the large cluster
 
 === Detect and save changes
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='ingest'].libraries[0].pypi.package: replace
   tasks[task_key='setup'].libraries: remove
   tasks[task_key='transform'].job_cluster_key: replace
 
@@ -20,7 +19,7 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -18,17 +18,18 @@
+@@ -18,14 +18,13 @@
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/setup
 -          libraries: &common_libs
@@ -31,25 +30,19 @@ Resource: resources.jobs.my_job
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/ingest
 -          libraries: *common_libs
-+          libraries:
++          libraries: &common_libs
 +            - pypi:
-+                package: httpx
++                package: requests
          - task_key: transform
 -          job_cluster_key: main
 +          job_cluster_key: large
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/transform
--          libraries: *common_libs
-+          libraries: &common_libs
-+            - pypi:
-+                package: requests
-
- targets:
 
 === Only the changed tasks differ
 
 >>> [CLI] bundle validate -o json
-{"task_key":"ingest","job_cluster_key":"main","libraries":[{"pypi":{"package":"httpx"}}]}
+{"task_key":"ingest","job_cluster_key":"main","libraries":[{"pypi":{"package":"requests"}}]}
 {"task_key":"setup","job_cluster_key":"main","libraries":null}
 {"task_key":"transform","job_cluster_key":"large","libraries":[{"pypi":{"package":"requests"}}]}
 

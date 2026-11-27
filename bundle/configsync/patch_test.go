@@ -483,8 +483,8 @@ func TestApplyChangeAddToExistingKey(t *testing.T) {
 		{"null", "parameters:\n  - name: p\n    value:\n", "parameters[0].value", "parameters: [{name: p, value: value}]"},
 		{"sequence index inserts", "parent:\n  - a\n", "parent[0]", "parent: [value, a]"},
 		{"merge key adds", "defaults: &d\n  job_cluster_key: old\ntasks:\n  - <<: *d\n    task_key: main\n", "tasks[0].job_cluster_key", "defaults: {job_cluster_key: old}\ntasks: [{task_key: main, job_cluster_key: value}]"},
-		{"through an alias", "defaults: &d\n  k: old\njob: *d\n", "job.k", "defaults: {k: old}\njob: {k: value}"},
-		{"under an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n", "parameters[0].value", "parameters: [{name: p, value: value}, {name: q, value: old}]"},
+		{"through an alias", "defaults: &d\n  k: old\njob: *d\n", "job.k", "defaults: {k: value}\njob: {k: value}"},
+		{"under an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n", "parameters[0].value", "parameters: [{name: p, value: value}, {name: q, value: value}]"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
@@ -645,28 +645,14 @@ func TestApplyChangeKeepsAnchors(t *testing.T) {
 			content:   "a: &x\n  k: 1\nb: *x\n",
 			operation: OperationReplace,
 			path:      "b.k",
-			want:      "a: &x\n  k: 1\nb:\n  k: 2\n",
-		},
-		{
-			name:      "edit inside anchored node",
-			content:   "a: &x\n  k: 1\nb: *x\nc: *x\n",
-			operation: OperationReplace,
-			path:      "a.k",
-			want:      "a:\n  k: 2\nb: &x\n  k: 1\nc: *x\n",
-		},
-		{
-			name:      "add through alias",
-			content:   "a: &x\n  - 1\nb: *x\n",
-			operation: OperationAdd,
-			path:      "b[*]",
-			want:      "a: &x\n  - 1\nb:\n  - 1\n  - 2\n",
+			want:      "a: &x\n  k: 2\nb: *x\n",
 		},
 		{
 			name:      "remove nested anchor through alias",
 			content:   "a: &x\n  k: &y 1\n  n: 3\nb: *x\nc: *y\n",
 			operation: OperationRemove,
 			path:      "b.k",
-			want:      "a: &x\n  k: &y 1\n  n: 3\nb:\n  n: 3\nc: *y\n",
+			want:      "a: &x\n  n: 3\nb: *x\nc: &y 1\n",
 		},
 		{
 			name:      "commented alias",

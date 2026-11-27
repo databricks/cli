@@ -20,16 +20,14 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -18,5 +18,7 @@
-       description: &description base
-       max_concurrent_runs: 1
--      schedule: *nightly
-+      schedule:
-+        quartz_cron_expression: 0 0 2 * * ?
-+        timezone_id: UTC
-       tasks:
-         - task_key: main
-@@ -29,5 +31,5 @@
+@@ -10,5 +10,5 @@
+ definitions:
+   nightly: &nightly
+-    quartz_cron_expression: "0 0 1 * * ?"
++    quartz_cron_expression: 0 0 2 * * ?
+     timezone_id: UTC
+
+@@ -29,5 +29,5 @@
        jobs:
          my_job: &dev_job
 -          description: *description
