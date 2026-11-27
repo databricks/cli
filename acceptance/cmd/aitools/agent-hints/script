@@ -38,7 +38,7 @@ title "With skill hints on, Cursor is hinted once per machine with the skills li
 trace DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CURSOR_AGENT=1 $CLI jobs list
 trace DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CURSOR_AGENT=1 $CLI jobs list
 
-# The skills subcommands are stubs until their own changes land, so `skills list`
-# fails with its not-implemented message; the point is that it prints no hint.
+# This build has no skills source, so `skills list` fails with its no-source
+# error; the point is that it prints no hint.
 title "With skill hints on, skills commands print no hint"
 musterr trace DATABRICKS_SKILLS_PREVIEW=1 DATABRICKS_SKILLS_HINTS=1 CODEX_CI=1 CODEX_THREAD_ID=thread-5 $CLI skills list

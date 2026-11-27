@@ -8,22 +8,23 @@ import (
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
-// notAnAgentEnv makes the CLI act as if no agent calls it, for example when an eval runs a baseline arm. Agent
+// NotAnAgentEnv makes the CLI act as if no agent calls it, for example when an eval runs a baseline arm. Agent
 // detection reports no agent, so every agent-facing output is the human one, and agent tips and notes are
 // suppressed too.
-const notAnAgentEnv = "DATABRICKS_NOT_AN_AGENT"
+const NotAnAgentEnv = "DATABRICKS_NOT_AN_AGENT"
 
 // NotAnAgent reports whether DATABRICKS_NOT_AN_AGENT is set to a true value in the context or the environment. An
 // invalid value counts as false.
 func NotAnAgent(ctx context.Context) bool {
-	on, _ := env.GetBool(ctx, notAnAgentEnv)
+	on, _ := env.GetBool(ctx, NotAnAgentEnv)
 	return on
 }
 
 // Provider returns the agent name that useragent.AgentProvider reports, or "" when no agent is detected or
 // NotAnAgent holds. The CLI's own readers of the calling agent (output, telemetry, the User-Agent) go through it.
-// The SDK adds its agent token from useragent.AgentProvider directly; ApplyNotAnAgentHeader removes it from the
-// CLI's clients.
+// The SDK adds its agent token from useragent.AgentProvider directly. ApplyNotAnAgentHeader removes it from the
+// MustWorkspaceClient, MustAccountClient and bundle workspace clients, including a profile picked at a prompt.
+// Other places that build their own SDK config, such as auth login and aitools mcp, still send the token.
 func Provider(ctx context.Context) string {
 	if NotAnAgent(ctx) {
 		return ""

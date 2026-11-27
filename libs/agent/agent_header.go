@@ -25,9 +25,9 @@ func ApplyNotAnAgentHeader(ctx context.Context, cfg *config.Config) {
 
 // noAgentHeaderTransport drops the agent token from User-Agent and passes the request on to base.
 type noAgentHeaderTransport struct {
-	// base is the transport cfg had. When it is nil, the SDK uses its shared default, which
-	// httptransport.HealthChecked mirrors. It is read from cfg on each request, so the insecure
-	// setting that the profile resolves is honoured.
+	// base is the transport cfg had. When base is nil, requests go to httptransport.HealthChecked, chosen per
+	// request from cfg.InsecureSkipVerify so a skip_verify resolved from the profile applies; it stands in for
+	// the SDK's unexported default.
 	base http.RoundTripper
 	cfg  *config.Config
 }

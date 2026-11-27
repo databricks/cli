@@ -175,9 +175,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	pickedCfg := &config.Config{Profile: profile}
-	agent.ApplyNotAnAgentHeader(ctx, pickedCfg)
-	a, err = databricks.NewAccountClient((*databricks.Config)(pickedCfg))
+	a, err = databricks.NewAccountClient(profileConfig(ctx, profile))
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -360,9 +358,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	pickedCfg := &config.Config{Profile: profile}
-	agent.ApplyNotAnAgentHeader(ctx, pickedCfg)
-	w, err = databricks.NewWorkspaceClient((*databricks.Config)(pickedCfg))
+	w, err = databricks.NewWorkspaceClient(profileConfig(ctx, profile))
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -502,6 +498,14 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 		InactiveTemplate:  `{{.Name}}`,
 		SelectedTemplate:  `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
 	})
+}
+
+// profileConfig returns the config for a profile picked at a prompt. The picked profile resolves into its own
+// config rather than the caller's cfg, so it gets the not-an-agent header setting here too.
+func profileConfig(ctx context.Context, profile string) *databricks.Config {
+	cfg := &config.Config{Profile: profile}
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
+	return (*databricks.Config)(cfg)
 }
 
 // To verify that a client is configured correctly, we pass an empty HTTP request
