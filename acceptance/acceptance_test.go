@@ -778,17 +778,22 @@ func getSkipReason(config *internal.TestConfig, configPath string, named bool) s
 		return ""
 	}
 
-	if WorkspaceTmpDir && !isTruePtr(config.RunsOnDbr) {
-		return "Disabled because RunsOnDbr is not set in " + configPath
+	cloudEnv := os.Getenv("CLOUD_ENV")
+	isRunningOnCloud := cloudEnv != ""
+
+	if WorkspaceTmpDir {
+		if isRunningOnCloud && !isTruePtr(config.RunsOnDbr) {
+			return "Disabled because RunsOnDbr is not set in " + configPath
+		}
+		if !isRunningOnCloud && config.RunsOnDbr != nil && !*config.RunsOnDbr {
+			return "Disabled via RunsOnDbr = false in " + configPath
+		}
 	}
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 	}
-
-	cloudEnv := os.Getenv("CLOUD_ENV")
-	isRunningOnCloud := cloudEnv != ""
 
 	if isRunningOnCloud {
 		cloudEnvBase := getCloudEnvBase(cloudEnv)

@@ -152,8 +152,8 @@ type TestConfig struct {
 	// On CI, we want to increase timeout, to account for slower environment
 	TimeoutCIMultiplier float64
 
-	// If true, run this test when running on DBR / workspace file system.
-	// Tests must explicitly opt-in to run on DBR.
+	// Whether this test runs on DBR (-workspace-tmp-dir). Cloud runs on DBR are opt-in
+	// (true); local runs on DBR are opt-out (false).
 	RunsOnDbr *bool
 }
 
