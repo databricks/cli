@@ -16,15 +16,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeSource struct {
+type listFakeSource struct {
 	catalog *libskills.Catalog
 }
 
-func (f fakeSource) Catalog(context.Context) (*libskills.Catalog, error) {
+func (f listFakeSource) Catalog(context.Context) (*libskills.Catalog, error) {
 	return f.catalog, nil
 }
 
-func (f fakeSource) ReadFile(context.Context, string, string) ([]byte, error) {
+func (f listFakeSource) ReadFile(context.Context, string, string) ([]byte, error) {
 	return nil, libskills.ErrUnknownFile
 }
 
@@ -141,12 +141,12 @@ func TestRunListTextAndJSON(t *testing.T) {
 	}
 
 	cmd, stdout, stderr := listTestCmd(t, flags.OutputText)
-	require.NoError(t, runList(cmd, fakeSource{catalog}, false))
+	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
 	assert.Equal(t, "alpha: First.\nbeta: Second.\n"+readHint+"\n", stdout.String())
 	assert.Empty(t, stderr.String())
 
 	cmd, stdout, _ = listTestCmd(t, flags.OutputJSON)
-	require.NoError(t, runList(cmd, fakeSource{catalog}, false))
+	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
 	var got struct {
 		Source         string `json:"source"`
 		ReleaseVersion string `json:"release_version"`
@@ -176,7 +176,7 @@ func TestRunListStaleCatalogPrintsProvenanceOnStderr(t *testing.T) {
 	}
 
 	cmd, stdout, stderr := listTestCmd(t, flags.OutputText)
-	require.NoError(t, runList(cmd, fakeSource{catalog}, false))
+	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
 	assert.Contains(t, stderr.String(), "Skills come from cached (release 1.2.3, fetched 2026-11-01T00:00:00Z)")
 	assert.NotContains(t, stdout.String(), "Skills come from")
 }

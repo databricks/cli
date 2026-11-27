@@ -165,6 +165,14 @@ type listJSONSkill struct {
 	Commands    []string `json:"commands"`
 }
 
+// nonNilList keeps an absent list as [] in JSON rather than null.
+func nonNilList(list []string) []string {
+	if list == nil {
+		return make([]string, 0)
+	}
+	return list
+}
+
 func writeListJSON(w io.Writer, catalog *libskills.Catalog, list []libskills.Skill) error {
 	out := listJSON{
 		Source:         catalog.Label,
@@ -176,8 +184,8 @@ func writeListJSON(w io.Writer, catalog *libskills.Catalog, list []libskills.Ski
 			Name:        s.Name,
 			Description: s.Description,
 			Version:     s.Version,
-			Files:       s.Files,
-			Commands:    s.Commands,
+			Files:       nonNilList(s.Files),
+			Commands:    nonNilList(s.Commands),
 		})
 	}
 	enc := json.NewEncoder(w)

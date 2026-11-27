@@ -56,7 +56,7 @@ To read a skill, run: databricks skills read <name>
       "files": [
         "SKILL.md"
       ],
-      "commands": null
+      "commands": []
     }
   ]
 }
