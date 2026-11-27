@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+ENDPOINT="vs-endpoint-$UNIQUE_NAME"
+
+cleanup() {
+    # Whatever destroy left behind.
+    errcode $CLI bundle destroy --auto-approve > LOG.cleanup 2>&1
+    errcode $CLI vector-search-endpoints delete-endpoint "$ENDPOINT" >> LOG.cleanup 2>&1
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Outside the bundle, create an endpoint with the name the bundle uses, 7 seconds before the deploy"
+trace $CLI vector-search-endpoints create-endpoint "$ENDPOINT" STANDARD --no-wait | jq '{name, endpoint_type}'
+sleep 7
+
+title "The bundle's create request fails with a 504 that the backend did not apply: deploy takes the endpoint"
+fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
+errcode trace $CLI bundle deploy
+trace $CLI bundle plan

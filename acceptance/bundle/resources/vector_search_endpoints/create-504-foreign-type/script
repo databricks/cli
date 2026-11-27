@@ -13,8 +13,6 @@ trap cleanup EXIT
 title "Outside the bundle, create an endpoint with the name the bundle uses, but of another endpoint_type"
 trace $CLI vector-search-endpoints create-endpoint "$ENDPOINT" STORAGE_OPTIMIZED --no-wait | jq '{name, endpoint_type}'
 
-# Undefined: whether an endpoint found after a failed create request has to match that request.
-# An endpoint the request created has the requested endpoint_type, so this one cannot be ours.
 title "The bundle's create request fails with a 504 that the backend did not apply: deploy takes the endpoint"
 fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
 trace $CLI bundle deploy

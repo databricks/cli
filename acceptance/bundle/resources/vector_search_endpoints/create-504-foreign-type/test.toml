@@ -1,3 +1,5 @@
+Badness = "After a create request fails with a 504, deploy looks the endpoint up by name and takes one created less than a minute before the request without comparing it with the request. Here the endpoint was created outside the bundle with another endpoint_type. An endpoint the bundle's request created has the requested type, so this one cannot be the bundle's. The next plan is a recreate, so the next deploy deletes it. Deploy should fail as it does without the 504."
+
 # Faults are injected through the testserver.
 Cloud = false
 

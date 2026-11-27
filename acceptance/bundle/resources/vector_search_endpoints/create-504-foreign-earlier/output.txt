@@ -1,0 +1,19 @@
+
+=== Outside the bundle, create an endpoint with the name the bundle uses, 7 seconds before the deploy
+
+>>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD --no-wait
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+=== The bundle's create request fails with a 504 that the backend did not apply: deploy takes the endpoint
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/vs-endpoint-504-foreign-earlier-[UNIQUE_NAME]/default/files...
+Created vector_search_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
