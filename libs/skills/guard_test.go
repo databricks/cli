@@ -87,16 +87,48 @@ func TestAgentFeaturesDisabledOverridesSkillsSwitches(t *testing.T) {
 			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
 			assert.Equal(t, c.want, Enabled(ctx))
 			assert.Equal(t, c.want, HintsEnabled(ctx))
+			assert.Equal(t, c.want, HintsEnabled(WithHintsMemo(ctx)))
 		})
 	}
 }
 
-func TestHintsEnabled(t *testing.T) {
-	// One entry applies to every CLI version, so the test does not depend on
-	// which version the test binary reports.
-	const entryOn = `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`
-	const entryOff = `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30"}}`
+// One entry applies to every CLI version, so the tests do not depend on which
+// version the test binary reports.
+const (
+	entryOn  = `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`
+	entryOff = `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30"}}`
+)
 
+// A cache refresh in the middle of a run, such as the auto-install after the
+// command, must not change HintsEnabled for that run. A run without the memo
+// still reads the refreshed cache.
+func TestHintsEnabledOncePerRun(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_PREVIEW", "true")
+	writeCachedManifest(t, ctx, entryOn, time.Now())
+
+	run := WithHintsMemo(ctx)
+	require.True(t, HintsEnabled(run))
+
+	writeCachedManifest(t, ctx, entryOff, time.Now())
+	assert.True(t, HintsEnabled(run), "a cache refresh changed HintsEnabled within one run")
+	assert.False(t, HintsEnabled(ctx), "without the memo, HintsEnabled reads the refreshed cache")
+
+	nextRun := WithHintsMemo(ctx)
+	assert.False(t, HintsEnabled(nextRun), "a new run reads the refreshed cache")
+}
+
+// The memo does not reach past the feature gate: with the preview off, hints
+// stay off whatever the cache says, memo or not.
+func TestHintsEnabledOncePerRunPreviewOff(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	ctx := t.Context()
+	writeCachedManifest(t, ctx, entryOn, time.Now())
+
+	assert.False(t, HintsEnabled(WithHintsMemo(ctx)))
+}
+
+func TestHintsEnabled(t *testing.T) {
 	cases := []struct {
 		name     string
 		preview  string

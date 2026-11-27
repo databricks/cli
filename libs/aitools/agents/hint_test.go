@@ -14,10 +14,12 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/useragent"
@@ -455,6 +457,39 @@ func TestMaybeHint_WithheldSkillsHintPrintsWhenTheRunDidNotInstall(t *testing.T)
 
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
 	assert.Nil(t, MaybeHint(withSkillHintEnv(ctx2), regularCmd(), noPluginRecorded))
+	assert.Empty(t, stderr2.String())
+}
+
+// The auto-install before a deferred hint may refresh the manifest cache. The
+// run resolves the hints value once, so the deferred text, its kind and its
+// throttle all keep the value MaybeHint saw.
+func TestMaybeHint_DeferredSkillsHintIgnoresCacheRefresh(t *testing.T) {
+	setClaudeAgent(t)
+	home, cacheDir := t.TempDir(), t.TempDir()
+	setInstallsFor(t, true)
+
+	ctx, stderr := sessionCtx(t, home, cacheDir, false)
+	ctx = skills.WithHintsMemo(env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1"))
+	path := clicompat.LocalManifestPath(ctx)
+	// One entry applies to every CLI version.
+	testutil.WriteFile(t, path, `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`)
+
+	deferred := MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	require.NotNil(t, deferred)
+	assert.Empty(t, stderr.String())
+
+	// The cache is refreshed with hints off before the deferred hint prints.
+	testutil.WriteFile(t, path, `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30"}}`)
+	deferred()
+	assert.Equal(t, skillsHintText+"\n", stderr.String())
+	assert.Equal(t, []protos.AitoolsHintKind{protos.AitoolsHintKindSkillsListText}, hintKinds(t, ctx))
+
+	// The skills text's throttle was recorded with it: the session's next
+	// command, with hints on again, prints nothing.
+	testutil.WriteFile(t, path, `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`)
+	ctx2, stderr2 := sessionCtx(t, home, cacheDir, false)
+	ctx2 = env.Set(ctx2, "DATABRICKS_SKILLS_PREVIEW", "1")
+	assert.Nil(t, MaybeHint(ctx2, regularCmd(), noPluginRecorded))
 	assert.Empty(t, stderr2.String())
 }
 
