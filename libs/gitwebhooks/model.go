@@ -117,3 +117,11 @@ type ListWebhookTriggersResponse struct {
 	WebhookTriggers []WebhookTrigger `json:"webhook_triggers,omitempty"`
 	NextPageToken   string           `json:"next_page_token,omitempty"`
 }
+
+// DeleteWebhookTrigger deletes the trigger with the same repo_url, bundle_yml_repo_path and
+// deployment_mode. The service ignores push_event, but rejects a request without it.
+type DeleteWebhookTrigger struct {
+	RepoURL       string                   `json:"repo_url"`
+	GitProvider   GitProvider              `json:"git_provider"`
+	TriggerConfig *DeploymentTriggerConfig `json:"trigger_config"`
+}

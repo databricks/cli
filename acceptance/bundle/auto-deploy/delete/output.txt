@@ -1,0 +1,78 @@
+
+=== Without a terminal, delete needs --auto-approve
+
+>>> musterr [CLI] bundle auto-deploy delete
+Error: this deletes the auto-deploy trigger of target dev. To proceed, use --auto-approve
+
+=== Deleting the target's trigger leaves the other target's
+
+>>> [CLI] bundle auto-deploy delete --auto-approve
+Deleted the auto-deploy trigger of target dev.
+{
+  "method": "DELETE",
+  "path": "/api/2.0/git-webhooks/trigger",
+  "body": {
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "dev"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle auto-deploy list
+Target  Branch  Deploy as    Trigger ID
+prod    main    its creator  [UUID]
+
+=== A retried delete sends its body again
+
+>>> [CLI] bundle auto-deploy delete -t prod --auto-approve
+Deleted the auto-deploy trigger of target prod.
+{
+  "method": "DELETE",
+  "path": "/api/2.0/git-webhooks/trigger",
+  "body": {
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "prod"
+      }
+    }
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/git-webhooks/trigger",
+  "body": {
+    "repo_url": "https://github.com/acme/repo",
+    "git_provider": "GITHUB",
+    "trigger_config": {
+      "push_event": {
+        "branch": "main"
+      },
+      "dabs_deploy": {
+        "bundle_yml_repo_path": "databricks.yml",
+        "deployment_mode": "prod"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle auto-deploy list
+Target  Branch  Deploy as  Trigger ID
+
+=== A target without a trigger
+
+>>> musterr [CLI] bundle auto-deploy delete --auto-approve
+Error: target dev has no auto-deploy trigger that you can view. To create one, run: databricks bundle auto-deploy create -t dev
