@@ -95,7 +95,7 @@ func Record(ctx context.Context, version string, attempts int, id string, now ti
 // StartAttempt records attempt as Record does, unless the state is opted out
 // by then, and reports whether it did. A run counts the attempt right before
 // it installs, so an opt-out stored after the run read the state (during the
-// gate lookup or the install prompt, say) still stops it.
+// gate lookup, say) still stops it.
 func StartAttempt(ctx context.Context, version string, attempt int, id string, now time.Time) (started bool, err error) {
 	err = updateState(ctx, func(s *State) {
 		if s.OptedOut {
@@ -135,15 +135,9 @@ func RecordUnfinished(ctx context.Context, version, id string) error {
 	})
 }
 
-// MarkInstalling sets State.Installing before a first install starts, and
-// State.InstalledWithoutConsent when the user has not answered.
+// MarkInstalling sets State.Installing before a first install starts.
 func MarkInstalling(ctx context.Context) error {
-	return updateState(ctx, func(s *State) {
-		s.Installing = true
-		if s.Consent() == ConsentUnknown {
-			s.InstalledWithoutConsent = true
-		}
-	})
+	return updateState(ctx, func(s *State) { s.Installing = true })
 }
 
 // SaveInstallStateDigest sets State.InstallStateDigest after a first install
@@ -164,12 +158,6 @@ func SaveID(ctx context.Context, id string) (string, error) {
 		id = s.ID
 	})
 	return id, err
-}
-
-// Accept records that the user answered "yes" at the install prompt of
-// version (State.AcceptedVersion).
-func Accept(ctx context.Context, version string) error {
-	return updateState(ctx, func(s *State) { s.AcceptedVersion = version })
 }
 
 // TryLock claims the machine-wide auto-install lock so that concurrent CLI

@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "skills": {
     "demo-skill": {"version": "0.0.1", "description": "A skill for tests.", "files": ["SKILL.md"], "commands": ["fs", "air"]},
-    "guide-skill": {"version": "0.0.1", "description": "A skill with a supporting file.", "files": ["SKILL.md", "references/guide.md"]},
+    "guide-skill": {"version": "0.0.1", "description": "A skill with a supporting file.", "files": ["SKILL.md", "references/guide.md", "-notes.md"]},
     "future-skill": {"version": "0.0.1", "description": "A skill that needs a newer CLI.", "files": ["SKILL.md"], "min_cli_version": "99.0.0"}
   }
 }

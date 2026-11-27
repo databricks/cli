@@ -36,6 +36,9 @@ const (
 	ReasonAlreadyRan       Reason = "already_ran"
 	ReasonRetriesExhausted Reason = "retries_exhausted"
 	ReasonRetryNotDue      Reason = "retry_not_due"
+	// The user never agreed to installing the tools. The version is left
+	// unsettled, so the first run after the user agrees installs.
+	ReasonNoConsent Reason = "no_consent"
 
 	// Settle the version without installing. All but ReasonGateOff are
 	// reported: the feature is not launched while the gate is off.
@@ -52,7 +55,7 @@ const (
 // settles the version. A run that is not due changes nothing.
 func (r Reason) Due() bool {
 	switch r {
-	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted, ReasonRetryNotDue:
+	case ReasonSkippedCommand, ReasonOnRuntime, ReasonCacheDisabled, ReasonDevelopmentBuild, ReasonRootInUserHome, ReasonAlreadyRan, ReasonRetriesExhausted, ReasonRetryNotDue, ReasonNoConsent:
 		return false
 	case ReasonSkippedCI, ReasonSkippedOptOut, ReasonGateOff, ReasonSkippedHoldout, ReasonRun:
 		return true
@@ -79,7 +82,8 @@ type Inputs struct {
 	// that another user owns (see RootInUserHome).
 	RootInUserHome bool
 
-	// State is the persisted state: last version, attempts and opt-out.
+	// State is the persisted state: last version, attempts and the user's
+	// consent.
 	State State
 
 	// Now is the time of the run.
@@ -131,8 +135,12 @@ func Decide(in Inputs) Reason {
 		return ReasonAlreadyRan
 	case in.CI:
 		return ReasonSkippedCI
-	case in.EnvOptOut, in.State.OptedOut:
+	case in.EnvOptOut, in.State.Consent() == ConsentOptedOut:
 		return ReasonSkippedOptOut
+	// Without the user's yes nothing is installed. CI and the opt-out come
+	// first, so they settle the version and are reported whatever the consent.
+	case in.State.Consent() == ConsentUnknown:
+		return ReasonNoConsent
 	// A source or agent CLI that stays broken would otherwise make every
 	// following command wait for a failing attempt. The wait is for the
 	// install only: CI and the opt-out settle the version during it.

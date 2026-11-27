@@ -32,8 +32,11 @@ func TestAutoInstallsFor(t *testing.T) {
 		want         bool
 	}{
 		{name: "first run of a version installs for a detected agent", want: true},
-		{name: "a retry installs too", state: `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 2}`, want: true},
-		{name: "a fresh machine with no state installs", state: "{}", want: true},
+		{name: "a retry installs too", state: `{"id": "treatment-machine", "consented": true, "last_version": "1.30.0", "attempts": 2}`, want: true},
+		{name: "a machine that agreed with no ID yet installs", state: `{"consented": true}`, want: true},
+		{name: "a machine whose user never answered installs nothing", state: `{"id": "treatment-machine"}`},
+		{name: "a fresh machine with no state installs nothing", state: "{}"},
+		{name: "a retry of a machine whose user never answered installs nothing", state: `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 2}`},
 		{name: "an agent without a config dir is not installed for", agent: agents.NameClaudeCode},
 		{name: "a settled version installs nothing", state: `{"id": "treatment-machine", "last_version": "1.30.0"}`},
 		{name: "a version whose retries ran out installs nothing", state: `{"id": "treatment-machine", "last_version": "1.30.0", "attempts": 10}`},
@@ -43,9 +46,13 @@ func TestAutoInstallsFor(t *testing.T) {
 		{name: "a development build installs nothing", env: map[string]string{"DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION": ""}},
 		{name: "a command that skips auto-install installs nothing", command: "aitools list"},
 		{name: "a failed plan installs nothing", installState: "not json"},
-		{name: "a holdout machine installs nothing", state: `{"id": "holdout-machine"}`},
+		{name: "a holdout machine installs nothing", state: `{"id": "holdout-machine", "consented": true}`},
 		{name: "an update may install for an agent with a config dir", installState: globalInstallState, want: true},
 		{name: "an update installs nothing for an agent without a config dir", installState: globalInstallState, agent: agents.NameClaudeCode},
+		// The run counts the installation as the consent and stores it.
+		{name: "an update of a machine whose user never answered may install", state: `{"id": "treatment-machine"}`, installState: globalInstallState, want: true},
+		{name: "an installation is no consent in CI", state: `{"id": "treatment-machine"}`, installState: globalInstallState, env: map[string]string{"CI": "true"}},
+		{name: "an installation does not replace an opt-out", state: `{"id": "treatment-machine", "opted_out": true}`, installState: globalInstallState},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

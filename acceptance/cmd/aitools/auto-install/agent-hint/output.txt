@@ -1,4 +1,7 @@
 
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+
 === a failing command: no install, the hint once the command ends
 
 >>> CLAUDECODE=1 [CLI] jobs get abc
@@ -13,7 +16,7 @@ Exit code: 1
 === first run of a new version: the install notice, no install hint
 
 >>> CLAUDECODE=1 [CLI] jobs list
-Installed Databricks AI tools for Claude Code, Cursor. Disable: databricks aitools auto-install disable
+Installed Databricks AI tools for Claude Code, Cursor. Turn off: databricks aitools auto-install disable. Remove: databricks aitools uninstall
 
 >>> print_telemetry
 {"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CLAUDE_CODE","CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CLAUDE_CODE","error_category":"CLI_NOT_ON_PATH"}],"trigger":"AUTO_FIRST_RUN"}}
@@ -26,6 +29,9 @@ Installed Databricks AI tools for Claude Code, Cursor. Disable: databricks aitoo
 >>> print_telemetry
 
 === gate off: no install, the hint once the command ends, and on the next
+
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
 
 >>> CLAUDECODE=1 [CLI] jobs list
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
@@ -41,9 +47,12 @@ Databricks skills are not installed. To work with Databricks reliably, first run
 
 === an agent the install skips is still hinted: Claude Code has no config dir
 
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+
 >>> CLAUDECODE=1 [CLI] jobs list
 Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
-Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+Installed Databricks AI tools for Cursor. Turn off: databricks aitools auto-install disable. Remove: databricks aitools uninstall
 
 >>> print_telemetry
 {"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}

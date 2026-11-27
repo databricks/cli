@@ -31,19 +31,19 @@ func (m *mergeJobTasks) taskKeyString(v dyn.Value) string {
 }
 
 func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		if v.Kind() == dyn.KindNil {
-			return v, nil
-		}
+	return diag.FromErr(b.Config.Mutate(m.merge))
+}
 
-		return dyn.Map(v, "resources.jobs", dyn.Foreach(func(_ dyn.Path, job dyn.Value) (dyn.Value, error) {
-			// Sorting keys here since it'll be sorted by TF anyway
-			// https://github.com/databricks/terraform-provider-databricks/blob/0a932c2/jobs/resource_job.go#L343
-			// However, if we don't sort we have a difference between direct and TF and between configs in
-			// "bundle validate" and configs sent to backend.
-			return dyn.Map(job, "tasks", merge.ElementsBySortedKey("task_key", m.taskKeyString))
-		}))
-	})
+func (m *mergeJobTasks) merge(v dyn.Value) (dyn.Value, error) {
+	if v.Kind() == dyn.KindNil {
+		return v, nil
+	}
 
-	return diag.FromErr(err)
+	return dyn.Map(v, "resources.jobs", dyn.Foreach(func(_ dyn.Path, job dyn.Value) (dyn.Value, error) {
+		// Sorting keys here since it'll be sorted by TF anyway
+		// https://github.com/databricks/terraform-provider-databricks/blob/0a932c2/jobs/resource_job.go#L343
+		// However, if we don't sort we have a difference between direct and TF and between configs in
+		// "bundle validate" and configs sent to backend.
+		return dyn.Map(job, "tasks", merge.ElementsBySortedKey("task_key", m.taskKeyString))
+	}))
 }
