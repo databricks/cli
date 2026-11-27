@@ -56,7 +56,8 @@ To read a skill, run: databricks skills read <name>
       "experimental": false,
       "files": [
         "SKILL.md",
-        "references/guide.md"
+        "references/guide.md",
+        "-notes.md"
       ],
       "commands": []
     }
@@ -101,7 +102,8 @@ To read a skill, run: databricks skills read <name>
       "experimental": false,
       "files": [
         "SKILL.md",
-        "references/guide.md"
+        "references/guide.md",
+        "-notes.md"
       ],
       "commands": []
     },

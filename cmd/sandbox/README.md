@@ -45,3 +45,36 @@ including workspace authentication. Neither timeout limits an established sessio
 These commands require workspace support for sandbox HTTP/WebSocket port
 forwarding. They do not connect to the legacy Gateway SSH endpoint or register
 keys with its registry.
+
+## Migrating from gateway key registration
+
+The legacy `databricks sandbox register`, `databricks sandbox ssh-key list`,
+and `databricks sandbox ssh-key delete` commands have been removed. SSH now uses
+workspace OAuth authentication and sandbox port forwarding; separate registration
+with the gateway key registry is no longer needed.
+
+Authenticate with `databricks auth login --host https://<workspace-host>`, then use
+`databricks sandbox ssh SANDBOX_ID`. For editor Remote-SSH, `ssh`, `scp`, or `sftp`,
+run `databricks sandbox ssh-setup SANDBOX_ID --name my-sandbox --profile PROFILE`
+and use the new alias instead of the old gateway hostname.
+
+Removing these commands does not delete existing local keys, change existing
+`~/.ssh/config` entries or the legacy `~/.ssh/databricks-sandbox` include file,
+or revoke any server-side key registrations. Existing gateway aliases remain
+as they are; use the new OAuth-backed alias for supported sandbox connections.
+
+### Revoking a previously registered gateway key
+
+While the legacy gateway key registry remains available, you can revoke an old
+registration through the generic API command. Use the workspace profile from
+the original registration, list the keys, then delete only the selected key:
+
+```sh
+databricks api get /api/2.0/lakebox/ssh-keys --profile PROFILE
+databricks api delete /api/2.0/lakebox/ssh-keys/KEY_HASH --profile PROFILE
+```
+
+Replace `KEY_HASH` with the `keyHash` from the selected entry in `sshKeys`.
+Deletion revokes that key's legacy gateway access; it does not delete its local
+key files or affect the workspace-authenticated port-forwarding SSH connection.
+This cleanup is optional and is never performed automatically by this retirement.

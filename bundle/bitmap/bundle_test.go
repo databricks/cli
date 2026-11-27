@@ -1,0 +1,176 @@
+package bitmap_test
+
+import (
+	"reflect"
+	"slices"
+	"testing"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/bitmap"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// These tests need bundle.Telemetry, and the bundle package imports this one,
+// so they live in an external test package.
+
+func TestWalkSchema(t *testing.T) {
+	schema, err := bitmap.WalkSchema(reflect.TypeFor[bundle.Telemetry]())
+	require.NoError(t, err)
+
+	seen := map[string]bool{}
+	for _, p := range schema {
+		assert.False(t, seen[p], "duplicate path %s", p)
+		seen[p] = true
+		assert.NotEqual(t, "targets", p)
+		assert.NotContains(t, p, "targets.")
+		assert.NotContains(t, p, "environments.")
+		assert.NotContains(t, p, "__locations")
+	}
+
+	assert.Contains(t, schema, "bundle.name")
+	assert.Contains(t, schema, "resources.jobs.*.name")
+	assert.Contains(t, schema, "resources.jobs.*.tasks[*].task_key")
+	assert.Contains(t, schema, "variables.*.default")
+	// Telemetry fields are namespaced under "telemetry." and named by their
+	// metric tag when they have one.
+	assert.Contains(t, schema, "telemetry.select_used")
+	assert.Contains(t, schema, "telemetry.run_as_set")
+	assert.Contains(t, schema, "telemetry.artifact_files_is_set")
+	assert.Contains(t, schema, "telemetry.experimental.use_legacy_run_as")
+	assert.NotContains(t, schema, "telemetry.SelectUsed")
+	assert.NotContains(t, schema, "telemetry.artifact_files_is_set[*]")
+
+	// Each bool field, whatever its Go shape, is followed by its value entries.
+	for _, p := range []string{
+		"experimental.use_legacy_run_as",                      // bool, omitempty
+		"resources.jobs.*.queue.enabled",                      // bool, no omitempty
+		"presets.pipelines_development",                       // *bool
+		"telemetry.run_as_set",                                // telemetry *bool
+		"telemetry.artifact_files_is_set",                     // telemetry BoolSet
+		"resources.jobs.*.tasks[*].disable_auto_optimization", // bool in a list element
+	} {
+		i := slices.Index(schema, p)
+		require.GreaterOrEqual(t, i, 0, p)
+		assert.Equal(t, []string{p + "=true", p + "=false"}, schema[i+1:i+3], p)
+	}
+	// A telemetry bool is recorded only when true: its presence bit is its value.
+	assert.Contains(t, schema, "telemetry.select_used")
+	assert.NotContains(t, schema, "telemetry.select_used=true")
+	assert.NotContains(t, schema, "telemetry.select_used=false")
+	// Non-bool fields have no value entries.
+	assert.NotContains(t, schema, "bundle.name=true")
+	assert.NotContains(t, schema, "variables.*.default=true")
+}
+
+func TestEmbeddedSchemaIsCompleteAndUnique(t *testing.T) {
+	schema := bitmap.EmbeddedSchema()
+	fresh, err := bitmap.WalkSchema(reflect.TypeFor[bundle.Telemetry]())
+	require.NoError(t, err)
+
+	_, added := bitmap.Merge(schema, fresh)
+	assert.Empty(t, added, "run 'task generate-bitmap-schema'")
+
+	// A duplicate would leave its first bit permanently 0.
+	seen := map[string]bool{}
+	for _, p := range schema {
+		assert.False(t, seen[p], "duplicate schema entry %q", p)
+		seen[p] = true
+	}
+}
+
+func TestBitsTelemetry(t *testing.T) {
+	schema := bitmap.EmbeddedSchema()
+	for _, tc := range []struct {
+		name string
+		tm   bundle.Telemetry
+		want []string
+	}{
+		// Every field of a zero struct is unmeasured; none may count as present.
+		{
+			name: "zero value",
+			tm:   bundle.Telemetry{},
+			want: nil,
+		},
+		{
+			name: "bool false",
+			tm:   bundle.Telemetry{SelectUsed: false},
+			want: nil,
+		},
+		{
+			name: "bool true",
+			tm:   bundle.Telemetry{SelectUsed: true},
+			want: []string{"telemetry.select_used"},
+		},
+		{
+			name: "*bool nil",
+			tm:   bundle.Telemetry{RunAsSet: nil},
+			want: nil,
+		},
+		{
+			name: "*bool false",
+			tm:   bundle.Telemetry{RunAsSet: new(false)},
+			want: []string{"telemetry.run_as_set", "telemetry.run_as_set=false"},
+		},
+		{
+			name: "*bool true",
+			tm:   bundle.Telemetry{RunAsSet: new(true)},
+			want: []string{"telemetry.run_as_set", "telemetry.run_as_set=true"},
+		},
+		{
+			name: "BoolSet unset",
+			tm:   bundle.Telemetry{ArtifactFilesIsSet: boolSet()},
+			want: nil,
+		},
+		{
+			name: "BoolSet true twice",
+			tm:   bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, true)},
+			want: []string{
+				"telemetry.artifact_files_is_set", "telemetry.artifact_files_is_set=true",
+			},
+		},
+		{
+			name: "BoolSet both values",
+			tm:   bundle.Telemetry{ArtifactFilesIsSet: boolSet(true, false)},
+			want: []string{
+				"telemetry.artifact_files_is_set", "telemetry.artifact_files_is_set=false", "telemetry.artifact_files_is_set=true",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bits, err := bitmap.NewBuilder(schema).Bits(tc.tm)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, setPaths(schema, bits))
+		})
+	}
+}
+
+func boolSet(values ...bool) bundle.BoolSet {
+	var s bundle.BoolSet
+	for _, v := range values {
+		s.SetBool(v)
+	}
+	return s
+}
+
+func BenchmarkWalkSchema(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := bitmap.WalkSchema(reflect.TypeFor[bundle.Telemetry]())
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// setPaths returns the schema paths whose bit is set, sorted.
+func setPaths(schema []string, bits []bool) []string {
+	var out []string
+	for i, p := range schema {
+		if bits[i] {
+			out = append(out, p)
+		}
+	}
+	slices.Sort(out)
+	return out
+}

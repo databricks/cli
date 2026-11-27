@@ -1,0 +1,1 @@
+* `databricks ssh connect --accelerator` now accepts any serverless GPU type name, such as `GPU_1xRTX6000`, instead of only `GPU_1xA10` and `GPU_8xH100`; the workspace validates which GPU types and environment versions are available. ([#7833](https://github.com/databricks/cli/pull/7833), [#7957](https://github.com/databricks/cli/pull/7957))
