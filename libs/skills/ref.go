@@ -31,8 +31,10 @@ const (
 // upstream CDN.
 const FetchConcurrency = 8
 
-// HTTPClient is shared by the skills fetches so the underlying transport
-// reuses TCP+TLS connections. MaxIdleConnsPerHost is raised above the default
+// HTTPClient is shared by the skill file fetches and the latest-release lookup
+// so the underlying transport reuses TCP+TLS connections. The manifest fetch in
+// libs/aitools/installer makes its own client and does not use it.
+// MaxIdleConnsPerHost is raised above the default
 // of 2 to leave headroom above FetchConcurrency, so a brief overlap between a
 // closing and a new connection doesn't force a fresh handshake.
 var HTTPClient = sync.OnceValue(func() *http.Client {
@@ -68,7 +70,9 @@ func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 
 // ResolveSkillsRef is GetSkillsRef, except that with allowFallback a failed
 // latest-release lookup falls back to the embedded cli-compat skills version
-// (logged as a warning) instead of returning an error.
+// when that version is a pinned release, logging a warning. The fallback ref is
+// not explicit. When the embedded version is empty, "latest" or unreadable, the
+// lookup error is returned as it would be without allowFallback.
 func ResolveSkillsRef(ctx context.Context, allowFallback bool) (ref string, explicit bool, err error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, true, nil
@@ -105,8 +109,10 @@ func resolveLatestSkillsReleaseRef(ctx context.Context, allowFallback bool) (ref
 }
 
 // FetchLatestSkillsReleaseRef returns the skills repo's latest release tag as a
-// v-prefixed semver string. A failed lookup, an unusable response or an invalid
-// tag returns a *FetchError with stage release.
+// v-prefixed semver string. A failed request, an unusable response or an invalid
+// tag returns a *FetchError with stage release. A request that cannot be built,
+// for example from a malformed DATABRICKS_CLI_GITHUB_API_URL, returns a plain
+// error instead.
 func FetchLatestSkillsReleaseRef(ctx context.Context) (string, error) {
 	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", versioncheck.GitHubAPIURL(ctx), RepoOwner, RepoName)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
