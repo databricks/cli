@@ -16,11 +16,7 @@ import (
 // terminal's answer times out, and a huh program's Send is not reachable from
 // a program filter, so a missed answer would hang the quit.
 func RunHuhField(ctx context.Context, field huh.Field) error {
-	return RunHuhForm(ctx, huh.NewForm(huh.NewGroup(field)).WithShowHelp(false))
-}
-
-// RunHuhForm runs form with the program options described on [RunHuhField].
-func RunHuhForm(ctx context.Context, form *huh.Form) error {
+	form := huh.NewForm(huh.NewGroup(field)).WithShowHelp(false)
 	return form.WithProgramOptions(huhProgramOptions(ctx)...).Run()
 }
 
