@@ -1,0 +1,23 @@
+export DATABRICKS_SKILLS_DIR=$TESTDIR/release
+
+# Text output: matches in the skills list line format, then how to read a skill.
+trace $CLI skills search pipelines
+trace $CLI skills search PIPELINES
+trace $CLI skills search skill pipelines
+
+# A word that matches nothing exits zero and points at skills list.
+trace $CLI skills search nothing-here
+
+# JSON output has the fields of skills list. A skill without commands prints [] rather than null.
+trace $CLI skills search --output json pipelines
+trace $CLI skills search --output json demo
+trace $CLI skills search --output json nothing-here
+
+# A blank word is rejected rather than matching every skill.
+musterr trace $CLI skills search " "
+
+# Experimental skills are hidden unless --experimental is set, as skills list hides them.
+export DATABRICKS_SKILLS_DIR=$TESTDIR/experimental-release
+trace $CLI skills search pipelines
+trace $CLI skills search --experimental pipelines
+trace $CLI skills search --experimental --output json pipelines

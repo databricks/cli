@@ -36,6 +36,3 @@ Error: databricks skills list-files is not implemented yet
 
 >>> [CLI] skills read-file demo-skill SKILL.md
 Error: databricks skills read-file is not implemented yet
-
->>> [CLI] skills search skill words
-Error: databricks skills search is not implemented yet
