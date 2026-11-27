@@ -1,3 +1,2 @@
 Cloud = false
-Ignore = [".databricks"]
 RecordRequests = true

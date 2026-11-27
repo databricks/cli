@@ -1586,3 +1586,26 @@ func jsonDump(obj any) string {
 	}
 	return string(bytes)
 }
+
+// A permissions object_id that references a backend-assigned parent field must
+// resolve during the parent's in-place update; otherwise the unchanged
+// permissions plan an update (a PUT of the same ACL) on every parent update.
+func TestPermissionIDFieldsStable(t *testing.T) {
+	for parentType, idField := range permissionIDFields {
+		resource, ok := SupportedResources[parentType]
+		require.True(t, ok, parentType)
+		adapter, err := NewAdapter(resource, parentType, nil)
+		require.NoError(t, err)
+
+		idPath := structpath.MustParsePath(idField)
+		if structaccess.ValidatePath(adapter.StateType(), idPath) == nil {
+			// In the config: resolves locally.
+			continue
+		}
+
+		t.Run(parentType, func(t *testing.T) {
+			assert.True(t, adapter.FieldIsStableOutput(idPath),
+				"%s is not in the config; declare it under stable_output_fields in configs/%s.yml", idField, parentType)
+		})
+	}
+}

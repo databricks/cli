@@ -13,4 +13,4 @@ trace update_file.py databricks.yml "description: initial" "description: updated
 trace $CLI bundle plan
 trace $CLI bundle deploy
 
-trace print_requests.py //registered-models //permissions | jq '{method, path}'
+trace print_requests.py //registered-models //permissions

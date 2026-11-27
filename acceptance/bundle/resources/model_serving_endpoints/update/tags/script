@@ -18,6 +18,6 @@ trace update_file.py databricks.yml "value: my-team-one" "value: my-team-two"
 trace $CLI bundle plan -o json | nostamp > out.plan.json
 trace $CLI bundle deploy
 
-trace print_requests.py //serving-endpoints
+trace print_requests.py //serving-endpoints //permissions
 
 trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.tags'

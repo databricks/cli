@@ -24,7 +24,11 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 >>> print_requests.py //registered-models //permissions
 {
   "method": "PATCH",
-  "path": "/api/2.0/mlflow/registered-models/update"
+  "path": "/api/2.0/mlflow/registered-models/update",
+  "body": {
+    "description": "updated",
+    "name": "test-model"
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve

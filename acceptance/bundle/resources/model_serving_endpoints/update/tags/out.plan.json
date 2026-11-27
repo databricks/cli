@@ -143,6 +143,28 @@
           "remote": "my-team-one"
         }
       }
+    },
+    "resources.model_serving_endpoints.test_endpoint.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.model_serving_endpoints.test_endpoint",
+          "label": "${resources.model_serving_endpoints.test_endpoint.endpoint_id}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "object_id": "/serving-endpoints/[UUID][1]",
+        "__embed__": [
+          {
+            "level": "CAN_QUERY",
+            "group_name": "users"
+          },
+          {
+            "level": "CAN_MANAGE",
+            "user_name": "[USERNAME]"
+          }
+        ]
+      }
     }
   }
 }
