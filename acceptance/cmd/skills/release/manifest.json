@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "skills": {
+    "demo-skill": {"version": "0.0.1", "description": "A skill for tests.", "files": ["SKILL.md"]}
+  }
+}

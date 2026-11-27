@@ -10,7 +10,8 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
-	"go.yaml.in/yaml/v3"
+	"github.com/databricks/cli/libs/yamlutil"
+	"go.yaml.in/yaml/v4"
 )
 
 type saver struct {
@@ -62,9 +63,7 @@ func (s *saver) encode(data any, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	enc := yaml.NewEncoder(w)
-	enc.SetIndent(2)
-	return enc.Encode(yamlNode)
+	return yamlutil.Encode(w, yamlNode)
 }
 
 func (s *saver) toYamlNode(v dyn.Value) (*yaml.Node, error) {
