@@ -1,5 +1,2 @@
-# git init does not work on the workspace file system.
-RunsOnDbr = false
-
 # Deployment history adds its own lookups; this test pins down the plain state reads.
 EnvMatrix.DMS = []

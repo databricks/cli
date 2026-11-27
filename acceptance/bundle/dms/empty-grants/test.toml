@@ -1,6 +1,3 @@
-# On DBR, git info for /Workspace paths comes from the workspace API, which adds recorded requests.
-RunsOnDbr = false
-
 Badness = "Emptying a grants node records a succeeded UPDATE operation with no state (apply calls DeleteState for an emptied resource), which the real service rejects with 400 INVALID_PARAMETER_VALUE; the recorded PATCH .../operations/schemas.foo.grants without a state field is the buggy output. It should record an update carrying the emptied grants state."
 
 # Cloud = false because of the bug in Badness: the fake does not model the service's check,
