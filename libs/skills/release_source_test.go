@@ -1,10 +1,13 @@
 package skills
 
 import (
+	"context"
+	"errors"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -93,6 +96,61 @@ func TestReleaseSourceServerErrorIsUnreachable(t *testing.T) {
 
 	_, err := NewReleaseSource().Catalog(t.Context())
 	assert.ErrorIs(t, err, ErrSourceUnreachable)
+}
+
+func TestReleaseSourceNotFoundIsNotUnreachable(t *testing.T) {
+	// A missing manifest, such as a ref that names no release, is not a
+	// source that cannot be reached: a caller that falls back must not hide it.
+	serveRelease(t, http.NotFoundHandler())
+
+	_, err := NewReleaseSource().Catalog(t.Context())
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.NotErrorIs(t, err, ErrSourceUnreachable)
+
+	// A file the manifest lists but the release lacks is missing, too.
+	serveReleaseFS(t, fstest.MapFS{
+		"manifest.json":         {Data: []byte(`{"version": "1.2.0", "skills": {"alpha": {"version": "1.0.0", "files": ["SKILL.md", "references/gone.md"]}}}`)},
+		"skills/alpha/SKILL.md": {Data: []byte("# Alpha\n")},
+	})
+
+	_, err = NewReleaseSource().ReadFile(t.Context(), "alpha", "references/gone.md")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	assert.NotErrorIs(t, err, ErrSourceUnreachable)
+}
+
+func TestReleaseSourceLatestReleaseLookupFailureIsUnreachable(t *testing.T) {
+	prev := releaseTimeout
+	releaseTimeout = 50 * time.Millisecond
+	t.Cleanup(func() { releaseTimeout = prev })
+	// Without a pinned ref, the release is the latest one, which is looked up.
+	// A cached compatibility manifest that tracks latest keeps the test from
+	// reading a pinned version, and so from the network.
+	t.Setenv("DATABRICKS_SKILLS_REF", "")
+	cacheDir := t.TempDir()
+	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
+	manifest := `{"0.0.0": {"appkit": "0.24.0", "skills": "latest"}}`
+	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "compat-manifest.json"), []byte(manifest), 0o644))
+	prevLookup := LatestSkillsReleaseRefFn
+	t.Cleanup(func() { LatestSkillsReleaseRefFn = prevLookup })
+
+	tests := map[string]func(context.Context) (string, error){
+		"lookup fails": func(context.Context) (string, error) {
+			return "", errors.New("HTTP 403")
+		},
+		"lookup hangs": func(ctx context.Context) (string, error) {
+			// Answer only once the source's timeout ends the call.
+			<-ctx.Done()
+			return "", ctx.Err()
+		},
+	}
+	for name, lookup := range tests {
+		t.Run(name, func(t *testing.T) {
+			LatestSkillsReleaseRefFn = lookup
+
+			_, err := NewReleaseSource().Catalog(t.Context())
+			assert.ErrorIs(t, err, ErrSourceUnreachable)
+		})
+	}
 }
 
 func TestReleaseSourceTimeoutIsUnreachable(t *testing.T) {

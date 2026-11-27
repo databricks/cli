@@ -78,7 +78,7 @@ func (s *fsSource) ReadFile(ctx context.Context, skill, file string) ([]byte, er
 // skill files, repo_dir and catalog_rules, must stay inside the release.
 func (s *fsSource) manifest(ctx context.Context) (*Manifest, error) {
 	data, err := s.read(ctx, manifestFile)
-	if errors.Is(err, ErrManifestTooLarge) {
+	if errors.Is(err, ErrManifestTooLarge) || errors.Is(err, errReleaseNotFound) {
 		return nil, err
 	}
 	if err != nil {
