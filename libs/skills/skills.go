@@ -2,8 +2,9 @@
 // a skills release: a published release, a bundled snapshot or a local folder.
 //
 // The catalog and source code is source-neutral. The release lookup in ref.go
-// and the fetch helpers in fetch.go are the only code here that talks to GitHub
-// or reads DATABRICKS_SKILLS_REF and DATABRICKS_SKILLS_BASE_URL. They sit in
+// and the fetch helpers in fetch.go are the only code here that talks to GitHub.
+// Only ref.go and cache.go read DATABRICKS_SKILLS_REF and DATABRICKS_SKILLS_BASE_URL;
+// cache.go reads them to turn the cache off for a pinned source. They sit in
 // this package for now, next to the installer code that already uses them.
 package skills
 
@@ -46,7 +47,9 @@ type Catalog struct {
 	// paths, which the catalog does not check yet.
 	Skills []Skill
 
-	// Version is the release version.
+	// Version is the release version, the key of the release in the cache. A
+	// source that serves a published release sets it to the release tag. The
+	// manifest's schema version is not a release version.
 	Version string
 
 	// Label says where the catalog came from.

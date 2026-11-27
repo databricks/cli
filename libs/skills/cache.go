@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"golang.org/x/mod/semver"
 )
 
 const (
@@ -26,8 +27,12 @@ const (
 	keptVersions = 2
 )
 
-// Cache keeps skills releases on disk, one folder per release version, so a
-// file of a release is written once and never replaced. A nil Cache stores nothing.
+// Cache keeps skills releases on disk, one folder per release version. The key
+// is Catalog.Version, so a source whose catalogs are cached must set it to the
+// release tag. The manifest's own version is a schema version ("2" for every
+// release), and two releases would then share a folder. A read of a file never
+// asks the source again; a write replaces its file atomically, so a reader sees
+// the old bytes or the new ones. A nil Cache stores nothing.
 type Cache struct {
 	dir string
 }
@@ -68,8 +73,11 @@ func (c *Cache) Latest() (*Catalog, bool) {
 	return cats[0], true
 }
 
-// putCatalog stores cat under its release version and removes the releases
-// older than the newest keptVersions.
+// putCatalog stores cat under its release version and keeps the release it
+// stores plus the newest other release, which makes keptVersions in all. Every
+// other folder is removed. Two processes may prune at once: a folder that one
+// removes under a write by the other costs that write its entry, and the next
+// read then misses. A miss is a live fetch, not a wrong answer.
 func (c *Cache) putCatalog(cat *Catalog) error {
 	if c == nil {
 		return nil
@@ -85,11 +93,14 @@ func (c *Cache) putCatalog(cat *Catalog) error {
 	if err := atomicfile.Write(path, data, 0o600, atomicfile.MkDir(0o700)); err != nil {
 		return err
 	}
-	// Keep the newest versions with a readable catalog, and remove every other
-	// folder, including one whose catalog does not parse.
+	// Keep the release just stored and the newest others with a readable
+	// catalog, until keptVersions are kept. The stored release may be older than
+	// others, so it is kept first, not counted among the newest ones.
 	keep := map[string]bool{cat.Version: true}
-	cats := c.catalogs()
-	for _, old := range cats[:min(keptVersions, len(cats))] {
+	for _, old := range c.catalogs() {
+		if len(keep) == keptVersions {
+			break
+		}
 		keep[old.Version] = true
 	}
 	entries, _ := os.ReadDir(c.dir)
@@ -117,9 +128,16 @@ func (c *Cache) catalogs() []*Catalog {
 		cats = append(cats, &cat)
 	}
 	slices.SortFunc(cats, func(a, b *Catalog) int {
-		return cmp.Or(b.FetchedAt.Compare(a.FetchedAt), strings.Compare(b.Version, a.Version))
+		return cmp.Or(b.FetchedAt.Compare(a.FetchedAt), compareVersions(b.Version, a.Version))
 	})
 	return cats
+}
+
+// compareVersions orders release tags by semver, so 10.0.0 is newer than 9.0.0,
+// and by text when either is not a semver version.
+func compareVersions(a, b string) int {
+	va, vb := "v"+strings.TrimPrefix(a, "v"), "v"+strings.TrimPrefix(b, "v")
+	return cmp.Or(semver.Compare(va, vb), strings.Compare(a, b))
 }
 
 // readFile returns the cached bytes of a file of a release version.
@@ -147,8 +165,10 @@ func (c *Cache) filePath(version, skill, file string) string {
 }
 
 // cacheable reports whether the names, which come from a source, stay inside
-// the cache folder of their release. The file must be clean, so that "./SKILL.md"
-// is not cached under the name "SKILL.md" and reads do not depend on the cache.
+// the cache folder of their release. The file must be clean and slash-separated,
+// and not ".", so that "./SKILL.md" is not cached under the name "SKILL.md" and
+// "references\..\SKILL.md" does not share an entry with "SKILL.md" on Windows.
 func cacheable(version, skill, file string) bool {
-	return isName(version) && isName(skill) && !escapesDir(file) && path.Clean(file) == file
+	return isName(version) && isName(skill) && !escapesDir(file) && path.Clean(file) == file &&
+		file != "." && !strings.Contains(file, `\`)
 }
