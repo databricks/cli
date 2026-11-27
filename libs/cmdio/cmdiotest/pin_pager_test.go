@@ -16,19 +16,6 @@ import (
 // pagerPrompt is the text the pager shows between pages.
 const pagerPrompt = "[space] more"
 
-// waitForOutputPast waits until the program has written more than n bytes of
-// any output, so the program is still running and drawing.
-func waitForOutputPast(t *testing.T, tm *termtest.Term[struct{}], n int) {
-	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for len(tm.Raw()) <= n && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
-	if len(tm.Raw()) <= n {
-		failWithRaw(t, tm, "no output within 5s")
-	}
-}
-
 // pinRow is the element type the pager pins list.
 type pinRow struct {
 	Name  string
@@ -177,19 +164,17 @@ func TestPagerPin_SpinnerDuringFirstPage(t *testing.T) {
 	pinPagerResult(t, tm, "03-result")
 }
 
-// TestPagerPin_EnterWhileFirstPageLoads pins Enter pressed while the first
+// TestPagerPin_EnterDrainsRemainingPages pins Enter pressed while the first
 // page loads: whether the spinner animates and what ends up on screen once
-// everything has been drained. The spinner keeps redrawing, so the wait after
-// Enter does not prove the pager read it before the page landed; either way
-// Enter drains the list, and the final screen is the same.
-func TestPagerPin_EnterWhileFirstPageLoads(t *testing.T) {
+// everything has been drained. The key may reach the pager during the fetch
+// or at the prompt after it; nothing observable tells which, and both drain
+// the list to the same final screen.
+func TestPagerPin_EnterDrainsRemainingPages(t *testing.T) {
 	t.Parallel()
 	it := newPinIterator(120, -1, 0)
 	tm := runPinPager(t, it)
 	termtest.GoldenText(t, "01-first-page-loading", observeSpinnerFrames(tm, 2, 3*time.Second))
 	tm.Type(termtest.KeyEnter)
-	before := len(tm.Raw())
-	waitForOutputPast(t, tm, before)
 	loadPage(tm, it)
 	pinPagerResult(t, tm, "02-result")
 	tm.Golden("03-final")

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"maps"
 	"strings"
-	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
@@ -96,13 +95,6 @@ func pinItems() []cmdio.Tuple {
 		{Name: "beta", Id: "id-02"},
 		{Name: "gamma", Id: "id-03"},
 	}
-}
-
-// failWithRaw fails the test with msg and the raw output, so a missed wait
-// shows what the program actually wrote.
-func failWithRaw[T any](t *testing.T, tm *termtest.Term[T], format string, args ...any) {
-	t.Helper()
-	t.Fatalf("%s\n--- raw output ---\n%q", fmt.Sprintf(format, args...), tm.Raw())
 }
 
 // quoted renders bytes as one escaped Go string, so goldens of raw
