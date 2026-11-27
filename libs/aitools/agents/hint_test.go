@@ -242,6 +242,200 @@ func TestMaybeHint_AIToolsCommandSilent(t *testing.T) {
 	assert.Empty(t, hintKinds(t, ctx))
 }
 
+func TestMaybeHint_SkillsHintTextFollowsGuard(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		preview string
+		hints   string
+		want    string
+	}{
+		{"both on names skills list", "1", "1", skillsHintText + "\n"},
+		{"preview without hints keeps install text", "1", "", hintText + "\n"},
+		{"hints without preview keeps install text", "", "1", hintText + "\n"},
+		{"both unset keeps install text", "", "", hintText + "\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", tc.preview)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", tc.hints)
+
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Equal(t, tc.want, stderr.String())
+		})
+	}
+}
+
+func TestMaybeHint_SkillsHintReplacesAgentInstallText(t *testing.T) {
+	// The per-agent install text names the agent in its --agents flag; with
+	// hints on, neither the install command nor that flag is printed.
+	setAgentEnv(t, "CODEX_CI")
+	ctx, stderr := agentCtx(t, t.TempDir(), t.TempDir())
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Equal(t, skillsHintText+"\n", stderr.String())
+	assert.NotContains(t, stderr.String(), "aitools")
+}
+
+func TestMaybeHint_SkillsHintKindFollowsGuard(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		agent   string
+		preview string
+		hints   string
+		want    protos.AitoolsHintKind
+	}{
+		{"claude, both on: skills list kind", "", "1", "1", protos.AitoolsHintKindSkillsListText},
+		{"codex, both on: skills list kind, not agent install text", "CODEX_CI", "1", "1", protos.AitoolsHintKindSkillsListText},
+		{"claude, hints off: install text kind", "", "1", "", protos.AitoolsHintKindInstallText},
+		{"claude, hints without preview: install text kind", "", "", "1", protos.AitoolsHintKindInstallText},
+		{"claude, both unset: install text kind", "", "", "", protos.AitoolsHintKindInstallText},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var ctx context.Context
+			if tc.agent == "" {
+				setClaudeAgent(t)
+				ctx, _ = claudeCtx(t, t.TempDir())
+			} else {
+				setAgentEnv(t, tc.agent)
+				ctx, _ = agentCtx(t, t.TempDir(), t.TempDir())
+			}
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", tc.preview)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", tc.hints)
+
+			MaybeHint(ctx, regularCmd(), noPluginRecorded)
+			assert.Equal(t, []protos.AitoolsHintKind{tc.want}, hintKinds(t, ctx))
+		})
+	}
+}
+
+func TestMaybeHint_SkillsCommandExemptFollowsGuard(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		preview string
+		hints   string
+		path    string
+		want    string
+	}{
+		{"hints on: skills list is silent", "1", "1", "skills list", ""},
+		{"hints on: skills read-file is silent", "1", "1", "skills read-file", ""},
+		{"hints on: a command named skillsfoo is hinted", "1", "1", "skillsfoo", skillsHintText + "\n"},
+		// Preview on, hints off: the skills commands keep the install hint, as
+		// they did before the skills list hint existed.
+		{"preview on, hints off: skills list keeps install text", "1", "", "skills list", hintText + "\n"},
+		{"both unset: skills list keeps install text", "", "", "skills list", hintText + "\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			setClaudeAgent(t)
+			ctx, stderr := claudeCtx(t, t.TempDir())
+			ctx = telemetry.WithNewLogger(ctx)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", tc.preview)
+			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", tc.hints)
+
+			MaybeHint(ctx, commandAt(tc.path), noPluginRecorded)
+			assert.Equal(t, tc.want, stderr.String())
+			if tc.want == "" {
+				assert.Empty(t, hintKinds(t, ctx))
+			}
+		})
+	}
+}
+
+// The install text's marker, left within the hour before skill hints were
+// turned on, must not hide the skills text; the skills text keeps its own
+// throttle.
+func TestMaybeHint_SkillsTextNotHiddenByInstallMarker(t *testing.T) {
+	setClaudeAgent(t)
+	home, cacheDir := t.TempDir(), t.TempDir()
+
+	ctx1, stderr1 := sessionCtx(t, home, cacheDir, false)
+	MaybeHint(ctx1, regularCmd(), noPluginRecorded)
+	assert.Equal(t, hintText+"\n", stderr1.String())
+
+	ctx2, stderr2 := sessionCtx(t, home, cacheDir, false)
+	ctx2 = env.Set(ctx2, "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx2 = env.Set(ctx2, "DATABRICKS_SKILLS_HINTS", "1")
+	MaybeHint(ctx2, regularCmd(), noPluginRecorded)
+	assert.Equal(t, skillsHintText+"\n", stderr2.String())
+
+	// Same session, second command with hints on: the skills text is throttled.
+	ctx3, stderr3 := sessionCtx(t, home, cacheDir, false)
+	ctx3 = env.Set(ctx3, "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx3 = env.Set(ctx3, "DATABRICKS_SKILLS_HINTS", "1")
+	MaybeHint(ctx3, regularCmd(), noPluginRecorded)
+	assert.Empty(t, stderr3.String())
+}
+
+// Codex writes its install text's marker before the text prints (a durable
+// throttle). With skill hints on, that marker must not hide the skills text,
+// and a skills marker must not hide the install text once hints are off.
+func TestMaybeHint_SkillsTextNotHiddenByInstallMarkerDurableAgent(t *testing.T) {
+	setAgentEnv(t, "CODEX_CI")
+	home, cacheDir := t.TempDir(), t.TempDir()
+
+	assert.Contains(t, runSkillsHintThread(t, home, cacheDir, "thread-1", false), "--agents codex")
+	assert.Equal(t, skillsHintText+"\n", runSkillsHintThread(t, home, cacheDir, "thread-1", true))
+	// Same thread with hints still on: the skills text is throttled.
+	assert.Empty(t, runSkillsHintThread(t, home, cacheDir, "thread-1", true))
+
+	assert.Equal(t, skillsHintText+"\n", runSkillsHintThread(t, home, cacheDir, "thread-2", true))
+	assert.Contains(t, runSkillsHintThread(t, home, cacheDir, "thread-2", false), "--agents codex")
+}
+
+// runSkillsHintThread runs one regular command as the given Codex thread and
+// returns its stderr. hints turns on both skill hint variables.
+func runSkillsHintThread(t *testing.T, home, cacheDir, thread string, hints bool) string {
+	ctx, stderr := agentCtx(t, home, cacheDir)
+	ctx = env.Set(ctx, "CODEX_THREAD_ID", thread)
+	if hints {
+		ctx = withSkillHintEnv(ctx)
+	}
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	return stderr.String()
+}
+
+// withSkillHintEnv turns on both skill hint variables.
+func withSkillHintEnv(ctx context.Context) context.Context {
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
+	return env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+}
+
+// A deferred hint (the auto-install may give the agent its tools) prints the
+// skills text too, once the run ended without them, and its markers are then
+// written.
+func TestMaybeHint_WithheldSkillsHintPrintsWhenTheRunDidNotInstall(t *testing.T) {
+	setClaudeAgent(t)
+	home, cacheDir := t.TempDir(), t.TempDir()
+	setInstallsFor(t, true)
+
+	ctx1, stderr1 := sessionCtx(t, home, cacheDir, true)
+	deferred := MaybeHint(withSkillHintEnv(ctx1), regularCmd(), noPluginRecorded)
+	require.NotNil(t, deferred)
+	assert.Empty(t, stderr1.String())
+	deferred()
+	assert.Equal(t, wantNativeHint+"\n"+skillsHintText+"\n", stderr1.String())
+
+	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
+	assert.Nil(t, MaybeHint(withSkillHintEnv(ctx2), regularCmd(), noPluginRecorded))
+	assert.Empty(t, stderr2.String())
+}
+
+// The native line is unchanged by skill hints: Claude Code shows its plugin
+// prompt from the same line, and the model reads the skills text beside it.
+func TestMaybeHint_SkillsTextWithNativeLine(t *testing.T) {
+	setClaudeAgent(t)
+	ctx, stderr := sessionCtx(t, t.TempDir(), t.TempDir(), true)
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
+
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	assert.Equal(t, wantNativeHint+"\n"+skillsHintText+"\n", stderr.String())
+}
+
 // commandAt builds a command tree under a "databricks" root and returns the
 // command at the space-separated path, e.g. "current-user me".
 func commandAt(path string) *cobra.Command {
@@ -261,6 +455,7 @@ func TestIsHintExemptCommand(t *testing.T) {
 	}{
 		{"aitools install", true},
 		{"experimental aitools skills install", true},
+		{"skills", false}, // Exempt only with skills.HintsEnabled; see MaybeHint.
 		{"feedback", true},
 		{"auth login", true},
 		{"auth token", true},

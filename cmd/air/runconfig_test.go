@@ -410,13 +410,13 @@ func TestLoadRunConfig_UnknownFieldErrors(t *testing.T) {
 	} {
 		t.Run("decoder reports "+name, func(t *testing.T) {
 			_, err := loadRunConfig(writeConfig(t, minimalConfig+extra))
-			require.ErrorContains(t, err, "cannot unmarshal")
+			require.ErrorContains(t, err, "cannot construct")
 		})
 	}
 
 	t.Run("decoder reports a mapping that merges itself", func(t *testing.T) {
 		_, err := loadRunConfig(writeConfig(t, minimalConfig+"code_source: &c\n  root_path: src\n  <<: *c\n"))
-		require.ErrorContains(t, err, "anchor 'c' value contains itself")
+		require.ErrorContains(t, err, "cyclic merge alias")
 	})
 
 	t.Run("unknown keys pulled in by a merge are left to the decoder", func(t *testing.T) {

@@ -1,0 +1,100 @@
+
+>>> [CLI] skills search pipelines
+pipeline-guide: Build and debug data pipelines.
+To read a skill, run: databricks skills read <name>
+
+>>> [CLI] skills search PIPELINES
+pipeline-guide: Build and debug data pipelines.
+To read a skill, run: databricks skills read <name>
+
+>>> [CLI] skills search skill pipelines
+demo-skill: A skill for tests.
+pipeline-guide: Build and debug data pipelines.
+To read a skill, run: databricks skills read <name>
+
+>>> [CLI] skills search nothing-here
+No skill matches. Run databricks skills list to see every skill.
+
+>>> [CLI] skills search --output json pipelines
+{
+  "source": "[TESTROOT]/cmd/skills/search/release",
+  "release_version": "0.0.1",
+  "skills": [
+    {
+      "name": "pipeline-guide",
+      "description": "Build and debug data pipelines.",
+      "version": "0.0.1",
+      "files": [
+        "SKILL.md"
+      ],
+      "commands": [
+        "pipelines"
+      ]
+    }
+  ]
+}
+
+>>> [CLI] skills search --output json demo
+{
+  "source": "[TESTROOT]/cmd/skills/search/release",
+  "release_version": "0.0.1",
+  "skills": [
+    {
+      "name": "demo-skill",
+      "description": "A skill for tests.",
+      "version": "0.0.1",
+      "files": [
+        "SKILL.md"
+      ],
+      "commands": []
+    }
+  ]
+}
+
+>>> [CLI] skills search --output json nothing-here
+{
+  "source": "[TESTROOT]/cmd/skills/search/release",
+  "release_version": "0.0.1",
+  "skills": []
+}
+
+>>> [CLI] skills search  
+Error: search words must not be blank
+
+>>> [CLI] skills search pipelines
+No skill matches. Run databricks skills list to see every skill.
+
+>>> [CLI] skills search --experimental pipelines
+pipeline-bare
+pipeline-lab: An experimental pipeline skill.
+To read a skill, run: databricks skills read <name>
+
+>>> [CLI] skills search --experimental --output json pipelines
+{
+  "source": "[TESTROOT]/cmd/skills/search/experimental-release",
+  "release_version": "0.0.1",
+  "skills": [
+    {
+      "name": "pipeline-bare",
+      "description": "",
+      "version": "0.0.1",
+      "files": [
+        "SKILL.md"
+      ],
+      "commands": [
+        "pipelines"
+      ]
+    },
+    {
+      "name": "pipeline-lab",
+      "description": "An experimental pipeline skill.",
+      "version": "0.0.1",
+      "files": [
+        "SKILL.md"
+      ],
+      "commands": [
+        "pipelines"
+      ]
+    }
+  ]
+}

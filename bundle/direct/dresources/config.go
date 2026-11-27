@@ -13,7 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // FieldRule represents a field path with its reason for inclusion.
