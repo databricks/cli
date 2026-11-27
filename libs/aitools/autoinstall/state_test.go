@@ -251,3 +251,93 @@ func TestEnvOptedOut(t *testing.T) {
 		})
 	}
 }
+
+func TestMarkConsentAsked(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		data       string
+		wantMarked bool
+		want       State
+	}{
+		{name: "no state", wantMarked: true, want: State{ConsentAsked: true}},
+		{name: "never answered", data: `{"id": "machine", "last_version": "1.30.0"}`, wantMarked: true, want: State{LastVersion: "1.30.0", ConsentAsked: true, ID: "machine"}},
+		{name: "asked before", data: `{"id": "machine", "consent_asked": true}`, want: State{ConsentAsked: true, ID: "machine"}},
+		{name: "consented", data: `{"id": "machine", "consented": true}`, want: State{Consented: true, ID: "machine"}},
+		{name: "opted out", data: `{"id": "machine", "opted_out": true}`, want: State{OptedOut: true, ID: "machine"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			ctx := env.WithUserHomeDir(t.Context(), home)
+			if tc.data != "" {
+				writeStateFile(t, home, tc.data)
+			}
+
+			marked, err := MarkConsentAsked(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantMarked, marked)
+			s, err := Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, s)
+		})
+	}
+}
+
+// A state file it cannot read may hold an opt-out, so it is kept.
+func TestMarkConsentAskedKeepsACorruptFile(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	writeStateFile(t, home, "not json")
+
+	marked, err := MarkConsentAsked(ctx)
+	assert.ErrorContains(t, err, "parse ")
+	assert.False(t, marked)
+	data, err := os.ReadFile(filepath.Join(home, ".databricks", "aitools", stateFileName))
+	require.NoError(t, err)
+	assert.Equal(t, "not json", string(data))
+}
+
+// The record of the question survives every change of the state that keeps
+// the rest of it, so it is never asked again.
+func TestConsentAskedSurvivesTheOtherChanges(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	_, err := MarkConsentAsked(ctx)
+	require.NoError(t, err)
+	at := time.Date(2026, 11, 20, 10, 0, 0, 0, time.UTC)
+	for name, change := range map[string]func() error{
+		"SaveID":                 func() error { _, err := SaveID(ctx, "machine"); return err },
+		"Record":                 func() error { return Record(ctx, "1.30.0", 1, "machine", at) },
+		"StartAttempt":           func() error { _, err := StartAttempt(ctx, "1.30.0", 2, "machine", at); return err },
+		"MarkInstalling":         func() error { return MarkInstalling(ctx) },
+		"SaveInstallStateDigest": func() error { return SaveInstallStateDigest(ctx, "digest") },
+		"GiveConsentIfUnknown":   func() error { _, err := GiveConsentIfUnknown(ctx); return err },
+		"SetConsent":             func() error { _, err := SetConsent(ctx, ConsentOptedOut); return err },
+		"Decline": func() error {
+			t.Cleanup(ResetDeclined)
+			_, err := Decline(ctx)
+			return err
+		},
+	} {
+		require.NoError(t, change(), name)
+		s, err := Load(ctx)
+		require.NoError(t, err)
+		assert.True(t, s.ConsentAsked, "after %s", name)
+	}
+}
+
+// A CLI from before the question at login reads a file that records it, and
+// keeps reading an opt-out as one.
+func TestOlderCLIReadsTheRecordOfTheQuestion(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	_, err := MarkConsentAsked(ctx)
+	require.NoError(t, err)
+	_, err = SetConsent(ctx, ConsentOptedOut)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(home, ".databricks", "aitools", stateFileName))
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `"consent_asked": true`)
+	var s olderState
+	require.NoError(t, json.Unmarshal(data, &s))
+	assert.True(t, s.OptedOut)
+}

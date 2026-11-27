@@ -62,9 +62,10 @@ func GateOn(ctx context.Context, version string) (bool, error) {
 }
 
 // NextAttempt returns the number of the attempt a run for version makes after
-// prior: 1 for a version the state has not failed for.
+// prior: 1 for a version the state has not failed for, or only failed to look
+// the gate up for.
 func NextAttempt(prior State, version string) int {
-	if prior.LastVersion == version {
+	if prior.LastVersion == version && !prior.gateLookupFailed(version) {
 		return prior.Attempts + 1
 	}
 	return 1

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"strings"
 	"sync"
 
@@ -81,6 +82,18 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 func IsPromptSupported(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.SupportsPrompt()
+}
+
+// DiscardInput discards what was typed at the stdin terminal but not read
+// yet, so that a prompt asked after a long-running command reads only what is
+// typed after the question.
+func DiscardInput(ctx context.Context) error {
+	c := fromContext(ctx)
+	f, ok := c.in.(*os.File)
+	if !ok || !c.capabilities.stdinIsTTY {
+		return nil
+	}
+	return discardInput(f)
 }
 
 // IsInputTTY reports whether stdin is a terminal, so that a user can type

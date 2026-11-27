@@ -104,11 +104,15 @@ const autoInstallNoticeCommands = "Turn off: databricks aitools auto-install dis
 //
 // It returns the signal that stopped it, if one did: Ctrl+C, a request to
 // terminate or the terminal closing during the gate lookup. It records what it
-// must first. The root command then ends the CLI by the signal, so that the
-// shell stops the script, loop or command list that ran the command, as it
-// would have without auto-install.
+// must first. It also returns the Ctrl+C that ended the question of the
+// command (see AskAtLogin), and then does nothing else. The root command then
+// ends the CLI by the signal, so that the shell stops the script, loop or
+// command list that ran the command, as it would have without auto-install.
 func AutoInstall(cmd *cobra.Command) os.Signal {
 	ctx := cmd.Context()
+	if sig := loginAnswerOf(ctx).sig; sig != nil {
+		return sig
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			log.Debugf(ctx, "auto-install: panic: %v", r)
@@ -150,6 +154,7 @@ func autoInstallInputs(ctx context.Context, skippedCommand bool) autoinstall.Inp
 		CI:             agents.InCI(ctx),
 		// A "no" earlier in this process counts even if storing it failed.
 		EnvOptOut: autoinstall.EnvOptedOut(ctx) || autoinstall.Declined(),
+		AgreedNow: loginAnswerOf(ctx).agreed(),
 		Now:       now(),
 	}
 }
@@ -240,8 +245,8 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 			// The gate is unknown. A machine that cannot reach the manifest
 			// (no route to GitHub) would wait for the lookup after every
 			// command, so the version gets no other attempt; the next version
-			// looks the gate up again. The feature may be off, so nothing is
-			// reported.
+			// looks the gate up again, as does a run after a yes at login.
+			// The feature may be off, so nothing is reported.
 			log.Debugf(ctx, "auto-install: could not resolve the gate, not trying again for this version: %v", err)
 			// No install started, so there is no last attempt.
 			if err := autoinstall.Record(ctx, version, autoinstall.MaxAttempts, id, time.Time{}); err != nil {
@@ -257,6 +262,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		arm:         holdoutArm(in.Bucket),
 		interactive: cmdio.HasTerminal(ctx) && useragent.AgentProvider() == "",
 		now:         in.Now,
+		afterYes:    loginAnswerOf(ctx).agreed(),
 	}
 	if !reason.Due() {
 		// Another process settled the version or recorded a failed attempt
@@ -338,6 +344,10 @@ func (r autoInstallRun) attempt(ctx context.Context, prior autoinstall.State) {
 		}
 		log.Debugf(ctx, "auto-install: attempt %d of %d failed: %v", attempt, autoinstall.MaxAttempts, err)
 		r.report(ctx, outcome, classifyInstallError(err))
+		if r.afterYes {
+			// The user is waiting for the answer to take effect.
+			cmdio.LogString(ctx, "Could not install Databricks AI tools. To install them, run: databricks aitools install")
+		}
 	default:
 		if result.unfinished {
 			r.settleUnfinished(ctx, result.outcome)
@@ -454,6 +464,9 @@ type autoInstallRun struct {
 	interactive bool
 	// now is the time the run was decided at.
 	now time.Time
+	// afterYes is set when the user agreed at the question of the command
+	// (see AskAtLogin) and waits for the install.
+	afterYes bool
 }
 
 // settle records the version as done and reports outcome.

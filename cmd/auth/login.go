@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
@@ -279,6 +280,8 @@ a new profile is created.
 				return errDeviceCodeNonInteractiveCluster
 			}
 		}
+		// Before the profile picker and the profile name prompt set the name.
+		asksAboutAITools := loginAsksAboutAITools(profileName, nonInteractive)
 
 		// Resolve the cache before the browser step so an unavailable
 		// keyring surfaces here rather than after OAuth. The probe also
@@ -400,7 +403,7 @@ a new profile is created.
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
-			return discoveryLogin(ctx, discoveryLoginInputs{
+			err = discoveryLogin(ctx, discoveryLoginInputs{
 				dc:              &defaultDiscoveryClient{},
 				profileName:     profileName,
 				timeout:         loginTimeout,
@@ -411,6 +414,14 @@ a new profile is created.
 				tokenStore:      tokenStore,
 				mode:            mode,
 			})
+			if err != nil {
+				return err
+			}
+			// discoveryLogin printed that the profile was saved.
+			if asksAboutAITools {
+				askAboutAITools(cmd)
+			}
+			return nil
 		}
 
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
@@ -579,12 +590,32 @@ a new profile is created.
 		}
 		if profileName != "" {
 			cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
+			if asksAboutAITools {
+				askAboutAITools(cmd)
+			}
 		}
 
 		return nil
 	}
 
 	return cmd
+}
+
+// loginAsksAboutAITools reports whether a login asks about installing
+// Databricks AI tools after it saved the profile, given namedProfile, the
+// profile that the command named with --profile or with a positional argument
+// that resolved to one. Only a login that named no profile asks. The
+// non-interactive device code login never asks.
+func loginAsksAboutAITools(namedProfile string, nonInteractive bool) bool {
+	return namedProfile == "" && !nonInteractive
+}
+
+// askAboutAITools asks the user about installing Databricks AI tools, where
+// that question applies (see autoinstall.AskAtLogin). It never fails.
+func askAboutAITools(cmd *cobra.Command) {
+	if autoinstall.AskAtLogin != nil {
+		autoinstall.AskAtLogin(cmd)
+	}
 }
 
 // shouldPromptWorkspace reports whether the login flow should ask the user to

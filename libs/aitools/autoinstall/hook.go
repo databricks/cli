@@ -17,6 +17,15 @@ import (
 // file.
 var Run func(cmd *cobra.Command) os.Signal
 
+// AskAtLogin, when set, is called by `databricks auth login` with its command
+// after the login saved the profile. Where the question applies, it asks the
+// user once per machine whether to install Databricks AI tools and keep them
+// up to date; after a "yes", the Run after the same command installs them.
+// Ctrl+C at the question makes that Run return the signal. It needs the
+// planning code of cmd/aitools, which cmd/auth must not import, so main.go
+// sets it with Run. It never fails the command and never writes to stdout.
+var AskAtLogin func(cmd *cobra.Command)
+
 // InstallsFor, when set, reports whether the Run after cmd may give the agent
 // with this registry name Databricks AI tools. The install hint, printed before
 // the command runs, is withheld then so the agent is not told to install what

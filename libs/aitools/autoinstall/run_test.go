@@ -191,6 +191,9 @@ func TestNextAttempt(t *testing.T) {
 	assert.Equal(t, 1, NextAttempt(State{}, "1.30.0"))
 	assert.Equal(t, 1, NextAttempt(State{LastVersion: "1.29.0", Attempts: 4}, "1.30.0"))
 	assert.Equal(t, 5, NextAttempt(State{LastVersion: "1.30.0", Attempts: 4}, "1.30.0"))
+	// A failed gate lookup started no install.
+	assert.Equal(t, 1, NextAttempt(State{LastVersion: "1.30.0", Attempts: MaxAttempts}, "1.30.0"))
+	assert.Equal(t, MaxAttempts+1, NextAttempt(State{LastVersion: "1.30.0", Attempts: MaxAttempts, LastAttempt: time.Now()}, "1.30.0"))
 }
 
 func TestChildEnvCarriesTheRefusal(t *testing.T) {

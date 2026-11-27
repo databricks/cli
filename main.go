@@ -27,10 +27,12 @@ func main() {
 	}
 
 	// cmd/root runs auto-install after a command but cannot import cmd/aitools,
-	// which imports it. It is wired here, not in a package init, for the same
-	// reason as DATABRICKS_CLI_PATH above.
+	// which imports it, and `auth login` asks about it but must not import
+	// another command group. It is wired here, not in a package init, for the
+	// same reason as DATABRICKS_CLI_PATH above.
 	autoinstall.Run = aitools.AutoInstall
 	autoinstall.InstallsFor = aitools.AutoInstallsFor
+	autoinstall.AskAtLogin = aitools.AskAtLogin
 
 	ctx := context.Background()
 	err := cmd.New(ctx).Execute(ctx, os.Args[1:])
