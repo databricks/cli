@@ -74,6 +74,15 @@ func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigReso
 			return
 		}
 	}
+	for _, name := range sortedKeys(r.DataQualityMonitors) {
+		var res ConfigResource
+		if x := r.DataQualityMonitors[name]; x != nil {
+			res = x
+		}
+		if !fn("data_quality_monitors", name, res) {
+			return
+		}
+	}
 	for _, name := range sortedKeys(r.DatabaseCatalogs) {
 		var res ConfigResource
 		if x := r.DatabaseCatalogs[name]; x != nil {
@@ -107,6 +116,15 @@ func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigReso
 			res = x
 		}
 		if !fn("external_locations", name, res) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.FeatureSpecs) {
+		var res ConfigResource
+		if x := r.FeatureSpecs[name]; x != nil {
+			res = x
+		}
+		if !fn("feature_specs", name, res) {
 			return
 		}
 	}
@@ -161,6 +179,15 @@ func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigReso
 			res = x
 		}
 		if !fn("jobs", name, res) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.MaterializationSets) {
+		var res ConfigResource
+		if x := r.MaterializationSets[name]; x != nil {
+			res = x
+		}
+		if !fn("materialization_sets", name, res) {
 			return
 		}
 	}
@@ -233,6 +260,15 @@ func (r *Resources) IterateAllResources(fn func(typ, name string, res ConfigReso
 			res = x
 		}
 		if !fn("postgres_catalogs", name, res) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresDataApis) {
+		var res ConfigResource
+		if x := r.PostgresDataApis[name]; x != nil {
+			res = x
+		}
+		if !fn("postgres_data_apis", name, res) {
 			return
 		}
 	}
@@ -434,6 +470,14 @@ func (r *Resources) Select(keys map[string]map[string]struct{}) Resources {
 			}
 		}
 	}
+	if names, ok := keys["data_quality_monitors"]; ok {
+		out.DataQualityMonitors = make(map[string]*resources.DataQualityMonitor, len(names))
+		for name := range names {
+			if x, ok := r.DataQualityMonitors[name]; ok {
+				out.DataQualityMonitors[name] = x
+			}
+		}
+	}
 	if names, ok := keys["database_catalogs"]; ok {
 		out.DatabaseCatalogs = make(map[string]*resources.DatabaseCatalog, len(names))
 		for name := range names {
@@ -463,6 +507,14 @@ func (r *Resources) Select(keys map[string]map[string]struct{}) Resources {
 		for name := range names {
 			if x, ok := r.ExternalLocations[name]; ok {
 				out.ExternalLocations[name] = x
+			}
+		}
+	}
+	if names, ok := keys["feature_specs"]; ok {
+		out.FeatureSpecs = make(map[string]*resources.FeatureSpec, len(names))
+		for name := range names {
+			if x, ok := r.FeatureSpecs[name]; ok {
+				out.FeatureSpecs[name] = x
 			}
 		}
 	}
@@ -511,6 +563,14 @@ func (r *Resources) Select(keys map[string]map[string]struct{}) Resources {
 		for name := range names {
 			if x, ok := r.Jobs[name]; ok {
 				out.Jobs[name] = x
+			}
+		}
+	}
+	if names, ok := keys["materialization_sets"]; ok {
+		out.MaterializationSets = make(map[string]*resources.MaterializationSet, len(names))
+		for name := range names {
+			if x, ok := r.MaterializationSets[name]; ok {
+				out.MaterializationSets[name] = x
 			}
 		}
 	}
@@ -575,6 +635,14 @@ func (r *Resources) Select(keys map[string]map[string]struct{}) Resources {
 		for name := range names {
 			if x, ok := r.PostgresCatalogs[name]; ok {
 				out.PostgresCatalogs[name] = x
+			}
+		}
+	}
+	if names, ok := keys["postgres_data_apis"]; ok {
+		out.PostgresDataApis = make(map[string]*resources.PostgresDataApi, len(names))
+		for name := range names {
+			if x, ok := r.PostgresDataApis[name]; ok {
+				out.PostgresDataApis[name] = x
 			}
 		}
 	}
@@ -773,6 +841,16 @@ func (r *Resources) CopyResource(src *Resources, typ, name string) bool {
 		}
 		r.Dashboards[name] = x
 		return true
+	case "data_quality_monitors":
+		x, ok := src.DataQualityMonitors[name]
+		if !ok {
+			return false
+		}
+		if r.DataQualityMonitors == nil {
+			r.DataQualityMonitors = map[string]*resources.DataQualityMonitor{}
+		}
+		r.DataQualityMonitors[name] = x
+		return true
 	case "database_catalogs":
 		x, ok := src.DatabaseCatalogs[name]
 		if !ok {
@@ -812,6 +890,16 @@ func (r *Resources) CopyResource(src *Resources, typ, name string) bool {
 			r.ExternalLocations = map[string]*resources.ExternalLocation{}
 		}
 		r.ExternalLocations[name] = x
+		return true
+	case "feature_specs":
+		x, ok := src.FeatureSpecs[name]
+		if !ok {
+			return false
+		}
+		if r.FeatureSpecs == nil {
+			r.FeatureSpecs = map[string]*resources.FeatureSpec{}
+		}
+		r.FeatureSpecs[name] = x
 		return true
 	case "features":
 		x, ok := src.Features[name]
@@ -872,6 +960,16 @@ func (r *Resources) CopyResource(src *Resources, typ, name string) bool {
 			r.Jobs = map[string]*resources.Job{}
 		}
 		r.Jobs[name] = x
+		return true
+	case "materialization_sets":
+		x, ok := src.MaterializationSets[name]
+		if !ok {
+			return false
+		}
+		if r.MaterializationSets == nil {
+			r.MaterializationSets = map[string]*resources.MaterializationSet{}
+		}
+		r.MaterializationSets[name] = x
 		return true
 	case "mcp_services":
 		x, ok := src.McpServices[name]
@@ -952,6 +1050,16 @@ func (r *Resources) CopyResource(src *Resources, typ, name string) bool {
 			r.PostgresCatalogs = map[string]*resources.PostgresCatalog{}
 		}
 		r.PostgresCatalogs[name] = x
+		return true
+	case "postgres_data_apis":
+		x, ok := src.PostgresDataApis[name]
+		if !ok {
+			return false
+		}
+		if r.PostgresDataApis == nil {
+			r.PostgresDataApis = map[string]*resources.PostgresDataApi{}
+		}
+		r.PostgresDataApis[name] = x
 		return true
 	case "postgres_databases":
 		x, ok := src.PostgresDatabases[name]
@@ -1145,6 +1253,10 @@ func (r *Resources) GetResource(typ, name string) (res ConfigResource, ok bool) 
 		if x := r.Dashboards[name]; x != nil {
 			return x, true
 		}
+	case "data_quality_monitors":
+		if x := r.DataQualityMonitors[name]; x != nil {
+			return x, true
+		}
 	case "database_catalogs":
 		if x := r.DatabaseCatalogs[name]; x != nil {
 			return x, true
@@ -1159,6 +1271,10 @@ func (r *Resources) GetResource(typ, name string) (res ConfigResource, ok bool) 
 		}
 	case "external_locations":
 		if x := r.ExternalLocations[name]; x != nil {
+			return x, true
+		}
+	case "feature_specs":
+		if x := r.FeatureSpecs[name]; x != nil {
 			return x, true
 		}
 	case "features":
@@ -1183,6 +1299,10 @@ func (r *Resources) GetResource(typ, name string) (res ConfigResource, ok bool) 
 		}
 	case "jobs":
 		if x := r.Jobs[name]; x != nil {
+			return x, true
+		}
+	case "materialization_sets":
+		if x := r.MaterializationSets[name]; x != nil {
 			return x, true
 		}
 	case "mcp_services":
@@ -1215,6 +1335,10 @@ func (r *Resources) GetResource(typ, name string) (res ConfigResource, ok bool) 
 		}
 	case "postgres_catalogs":
 		if x := r.PostgresCatalogs[name]; x != nil {
+			return x, true
+		}
+	case "postgres_data_apis":
+		if x := r.PostgresDataApis[name]; x != nil {
 			return x, true
 		}
 	case "postgres_databases":
@@ -1484,6 +1608,11 @@ func (r *Resources) IterateAllResourceStates(fn func(typ, name string, id *strin
 			return
 		}
 	}
+	for _, name := range sortedKeys(r.DataQualityMonitors) {
+		if x := r.DataQualityMonitors[name]; x != nil && !fn("data_quality_monitors", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
 	for _, name := range sortedKeys(r.DatabaseCatalogs) {
 		if x := r.DatabaseCatalogs[name]; x != nil && !fn("database_catalogs", name, &x.ID, &x.ModifiedStatus) {
 			return
@@ -1501,6 +1630,11 @@ func (r *Resources) IterateAllResourceStates(fn func(typ, name string, id *strin
 	}
 	for _, name := range sortedKeys(r.ExternalLocations) {
 		if x := r.ExternalLocations[name]; x != nil && !fn("external_locations", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.FeatureSpecs) {
+		if x := r.FeatureSpecs[name]; x != nil && !fn("feature_specs", name, &x.ID, &x.ModifiedStatus) {
 			return
 		}
 	}
@@ -1526,6 +1660,11 @@ func (r *Resources) IterateAllResourceStates(fn func(typ, name string, id *strin
 	}
 	for _, name := range sortedKeys(r.Jobs) {
 		if x := r.Jobs[name]; x != nil && !fn("jobs", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.MaterializationSets) {
+		if x := r.MaterializationSets[name]; x != nil && !fn("materialization_sets", name, &x.ID, &x.ModifiedStatus) {
 			return
 		}
 	}
@@ -1566,6 +1705,11 @@ func (r *Resources) IterateAllResourceStates(fn func(typ, name string, id *strin
 	}
 	for _, name := range sortedKeys(r.PostgresCatalogs) {
 		if x := r.PostgresCatalogs[name]; x != nil && !fn("postgres_catalogs", name, &x.ID, &x.ModifiedStatus) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.PostgresDataApis) {
+		if x := r.PostgresDataApis[name]; x != nil && !fn("postgres_data_apis", name, &x.ID, &x.ModifiedStatus) {
 			return
 		}
 	}
@@ -1716,6 +1860,16 @@ func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *stri
 			r.Dashboards[name] = x
 		}
 		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "data_quality_monitors":
+		x, exists := r.DataQualityMonitors[name]
+		if x == nil {
+			if r.DataQualityMonitors == nil {
+				r.DataQualityMonitors = map[string]*resources.DataQualityMonitor{}
+			}
+			x = &resources.DataQualityMonitor{}
+			r.DataQualityMonitors[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
 	case "database_catalogs":
 		x, exists := r.DatabaseCatalogs[name]
 		if x == nil {
@@ -1754,6 +1908,16 @@ func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *stri
 			}
 			x = &resources.ExternalLocation{}
 			r.ExternalLocations[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "feature_specs":
+		x, exists := r.FeatureSpecs[name]
+		if x == nil {
+			if r.FeatureSpecs == nil {
+				r.FeatureSpecs = map[string]*resources.FeatureSpec{}
+			}
+			x = &resources.FeatureSpec{}
+			r.FeatureSpecs[name] = x
 		}
 		return &x.ID, &x.ModifiedStatus, !exists, true
 	case "features":
@@ -1804,6 +1968,16 @@ func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *stri
 			}
 			x = &resources.Job{}
 			r.Jobs[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "materialization_sets":
+		x, exists := r.MaterializationSets[name]
+		if x == nil {
+			if r.MaterializationSets == nil {
+				r.MaterializationSets = map[string]*resources.MaterializationSet{}
+			}
+			x = &resources.MaterializationSet{}
+			r.MaterializationSets[name] = x
 		}
 		return &x.ID, &x.ModifiedStatus, !exists, true
 	case "mcp_services":
@@ -1884,6 +2058,16 @@ func (r *Resources) GetOrCreateState(typ, name string) (id *string, status *stri
 			}
 			x = &resources.PostgresCatalog{}
 			r.PostgresCatalogs[name] = x
+		}
+		return &x.ID, &x.ModifiedStatus, !exists, true
+	case "postgres_data_apis":
+		x, exists := r.PostgresDataApis[name]
+		if x == nil {
+			if r.PostgresDataApis == nil {
+				r.PostgresDataApis = map[string]*resources.PostgresDataApi{}
+			}
+			x = &resources.PostgresDataApi{}
+			r.PostgresDataApis[name] = x
 		}
 		return &x.ID, &x.ModifiedStatus, !exists, true
 	case "postgres_databases":
@@ -2061,6 +2245,11 @@ func (r *Resources) IterateAllGrants(fn func(typ, name string, grants *[]catalog
 	}
 	for _, name := range sortedKeys(r.ExternalLocations) {
 		if x := r.ExternalLocations[name]; x != nil && !fn("external_locations", name, &x.Grants) {
+			return
+		}
+	}
+	for _, name := range sortedKeys(r.FeatureSpecs) {
+		if x := r.FeatureSpecs[name]; x != nil && !fn("feature_specs", name, &x.Grants) {
 			return
 		}
 	}

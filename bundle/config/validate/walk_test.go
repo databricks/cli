@@ -56,7 +56,8 @@ resources:
 }
 
 func TestRequiredWalkSetValues(t *testing.T) {
-	// A pure reference sets a field; null does not. An explicit zero of a field that has no
+	// A pure reference sets a field; null does not. A null block (run_job_task) is not sent,
+	// so its fields are not checked. An explicit zero of a field that has no
 	// ForceSendFields (here value: 0) cannot be told from an unset field in the typed
 	// configuration, so it is reported (known difference from the dyn implementation).
 	b := loadBundle(t, `
@@ -86,7 +87,6 @@ resources:
 	diags := bundle.Apply(t.Context(), b, Required())
 	assert.Equal(t, []string{
 		`required field "commands" is not set at resources.jobs.job.tasks[1].dbt_task (23)`,
-		`required field "job_id" is not set at resources.jobs.job.tasks[0].run_job_task (20)`,
 		`required field "value" is not set at resources.jobs.job.health.rules[1] (15)`,
 	}, summarize(diags))
 }

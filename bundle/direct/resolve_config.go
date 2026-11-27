@@ -29,8 +29,9 @@ var resourcesPrefix = structpath.NewPath(nil, "resources")
 // The state DB holds fields like the immutable snapshot's full_path that never reach the
 // config, so it must be open.
 func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target *structpath.PathNode) error {
+	isResource := target.Len() == 3 && target.HasPrefix(resourcesPrefix)
 	typ, name := target.KeyAt(1), target.KeyAt(2)
-	if _, ok := cfg.Resources.GetResource(typ, name); !ok {
+	if _, ok := cfg.Resources.GetResource(typ, name); isResource && !ok {
 		return fmt.Errorf("resource %s not found in configuration", target)
 	}
 	view := cfg.View()
@@ -58,10 +59,15 @@ func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target *s
 		return structvar.NewView(&got, nil, nil), nil
 	}
 
-	walk.ResourceStringsOf(cfg, typ, name, walk.WithReferences, func(n *walk.Node, s string) (string, bool) {
-		addTemplate(templates, paths, target, n.Path(), s)
-		return "", false
-	})
+	if isResource {
+		walk.ResourceStringsOf(cfg, typ, name, walk.WithReferences, func(n *walk.Node, s string) (string, bool) {
+			addTemplate(templates, paths, target, n.Path(), s)
+			return "", false
+		})
+	} else if s, ok := view.Lookup(target).AsString(); ok {
+		// Any other target (e.g. workspace.file_path) is a single string value.
+		addTemplate(templates, paths, target, target, s)
+	}
 	for p, ref := range cfg.ReferencesUnder(target) {
 		addTemplate(templates, paths, target, p, ref)
 	}

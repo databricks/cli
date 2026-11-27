@@ -195,9 +195,10 @@ func (e *ruleWalk) field(t *structinfo.Type, n *Node, p unsafe.Pointer, op *stru
 			c := e.child(n, t.Fields[op.Idx].Key)
 			e.strct(ft.Elem, c, q)
 			e.pop()
-		} else if e.rule == 0 && (t.ForcedOp(p, op) || n.IsRef(t.Fields[op.Idx].Key)) {
-			// A forced nil value (e.g. "run_job_task:") or one replaced by a pure
-			// reference is a node without fields.
+		} else if e.rule == 0 && n.IsRef(t.Fields[op.Idx].Key) {
+			// A value replaced by a pure reference is a node without fields. A null value
+			// (e.g. "schedule: null") is a nil pointer that is not sent, so its fields are
+			// not checked.
 			c := e.child(n, t.Fields[op.Idx].Key)
 			e.strct(ft.Elem, c, nil)
 			e.pop()
