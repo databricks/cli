@@ -48,6 +48,8 @@ def go_test(args, run, faultlog, faultplan, json_out):
     if faultplan:
         cmd += ["-faultplan", str(faultplan)]
     cmd += args.go_args
+    # The runner appends to -faultlog; start fresh so a reused --out does not mix in old runs.
+    faultlog.unlink(missing_ok=True)
     print("+ " + " ".join(cmd), file=sys.stderr, flush=True)
     start = time.time()
     with open(json_out, "w") as f:
@@ -151,8 +153,8 @@ def run_round(args, out, rnd, eligible, rng):
                 test,
                 {"test": test, "round": rnd, "planned": plan[test], "fired": fired, "requests": e["requests"]},
             )
-            if attempt == 1 and not fired:
-                result["outcome"] = "not-fired"
+            if not fired:
+                result["outcome"] = "not-fired" if attempt == 1 else "not-fired-on-rerun"
                 continue
             if e["failed"]:
                 if outputs is None:
@@ -197,7 +199,8 @@ def write_summary(args, out, eligible, baseline_failed, no_requests, results):
         f"- Left out, made no requests: {len(no_requests)}",
         "",
         "Outcomes: `pass` passed twice with the fault, `fail` failed with it, `fail-on-rerun` passed once and",
-        "failed the second time, `not-fired` made fewer requests than the chosen number, `no-result` was cut short.",
+        "failed the second time, `not-fired` made fewer requests than the chosen number (`not-fired-on-rerun`: on the second run),",
+        "`no-result` was cut short.",
         "",
         "| Kind | Injected | pass | fail | fail-on-rerun | not-fired | no-result |",
         "|---|---|---|---|---|---|---|",

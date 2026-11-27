@@ -155,6 +155,11 @@ func (s *Server) writeRequestFault(w http.ResponseWriter, request *Request, kind
 		}
 		_ = conn.Close()
 	case FaultTruncatedLate:
+		if !responseHasBody(request.Method, resp.StatusCode) {
+			// The client would not read the body, so cut the connection instead.
+			s.writeRequestFault(w, request, FaultResetLate, resp)
+			return
+		}
 		s.notifyResponse(request, EncodedResponse{})
 		conn := s.hijack(w)
 		if conn == nil {
@@ -165,6 +170,9 @@ func (s *Server) writeRequestFault(w http.ResponseWriter, request *Request, kind
 		var head strings.Builder
 		fmt.Fprintf(&head, "HTTP/1.1 %d %s\r\n", resp.StatusCode, http.StatusText(resp.StatusCode))
 		for key, values := range resp.Headers {
+			if http.CanonicalHeaderKey(key) == "Content-Length" {
+				continue
+			}
 			for _, value := range values {
 				fmt.Fprintf(&head, "%s: %s\r\n", key, value)
 			}
@@ -175,6 +183,11 @@ func (s *Server) writeRequestFault(w http.ResponseWriter, request *Request, kind
 	default:
 		s.writeResponse(w, request, faultStatusResponses[kind])
 	}
+}
+
+// responseHasBody reports whether an HTTP client reads a body for this response.
+func responseHasBody(method string, status int) bool {
+	return method != http.MethodHead && status != http.StatusNoContent && status != http.StatusNotModified
 }
 
 func (s *Server) hijack(w http.ResponseWriter) net.Conn {

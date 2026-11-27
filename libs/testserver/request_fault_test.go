@@ -125,3 +125,18 @@ func TestSetRequestFaultValidates(t *testing.T) {
 	assert.ErrorContains(t, s.SetRequestFault(0, testserver.FaultUnavailable), "at least 1")
 	assert.ErrorContains(t, s.SetRequestFault(1, "418"), `unknown request fault kind "418"`)
 }
+
+func TestRequestFaultTruncatedWithoutBodyResets(t *testing.T) {
+	s := testserver.New(t)
+	s.Handle("HEAD", "/api/2.0/things", func(req testserver.Request) any {
+		return testserver.Response{StatusCode: 200}
+	})
+	require.NoError(t, s.SetRequestFault(1, testserver.FaultTruncatedLate))
+
+	client := &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
+	resp, err := client.Head(s.URL + "/api/2.0/things")
+	if err == nil {
+		resp.Body.Close()
+	}
+	require.Error(t, err)
+}
