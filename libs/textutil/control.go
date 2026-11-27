@@ -21,7 +21,7 @@ import (
 // the name it has. JSON output must not go through this: the JSON encoder has
 // its own escaping.
 func EscapeControl(s string) string {
-	return escapeControl(s, false)
+	return escapeControl(s, noColors)
 }
 
 // EscapeControlOneLine is [EscapeControl] for a value shown in a one-line slot
@@ -31,21 +31,36 @@ func EscapeControlOneLine(s string) string {
 	if strings.ContainsAny(s, "\r\n\t") {
 		s = strings.NewReplacer("\r", `\r`, "\n", `\n`, "\t", `\t`).Replace(s)
 	}
-	return escapeControl(s, false)
+	return escapeControl(s, noColors)
 }
 
 // EscapeControlKeepColors is [EscapeControl] for text the CLI composed from its
 // own text and other values, where colors are on: SGR sequences (colors and
 // text styles, ESC [ ... m) are kept, because the CLI's own styling is already
-// part of the string. A style that is still on at the end of a line or a table
-// cell is reset there, so that a value cannot hide what is printed after it.
-// Prefer EscapeControl on the individual values where the caller has them, and
-// where the CLI adds no colors.
+// part of the string. A style that is still on at the end is reset, so that a
+// value cannot hide what is printed after it. Prefer EscapeControl on the
+// individual values where the caller has them, and where the CLI adds no
+// colors.
 func EscapeControlKeepColors(s string) string {
-	return escapeControl(s, true)
+	return escapeControl(s, keepColors)
 }
 
-func escapeControl(s string, keepColors bool) string {
+// EscapeControlKeepColorsPerCell is [EscapeControlKeepColors] for a rendered
+// table: a style that is still on at the end of a line or a tab-separated cell
+// is reset there, so that a value cannot hide the next cell or row.
+func EscapeControlKeepColorsPerCell(s string) string {
+	return escapeControl(s, keepColorsPerCell)
+}
+
+type colorMode int
+
+const (
+	noColors colorMode = iota
+	keepColors
+	keepColorsPerCell
+)
+
+func escapeControl(s string, colors colorMode) string {
 	var b strings.Builder
 	// s[flushed:i] is text that needs no escaping and is not in b yet.
 	flushed := 0
@@ -59,14 +74,14 @@ func escapeControl(s string, keepColors bool) string {
 		switch {
 		case invalid:
 			keep = 0
-		case (r == '\n' || r == '\t') && styled:
+		case (r == '\n' || r == '\t') && styled && colors == keepColorsPerCell:
 			b.WriteString(s[flushed:i])
 			b.WriteString(sgrReset)
 			flushed = i
 			styled = false
 			changed = true
 		case r == '\n' || r == '\t':
-		case r == '\x1b' && keepColors:
+		case r == '\x1b' && colors != noColors:
 			keep = sgrLen(s[i:])
 			if keep > 0 {
 				styled = s[i:i+keep] != sgrReset && s[i:i+keep] != "\x1b[m"

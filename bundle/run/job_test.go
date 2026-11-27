@@ -287,3 +287,31 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	_, err := runner.Restart(ctx, &Options{})
 	require.NoError(t, err)
 }
+
+func TestJobRunnerLogsFailedTaskTraceAsIs(t *testing.T) {
+	b := &bundle.Bundle{}
+	runner := jobRunner{key: "test", bundle: b, job: &resources.Job{ID: "123"}}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	jobApi := m.GetMockJobsAPI()
+	jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 456}).Return(&jobs.Run{
+		State: &jobs.RunState{ResultState: jobs.RunResultStateFailed},
+		Tasks: []jobs.RunTask{{
+			TaskKey: "main",
+			RunId:   789,
+			State:   &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateInternalError, ResultState: jobs.RunResultStateFailed},
+		}},
+	}, nil)
+	// A notebook's trace is colored.
+	jobApi.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 789}).Return(&jobs.RunOutput{
+		Error:      "ValueError: boom",
+		ErrorTrace: "\x1b[0;31m----\x1b[0m\n\x1b[0;31mValueError\x1b[0m: boom",
+	}, nil)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	runner.logFailedTasks(ctx, 456)
+
+	require.Equal(t, "Task main FAILED:\nValueError: boom\n\x1b[0;31m----\x1b[0m\n\x1b[0;31mValueError\x1b[0m: boom\n\n", stderr.String())
+}

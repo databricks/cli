@@ -72,7 +72,9 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", cmdio.Red(ctx, task.TaskKey), err)
 				continue
 			}
-			cmdio.Log(ctx, progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace))
+			// The error and its trace are the task's own output, like its logs, and
+			// are passed through as is: a notebook's trace is colored.
+			cmdio.LogRawString(ctx, progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace).String())
 			log.Errorf(ctx, "Task %s failed!\nError:\n%s\nTrace:\n%s",
 				cmdio.Red(ctx, task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {
