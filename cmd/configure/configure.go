@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
@@ -58,10 +59,12 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 	// Ask user to specify a cluster if not already set.
 	if flags.ConfigureCluster && cfg.ClusterID == "" {
 		// Create workspace client with configuration without the profile name set.
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		wCfg := &config.Config{
 			Host:  cfg.Host,
 			Token: cfg.Token,
-		})
+		}
+		agent.ApplyNotAnAgentHeader(cmd.Context(), wCfg)
+		w, err := databricks.NewWorkspaceClient((*databricks.Config)(wCfg))
 		if err != nil {
 			return err
 		}

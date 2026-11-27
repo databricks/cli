@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -124,6 +125,7 @@ func (e *Entrypoint) preparePython(ctx context.Context, environment map[string]s
 func (e *Entrypoint) ensureRunningCluster(ctx context.Context, cfg *config.Config) error {
 	sp := cmdio.NewSpinner(ctx)
 	defer sp.Close()
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return fmt.Errorf("workspace client: %w", err)

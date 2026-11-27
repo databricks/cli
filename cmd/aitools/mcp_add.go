@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/aitools/mcp"
@@ -590,6 +591,7 @@ func checkWorkspaceProfile(name, configFile string, cfg *config.Config) error {
 
 // boundClient returns the workspace client and Authorization header for the bound config.
 func boundClient(ctx context.Context, cfg *config.Config, name, pinnedFile string) (*databricks.WorkspaceClient, string, error) {
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return nil, "", err

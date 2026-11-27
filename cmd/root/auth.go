@@ -175,7 +175,9 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
+	pickedCfg := &config.Config{Profile: profile}
+	agent.ApplyNotAnAgentHeader(ctx, pickedCfg)
+	a, err = databricks.NewAccountClient((*databricks.Config)(pickedCfg))
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -358,7 +360,9 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
+	pickedCfg := &config.Config{Profile: profile}
+	agent.ApplyNotAnAgentHeader(ctx, pickedCfg)
+	w, err = databricks.NewWorkspaceClient((*databricks.Config)(pickedCfg))
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}

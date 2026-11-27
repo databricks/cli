@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -92,6 +93,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 	callCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	switch configType {
 	case config.AccountConfig:
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))

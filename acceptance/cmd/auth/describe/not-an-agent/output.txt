@@ -1,0 +1,26 @@
+
+=== With the variable set, the verification request has no agent token
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] auth describe
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/auth_describe cmd-exec-id/[UUID][0] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+
+=== With the variable unset, the verification request carries the agent token
+
+>>> CLAUDECODE=1 [CLI] auth describe
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/auth_describe cmd-exec-id/[UUID][1] interactive/none aitools-agent/none auth/pat agent/claude-code"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
