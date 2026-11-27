@@ -1,0 +1,44 @@
+
+=== Copy a file to a new file
+
+>>> [CLI] fs cp [SRC]/foo.txt [DST]/bar.txt
+[SRC]/foo.txt -> [DST]/bar.txt
+
+>>> [CLI] fs cat [DST]/bar.txt
+abc
+
+=== Copy a file into an existing directory
+
+>>> [CLI] fs cp [SRC]/foo.txt [DST]
+[SRC]/foo.txt -> [DST]/foo.txt
+
+>>> [CLI] fs cat [DST]/foo.txt
+abc
+
+=== An existing file is skipped without --overwrite
+
+>>> [CLI] fs cp [SRC]/a/b/c/hello.txt [DST]/skip/a/b/c
+[SRC]/a/b/c/hello.txt -> [DST]/skip/a/b/c/hello.txt (skipped; already exists)
+
+>>> [CLI] fs cat [DST]/skip/a/b/c/hello.txt
+existing content
+
+>>> [CLI] fs cp [SRC]/a/b/c/hello.txt [DST]/skip/a/b/c/dontoverwrite.txt
+[SRC]/a/b/c/hello.txt -> [DST]/skip/a/b/c/dontoverwrite.txt (skipped; already exists)
+
+>>> [CLI] fs cat [DST]/skip/a/b/c/dontoverwrite.txt
+existing content
+
+=== --overwrite replaces an existing file
+
+>>> [CLI] fs cp --overwrite [SRC]/a/b/c/hello.txt [DST]/overwrite/a/b/c
+[SRC]/a/b/c/hello.txt -> [DST]/overwrite/a/b/c/hello.txt
+
+>>> [CLI] fs cat [DST]/overwrite/a/b/c/hello.txt
+hello, world
+
+>>> [CLI] fs cp --overwrite [SRC]/a/b/c/hello.txt [DST]/overwrite/a/b/c/overwritten.txt
+[SRC]/a/b/c/hello.txt -> [DST]/overwrite/a/b/c/overwritten.txt
+
+>>> [CLI] fs cat [DST]/overwrite/a/b/c/overwritten.txt
+hello, world
