@@ -180,6 +180,7 @@ func autoInstall(ctx context.Context, skippedCommand bool) os.Signal {
 		log.Debugf(ctx, "auto-install: skipped: %v", err)
 		return nil
 	}
+	consentExistingInstall(ctx, &in)
 	reason := autoinstall.Decide(in)
 	if !reason.Due() {
 		log.Debugf(ctx, "auto-install: skipped: %s", reason)
@@ -402,6 +403,42 @@ func installStateSaved(globalDir string) bool {
 	return err != nil || existing != nil
 }
 
+// consentExistingInstall stores the consent of a machine whose user never
+// answered but has a global installation that the CLI made (one with install
+// state): the user installed the tools, so auto-install keeps them up to date.
+// Skills without install state may be the user's own copies, and a project
+// installation belongs to the project, so neither counts. in is a run past
+// stateFreeSkips; one in CI or with auto-install turned off in the environment
+// stores nothing. in.State gets the stored consent.
+func consentExistingInstall(ctx context.Context, in *autoinstall.Inputs) {
+	if in.CI || in.EnvOptOut || in.State.Consent() != autoinstall.ConsentUnknown {
+		return
+	}
+	globalDir, err := installer.GlobalSkillsDir(ctx)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
+		return
+	}
+	existing, err := installer.LoadState(globalDir)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not look for an installation: %v", err)
+		return
+	}
+	if existing == nil {
+		return
+	}
+	previous, err := autoinstall.GiveConsentIfUnknown(ctx)
+	if err != nil {
+		log.Debugf(ctx, "auto-install: could not save the state: %v", err)
+		return
+	}
+	// An opt-out stored since the state was read stays, and the run finds it
+	// when it reads the state again under the run lock.
+	if previous != autoinstall.ConsentOptedOut {
+		in.State.Consented = true
+	}
+}
+
 // saveInstallStateDigest records the digest of the install state that a first
 // install that did not finish saved, so that a later run can tell it from
 // install state that anything else wrote. Without the digest, a later run
@@ -519,7 +556,7 @@ func (r autoInstallRun) ask(ctx context.Context, names []string) (bool, os.Signa
 // asks again.
 func (r autoInstallRun) decline(ctx context.Context) {
 	r.settle(ctx, protos.AitoolsAutoInstallOutcomeDeclined)
-	if err := autoinstall.Decline(ctx); err != nil {
+	if _, err := autoinstall.Decline(ctx); err != nil {
 		log.Warnf(ctx, "Could not save the answer, so a later CLI version asks again: %v", err)
 		cmdio.LogString(ctx, skippedNotice)
 		return

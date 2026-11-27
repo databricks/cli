@@ -42,7 +42,10 @@ func TestRecordKeepsConcurrentOptOut(t *testing.T) {
 	for range 20 {
 		wg.Go(func() { assert.NoError(t, Record(ctx, "1.30.0", 1, "machine", time.Now())) })
 	}
-	wg.Go(func() { assert.NoError(t, SetOptedOut(ctx, true)) })
+	wg.Go(func() {
+		_, err := SetConsent(ctx, ConsentOptedOut)
+		assert.NoError(t, err)
+	})
 	wg.Wait()
 
 	s, err := Load(ctx)
@@ -118,14 +121,15 @@ func TestLockReturnsOtherErrorsAtOnce(t *testing.T) {
 	assert.Equal(t, 1, tries)
 }
 
-func TestSetOptedOutWithoutLocks(t *testing.T) {
+func TestSetConsentWithoutLocks(t *testing.T) {
 	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
 
 	// An explicit opt-out must work where the filesystem has no locks.
 	orig := tryLock
 	t.Cleanup(func() { tryLock = orig })
 	tryLock = func(*os.File) error { return errors.New("no locks here") }
-	require.NoError(t, SetOptedOut(ctx, true))
+	_, err := SetConsent(ctx, ConsentOptedOut)
+	require.NoError(t, err)
 
 	s, err := load(ctx)
 	require.NoError(t, err)
@@ -133,7 +137,8 @@ func TestSetOptedOutWithoutLocks(t *testing.T) {
 
 	// A lock another process holds is waited for, not skipped.
 	tryLock = func(*os.File) error { return errLockHeld }
-	assert.ErrorIs(t, SetOptedOut(ctx, false), errLockHeld)
+	_, err = SetConsent(ctx, ConsentGiven)
+	assert.ErrorIs(t, err, errLockHeld)
 }
 
 func TestRecordClearsInstallingWhenSettled(t *testing.T) {
@@ -240,7 +245,8 @@ func TestStartAttemptStopsAtAnOptOut(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, State{LastVersion: "1.30.0", Attempts: 1, LastAttempt: at, ID: "machine"}, s)
 
-	require.NoError(t, SetOptedOut(ctx, true))
+	_, err = SetConsent(ctx, ConsentOptedOut)
+	require.NoError(t, err)
 	started, err = StartAttempt(ctx, "1.30.0", 2, "machine", at)
 	require.NoError(t, err)
 	assert.False(t, started)

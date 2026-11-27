@@ -565,7 +565,8 @@ func TestAutoInstallRetriesAnAgentThatGotNoSkills(t *testing.T) {
 	require.NoError(t, os.Remove(skillsDir))
 	outcomes, state = runAutoInstallAt(t, 5*time.Minute)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeInstalled}, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, state)
+	// The install state of the first attempt counts as consent.
+	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", Consented: true, ID: "treatment-machine"}, state)
 	assert.FileExists(t, filepath.Join(skillsDir, "databricks-test", "SKILL.md"))
 }
 
@@ -610,14 +611,14 @@ func TestAutoInstallFinishesAMixedInstallRefusedTheSkills(t *testing.T) {
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.31.0")
 	outcomes, state = runAutoInstallAt(t, 0)
 	assert.Equal(t, []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeKept}, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", Installing: true, InstallStateDigest: digest, ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.31.0", Consented: true, Installing: true, InstallStateDigest: digest, ID: "treatment-machine"}, state)
 	assert.Equal(t, 1, pluginInstalls)
 
 	require.NoError(t, os.RemoveAll(handPlaced))
 	t.Setenv("DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.32.0")
 	outcomes, state = runAutoInstallAt(t, 0)
 	assert.Equal(t, installed, outcomes)
-	assert.Equal(t, autoinstall.State{LastVersion: "1.32.0", ID: "treatment-machine"}, state)
+	assert.Equal(t, autoinstall.State{LastVersion: "1.32.0", Consented: true, ID: "treatment-machine"}, state)
 	assert.FileExists(t, filepath.Join(handPlaced, "SKILL.md"))
 	assert.Equal(t, 1, pluginInstalls)
 	installState, err = installer.LoadState(filepath.Join(home, ".databricks", "aitools", "skills"))
@@ -803,7 +804,8 @@ func TestAutoInstallStopsAtAnOptOutStoredWhileItDecides(t *testing.T) {
 	home := setupAutoInstallHome(t, "", "CLAUDECODE", "1")
 	t.Cleanup(func() { gateOn = autoinstall.GateOn })
 	gateOn = func(ctx context.Context, _ string) (bool, error) {
-		require.NoError(t, autoinstall.SetOptedOut(ctx, true))
+		_, err := autoinstall.SetConsent(ctx, autoinstall.ConsentOptedOut)
+		require.NoError(t, err)
 		return true, nil
 	}
 	ctx := cmdio.MockDiscard(t.Context())
@@ -868,6 +870,77 @@ func TestUninstallFailsWhileAnAutoInstallRuns(t *testing.T) {
 	state, err = autoinstall.Load(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", OptedOut: true, ID: "treatment-machine"}, state)
+}
+
+// A global installation the CLI made counts as the user's consent on a run
+// that could auto-install. The machine settled the version already, so the
+// runs install nothing and only the consent changes.
+func TestAutoInstallStoresTheConsentOfAnExistingInstall(t *testing.T) {
+	const settled = `{"id": "treatment-machine", "last_version": "1.30.0"}`
+	tests := []struct {
+		name  string
+		state string
+		// global and project write install state in that scope.
+		global  bool
+		project bool
+		// mcpOnly writes global install state that records only MCP servers.
+		mcpOnly bool
+		// untracked puts skills in the global directory without install state.
+		untracked bool
+		env       []string
+		want      autoinstall.Consent
+	}{
+		{name: "global install state", global: true, want: autoinstall.ConsentGiven},
+		{name: "no installation", want: autoinstall.ConsentUnknown},
+		{name: "skills without install state", untracked: true, want: autoinstall.ConsentUnknown},
+		{name: "a project installation", project: true, want: autoinstall.ConsentUnknown},
+		{name: "global install state of MCP servers only", mcpOnly: true, want: autoinstall.ConsentUnknown},
+		{name: "an opt-out stays", state: `{"id": "treatment-machine", "last_version": "1.30.0", "opted_out": true}`, global: true, want: autoinstall.ConsentOptedOut},
+		{name: "not in CI", global: true, env: []string{"CI", "true"}, want: autoinstall.ConsentUnknown},
+		{name: "not with the environment opt-out", global: true, env: []string{autoinstall.EnvVar, "false"}, want: autoinstall.ConsentUnknown},
+		{name: "not on a development build", global: true, env: []string{"DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION", "1.30.0-dev+abcdef123456"}, want: autoinstall.ConsentUnknown},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			state := tc.state
+			if state == "" {
+				state = settled
+			}
+			home := setupAutoInstallHome(t, state, tc.env...)
+			globalDir := filepath.Join(home, ".databricks", "aitools", "skills")
+			project := t.TempDir()
+			t.Chdir(project)
+			recorded := &installer.InstallState{SchemaVersion: installer.CurrentSchemaVersion, Skills: map[string]string{"databricks-test": "1.0.0"}}
+			if tc.global {
+				require.NoError(t, installer.SaveState(globalDir, recorded))
+			}
+			if tc.project {
+				require.NoError(t, installer.SaveState(filepath.Join(project, ".databricks", "aitools", "skills"), recorded))
+			}
+			if tc.mcpOnly {
+				require.NoError(t, os.MkdirAll(globalDir, 0o755))
+				require.NoError(t, os.WriteFile(filepath.Join(globalDir, ".state.json"), []byte(`{"mcp": {"servers": {}}}`), 0o600))
+			}
+			if tc.untracked {
+				require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-test"), 0o755))
+				require.NoError(t, os.WriteFile(filepath.Join(globalDir, "databricks-test", "SKILL.md"), []byte("mine"), 0o644))
+			}
+			t.Cleanup(func() { gateOn = autoinstall.GateOn })
+			gateOn = func(context.Context, string) (bool, error) {
+				t.Error("the gate was looked up")
+				return true, nil
+			}
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			runAutoInstallHook(ctx)
+
+			got, err := autoinstall.Load(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got.Consent())
+			got.OptedOut, got.Consented = false, false
+			assert.Equal(t, autoinstall.State{LastVersion: "1.30.0", ID: "treatment-machine"}, got, "nothing else changes")
+			assert.Empty(t, telemetry.BufferedEvents(ctx))
+		})
+	}
 }
 
 func TestToolsPlanNewAgents(t *testing.T) {

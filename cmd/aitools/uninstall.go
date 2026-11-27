@@ -142,7 +142,7 @@ The command exits with code 1 when every removal it attempts fails.`,
 			// one counts too: the update it runs re-adds removed skills. A run
 			// that removed nothing (a mistyped skill, nothing installed) does not.
 			if scope == installer.ScopeGlobal && (result.PluginsRemoved > 0 || result.SkillsChanged > 0) {
-				if err := autoinstall.SetOptedOut(ctx, true); err != nil {
+				if _, err := autoinstall.SetConsent(ctx, autoinstall.ConsentOptedOut); err != nil {
 					log.Warnf(ctx, "Could not turn off the automatic installation of Databricks AI tools: %v", err)
 				}
 			}

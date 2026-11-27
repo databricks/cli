@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -390,6 +391,10 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}()
 
 			outcomes, runErr = executePlan(ctx, src, plan, opts, rerun, jsonMode)
+			// Auto-install keeps only the global scope up to date.
+			if scope == installer.ScopeGlobal && anyInstalled(outcomes) {
+				storeInstallConsent(ctx)
+			}
 			for _, s := range deliverySteps(outcomes) {
 				funnel.step(ctx, s)
 			}
@@ -1351,4 +1356,13 @@ func printNoAgentsMessage(ctx context.Context, rerun installInvocation) {
 	cmdio.LogString(ctx, "Supported: "+strings.Join(agents.SupportedNames(), ", ")+".")
 	named, _ := commandText(runtime.GOOS, rerun, nil, "--agents=<name>")
 	cmdio.LogString(ctx, "Install one, then re-run "+rerunPhrase(runtime.GOOS, rerun)+". To set up an agent that was not detected, name it: "+named)
+}
+
+// storeInstallConsent records a global install as the user's consent to
+// installing the tools and keeping them up to date, unless the user answered
+// before: an earlier opt-out stays.
+func storeInstallConsent(ctx context.Context) {
+	if _, err := autoinstall.GiveConsentIfUnknown(ctx); err != nil {
+		log.Debugf(ctx, "Could not save the consent to install Databricks AI tools automatically: %v", err)
+	}
 }
