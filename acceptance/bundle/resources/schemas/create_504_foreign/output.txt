@@ -31,7 +31,6 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --get //unity-catalog/schemas //scim/v2/Me
-GET /api/2.0/preview/scim/v2/Me
 POST /api/2.1/unity-catalog/schemas
 GET /api/2.1/unity-catalog/schemas/main.test-schema-[UNIQUE_NAME]
 GET /api/2.0/preview/scim/v2/Me

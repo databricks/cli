@@ -52,4 +52,4 @@ Destroy: 1 deleted
 DELETE /api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]
 
 >>> musterr [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
-Error: Vector search endpoint vs-endpoint-[UNIQUE_NAME] not found
+Error: Resource vectorsearch.EndpointInfo not found: vs-endpoint-[UNIQUE_NAME]
