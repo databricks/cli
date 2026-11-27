@@ -2,6 +2,7 @@ package direct
 
 import (
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -85,15 +86,17 @@ func (b *DeploymentBundle) lookupStateField(path dyn.Path) (dyn.Value, bool) {
 // not safe to show:
 //   - a resource that was never deployed: unlike ResolveConfigAgainstState there is no
 //     fallback to implied empty fields, which would turn an id into "" (see #6690);
-//   - a sensitive field (state stores it zeroed, config holds the secret), or a field
-//     whose config references one, directly or through other references (its deployed
-//     value in state holds the secret);
+//   - a sensitive field (state stores it zeroed, config holds the secret), a field whose
+//     config references one, directly or through other references (its deployed value
+//     in state holds the secret), and any value that contains the value of a sensitive
+//     field or variable in the config (the deployed value can predate a local edit);
 //   - a state field stored as a content hash, or a state string that holds a literal
 //     ${...} (it would be interpolated again).
 //
 // A resource whose resolved values don't fit its Go type keeps its references.
 func (b *DeploymentBundle) ResolveAllResourcesAgainstState(cfg *config.Root) {
 	stateCache := map[string]dyn.Value{}
+	secrets := dresources.SensitiveConfigValues(cfg)
 	_ = cfg.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		lookup := func(path dyn.Path) (dyn.Value, error) {
 			if len(path) < 4 || !path.HasPrefix(resourcesPrefix) {
@@ -102,14 +105,20 @@ func (b *DeploymentBundle) ResolveAllResourcesAgainstState(cfg *config.Root) {
 			if dependsOnSensitiveField(root, path, map[string]bool{}) {
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
 			}
-			if v, ok := b.cachedStateField(stateCache, path); ok {
+			v, ok := b.cachedStateField(stateCache, path)
+			if ok {
 				if str, isStr := v.AsString(); isStr && (dresources.IsStateHashPlaceholder(str) || dynvar.ContainsVariableReference(str)) {
 					return dyn.InvalidValue, dynvar.ErrSkipResolution
 				}
-				return v, nil
+			} else {
+				var err error
+				v, err = dyn.GetByPath(root, path)
+				if err != nil || !v.IsValid() {
+					return dyn.InvalidValue, dynvar.ErrSkipResolution
+				}
 			}
-			v, err := dyn.GetByPath(root, path)
-			if err != nil || !v.IsValid() {
+			// The deployed value can hold a secret that the config no longer references.
+			if containsAny(v, secrets) {
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
 			}
 			return v, nil
@@ -154,8 +163,13 @@ func dependsOnSensitiveField(root dyn.Value, path dyn.Path, visited map[string]b
 		return true
 	}
 
-	value, err := dyn.GetByPath(root, path)
-	if err != nil || !value.IsValid() {
+	// The closest config value at or above path: a parent can be a whole-object reference,
+	// such as tags: ${resources.jobs.x.tags}.
+	var value dyn.Value
+	for i := len(path); i >= 4 && !value.IsValid(); i-- {
+		value, _ = dyn.GetByPath(root, path[:i])
+	}
+	if !value.IsValid() {
 		return false
 	}
 	found := false
@@ -170,6 +184,18 @@ func dependsOnSensitiveField(root dyn.Value, path dyn.Path, visited map[string]b
 				found = true
 				return nil
 			}
+		}
+		return nil
+	})
+	return found
+}
+
+// containsAny reports whether any string in v contains one of values.
+func containsAny(v dyn.Value, values []string) bool {
+	found := false
+	_ = dyn.WalkReadOnly(v, func(_ dyn.Path, leaf dyn.Value) error {
+		if s, ok := leaf.AsString(); ok && !found {
+			found = slices.ContainsFunc(values, func(value string) bool { return strings.Contains(s, value) })
 		}
 		return nil
 	})

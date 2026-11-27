@@ -23,9 +23,16 @@ resources:
     # The secret is not shown: the reference stays as it is.
     ref_secret:
       name: secret ${resources.secrets.s.value}
-    # ref_secret's deployed name holds the secret, so this reference stays as well.
+      tags:
+        k: tag ${resources.secrets.s.value}
+    # ref_secret's deployed name holds the secret, so these references stay as well.
     ref_secret_chain:
       name: chain ${resources.jobs.ref_secret.name}
+    ref_secret_tags:
+      name: tags
+      tags: ${resources.jobs.ref_secret.tags}
+    ref_secret_tag:
+      name: tag ${resources.jobs.ref_secret_tags.tags.k}
     # The deployed description is the literal ${resources.jobs.a.id}. The script adds a job
     # that references it after deploy: that reference stays unresolved rather than being
     # interpolated a second time.

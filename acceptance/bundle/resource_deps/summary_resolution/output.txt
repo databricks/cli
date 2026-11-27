@@ -7,11 +7,13 @@ Created jobs.literal
 Created jobs.ref_id
 Created jobs.ref_secret
 Created jobs.ref_secret_chain
+Created jobs.ref_secret_tag
+Created jobs.ref_secret_tags
 Created secrets.s
 Files: 1 uploaded, 0 deleted
 Output from job_runs.run: id=[RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[A_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 Output from job_runs.run: id=[RUN_ID]: SUCCESS
-Resources: 8 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 10 created, 0 changed, 0 deleted, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/summary-resolution/default/files...
 
 === After deploy, references show the deployed values
@@ -46,17 +48,34 @@ Resources:
     ref_secret_chain:
       Name: chain ${resources.jobs.ref_secret.name}
       URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_CHAIN_ID]?w=[WORKSPACE_ID]
+    ref_secret_tag:
+      Name: tag ${resources.jobs.ref_secret_tags.tags.k}
+      URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_TAG_ID]?w=[WORKSPACE_ID]
+    ref_secret_tags:
+      Name: tags
+      URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_TAGS_ID]?w=[WORKSPACE_ID]
   Secrets:
     s:
       Name: [S_ID]
       URL:  [DATABRICKS_URL]/explore/data/main/default/test_secret?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle summary --var secret_value=s3cr3t-value -o json
-[{"key":"a","name":"job-a"},{"key":"b","name":"job-b"},{"key":"literal","name":"literal"},{"key":"ref_id","name":"ref [A_ID]"},{"key":"ref_secret","name":"secret ${resources.secrets.s.value}"},{"key":"ref_secret_chain","name":"chain ${resources.jobs.ref_secret.name}"}]
+[{"key":"a","name":"job-a"},{"key":"b","name":"job-b"},{"key":"literal","name":"literal"},{"key":"ref_id","name":"ref [A_ID]"},{"key":"ref_secret","name":"secret ${resources.secrets.s.value}"},{"key":"ref_secret_chain","name":"chain ${resources.jobs.ref_secret.name}"},{"key":"ref_secret_tag","name":"tag ${resources.jobs.ref_secret_tags.tags.k}"},{"key":"ref_secret_tags","name":"tags"}]
+
+=== The secret appears nowhere in the summary
+0
+
+=== With a rotated secret, the deployed names hold the previous one: the references still stay
+
+>>> [CLI] bundle summary --var secret_value=rotated-value -o json
+[{"key":"ref_secret","name":"secret ${resources.secrets.s.value}"},{"key":"ref_secret_chain","name":"chain ${resources.jobs.ref_secret.name}"},{"key":"ref_secret_tag","name":"tag ${resources.jobs.ref_secret_tags.tags.k}"},{"key":"ref_secret_tags","name":"tags"}]
+0
 
 === Add resources that are not deployed: a job referencing the literal, and two resources whose resolved values do not fit their types
 
 === A run edited locally to point at another job keeps the URL of the job it was launched for
+
+=== After a local edit removes the secret from ref_secret's name, its deployed name still holds it: ref_secret_chain stays a reference
 
 >>> [CLI] bundle summary --var secret_value=s3cr3t-value
 Name: summary-resolution
@@ -89,11 +108,17 @@ Resources:
       Name: copy ${resources.jobs.literal.description}
       URL:  (not deployed)
     ref_secret:
-      Name: secret ${resources.secrets.s.value}
+      Name: renamed
       URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_ID]?w=[WORKSPACE_ID]
     ref_secret_chain:
       Name: chain ${resources.jobs.ref_secret.name}
       URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_CHAIN_ID]?w=[WORKSPACE_ID]
+    ref_secret_tag:
+      Name: tag ${resources.jobs.ref_secret_tags.tags.k}
+      URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_TAG_ID]?w=[WORKSPACE_ID]
+    ref_secret_tags:
+      Name: tags
+      URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_TAGS_ID]?w=[WORKSPACE_ID]
   Postgres projects:
     bad_duration:
       Name: 
