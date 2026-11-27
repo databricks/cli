@@ -136,8 +136,9 @@ func (c *chain) ReadFile(ctx context.Context, skill, file string) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	// A stale catalog means the live source already failed, so it is not asked again.
-	if read.cat.Stale {
+	// The live source already failed while reading the catalog, so it is not asked again.
+	// Stale alone does not mean that: a live source that is itself a cache can report Stale.
+	if read.liveErr != nil {
 		return c.fallBack(ctx, read, skill, file)
 	}
 	data, liveErr := c.live.ReadFile(ctx, skill, file)

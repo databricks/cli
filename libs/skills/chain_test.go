@@ -339,6 +339,16 @@ func TestChainClockMovedBackKeepsNewestReleaseWhenVersionsSortAsStrings(t *testi
 	assert.Equal(t, "0.2.10", cached.Version, "the newer release is stored after the older one, whatever the version order")
 }
 
+func TestChainLiveStaleCatalogStillReadsFileLive(t *testing.T) {
+	// A live source that is itself a cache can report Stale with no error. Its files are still read live.
+	live := &fakeSource{catalog: &Catalog{Version: "1.0.0", Stale: true}, files: map[string]string{"alpha/SKILL.md": "live body"}}
+	c, _ := newTestChain(t, live, &fakeSource{catalog: release("0.9.0"), files: map[string]string{"alpha/SKILL.md": "bundled body"}})
+
+	data, err := c.ReadFile(t.Context(), "alpha", "SKILL.md")
+	require.NoError(t, err)
+	assert.Equal(t, "live body", string(data))
+}
+
 func TestChainNilCacheReadsLive(t *testing.T) {
 	live := &fakeSource{catalog: release("1.0.0"), files: map[string]string{"alpha/SKILL.md": "live body"}}
 	c := newChain(live, nil, &fakeSource{}, func() time.Time { return t0 })
