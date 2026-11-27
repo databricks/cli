@@ -56,9 +56,10 @@ func TestEmitNoLogsEscapesControlCharacters(t *testing.T) {
 
 func TestDisplayCancelPreviewEscapesControlCharacters(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	displayCancelPreview(ctx, []listRow{{RunID: "1", Experiment: controlPayload + "\n2\tfake"}}, map[string][]string{"1": {controlPayload}}, "https://h.test")
+	displayCancelPreview(ctx, []listRow{{RunID: "1", Experiment: controlPayload + "\n2\tfake"}}, map[string][]string{"1": {"train\n3\tfake"}}, "https://h.test")
 	assertControlEscaped(t, stderr.String())
 	assert.Contains(t, stderr.String(), controlEscaped+`\n2\tfake`)
+	assert.Contains(t, stderr.String(), `train\n3\tfake`)
 }
 
 func TestRenderPoolsEscapeControlCharacters(t *testing.T) {

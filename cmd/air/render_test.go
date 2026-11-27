@@ -286,6 +286,7 @@ func TestRenderFieldsEscapesControlCharacters(t *testing.T) {
 	p := asciiPalette(t)
 	out := renderFields(p, false, runView{
 		runID:        "1",
+		task:         "tr\x1b[2Jain",
 		status:       "Waiting\x1b[2J for capacity\n...",
 		submitted:    "2026-06-03 04:17 UTC",
 		maxRetries:   "3",
@@ -298,6 +299,7 @@ func TestRenderFieldsEscapesControlCharacters(t *testing.T) {
 		environment:  "\x1b]8;;https://attacker.test/\x07databricks_ai_v6\x1b]8;;\x07",
 	})
 
+	assert.Contains(t, out, `Task          tr\u001b[2Jain`)
 	assert.Contains(t, out, `Status        ● Waiting\u001b[2J for capacity\n...`)
 	assert.Contains(t, out, `Experiment    \u001b]0;pwned\u0007exp\u001b[2Jeriment`)
 	assert.Contains(t, out, `MLflow Run    run\rname`)

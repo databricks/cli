@@ -27,5 +27,6 @@ line 1<0x0d>line 2<0x1b>[2J
 === export as JSON: the response, with the content in base64
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Users/raw.txt -o json
-line 1<0x0d>line 2<0x1b>[2J
-	indented
+{
+  "content": "bGluZSAxDWxpbmUgMhtbMkoKCWluZGVudGVkCg=="
+}
