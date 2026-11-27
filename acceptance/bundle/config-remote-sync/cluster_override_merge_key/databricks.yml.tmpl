@@ -1,0 +1,41 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# cluster_id makes OverrideCompute clear job_cluster_key. The tasks inherit it through
+# merge keys, from an anchor outside resources and from one inside them.
+
+definitions:
+  outside: &outside
+    job_cluster_key: shared
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
+        - job_cluster_key: other
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 2
+      tasks:
+        - <<: *outside
+          task_key: from_outside
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - <<: &inside
+            job_cluster_key: shared
+          task_key: defines_inside
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - <<: *inside
+          task_key: from_inside
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    cluster_id: 0101-000000-override
