@@ -1,6 +1,3 @@
-# psql is not installed on DBR.
-RunsOnDbr = false
-
 # This acceptance test is disabled on Windows runners because
 # the current argument capturing method does not work on windows-latest GitHub Runner.
 #

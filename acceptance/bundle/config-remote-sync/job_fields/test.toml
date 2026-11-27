@@ -1,6 +1,3 @@
-# On DBR, dev-mode bundles under /Workspace deploy source-linked, so the upload output differs.
-RunsOnDbr = false
-
 Cloud = true
 
 # RecordRequests captures the config-remote-sync telemetry event so the script

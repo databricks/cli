@@ -1,6 +1,3 @@
-# On DBR, dev-mode bundles under /Workspace deploy source-linked, so the upload output differs.
-RunsOnDbr = false
-
 Badness = "In development mode, name_prefix: \"\" is ignored and the default prefix is still applied (job name '[dev [USERNAME]] job1'), so the prefix cannot be turned off; a null name_prefix does the same and also warns 'expected a string value, found null'. An explicit empty prefix should disable it."
 # The test works on terraform as well but output is slightly different
 #                     "mode": "development",

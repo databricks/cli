@@ -1,2 +1,0 @@
-# On DBR, git info for /Workspace paths comes from the workspace API, which adds recorded requests.
-RunsOnDbr = false
