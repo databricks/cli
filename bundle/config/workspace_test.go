@@ -276,6 +276,23 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("default config file with match on the default port", func(t *testing.T) {
+		setupWorkspaceTest(t)
+
+		err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+			Profile: "abc",
+			Host:    "https://abc.test",
+		})
+		require.NoError(t, err)
+
+		w := Workspace{
+			Host:    "https://abc.test:443",
+			Profile: "abc",
+		}
+		_, err = w.Client(t.Context())
+		assert.NoError(t, err)
+	})
+
 	t.Run("default config file with mismatch", func(t *testing.T) {
 		setupWorkspaceTest(t)
 

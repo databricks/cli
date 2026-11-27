@@ -86,7 +86,7 @@ func (a *Agent) DatabricksTooling(ctx context.Context, pluginRecorded func() boo
 	if dir, err := a.SkillsDir(ctx); err == nil && HasDatabricksSkillsIn(dir) {
 		return ToolingSkills
 	}
-	if a.SupportsProjectScope && cwd != "" {
+	if a.SupportsProjectSkills && cwd != "" {
 		for _, dir := range projectDirs(cwd) {
 			if HasDatabricksSkillsIn(a.ProjectSkillsDir(dir)) {
 				return ToolingSkills

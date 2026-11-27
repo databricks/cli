@@ -23,7 +23,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/spf13/cobra"
@@ -31,30 +30,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestLoginDeviceCodeFlagVisibility(t *testing.T) {
+	cmd := newLoginCommand(&auth.AuthArguments{})
+
+	assert.False(t, cmd.Flag("use-device-code").Hidden)
+	// Only the rerun that completes a non-interactive login uses these.
+	assert.True(t, cmd.Flag("user-code").Hidden)
+	assert.True(t, cmd.Flag("confirmation-code").Hidden)
+}
+
 func TestValidateDeviceCodeLogin(t *testing.T) {
 	tests := []struct {
 		name    string
-		envVal  string
 		setFlag string
 		flagVal string
 		wantErr string
 	}{
 		{
-			name:    "disabled by default",
-			wantErr: "--use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it",
-		},
-		{
-			name:    "explicitly disabled",
-			envVal:  "false",
-			wantErr: "--use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it",
-		},
-		{
-			name:   "enabled",
-			envVal: "true",
+			name: "no incompatible flags",
 		},
 		{
 			name:    "resource is incompatible",
-			envVal:  "1",
 			setFlag: "resource",
 			flagVal: "https://workspace.test/ai-gateway/mcp-services/system.ai.github",
 			wantErr: "--use-device-code cannot be combined with --resource",
@@ -62,14 +58,13 @@ func TestValidateDeviceCodeLogin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := env.Set(t.Context(), deviceCodeEnvVar, tt.envVal)
 			cmd := &cobra.Command{}
 			cmd.Flags().StringArray("resource", nil, "")
 			if tt.setFlag != "" {
 				require.NoError(t, cmd.Flags().Set(tt.setFlag, tt.flagVal))
 			}
 
-			err := validateDeviceCodeLogin(ctx, cmd)
+			err := validateDeviceCodeLogin(cmd)
 			if tt.wantErr != "" {
 				assert.EqualError(t, err, tt.wantErr)
 			} else {
@@ -230,13 +225,6 @@ func startLogin(t *testing.T, config string, args ...string) *termtest.Term[stru
 	})
 }
 
-// setUpDeviceCodeLogin isolates the environment of a device code login, using
-// config as the contents of .databrickscfg.
-func setUpDeviceCodeLogin(t *testing.T, config string) {
-	setUpLogin(t, config)
-	t.Setenv(deviceCodeEnvVar, "true")
-}
-
 // runDeviceCodeLogin runs "auth login --use-device-code" with args.
 func runDeviceCodeLogin(ctx context.Context, args ...string) error {
 	return runLogin(ctx, append([]string{"--use-device-code"}, args...)...)
@@ -245,7 +233,7 @@ func runDeviceCodeLogin(ctx context.Context, args ...string) error {
 // startDeviceCodeLogin runs "auth login --use-device-code" with args in a
 // terminal emulator, using config as the contents of .databrickscfg.
 func startDeviceCodeLogin(t *testing.T, config string, args ...string) *termtest.Term[struct{}] {
-	setUpDeviceCodeLogin(t, config)
+	setUpLogin(t, config)
 	return termtest.Run(t, func(ctx context.Context) (struct{}, error) {
 		return struct{}{}, runDeviceCodeLogin(ctx, args...)
 	})
@@ -499,7 +487,7 @@ func TestLoginDeviceCodeRequestsScopes(t *testing.T) {
 // the pending login under the host, like the first step did.
 func TestLoginDeviceCodeCompletesInTerminal(t *testing.T) {
 	server := newDeviceCodeServer(t)
-	setUpDeviceCodeLogin(t, "")
+	setUpLogin(t, "")
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL))
 
@@ -533,7 +521,7 @@ func TestLoginDeviceCodeCompletionInTerminalSkipsWorkspacePicker(t *testing.T) {
 			workspaceRequests.Add(1)
 		}
 	}
-	setUpDeviceCodeLogin(t, "")
+	setUpLogin(t, "")
 	host := server.URL + "?a=spog-acct-123"
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", host, "--profile", "account"))
@@ -558,7 +546,7 @@ func TestLoginDeviceCodeCompletionChecksUserCode(t *testing.T) {
 			tokenRequests.Add(1)
 		}
 	}
-	setUpDeviceCodeLogin(t, "")
+	setUpLogin(t, "")
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test"))
 
@@ -627,7 +615,7 @@ func TestLoginDeviceCodeCompletionChecksSettings(t *testing.T) {
 					tokenRequests.Add(1)
 				}
 			}
-			setUpDeviceCodeLogin(t, "")
+			setUpLogin(t, "")
 			ctx := cmdio.MockDiscard(t.Context())
 			require.NoError(t, runDeviceCodeLogin(ctx, append([]string{"--host", server.URL + tt.startQuery, "--profile", "test"}, tt.startArgs...)...))
 
@@ -673,7 +661,7 @@ func TestOAuthAccountID(t *testing.T) {
 // host in the cache key.
 func TestLoginDeviceCodeCompletionWithSameHostInAnotherForm(t *testing.T) {
 	server := newDeviceCodeServer(t)
-	setUpDeviceCodeLogin(t, "")
+	setUpLogin(t, "")
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL))
 
@@ -685,7 +673,7 @@ func TestLoginDeviceCodeCompletionWithSameHostInAnotherForm(t *testing.T) {
 // they request the same scopes.
 func TestLoginDeviceCodeCompletionWithSameScopesInAnotherOrder(t *testing.T) {
 	server := newDeviceCodeServer(t)
-	setUpDeviceCodeLogin(t, "")
+	setUpLogin(t, "")
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--scopes", "sql,all-apis"))
 
@@ -710,7 +698,7 @@ func TestLoginDeviceCodeCompletionRateLimited(t *testing.T) {
 		return map[string]any{"access_token": "oauth-token", "expires_in": 3600, "token_type": "Bearer"}
 	})
 	testserver.AddDefaultHandlers(server)
-	setUpDeviceCodeLogin(t, "")
+	setUpLogin(t, "")
 	ctx := cmdio.MockDiscard(t.Context())
 	require.NoError(t, runDeviceCodeLogin(ctx, "--host", server.URL, "--profile", "test"))
 

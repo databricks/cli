@@ -1,0 +1,45 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# cluster_id makes OverrideCompute clear job_cluster_key, so the merged config
+# has no value for it even though the YAML still declares it.
+
+variables:
+  cluster_key:
+    default: shared
+  cluster:
+    type: complex
+    default:
+      spark_version: 13.3.x-scala2.12
+      num_workers: 1
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1
+        - job_cluster_key: other
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 2
+      tasks:
+        - task_key: main
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - task_key: by_variable
+          job_cluster_key: ${var.cluster_key}
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+        - task_key: by_complex_variable
+          new_cluster: ${var.cluster}
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    cluster_id: 0101-000000-override

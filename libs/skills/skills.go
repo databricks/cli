@@ -24,6 +24,7 @@ type Skill struct {
 	Name        string
 	Description string
 	Version     string
+	MinCLIVer   string
 
 	// Files lists the skill's files relative to the skill directory, SKILL.md included.
 	Files []string
@@ -31,19 +32,13 @@ type Skill struct {
 	// Commands lists the CLI command groups the skill covers.
 	Commands []string
 
-	// MinCLIVersion is the oldest CLI version that can use the skill (manifest
-	// field min_cli_version). Install skips the skill on an older CLI, so callers
-	// that install skills must apply the same check.
-	MinCLIVersion string
-
 	Experimental bool
 }
 
 // Catalog is the set of skills a source serves.
 type Catalog struct {
-	// Skills are sorted by name. The catalog lists every skill the release
-	// names. Install also skips a skill with a non-portable name or file path,
-	// and a skill whose MinCLIVersion is newer than the running CLI.
+	// Skills are sorted by name. Install also skips non-portable names and
+	// paths, which the catalog does not check yet.
 	Skills []Skill
 
 	// Version is the release version.

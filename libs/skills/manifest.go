@@ -87,7 +87,7 @@ func CheckManifestPaths(m *Manifest) error {
 			return fmt.Errorf("%w: skill name %q", ErrUnsafeManifestPath, name)
 		}
 		for _, file := range m.Skills[name].Files {
-			if EscapesDir(file) {
+			if escapesDir(file) {
 				return fmt.Errorf("%w: skill %q lists file %q", ErrUnsafeManifestPath, name, file)
 			}
 		}
@@ -95,10 +95,10 @@ func CheckManifestPaths(m *Manifest) error {
 	return nil
 }
 
-// EscapesDir reports whether file, joined onto a directory, names a path
+// escapesDir reports whether file, joined onto a directory, names a path
 // outside it on some OS: an absolute path, a Windows drive, or more ".."
 // elements than the elements before them, with either slash as the separator.
-func EscapesDir(file string) bool {
+func escapesDir(file string) bool {
 	if strings.HasPrefix(file, "/") || strings.HasPrefix(file, `\`) || (len(file) >= 2 && file[1] == ':') {
 		return true
 	}
