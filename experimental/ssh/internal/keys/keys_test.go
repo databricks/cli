@@ -37,6 +37,32 @@ func TestGetLocalServerSSHKeyPath(t *testing.T) {
 	assert.Equal(t, pathA, again)
 }
 
+func TestRemoveOtherServerFiles(t *testing.T) {
+	dir := t.TempDir()
+	keep, err := keys.GetLocalServerSSHKeyPath(t.Context(), "session1", "SHA256:kept", dir)
+	require.NoError(t, err)
+	other, err := keys.GetLocalServerSSHKeyPath(t.Context(), "session1", "SHA256:other", dir)
+	require.NoError(t, err)
+	otherSession, err := keys.GetLocalServerSSHKeyPath(t.Context(), "session10", "SHA256:other", dir)
+	require.NoError(t, err)
+	sessionPath, err := keys.GetLocalSSHKeyPath(t.Context(), "session1", dir)
+	require.NoError(t, err)
+	for _, path := range []string{keep, other, otherSession, sessionPath} {
+		require.NoError(t, keys.SaveSSHKeyPair(path, []byte("private"), []byte("public")))
+	}
+
+	require.NoError(t, keys.RemoveOtherServerFiles("session1", keep))
+
+	// Only the files of the session's other servers are removed: the kept server's, the
+	// session's own and another session's stay.
+	assert.NoFileExists(t, other)
+	assert.NoFileExists(t, other+".pub")
+	for _, path := range []string{keep, otherSession, sessionPath} {
+		assert.FileExists(t, path)
+		assert.FileExists(t, path+".pub")
+	}
+}
+
 func TestSaveSSHKeyPairNewFiles(t *testing.T) {
 	dir := t.TempDir()
 	keyPath := filepath.Join(dir, "session1")

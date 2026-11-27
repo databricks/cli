@@ -42,9 +42,10 @@ func GetKnownHostsPath(ctx context.Context, sessionID, knownHostsDir string) (st
 // IDs contain no dot, so it cannot be another session's file.
 //
 // Servers started for a session at the same time each publish a key of their own, and a
-// connection to one of them must not find the other's key in the file it reads. The file
-// holds only the key with hostKeyFingerprint, so a connect to another server of the session
-// never rewrites it.
+// connection to one of them must not find the other's key in the file it reads, so a connect
+// to another server of the session never rewrites the file. A ProxyCommand that names the
+// server does when it finds the server replaced on the same port: it pins the replacement's
+// key there, since that is the file the ProxyCommand's ssh reads.
 func GetServerKnownHostsPath(ctx context.Context, sessionID, hostKeyFingerprint, knownHostsDir string) (string, error) {
 	sessionPath, err := GetKnownHostsPath(ctx, sessionID, knownHostsDir)
 	if err != nil {

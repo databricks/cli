@@ -204,11 +204,16 @@ The same goes for the client key: a connection saves the pair the server authori
 `~/.databricks/ssh-tunnel-keys/<name>.<digest of the client key's fingerprint>`, points ssh at
 that file, and has its ProxyCommand carry the fingerprint. The ProxyCommand uses the pair in that
 file, or the scope's pair while it has that fingerprint. When another server has replaced that
-one on the same port, it uses the new server's keys and saves them in the files ssh reads, so
-later reconnects with the same ProxyCommand keep working. Otherwise it treats the server as
-unusable, the way a connection without that ProxyCommand does.
-The ssh client that runs a ProxyCommand has already loaded its key file, so a server started
-from a ProxyCommand authorizes the pair in that file rather than a new one. For a host that
+one on the same port, it pins the new server's host key in the file ssh reads, and uses the new
+server only if it authorized the key in the key file, or the key file is missing, in which case
+it saves the new server's pair there. Otherwise it treats the server as unusable, the way a
+connection without that ProxyCommand does. Either way later reconnects with the same
+ProxyCommand keep working.
+The ssh client that runs a ProxyCommand has already loaded its key file, so a ProxyCommand reuses
+a running server only if it authorized the key in that file, and a server started from a
+ProxyCommand authorizes the pair in that file rather than a new one. A connection that is not a
+ProxyCommand removes the key and known_hosts files of the session's other servers once it has
+picked its server. For a host that
 `databricks ssh setup` configured, that file is `~/.databricks/ssh-tunnel-keys/<name>`, which
 earlier CLI versions filled from the scope: such a host keeps that client key until the file is
 removed or replaced.

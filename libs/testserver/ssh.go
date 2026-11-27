@@ -69,9 +69,9 @@ func (s *FakeWorkspace) sshClientAuthorizedKey() []byte {
 }
 
 // sshTunnelHostKey returns the host key in PEM form that every sshd of this workspace
-// serves, generating it on first use. The real tunnel server generates its host key once,
-// stores it in the session's secret scope and reuses it for every sshd it launches, so one
-// key per workspace is what a client sees across connections.
+// serves, generating it on first use. The real tunnel server generates a new host key each
+// time it starts, publishes it to the session's secret scope and reuses it for every sshd it
+// launches until it stops. The fake keeps one key per workspace across server starts.
 func (s *FakeWorkspace) sshTunnelHostKey() ([]byte, error) {
 	defer s.LockUnlock()()
 	return s.ensureSSHTunnelHostKey()

@@ -11,8 +11,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
@@ -39,8 +41,10 @@ func GetLocalSSHKeyPath(ctx context.Context, sessionID, keysDir string) (string,
 //
 // Servers started for a session at the same time each authorize a key pair of their own, and
 // the ssh client or IDE configuration a connection sets up for one of them must not find the
-// other's key in the file it reads. The file holds only the pair with clientKeyFingerprint, so
-// a connect to another server of the session never rewrites it.
+// other's key in the file it reads, so a connect to another server of the session never
+// rewrites the file. A ProxyCommand that names the server does when it finds the server
+// replaced on the same port and the file missing: ssh has loaded no key from it then, so it
+// saves the pair the replacement authorized there.
 func GetLocalServerSSHKeyPath(ctx context.Context, sessionID, clientKeyFingerprint, keysDir string) (string, error) {
 	sessionPath, err := GetLocalSSHKeyPath(ctx, sessionID, keysDir)
 	if err != nil {
@@ -55,6 +59,31 @@ func GetLocalServerSSHKeyPath(ctx context.Context, sessionID, clientKeyFingerpri
 func FingerprintFileSuffix(fingerprint string) string {
 	digest := sha256.Sum256([]byte(fingerprint))
 	return "." + hex.EncodeToString(digest[:8])
+}
+
+// RemoveOtherServerFiles removes the files of the session's other servers that sit next to
+// keepPath, the file of the server a connect picked: the files GetLocalServerSSHKeyPath names
+// with their .pub files, or the known_hosts files sshconfig.GetServerKnownHostsPath names.
+// Each server start leaves new ones, so they would otherwise pile up. The session's own file,
+// which ssh configurations written by `databricks ssh setup` read, is kept.
+func RemoveOtherServerFiles(sessionID, keepPath string) error {
+	dir, keepName := filepath.Split(keepPath)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	serverFile := regexp.MustCompile(`^` + regexp.QuoteMeta(sessionID) + `\.[0-9a-f]{16}(\.pub)?$`)
+	var errs []error
+	for _, entry := range entries {
+		name := entry.Name()
+		if !serverFile.MatchString(name) || name == keepName || name == keepName+".pub" {
+			continue
+		}
+		if err := os.Remove(filepath.Join(dir, name)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // GenerateSSHKeyPair generates a new key pair, returned as a PEM private key and an

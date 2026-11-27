@@ -68,9 +68,10 @@ var errDriverProxyForbidden = errors.New("the workspace refused the SSH tunnel c
 // even when it happens while ensuring the server is running.
 var errClientKeyPair = errors.New("failed to set up the SSH client key pair")
 
-// errClientKeysNotAuthorized marks a client key pair in the secret scope that the running
-// server does not accept: torn, or the pair another server started for the session wrote.
-var errClientKeysNotAuthorized = errors.New("the client key pair in the secret scope is not the one the SSH server authorized")
+// errClientKeysNotAuthorized marks a running server that does not accept the client key pair
+// to use with it: the secret scope's pair is torn or another server started for the session
+// wrote it, or, in proxy mode, the ssh client that runs us has loaded another key.
+var errClientKeysNotAuthorized = errors.New("the client key pair is not the one the SSH server authorized")
 
 // errNamedServerReplaced marks a server named by --metadata that another server of the session
 // has replaced, and whose replacement the files the ProxyCommand's ssh reads do not hold yet.
@@ -529,8 +530,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	version := build.GetInfo().Version
 
 	// --metadata names a server that is already running, so use the key pair it authorizes.
-	// When that server was replaced, or neither the local key file nor the scope holds the pair
-	// it authorized, the server is found or replaced the way a connect without --metadata does,
+	// When that server was replaced, the local key file holds another key, or neither the file
+	// nor the scope holds the pair it authorized, the server is found or replaced the way a connect without --metadata does,
 	// and its keys are saved in the files ssh is pointed at.
 	reuseNamedServer := opts.ServerMetadata != ""
 	if reuseNamedServer {
@@ -609,7 +610,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return err
 	}
 
+	// A connect that is not a ProxyCommand points ssh at the files of the server it picked, so
+	// nothing it sets up reads the files of the session's other servers. A ProxyCommand that
+	// names one of those servers saves its files again when it finds them missing.
 	if !opts.ProxyMode {
+		removeOtherServerFiles(ctx, sessionID, keyPath, knownHostsPath)
 		cmdio.LogString(ctx, "Connected!")
 	}
 
@@ -671,6 +676,17 @@ func pinServerHostKey(ctx context.Context, sessionID, knownHostsFingerprint stri
 
 	log.Infof(ctx, "Pinned the SSH server host key for %s in %s", sessionID, knownHostsPath)
 	return knownHostsPath, nil
+}
+
+// removeOtherServerFiles removes the client key files and known_hosts files of the session's
+// servers other than the one at keyPath and knownHostsPath (see keys.RemoveOtherServerFiles).
+// A failure leaves stale files behind but does not affect this connection, so it is logged.
+func removeOtherServerFiles(ctx context.Context, sessionID, keyPath, knownHostsPath string) {
+	for _, path := range []string{keyPath, knownHostsPath} {
+		if err := keys.RemoveOtherServerFiles(sessionID, path); err != nil {
+			log.Warnf(ctx, "Failed to remove the files of other SSH servers of %s: %v", sessionID, err)
+		}
+	}
 }
 
 func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath, knownHostsPath string, serverPort int, clusterID, hostKeyFingerprint, clientKeyFingerprint string, opts ClientOptions) error {
@@ -867,8 +883,8 @@ func namedServerKeys(ctx context.Context, client *databricks.WorkspaceClient, ve
 // still names the server on port, the other server is still starting, and pinning its key
 // would make ssh reject the server on port, so the pinned key is kept. Once metadata.json
 // names the other server, it has replaced this one: on the same port and cluster, its host key
-// and the client key it authorized are used, so the files ssh reads end up holding the running
-// server's keys. Otherwise the error wraps errNamedServerReplaced.
+// and the client key it authorized are used, and namedServerClientKeys reuses it only when
+// that is the key ssh has loaded. Otherwise the error wraps errNamedServerReplaced.
 //
 // A ProxyCommand written by an earlier CLI version carries no fingerprint, so the scope's key
 // is pinned unchecked, as that version did.
@@ -1659,8 +1675,9 @@ func clientKeyPairForNewServer(keyPath string, proxyMode bool) ([]byte, []byte, 
 
 // namedServerClientKeys makes keyPath, the file the ProxyCommand's ssh reads, hold the client
 // key pair that the server on port authorized, the one with clientKeyFingerprint (see
-// namedServerHostKey). It saves the pair there from the scope when the file does not hold it
-// yet, and fails with errClientKeysNotAuthorized when neither holds that pair.
+// namedServerHostKey). It saves the pair there from the scope when the file is missing or does
+// not parse, and fails with errClientKeysNotAuthorized when the file holds another key, which
+// ssh has already loaded (see loadedClientKeyAuthorized), or the scope does not hold that pair.
 //
 // The file is the server's own (see keys.GetLocalServerSSHKeyPath), which the connect that
 // wrote the ProxyCommand pointed ssh at. Another server started for the session overwrites the
@@ -1678,14 +1695,33 @@ func namedServerClientKeys(ctx context.Context, client *databricks.WorkspaceClie
 		return err
 	}
 	// A file that is missing or does not parse is saved again from the scope below.
-	if _, publicKeyBytes, err := keys.LoadSSHKeyPair(keyPath); err == nil {
-		fingerprint, err := keys.PublicKeyFingerprint(publicKeyBytes)
-		if err == nil && fingerprint == clientKeyFingerprint {
-			return nil
-		}
+	if loaded, err := loadedClientKeyAuthorized(keyPath, port, clientKeyFingerprint); loaded {
+		return err
 	}
 	named := serverMetadata{Port: port, ClientKeyFingerprint: clientKeyFingerprint}
 	return saveAuthorizedClientKeys(ctx, client, secretScopeName, keyPath, named, opts)
+}
+
+// loadedClientKeyAuthorized checks the client key at keyPath, which the ssh client that runs
+// us as its ProxyCommand has already loaded (see clientKeyPairForNewServer), against
+// clientKeyFingerprint, the key the server on port authorized. It reports false when the file
+// is missing or does not parse, which leaves ssh no key loaded, so the caller may still save
+// the server's pair there. Otherwise rewriting the file would not change the key ssh offers,
+// so the error wraps errClientKeysNotAuthorized when the key is another one, and the caller
+// replaces the server with the local pair.
+func loadedClientKeyAuthorized(keyPath string, port int, clientKeyFingerprint string) (bool, error) {
+	if _, publicKeyBytes, err := keys.LoadSSHKeyPair(keyPath); err == nil {
+		fingerprint, err := keys.PublicKeyFingerprint(publicKeyBytes)
+		if err != nil {
+			return true, fmt.Errorf("%w: %w", errClientKeyPair, err)
+		}
+		if fingerprint != clientKeyFingerprint {
+			return true, fmt.Errorf("%w: %s holds client key %s, the server on port %d authorized %s",
+				errClientKeysNotAuthorized, keyPath, fingerprint, port, clientKeyFingerprint)
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 // authorizedClientKeyPath returns the file to save the client key pair that the server meta
@@ -1727,7 +1763,7 @@ func saveRunningServerClientKeys(ctx context.Context, client *databricks.Workspa
 func saveAuthorizedClientKeys(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName, keyPath string, meta serverMetadata, opts ClientOptions) error {
 	privateKeyBytes, publicKeyBytes, err := keys.GetSSHKeyPairFromSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
 	if errors.Is(err, keys.ErrMismatchedKeyPair) {
-		return fmt.Errorf("%w: %w: %w", errClientKeyPair, errClientKeysNotAuthorized, err)
+		return fmt.Errorf("%w: %w", errClientKeysNotAuthorized, err)
 	}
 	if err != nil {
 		return fmt.Errorf("%w: failed to get the SSH key pair of the running server: %w", errClientKeyPair, err)
@@ -1737,9 +1773,9 @@ func saveAuthorizedClientKeys(ctx context.Context, client *databricks.WorkspaceC
 		return fmt.Errorf("%w: %w", errClientKeyPair, err)
 	}
 	if fingerprint != meta.ClientKeyFingerprint {
-		return fmt.Errorf("%w: %w: secret scope %s holds %s, the server on port %d authorized %s, "+
+		return fmt.Errorf("%w: secret scope %s holds %s, the server on port %d authorized %s, "+
 			"which happens when another SSH server for this session started at the same time",
-			errClientKeyPair, errClientKeysNotAuthorized, secretScopeName, fingerprint, meta.Port, meta.ClientKeyFingerprint)
+			errClientKeysNotAuthorized, secretScopeName, fingerprint, meta.Port, meta.ClientKeyFingerprint)
 	}
 	if err := keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
 		return fmt.Errorf("%w: failed to save SSH key pair locally: %w", errClientKeyPair, err)
@@ -1775,12 +1811,19 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	if !needNewServer {
 		// A running server is also replaced when the scope's client key pair is not the one it
 		// authorized (see saveAuthorizedClientKeys): no private key in the scope is then
-		// accepted by it.
+		// accepted by it. In proxy mode it is reused only when it authorized the key ssh has
+		// loaded, and replaced with that key otherwise (see loadedClientKeyAuthorized).
 		authorizedKeyPath, err = authorizedClientKeyPath(ctx, keyPath, meta, opts)
 		if err != nil {
 			return serverMetadata{}, "", err
 		}
-		err = saveAuthorizedClientKeys(ctx, client, secretScopeName, authorizedKeyPath, meta, opts)
+		loaded := false
+		if opts.ProxyMode {
+			loaded, err = loadedClientKeyAuthorized(keyPath, meta.Port, meta.ClientKeyFingerprint)
+		}
+		if !loaded {
+			err = saveAuthorizedClientKeys(ctx, client, secretScopeName, authorizedKeyPath, meta, opts)
+		}
 		if errors.Is(err, errClientKeysNotAuthorized) {
 			log.Debugf(ctx, "Replacing the SSH server on port %d: %v", meta.Port, err)
 			needNewServer = true
