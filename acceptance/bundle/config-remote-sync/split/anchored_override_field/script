@@ -11,6 +11,9 @@ r["description"] = "edited"
 r["schedule"]["quartz_cron_expression"] = "0 0 2 * * ?"
 PYEDIT
 
+title "JSON output lists the anchored value as skip"
+trace $CLI bundle config-remote-sync -t dev -o json | jq -c '.changes["resources.jobs.my_job"] | map_values(del(.value))'
+
 title "Sync edits under the anchored mapping and leaves the anchored value unapplied"
 cp databricks.yml databricks.yml.backup
 trace $CLI bundle config-remote-sync -t dev --save
