@@ -567,7 +567,6 @@ func preserveBlankLines(content []byte) []byte {
 
 	inBlockScalar := false
 	blockScalarIndent := 0
-	blockContentIndent := -1
 	keepsTrailingLines := false
 	var pendingBlanks []string
 
@@ -585,28 +584,24 @@ func preserveBlankLines(content []byte) []byte {
 		// Exit block scalar when indentation decreases.
 		if inBlockScalar && indent <= blockScalarIndent {
 			inBlockScalar = false
-			// Blank lines up to the scalar's last content line still belong to it. A whitespace-only
-			// line is content when it has a tab or more spaces than the content indentation, and
-			// keep chomping (+) keeps every trailing line.
+			// Trailing lines up to the last tab line still belong to the scalar,
+			// and keep chomping (+) keeps all of them.
 			n := 0
 			for j, blank := range pendingBlanks {
-				if keepsTrailingLines || strings.Contains(blank, "\t") || (blockContentIndent >= 0 && len(blank) > blockContentIndent) {
+				if keepsTrailingLines || strings.HasSuffix(blank, "\t") {
 					n = j + 1
 				}
 			}
-			result = append(result, pendingBlanks[:n]...)
+			result = appendBlockScalarBlanks(result, pendingBlanks[:n])
 			pendingBlanks = pendingBlanks[n:]
 		}
-		if inBlockScalar && blockContentIndent < 0 {
-			blockContentIndent = indent
-		}
 
-		// Flush buffered blank lines: keep literal inside block scalars,
+		// Flush buffered blank lines: keep them inside block scalars,
 		// replace with markers otherwise.
-		for _, blank := range pendingBlanks {
-			if inBlockScalar {
-				result = append(result, blank)
-			} else {
+		if inBlockScalar {
+			result = appendBlockScalarBlanks(result, pendingBlanks)
+		} else {
+			for range pendingBlanks {
 				result = append(result, blankLineMarker)
 			}
 		}
@@ -615,11 +610,7 @@ func preserveBlankLines(content []byte) []byte {
 		if !inBlockScalar {
 			if m := blockScalarRe.FindStringSubmatch(trimmed); m != nil {
 				inBlockScalar = true
-				blockScalarIndent = indent
-				blockContentIndent = -1
-				if d := strings.IndexAny(m[1], "123456789"); d >= 0 {
-					blockContentIndent = indent + int(m[1][d]-'0')
-				}
+				blockScalarIndent = blockScalarParentIndent(line)
 				keepsTrailingLines = strings.Contains(m[1], "+")
 			}
 		}
@@ -628,6 +619,34 @@ func preserveBlankLines(content []byte) []byte {
 	}
 
 	return []byte(strings.Join(result, "\n"))
+}
+
+// appendBlockScalarBlanks appends the whitespace-only lines of a block scalar. yaml.v3 writes a value
+// with a space before a line break as a quoted string, so only lines ending in a tab are kept as is.
+func appendBlockScalarBlanks(result, blanks []string) []string {
+	for _, blank := range blanks {
+		if !strings.HasSuffix(blank, "\t") {
+			blank = ""
+		}
+		result = append(result, blank)
+	}
+	return result
+}
+
+// blockScalarParentIndent returns the column a block scalar's content is indented past:
+// the key's for "- key: |", the dash's for "- |".
+func blockScalarParentIndent(line string) int {
+	indent := len(line) - len(strings.TrimLeft(line, " "))
+	rest := line[indent:]
+	for strings.HasPrefix(rest, "- ") {
+		item := strings.TrimLeft(rest[1:], " ")
+		if strings.HasPrefix(item, "|") || strings.HasPrefix(item, ">") {
+			break
+		}
+		indent += len(rest) - len(item)
+		rest = item
+	}
+	return indent
 }
 
 // flushBlanks appends blank lines to result. When markers are present,

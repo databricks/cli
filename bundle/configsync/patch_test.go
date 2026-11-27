@@ -257,9 +257,9 @@ next: value
 `),
 		},
 		{
-			name:     "whitespace-only content lines ending a block scalar",
+			name:     "tab lines ending a block scalar",
 			input:    "key: |\n  line1\n      \n  \t\n\n  \nnext: value\n",
-			expected: "key: |\n  line1\n      \n  \t\n# __YAMLPATCH_BLANK_LINE__\n# __YAMLPATCH_BLANK_LINE__\nnext: value\n",
+			expected: "key: |\n  line1\n\n  \t\n# __YAMLPATCH_BLANK_LINE__\n# __YAMLPATCH_BLANK_LINE__\nnext: value\n",
 		},
 		{
 			name: "keep chomping keeps trailing blanks",
@@ -274,6 +274,23 @@ key: |+
   line1
 
 next: value
+`),
+		},
+		{
+			name: "block scalar under a list item key",
+			input: nl(`
+- key: |+
+    line1
+  other: value
+
+- next: value
+`),
+			expected: nl(`
+- key: |+
+    line1
+  other: value
+# __YAMLPATCH_BLANK_LINE__
+- next: value
 `),
 		},
 		{
@@ -576,9 +593,8 @@ func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
 		{"spaces under null parent", "tags: null\n", "one\n    \nthree", `tags: {key: "one\n    \nthree"}`},
 		{"tab under null parent", "tags: null\n", "one\n\t\nthree", `tags: {key: "one\n\t\nthree"}`},
 		{"tab under existing parent", "tags:\n  other: x\n", "one\n\t\nthree", `tags: {other: x, key: "one\n\t\nthree"}`},
-		{"untouched block scalar", "script: |-\n  one\n      \n  \t\n  three\ntags: null\n", "value", `{script: "one\n    \n\t\nthree", tags: {key: value}}`},
-		{"untouched block scalar ending in whitespace", "script: |\n  one\n      \ntags: null\n", "value", `{script: "one\n    \n", tags: {key: value}}`},
-		{"untouched block scalar with indent indicator", "script: |2\n    one\n   \ntags: null\n", "value", `{script: "  one\n \n", tags: {key: value}}`},
+		// Space-only lines of untouched block scalars are emptied, so yaml.v3 keeps their block style.
+		{"untouched block scalar", "script: |-\n  one\n      \n  \t\n  three\ntags: null\n", "value", `{script: "one\n\n\t\nthree", tags: {key: value}}`},
 		{"untouched keep block scalar", "script: |+\n  one\n\ntags: null\n", "value", `{script: "one\n\n", tags: {key: value}}`},
 		{"untouched block scalar at end of file", "tags: null\nscript: |\n  one\n  \t\n", "value", `{script: "one\n\t\n", tags: {key: value}}`},
 	} {
@@ -592,7 +608,11 @@ func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
 			require.NoError(t, err)
 			result, err = clearAddedFlowStyle(result, []FieldChange{change})
 			require.NoError(t, err)
-			assert.YAMLEq(t, tc.want, string(restoreBlankLines(result)))
+			out := string(restoreBlankLines(result))
+			assert.YAMLEq(t, tc.want, out)
+			if strings.Contains(tc.content, "script: |") {
+				assert.Contains(t, out, "script: |")
+			}
 		})
 	}
 }
