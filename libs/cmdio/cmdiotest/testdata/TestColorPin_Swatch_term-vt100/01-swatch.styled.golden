@@ -1,0 +1,3 @@
+renderer color: false
+helpers: {fg=1}red{/} {fg=2}green{/} {fg=4}blue{/} {fg=8}hiblack{/} {fg=12}hiblue{/} {bold}bold{/} {faint}faint{/}
+renderer: bold reverse
