@@ -23,9 +23,9 @@ trace print_requests.py --get //scim/v2/Me > LOG.normalized
 contains.py " skill/databricks-core" "!skill/databricks-core skill/" "!skill/bad" "!databricks:" < LOG.normalized > /dev/null
 
 title "Skills that are not Databricks skills are dropped, even with the databricks- prefix"
-DATABRICKS_SKILLS_INVOKED=my-team-skill,databricks-core,databricks-deploy,acme-databricks trace $CLI current-user me > /dev/null
+DATABRICKS_SKILLS_INVOKED=my-team-skill,databricks-core,databricks-my-team-tool,acme-databricks trace $CLI current-user me > /dev/null
 trace print_requests.py --get //scim/v2/Me > LOG.unknown
-contains.py " skill/databricks-core" "!skill/my-team-skill" "!skill/databricks-deploy" "!skill/acme-databricks" < LOG.unknown > /dev/null
+contains.py " skill/databricks-core" "!skill/my-team-skill" "!skill/databricks-my-team-tool" "!skill/acme-databricks" < LOG.unknown > /dev/null
 
 title "No skills when unset"
 trace $CLI current-user me > /dev/null

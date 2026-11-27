@@ -77,7 +77,7 @@ func TestParseSkills(t *testing.T) {
 func TestParseSkillsDropsUnknownSkills(t *testing.T) {
 	// Agents pass every skill they loaded. Only Databricks skills are reported,
 	// even when a customer's own skill uses the databricks- prefix.
-	got := root.ParseSkills(t.Context(), "my-team-skill,databricks-core,databricks-deploy,acme-databricks,databricks-jobs")
+	got := root.ParseSkills(t.Context(), "my-team-skill,databricks-core,databricks-my-team-tool,acme-databricks,databricks-jobs")
 	assert.Equal(t, []string{"databricks-core", "databricks-jobs"}, got)
 }
 
