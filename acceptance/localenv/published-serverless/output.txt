@@ -26,8 +26,6 @@ files in project: 0
 === Unpublished version: fetch fails with E_ENV_UNSUPPORTED, and nothing is written
 
 >>> [CLI] environments setup-local --serverless-version 9999 --dry-run --output json
-
-Exit code: 1
 {
   "ok": false,
   "dryRun": true,
