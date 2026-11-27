@@ -5,7 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
-	"time"
 )
 
 // bundledSnapshot is a skills release compiled into the binary. It is the
@@ -51,9 +50,9 @@ type bundledSource struct {
 	src Source
 }
 
-// Catalog reports the snapshot as a stale copy with no fetch time. The binary
-// does not record when the snapshot was built, and the snapshot is only used
-// when the release cannot be reached, so it is never current.
+// Catalog reports the snapshot as a stale copy. Its FetchedAt is the time it was
+// read, since the binary does not record when the snapshot was built. The
+// snapshot is only used when the release cannot be reached, so it is never current.
 func (s *bundledSource) Catalog(ctx context.Context) (*Catalog, error) {
 	catalog, err := s.src.Catalog(ctx)
 	if err != nil {
@@ -62,7 +61,6 @@ func (s *bundledSource) Catalog(ctx context.Context) (*Catalog, error) {
 	if len(catalog.Skills) == 0 {
 		return nil, fmt.Errorf("%w: the bundled copy has no skills", ErrSourceUnreachable)
 	}
-	catalog.FetchedAt = time.Time{}
 	catalog.Stale = true
 	return catalog, nil
 }

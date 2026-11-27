@@ -46,7 +46,7 @@ func TestBundledSourceFromFixture(t *testing.T) {
 	assert.Equal(t, BundledLabel, catalog.Label)
 	assert.Equal(t, "1.2.0", catalog.Version)
 	assert.True(t, catalog.Stale)
-	assert.True(t, catalog.FetchedAt.IsZero())
+	assert.False(t, catalog.FetchedAt.IsZero(), "the bundled copy is stamped with the time it was read")
 	require.Len(t, catalog.Skills, 2)
 	assert.Equal(t, "alpha", catalog.Skills[0].Name)
 	assert.Equal(t, "beta", catalog.Skills[1].Name)
