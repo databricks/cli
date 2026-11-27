@@ -150,6 +150,9 @@ func Decide(in Inputs) Reason {
 	// A source or agent CLI that stays broken would otherwise make every
 	// following command wait for a failing attempt. The wait is for the
 	// install only: CI and the opt-out settle the version during it.
+	// Attempts > 0 is load-bearing: with AgreedNow, a settled version
+	// (Attempts == 0) gets past ReasonAlreadyRan, and retryDue shifts by
+	// Attempts-1, which panics when negative.
 	case in.State.LastVersion == in.Version && in.State.Attempts > 0 && !retryDue(in.State, in.Now):
 		return ReasonRetryNotDue
 	case !in.GateOn:

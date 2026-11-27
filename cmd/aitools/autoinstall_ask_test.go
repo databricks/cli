@@ -446,7 +446,10 @@ func TestAskAtLoginThenTheSameRunInstalls(t *testing.T) {
 		state string
 		// failInstall makes the skills download fail.
 		failInstall bool
+		// holdLock makes another CLI process hold the auto-install lock.
+		holdLock    bool
 		wantInstall bool
+		// wantFailure is set when the run says it installed nothing.
 		wantFailure bool
 		wantState   autoinstall.State
 		wantOutcome []protos.AitoolsAutoInstallOutcome
@@ -500,6 +503,15 @@ func TestAskAtLoginThenTheSameRunInstalls(t *testing.T) {
 			wantOutcome: []protos.AitoolsAutoInstallOutcome{protos.AitoolsAutoInstallOutcomeFailed},
 		},
 		{
+			// Another CLI process runs auto-install, so this run installs
+			// nothing and says so.
+			name:        "yes, while another process holds the lock",
+			input:       "\n",
+			holdLock:    true,
+			wantFailure: true,
+			wantState:   autoinstall.State{Consented: true, ConsentAsked: true, ID: "treatment-machine"},
+		},
+		{
 			// The opt-out settles the version, as it does on any run.
 			name:        "no",
 			input:       "n\n",
@@ -523,6 +535,11 @@ func TestAskAtLoginThenTheSameRunInstalls(t *testing.T) {
 				t.Setenv("DATABRICKS_SKILLS_BASE_URL", "http://127.0.0.1:1")
 			}
 			t.Cleanup(autoinstall.ResetDeclined)
+			if tc.holdLock {
+				unlock, ok := autoinstall.TryLock(t.Context())
+				require.True(t, ok)
+				t.Cleanup(unlock)
+			}
 			wireAutoInstall(t)
 			// The gate is read from the cached manifest that
 			// setupAutoInstallHome writes.
@@ -552,7 +569,7 @@ func TestAskAtLoginThenTheSameRunInstalls(t *testing.T) {
 			} else {
 				assert.Equal(t, -1, notice, "stderr: %q", out)
 			}
-			assert.Equal(t, tc.wantFailure, strings.Contains(out, "Could not install Databricks AI tools. To install them, run: databricks aitools install"), "stderr: %q", out)
+			assert.Equal(t, tc.wantFailure, strings.Contains(out, notInstalledAfterYes), "stderr: %q", out)
 			_, statErr := os.Stat(filepath.Join(home, ".cursor", "skills", "databricks-test", "SKILL.md"))
 			assert.Equal(t, tc.wantInstall, statErr == nil, "Cursor has the skill")
 			s, err := autoinstall.Load(t.Context())
