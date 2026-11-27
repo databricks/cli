@@ -128,8 +128,8 @@ func newImagePushCommandWithDeps(deps imagePushDeps) *cobra.Command {
 	var opts imagePushOptions
 	cmd := &cobra.Command{
 		Use:   "push",
-		Short: "*Preview* Push a container image to Databricks Artifact Registry",
-		Long: `This CLI command is in Preview. For current feature status and requirements, see:
+		Short: "Push a container image to Databricks Artifact Registry",
+		Long: `For feature status and requirements, see:
   AWS: https://docs.databricks.com/aws/en/machine-learning/ai-runtime/connecting/cli/docker-images
   Azure: https://learn.microsoft.com/azure/databricks/machine-learning/ai-runtime/connecting/cli/docker-images
 
@@ -255,7 +255,6 @@ func darLimitationsURL(cfg *config.Config) string {
 // runImagePush validates inputs, prepares a compatible source image, and pushes it to DAR.
 func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps) error {
 	ctx := cmd.Context()
-	cmdio.LogString(ctx, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.")
 	w := cmdctx.WorkspaceClient(ctx)
 
 	resolved, err := resolveImagePushOptions(ctx, opts)

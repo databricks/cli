@@ -85,8 +85,7 @@ func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
 		"Now you can set `environment.unity_catalog_image = main.training.cuda:13.4.1` in your YAML config and create a workload with `databricks air run -f config.yaml`.\n",
 		stdout.String(),
 	)
-	stderrLines := strings.Split(stderr.String(), "\n")
-	assert.Equal(t, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.", stderrLines[0])
+	assert.NotContains(t, stderr.String(), "Preview")
 	assert.Contains(t, stderr.String(), "Pushed image")
 }
 
