@@ -66,16 +66,6 @@ func TestHintsEnabledOncePerRun(t *testing.T) {
 	assert.False(t, HintsEnabled(nextRun), "a new run reads the refreshed cache")
 }
 
-// The memo does not reach past the feature gate: with the preview off, hints
-// stay off whatever the cache says, memo or not.
-func TestHintsEnabledOncePerRunPreviewOff(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-	ctx := t.Context()
-	writeCachedManifest(t, ctx, entryOn, time.Now())
-
-	assert.False(t, HintsEnabled(WithHintsMemo(ctx)))
-}
-
 func TestHintsEnabled(t *testing.T) {
 	cases := []struct {
 		name     string

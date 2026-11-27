@@ -1,7 +1,6 @@
 package root
 
 import (
-	"os"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -20,11 +19,8 @@ func TestExecuteSkillHintsOncePerRun(t *testing.T) {
 	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_PREVIEW", "true")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", t.TempDir())
 	path := clicompat.LocalManifestPath(ctx)
-	writeManifest := func(manifest string) {
-		require.NoError(t, os.WriteFile(path, []byte(manifest), 0o600))
-	}
 	// One entry applies to every CLI version.
-	writeManifest(`{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`)
+	testutil.WriteFile(t, path, `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`)
 
 	var before, after bool
 	cmd := &cobra.Command{
@@ -33,12 +29,12 @@ func TestExecuteSkillHintsOncePerRun(t *testing.T) {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			before = skills.HintsEnabled(cmd.Context())
-			writeManifest(`{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30"}}`)
+			testutil.WriteFile(t, path, `{"0.1.0": {"appkit": "0.84.0", "skills": "0.2.30"}}`)
 			after = skills.HintsEnabled(cmd.Context())
 			return nil
 		},
 	}
 	require.NoError(t, execute(ctx, cmd, nil))
-	assert.True(t, before)
+	require.True(t, before)
 	assert.True(t, after, "a cache refresh during the command changed skills hints for that run")
 }
