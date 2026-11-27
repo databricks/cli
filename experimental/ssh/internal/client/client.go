@@ -534,10 +534,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// and its keys are saved in the files ssh is pointed at.
 	reuseNamedServer := opts.ServerMetadata != ""
 	if reuseNamedServer {
-		// The failures below are left to fall through to UNKNOWN on purpose: --metadata is a
-		// hidden flag whose value we generated ourselves in ToProxyCommand, so a parse failure
-		// here is a CLI bug rather than a per-environment blocker. Attributing them to
-		// SERVER_START_TIMEOUT would pollute the bucket that tracks unreachable servers.
+		// --metadata is a hidden flag whose value ToProxyCommand generates, so a parse failure
+		// here is a CLI bug. It is returned as is and not reported as a server start timeout.
 		userName, serverPort, clusterID, hostKeyFingerprint, clientKeyFingerprint, err = parseServerMetadata(opts.ServerMetadata, opts.ClusterID)
 		if err != nil {
 			return err
