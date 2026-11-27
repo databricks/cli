@@ -3,6 +3,7 @@ package skills
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -235,6 +236,25 @@ func TestRunListStaleCatalogPrintsProvenanceOnStderr(t *testing.T) {
 	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
 	assert.Contains(t, stderr.String(), "Skills come from cached (release 1.2.3, fetched 2026-11-01T00:00:00Z)")
 	assert.NotContains(t, stdout.String(), "Skills come from")
+}
+
+func TestRunListJSONCarriesMinCLIVersion(t *testing.T) {
+	catalog := &libskills.Catalog{
+		Label:   "cached",
+		Version: "1.2.3",
+		Skills:  []libskills.Skill{{Name: "alpha"}, {Name: "future", MinCLIVer: "99.0.0"}},
+	}
+
+	ctx, stdout := cmdio.NewTestContextWithStdout(t.Context())
+	cmd, _, _ := listTestCmd(t, flags.OutputJSON)
+	cmd.SetContext(ctx)
+	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
+
+	var out listJSON
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &out))
+	require.Len(t, out.Skills, 2)
+	assert.Empty(t, out.Skills[0].MinCLIVersion)
+	assert.Equal(t, "99.0.0", out.Skills[1].MinCLIVersion)
 }
 
 func TestProvenanceLineOmitsUnknownFetchTime(t *testing.T) {
