@@ -88,3 +88,31 @@ func TestFetchRepositoryInfoFromWorkspace(t *testing.T) {
 		})
 	}
 }
+
+func TestFetchRepositoryInfoSubmodule(t *testing.T) {
+	dir := t.TempDir()
+
+	// Superproject metadata that must not leak into the submodule's.
+	testutil.WriteFile(t, filepath.Join(dir, ".git", "HEAD"), "ref: refs/heads/outer")
+	testutil.WriteFile(t, filepath.Join(dir, ".git", "refs", "heads", "outer"), strings.Repeat("1", 40))
+	testutil.WriteFile(t, filepath.Join(dir, ".git", "config"), "[remote \"origin\"]\n\turl = https://example.test/outer.git")
+
+	// Submodule git folder: a full repository without a "commondir" file.
+	modDir := filepath.Join(dir, ".git", "modules", "lib")
+	testutil.WriteFile(t, filepath.Join(modDir, "HEAD"), "ref: refs/heads/main")
+	testutil.WriteFile(t, filepath.Join(modDir, "refs", "heads", "main"), strings.Repeat("2", 40))
+	testutil.WriteFile(t, filepath.Join(modDir, "config"), "[remote \"origin\"]\n\turl = https://example.test/lib.git")
+
+	submodule := filepath.Join(dir, "lib")
+	testutil.WriteFile(t, filepath.Join(submodule, ".git"), "gitdir: ../.git/modules/lib")
+	file := testutil.Touch(t, submodule, "subdir", "databricks.yml")
+
+	got, err := fetchRepositoryInfoDotGit(t.Context(), filepath.Dir(file))
+	require.NoError(t, err)
+	assert.Equal(t, RepositoryInfo{
+		OriginURL:     "https://example.test/lib.git",
+		LatestCommit:  strings.Repeat("2", 40),
+		CurrentBranch: "main",
+		WorktreeRoot:  submodule,
+	}, got)
+}

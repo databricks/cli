@@ -24,13 +24,14 @@ type Repository struct {
 	rootDir vfs.Path
 
 	// gitDir is the equivalent of $GIT_DIR and points to the
-	// `.git` directory of a repository or a worktree directory.
+	// `.git` directory of a repository, a worktree directory, or a submodule's
+	// directory under the superproject's `.git/modules`.
 	// See https://git-scm.com/docs/git-worktree#_details for more information.
 	gitDir vfs.Path
 
 	// gitCommonDir is the equivalent of $GIT_COMMON_DIR and points to the
 	// `.git` directory of the main working tree (common between worktrees).
-	// This is equivalent to [gitDir] if this is the main working tree.
+	// This is equivalent to [gitDir] if this is the main working tree or a submodule.
 	// See https://git-scm.com/docs/git-worktree#_details for more information.
 	gitCommonDir vfs.Path
 
