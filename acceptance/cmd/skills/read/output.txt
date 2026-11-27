@@ -13,6 +13,17 @@ Read the guide in references for details.
 
 Other files in this skill, each read with its command:
   databricks skills read-file guide-skill references/guide.md
+  databricks skills read-file -- guide-skill -notes.md
+
+=== A file whose name starts with a hyphen: the printed command ends the flags and runs as printed
+
+>>> eval databricks skills read-file -- guide-skill -notes.md
+Notes that start with a hyphen.
+
+=== read-file accepts -- before a leading-hyphen file name
+
+>>> [CLI] skills read-file -- guide-skill -notes.md
+Notes that start with a hyphen.
 
 === A skill without supporting files
 
@@ -33,7 +44,8 @@ description: A skill for tests.
   "source": "[TESTROOT]/cmd/skills/read/../release",
   "content": "---\nname: guide-skill\ndescription: A skill with a supporting file.\n---\n\n# Guide skill\n\nRead the guide in references for details.\n",
   "files": [
-    "references/guide.md"
+    "references/guide.md",
+    "-notes.md"
   ]
 }
 

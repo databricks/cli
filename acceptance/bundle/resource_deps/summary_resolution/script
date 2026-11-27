@@ -1,0 +1,35 @@
+# Resources are created concurrently, so sort the deploy output.
+trace $CLI bundle deploy --var secret_value=s3cr3t-value 2>&1 | sort
+replace_ids.py
+
+title "After deploy, references show their values"
+trace $CLI bundle summary --var secret_value=s3cr3t-value
+trace $CLI bundle summary --var secret_value=s3cr3t-value -o json | jq -c '[.resources.jobs | to_entries[] | {key, name: .value.name}]'
+
+title "The secret appears nowhere in the summary"
+$CLI bundle summary --var secret_value=s3cr3t-value -o json | contains.py '!s3cr3t' > /dev/null
+
+title "Add resources that are not deployed: a reference cycle (deploy rejects it, validate does not) and two whose resolved values do not fit their types"
+update_file.py databricks.yml '  job_runs:' '    cycle_a:
+      name: ${resources.jobs.cycle_b.name}
+    cycle_b:
+      name: ${resources.jobs.cycle_a.name}
+    bad_type:
+      name: bad-type
+      max_concurrent_runs: ${resources.jobs.a.name}
+
+  postgres_projects:
+    bad_duration:
+      project_id: bad-duration
+      history_retention_duration: ${resources.jobs.a.name}
+
+  job_runs:'
+title "Edit locally: rename job a and point the run at job b"
+update_file.py databricks.yml 'name: job-a' 'name: job-renamed'
+update_file.py databricks.yml 'job_id: ${resources.jobs.a.id}' 'job_id: ${resources.jobs.b.id}'
+
+title "References show the config values; the run keeps the URL of the job it was launched for"
+trace $CLI bundle summary --var secret_value=s3cr3t-value
+trace $CLI bundle summary --var secret_value=s3cr3t-value -o json | jq -c '.resources.jobs.ref_name.name, .resources.jobs.cycle_a.name, .resources.jobs.bad_type.max_concurrent_runs, .resources.postgres_projects.bad_duration.history_retention_duration, .resources.job_runs.run.url'
+
+trace $CLI bundle destroy --auto-approve --var secret_value=s3cr3t-value &> LOG.destroy

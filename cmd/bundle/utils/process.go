@@ -66,7 +66,8 @@ type ProcessOptions struct {
 	// Implies ReadState
 	AlwaysPull bool
 
-	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also calls InitializeURLs()
+	// If true, calls statemgmt.Load() to read the state and update resources with IDs; also resolves
+	// ${resources.*} references for display (ResolveResourceReferencesForDisplay) and calls InitializeURLs()
 	// Implies ReadState
 	InitIDs bool
 
@@ -463,7 +464,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 			// InitializeURLs makes an extra API call; only run it when URLs are needed.
 			if opts.InitIDs {
-				mutators = append(mutators, mutator.InitializeURLs())
+				mutators = append(mutators, mutator.ResolveResourceReferencesForDisplay(), mutator.InitializeURLs())
 			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {
