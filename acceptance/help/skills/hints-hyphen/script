@@ -1,8 +1,2 @@
-export DATABRICKS_SKILLS_DIR="$TESTDIR/../../../cmd/skills/release"
-
-# The footer for a group ends the flags before a skill whose name starts with "-", so the printed command runs.
+# The footer lists only the skills whose names the installer accepts. "-foo" is left out, so no printed command starts with a flag.
 trace $CLI jobs --help | tail -n 4
-
-databricks() { "$CLI" "$@"; }
-line=$($CLI jobs --help | grep -- '  databricks skills read')
-trace eval "$line"
