@@ -32,10 +32,10 @@ type bundleYAML struct {
 
 // ValidateAuthModes checks that resources accessed on behalf of the user are consistent
 // with the manifest. A resource is treated as accessed on behalf of the user when app.yaml
-// sets one of its env vars to a literal value and databricks.yml does not bind it.
+// sets one of its env vars to a literal value and the bundle configuration does not bind it.
 // Such a resource must not be app-only, and its scope must be in user_api_scopes.
-// Projects without appkit.plugins.json, app.yaml, or databricks.yml are not checked.
-func ValidateAuthModes(projectPath string) error {
+// Projects without appkit.plugins.json, app.yaml, or a bundle configuration are skipped.
+func ValidateAuthModes(projectPath, configFile string) error {
 	if !manifest.HasManifest(projectPath) {
 		return nil
 	}
@@ -49,7 +49,7 @@ func ValidateAuthModes(projectPath string) error {
 		return err
 	}
 	var root bundleYAML
-	if ok, err := readYAML(filepath.Join(projectPath, "databricks.yml"), &root); !ok {
+	if ok, err := readYAML(configFile, &root); !ok {
 		return err
 	}
 
@@ -57,11 +57,14 @@ func ValidateAuthModes(projectPath string) error {
 	// resource and user_api_scopes live in separate files, are seen too.
 	bundles := []bundleYAML{root}
 	for _, pattern := range root.Include {
-		matches, err := filepath.Glob(filepath.Join(projectPath, pattern))
+		matches, err := filepath.Glob(filepath.Join(filepath.Dir(configFile), pattern))
 		if err != nil {
 			return fmt.Errorf("invalid include pattern %q: %w", pattern, err)
 		}
 		for _, path := range matches {
+			if path == configFile {
+				continue
+			}
 			var inc bundleYAML
 			ok, err := readYAML(path, &inc)
 			if err != nil {
@@ -105,9 +108,9 @@ func ValidateAuthModes(projectPath string) error {
 		checked[r.Key()] = true
 		switch {
 		case r.AppOnly:
-			errs = append(errs, fmt.Errorf("resource %q must be bound to the app's service principal in databricks.yml, but app.yaml sets %s to a literal value", r.Key(), e.Name))
+			errs = append(errs, fmt.Errorf("resource %q must be bound to the app's service principal in %s, but app.yaml sets %s to a literal value", r.Key(), filepath.Base(configFile), e.Name))
 		case r.Scope != "" && !slices.Contains(scopes, r.Scope):
-			errs = append(errs, fmt.Errorf("resource %q is accessed on behalf of the user but its scope %q is missing from user_api_scopes in databricks.yml", r.Key(), r.Scope))
+			errs = append(errs, fmt.Errorf("resource %q is accessed on behalf of the user but its scope %q is missing from user_api_scopes in %s", r.Key(), r.Scope, filepath.Base(configFile)))
 		}
 	}
 	return errors.Join(errs...)

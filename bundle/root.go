@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
@@ -12,31 +13,31 @@ import (
 	"github.com/databricks/cli/libs/folders"
 )
 
-// getRootEnv returns the value of the bundle root environment variable
-// if it is set and points to a directory that contains a bundle configuration
-// file. If the environment variable is set but does not point to such a
-// directory, it returns diagnostics. If the environment variable is not set,
-// it returns an empty string.
-func getRootEnv(ctx context.Context) (string, diag.Diagnostics) {
+func resolveConfigFile(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	if info.IsDir() {
+		return config.FileNames.FindInPath(path)
+	}
+	if !info.Mode().IsRegular() || !config.IsConfigFile(path) {
+		return "", errors.New("expected a .yml, .yaml, or .json configuration file")
+	}
+	return filepath.Abs(path)
+}
+
+// ConfigFileFromEnv returns the explicitly selected configuration file, or an empty path if unset.
+func ConfigFileFromEnv(ctx context.Context) (string, error) {
 	path, ok := env.Root(ctx)
 	if !ok {
 		return "", nil
 	}
-	stat, err := os.Stat(path)
-	if err == nil && !stat.IsDir() {
-		err = errors.New("not a directory")
-	}
-	if err == nil {
-		_, err = config.FileNames.FindInPath(path)
-	}
+	file, err := resolveConfigFile(path)
 	if err != nil {
-		return "", diag.Diagnostics{{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf(`Invalid bundle root %s="%s": %s`, env.RootVariable, path, err),
-			Detail:   fmt.Sprintf("The %s environment variable must point to an existing directory that contains a bundle configuration file.", env.RootVariable),
-		}}
+		return "", fmt.Errorf("%s=%q: %w", env.RootVariable, filepath.ToSlash(path), err)
 	}
-	return path, nil
+	return file, nil
 }
 
 // getRootWithTraversal returns the bundle root by traversing the filesystem
@@ -57,27 +58,29 @@ func getRootWithTraversal() (string, diag.Diagnostics) {
 	return "", diag.Diagnostics{{
 		Severity: diag.Error,
 		Summary:  fmt.Sprintf("Unable to locate the bundle root: %s not found.", config.FileNames[0]),
-		Detail:   fmt.Sprintf("Run this command from a directory that contains a bundle, or set the %s environment variable to the bundle root directory.\nAlternatively, create a new bundle with 'databricks bundle init'.", env.RootVariable),
+		Detail:   fmt.Sprintf("Run this command from a directory that contains a bundle, or set %s to the bundle directory or configuration file.\nAlternatively, create a new bundle with 'databricks bundle init'.", env.RootVariable),
 	}}
 }
 
-// mustGetRoot returns a bundle root or diagnostics if one cannot be found.
-func mustGetRoot(ctx context.Context) (string, diag.Diagnostics) {
-	path, diags := getRootEnv(ctx)
-	if path != "" || diags.HasError() {
-		return path, diags
+func findConfigFile(ctx context.Context, required bool) (string, diag.Diagnostics) {
+	file, err := ConfigFileFromEnv(ctx)
+	if err != nil {
+		return "", diag.Diagnostics{{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("Invalid bundle root %s", err),
+			Detail:   fmt.Sprintf("Set %s to a bundle directory or a .yml, .yaml, or .json configuration file.", env.RootVariable),
+		}}
 	}
-	return getRootWithTraversal()
-}
-
-// tryGetRoot returns a bundle root or an empty string if one cannot be found.
-func tryGetRoot(ctx context.Context) (string, diag.Diagnostics) {
-	// Note: an invalid value in the environment variable is still an error.
-	path, diags := getRootEnv(ctx)
-	if path != "" || diags.HasError() {
-		return path, diags
+	if file != "" {
+		return file, nil
 	}
-	// Note: traversal failing means the bundle root cannot be found.
-	path, _ = getRootWithTraversal()
-	return path, nil
+	dir, diags := getRootWithTraversal()
+	if dir == "" {
+		if required {
+			return "", diags
+		}
+		return "", nil
+	}
+	file, err = config.FileNames.FindInPath(dir)
+	return file, diag.FromErr(err)
 }

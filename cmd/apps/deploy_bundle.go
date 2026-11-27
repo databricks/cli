@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -16,22 +14,13 @@ import (
 	"github.com/databricks/cli/libs/apps/validation"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
 
 // ErrorWrapper is a function type for wrapping deployment errors.
 type ErrorWrapper func(cmd *cobra.Command, appName string, err error) error
-
-// hasBundleConfig checks if the current directory contains a bundle configuration file.
-func hasBundleConfig() bool {
-	wd, err := os.Getwd()
-	if err != nil {
-		return false
-	}
-	_, err = config.FileNames.FindInPath(wd)
-	return err == nil
-}
 
 // bundleDeployOptions holds flags for the bundle-aware deploy path.
 type bundleDeployOptions struct {
@@ -89,10 +78,11 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		originalRunE := deployCmd.RunE
 		deployCmd.RunE = func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				b := root.TryConfigureBundle(cmd)
-				if b != nil {
-					return runBundleDeploy(cmd, opts)
+				b := root.MustConfigureBundle(cmd)
+				if b == nil || logdiag.HasError(cmd.Context()) {
+					return root.ErrAlreadyPrinted
 				}
+				return runBundleDeploy(cmd, opts, b.BundleRootPath)
 			}
 
 			err := originalRunE(cmd, args)
@@ -142,13 +132,8 @@ Examples:
 }
 
 // runBundleDeploy executes the enhanced deployment flow for project directories.
-func runBundleDeploy(cmd *cobra.Command, opts bundleDeployOptions) error {
+func runBundleDeploy(cmd *cobra.Command, opts bundleDeployOptions, workDir string) error {
 	ctx := cmd.Context()
-
-	workDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get working directory: %w", err)
-	}
 
 	// Step 1: Validate project (unless skipped)
 	if !opts.skipValidation {

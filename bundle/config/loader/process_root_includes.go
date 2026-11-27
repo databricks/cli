@@ -45,11 +45,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	b.SetIncludePatterns(patterns)
 
 	// Map with files we've already seen to avoid loading them twice.
-	seen := map[string]bool{}
-
-	for _, file := range config.FileNames {
-		seen[file] = true
-	}
+	seen := map[string]bool{filepath.Base(b.ConfigFilePath): true}
 
 	// Maintain list of files in order of files being loaded.
 	// This is stored in the bundle configuration for observability.
@@ -106,7 +102,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 				continue
 			}
 			seen[rel] = true
-			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" && filepath.Ext(rel) != ".json" {
+			if !config.IsConfigFile(rel) {
 				diags = diags.Append(diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "Files in the 'include' configuration section must be YAML or JSON files.",

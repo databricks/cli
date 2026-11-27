@@ -34,7 +34,7 @@ func newConfigRemoteSyncCommand() *cobra.Command {
 		Short: "[EXPERIMENTAL] Sync remote resource changes to bundle configuration",
 		Long: `[EXPERIMENTAL] Compares deployed state with current remote state and generates updated configuration files.
 
-When --save is specified, writes updated YAML files to disk.
+When --save is specified, writes updated YAML or JSON configuration files to disk.
 Otherwise, outputs diff without modifying files.
 
 IMPORTANT: This is an experimental feature and is subject to change. Windows is not yet supported.
@@ -167,7 +167,7 @@ Examples:
 				applied, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryYamlApplyFailed
-					return fmt.Errorf("failed to generate YAML files: %w", err)
+					return fmt.Errorf("failed to generate configuration files: %w", err)
 				}
 				stats.FilesChangedCount = int64(len(applied))
 

@@ -2,7 +2,7 @@
 >>> [CLI] bundle run -- echo hello
 Error: Unable to locate the bundle root: databricks.yml not found.
 
-Run this command from a directory that contains a bundle, or set the DATABRICKS_BUNDLE_ROOT environment variable to the bundle root directory.
+Run this command from a directory that contains a bundle, or set DATABRICKS_BUNDLE_ROOT to the bundle directory or configuration file.
 Alternatively, create a new bundle with 'databricks bundle init'.
 
 

@@ -1,0 +1,1 @@
+Ignore = ["project/.databricks", "project/.gitignore"]

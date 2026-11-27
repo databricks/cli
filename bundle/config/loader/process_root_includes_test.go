@@ -54,7 +54,7 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
+	b.ConfigFilePath = testutil.Touch(t, b.BundleRootPath, "databricks.yml")
 	testutil.Touch(t, b.BundleRootPath, "a.yml")
 	testutil.Touch(t, b.BundleRootPath, "b.yml")
 
@@ -113,7 +113,7 @@ func TestProcessRootIncludesUpdatesDynamicValue(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
+	b.ConfigFilePath = testutil.Touch(t, b.BundleRootPath, "databricks.yml")
 	testutil.Touch(t, b.BundleRootPath, "a.yml")
 
 	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
@@ -135,7 +135,7 @@ func TestProcessRootIncludesEmptyOmitsDynamicValue(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
+	b.ConfigFilePath = testutil.Touch(t, b.BundleRootPath, "databricks.yml")
 
 	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
@@ -155,7 +155,7 @@ func TestProcessRootIncludesKeepsIncludesOfIncludedFiles(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
+	b.ConfigFilePath = testutil.Touch(t, b.BundleRootPath, "databricks.yml")
 	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, "a.yml"), "include:\n  - c.yml\n")
 	testutil.Touch(t, b.BundleRootPath, "b.yml")
 

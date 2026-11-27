@@ -1,0 +1,19 @@
+
+>>> DATABRICKS_BUNDLE_ROOT=project [CLI] --profile DEFAULT bundle debug list-targets
+conventional (default)
+
+>>> DATABRICKS_BUNDLE_ROOT=project/custom.json [CLI] --profile DEFAULT bundle debug list-targets
+from_json (default)
+
+>>> DATABRICKS_BUNDLE_ROOT=project/custom.json [CLI] --profile DEFAULT --target missing workspace list /
+Error: missing: no such target. Available targets: from_json
+
+
+>>> DATABRICKS_BUNDLE_ROOT=project/custom.json [CLI] --profile DEFAULT --target missing apps logs
+Error: missing: no such target. Available targets: from_json
+
+
+>>> DATABRICKS_BUNDLE_ROOT=project/custom.json [CLI] --profile DEFAULT bundle plan
+create jobs.selected_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
