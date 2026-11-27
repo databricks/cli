@@ -36,13 +36,14 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 The following resources will be deleted:
   delete resources.registered_models.model1
   delete resources.schemas.schema1
+  delete resources.secrets.secret1
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
   delete resources.schemas.schema1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Destroy: 2 deleted
+Destroy: 3 deleted
 
 >>> print_requests.py //unity-catalog
 {

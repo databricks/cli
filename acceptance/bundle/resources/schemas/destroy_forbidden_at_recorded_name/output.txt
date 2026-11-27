@@ -11,8 +11,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === Destroy finds the renamed schema by its schema_id, and the volume in it by its volume_id, and deletes both there
 
 >>> [CLI] bundle destroy --auto-approve
-Warn: planning resources.volumes.volume1: reading resources.volumes.volume1 id="main.myschema.myvolume": User does not have USE SCHEMA on the schema
-Warn: planning resources.schemas.schema1: reading resources.schemas.schema1 id="main.myschema": User does not have USE SCHEMA on the schema
+Warn: planning resources.volumes.volume1: reading resources.volumes.volume1 id="main.myschema.myvolume": Fault injected by test.
+Warn: planning resources.schemas.schema1: reading resources.schemas.schema1 id="main.myschema": Fault injected by test.
 The following resources will be deleted:
   delete resources.schemas.schema1
   delete resources.volumes.volume1

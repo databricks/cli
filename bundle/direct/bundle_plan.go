@@ -921,12 +921,12 @@ func isParentIDField(adapter *dresources.Adapter, path *structpath.PathNode) boo
 // findInMovedParents handles a Delete of a resource not found at its recorded ID (Gone) while its
 // parent was found at another ID in this plan: renamed out of band (see findMoved and
 // findByInternalID). Only a resource that lives in a UC parent (ParentIDFields, MovesWithParent)
-// moves with it, so it is looked for under the parent's new ID, and deleted there as itself if it has
-// its recorded internal ID. When the parent is deleted and the resource is there but cannot be
-// verified (it has no internal ID: a model, a secret, a feature), or may be there (it has one, and a
-// 404 cannot tell a renamed resource from a deleted one), it is marked WithParent: no delete is sent
-// for it, but approval and lifecycle.prevent_destroy see that the parent's delete takes it along. A
-// resource without an internal ID that is not there stays Gone.
+// moves with it, so it is looked for under the parent's new ID. It is deleted there as itself if it
+// has its recorded internal ID, or, having none to check (a model, a secret, a feature), if it is
+// found there inside the bundle's parent, which stays. Otherwise, under a parent that is deleted, it
+// is marked WithParent, found or not (a 404 cannot tell a resource renamed too from one deleted): no
+// delete is sent for it, but approval and lifecycle.prevent_destroy see that the parent's delete
+// takes it along. Under a parent that stays, it stays Gone.
 func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployplan.Plan) error {
 	parents, err := b.movedParents(plan)
 	if err != nil || len(parents) == 0 {
@@ -970,7 +970,7 @@ func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployp
 		if parent == nil {
 			continue
 		}
-		remote, verified, maybeThere, err := b.readUnderMovedParent(ctx, adapter, dbentry, id)
+		remote, verified, err := b.readUnderMovedParent(ctx, adapter, dbentry, id)
 		if err != nil {
 			return fmt.Errorf("%s: %w", resourceKey, err)
 		}
@@ -987,7 +987,10 @@ func (b *DeploymentBundle) findInMovedParents(ctx context.Context, plan *deployp
 			if verified && adapter.HasIDFromState() {
 				parents = append(parents, &movedParent{key: resourceKey, recordedID: dbentry.ID, id: id, deleted: true})
 			}
-		case parent.deleted && maybeThere:
+		case parent.deleted:
+			// Not verified, or not found: a 404 cannot tell a resource renamed too (or moved by the
+			// parent's rename and then renamed) from one deleted, with or without an internal ID. The
+			// parent's delete removes it if it is there, so it is listed with it.
 			entry.WithParent = parent.key
 		default:
 			continue
@@ -1050,20 +1053,19 @@ func underMovedParent(parents []*movedParent, id string) (*movedParent, string) 
 }
 
 // readUnderMovedParent reads the resource recorded in dbentry at id, under its parent's new ID. It
-// returns what it read there (nil if nothing), and whether that is verified: it has the recorded
-// internal ID. Else maybeThere reports whether the resource can be there: found, or not readable, or,
-// for a resource with an internal ID, not found (a 404 cannot tell a resource renamed too from one
-// deleted). A read that fails other than with a missing resource or a permission error fails the
+// returns what it read there (nil if nothing, or if the read is forbidden), and whether that is
+// verified: it has the recorded internal ID. Something else there (another internal ID) is not
+// returned. A read that fails other than with a missing resource or a permission error fails the
 // plan.
-func (b *DeploymentBundle) readUnderMovedParent(ctx context.Context, adapter *dresources.Adapter, dbentry dstate.ResourceEntry, id string) (remote any, verified, maybeThere bool, err error) {
+func (b *DeploymentBundle) readUnderMovedParent(ctx context.Context, adapter *dresources.Adapter, dbentry dstate.ResourceEntry, id string) (remote any, verified bool, err error) {
 	savedInternalID := ""
 	if hasRecordedInternalID(adapter, dbentry) {
 		state, err := parseState(adapter.StateType(), dbentry.State)
 		if err != nil {
-			return nil, false, false, fmt.Errorf("interpreting state: %w", err)
+			return nil, false, fmt.Errorf("interpreting state: %w", err)
 		}
 		if savedInternalID, err = adapter.InternalID(state); err != nil {
-			return nil, false, false, err
+			return nil, false, err
 		}
 	}
 	remote, err = retry.With(ctx, retry.IsTransientRead, func() (any, error) {
@@ -1071,21 +1073,18 @@ func (b *DeploymentBundle) readUnderMovedParent(ctx context.Context, adapter *dr
 	})
 	if err != nil {
 		if apierr.IsMissing(err) {
-			return nil, false, savedInternalID != "", nil
+			return nil, false, nil
 		}
-		return nil, false, true, ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("reading id=%q under its renamed parent", id))
+		return nil, false, ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("reading id=%q under its renamed parent", id))
 	}
 	if savedInternalID == "" {
-		return remote, false, true, nil
+		return remote, false, nil
 	}
 	ok, err := hasInternalIDOf(adapter, remote, savedInternalID)
-	if err != nil {
-		return nil, false, false, err
+	if err != nil || !ok {
+		return nil, false, err
 	}
-	if !ok {
-		return nil, false, true, nil
-	}
-	return remote, true, true, nil
+	return remote, true, nil
 }
 
 // hasRecordedInternalID reports whether the state in dbentry has the resource's internal ID.
@@ -1311,7 +1310,8 @@ func findByInternalID(ctx context.Context, adapter *dresources.Adapter, savedSta
 		return adapter.DoFindByInternalID(ctx, savedState)
 	})
 	if err != nil || id == "" {
-		return "", nil, ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("looking for %s %q after a rename outside the bundle", adapter.ResourceConfig().InternalIDField, savedInternalID))
+		return "", nil, ignoreMissingOrForbidden(ctx, err, fmt.Sprintf("searching %sfor %s %q, as a read at its recorded ID did not return it",
+			searchedParent(adapter, savedState), adapter.ResourceConfig().InternalIDField, savedInternalID))
 	}
 	remote, err := retry.With(ctx, retry.IsTransientRead, func() (any, error) {
 		return adapter.DoRead(ctx, id)
@@ -1323,6 +1323,19 @@ func findByInternalID(ctx context.Context, adapter *dresources.Adapter, savedSta
 		return "", nil, err
 	}
 	return id, remote, nil
+}
+
+// searchedParent names, followed by a space, the parent DoFindByInternalID lists: the recorded full
+// name without its last part (the catalog of a schema, the schema of a volume). Empty if unknown.
+func searchedParent(adapter *dresources.Adapter, savedState any) string {
+	if !adapter.HasIDFromState() {
+		return ""
+	}
+	recorded, err := adapter.IDFromState(savedState)
+	if i := strings.LastIndex(recorded, "."); err == nil && i > 0 {
+		return fmt.Sprintf("%q ", recorded[:i])
+	}
+	return ""
 }
 
 // ignoreMissingOrForbidden returns err unless it is nil, a missing resource or a permission error

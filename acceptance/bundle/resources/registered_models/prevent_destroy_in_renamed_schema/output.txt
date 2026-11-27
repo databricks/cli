@@ -1,0 +1,35 @@
+
+=== Deploy a schema with a registered model in it that must not be destroyed
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created registered_models.model1
+Created schemas.schema1
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the schema and the model out of band
+
+>>> [CLI] schemas update main.test-schema-[UNIQUE_NAME] --new-name test-schema-renamed-[UNIQUE_NAME]
+{
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME]",
+  "schema_id": "[UUID]"
+}
+
+>>> [CLI] registered-models update main.test-schema-renamed-[UNIQUE_NAME].mymodel --new-name mymodel2
+{
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME].mymodel2"
+}
+
+=== The model has no internal ID and is not at its new path, but the schema's delete would take it, so destroy lists it and prevent_destroy stops it
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: resources.registered_models.model1 has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for resources.registered_models.model1
+
+
+>>> print_requests.py //unity-catalog
+
+>>> [CLI] registered-models get main.test-schema-renamed-[UNIQUE_NAME].mymodel2
+{
+  "full_name": "main.test-schema-renamed-[UNIQUE_NAME].mymodel2"
+}
