@@ -34,7 +34,7 @@ type Cache struct {
 }
 
 // pinnedCacheEnv turns the cache on for a pinned source, so a test that pins the
-// source to a fake server has a cache to cover. No acceptance test sets it yet.
+// source to a fake server has a cache to cover. Only tests set it.
 // Unset, a pinned source stores nothing.
 const pinnedCacheEnv = "DATABRICKS_SKILLS_TEST_PINNED_CACHE"
 
