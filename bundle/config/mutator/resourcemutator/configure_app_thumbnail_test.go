@@ -92,7 +92,7 @@ func TestConfigureAppThumbnail(t *testing.T) {
 			if tt.contents != nil {
 				want = base64.StdEncoding.EncodeToString(tt.contents)
 			}
-			assert.Equal(t, want, b.Config.Resources.Apps["my_app"].ThumbnailContent)
+			assert.Equal(t, want, b.Config.Resources.Apps["my_app"].Thumbnail)
 		})
 	}
 }

@@ -189,7 +189,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		ConfigureDashboardSerializedDashboard(),
 
 		// Reads (dynamic): resources.apps.*.thumbnail_path
-		// Updates (dynamic): resources.apps.*.thumbnail_content
+		// Updates (dynamic): resources.apps.*.thumbnail
 		ConfigureAppThumbnail(),
 
 		// Reads (dynamic): resources.genie_spaces.*.file_path

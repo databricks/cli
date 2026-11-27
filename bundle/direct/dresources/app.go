@@ -72,7 +72,7 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 		App:       input.App,
 		Config:    input.Config,
 		Lifecycle: nil,
-		Thumbnail: input.ThumbnailContent,
+		Thumbnail: input.Thumbnail,
 	}
 	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
 		s.Lifecycle = &StateLifecycle{Started: input.Lifecycle.Started}

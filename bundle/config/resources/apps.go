@@ -60,8 +60,9 @@ type App struct {
 	// ThumbnailPath is the local path of a PNG or JPEG image shown for the app in the Apps UI.
 	ThumbnailPath string `json:"thumbnail_path,omitempty"`
 
-	// ThumbnailContent is the base64-encoded image read from ThumbnailPath (see ConfigureAppThumbnail).
-	ThumbnailContent string `json:"thumbnail_content,omitempty" bundle:"internal"`
+	// Thumbnail is the base64-encoded image read from ThumbnailPath (see ConfigureAppThumbnail).
+	// It has the same name as in the state (dresources.AppState) and the API (apps.AppThumbnail).
+	Thumbnail string `json:"thumbnail,omitempty" bundle:"internal"`
 
 	Permissions []AppPermission `json:"permissions,omitempty"`
 }

@@ -68,6 +68,12 @@ If a desired state describes no resource at all (e.g. an empty grants list), imp
 
 The planner only consults it for nodes without a state entry: once state exists the node stays in the plan, so emptying it still plans an update, and the update is what removes the entry.
 
+## Config and state use the same field names
+
+A field that is in both the config (`bundle/config/resources`) and the state must have the same name and path in both. This includes internal fields that a mutator fills from another field, such as `apps.thumbnail`, which is read from `thumbnail_path`. Do not rename a field in `PrepareState`.
+
+The plan reports changes, and `${resources...}` references resolve, by state paths. With a renamed field, the plan reports a change under a name the config lacks, and a reference resolves under the state name only. `TestInputSubset` (type_test.go) fails for a config field missing from the state, internal fields included. A config-only field, such as a local path whose contents go into another field, belongs in `knownMissingInStateType` with the reason.
+
 ## Config that is not the state: Configure and PrepareInputConfig
 
 Most resources take their bundle config straight into `PrepareState`. Sub-resources (permissions, grants) cannot: their state is assembled from the parent's config section plus a reference to the parent's ID, which has no source in the config.
