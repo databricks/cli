@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/mcp"
 	"github.com/databricks/cli/libs/auth"
@@ -113,7 +112,7 @@ func mcpServiceType(fullName string) protos.AitoolsMcpService {
 // callingAgentType returns the agent that drives the CLI, Unspecified when none is detected or
 // DATABRICKS_NOT_AN_AGENT holds (see agent.Provider).
 func callingAgentType(ctx context.Context) protos.AitoolsAgentType {
-	a := agents.AgentForProvider(agent.Provider(ctx))
+	a := agents.CallingAgent(ctx)
 	if a == nil {
 		return protos.AitoolsAgentTypeUnspecified
 	}
