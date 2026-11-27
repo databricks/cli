@@ -9,16 +9,12 @@ type Action struct {
 	// Full resource key, e.g. "resources.jobs.foo" or "resources.jobs.foo.permissions"
 	ResourceKey string
 	ActionType  ActionType
-	// Gone mirrors PlanEntry.Gone: applying the delete sends no delete call and only removes the
-	// state entry, as planning did not find the resource remotely (or the state entry has an empty
-	// ID). With WithParent, the resource is most likely still there until its parent's delete
-	// removes it, so the action is shown and approved as a deletion.
+	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
+	// resource no longer exists remotely (confirmed by a read, or an empty-ID state entry).
 	Gone bool
 	// StateOnly mirrors PlanEntry.StateOnly: applying the action only changes the state
 	// (a delete of a resource without DoDelete, or a re-key).
 	StateOnly bool
-	// WithParent mirrors PlanEntry.WithParent: the resource goes with its parent's delete.
-	WithParent bool
 }
 
 func (a Action) String() string {
@@ -27,9 +23,9 @@ func (a Action) String() string {
 
 // IsStateOnly reports whether applying this action makes no backend call and only changes the
 // state (see PlanEntry.IsStateOnly). Such actions are omitted from human output and need no
-// approval. An action with WithParent is not: its parent's delete removes the resource.
+// approval.
 func (a Action) IsStateOnly() bool {
-	return (a.Gone || a.StateOnly) && !a.WithParent
+	return a.Gone || a.StateOnly
 }
 
 func (a Action) IsChildResource() bool {

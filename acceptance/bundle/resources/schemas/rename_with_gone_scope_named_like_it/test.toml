@@ -1,6 +1,0 @@
-# Local only: names are fixed so that the scope's name starts with the schema's full name.
-
-Ignore = [
-    ".databricks",
-    "databricks.yml",
-]

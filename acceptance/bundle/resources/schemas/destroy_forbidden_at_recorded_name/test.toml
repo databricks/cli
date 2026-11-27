@@ -1,9 +1,0 @@
-# Local only: the 403 at the recorded name is injected, as for another user's schema the
-# deployer cannot read.
-Cloud = false
-
-Ignore = [
-    ".databricks",
-    ".gitignore",
-    "databricks.yml",
-]

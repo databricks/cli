@@ -55,10 +55,6 @@ type DeploymentBundle struct {
 	// fields references, recorded before resolveReferences drops them (see addParentMoves).
 	refTypes sync.Map
 
-	// otherObjects maps the key of a resource to be deleted to the message that another object holds
-	// its recorded ID, told once the plan is complete (see warnOtherObjects).
-	otherObjects sync.Map
-
 	// DeployDurations maps a resource key to the time.Duration its create, update or
 	// recreate took. Only successfully deployed resources are recorded; Apply runs
 	// nodes in parallel, hence the sync.Map.

@@ -35,10 +35,10 @@ title "Deploy leaves the other schema alone: the create fails on its name"
 trace musterr $CLI bundle deploy
 print_requests.py //unity-catalog &> LOG.failed_deploy_requests
 
-title "Destroy finds the bundle's schema by its schema_id and deletes it, not the other one"
+title "Destroy does not delete the other schema: it only drops the bundle's from the state"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
-trace musterr $CLI schemas get "$MOVED_SCHEMA"
+trace $CLI schemas get "$MOVED_SCHEMA" | schema_fields
 
 title "The other schema is left alone"
 trace $CLI schemas get "$SCHEMA" | schema_fields

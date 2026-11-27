@@ -3,9 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -185,18 +183,4 @@ func (s *FakeWorkspace) SchemasDelete(req Request, fullName string) Response {
 		}
 	}
 	return Response{}
-}
-
-// SchemasList returns the schemas in a catalog, in one page.
-func (s *FakeWorkspace) SchemasList(req Request) Response {
-	defer s.LockUnlock()()
-
-	catalogName := req.URL.Query().Get("catalog_name")
-	result := catalog.ListSchemasResponse{Schemas: []catalog.SchemaInfo{}}
-	for _, key := range slices.Sorted(maps.Keys(s.Schemas)) {
-		if schema := s.Schemas[key]; schema.CatalogName == catalogName {
-			result.Schemas = append(result.Schemas, schema)
-		}
-	}
-	return Response{Body: result}
 }

@@ -18,13 +18,13 @@ print_requests.py //unity-catalog &> LOG.deploy_requests
 add_repl "$($CLI schemas get "$OLD_SCHEMA" | jq -r .schema_id)" SCHEMA_ID
 
 title "Rename the schema out of band, and the config to match"
-trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | schema_fields
+trace $CLI schemas update "$OLD_SCHEMA" --new-name "test-schema-renamed-${UNIQUE_NAME}" | jq '{full_name, schema_id}'
 print_requests.py //unity-catalog &> LOG.rename_requests
 trace update_file.py databricks.yml test-schema- test-schema-renamed-
 
-title "Destroy finds the schema at its new name by its schema_id and deletes it, with its volume"
+title "Destroy"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
 
-title "The renamed schema is gone, and the volume with it"
-trace musterr $CLI schemas get "$NEW_SCHEMA"
+title "The renamed schema is still there"
+trace $CLI schemas get "$NEW_SCHEMA" | jq '{full_name, schema_id}'

@@ -2,5 +2,3 @@ provided_id_fields:
   # UC lowercases the name; remote returns "main.ml.myspec" for config "main.ml.MySpec".
   - field: name
     reason: id_field
-# Inside its UC schema: a rename of the schema moves it, and its ID with it.
-moves_with_parent: true

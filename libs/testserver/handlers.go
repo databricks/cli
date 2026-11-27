@@ -854,10 +854,6 @@ func AddDefaultHandlers(server *Server) {
 
 	// Schemas:
 
-	server.Handle("GET", "/api/2.1/unity-catalog/schemas", func(req Request) any {
-		return req.Workspace.SchemasList(req)
-	})
-
 	server.Handle("GET", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
 		return MapGetUC(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"], "Schema")
 	})
@@ -1081,10 +1077,6 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// Volumes: looked up case-insensitively, see volumeKey.
-
-	server.Handle("GET", "/api/2.1/unity-catalog/volumes", func(req Request) any {
-		return req.Workspace.VolumesList(req)
-	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
 		return MapGetUC(req.Workspace, req.Workspace.Volumes, volumeKey(req.Vars["full_name"]), "Volume")

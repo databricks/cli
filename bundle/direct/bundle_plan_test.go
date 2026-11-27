@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -1022,72 +1021,34 @@ func TestOtherInternalID(t *testing.T) {
 	assert.Empty(t, got)
 }
 
-func TestFindDeleteTargetKeepsOwnResource(t *testing.T) {
+func TestOtherObjectAtRecordedID(t *testing.T) {
 	const key = "resources.schemas.schema1"
 	adapters, err := dresources.InitAll(nil)
 	require.NoError(t, err)
 	remote := &catalog.SchemaInfo{FullName: "main.s1", SchemaId: "uuid-1"}
 
-	for name, state := range map[string][]byte{
+	for name, tc := range map[string]struct {
+		state []byte
+		other bool
+	}{
 		// The deployment metadata service can hold an entry with only an ID.
-		"id-only entry":     nil,
-		"same internal id":  []byte(`{"catalog_name": "main", "name": "s1", "schema_id": "uuid-1"}`),
-		"internal id unset": []byte(`{"catalog_name": "main", "name": "s1"}`),
+		"id-only entry":       {state: nil},
+		"same internal id":    {state: []byte(`{"catalog_name": "main", "name": "s1", "schema_id": "uuid-1"}`)},
+		"internal id unset":   {state: []byte(`{"catalog_name": "main", "name": "s1"}`)},
+		"another internal id": {state: []byte(`{"catalog_name": "main", "name": "s1", "schema_id": "uuid-0"}`), other: true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			b := &DeploymentBundle{Adapters: adapters}
 			b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
-				key: {ID: "main.s1", State: state},
+				key: {ID: "main.s1", State: tc.state},
 			}})
-			id, got, err := b.findDeleteTarget(t.Context(), key, adapters["schemas"], "main.s1", remote, nil)
+			message, err := b.otherObjectAtRecordedID(key, adapters["schemas"], "main.s1", remote)
 			require.NoError(t, err)
-			assert.Empty(t, id)
-			assert.Same(t, remote, got)
-		})
-	}
-}
-
-func TestFindDeleteTargetUnverifiedRead(t *testing.T) {
-	const key = "resources.schemas.schema1"
-	adapters, err := dresources.InitAll(nil)
-	require.NoError(t, err)
-	b := &DeploymentBundle{Adapters: adapters}
-	b.StateDB.OpenWithData("state.json", dstate.Database{State: map[string]dstate.ResourceEntry{
-		key: {ID: "main.s1", State: []byte(`{"catalog_name": "main", "name": "s1", "schema_id": "uuid-1"}`)},
-	}})
-
-	// A read that failed for another reason than a missing resource cannot show that what is at the
-	// recorded ID is ours: the plan fails instead of deleting it.
-	_, _, err = b.findDeleteTarget(t.Context(), key, adapters["schemas"], "main.s1", nil, apierr.ErrInternalError)
-	assert.ErrorIs(t, err, apierr.ErrInternalError)
-
-	// A permission error searches by internal ID first: schemas/destroy_forbidden_at_recorded_name.
-}
-
-func TestUnderMovedParent(t *testing.T) {
-	catalog := &movedParent{key: "resources.catalogs.c", recordedID: "main", id: "archive"}
-	schema := &movedParent{key: "resources.schemas.s", recordedID: "main.s", id: "main.t", deleted: true}
-	sameAsCatalog := &movedParent{key: "resources.schemas.main", recordedID: "main.main", id: "main.moved", deleted: true}
-
-	for name, tt := range map[string]struct {
-		parents    []*movedParent
-		id, wantID string
-		want       *movedParent
-	}{
-		"moved":                         {parents: []*movedParent{schema}, id: "main.s.v", wantID: "main.t.v", want: schema},
-		"schema named like its catalog": {parents: []*movedParent{sameAsCatalog}, id: "main.main.v", wantID: "main.moved.v", want: sameAsCatalog},
-		// The bundle records a child in config case and its renamed parent in UC's lower case.
-		"recorded in another case": {parents: []*movedParent{schema}, id: "main.S.v", wantID: "main.t.v", want: schema},
-		"longest prefix":           {parents: []*movedParent{catalog, schema}, id: "main.s.v", wantID: "main.t.v", want: schema},
-		"only the catalog moved":   {parents: []*movedParent{catalog}, id: "main.s.v", wantID: "archive.s.v", want: catalog},
-		"not under the parent":     {parents: []*movedParent{schema}, id: "main.sx.v", wantID: "", want: nil},
-		"the parent itself":        {parents: []*movedParent{schema}, id: "main.s", wantID: "", want: nil},
-		"no parents":               {parents: nil, id: "main.s.v", wantID: "", want: nil},
-	} {
-		t.Run(name, func(t *testing.T) {
-			got, gotID := underMovedParent(tt.parents, tt.id)
-			assert.Same(t, tt.want, got)
-			assert.Equal(t, tt.wantID, gotID)
+			if tc.other {
+				assert.Contains(t, message, `its schema_id is "uuid-1", not "uuid-0" as recorded`)
+			} else {
+				assert.Empty(t, message)
+			}
 		})
 	}
 }

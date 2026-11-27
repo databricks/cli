@@ -1,7 +1,0 @@
-Cloud = true
-
-Ignore = [
-    ".databricks",
-    ".gitignore",
-    "databricks.yml",
-]

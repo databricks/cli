@@ -1,7 +1,6 @@
 package direct
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -24,9 +23,7 @@ func (d *DeploymentUnit) withResourceKey(ctx context.Context) context.Context {
 	return dresources.WithResourceKey(ctx, strings.TrimPrefix(d.ResourceKey, "resources."))
 }
 
-// Destroy deletes the resource at its recorded ID, or at movedID when the plan found it there (see
-// findByInternalID and findInMovedParents).
-func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState, movedID string) error {
+func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
 	ctx = log.WithPrefix(ctx, "destroying "+d.ResourceKey)
 	ctx = d.withResourceKey(ctx)
 	id := db.GetResourceID(d.ResourceKey)
@@ -35,7 +32,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 		return nil
 	}
 
-	return d.Delete(ctx, db, cmp.Or(movedID, id))
+	return d.Delete(ctx, db, id)
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {

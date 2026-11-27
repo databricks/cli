@@ -113,21 +113,3 @@ func TestHasOnlySingleReason(t *testing.T) {
 		})
 	}
 }
-
-func TestWithParentIsADeleteThatSendsNoCall(t *testing.T) {
-	gone := &deployplan.PlanEntry{Action: deployplan.Delete, Gone: true}
-	withParent := &deployplan.PlanEntry{Action: deployplan.Delete, Gone: true, WithParent: "resources.schemas.s"}
-
-	// A resource already gone is hidden and needs no call.
-	assert.True(t, gone.IsStateOnly())
-	assert.True(t, gone.SendsNoDelete())
-
-	// One that goes with its parent's delete is shown and approved as a deletion, but no delete is
-	// sent for it.
-	assert.False(t, withParent.IsStateOnly())
-	assert.True(t, withParent.SendsNoDelete())
-
-	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{"resources.volumes.v": withParent}}
-	actions := plan.GetActions()
-	assert.False(t, actions[0].IsStateOnly())
-}
