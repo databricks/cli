@@ -2,7 +2,6 @@ package filer
 
 import (
 	"context"
-	"fmt"
 	"io/fs"
 	"net/http"
 	"testing"
@@ -288,28 +287,8 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 	}
 }
 
-// getStatusClient serves /api/2.0/workspace/get-status from a fixed set of objects
-// and returns a 404 for any other path.
-type getStatusClient map[string]wsfsFileInfo
-
-func (c getStatusClient) Do(ctx context.Context, method, path string,
-	headers map[string]string, queryString map[string]any, request, response any,
-	visitors ...func(*http.Request) error,
-) error {
-	req := request.(map[string]string)
-	if path != "/api/2.0/workspace/get-status" || req["return_export_info"] != "true" {
-		return fmt.Errorf("unexpected request %s %s %v", method, path, req)
-	}
-	info, ok := c[req["path"]]
-	if !ok {
-		return &apierr.APIError{StatusCode: http.StatusNotFound}
-	}
-	*response.(*wsfsFileInfo) = info
-	return nil
-}
-
 func TestFilerWorkspaceFilesExtensionsNotebookExtensionIsCaseInsensitive(t *testing.T) {
-	objects := getStatusClient{
+	objects := map[string]wsfsFileInfo{
 		"/dir/etl": {
 			Path:              "/dir/etl",
 			Language:          workspace.LanguageR,
@@ -326,11 +305,22 @@ func TestFilerWorkspaceFilesExtensionsNotebookExtensionIsCaseInsensitive(t *test
 
 	newClient := func(t *testing.T) (*WorkspaceFilesExtensionsClient, *mocks.MockWorkspaceClient) {
 		mockedWorkspaceClient := mocks.NewMockWorkspaceClient(t)
+		mockedApiClient := mockApiClient{}
+		getStatus := func(path any) *mock.Call {
+			return mockedApiClient.On("Do", mock.Anything, http.MethodGet, "/api/2.0/workspace/get-status", map[string]string(nil),
+				path, mock.AnythingOfType("*filer.wsfsFileInfo"), []func(*http.Request) error(nil))
+		}
+		for p, info := range objects {
+			getStatus(map[string]string{"path": p, "return_export_info": "true"}).Return(nil, info)
+		}
+		// Expectations match in order, so any other path is not found.
+		getStatus(mock.Anything).Return(&apierr.APIError{StatusCode: http.StatusNotFound}, wsfsFileInfo{})
+
 		return &WorkspaceFilesExtensionsClient{
 			workspaceClient: mockedWorkspaceClient.WorkspaceClient,
 			wsfs: &WorkspaceFilesClient{
 				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
-				apiClient:       objects,
+				apiClient:       &mockedApiClient,
 				root:            NewWorkspaceRootPath("/dir"),
 			},
 			root: "/dir",
