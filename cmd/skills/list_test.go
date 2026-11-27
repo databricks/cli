@@ -129,6 +129,29 @@ func TestRenderTextOneUnbreakableDescriptionDropsOnlyItself(t *testing.T) {
 	assert.Contains(t, out, "databricks skills search <words>")
 }
 
+// The search hint goes away once the last dropped description gets its first
+// word, so a narrower width can be the one that fits. Widths 35 to 37 are over
+// the budget here, and 38 fits with every description shown.
+func TestRenderTextKeepsWidestFittingWidth(t *testing.T) {
+	var list []libskills.Skill
+	for i := range 84 {
+		list = append(list, libskills.Skill{
+			Name:        fmt.Sprintf("skill-%02d", i),
+			Description: "Deploys the workspace resources, then reports every step taken and any error found.",
+		})
+	}
+	list = append(list, libskills.Skill{
+		Name:        "odd",
+		Description: strings.Repeat("x", 35) + " then more words follow here for the odd skill to show.",
+	})
+
+	out := renderText("", list)
+
+	assert.LessOrEqual(t, len(out), textBudget)
+	assert.Contains(t, out, "odd: "+strings.Repeat("x", 35)+"...\n")
+	assert.NotContains(t, out, "databricks skills search")
+}
+
 func TestRenderTextNoSearchHintWithoutDescriptions(t *testing.T) {
 	list := []libskills.Skill{{Name: "alpha"}, {Name: "beta"}}
 	assert.Equal(t, "alpha\nbeta\n"+readHint+"\n", renderText("", list))

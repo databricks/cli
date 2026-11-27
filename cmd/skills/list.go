@@ -101,21 +101,19 @@ func renderText(rules string, list []libskills.Skill) string {
 	for _, s := range list {
 		maxLen = max(maxLen, len(oneLine(s.Description)))
 	}
-	if full := layoutText(rules, list, maxLen); len(full) <= textBudget {
-		return full
+	// The length is not monotonic in width: a wider width can drop the search
+	// hint once the last dropped description gets its first word, so a binary
+	// search could settle on a narrower width than a wider one that fits. Try
+	// each width from the widest down and keep the first that fits. No width
+	// above textBudget can fit differently from textBudget itself.
+	for w := min(maxLen, textBudget); w > 0; w-- {
+		if out := layoutText(rules, list, w); len(out) <= textBudget {
+			return out
+		}
 	}
 	// Width 0 leaves every description out, so it is the answer when the names
 	// alone do not fit.
-	lo, hi := 0, maxLen
-	for lo < hi {
-		mid := (lo + hi + 1) / 2
-		if len(layoutText(rules, list, mid)) <= textBudget {
-			lo = mid
-		} else {
-			hi = mid - 1
-		}
-	}
-	return layoutText(rules, list, lo)
+	return layoutText(rules, list, 0)
 }
 
 // layoutText lays out the text output with descriptions cut to width. A width
