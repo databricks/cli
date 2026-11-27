@@ -12,3 +12,8 @@ trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI fs --help | contain
 # With the variable unset, the root and the same group get their footer, so the checks above can fail.
 trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI --help | contains.py "databricks skills" > LOG.help-unset
 trace env -u DATABRICKS_AGENT_FEATURES_DISABLED $CLI fs --help | contains.py "databricks skills read" > LOG.fs-help-unset
+
+# The agent text drops its aitools block too, so it names no aitools install and keeps the shared text.
+trace DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 $CLI quickstart | contains.py "# Databricks Quickstart" "!aitools install" "!install the matching skill" "!databricks skills" > LOG.quickstart
+# With the variable unset and the skills preview off, the agent text names the aitools install, so the check above can fail.
+trace env -u DATABRICKS_AGENT_FEATURES_DISABLED -u DATABRICKS_SKILLS_PREVIEW $CLI quickstart | contains.py "databricks aitools install" > LOG.quickstart-unset

@@ -9,3 +9,7 @@ Error: unknown command "skills" for "databricks"
 >>> env -u DATABRICKS_AGENT_FEATURES_DISABLED [CLI] --help
 
 >>> env -u DATABRICKS_AGENT_FEATURES_DISABLED [CLI] fs --help
+
+>>> DATABRICKS_AGENT_FEATURES_DISABLED=1 CLAUDECODE=1 [CLI] quickstart
+
+>>> env -u DATABRICKS_AGENT_FEATURES_DISABLED -u DATABRICKS_SKILLS_PREVIEW [CLI] quickstart

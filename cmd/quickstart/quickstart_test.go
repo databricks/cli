@@ -8,20 +8,21 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestQuickstartForInteractiveReturnsHumanGuide(t *testing.T) {
-	out := quickstartFor(true, false)
+	out := quickstartFor(true, false, true)
 	assert.Contains(t, out, "# Welcome to Databricks")
 	assert.NotContains(t, out, "## Golden rules")
 	assert.False(t, strings.HasSuffix(out, "\n"), "trailing newline should be trimmed; Fprintln re-adds one")
 }
 
 func TestQuickstartForNonInteractiveReturnsAgentGuide(t *testing.T) {
-	out := quickstartFor(false, false)
+	out := quickstartFor(false, false, true)
 	assert.Contains(t, out, "# Databricks Quickstart")
 	assert.Contains(t, out, "## Golden rules")
 	// Frontmatter must be stripped so the output starts at the heading.
@@ -30,18 +31,18 @@ func TestQuickstartForNonInteractiveReturnsAgentGuide(t *testing.T) {
 }
 
 func TestQuickstartForInteractiveIgnoresSkillsVariant(t *testing.T) {
-	assert.Equal(t, quickstartFor(true, false), quickstartFor(true, true))
+	assert.Equal(t, quickstartFor(true, false, true), quickstartFor(true, true, true))
 }
 
 func TestQuickstartForNonInteractiveAitoolsVariant(t *testing.T) {
-	out := quickstartFor(false, false)
+	out := quickstartFor(false, false, true)
 	assert.Contains(t, out, "databricks aitools install")
 	assert.NotContains(t, out, "databricks skills")
 	assert.NotContains(t, out, "<!--")
 }
 
 func TestQuickstartForNonInteractiveSkillsVariant(t *testing.T) {
-	out := quickstartFor(false, true)
+	out := quickstartFor(false, true, true)
 	assert.True(t, strings.HasPrefix(out, "# Databricks Quickstart"))
 	assert.Contains(t, out, "databricks skills list")
 	assert.Contains(t, out, "databricks skills read <name>")
@@ -57,27 +58,50 @@ func TestSkillForHasFrontmatterAndAgentBody(t *testing.T) {
 	out := skillFor()
 	assert.True(t, strings.HasPrefix(out, "---\nname: databricks-quickstart\ndescription: "), out)
 	assert.NotContains(t, out, "<!--")
-	assert.Equal(t, quickstartFor(false, true), stripFrontmatter(out))
+	assert.Equal(t, quickstartFor(false, true, true), stripFrontmatter(out))
 }
 
 func TestVariantText(t *testing.T) {
 	const in = "shared\n<!--skills-->\nnew\n<!--aitools-->\nold\n<!--end-->\nafter"
-	assert.Equal(t, "shared\nnew\nafter", variantText(in, true))
-	assert.Equal(t, "shared\nold\nafter", variantText(in, false))
+	assert.Equal(t, "shared\nnew\nafter", variantText(in, true, true))
+	assert.Equal(t, "shared\nold\nafter", variantText(in, false, true))
+}
+
+// The switch drops the aitools block from the agent text, so no aitools install
+// is named. A value that is not true leaves the text as it was.
+func TestQuickstartAgentFeaturesDisabledDropsAitoolsBlock(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	for _, value := range []string{"false", "1"} {
+		ctx := env.Set(cmdio.MockDiscard(t.Context()), skills.AgentFeaturesDisabledEnv, value)
+		cmd := &cobra.Command{}
+		buildCommand(ctx, cmd)
+		var out bytes.Buffer
+		cmd.SetContext(ctx)
+		cmd.SetOut(&out)
+		require.NoError(t, cmd.RunE(cmd, nil))
+		assert.NotContains(t, out.String(), "<!--")
+		assert.Contains(t, out.String(), "## Golden rules")
+		if value == "false" {
+			assert.Contains(t, out.String(), "databricks aitools install")
+		} else {
+			assert.NotContains(t, out.String(), "aitools install")
+			assert.NotContains(t, out.String(), "databricks-dabs")
+		}
+	}
 }
 
 func TestVariantTextAcceptsCRLFMarkers(t *testing.T) {
 	// A CRLF checkout (Git for Windows with core.autocrlf=true) leaves a \r on
 	// each marker line. The markers must still match and be dropped.
 	const in = "shared\r\n<!--skills-->\r\nnew\r\n<!--aitools-->\r\nold\r\n<!--end-->\r\nafter\r\n"
-	assert.Equal(t, "shared\r\nnew\r\nafter\r\n", variantText(in, true))
-	assert.Equal(t, "shared\r\nold\r\nafter\r\n", variantText(in, false))
+	assert.Equal(t, "shared\r\nnew\r\nafter\r\n", variantText(in, true, true))
+	assert.Equal(t, "shared\r\nold\r\nafter\r\n", variantText(in, false, true))
 }
 
 func TestVariantTextCRLFMatchesLF(t *testing.T) {
 	crlf := strings.ReplaceAll(agentQuickstart, "\n", "\r\n")
 	for _, skillsVariant := range []bool{false, true} {
-		assert.Equal(t, strings.ReplaceAll(variantText(agentQuickstart, skillsVariant), "\n", "\r\n"), variantText(crlf, skillsVariant))
+		assert.Equal(t, strings.ReplaceAll(variantText(agentQuickstart, skillsVariant, true), "\n", "\r\n"), variantText(crlf, skillsVariant, true))
 	}
 }
 

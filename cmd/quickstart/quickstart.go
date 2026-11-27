@@ -54,6 +54,9 @@ terminal (for example, when a coding agent runs the command), it prints a
 denser, agent-oriented version instead.`
 
 	skillsVariant := skills.Enabled(ctx)
+	// With DATABRICKS_AGENT_FEATURES_DISABLED set, the agent text names no
+	// aitools install either: it is one of the agent nudges that switch turns off.
+	aitoolsNudge := !skills.AgentFeaturesDisabled(ctx)
 	var printSkill bool
 	if skillsVariant {
 		cmd.Flags().BoolVar(&printSkill, "skill", false, "Print the databricks-quickstart skill with its frontmatter")
@@ -65,7 +68,7 @@ denser, agent-oriented version instead.`
 		if printSkill {
 			content = skillFor()
 		} else {
-			content = quickstartFor(cmdio.IsPromptSupported(cmd.Context()), skillsVariant)
+			content = quickstartFor(cmdio.IsPromptSupported(cmd.Context()), skillsVariant, aitoolsNudge)
 		}
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), content)
 		return err
@@ -76,26 +79,28 @@ denser, agent-oriented version instead.`
 // terminals (people) get the friendly guide; non-interactive callers (coding
 // agents, scripts, CI) get the agent-oriented version. The detection is
 // intentionally simple for now and can grow more precise later. skillsVariant
-// selects the agent text that points at `databricks skills`.
-func quickstartFor(interactive, skillsVariant bool) string {
+// selects the agent text that points at `databricks skills`. aitoolsNudge
+// keeps the aitools blocks, which point at `databricks aitools install`.
+func quickstartFor(interactive, skillsVariant, aitoolsNudge bool) string {
 	if interactive {
 		return strings.TrimRight(humanQuickstart, "\n")
 	}
-	return stripFrontmatter(variantText(agentQuickstart, skillsVariant))
+	return stripFrontmatter(variantText(agentQuickstart, skillsVariant, aitoolsNudge))
 }
 
 // skillFor returns the skills variant of the agent quickstart with its
 // frontmatter: the text a harness writes to databricks-quickstart/SKILL.md.
 func skillFor() string {
-	return strings.TrimRight(variantText(agentQuickstart, true), "\n")
+	return strings.TrimRight(variantText(agentQuickstart, true, true), "\n")
 }
 
 // variantText keeps the variant that was asked for and drops the other one,
-// along with the marker lines. Text outside blocks is kept as it is. A marker
-// matches with a trailing \r ignored, so a CRLF copy still splits into
-// variants. The other lines keep their \r. The frontmatter fence in
-// stripFrontmatter needs LF, which cmd/quickstart/.gitattributes ensures.
-func variantText(s string, skillsVariant bool) string {
+// along with the marker lines. The aitools block is also dropped when
+// aitoolsNudge is false, so the text has no aitools nudge. Text outside blocks
+// is kept as it is. A marker matches with a trailing \r ignored, so a CRLF copy
+// still splits into variants. The other lines keep their \r. The frontmatter
+// fence in stripFrontmatter needs LF, which cmd/quickstart/.gitattributes ensures.
+func variantText(s string, skillsVariant, aitoolsNudge bool) string {
 	var out []string
 	keep := true
 	for line := range strings.SplitSeq(s, "\n") {
@@ -103,7 +108,7 @@ func variantText(s string, skillsVariant bool) string {
 		case skillsMarker:
 			keep = skillsVariant
 		case aitoolsMarker:
-			keep = !skillsVariant
+			keep = !skillsVariant && aitoolsNudge
 		case endMarker:
 			keep = true
 		default:
