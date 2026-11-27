@@ -1,0 +1,55 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.my_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Move the tasks back to job clusters remotely
+
+=== Sync replaces the job_cluster_key the YAML already has and keeps the variables
+
+>>> [CLI] bundle config-remote-sync -t dev --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='by_complex_variable'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='by_complex_variable'].new_cluster: skip (the field is a variable reference)
+  tasks[task_key='by_variable'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='by_variable'].job_cluster_key: replace
+  tasks[task_key='main'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='main'].job_cluster_key: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -28,5 +28,5 @@
+       tasks:
+         - task_key: main
+-          job_cluster_key: shared
++          job_cluster_key: other
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/nb
+
+=== The override still clears job_cluster_key, so the next sync detects it again
+
+>>> [CLI] bundle config-remote-sync -t dev
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='by_complex_variable'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='by_complex_variable'].new_cluster: skip (the field is a variable reference)
+  tasks[task_key='by_variable'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='by_variable'].job_cluster_key: replace
+  tasks[task_key='main'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='main'].job_cluster_key: replace
+
+
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 1 deleted

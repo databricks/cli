@@ -1,0 +1,24 @@
+
+=== Copy a file at an absolute Windows path into a DBFS directory
+
+>>> [CLI] fs cp [TEST_TMP_DIR]\foo.txt dbfs:/tmp/fs-cp-windows-[UNIQUE_NAME]
+[TEST_TMP_DIR]\foo.txt -> dbfs:/tmp/fs-cp-windows-[UNIQUE_NAME]/foo.txt
+
+>>> [CLI] fs cat dbfs:/tmp/fs-cp-windows-[UNIQUE_NAME]/foo.txt
+abc
+
+=== Copy a file into an existing local directory named with a trailing backslash
+
+>>> [CLI] fs cp [TEST_TMP_DIR]\foo.txt [TEST_TMP_DIR]\existingdir\
+[TEST_TMP_DIR]\foo.txt -> [TEST_TMP_DIR]\existingdir/foo.txt
+
+>>> cat existingdir/foo.txt
+abc
+
+=== A trailing backslash or slash on a missing directory fails
+
+>>> musterr [CLI] fs cp [TEST_TMP_DIR]\foo.txt [TEST_TMP_DIR]\nonexistent\mydir\
+Error: no such directory: [TEST_TMP_DIR]\nonexistent\mydir
+
+>>> musterr [CLI] fs cp [TEST_TMP_DIR]/foo.txt [TEST_TMP_DIR]/nonexistent2/mydir2/
+Error: no such directory: [TEST_TMP_DIR]\nonexistent2\mydir2

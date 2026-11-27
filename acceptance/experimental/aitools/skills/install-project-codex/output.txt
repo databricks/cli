@@ -1,0 +1,40 @@
+
+=== install --scope=project skips the user-only Codex plugin and points at --skills-only
+
+>>> [CLI] aitools install --scope=project --agents=codex --output json
+{
+  "scope": "project",
+  "agents": [
+    {
+      "name": "codex",
+      "delivery": "skip",
+      "status": "skipped",
+      "error_category": "UNSUPPORTED_SCOPE",
+      "message": "the plugin is user-only; project-scoped plugins are not supported",
+      "recovery": "To install skill files for Codex CLI in the project scope instead, run: databricks aitools install --scope=project --agents=codex --skills-only --output json"
+    }
+  ]
+}
+
+Exit code: 1
+
+=== install --skills-only --scope=project installs Codex skills into .agents/skills
+
+>>> [CLI] aitools install --skills-only --scope=project --agents=codex --output json
+{
+  "scope": "project",
+  "agents": [
+    {
+      "name": "codex",
+      "delivery": "skills",
+      "status": "installed"
+    }
+  ]
+}
+Codex project skill installed
+
+=== uninstall --scope=project removes the Codex project skill
+
+>>> [CLI] aitools uninstall --scope=project
+Uninstalled 1 skill.
+Codex project skill removed

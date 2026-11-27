@@ -316,9 +316,22 @@ func TestSkipRecoveryNamesOnlyTheAgentInTheGlobalScope(t *testing.T) {
 	inv := installInvocation{scope: installer.ScopeProject, agents: "claude-code,cursor", skillsOnly: true, experimental: true}
 	assert.Equal(t, "To set up Cursor in the global scope, run: databricks aitools install --scope=global --agents=cursor --skills-only --experimental", skipRecovery(inv, agentPlanItem{agent: cursor, delivery: deliverySkip}))
 
-	inv = installInvocation{scope: installer.ScopeProject, agents: "codex", jsonOutput: true}
-	codex := testPluginAgent(agents.NameCodex, "Codex CLI", "codex")
-	assert.Equal(t, "To set up Codex CLI in the global scope, run: databricks aitools install --scope=global --agents=codex --output json", skipRecovery(inv, agentPlanItem{agent: codex, delivery: deliverySkip}))
+	inv = installInvocation{scope: installer.ScopeProject, agents: "copilot", jsonOutput: true}
+	copilot := agents.ByName(agents.NameCopilot)
+	assert.Equal(t, "To set up GitHub Copilot in the global scope, run: databricks aitools install --scope=global --agents=copilot --output json", skipRecovery(inv, agentPlanItem{agent: copilot, delivery: deliverySkip}))
+}
+
+func TestSkipRecoveryForUserOnlyPluginKeepsTheProjectScopeForSkillFiles(t *testing.T) {
+	// The Codex plugin is user-only, but Codex reads project skill files, so a
+	// project install it skipped recovers with --skills-only in the same scope.
+	fakeBinsOnPath(t, "codex")
+	codex := agents.ByName(agents.NameCodex)
+	plan := buildPlan(t.Context(), []*agents.Agent{codex}, installer.ScopeProject, false, true)
+	require.Len(t, plan, 1)
+	assert.Equal(t, deliverySkip, plan[0].delivery)
+
+	inv := installInvocation{scope: installer.ScopeProject, agents: "codex", jsonOutput: true}
+	assert.Equal(t, "To install skill files for Codex CLI in the project scope instead, run: databricks aitools install --scope=project --agents=codex --skills-only --output json", skipRecovery(inv, plan[0]))
 }
 
 func TestBuildInstallOutputIncludesRecovery(t *testing.T) {

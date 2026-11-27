@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/sandbox"
 
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -1066,11 +1067,42 @@ type notebookDetector func(filePath string, body []byte) (workspace.Language, bo
 
 // detectLegacyNotebook mirrors the legacy import-file endpoint, which looks for
 // the marker on the first line only (NotebookUtils.checkSourceFileNotebook in
-// universe).
+// universe). A valid Jupyter notebook is imported as a notebook named without
+// its .ipynb extension. Designer and query files (.designer.ipynb,
+// .lwquery.ipynb) are other asset types and are not modeled here.
 func detectLegacyNotebook(filePath string, body []byte) (workspace.Language, bool) {
+	lower := strings.ToLower(filePath)
+	if path.Ext(lower) == notebook.ExtensionJupyter && !strings.HasSuffix(lower, notebook.ExtensionDesigner) && !strings.HasSuffix(lower, ".lwquery.ipynb") {
+		return detectJupyterNotebook(filePath, body)
+	}
 	language, ok := sourceNotebookLanguages[strings.ToLower(path.Ext(filePath))]
 	firstLine, _, _ := bytes.Cut(notebookDetectionPrefix(body), []byte("\n"))
 	return language, ok && bytes.Contains(firstLine, []byte(notebookSourceMarker))
+}
+
+// detectJupyterNotebook reports whether body is a valid Jupyter notebook and
+// the language the workspace gives it on import: the language in its Databricks
+// metadata, else the one in metadata.language_info.name (a notebook with only
+// language_info.name "python" is imported as a PYTHON notebook).
+func detectJupyterNotebook(filePath string, body []byte) (workspace.Language, bool) {
+	isNotebook, language, err := notebook.DetectBytes(filePath, body)
+	if err != nil || !isNotebook {
+		return "", false
+	}
+	if language != "" {
+		return language, true
+	}
+	var nb struct {
+		Metadata struct {
+			LanguageInfo struct {
+				Name string `json:"name"`
+			} `json:"language_info"`
+		} `json:"metadata"`
+	}
+	if json.Unmarshal(body, &nb) != nil {
+		return "", true
+	}
+	return notebook.LanguageFromJupyterName(strings.ToLower(nb.Metadata.LanguageInfo.Name)), true
 }
 
 // detectAutoNotebook mirrors /workspace/import with format=AUTO, which finds the
@@ -1159,6 +1191,12 @@ func importFileNotebookTaken(filePath string) Response {
 			"message": fmt.Sprintf("Creating file failed. An item with path %s already exists", filePath),
 		},
 	}
+}
+
+// FilesUpload mirrors PUT /api/2.0/fs/files: the Files API stores the body as
+// uploaded, without turning notebooks into notebook objects or extracting zips.
+func (s *FakeWorkspace) FilesUpload(filePath string, body []byte, overwrite bool) Response {
+	return s.importFile(filePath, body, overwrite, nil, importFileConflicts)
 }
 
 // WorkspaceFilesImportFile mirrors the legacy import-file endpoint.

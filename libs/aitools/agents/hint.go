@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/useragent"
@@ -21,6 +22,11 @@ const (
 	// is deliberately chosen to be effective at helping agents; change it only
 	// after thorough testing.
 	hintText = "Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install"
+
+	// skillsHintText replaces hintText when skills.HintsEnabled is true. Agents
+	// acknowledged the install text without acting on it, and reading a skill
+	// through `databricks skills` needs no install step, so it asks for that.
+	skillsHintText = "Before you work with Databricks, run: databricks skills list"
 
 	// claudeAgentProvider is the useragent.AgentProvider() value for Claude Code.
 	// The SDK maps the CLAUDECODE env var to this product name.
@@ -88,6 +94,11 @@ var (
 	// reads in every tool output it lands in.
 	textHintThrottle = hintThrottle{component: "aitools-hint", ttl: time.Hour}
 
+	// skillsTextHintThrottle throttles the skills list text on its own marker
+	// bucket. An install-text marker left within the hour must not hide the
+	// skills text when skill hints are turned on, and the reverse.
+	skillsTextHintThrottle = hintThrottle{component: "aitools-skills-hint", ttl: time.Hour}
+
 	// nativeHintThrottle throttles the agent-native line on its own, shorter
 	// clock. The session id doesn't tell the main loop from a subagent or a
 	// hook (a subagent's commands carry the parent's session id and the
@@ -117,12 +128,14 @@ type agentHint struct {
 	// does, nothing is printed.
 	installed func(ctx context.Context) bool
 
-	// text is the model-facing recommendation, printed at most once per
-	// textHintThrottle per session (see sessionEnv), or per agent on this
-	// machine when there is no session id (see fallbackKey).
+	// text is the agent's install recommendation, the model-facing text unless
+	// skills.HintsEnabled is true (see message). It is printed at most once per
+	// text throttle (see message) per session (see sessionEnv), or per agent on
+	// this machine when there is no session id (see fallbackKey).
 	text string
 
-	// textKind tags the hint-shown event logged when text prints.
+	// textKind tags the hint-shown event logged when text prints. With
+	// skills.HintsEnabled on, message gives the skills list kind instead.
 	textKind protos.AitoolsHintKind
 
 	// sessionEnv names the env var carrying the agent's session id, which keys
@@ -137,7 +150,7 @@ type agentHint struct {
 	sessionKeyPrefix string
 
 	// fallbackKey keys the throttle when there is no session id, so the hint
-	// prints at most once per textHintThrottle on this machine. Empty means no
+	// prints at most once per text throttle on this machine. Empty means no
 	// throttle without a session id (Claude Code).
 	fallbackKey string
 
@@ -195,12 +208,15 @@ func (h *agentHint) nativeLine(ctx context.Context) string {
 	return h.native(ctx)
 }
 
-// MaybeHint recommends installing the Databricks AI tooling when a supported
-// agent drives the CLI without it installed. It is a no-op for human callers,
-// unsupported agents, hint-exempt commands (isHintExemptCommand), the `auth
+// MaybeHint nudges a supported agent toward Databricks AI tooling when it drives
+// the CLI without it installed. It is a no-op for human callers,
+// unsupported agents, hint-exempt commands (isHintExemptCommand), the
+// `databricks skills` commands when skills.HintsEnabled is true, the `auth
 // token` and `auth docker token` credential helpers, a CLI process the CLI
 // started itself, when there is no output stream, and once the tooling is
 // present.
+// The model-facing text is the skills list recommendation when
+// skills.HintsEnabled is true, else the agent's install text (see message).
 // The agent-native line (if any) and the model-facing text are throttled
 // independently, per session or, for agents without a session id, per agent
 // on this machine (fallbackKey). Both hint-shown events follow the text's
@@ -224,6 +240,11 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if isHintExemptCommand(cmd) {
 		return nil
 	}
+	// Only with skill hints on: with them off, the skills commands keep the
+	// install hint they had before the skills list hint existed.
+	if skills.HintsEnabled(ctx) && isUnder(cmd, skillsCommandPath) {
+		return nil
+	}
 	if IsCredentialHelperCommand(cmd) {
 		return nil
 	}
@@ -242,16 +263,19 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 	if native != "" && nativeHintThrottle.seen(ctx, key) {
 		native = ""
 	}
-	textDue := !textHintThrottle.seen(ctx, key)
+	textDue := !hint.message(ctx).throttle.seen(ctx, key)
 	if native == "" && !textDue {
 		return nil
 	}
+	// An agent that already has the tooling gets neither text, with skills hints
+	// on too: which agents are hinted stays as it was.
 	if hint.installed(ctx) {
 		return nil
 	}
-	// The auto-install after this command prints its own notice; neither line
-	// may tell the agent to install what it installs. No marker is written
-	// until the hint prints.
+	// The auto-install after this command prints its own notice. The install
+	// text must not ask for an install that run already makes, so both texts
+	// are withheld while it may install: one rule for both. No marker is
+	// written until the hint prints.
 	if autoinstall.InstallsFor != nil && autoinstall.InstallsFor(cmd, hint.agentName) {
 		return func() {
 			if hint.installed(ctx) {
@@ -267,9 +291,10 @@ func MaybeHint(ctx context.Context, cmd *cobra.Command, pluginRecorded PluginRec
 // show prints the lines MaybeHint found due, records their throttle markers
 // and logs their hint-shown events.
 func (h *agentHint) show(ctx context.Context, key, native string, textDue bool) {
+	msg := h.message(ctx)
 	// Only agents without a native line have a durable throttle, so a failed
 	// claim leaves nothing to print.
-	if textDue && !h.claim(ctx, key) {
+	if textDue && !h.claim(ctx, msg.throttle, key) {
 		return
 	}
 	if native != "" {
@@ -285,18 +310,37 @@ func (h *agentHint) show(ctx context.Context, key, native string, textDue bool) 
 		nativeEventThrottle.set(ctx, key, false)
 	}
 	if textDue {
-		cmdio.LogString(ctx, h.text)
-		logHintShown(ctx, h.textKind)
+		cmdio.LogString(ctx, msg.text)
+		logHintShown(ctx, msg.kind)
 	}
+}
+
+// hintMessage is the model-facing text of the hint, with the hint-shown kind
+// its event logs and the throttle that gates it.
+type hintMessage struct {
+	text     string
+	kind     protos.AitoolsHintKind
+	throttle hintThrottle
+}
+
+// message returns the text, kind and throttle of the hint: the skills list
+// ones when skills.HintsEnabled is true, else the agent's install text, its
+// kind and the install throttle. They are picked together behind one guard, so
+// the logged kind and the throttle always match the text that prints.
+func (h *agentHint) message(ctx context.Context) hintMessage {
+	if skills.HintsEnabled(ctx) {
+		return hintMessage{text: skillsHintText, kind: protos.AitoolsHintKindSkillsListText, throttle: skillsTextHintThrottle}
+	}
+	return hintMessage{text: h.text, kind: h.textKind, throttle: textHintThrottle}
 }
 
 // claim records the text's throttle key and reports whether the text may
 // print. A durable throttle allows it only once the marker has persisted.
-func (h *agentHint) claim(ctx context.Context, key string) bool {
+func (h *agentHint) claim(ctx context.Context, throttle hintThrottle, key string) bool {
 	if h.durableThrottle {
-		return claimHintMarker(ctx, key)
+		return claimHintMarker(ctx, throttle, key)
 	}
-	textHintThrottle.record(ctx, key)
+	throttle.record(ctx, key)
 	return true
 }
 
@@ -348,6 +392,11 @@ func IsCredentialHelperCommand(cmd *cobra.Command) bool {
 	return parent != nil && parent.Name() == authCommandName
 }
 
+// skillsCommandPath is the `databricks skills` command group. Its commands are
+// hint-exempt only when skills.HintsEnabled is true (see MaybeHint): reading a
+// skill is the task itself, so the skills list hint would only repeat it.
+const skillsCommandPath = "skills"
+
 // hintExemptCommands are the commands, with their subcommands, on which no
 // tooling hint prints. Paths are relative to the root command. The aitools
 // trees are exempt because telling the agent to run aitools while it already
@@ -371,15 +420,20 @@ var hintExemptCommands = []string{
 // isHintExemptCommand reports whether cmd is one of hintExemptCommands or a
 // subcommand of one.
 func isHintExemptCommand(cmd *cobra.Command) bool {
-	path := cmd.CommandPath()
-	root := cmd.Root().CommandPath()
 	for _, exempt := range hintExemptCommands {
-		full := root + " " + exempt
-		if path == full || strings.HasPrefix(path, full+" ") {
+		if isUnder(cmd, exempt) {
 			return true
 		}
 	}
 	return false
+}
+
+// isUnder reports whether cmd is the command at path, relative to the root
+// command, or one of its subcommands.
+func isUnder(cmd *cobra.Command, path string) bool {
+	full := cmd.Root().CommandPath() + " " + path
+	cmdPath := cmd.CommandPath()
+	return cmdPath == full || strings.HasPrefix(cmdPath, full+" ")
 }
 
 // claudeToolingInstalled reports whether Claude Code has Databricks AI tooling

@@ -1,9 +1,4 @@
 
-=== Device code login is disabled by default
-
->>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
-Error: --use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it
-
 === Inputs device code login cannot honor are rejected
 
 >>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --resource https://resource.test

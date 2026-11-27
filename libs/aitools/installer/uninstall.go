@@ -271,7 +271,7 @@ func removeSkillExposuresFromAgents(ctx context.Context, skillName, canonicalDir
 		if agent == nil {
 			continue
 		}
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
@@ -304,7 +304,7 @@ func hasRemainingSkillExposure(ctx context.Context, skillName, canonicalDir, sco
 		if removed[agent.Name] {
 			continue
 		}
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
@@ -348,7 +348,7 @@ func untrackedSkillAgents(ctx context.Context, skillName string, agentNames []st
 		if agent == nil {
 			continue
 		}
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
@@ -371,7 +371,7 @@ func untrackedSkillAgents(ctx context.Context, skillName string, agentNames []st
 func removeSkillEntriesFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string, state *InstallState) bool {
 	removed := false
 	for _, agent := range agents.Registry {
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
@@ -410,7 +410,7 @@ func removeSkillEntriesFromAgents(ctx context.Context, skillName, canonicalDir, 
 // into baseDir that are not tracked in state, and removes them.
 func cleanOrphanedSymlinks(ctx context.Context, baseDir, scope, cwd string) {
 	for _, agent := range agents.Registry {
-		if scope == ScopeProject && !agent.SupportsProjectScope {
+		if scope == ScopeProject && !agent.SupportsProjectSkills {
 			continue
 		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)

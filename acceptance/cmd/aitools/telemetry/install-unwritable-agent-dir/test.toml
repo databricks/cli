@@ -1,0 +1,5 @@
+# The case relies on chmod, which does not make a directory read-only on Windows.
+GOOS.windows = false
+Ignore = [
+    "home2",
+]

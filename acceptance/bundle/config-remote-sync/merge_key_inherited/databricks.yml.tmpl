@@ -1,0 +1,87 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+include:
+  - pipeline.yml
+
+variables:
+  input_a:
+    default: original
+  input_b:
+    default: other
+
+targets:
+  staging:
+    mode: development
+    resources:
+      jobs:
+        my_job: &job_overrides
+          timeout_seconds: 600
+  default:
+    default: true
+    mode: development
+    resources:
+      jobs:
+        other_job: &other_job
+          tasks:
+            - task_key: prep
+              max_retries: 3
+        my_job:
+          <<: [*job_overrides, *other_job]
+        rename_job:
+          tasks:
+            - &renamed_task
+              task_key: main
+              max_retries: 1
+
+resources:
+  jobs:
+    rename_job:
+      <<: *job_overrides
+      tasks:
+        - <<: *renamed_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+    my_job:
+      timeout_seconds: 300
+      job_clusters:
+        - job_cluster_key: base
+          new_cluster: &base_cluster
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - job_cluster_key: derived
+          new_cluster:
+            <<: *base_cluster
+            spark_conf:
+              spark.speculation: "true"
+      tasks:
+        - task_key: prep
+          job_cluster_key: base
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/prep
+        - task_key: setup
+          job_cluster_key: base
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/setup
+        - &base_task
+          task_key: a_task
+          job_cluster_key: base
+          max_retries: 2
+          min_retry_interval_millis: 1000
+          depends_on:
+            - task_key: prep
+            - task_key: setup
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+            base_parameters: &base_params
+              input_file_name: ${var.input_a}
+        - <<: *base_task
+          task_key: b_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+            base_parameters:
+              <<: *base_params
+              extra: b
+        - <<: *base_task
+          task_key: c_task

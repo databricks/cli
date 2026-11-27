@@ -1,5 +1,5 @@
 
-=== Unicode job names resolve in resources references
+=== A unicode resource key passes validate, plan and deploy
 
 >>> [CLI] bundle validate
 Name: test-bundle

@@ -31,9 +31,10 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/yamlutil"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/spf13/cobra"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 const (
@@ -994,12 +995,7 @@ func replaceProjectName(destDir, newName string, selectedManager pkgmanager.Mana
 	}
 
 	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(&doc); err != nil {
-		return fmt.Errorf("encode %s: %w", bundleConfigFile, err)
-	}
-	if err := enc.Close(); err != nil {
+	if err := yamlutil.Encode(&buf, &doc); err != nil {
 		return fmt.Errorf("encode %s: %w", bundleConfigFile, err)
 	}
 

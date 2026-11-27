@@ -1,0 +1,1 @@
+* `databricks aitools install --skills-only --scope project` now installs Codex skills into `<project>/.agents/skills` instead of skipping Codex. `databricks aitools update --scope project` refreshes those skills, and adds none for Codex to a project that does not have them. ([#7990](https://github.com/databricks/cli/pull/7990))

@@ -48,16 +48,43 @@ type State struct {
 	// "no" to the skills prompt of `databricks apps init`.
 	OptedOut bool `json:"opted_out,omitempty"`
 
+	// Consented records that the user agreed to installing the tools and
+	// keeping them up to date. It is set by `databricks aitools auto-install
+	// enable`, by a global-scope `databricks aitools install` that set an agent
+	// up, by a "yes" to the install prompt, by a "yes" to the skills prompt of
+	// `databricks apps init`, and by a run that finds a global installation
+	// made by the CLI other than one auto-install made without consent (see
+	// InstalledWithoutConsent and Installing). It is never set
+	// together with OptedOut (see Consent), so a CLI that knows only OptedOut
+	// still reads an opt-out as one.
+	Consented bool `json:"consented,omitempty"`
+
 	// AcceptedVersion is the CLI version whose install prompt the user
 	// answered "yes". Retries of that version install without asking again;
 	// any other version asks.
 	AcceptedVersion string `json:"accepted_version,omitempty"`
 
 	// Installing is set while auto-install makes a first install, and stays
-	// set when the install did not finish. The skills such an install left
+	// set when the install did not finish, including one that was refused
+	// the skills (see RecordUnfinished). The skills such an install left
 	// have no install state, like the ones the user put there, so a later run
 	// uses it to finish the install instead of leaving the skills alone.
 	Installing bool `json:"installing,omitempty"`
+
+	// InstallStateDigest is the digest of the install state that an
+	// unfinished first install saved (one that failed only for some agents,
+	// or that installed the plugins and was refused the skills).
+	// While the install state still has it, nothing else wrote it, so a later
+	// run finishes the install as a first install instead of updating it.
+	// Install state that anything else wrote is updated. It is cleared with
+	// Installing.
+	InstallStateDigest string `json:"install_state_digest,omitempty"`
+
+	// InstalledWithoutConsent records that auto-install started a first
+	// install while the user had not answered (a coding agent's run, which
+	// does not ask). The install state it leaves is not the user's consent, so
+	// a run does not read it as one. It is cleared once the user answers.
+	InstalledWithoutConsent bool `json:"installed_without_consent,omitempty"`
 
 	// ID is a random per-machine identifier, created on the first run that
 	// decides anything. Only its Bucket is used, and it never leaves the
@@ -123,16 +150,49 @@ func save(ctx context.Context, s State) error {
 	return atomicfile.Write(path, append(data, '\n'), 0o600, atomicfile.MkDir(0o755))
 }
 
-// SetOptedOut turns auto-install off (true) or back on (false), keeping the
-// rest of the state. A state file that cannot be read is replaced: the user's
-// explicit choice matters more than a broken record. Where the state lock
-// cannot be taken at all (a filesystem without locks), it writes without it:
-// auto-install cannot run there, so nothing else writes the state.
-func SetOptedOut(ctx context.Context, optedOut bool) error {
+// Consent is the user's answer to installing Databricks AI tools and keeping
+// them up to date. It is one answer per machine, for every CLI version.
+type Consent int
+
+const (
+	// ConsentUnknown is a machine whose user never answered.
+	ConsentUnknown Consent = iota
+	// ConsentGiven is a machine whose user agreed.
+	ConsentGiven
+	// ConsentOptedOut is a machine whose user refused.
+	ConsentOptedOut
+)
+
+// Consent returns the stored answer. A state with both OptedOut and Consented
+// set, which only a hand edit makes, is opted out.
+func (s State) Consent() Consent {
+	switch {
+	case s.OptedOut:
+		return ConsentOptedOut
+	case s.Consented:
+		return ConsentGiven
+	}
+	return ConsentUnknown
+}
+
+// setConsent stores c in s, clearing the other answer.
+func setConsent(s *State, c Consent) {
+	s.OptedOut = c == ConsentOptedOut
+	s.Consented = c == ConsentGiven
+	s.InstalledWithoutConsent = false
+}
+
+// SetConsent stores the user's answer c, keeping the rest of the state, and
+// returns the answer stored before. A state file that cannot be read is
+// replaced: the user's explicit choice matters more than a broken record.
+// Where the state lock cannot be taken at all (a filesystem without locks),
+// it writes without it: auto-install cannot run there, so nothing else writes
+// the state.
+func SetConsent(ctx context.Context, c Consent) (previous Consent, err error) {
 	unlock, err := lock(ctx, stateLockFileName, stateLockWait)
 	switch {
 	case errors.Is(err, errLockHeld):
-		return err
+		return ConsentUnknown, err
 	case err != nil:
 		log.Debugf(ctx, "Saving the auto-install state without its lock: %v", err)
 	default:
@@ -143,20 +203,36 @@ func SetOptedOut(ctx context.Context, optedOut bool) error {
 		log.Debugf(ctx, "Replacing unreadable auto-install state: %v", err)
 		s = State{}
 	}
-	s.OptedOut = optedOut
-	return save(ctx, s)
+	previous = s.Consent()
+	setConsent(&s, c)
+	return previous, save(ctx, s)
+}
+
+// GiveConsentIfUnknown stores ConsentGiven unless the user answered already,
+// and returns the answer stored before. It is for actions that count as
+// consent without asking for it, such as an install, so an earlier opt-out
+// stays. For the same reason it fails on a state file it cannot read, rather
+// than replacing it: the file may hold an opt-out.
+func GiveConsentIfUnknown(ctx context.Context) (previous Consent, err error) {
+	err = updateState(ctx, func(s *State) {
+		previous = s.Consent()
+		if previous == ConsentUnknown {
+			setConsent(s, ConsentGiven)
+		}
+	})
+	return previous, err
 }
 
 // declined is set once the user turned the tools down in this process.
 var declined atomic.Bool
 
 // Decline turns auto-install off after the user turned the tools down: for
-// this process at once, and for later ones through the stored opt-out. The
-// error is that of storing the opt-out; this process honors the answer either
-// way.
-func Decline(ctx context.Context) error {
+// this process at once, and for later ones through the stored opt-out. It
+// returns the answer stored before. The error is that of storing the opt-out;
+// this process honors the answer either way.
+func Decline(ctx context.Context) (previous Consent, err error) {
 	declined.Store(true)
-	return SetOptedOut(ctx, true)
+	return SetConsent(ctx, ConsentOptedOut)
 }
 
 // Declined reports whether Decline ran in this process.

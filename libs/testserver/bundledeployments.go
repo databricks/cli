@@ -478,38 +478,43 @@ func operationBody(op *bundledeployments.Operation) (map[string]any, error) {
 	return body, nil
 }
 
-// UpdateOperation applies a later write for a resource already recorded in this
-// version. sequence_id is the concurrency precondition and increments on success.
-func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, resourceKey string) Response {
+// dmsOperationUpdate is one operation write as the service reads it, before it looks at storage.
+type dmsOperationUpdate struct {
+	op bundledeployments.Operation
+	// update holds the paths the mask names. Only these are written; other fields keep their
+	// values, and omitting state keeps the already-recorded state.
+	update map[string]bool
+}
+
+// parseOperationUpdate checks one write's body against its update_mask, which the service does
+// before reading the operation it applies to.
+func parseOperationUpdate(body []byte, updateMask string) (dmsOperationUpdate, Response, bool) {
 	// raw tracks which fields the body sent. A masked field with no value means clear it.
 	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(req.Body, &raw); err != nil {
-		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return dmsOperationUpdate{}, Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}, false
 	}
 	// sequence_id comes as a number (SDK) or a string (real service). Operation reads
 	// either into int64, so the whole body decodes in one shot.
 	var op bundledeployments.Operation
-	if err := json.Unmarshal(req.Body, &op); err != nil {
-		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	if err := json.Unmarshal(body, &op); err != nil {
+		return dmsOperationUpdate{}, Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}, false
 	}
 
-	updateMask := req.URL.Query().Get("update_mask")
 	if updateMask == "" {
-		return dmsInvalidArgument("update_mask is required")
+		return dmsOperationUpdate{}, dmsInvalidArgument("update_mask is required"), false
 	}
-	// Only masked paths are written; other fields keep their values.
-	// Omitting state keeps the already-recorded state.
 	update := map[string]bool{}
 	for path := range strings.SplitSeq(updateMask, ",") {
 		path = strings.TrimSpace(path)
 		if !slices.Contains(dmsUpdatableOperationFields, path) {
-			return dmsInvalidArgument("update_mask path " + path + " is not updatable")
+			return dmsOperationUpdate{}, dmsInvalidArgument("update_mask path " + path + " is not updatable"), false
 		}
 		// state is the exception: masked with no value is how the service is told the resource
 		// is gone, which is what stops it being listed.
 		if _, sent := raw[path]; !sent && path != "state" {
 			// An empty value is how a field is cleared, so the field has to be there to say so.
-			return dmsInvalidArgument(path + " is required when '" + path + "' is in update_mask (an empty value clears it)")
+			return dmsOperationUpdate{}, dmsInvalidArgument(path + " is required when '" + path + "' is in update_mask (an empty value clears it)"), false
 		}
 		update[path] = true
 	}
@@ -523,7 +528,7 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 			bundledeployments.OperationStatusOperationStatusFailed,
 			operationStatusPending:
 		default:
-			return dmsInvalidArgument("status is required and must not be UNSPECIFIED when 'status' is in update_mask")
+			return dmsOperationUpdate{}, dmsInvalidArgument("status is required and must not be UNSPECIFIED when 'status' is in update_mask"), false
 		}
 	}
 
@@ -535,11 +540,102 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	// A resource_id can be written but not cleared, and only alongside the state it belongs to.
 	if update["resource_id"] {
 		if op.ResourceId == "" {
-			return dmsInvalidArgument("resource_id is required when 'resource_id' is in update_mask")
+			return dmsOperationUpdate{}, dmsInvalidArgument("resource_id is required when 'resource_id' is in update_mask"), false
 		}
 		if !recordsState {
-			return dmsInvalidArgument("state must be in update_mask when 'resource_id' is")
+			return dmsOperationUpdate{}, dmsInvalidArgument("state must be in update_mask when 'resource_id' is"), false
 		}
+	}
+
+	return dmsOperationUpdate{op: op, update: update}, Response{}, true
+}
+
+// checkOperationUpdate validates u against the operation it updates, without changing it.
+func checkOperationUpdate(existing *bundledeployments.Operation, u dmsOperationUpdate) (Response, bool) {
+	if u.op.SequenceId != existing.SequenceId {
+		return dmsAborted("sequence_id is outdated; the operation is at " + strconv.FormatInt(existing.SequenceId, 10)), false
+	}
+
+	// Invariants check the operation after the update, not the request.
+	// The mask leaves unspecified fields unchanged.
+	after := *existing
+	writeOperationFields(&after, u)
+
+	failed := after.Status == bundledeployments.OperationStatusOperationStatusFailed
+	if !failed && after.ErrorMessage != "" {
+		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED"), false
+	}
+
+	// A failure may leave no state only where nothing is left to describe: a create that never
+	// landed, or a recreate whose delete already went through.
+	if failed && after.State == "" && leavesLiveResource(after.ActionType) {
+		return dmsInvalidArgument("state is required for a " + string(after.ActionType) +
+			" operation, because it acts on a resource that already exists and cannot destroy it, even when it fails"), false
+	}
+
+	// An operation with state must identify its resource via resource_id,
+	// even for failed operations reporting prior state.
+	if after.State != "" && after.ResourceId == "" {
+		return dmsInvalidArgument("resource_id is required for an operation that records state"), false
+	}
+	return Response{}, true
+}
+
+// writeOperationFields copies the masked fields of u onto op. Only the masked fields change;
+// action_type and resource_key stay as created.
+func writeOperationFields(op *bundledeployments.Operation, u dmsOperationUpdate) {
+	if u.update["state"] {
+		op.State = u.op.State
+	}
+	if u.update["error_message"] {
+		op.ErrorMessage = u.op.ErrorMessage
+	}
+	if u.update["resource_id"] {
+		op.ResourceId = u.op.ResourceId
+	}
+	if u.update["status"] {
+		op.Status = u.op.Status
+	}
+}
+
+// applyOperationUpdate writes a checked update onto existing and moves the deployment's
+// resource the way the service does.
+func (d *DmsDeployment) applyOperationUpdate(deploymentID, versionID, resourceKey string, existing *bundledeployments.Operation, u dmsOperationUpdate) {
+	writeOperationFields(existing, u)
+	existing.SequenceId++
+
+	// Only an update that names state moves the resource: naming it with no value clears
+	// it and removes the resource, and an update that leaves it out - a failure reporting
+	// its outcome - must not disturb what the deployment already holds. Every version
+	// stages its operations without state, so re-deriving this from the operation
+	// regardless of the mask would drop a resource whose deploy failed before writing.
+	if u.update["state"] {
+		if existing.State == "" {
+			delete(d.Resources, resourceKey)
+		} else {
+			d.Resources[resourceKey] = bundledeployments.Resource{
+				Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
+				ResourceKey:    resourceKey,
+				ResourceId:     existing.ResourceId,
+				ResourceType:   existing.ResourceType,
+				LastActionType: existing.ActionType,
+				LastVersionId:  versionID,
+				State:          existing.State,
+			}
+		}
+	} else if resource, projected := d.Resources[resourceKey]; projected && u.update["resource_id"] {
+		// resource_id is mirrored too, for a resource the deployment still holds.
+		resource.ResourceId = existing.ResourceId
+		d.Resources[resourceKey] = resource
+	}
+}
+
+// UpdateOperation applies a later write for a resource already recorded in this
+// version. sequence_id is the concurrency precondition and increments on success.
+func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, resourceKey string) Response {
+	u, resp, ok := parseOperationUpdate(req.Body, req.URL.Query().Get("update_mask"))
+	if !ok {
+		return resp
 	}
 
 	defer s.LockUnlock()()
@@ -554,90 +650,83 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	if !ok {
 		return dmsNotFound("operation " + opName)
 	}
-	if op.SequenceId != existing.SequenceId {
-		return dmsAborted("sequence_id is outdated; the operation is at " + strconv.FormatInt(existing.SequenceId, 10))
+	if resp, ok := checkOperationUpdate(existing, u); !ok {
+		return resp
 	}
-
-	// Invariants check the operation after the update, not the request.
-	// The mask leaves unspecified fields unchanged.
-	after := *existing
-	if update["state"] {
-		after.State = op.State
-	}
-	if update["error_message"] {
-		after.ErrorMessage = op.ErrorMessage
-	}
-	if update["resource_id"] {
-		after.ResourceId = op.ResourceId
-	}
-	if update["status"] {
-		after.Status = op.Status
-	}
-
-	failed := after.Status == bundledeployments.OperationStatusOperationStatusFailed
-	if !failed && after.ErrorMessage != "" {
-		return dmsInvalidArgument("error_message is only allowed when status is OPERATION_STATUS_FAILED")
-	}
-
-	// A failure may leave no state only where nothing is left to describe: a create that never
-	// landed, or a recreate whose delete already went through.
-	if failed && after.State == "" && leavesLiveResource(after.ActionType) {
-		return dmsInvalidArgument("state is required for a " + string(after.ActionType) +
-			" operation, because it acts on a resource that already exists and cannot destroy it, even when it fails")
-	}
-
-	// An operation with state must identify its resource via resource_id,
-	// even for failed operations reporting prior state.
-	if after.State != "" && after.ResourceId == "" {
-		return dmsInvalidArgument("resource_id is required for an operation that records state")
-	}
-
-	// Only the masked fields change; action_type and resource_key stay as created.
-	if update["state"] {
-		existing.State = op.State
-	}
-	if update["error_message"] {
-		existing.ErrorMessage = op.ErrorMessage
-	}
-	if update["resource_id"] {
-		existing.ResourceId = op.ResourceId
-	}
-	if update["status"] {
-		existing.Status = op.Status
-	}
-	existing.SequenceId++
+	d.applyOperationUpdate(deploymentID, versionID, resourceKey, existing, u)
 
 	body, err := operationBody(existing)
 	if err != nil {
 		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
 	}
+	return Response{Body: body}
+}
 
-	// Only an update that names state moves the resource: naming it with no value clears
-	// it and removes the resource, and an update that leaves it out - a failure reporting
-	// its outcome - must not disturb what the deployment already holds. Every version
-	// stages its operations without state, so re-deriving this from the operation
-	// regardless of the mask would drop a resource whose deploy failed before writing.
-	if update["state"] {
-		if existing.State == "" {
-			delete(d.Resources, resourceKey)
-		} else {
-			d.Resources[resourceKey] = bundledeployments.Resource{
-				Name:           "deployments/" + deploymentID + "/resources/" + resourceKey,
-				ResourceKey:    resourceKey,
-				ResourceId:     existing.ResourceId,
-				ResourceType:   existing.ResourceType,
-				LastActionType: existing.ActionType,
-				LastVersionId:  versionID,
-				State:          existing.State,
-			}
-		}
-	} else if resource, projected := d.Resources[resourceKey]; projected && update["resource_id"] {
-		// resource_id is mirrored too, for a resource the deployment still holds.
-		resource.ResourceId = existing.ResourceId
-		d.Resources[resourceKey] = resource
+// maxBatchOperationUpdates is the most writes one BatchUpdateOperations call carries.
+const maxBatchOperationUpdates = 20
+
+// BatchUpdateOperations applies UpdateOperation's writes for several operations of one version,
+// all or none: every write is checked before any is applied, so a rejected batch changes nothing.
+// Each entry names its operation in the body, and the results come back in request order.
+func (s *FakeWorkspace) BatchUpdateOperations(req Request, deploymentID, versionID string) Response {
+	var batch struct {
+		Requests []struct {
+			Operation  json.RawMessage `json:"operation"`
+			UpdateMask string          `json:"update_mask"`
+		} `json:"requests"`
+	}
+	if err := json.Unmarshal(req.Body, &batch); err != nil {
+		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
+	}
+	if len(batch.Requests) == 0 || len(batch.Requests) > maxBatchOperationUpdates {
+		return dmsInvalidArgument(fmt.Sprintf("requests must hold between 1 and %d updates, got %d", maxBatchOperationUpdates, len(batch.Requests)))
 	}
 
-	return Response{Body: body}
+	parent := "deployments/" + deploymentID + "/versions/" + versionID
+	updates := make([]dmsOperationUpdate, len(batch.Requests))
+	keys := make([]string, len(batch.Requests))
+	for i, entry := range batch.Requests {
+		u, resp, ok := parseOperationUpdate(entry.Operation, entry.UpdateMask)
+		if !ok {
+			return resp
+		}
+		key, found := strings.CutPrefix(u.op.Name, parent+"/operations/")
+		if !found || key == "" {
+			return dmsInvalidArgument(fmt.Sprintf("requests[%d].operation.name must name an operation of %s, got %q", i, parent, u.op.Name))
+		}
+		if slices.Contains(keys[:i], key) {
+			return dmsInvalidArgument(fmt.Sprintf("requests[%d] updates %s again; a batch updates each operation once", i, u.op.Name))
+		}
+		updates[i], keys[i] = u, key
+	}
+
+	defer s.LockUnlock()()
+
+	d, ok := s.DmsDeployments[deploymentID]
+	if !ok {
+		return dmsNotFound("deployment " + deploymentID)
+	}
+	existing := make([]*bundledeployments.Operation, len(updates))
+	for i, u := range updates {
+		existing[i], ok = d.Operations[u.op.Name]
+		if !ok {
+			return dmsNotFound("operation " + u.op.Name)
+		}
+		if resp, ok := checkOperationUpdate(existing[i], u); !ok {
+			return resp
+		}
+	}
+
+	bodies := make([]map[string]any, len(updates))
+	for i, u := range updates {
+		d.applyOperationUpdate(deploymentID, versionID, keys[i], existing[i], u)
+		body, err := operationBody(existing[i])
+		if err != nil {
+			return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
+		}
+		bodies[i] = body
+	}
+	return Response{Body: map[string]any{"operations": bodies}}
 }
 
 func (s *FakeWorkspace) ListResources(deploymentID string) Response {

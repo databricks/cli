@@ -82,8 +82,8 @@ Resource: resources.jobs.shift_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.rename_job
-  tasks[task_key='a_shared']: remove
-  tasks[task_key='b_shared']: add
+  tasks[task_key='a_shared']: skip (a split element cannot be removed and recreated at once)
+  tasks[task_key='b_shared']: skip (a split element cannot be removed and recreated at once)
   tasks[task_key='z_solo']: replace
 
 

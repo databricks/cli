@@ -1,0 +1,6 @@
+# No skills folder is set and the base URL is unreachable. Help reads only the local
+# catalog, so the unreachable URL changes nothing and no group gets a footer.
+trace env -u DATABRICKS_SKILLS_DIR DATABRICKS_SKILLS_BASE_URL=http://127.0.0.1:1 $CLI fs --help | contains.py "!databricks skills read" > /dev/null
+trace env -u DATABRICKS_SKILLS_DIR DATABRICKS_SKILLS_BASE_URL=http://127.0.0.1:1 $CLI --help | tail -n 2
+# With no skill mapped to air, air keeps its hard-coded skill line.
+trace env -u DATABRICKS_SKILLS_DIR DATABRICKS_SKILLS_BASE_URL=http://127.0.0.1:1 $CLI air --help | tail -n 1
