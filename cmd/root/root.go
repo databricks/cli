@@ -129,6 +129,7 @@ func newRootCommand(ctx context.Context) *cobra.Command {
 
 	cmd.SetFlagErrorFunc(flagErrorFunc)
 	cmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
+	setHelpFunc(cmd)
 	return cmd
 }
 
