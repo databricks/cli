@@ -31,7 +31,8 @@ To read a skill, run: databricks skills read <name>
         "SKILL.md"
       ],
       "commands": [
-        "jobs"
+        "fs",
+        "air"
       ]
     },
     {
@@ -69,7 +70,8 @@ To read a skill, run: databricks skills read <name>
         "SKILL.md"
       ],
       "commands": [
-        "jobs"
+        "fs",
+        "air"
       ]
     },
     {
