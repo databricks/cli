@@ -23,7 +23,7 @@ var bundledSnapshot embed.FS
 // BundledLabel says where a catalog from the bundled snapshot came from.
 const BundledLabel = "bundled copy"
 
-// bundledFS is the root of the bundled snapshot. Tests swap it for a fixture release.
+// bundledFS is the root of the compiled-in snapshot.
 var bundledFS = subSnapshot()
 
 func subSnapshot() fs.FS {
@@ -38,7 +38,13 @@ func subSnapshot() fs.FS {
 // binary. A snapshot with no skills reports ErrSourceUnreachable, so a
 // development build behaves as if it had no bundled copy.
 func NewBundledSource() Source {
-	return &bundledSource{src: NewFSSource(bundledFS, BundledLabel)}
+	return newBundledSource(bundledFS)
+}
+
+// newBundledSource serves a snapshot rooted at fsys. Tests pass a fixture
+// release here, so they do not swap the package variable.
+func newBundledSource(fsys fs.FS) Source {
+	return &bundledSource{src: NewFSSource(fsys, BundledLabel)}
 }
 
 type bundledSource struct {

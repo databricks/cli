@@ -2,43 +2,33 @@ package skills
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// useBundled swaps the bundled snapshot for dir and restores it after the test.
-func useBundled(t *testing.T, dir string) {
-	t.Helper()
-	saved := bundledFS
-	bundledFS = os.DirFS(dir)
-	t.Cleanup(func() { bundledFS = saved })
-}
-
 func TestBundledSourceNoSkills(t *testing.T) {
-	// A temp snapshot with no skills, so the test does not depend on what
+	t.Parallel()
+	// A snapshot with an empty manifest, so the test does not depend on what
 	// the release build has put into the embedded folder. It checks the
 	// empty-manifest rule; the committed folder is checked below.
-	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(`{"skills": {}}`), 0o644))
-	useBundled(t, dir)
-	assertBundledEmpty(t)
+	fsys := fstest.MapFS{
+		"manifest.json": {Data: []byte(`{"skills": {}}`)},
+	}
+	assertBundledEmpty(t, newBundledSource(fsys))
 }
 
 func TestBundledSourceCommittedPlaceholder(t *testing.T) {
+	t.Parallel()
 	// The folder compiled into the binary as committed. A later change fills
 	// it in the release build, so until then CI always sees this empty copy.
-	saved := bundledFS
-	bundledFS = subSnapshot()
-	t.Cleanup(func() { bundledFS = saved })
-	assertBundledEmpty(t)
+	assertBundledEmpty(t, NewBundledSource())
 }
 
-func assertBundledEmpty(t *testing.T) {
+func assertBundledEmpty(t *testing.T, src Source) {
 	t.Helper()
-	src := NewBundledSource()
 
 	_, err := src.Catalog(t.Context())
 	assert.ErrorIs(t, err, ErrSourceUnreachable)
@@ -48,8 +38,8 @@ func assertBundledEmpty(t *testing.T) {
 }
 
 func TestBundledSourceFromFixture(t *testing.T) {
-	useBundled(t, "testdata/release")
-	src := NewBundledSource()
+	t.Parallel()
+	src := newBundledSource(os.DirFS("testdata/release"))
 
 	catalog, err := src.Catalog(t.Context())
 	require.NoError(t, err)
@@ -63,7 +53,7 @@ func TestBundledSourceFromFixture(t *testing.T) {
 
 	data, err := src.ReadFile(t.Context(), "alpha", "references/guide.md")
 	require.NoError(t, err)
-	assert.NotEmpty(t, data)
+	assert.Equal(t, "# Guide\n\nRead this for details.\n", lf(string(data)))
 
 	_, err = src.ReadFile(t.Context(), "alpha", "missing.md")
 	assert.ErrorIs(t, err, ErrUnknownFile)
