@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -97,6 +98,9 @@ func renderText(rules string, list []libskills.Skill) string {
 	if len(list) == 0 {
 		return withRules(rules) + "No skills found.\n"
 	}
+	// Every width lays the list out again, so each description is joined into
+	// one line once, here.
+	list = oneLineSkills(list)
 	// A description only makes its line longer, and the search hint is the one
 	// line a wider width can leave out. So when the names do not fit even with
 	// the hint, no width does, and the names-only text is the answer.
@@ -106,29 +110,58 @@ func renderText(rules string, list []libskills.Skill) string {
 	}
 	maxLen := 0
 	for _, s := range list {
-		maxLen = max(maxLen, len(oneLine(s.Description)))
+		maxLen = max(maxLen, len(s.Description))
 	}
-	// The length is not monotonic in width: a wider width can drop the search
-	// hint, so a binary search could settle on a narrower width than one that
-	// fits. Try each width from the widest down and keep the first that fits.
-	for w := min(maxLen, textBudget); w > 0; w-- {
-		if out := layoutText(rules, list, w); len(out) <= textBudget {
-			return out
-		}
+	// No width above maxLen cuts a description, so the widest width to try is
+	// the smaller of maxLen and the budget.
+	top := min(maxLen, textBudget)
+	fits := func(w int) bool { return len(layoutText(rules, list, w)) <= textBudget }
+	// The length is not monotonic in width: once every description is cut, the
+	// search hint goes away, so a wider width can be shorter. Below the first
+	// width that cuts every description the hint is always there, and from that
+	// width on it never is, so the length only grows within each part. The
+	// widest fitting width is searched in the upper part first, then the lower.
+	complete := 1 + sort.Search(top, func(i int) bool { return !dropsAny(list, i+1) })
+	if w := widestFitIn(complete, top, fits); w > 0 {
+		return layoutText(rules, list, w)
+	}
+	if w := widestFitIn(1, min(complete-1, top), fits); w > 0 {
+		return layoutText(rules, list, w)
 	}
 	return names
+}
+
+// widestFitIn returns the widest width in [lo, hi] that fits, or 0 when lo does
+// not fit. Within [lo, hi] fits must hold up to some width and fail above it.
+func widestFitIn(lo, hi int, fits func(int) bool) int {
+	if hi < lo || !fits(lo) {
+		return 0
+	}
+	first := sort.Search(hi-lo+1, func(i int) bool { return !fits(lo + i) })
+	return lo + first - 1
+}
+
+// dropsAny reports whether layoutText at width leaves some description out.
+// It goes false once the width cuts every description, and stays false above it.
+func dropsAny(list []libskills.Skill, width int) bool {
+	for _, s := range list {
+		if desc := s.Description; desc != "" && cutWords(desc, width) == "" {
+			return true
+		}
+	}
+	return false
 }
 
 // layoutText lays out the text output with descriptions cut to width. A width
 // of 0 leaves every description out. A skill is listed by its name alone when
 // its description is left out or has no word boundary within width, so one
-// long description does not drop the others.
+// long description does not drop the others. Descriptions must be one line.
 func layoutText(rules string, list []libskills.Skill, width int) string {
 	var b strings.Builder
 	b.WriteString(withRules(rules))
 	dropped := false
 	for _, s := range list {
-		desc := oneLine(s.Description)
+		desc := s.Description
 		cut := ""
 		if width > 0 {
 			cut = cutWords(desc, width)
@@ -145,6 +178,16 @@ func layoutText(rules string, list []libskills.Skill, width int) string {
 	}
 	b.WriteString(readHint + "\n")
 	return b.String()
+}
+
+// oneLineSkills returns list with each description joined into one line.
+func oneLineSkills(list []libskills.Skill) []libskills.Skill {
+	out := make([]libskills.Skill, len(list))
+	for i, s := range list {
+		s.Description = oneLine(s.Description)
+		out[i] = s
+	}
+	return out
 }
 
 // oneLine joins the words of s with single spaces, so a description takes
