@@ -1,0 +1,30 @@
+# The state points at a cluster that was deleted out of band. The backend answers clusters/get
+# and libraries/cluster-status for it with 400 INVALID_PARAMETER_VALUE "does not exist"; the
+# stub in test.toml delays the cluster GET so the library-status GET answers first.
+seed_state() {
+    mkdir -p .databricks/bundle/default
+    cp state.json .databricks/bundle/default/resources.json
+    # MSYS_NO_PATHCONV=1 keeps Git Bash on Windows from rewriting the workspace path.
+    MSYS_NO_PATHCONV=1 $CLI workspace mkdirs /Workspace/Users/$CURRENT_USER_NAME/.bundle/test-bundle/default
+}
+
+# Destroy runs first: a deploy pushes a newer state that the destroy would pull instead.
+title "destroy"
+seed_state
+trace $CLI bundle destroy --auto-approve
+trace print_state.py | jq -c ".state | keys"
+trace print_requests.py --get --sort //clusters //libraries
+
+title "deploy: the cluster is removed from config"
+seed_state
+update_file.py databricks.yml "  clusters:
+    foo:
+      cluster_name: foo
+      spark_version: 13.3.x-scala2.12
+      node_type_id: i3.xlarge
+      num_workers: 1
+" "  {}
+"
+trace $CLI bundle deploy --auto-approve
+trace print_state.py | jq -c ".state | keys"
+trace print_requests.py --get --sort //clusters //libraries

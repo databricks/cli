@@ -1,7 +1,9 @@
 package sync
 
 import (
+	"errors"
 	"fmt"
+	iofs "io/fs"
 	"path/filepath"
 	"time"
 
@@ -28,6 +30,17 @@ type SnapshotState struct { //nolint:recvcheck // value receiver for ToSlash() c
 
 // Convert an array of files on the local file system to a SnapshotState representation.
 func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
+	state, _, err := newSnapshotStateFrom(localFiles, nil)
+	return state, err
+}
+
+// newSnapshotStateFrom is [NewSnapshotState] for a sync that last left the
+// workspace in the previous state (nil if there is none). A file whose notebook
+// type cannot be determined, such as a .ipynb with invalid JSON, keeps its remote
+// name from previous: dropping it would make the diff delete its remote copy.
+// Its mtime is reset, so it is uploaded once it can be read again, whatever its
+// mtime then is. reset reports whether that changed any mtime from previous.
+func newSnapshotStateFrom(localFiles []fileset.File, previous *SnapshotState) (state *SnapshotState, reset bool, err error) {
 	fs := &SnapshotState{
 		LastModifiedTimes:  make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),
@@ -40,7 +53,7 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 		if _, ok := seen[f.Relative]; !ok {
 			seen[f.Relative] = f
 		} else {
-			return nil, fmt.Errorf("expected only one entry per file. Found duplicate entries for file: %s", f.Relative)
+			return nil, false, fmt.Errorf("expected only one entry per file. Found duplicate entries for file: %s", f.Relative)
 		}
 	}
 
@@ -49,26 +62,45 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 		f := &localFiles[k]
 		// Compute the remote name the file will have in WSFS
 		remoteName := f.Relative
+		modified := f.Modified()
 		isNotebook, err := f.IsNotebook()
 		if err != nil {
-			// Ignore this file if we're unable to determine the notebook type.
-			// Trying to upload such a file to the workspace would fail anyway.
-			continue
-		}
-		if isNotebook {
+			// Trying to upload such a file to the workspace would fail, so don't.
+			// Keeping its previous remote name leaves the remote copy as it is
+			// until the file can be read again. A file removed since it was
+			// listed is gone, so its remote copy is deleted as usual.
+			previousRemoteName, ok := previous.remoteName(f.Relative)
+			if !ok || errors.Is(err, iofs.ErrNotExist) {
+				continue
+			}
+			remoteName = previousRemoteName
+			modified = time.Unix(0, 0)
+			if !previous.LastModifiedTimes[f.Relative].Equal(modified) {
+				reset = true
+			}
+		} else if isNotebook {
 			remoteName = notebook.StripExtension(remoteName)
 		}
 
 		// Add the file to snapshot state
-		fs.LastModifiedTimes[f.Relative] = f.Modified()
+		fs.LastModifiedTimes[f.Relative] = modified
 		if existingLocalName, ok := fs.RemoteToLocalNames[remoteName]; ok {
-			return nil, fmt.Errorf("both %s and %s point to the same remote file location %s. Please remove one of them from your local project", existingLocalName, f.Relative, remoteName)
+			return nil, false, fmt.Errorf("both %s and %s point to the same remote file location %s. Please remove one of them from your local project", existingLocalName, f.Relative, remoteName)
 		}
 
 		fs.LocalToRemoteNames[f.Relative] = remoteName
 		fs.RemoteToLocalNames[remoteName] = f.Relative
 	}
-	return fs, nil
+	return fs, reset, nil
+}
+
+// remoteName returns the remote name of a tracked local file. Safe on a nil state.
+func (fs *SnapshotState) remoteName(localName string) (string, bool) {
+	if fs == nil {
+		return "", false
+	}
+	name, ok := fs.LocalToRemoteNames[localName]
+	return name, ok
 }
 
 func (fs *SnapshotState) ResetLastModifiedTimes() {
