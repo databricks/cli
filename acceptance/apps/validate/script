@@ -6,11 +6,15 @@ trace withdir app $CLI apps validate --path ..
 title "Skip tests"
 trace $CLI apps validate --skip-tests
 
+# The failed script's output has color codes, as a real build's has. It is
+# passed through as is; show_control.py shows the raw ESC as <0x1b>.
+export VALIDATION_TEST_STDERR=$'\033[31mvalidation stderr\033[0m'
+
 title "Report a failed script"
-trace VALIDATION_TEST_FAIL="run --if-present test" musterr $CLI apps validate
+trace VALIDATION_TEST_FAIL="run --if-present test" musterr $CLI apps validate 2>&1 | show_control.py
 
 title "Deploy validates with the same package manager before uploading"
-trace VALIDATION_TEST_FAIL="run --if-present build" musterr $CLI apps deploy
+trace VALIDATION_TEST_FAIL="run --if-present build" musterr $CLI apps deploy 2>&1 | show_control.py
 
 title "Commands executed in the project directory"
 trace cat commands.log

@@ -1,4 +1,5 @@
 Env.VALIDATION_TEST_FAIL = ""
+Env.VALIDATION_TEST_STDERR = "validation stderr"
 Ignore = ["commands.log"]
 
 [[Repls]]

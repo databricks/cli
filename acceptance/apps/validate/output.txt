@@ -39,7 +39,7 @@ Stdout:
 validation stdout
 
 Stderr:
-validation stderr
+<0x1b>[31mvalidation stderr<0x1b>[0m
 
 Error: validation failed
 
@@ -58,7 +58,7 @@ Stdout:
 validation stdout
 
 Stderr:
-validation stderr
+<0x1b>[31mvalidation stderr<0x1b>[0m
 
 Error: validation failed - fix errors before deploying
 

@@ -164,7 +164,8 @@ func runBundleDeploy(cmd *cobra.Command, opts bundleDeployOptions) error {
 
 			if !result.Success {
 				if result.Details != nil {
-					cmdio.LogString(ctx, result.Details.Error())
+					// The package manager's output is passed through as is.
+					cmdio.LogRawString(ctx, result.Details.Error())
 				}
 				return errors.New("validation failed - fix errors before deploying")
 			}

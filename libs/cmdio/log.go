@@ -23,7 +23,8 @@ func LogString(ctx context.Context, str string) {
 // LogRawString writes str to the error writer as is, followed by a newline. It
 // is for output passed through from a local process, such as a bundle script,
 // where escape sequences (a progress bar, cursor movement) are the process's
-// own. Everything else goes through [LogString].
+// own, and for text in which the caller escaped each value itself. Everything
+// else goes through [LogString].
 func LogRawString(ctx context.Context, str string) {
 	c := fromContext(ctx)
 	_, _ = io.WriteString(c.err, str+"\n")
