@@ -1,2 +1,0 @@
-# On DBR, dev-mode bundles under /Workspace deploy source-linked, so the deploy output differs.
-RunsOnDbr = false

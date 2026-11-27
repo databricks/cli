@@ -1,6 +1,3 @@
-# On DBR, dev-mode bundles under /Workspace deploy source-linked, so the deploy output differs.
-RunsOnDbr = false
-
 Cloud=true
 # The MLOps Stacks template registers the model in Unity Catalog and runs its
 # jobs on serverless compute, so this test only works on a UC-enabled workspace

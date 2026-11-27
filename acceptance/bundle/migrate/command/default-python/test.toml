@@ -1,5 +1,2 @@
-# On DBR, dev-mode bundles under /Workspace deploy source-linked, so the deploy output differs.
-RunsOnDbr = false
-
 RecordRequests = false
 Ignore = ["my_default_python"]

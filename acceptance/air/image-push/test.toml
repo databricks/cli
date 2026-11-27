@@ -1,6 +1,3 @@
-# On DBR, a bare `databricks` resolves to the image's own CLI wrapper.
-RunsOnDbr = false
-
 Ignore = ["home"]
 RecordRequests = true
 

@@ -1,6 +1,3 @@
-# Redeploys every resource config repeatedly; on the workspace file system this exceeds the timeout.
-RunsOnDbr = false
-
 # These migrate a per-config terraform-state fixture (replayed by replay_tfstate.py, captured once
 # against the local test server) instead of running a live terraform deploy, so they are local-only.
 # That is complete coverage, not a gap: tf->direct migration is a one-time transition over a closed

@@ -1,6 +1,3 @@
-# On DBR, git info for /Workspace paths comes from the workspace API, which adds recorded requests.
-RunsOnDbr = false
-
 # Local only: the failure has to land on CreateVersion and not on the CreateDeployment
 # that precedes it, which fault.py's trailing-* pattern cannot express, so this case
 # keeps a [[Server]] stub - and the cloud harness ignores stubs.
