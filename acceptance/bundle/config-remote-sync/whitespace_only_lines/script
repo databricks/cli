@@ -1,0 +1,24 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+job_id=$(read_id.py my_job)
+
+# Materializing the null parent writes the value as a block scalar with a space-only line.
+edit_resource.py jobs "$job_id" <<'PY'
+r["job_clusters"][0]["new_cluster"]["spark_env_vars"]["BANNER"] = "line one\n    \nline three"
+PY
+
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+# diff.py trims trailing spaces, so print the saved value too.
+trace $CLI bundle validate -o json | gron.py | grep BANNER
+
+trace $CLI bundle config-remote-sync --save
