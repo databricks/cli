@@ -14,6 +14,7 @@
 # - test_metastore_id: Unity Catalog metastore ID
 # - test_sp_application_id: Service principal application ID
 # - debug_log_path: Workspace path for the debug log file (pre-created by the test runner)
+# - workspace_tmp_root: FUSE path for test directories (deleted by the test runner after the job)
 
 import os
 import platform
@@ -179,6 +180,7 @@ def run_tests(
     test_user_email: str = "",
     test_sp_application_id: str = "",
     debug_log_path: str = "",
+    workspace_tmp_root: str = "",
 ) -> TestResult:
     """Run CLI acceptance tests."""
     cli_dir = extract_dir / "cli"
@@ -193,6 +195,8 @@ def run_tests(
         "14400s",
         "-v",
         "-workspace-tmp-dir",
+        "-workspace-tmp-root",
+        workspace_tmp_root,
     ]
 
     if test_filter:
@@ -303,6 +307,7 @@ def main():
     dbutils.widgets.text("test_user_email", "")
     dbutils.widgets.text("test_sp_application_id", "")
     dbutils.widgets.text("debug_log_path", "")
+    dbutils.widgets.text("workspace_tmp_root", "")
 
     archive_path = dbutils.widgets.get("archive_path")
     test_type = dbutils.widgets.get("test_type")
@@ -315,6 +320,7 @@ def main():
     test_user_email = dbutils.widgets.get("test_user_email")
     test_sp_application_id = dbutils.widgets.get("test_sp_application_id")
     debug_log_path = dbutils.widgets.get("debug_log_path")
+    workspace_tmp_root = dbutils.widgets.get("workspace_tmp_root")
 
     if not archive_path:
         raise ValueError("archive_path parameter is required")
@@ -324,6 +330,8 @@ def main():
         raise ValueError("cloud_env parameter is required for cloud tests")
     if not debug_log_path:
         raise ValueError("debug_log_path parameter is required")
+    if not workspace_tmp_root:
+        raise ValueError("workspace_tmp_root parameter is required")
 
     print("=" * 60)
     print(f"DBR Test Runner ({test_type})")
@@ -353,6 +361,7 @@ def main():
         test_user_email=test_user_email,
         test_sp_application_id=test_sp_application_id,
         debug_log_path=debug_log_path,
+        workspace_tmp_root=workspace_tmp_root,
     )
 
     print("=" * 60)
