@@ -11,12 +11,13 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/bitmap"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -159,16 +160,16 @@ func collectTaskTypes(jobs map[string]*resources.Job) []string {
 	return keys
 }
 
-// aiRuntimeTaskMetrics computes the ai_runtime_task-specific deploy dimensions.
-// present is true when any job declares an ai_runtime_task (including one nested in
-// a for_each_task); scheduled and multitask describe those jobs and are meaningful
-// only when present is true. Task-type presence itself (has_ai_runtime_task and the
-// other has_*_task keys) is recorded generically by collectTaskTypes.
+// aiRuntimeTaskMetrics records the ai_runtime_task-specific deploy dimensions: whether
+// each job that declares an ai_runtime_task (including one nested in a for_each_task)
+// is scheduled and has more than one task. Task-type presence itself
+// (has_ai_runtime_task and the other has_*_task keys) is recorded generically by
+// collectTaskTypes.
 //
 // code_source_path is deliberately not inspected: it is rewritten to its uploaded
 // remote path before this runs, so it would always read as remote. GPU type and
 // count are likewise not recorded here.
-func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, multitask bool) {
+func aiRuntimeTaskMetrics(jobs map[string]*resources.Job, t *bundle.Telemetry) {
 	for _, job := range jobs {
 		if job == nil {
 			continue
@@ -187,15 +188,9 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 		if !jobHasAiRuntimeTask {
 			continue
 		}
-		present = true
-		if job.Schedule != nil || job.Trigger != nil || job.Continuous != nil {
-			scheduled = true
-		}
-		if len(job.Tasks) > 1 {
-			multitask = true
-		}
+		t.AiRuntimeTaskScheduled.SetBool(job.Schedule != nil || job.Trigger != nil || job.Continuous != nil)
+		t.AiRuntimeTaskMultitask.SetBool(len(job.Tasks) > 1)
 	}
-	return present, scheduled, multitask
 }
 
 // pydabsMetrics reports usage of Python support. Loaders and mutators are read from
@@ -254,14 +249,22 @@ func fromWorkspaceFolder(ctx context.Context, b *bundle.Bundle) bool {
 	return dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 }
 
+// Key under which the snapshot upload duration is reported in
+// bundle_mutator_execution_time_ms, next to files.(upload) so the two can be
+// compared. Covers creating the snapshot resource (the upload plus recording it in
+// state), not building the zip, which is snapshot.(snapshotUpload). Absent when no
+// snapshot was uploaded. It lacks the parentheses of a mutator name because it is
+// not a mutator.
+const snapshotUploadDurationKey = "snapshot.upload"
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
-	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.RecordsHistory())
-	b.Metrics.SetBoolValue(metrics.ImmutableSnapshotUsed, len(b.Config.Resources.Snapshots) > 0)
+	b.Telemetry.DeploymentHistoryEnabled = new(b.DeploymentBundle.StateDB.RecordsHistory())
+	b.Telemetry.ImmutableSnapshotUsed = new(len(b.Config.Resources.Snapshots) > 0)
 	if d, ok := b.DeploymentBundle.DeployDurations.Load(resources.SnapshotKey); ok {
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   metrics.SnapshotUploadDuration,
+			Key:   snapshotUploadDurationKey,
 			Value: d.(time.Duration).Milliseconds(),
 		})
 	}
@@ -337,34 +340,30 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 
 	for _, app := range b.Config.Resources.Apps {
 		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
-			break
+			b.Telemetry.AppLifecycleStarted.SetBool(*app.Lifecycle.Started)
 		}
 	}
 
 	for _, cluster := range b.Config.Resources.Clusters {
 		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
-			break
+			b.Telemetry.ClusterLifecycleStarted.SetBool(*cluster.Lifecycle.Started)
 		}
 	}
 
 	for _, warehouse := range b.Config.Resources.SqlWarehouses {
 		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
-			break
+			b.Telemetry.SqlWarehouseLifecycleStarted.SetBool(*warehouse.Lifecycle.Started)
 		}
 	}
 
 	// Record which task types the bundle uses (has_<task_type> per type present),
 	// plus the ai_runtime_task-specific scheduling / multi-task dimensions.
+	// The has_<task_type> keys are dynamic, so they bypass b.Telemetry; the bitmap
+	// records each task type as a config field (resources.jobs.*.tasks[*].<type>_task).
 	for _, key := range collectTaskTypes(b.Config.Resources.Jobs) {
 		b.Metrics.SetBoolValue(key, true)
 	}
-	if airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs); airPresent {
-		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskScheduled, airScheduled)
-		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
-	}
+	aiRuntimeTaskMetrics(b.Config.Resources.Jobs, &b.Telemetry)
 
 	// Record whether the removed terraform engine was still requested (the command
 	// then fails with the removal error), separately per source. Only emitted when
@@ -372,10 +371,10 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	// already failed the command upstream via ValidateEngineSetting, so treating the
 	// FromEnv error as "not terraform" here cannot mask a real terraform request.
 	if b.Config.Bundle.Engine == engine.EngineTerraform {
-		b.Metrics.SetBoolValue(metrics.EngineTerraformConfig, true)
+		b.Telemetry.EngineTerraformConfig = true
 	}
 	if envEngine, _ := engine.FromEnv(ctx); envEngine == engine.EngineTerraform {
-		b.Metrics.SetBoolValue(metrics.EngineTerraformEnv, true)
+		b.Telemetry.EngineTerraformEnv = true
 	}
 
 	// If the bundle UUID is not set, we use a default 0 value.
@@ -475,6 +474,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			Git:                 bundleGitInfo(b),
 			FromWorkspaceFolder: fromWorkspaceFolder(ctx, b),
 			InGitRepo:           b.InGitRepo,
+			BundleBitmap:        bundleBitmap(ctx, b),
 
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
@@ -483,7 +483,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
 				TargetCount:                  b.Metrics.TargetCount,
 				WorkspaceArtifactPathType:    artifactPathType,
-				BoolValues:                   b.Metrics.BoolValues,
+				BoolValues:                   append(b.Telemetry.BoolValues(), b.Metrics.BoolValues...),
 				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,
@@ -492,4 +492,76 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			},
 		},
 	})
+}
+
+// bundleBitmap encodes the bundle bitmap with the telemetry flags measured so
+// far. Loading starts the bitmap once the target is selected, so it is nil when
+// loading failed before that; deploy telemetry is logged on that path too.
+func bundleBitmap(ctx context.Context, b *bundle.Bundle) string {
+	if b.Bitmap == nil {
+		return ""
+	}
+	bits, err := b.Bitmap.Bits(b.Telemetry)
+	if err != nil {
+		log.Debugf(ctx, "failed to compute the bundle bitmap: %s", err)
+		return ""
+	}
+	encoded, err := bitmap.Encode(bits, bitmap.ContextFullBundle)
+	if err != nil {
+		log.Debugf(ctx, "failed to encode the bundle bitmap: %s", err)
+		return ""
+	}
+	return encoded
+}
+
+// trackUsedCompute records which kinds of compute the jobs use.
+type trackUsedCompute struct{}
+
+func (c *trackUsedCompute) Name() string {
+	return "trackUsedCompute"
+}
+
+func (c *trackUsedCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Track different types of compute used
+	hasServerlessCompute := false
+	hasClassicJobCompute := false
+	hasClassicInteractiveCompute := false
+
+	// Iterate over all tasks in bundle
+	for _, job := range b.Config.Resources.Jobs {
+		for _, task := range job.Tasks {
+			// If the environment_key is set - then serverless compute is used
+			if task.EnvironmentKey != "" {
+				hasServerlessCompute = true
+				continue
+			}
+
+			// If the new_cluster or job_cluster_key is set - then classic job compute is used
+			if task.NewCluster != nil || task.JobClusterKey != "" {
+				hasClassicJobCompute = true
+				continue
+			}
+
+			// If existing_cluster_id is set - then classic interactive compute is used
+			if task.ExistingClusterId != "" {
+				hasClassicInteractiveCompute = true
+				continue
+			}
+
+			// For notebook tasks if nothing is set it means serverless compute is used
+			if task.NotebookTask != nil {
+				hasServerlessCompute = true
+			}
+		}
+	}
+
+	b.Telemetry.HasServerlessCompute = new(hasServerlessCompute)
+	b.Telemetry.HasClassicJobCompute = new(hasClassicJobCompute)
+	b.Telemetry.HasClassicInteractiveCompute = new(hasClassicInteractiveCompute)
+
+	return nil
+}
+
+func trackUsedComputeMutator() bundle.Mutator {
+	return &trackUsedCompute{}
 }

@@ -14,6 +14,7 @@ databricks-test
 >>> auto_install_state
 {
   "last_version": "1.30.0",
+  "installed_without_consent": true,
   "id": "treatment-machine"
 }
 
@@ -56,7 +57,7 @@ SKILL.md
 my own skill
 
 >>> settled_version
-{"last_version":"1.30.0"}
+{"last_version":"1.30.0","installed_without_consent":true}
 
 === first run with the user's own skill under another name in an agent's skills directory: installs
 

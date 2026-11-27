@@ -1,0 +1,359 @@
+
+=== Retired commands reject requests without touching existing SSH files
+
+>>> musterr [CLI] sandbox register
+Error: unknown command "register" for "databricks sandbox"
+
+Usage:
+  databricks sandbox [flags]
+  databricks sandbox [command]
+
+Available Commands:
+  config      Configure a Sandbox's name and auto-stop policy
+  create      Create a new Sandbox environment
+  default     Set the default Sandbox for SSH
+  delete      Delete a Sandbox environment
+  forward     Forward local ports to apps in a Sandbox environment
+  fs          Filesystem related commands
+  list        List your Sandbox environments
+  ssh         SSH into a Sandbox environment
+  ssh-setup   Configure native SSH tools for a sandbox
+  start       Start a stopped Sandbox environment
+  status      Show Sandbox environment status
+  stop        Stop a running Sandbox environment
+
+Flags:
+  -h, --help[=true|false]   help for sandbox
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks sandbox [command] --help" for more information about a command.
+
+
+>>> musterr [CLI] sandbox register --name test-machine
+Error: unknown flag: --name
+
+Usage:
+  databricks sandbox [flags]
+  databricks sandbox [command]
+
+Available Commands:
+  config      Configure a Sandbox's name and auto-stop policy
+  create      Create a new Sandbox environment
+  default     Set the default Sandbox for SSH
+  delete      Delete a Sandbox environment
+  forward     Forward local ports to apps in a Sandbox environment
+  fs          Filesystem related commands
+  list        List your Sandbox environments
+  ssh         SSH into a Sandbox environment
+  ssh-setup   Configure native SSH tools for a sandbox
+  start       Start a stopped Sandbox environment
+  status      Show Sandbox environment status
+  stop        Stop a running Sandbox environment
+
+Flags:
+  -h, --help[=true|false]   help for sandbox
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks sandbox [command] --help" for more information about a command.
+
+
+>>> musterr [CLI] sandbox ssh-key list
+Error: unknown command "ssh-key" for "databricks sandbox"
+
+Usage:
+  databricks sandbox [flags]
+  databricks sandbox [command]
+
+Available Commands:
+  config      Configure a Sandbox's name and auto-stop policy
+  create      Create a new Sandbox environment
+  default     Set the default Sandbox for SSH
+  delete      Delete a Sandbox environment
+  forward     Forward local ports to apps in a Sandbox environment
+  fs          Filesystem related commands
+  list        List your Sandbox environments
+  ssh         SSH into a Sandbox environment
+  ssh-setup   Configure native SSH tools for a sandbox
+  start       Start a stopped Sandbox environment
+  status      Show Sandbox environment status
+  stop        Stop a running Sandbox environment
+
+Flags:
+  -h, --help[=true|false]   help for sandbox
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks sandbox [command] --help" for more information about a command.
+
+
+>>> musterr [CLI] sandbox ssh-key delete legacy-key-hash
+Error: unknown command "ssh-key" for "databricks sandbox"
+
+Usage:
+  databricks sandbox [flags]
+  databricks sandbox [command]
+
+Available Commands:
+  config      Configure a Sandbox's name and auto-stop policy
+  create      Create a new Sandbox environment
+  default     Set the default Sandbox for SSH
+  delete      Delete a Sandbox environment
+  forward     Forward local ports to apps in a Sandbox environment
+  fs          Filesystem related commands
+  list        List your Sandbox environments
+  ssh         SSH into a Sandbox environment
+  ssh-setup   Configure native SSH tools for a sandbox
+  start       Start a stopped Sandbox environment
+  status      Show Sandbox environment status
+  stop        Stop a running Sandbox environment
+
+Flags:
+  -h, --help[=true|false]   help for sandbox
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks sandbox [command] --help" for more information about a command.
+
+
+>>> cmp legacy-ssh/config [TEST_TMP_DIR]/.ssh/config
+
+>>> cmp legacy-ssh/databricks-sandbox [TEST_TMP_DIR]/.ssh/databricks-sandbox
+
+>>> cmp legacy-ssh/sandbox_ed25519 [TEST_TMP_DIR]/.ssh/sandbox_ed25519
+
+>>> cmp legacy-ssh/sandbox_ed25519.pub [TEST_TMP_DIR]/.ssh/sandbox_ed25519.pub
+
+>>> test ! -s [OUTPUT_DIR]/out.requests.txt
+
+=== Sandbox help describes the supported connection path
+
+>>> [CLI] sandbox --help
+Manage Databricks Sandbox environments.
+
+Sandbox provides SSH-accessible development environments backed by
+microVM isolation. Each sandbox is a personal sandbox with pre-installed
+tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
+
+SSH uses workspace authentication; no separate SSH key registration is required.
+For editor Remote-SSH or native SSH tools, use databricks sandbox ssh-setup.
+
+Getting started:
+  databricks auth login --host https://...   # authenticate to a Databricks workspace
+  databricks sandbox create                  # provision a sandbox (becomes your default)
+  databricks sandbox ssh                     # SSH to your default sandbox
+
+Common workflows:
+  databricks sandbox ssh                     # SSH to your default sandbox
+  databricks sandbox ssh my-project          # SSH to a named sandbox
+  databricks sandbox list                    # list your sandboxes
+  databricks sandbox create                  # create a new sandbox
+  databricks sandbox delete my-project       # delete a sandbox
+  databricks sandbox status my-project       # show sandbox status
+  databricks sandbox forward -L 8080:10080  # open sandbox port 10080 at localhost:8080
+
+Usage:
+  databricks sandbox [flags]
+  databricks sandbox [command]
+
+Available Commands:
+  config      Configure a Sandbox's name and auto-stop policy
+  create      Create a new Sandbox environment
+  default     Set the default Sandbox for SSH
+  delete      Delete a Sandbox environment
+  forward     Forward local ports to apps in a Sandbox environment
+  fs          Filesystem related commands
+  list        List your Sandbox environments
+  ssh         SSH into a Sandbox environment
+  ssh-setup   Configure native SSH tools for a sandbox
+  start       Start a stopped Sandbox environment
+  status      Show Sandbox environment status
+  stop        Stop a running Sandbox environment
+
+Flags:
+  -h, --help[=true|false]   help for sandbox
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks sandbox [command] --help" for more information about a command.
+
+>>> [CLI] sandbox ssh --help
+Connect to your default or a named sandbox through authenticated WebSocket port forwarding.
+
+The CLI creates a local SSH key automatically. No Gateway SSH key registration
+or persistent SSH Host configuration is required. The sandbox must have Python 3
+and openssh-server installed, and the local machine must have OpenSSH.
+
+Examples:
+  databricks sandbox ssh
+  databricks sandbox ssh happy-panda-1234
+  databricks sandbox ssh happy-panda-1234 -- cat /etc/os-release
+  databricks sandbox ssh -- -L 8080:localhost:8080
+
+Usage:
+  databricks sandbox ssh [sandbox-id] [-- <ssh-args-or-command>...] [flags]
+
+Flags:
+  -h, --help[=true|false]     help for ssh
+      --releases-dir string   Directory containing version-matched Linux CLI archives
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+>>> [CLI] sandbox ssh-setup --help
+Create a local SSH Host entry for native ssh, scp, sftp, and tools that use SSH.
+
+The CLI creates or reuses a local key. On each connection, the generated
+ProxyCommand prepares the sandbox and opens authenticated WebSocket port forwarding.
+Pass --profile with a named Databricks profile so later connections select the same workspace.
+Databricks CLI and that profile's credentials must remain available locally.
+
+Examples:
+  databricks sandbox ssh-setup happy-panda-1234 --name my-sandbox --profile my-workspace
+  ssh my-sandbox
+  scp ./example.txt my-sandbox:/tmp/example.txt
+
+Interactive 'databricks sandbox ssh' works without this setup step.
+
+Usage:
+  databricks sandbox ssh-setup [sandbox-id] [flags]
+
+Flags:
+  -h, --help[=true|false]        help for ssh-setup
+      --name string              Local SSH host alias
+      --overwrite[=true|false]   Replace an existing managed SSH host entry
+      --releases-dir string      Directory containing version-matched Linux CLI archives
+      --ssh-config string        Path to SSH config file (default ~/.ssh/config)
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+=== Retired commands leave a fresh SSH directory absent
+
+>>> musterr [CLI] sandbox register
+Error: unknown command "register" for "databricks sandbox"
+
+Usage:
+  databricks sandbox [flags]
+  databricks sandbox [command]
+
+Available Commands:
+  config      Configure a Sandbox's name and auto-stop policy
+  create      Create a new Sandbox environment
+  default     Set the default Sandbox for SSH
+  delete      Delete a Sandbox environment
+  forward     Forward local ports to apps in a Sandbox environment
+  fs          Filesystem related commands
+  list        List your Sandbox environments
+  ssh         SSH into a Sandbox environment
+  ssh-setup   Configure native SSH tools for a sandbox
+  start       Start a stopped Sandbox environment
+  status      Show Sandbox environment status
+  stop        Stop a running Sandbox environment
+
+Flags:
+  -h, --help[=true|false]   help for sandbox
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks sandbox [command] --help" for more information about a command.
+
+
+>>> musterr [CLI] sandbox ssh-key list
+Error: unknown command "ssh-key" for "databricks sandbox"
+
+Usage:
+  databricks sandbox [flags]
+  databricks sandbox [command]
+
+Available Commands:
+  config      Configure a Sandbox's name and auto-stop policy
+  create      Create a new Sandbox environment
+  default     Set the default Sandbox for SSH
+  delete      Delete a Sandbox environment
+  forward     Forward local ports to apps in a Sandbox environment
+  fs          Filesystem related commands
+  list        List your Sandbox environments
+  ssh         SSH into a Sandbox environment
+  ssh-setup   Configure native SSH tools for a sandbox
+  start       Start a stopped Sandbox environment
+  status      Show Sandbox environment status
+  stop        Stop a running Sandbox environment
+
+Flags:
+  -h, --help[=true|false]   help for sandbox
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks sandbox [command] --help" for more information about a command.
+
+
+>>> musterr [CLI] sandbox ssh-key delete legacy-key-hash
+Error: unknown command "ssh-key" for "databricks sandbox"
+
+Usage:
+  databricks sandbox [flags]
+  databricks sandbox [command]
+
+Available Commands:
+  config      Configure a Sandbox's name and auto-stop policy
+  create      Create a new Sandbox environment
+  default     Set the default Sandbox for SSH
+  delete      Delete a Sandbox environment
+  forward     Forward local ports to apps in a Sandbox environment
+  fs          Filesystem related commands
+  list        List your Sandbox environments
+  ssh         SSH into a Sandbox environment
+  ssh-setup   Configure native SSH tools for a sandbox
+  start       Start a stopped Sandbox environment
+  status      Show Sandbox environment status
+  stop        Stop a running Sandbox environment
+
+Flags:
+  -h, --help[=true|false]   help for sandbox
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+
+Use "databricks sandbox [command] --help" for more information about a command.
+
+
+>>> test ! -e [TEST_TMP_DIR]/fresh-home/.ssh
