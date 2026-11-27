@@ -101,6 +101,16 @@ func TestCacheFilesAreKeyedByVersionAndStayInside(t *testing.T) {
 	}
 }
 
+func TestNilCacheStoresNothing(t *testing.T) {
+	var cache *Cache
+	_, ok := cache.Latest()
+	assert.False(t, ok)
+	assert.NoError(t, cache.putCatalog(release("1.0.0")))
+	assert.NoError(t, cache.writeFile("1.0.0", "alpha", "SKILL.md", []byte("x")))
+	_, ok = cache.readFile("1.0.0", "alpha", "SKILL.md")
+	assert.False(t, ok)
+}
+
 func TestNewCacheHonoursCacheEnabled(t *testing.T) {
 	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
 
