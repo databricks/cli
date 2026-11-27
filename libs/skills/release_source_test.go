@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -68,6 +69,23 @@ func TestReleaseSourceUnknownSkillAndFile(t *testing.T) {
 	assert.ErrorIs(t, err, ErrUnknownFile)
 }
 
+func TestReleaseSourceReadsFileNamesWithReservedCharacters(t *testing.T) {
+	serveReleaseFS(t, fstest.MapFS{
+		"manifest.json":                       {Data: []byte(`{"version": "1.2.0", "skills": {"gamma": {"version": "1.0.0", "files": ["references/C#-guide.md", "what?.md"]}}}`)},
+		"skills/gamma/references/C#-guide.md": {Data: []byte("# C#\n")},
+		"skills/gamma/what?.md":               {Data: []byte("# Query\n")},
+	})
+	src := NewReleaseSource()
+
+	data, err := src.ReadFile(t.Context(), "gamma", "references/C#-guide.md")
+	require.NoError(t, err)
+	assert.Equal(t, "# C#\n", string(data))
+
+	data, err = src.ReadFile(t.Context(), "gamma", "what?.md")
+	require.NoError(t, err)
+	assert.Equal(t, "# Query\n", string(data))
+}
+
 func TestReleaseSourceServerErrorIsUnreachable(t *testing.T) {
 	serveRelease(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -78,6 +96,10 @@ func TestReleaseSourceServerErrorIsUnreachable(t *testing.T) {
 }
 
 func TestReleaseSourceTimeoutIsUnreachable(t *testing.T) {
+	prev := releaseTimeout
+	releaseTimeout = 50 * time.Millisecond
+	t.Cleanup(func() { releaseTimeout = prev })
+
 	serveRelease(t, http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		// Answer only once the client gives up, so the release source's own
 		// timeout is what ends the call.

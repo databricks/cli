@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
 // releaseTimeout bounds one call to the published release, the release lookup
 // included, so an interactive command falls back to another source promptly
-// when GitHub does not answer.
-const releaseTimeout = 5 * time.Second
+// when GitHub does not answer. A variable so the tests can shorten it.
+var releaseTimeout = 5 * time.Second
 
 type releaseSource struct{}
 
@@ -55,18 +57,29 @@ func openRelease(ctx context.Context) (Source, error) {
 		read: func(ctx context.Context, name string) ([]byte, error) {
 			// Only the manifest is capped, as the installer caps it. Skill
 			// files are read whole.
-			return fetchRelease(ctx, base+"/"+name, name == manifestFile)
+			return fetchRelease(ctx, releaseFileURL(base, name), name == manifestFile)
 		},
 		label: base,
 	}, nil
+}
+
+// releaseFileURL returns the URL of the file name in the release at base. Each
+// path segment is escaped, so a name with '#', '?' or '%' stays part of the
+// path instead of starting a fragment or a query.
+func releaseFileURL(base, name string) string {
+	segments := strings.Split(name, "/")
+	for i, segment := range segments {
+		segments[i] = url.PathEscape(segment)
+	}
+	return base + "/" + strings.Join(segments, "/")
 }
 
 // fetchRelease downloads one file of a release. Every failure to get the file
 // is ErrSourceUnreachable, except a capped read of a body over MaxFetchBodySize,
 // which is ErrManifestTooLarge. The capped read stops one byte past the cap, so
 // an oversized body is told apart from one that fits exactly.
-func fetchRelease(ctx context.Context, url string, capped bool) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func fetchRelease(ctx context.Context, fileURL string, capped bool) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fileURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrSourceUnreachable, err)
 	}
