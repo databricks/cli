@@ -27,13 +27,6 @@ func newClient(t *testing.T) (*acc.WorkspaceT, *sqlexec.Client) {
 	return wt, sqlexec.New(wt.W.StatementExecution, warehouseID)
 }
 
-func TestSQLExecScalar(t *testing.T) {
-	wt, c := newClient(t)
-	got, err := c.ExecuteScalar(wt.Context(), "SELECT 1")
-	require.NoError(t, err)
-	assert.Equal(t, "1", got)
-}
-
 func TestSQLExecColumnsAndRows(t *testing.T) {
 	wt, c := newClient(t)
 	r, err := c.Execute(wt.Context(), "SELECT id, id * 2 AS doubled FROM range(3) ORDER BY id")
@@ -55,11 +48,11 @@ func TestSQLExecParameters(t *testing.T) {
 func TestSQLExecNullParameter(t *testing.T) {
 	wt, c := newClient(t)
 	// An empty value is sent as SQL NULL (StatementParameterListItem.Value is omitempty).
-	got, err := c.ExecuteScalar(wt.Context(), "SELECT :maybe IS NULL", sqlexec.WithParameters([]sql.StatementParameterListItem{
+	r, err := c.Execute(wt.Context(), "SELECT :maybe IS NULL", sqlexec.WithParameters([]sql.StatementParameterListItem{
 		{Name: "maybe", Value: ""},
 	}))
 	require.NoError(t, err)
-	assert.Equal(t, "true", got)
+	assert.Equal(t, [][]string{{"true"}}, r.Rows)
 }
 
 func TestSQLExecFailedStatement(t *testing.T) {
@@ -70,9 +63,6 @@ func TestSQLExecFailedStatement(t *testing.T) {
 	assert.Equal(t, sql.StatementStateFailed, se.State)
 	assert.NotEmpty(t, se.Code)
 	assert.NotEmpty(t, se.Message)
-	// The API populates status.sql_state (SQLSTATE) on failures, e.g. 42P01 for
-	// a missing relation; assert it survives into the typed error.
-	assert.NotEmpty(t, se.SQLState)
 }
 
 func TestSQLExecSubmitAndCancel(t *testing.T) {

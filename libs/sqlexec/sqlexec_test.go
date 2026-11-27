@@ -42,22 +42,21 @@ func succeededResp(columns []string, dataArray [][]string) *sql.StatementRespons
 	}
 }
 
-func TestExecuteScalar(t *testing.T) {
+func TestExecute(t *testing.T) {
 	tests := []struct {
 		name      string
 		resp      *sql.StatementResponse
-		want      string
+		want      [][]string
 		errSubstr string
 	}{
 		{
 			name: "succeeded with cell",
 			resp: succeededResp([]string{"table_type"}, [][]string{{"METRIC_VIEW"}}),
-			want: "METRIC_VIEW",
+			want: [][]string{{"METRIC_VIEW"}},
 		},
 		{
 			name: "succeeded with no rows",
 			resp: succeededResp([]string{"table_type"}, nil),
-			want: "",
 		},
 		{
 			name: "failed surfaces backend code and message",
@@ -93,14 +92,14 @@ func TestExecuteScalar(t *testing.T) {
 			c, api := testClient(t)
 			api.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(tt.resp, nil).Once()
 
-			got, err := c.ExecuteScalar(t.Context(), "SELECT 1")
+			got, err := c.Execute(t.Context(), "SELECT 1")
 			if tt.errSubstr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errSubstr)
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want, got.Rows)
 		})
 	}
 }
@@ -115,7 +114,6 @@ func TestExecuteDDLReturnsEmptyResult(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, r.Columns)
 	assert.Empty(t, r.Rows)
-	assert.Empty(t, r.Scalar())
 }
 
 func TestExecuteSubmitTransportError(t *testing.T) {
@@ -138,9 +136,9 @@ func TestExecutePollsUntilTerminal(t *testing.T) {
 	api.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").
 		Return(succeededResp([]string{"n"}, [][]string{{"polled"}}), nil).Once()
 
-	got, err := c.ExecuteScalar(t.Context(), "SELECT 1")
+	got, err := c.Execute(t.Context(), "SELECT 1")
 	require.NoError(t, err)
-	assert.Equal(t, "polled", got)
+	assert.Equal(t, [][]string{{"polled"}}, got.Rows)
 }
 
 func TestExecuteUsesSyncWaitTimeout(t *testing.T) {
@@ -363,12 +361,6 @@ func TestStatementErrorError(t *testing.T) {
 
 	noCode := &StatementError{State: sql.StatementStateCanceled, Message: "statement reached terminal state CANCELED"}
 	assert.Equal(t, "statement reached terminal state CANCELED", noCode.Error())
-}
-
-func TestResultScalar(t *testing.T) {
-	assert.Empty(t, (&Result{}).Scalar())
-	assert.Empty(t, (&Result{Rows: [][]string{{}}}).Scalar())
-	assert.Equal(t, "x", (&Result{Rows: [][]string{{"x", "y"}}}).Scalar())
 }
 
 func TestStatementColumns(t *testing.T) {

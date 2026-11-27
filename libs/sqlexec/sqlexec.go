@@ -146,19 +146,17 @@ func (s *Statement) Columns() []string {
 }
 
 // StatementError describes a statement that reached a terminal non-success
-// state. FAILED statuses carry a backend error code and message (and, in the
-// FAILED case, an SQLSTATE); CANCELED and CLOSED carry no error object, so the
-// message is synthesized from the state.
+// state. FAILED statuses carry a backend error code and message; CANCELED and
+// CLOSED carry no error object, so the message is synthesized from the state.
 type StatementError struct {
-	State    sql.StatementState
-	Code     sql.ServiceErrorCode
-	Message  string
-	SQLState string
+	State   sql.StatementState
+	Code    sql.ServiceErrorCode
+	Message string
 }
 
 // newStatementError builds a StatementError from a terminal non-success status.
 func newStatementError(status *sql.StatementStatus) *StatementError {
-	e := &StatementError{State: status.State, SQLState: status.SqlState}
+	e := &StatementError{State: status.State}
 	if status.Error != nil {
 		e.Code = status.Error.ErrorCode
 		e.Message = status.Error.Message
@@ -187,14 +185,6 @@ type Result struct {
 	// null-aware cell type (e.g. [][]*string) or the ARROW_STREAM format; no
 	// caller needs it today, so we keep the simpler string rows.
 	Rows [][]string
-}
-
-// Scalar returns the top-left cell of the result, or "" when there are no rows.
-func (r *Result) Scalar() string {
-	if len(r.Rows) == 0 || len(r.Rows[0]) == 0 {
-		return ""
-	}
-	return r.Rows[0][0]
 }
 
 // Submit starts a statement asynchronously and returns immediately with its
@@ -313,16 +303,6 @@ func (c *Client) Execute(ctx context.Context, statement string, opts ...RequestO
 		return nil, err
 	}
 	return c.Results(ctx, s)
-}
-
-// ExecuteScalar runs a statement returning at most one row and one column and
-// returns that cell, or "" when there are no rows.
-func (c *Client) ExecuteScalar(ctx context.Context, statement string, opts ...RequestOption) (string, error) {
-	r, err := c.Execute(ctx, statement, opts...)
-	if err != nil {
-		return "", err
-	}
-	return r.Scalar(), nil
 }
 
 // isPending reports whether a statement is still PENDING or RUNNING, i.e. Poll

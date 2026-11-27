@@ -54,9 +54,9 @@ func TestHTTPExecutePolls(t *testing.T) {
 		return testsql.Result{Rows: [][]string{{"done"}}, Polls: 1}
 	})
 
-	got, err := httpClient(t, server).ExecuteScalar(t.Context(), "SELECT 1")
+	got, err := httpClient(t, server).Execute(t.Context(), "SELECT 1")
 	require.NoError(t, err)
-	assert.Equal(t, "done", got)
+	assert.Equal(t, [][]string{{"done"}}, got.Rows)
 }
 
 func TestHTTPExecutePaginatesChunks(t *testing.T) {
@@ -84,7 +84,6 @@ func TestHTTPExecuteFailedReturns200(t *testing.T) {
 	assert.Equal(t, sql.StatementStateFailed, se.State)
 	assert.Equal(t, sql.ServiceErrorCodeBadRequest, se.Code)
 	assert.Equal(t, "no such table", se.Message)
-	assert.Equal(t, "42P01", se.SQLState)
 }
 
 func TestHTTPSubmitAndCancel(t *testing.T) {
