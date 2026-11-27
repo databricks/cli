@@ -1,6 +1,3 @@
-# git init does not work on the workspace file system.
-RunsOnDbr = false
-
 # A real (non-dry-run) submit that packages a git code_source, uploads the
 # tarball + provenance sidecars, and POSTs runs/submit.
 RecordRequests = true

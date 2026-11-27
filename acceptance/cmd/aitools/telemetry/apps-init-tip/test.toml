@@ -1,6 +1,3 @@
-# AI tools hints and auto-install behave differently on DBR.
-RunsOnDbr = false
-
 [[Repls]]
 # Fix path with reverse slashes in the output for Windows.
 Old = 'TEST_TMP_DIR]\\app-tip'
