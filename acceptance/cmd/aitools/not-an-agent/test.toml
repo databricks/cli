@@ -1,5 +1,17 @@
 Env.DATABRICKS_SKILLS_PREVIEW = "1"
 Env.DATABRICKS_SKILLS_HINTS = "1"
+RecordRequests = true
+IncludeRequestHeaders = ["User-Agent"]
 # The throttle markers live in the file cache, which a host could disable.
 Env.DATABRICKS_CACHE_ENABLED = "true"
 Ignore = ["home"]
+
+# The SDK adds cicd/<name> on CI runners (GITHUB_ACTIONS), and the OS differs by runner, so normalize both
+# to keep the golden the same everywhere.
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = "os/(linux|darwin|windows)"
+New = "os/[OS]"

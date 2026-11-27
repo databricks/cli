@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/httptransport"
@@ -251,6 +252,7 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 	// Set after EnsureResolved, so skip_verify from the profile is known. The token-refresh client
 	// the SDK builds while resolving the config therefore still uses the SDK default.
 	cfg.HTTPTransport = httptransport.HealthChecked(cfg.InsecureSkipVerify)
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 
 	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }

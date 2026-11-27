@@ -52,3 +52,27 @@ DATABRICKS_NOT_AN_AGENT still stops it in this environment; unset it to let it r
 
 >>> DATABRICKS_NOT_AN_AGENT=0 CODEX_CI=1 CODEX_THREAD_ID=thread-1 [CLI] jobs list
 Before you work with Databricks, run: databricks skills list
+
+=== The SDK's User-Agent follows the variable
+
+>>> DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 [CLI] current-user me
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/current-user_me cmd-exec-id/[UUID][0] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+
+>>> CLAUDECODE=1 [CLI] current-user me
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/current-user_me cmd-exec-id/[UUID][1] interactive/none aitools-agent/none auth/pat agent/claude-code"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}

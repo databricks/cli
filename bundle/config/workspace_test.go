@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/databrickscfg"
+	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/httptransport"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -367,4 +368,26 @@ func TestWorkspaceClientUsesHealthCheckedTransport(t *testing.T) {
 	client, err = w.Client(t.Context())
 	require.NoError(t, err)
 	assert.Same(t, httptransport.HealthChecked(true), client.Config.HTTPTransport)
+}
+
+func TestWorkspaceClientNotAnAgentWrapsTransport(t *testing.T) {
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "secure",
+		Host:    "https://secure.cloud.databricks.test",
+		Token:   "token",
+	})
+	require.NoError(t, err)
+
+	w := Workspace{Profile: "secure"}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Same(t, httptransport.HealthChecked(false), client.Config.HTTPTransport)
+
+	// With the variable set, the client's transport drops the SDK's agent token. The header itself is checked
+	// in libs/agent, which needs no loopback listener.
+	client, err = w.Client(envlib.Set(t.Context(), "DATABRICKS_NOT_AN_AGENT", "1"))
+	require.NoError(t, err)
+	assert.NotSame(t, httptransport.HealthChecked(false), client.Config.HTTPTransport)
 }

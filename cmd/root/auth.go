@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -174,7 +175,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
+	a, err = databricks.NewAccountClient(profileConfig(ctx, profile))
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -239,6 +240,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		cfg.Credentials = auth.CredentialsWithoutRefresh()
 	}
 	liteswap.Apply(ctx, cfg)
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	bindHostMetadataLogger(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
@@ -356,7 +358,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	// The picked profile resolves into its own config, not the caller's cfg.
 	// Return the client (even on failure) so the caller renders errors against
 	// that config rather than the original, otherwise-empty one.
-	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
+	w, err = databricks.NewWorkspaceClient(profileConfig(ctx, profile))
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -372,6 +374,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Credentials = auth.CredentialsWithoutRefresh()
 	}
 	liteswap.Apply(ctx, cfg)
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
 	bindHostMetadataLogger(ctx, cfg)
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
@@ -495,6 +498,14 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 		InactiveTemplate:  `{{.Name}}`,
 		SelectedTemplate:  `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
 	})
+}
+
+// profileConfig returns the config for a profile picked at a prompt. The picked profile resolves into its own
+// config rather than the caller's cfg, so it gets the not-an-agent header setting here too.
+func profileConfig(ctx context.Context, profile string) *databricks.Config {
+	cfg := &config.Config{Profile: profile}
+	agent.ApplyNotAnAgentHeader(ctx, cfg)
+	return (*databricks.Config)(cfg)
 }
 
 // To verify that a client is configured correctly, we pass an empty HTTP request
