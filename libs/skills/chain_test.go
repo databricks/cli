@@ -294,6 +294,24 @@ func TestChainCacheWriteFailureIsIgnored(t *testing.T) {
 	assert.Equal(t, "live body", string(data))
 }
 
+func TestChainClockMovedBackKeepsNewestRelease(t *testing.T) {
+	live := &fakeSource{catalog: release("1.0.0")}
+	c, now := newTestChain(t, live, &fakeSource{})
+
+	_, err := c.Catalog(t.Context())
+	require.NoError(t, err)
+	// The clock moved back an hour, and live now serves 2.0.0.
+	*now = t0.Add(-time.Hour)
+	live.catalog = release("2.0.0")
+	cat, err := c.Catalog(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "2.0.0", cat.Version)
+
+	cached, ok := c.cache.Latest()
+	require.True(t, ok)
+	assert.Equal(t, "2.0.0", cached.Version, "the newer release stays the newest cached one")
+}
+
 func TestChainNilCacheReadsLive(t *testing.T) {
 	live := &fakeSource{catalog: release("1.0.0"), files: map[string]string{"alpha/SKILL.md": "live body"}}
 	c := newChain(live, nil, &fakeSource{}, func() time.Time { return t0 })

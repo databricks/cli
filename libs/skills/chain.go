@@ -79,7 +79,7 @@ func (c *chain) catalog(ctx context.Context, cached *Catalog) (*catalogRead, err
 	live, liveErr := c.live.Catalog(ctx)
 	if liveErr == nil {
 		live.FetchedAt = c.now()
-		if err := c.cache.putCatalog(live); err != nil {
+		if err := c.cache.putCatalog(storedCopy(cached, live)); err != nil {
 			log.Debugf(ctx, "[skills] cache catalog: %v", err)
 		}
 		return &catalogRead{cat: live}, nil
@@ -96,6 +96,17 @@ func (c *chain) catalog(ctx context.Context, cached *Catalog) (*catalogRead, err
 	}
 	bundled.Stale = true
 	return &catalogRead{cat: bundled, bundled: bundled, liveErr: liveErr}, nil
+}
+
+// storedCopy returns the copy of live to cache. When a clock moved back has
+// stamped the newest cached catalog later than now, live is stored no earlier
+// than that one, so Latest keeps the newest release. The release order breaks the tie.
+func storedCopy(newest, live *Catalog) *Catalog {
+	cp := *live
+	if newest != nil && newest.FetchedAt.After(cp.FetchedAt) {
+		cp.FetchedAt = newest.FetchedAt
+	}
+	return &cp
 }
 
 // fallsBack reports whether err lets the chain fall back. Only an unreachable
