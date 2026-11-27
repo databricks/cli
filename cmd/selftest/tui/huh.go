@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -77,23 +76,12 @@ so this checks the theme, not the production prompt flows.`,
 			}
 			cmdio.LogString(ctx, "answer: "+answer)
 
-			r, _ := cmdio.NewRenderer(ctx, cmd.ErrOrStderr())
-			cmdio.LogString(ctx, fmt.Sprintf("dark_background=%t", r.HasDarkBackground()))
+			cmdio.LogString(ctx, fmt.Sprintf("dark_background=%t", cmdio.HasDarkBackground()))
 
-			// The blurred button colour is an AdaptiveColor, which hides the choice
-			// behind one value. lipgloss resolves it with the default renderer, the
-			// one the theme's styles render with, so print the side it picks.
+			// The appkit theme picks its colours for the background detected when
+			// it is built, so the blurred button is the colour for that background.
 			fg := theme.Focused.BlurredButton.GetForeground()
-			if adaptive, ok := fg.(lipgloss.AdaptiveColor); ok {
-				dark := lipgloss.HasDarkBackground()
-				resolved := adaptive.Light
-				if dark {
-					resolved = adaptive.Dark
-				}
-				cmdio.LogString(ctx, fmt.Sprintf("blurred_button=%s (resolved, default renderer dark_background=%t)", resolved, dark))
-			} else {
-				cmdio.LogString(ctx, fmt.Sprintf("blurred_button=%+v (not an AdaptiveColor, not resolved)", fg))
-			}
+			cmdio.LogString(ctx, fmt.Sprintf("blurred_button=%v (resolved, dark_background=%t)", fg, cmdio.HasDarkBackground()))
 			return nil
 		},
 	}

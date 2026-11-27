@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,4 +75,27 @@ func TestNewCapabilitiesMSYSPipeStdin(t *testing.T) {
 	c = newCapabilities(ctx, FakeTTYReader(nil), errw, errw)
 	assert.False(t, c.stdinIsMSYSPipe)
 	assert.True(t, c.SupportsPrompt())
+}
+
+func TestNewRendererRaisesMSYSPipeToANSI(t *testing.T) {
+	// termenv reads NO_COLOR from the process environment.
+	t.Setenv("NO_COLOR", "")
+	// termenv can't recognize an MSYS2 pty pipe as a terminal, but cmdio
+	// does, so the renderer must still emit color there.
+	f := openNamedPipe(t, fmt.Sprintf("msys-%016x-pty0-to-master", os.Getpid()+1))
+	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true}})
+	r, color := NewRenderer(ctx, f)
+	assert.True(t, color)
+	assert.Equal(t, colorprofile.ANSI, r.Profile())
+	assert.NotEqual(t, "hi", r.NewStyle().Foreground(lipgloss.Color("10")).Render("hi"))
+}
+
+func TestNewRendererMSYSPipeHonorsCLICOLOR(t *testing.T) {
+	// termenv reads NO_COLOR from the process environment.
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("CLICOLOR", "0")
+	f := openNamedPipe(t, fmt.Sprintf("msys-%016x-pty1-to-master", os.Getpid()+3))
+	ctx := InContext(t.Context(), &cmdIO{capabilities: Capabilities{stderrIsTTY: true}})
+	r, _ := NewRenderer(ctx, f)
+	assert.Equal(t, colorprofile.Ascii, r.Profile())
 }

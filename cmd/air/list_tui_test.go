@@ -175,9 +175,12 @@ func TestListModelEnterOpensMLflowLogs(t *testing.T) {
 
 func TestListModelView(t *testing.T) {
 	next, _ := testListModel(t).Update(tea.WindowSizeMsg{Width: 200, Height: 24})
-	out := next.(listModel).View()
+	raw := next.(listModel).View()
 
-	assert.NotContains(t, out, "\x1b", "Ascii profile + no links should produce no escapes")
+	// On lipgloss v2 styles always render full color and the program
+	// downsamples at write time, so check text on the stripped view.
+	assert.NotContains(t, raw, "\x1b]8;;", "no links should produce no hyperlinks")
+	out := ansi.Strip(raw)
 	for _, want := range []string{
 		"Run ID", "Experiment", "Status", "Started", "Duration", "Progress", "MLflow", "User", "Accelerators",
 		"qwen-train", "● SUCCESS", "● RUNNING", "● FAILED",
@@ -193,8 +196,15 @@ func TestListModelView(t *testing.T) {
 
 func TestStaticListTable(t *testing.T) {
 	r, _ := cmdio.NewRenderer(cmdio.MockDiscard(t.Context()), io.Discard)
-	out := staticListTable(r, testListRows(), false)
+	raw := staticListTable(r, testListRows(), false)
+	assert.NotContains(t, raw, "\x1b]8;;", "no links should produce no hyperlinks")
 
+	// Write the table as renderListText does. The table carries styling (full
+	// color on lipgloss v2); r.Writer strips it for this color-less target.
+	var b strings.Builder
+	_, err := io.WriteString(r.Writer(&b), raw)
+	require.NoError(t, err)
+	out := b.String()
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "▸", "static table has no selection")
 	for _, want := range []string{"Run ID", "1", "qwen-train", "1m 14s", "qwen-run-001", "8x H100", "Accelerators"} {
@@ -253,12 +263,16 @@ func TestRenderRowStripsControlCharacters(t *testing.T) {
 	}
 	cols := computeListCols([]listRow{row})
 
-	out := styles.renderRow(cols, row, false, false)
+	raw := styles.renderRow(cols, row, false, false)
+	// On lipgloss v2 styles always render full color (stripped at write
+	// time), so check the injected sequences on the raw output only.
+	for _, injected := range []string{"\x1b]0;", "\x1b[2J", "\x1b[31m", "\r", "\x07"} {
+		assert.NotContains(t, raw, injected)
+	}
+	out := r.Render(raw)
 	assert.Contains(t, out, "experiment")
 	assert.Contains(t, out, "user@example.com")
 	assert.Contains(t, out, "my-run")
-	assert.NotContains(t, out, "\x1b")
-	assert.NotContains(t, out, "\r")
 	// Stripping happens before width is measured, so the columns stay aligned.
 	assert.Equal(t, cols.experiment, lipgloss.Width(stripControl(row.Experiment)))
 }
