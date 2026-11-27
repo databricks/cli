@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/skills"
 )
 
 // DumpSkillsToPath writes resolved skill files into destDir and returns the
@@ -17,7 +18,7 @@ import (
 // the cli-compat version pin, --skills cherry-picks, and --experimental exactly
 // as the agent install path does, since it reuses resolveSkills.
 func DumpSkillsToPath(ctx context.Context, src ManifestSource, destDir string, opts InstallOptions) (int, error) {
-	ref, explicit, err := getSkillsRef(ctx, true)
+	ref, explicit, err := skills.ResolveSkillsRef(ctx, true)
 	if err != nil {
 		return 0, err
 	}

@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/zz-bad-ipynb-[UNIQUE_NAME]/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> list_notebook
+[{"path":"/Workspace/Users/[USERNAME]/.bundle/zz-bad-ipynb-[UNIQUE_NAME]/default/files/n","object_type":"NOTEBOOK","language":"PYTHON"}]
+
+=== Break the notebook JSON and redeploy
+
+>>> echo {"cells": [
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/zz-bad-ipynb-[UNIQUE_NAME]/default/files...
+Error: n.ipynb: error loading Jupyter notebook file: unexpected EOF
+
+Files: 0 uploaded, 0 deleted
+
+>>> list_notebook
+[{"path":"/Workspace/Users/[USERNAME]/.bundle/zz-bad-ipynb-[UNIQUE_NAME]/default/files/n","object_type":"NOTEBOOK","language":"PYTHON"}]
+
+=== Restore the notebook with an mtime older than its last upload and redeploy
+
+>>> setmtime.py [TIMESTAMP] n.ipynb
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/zz-bad-ipynb-[UNIQUE_NAME]/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> list_notebook
+[{"path":"/Workspace/Users/[USERNAME]/.bundle/zz-bad-ipynb-[UNIQUE_NAME]/default/files/n","object_type":"NOTEBOOK","language":"PYTHON"}]

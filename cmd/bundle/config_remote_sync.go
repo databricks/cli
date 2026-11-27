@@ -148,7 +148,8 @@ Examples:
 				}
 
 				// Loaded once and shared: ResolveChanges uses it to skip changes whose
-				// parent is a variable reference, RestoreVariableReferences to restore refs.
+				// parent is a variable reference and to find fields a mutator cleared,
+				// RestoreVariableReferences to restore refs.
 				preResolved := configsync.LoadPreResolvedConfig(ctx, b)
 
 				fieldChanges, skipped, err := configsync.ResolveChanges(ctx, b, detected, preResolved)

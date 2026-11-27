@@ -1,0 +1,6 @@
+Cloud = true
+
+# File sync does not depend on the deployment metadata service.
+EnvMatrix.DMS = [""]
+
+Ignore = ["databricks.yml"]

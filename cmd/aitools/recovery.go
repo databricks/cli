@@ -428,6 +428,15 @@ func skillsOnlyCommand(inv installInvocation, it agentPlanItem) string {
 	return installCommand(inv, it)
 }
 
+// skillsAgentRerun is rerun for one agent that gets skill files. An agent
+// whose CLI is missing gets --skills-only: named via --agents, it would get
+// the plugin instead.
+func skillsAgentRerun(inv installInvocation, it agentPlanItem) installInvocation {
+	inv.agents = it.agent.Name
+	inv.skillsOnly = inv.skillsOnly || it.cliMissing
+	return inv
+}
+
 // pluginFailureText returns the one-line reason and the recovery step for a
 // plugin agent that could not be set up. The skill files alternative starts
 // with removing the plugin when the agent already has one, since --skills-only
@@ -471,12 +480,17 @@ func pluginFailureText(ctx context.Context, inv installInvocation, it agentPlanI
 
 // skipRecovery returns the recovery step for an agent the plan skipped. An
 // agent skipped under --skills-only because it has the plugin gets the steps
-// that replace the plugin with skill files. Every other skip is an agent
-// without support for the project scope, so the step is the command that sets
-// up just this agent in the global scope.
+// that replace the plugin with skill files. Every other skip is a project-scoped
+// install the agent cannot take: an agent that reads project skill files was
+// skipped only because its plugin is user-only (see mapAgentScope), so the step
+// is the --skills-only install in the same scope. For any other agent the step
+// is the command that sets up just this agent in the global scope.
 func skipRecovery(inv installInvocation, it agentPlanItem) string {
 	if it.pluginRemoval != "" {
 		return "To use skill files instead, " + it.pluginRemoval + ", then run: " + skillsOnlyCommand(inv, it)
+	}
+	if it.agent.SupportsProjectSkills {
+		return "To install skill files for " + it.agent.DisplayName + " in the project scope instead, run: " + skillsOnlyCommand(inv, it)
 	}
 	inv.scope = installer.ScopeGlobal
 	return "To set up " + it.agent.DisplayName + " in the global scope, run: " + installCommand(inv, it)
