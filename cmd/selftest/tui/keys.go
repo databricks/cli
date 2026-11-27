@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -110,8 +111,9 @@ func rawInputFile(in io.Reader) (*os.File, bool) {
 }
 
 // runRawKeys reads stdin in raw mode without bubbletea. After an early return
-// the reader goroutine can be blocked on Read or on sending a chunk; the
-// process exits once the command finishes, so it does not need to be joined.
+// the reader goroutine can be blocked on Read or on sending a chunk. It is not
+// joined: the process exits soon after, and until then cmdio asks no line
+// prompt whose answer the goroutine could take.
 func runRawKeys(in io.Reader, out io.Writer, timeout time.Duration) error {
 	// Raw mode clears OPOST, so "\n" would not return the carriage. Print
 	// "\r\n" in that case so each line starts at column 0.
@@ -127,6 +129,7 @@ func runRawKeys(in io.Reader, out io.Writer, timeout time.Duration) error {
 
 	chunks := make(chan []byte)
 	readErr := make(chan error, 1)
+	cmdio.MarkStdinReadInBackground()
 	go func() {
 		buf := make([]byte, 256)
 		for {

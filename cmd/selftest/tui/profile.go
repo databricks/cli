@@ -12,6 +12,11 @@ import (
 // profileEnvVars are the variables cmdio, lipgloss and termenv consult when
 // deciding on color and background, so a mismatch in a live terminal can be
 // traced. COLORFGBG is the termenv background fallback on terminals.
+//
+// Sources: NO_COLOR is https://no-color.org, CLICOLOR and CLICOLOR_FORCE are
+// https://bixense.com/clicolors, and COLORTERM is
+// https://github.com/termstandard/colors. The others are set by convention
+// by terminals and CI systems, and termenv reads them as such.
 var profileEnvVars = []string{
 	"TERM", "COLORTERM", "CLICOLOR", "CLICOLOR_FORCE", "NO_COLOR",
 	"COLORFGBG", "CI", "TERM_PROGRAM", "WT_SESSION",

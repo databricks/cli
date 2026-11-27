@@ -57,7 +57,10 @@ so this checks the theme, not the production prompt flows.`,
 				group = huh.NewMultiSelect[string]().Title("Pick items").Options(options...).Value(&picked)
 			}
 
-			if err := huh.NewForm(huh.NewGroup(group)).WithTheme(theme).Run(); err != nil {
+			// Run the field the way the prompts in libs/apps/prompt do, so the
+			// form around it (no help footer, the theme on the field only) is
+			// the one production draws.
+			if err := group.WithTheme(theme).Run(); err != nil {
 				return err
 			}
 

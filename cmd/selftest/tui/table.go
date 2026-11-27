@@ -37,10 +37,13 @@ func newTableCmd() *cobra.Command {
 					data[r][c] = fmt.Sprintf("r%04d-c%02d", r+1, c+1)
 				}
 			}
-			// tableview.Run does not report how the user exited, only the error.
-			err := tableview.Run(cmd.Context(), cmd.OutOrStdout(), columns, data)
-			fmt.Fprintf(cmd.ErrOrStderr(), "tableview.Run returned: %v\n", err)
-			return err
+			// tableview.Run does not report how the user exited, only the error,
+			// which the root command prints.
+			if err := tableview.Run(cmd.Context(), cmd.OutOrStdout(), columns, data); err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.ErrOrStderr(), "tableview.Run returned without error")
+			return nil
 		},
 	}
 	cmd.Flags().IntVar(&rows, "rows", 100, "number of generated rows")
