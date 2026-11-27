@@ -380,6 +380,11 @@ key: |
 next: value
 `),
 		},
+		{
+			name:     "whitespace-only block scalar lines are kept",
+			input:    "key: |-\n  line1\n      \n  \t\n\n  line2\n# __YAMLPATCH_BLANK_LINE__\nnext: value\n",
+			expected: "key: |-\n  line1\n      \n  \t\n\n  line2\n\nnext: value\n",
+		},
 	}
 
 	for _, tt := range tests {
@@ -536,6 +541,29 @@ func TestApplyChangeNullParentComments(t *testing.T) {
 			for _, comment := range []string{"# head", "# inline", "# foot"} {
 				assert.Equal(t, 1, strings.Count(string(result), comment), "%s in %s", comment, result)
 			}
+		})
+	}
+}
+
+func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
+	// The encoder can write these values as block scalars.
+	for _, tc := range []struct {
+		name    string
+		content string
+		value   string
+		want    string
+	}{
+		{"spaces under null parent", "tags: null\n", "one\n    \nthree", `tags: {key: "one\n    \nthree"}`},
+		{"tab under null parent", "tags: null\n", "one\n\t\nthree", `tags: {key: "one\n\t\nthree"}`},
+		{"tab under existing parent", "tags:\n  other: x\n", "one\n\t\nthree", `tags: {other: x, key: "one\n\t\nthree"}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: "tags.key",
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: tc.value},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(restoreBlankLines(result)))
 		})
 	}
 }
