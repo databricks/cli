@@ -3,5 +3,5 @@ trace $CLI bundle init . --config-file config.json --output-dir from-config
 trace cat from-config/values.txt
 
 title "integer with format: int32"
-trace errcode $CLI bundle init . --output-dir defaults
+trace musterr $CLI bundle init . --output-dir defaults
 trace cat defaults/values.txt
