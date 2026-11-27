@@ -37,7 +37,8 @@ type chain struct {
 // is unreachable, it serves the bundled copy, and only when the bundled release
 // is the catalog's release.
 //
-// Both fall back only for an error that wraps ErrSourceUnreachable.
+// Both fall back only for an error that wraps ErrSourceUnreachable, and not
+// once the caller's context is canceled.
 //
 //deadcode:allow the skills commands call it once they are wired to the chain
 func NewChain(live Source, cache *Cache, bundled Source) Source {
@@ -48,20 +49,31 @@ func newChain(live Source, cache *Cache, bundled Source, now func() time.Time) *
 	return &chain{live: live, cache: cache, bundled: bundled, now: now}
 }
 
+// catalogRead is the catalog a read serves, with what catalog() learned on the way.
+type catalogRead struct {
+	cat *Catalog
+	// bundled is the bundled catalog when catalog() read it, else nil.
+	bundled *Catalog
+	// liveErr is the live failure behind a stale catalog, else nil.
+	liveErr error
+}
+
 func (c *chain) Catalog(ctx context.Context) (*Catalog, error) {
 	cached, _ := c.cache.Latest()
-	cat, _, err := c.catalog(ctx, cached)
-	return cat, err
+	read, err := c.catalog(ctx, cached)
+	if err != nil {
+		return nil, err
+	}
+	return read.cat, nil
 }
 
 // catalog returns the catalog to serve, given the newest cached catalog, which
-// is nil when nothing is cached. It also returns the bundled catalog when it
-// had to read it, so ReadFile does not read it again.
-func (c *chain) catalog(ctx context.Context, cached *Catalog) (*Catalog, *Catalog, error) {
+// is nil when nothing is cached.
+func (c *chain) catalog(ctx context.Context, cached *Catalog) (*catalogRead, error) {
 	// A negative age, from a clock that moved back, is not fresh.
 	if cached != nil {
 		if age := c.now().Sub(cached.FetchedAt); age >= 0 && age < catalogFreshFor {
-			return fromCache(cached, false), nil, nil
+			return &catalogRead{cat: fromCache(cached, false)}, nil
 		}
 	}
 	live, liveErr := c.live.Catalog(ctx)
@@ -70,20 +82,27 @@ func (c *chain) catalog(ctx context.Context, cached *Catalog) (*Catalog, *Catalo
 		if err := c.cache.putCatalog(live); err != nil {
 			log.Debugf(ctx, "[skills] cache catalog: %v", err)
 		}
-		return live, nil, nil
+		return &catalogRead{cat: live}, nil
 	}
-	if !errors.Is(liveErr, ErrSourceUnreachable) {
-		return nil, nil, liveErr
+	if !fallsBack(ctx, liveErr) {
+		return nil, liveErr
 	}
 	if cached != nil {
-		return fromCache(cached, true), nil, nil
+		return &catalogRead{cat: fromCache(cached, true), liveErr: liveErr}, nil
 	}
 	bundled, err := c.bundled.Catalog(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("no skills catalog available: live source: %w; bundled source: %w", liveErr, err)
+		return nil, fmt.Errorf("no skills catalog available: live source: %w; bundled source: %w", liveErr, err)
 	}
 	bundled.Stale = true
-	return bundled, bundled, nil
+	return &catalogRead{cat: bundled, bundled: bundled, liveErr: liveErr}, nil
+}
+
+// fallsBack reports whether err lets the chain fall back. Only an unreachable
+// source does, and only while the caller still wants the answer: once the
+// caller has canceled, the live error is returned instead.
+func fallsBack(ctx context.Context, err error) bool {
+	return errors.Is(err, ErrSourceUnreachable) && ctx.Err() == nil
 }
 
 // fromCache marks cat as served from the cache. It is stale when the live
@@ -101,25 +120,32 @@ func (c *chain) ReadFile(ctx context.Context, skill, file string) ([]byte, error
 			return data, nil
 		}
 	}
-	cat, bundled, err := c.catalog(ctx, cached)
+	read, err := c.catalog(ctx, cached)
 	if err != nil {
 		return nil, err
 	}
 	// A stale catalog means the live source already failed, so it is not asked again.
-	if cat.Stale {
-		return c.readBundled(ctx, cat, bundled, skill, file)
+	if read.cat.Stale {
+		return c.fallBack(ctx, read, skill, file)
 	}
 	data, liveErr := c.live.ReadFile(ctx, skill, file)
 	if liveErr == nil {
-		c.cacheFile(ctx, cat.Version, skill, file, data)
+		c.cacheFile(ctx, read.cat.Version, skill, file, data)
 		return data, nil
 	}
-	if !errors.Is(liveErr, ErrSourceUnreachable) {
+	if !fallsBack(ctx, liveErr) {
 		return nil, liveErr
 	}
-	data, err = c.readBundled(ctx, cat, bundled, skill, file)
+	read.liveErr = liveErr
+	return c.fallBack(ctx, read, skill, file)
+}
+
+// fallBack serves a file from the bundled copy, when its release is the
+// catalog's release. The live failure stays in the error.
+func (c *chain) fallBack(ctx context.Context, read *catalogRead, skill, file string) ([]byte, error) {
+	data, err := c.readBundled(ctx, read.cat, read.bundled, skill, file)
 	if err != nil {
-		return nil, fmt.Errorf("live source: %w; %w", liveErr, err)
+		return nil, fmt.Errorf("live source: %w; %w", read.liveErr, err)
 	}
 	return data, nil
 }

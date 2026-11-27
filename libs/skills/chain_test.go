@@ -184,6 +184,22 @@ func TestChainReadFileStaleCacheOtherBundledReleaseIsNotServed(t *testing.T) {
 
 	_, err = c.ReadFile(t.Context(), "alpha", "SKILL.md")
 	require.ErrorContains(t, err, "is not release 1.0.0", "0.9.0 bytes under a 1.0.0 catalog are not served")
+	require.ErrorIs(t, err, ErrSourceUnreachable, "the live failure is kept in the error")
+}
+
+func TestChainCanceledCallerIsNotFallenBack(t *testing.T) {
+	live := &fakeSource{catalog: release("1.0.0")}
+	c, now := newTestChain(t, live, &fakeSource{catalog: release("0.9.0")})
+
+	_, err := c.Catalog(t.Context())
+	require.NoError(t, err)
+	live.catalog, live.err = nil, errLiveDown
+	*now = now.Add(30 * time.Minute)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	_, err = c.Catalog(ctx)
+	require.ErrorIs(t, err, ErrSourceUnreachable, "a canceled caller gets the live error, not the stale cache")
 }
 
 func TestChainCatalogThenReadFileIsCachedForOfflineReads(t *testing.T) {
