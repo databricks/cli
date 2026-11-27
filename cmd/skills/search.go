@@ -58,7 +58,7 @@ func runSearch(cmd *cobra.Command, words []string, experimental bool) error {
 	if err != nil {
 		return err
 	}
-	matches := matchSkills(visibleSkills(catalog.Skills, experimental), words)
+	matches := matchSkills(searchableSkills(catalog.Skills, experimental), words)
 	results := make([]searchResult, 0, len(matches))
 	for _, s := range matches {
 		results = append(results, searchResult{
@@ -90,9 +90,9 @@ func copyList(list []string) []string {
 	return append(make([]string, 0, len(list)), list...)
 }
 
-// visibleSkills returns the skills that search covers. Experimental skills are
+// searchableSkills returns the skills that search covers. Experimental skills are
 // left out unless experimental is set, as skills list leaves them out.
-func visibleSkills(all []skills.Skill, experimental bool) []skills.Skill {
+func searchableSkills(all []skills.Skill, experimental bool) []skills.Skill {
 	if experimental {
 		return all
 	}

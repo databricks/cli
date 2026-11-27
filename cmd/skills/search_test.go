@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func names(list []skills.Skill) []string {
+func skillNames(list []skills.Skill) []string {
 	out := make([]string, 0, len(list))
 	for _, s := range list {
 		out = append(out, s.Name)
@@ -41,7 +41,7 @@ func TestMatchSkills(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, names(matchSkills(searchCatalog, tt.words)))
+			assert.Equal(t, tt.want, skillNames(matchSkills(searchCatalog, tt.words)))
 		})
 	}
 }
@@ -53,7 +53,7 @@ func TestMatchSkillsOrdersByMatchedWordsThenName(t *testing.T) {
 		{Name: "a-skill", Description: "one two"},
 		{Name: "d-skill", Description: "three"},
 	}
-	got := names(matchSkills(catalog, []string{"one", "two"}))
+	got := skillNames(matchSkills(catalog, []string{"one", "two"}))
 	assert.Equal(t, []string{"a-skill", "b-skill", "c-skill"}, got)
 }
 
@@ -65,7 +65,7 @@ func TestMatchSkillsCountsAWordOnceForEachSkill(t *testing.T) {
 	// "pipeline" appears in the name, the description and the command group of
 	// pipeline-guide, but it counts once, so both skills have one hit and the name
 	// decides: "other" sorts first.
-	got := names(matchSkills(catalog, []string{"pipeline"}))
+	got := skillNames(matchSkills(catalog, []string{"pipeline"}))
 	assert.Equal(t, []string{"other", "pipeline-guide"}, got)
 }
 
@@ -76,7 +76,7 @@ func TestMatchSkillsCountsARepeatedWordOnce(t *testing.T) {
 	}
 	// "one" repeated (in another case too) is one word, so b-skill has one hit,
 	// the same as a-skill, and the name decides.
-	got := names(matchSkills(catalog, []string{"one", " ONE ", "two"}))
+	got := skillNames(matchSkills(catalog, []string{"one", " ONE ", "two"}))
 	assert.Equal(t, []string{"a-skill", "b-skill"}, got)
 }
 
@@ -85,9 +85,9 @@ func TestVisibleSkillsHidesExperimentalUnlessAsked(t *testing.T) {
 		{Name: "stable"},
 		{Name: "beta", Experimental: true},
 	}
-	assert.Equal(t, []string{"stable"}, names(visibleSkills(catalog, false)))
-	assert.Equal(t, []string{"stable", "beta"}, names(visibleSkills(catalog, true)))
-	assert.Empty(t, names(matchSkills(visibleSkills(catalog, false), []string{"beta"})))
+	assert.Equal(t, []string{"stable"}, skillNames(searchableSkills(catalog, false)))
+	assert.Equal(t, []string{"stable", "beta"}, skillNames(searchableSkills(catalog, true)))
+	assert.Empty(t, skillNames(matchSkills(searchableSkills(catalog, false), []string{"beta"})))
 }
 
 func TestCheckWordsRejectsBlankWord(t *testing.T) {
@@ -97,6 +97,6 @@ func TestCheckWordsRejectsBlankWord(t *testing.T) {
 }
 
 func TestMatchSkillsTrimsWords(t *testing.T) {
-	got := names(matchSkills(searchCatalog, []string{" jobs "}))
+	got := skillNames(matchSkills(searchCatalog, []string{" jobs "}))
 	assert.Equal(t, []string{"jobs-helper"}, got)
 }
