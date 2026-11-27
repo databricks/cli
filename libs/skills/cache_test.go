@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,16 +25,37 @@ func release(version string) *Catalog {
 }
 
 func TestCacheLatestIsNewestAndSkipsCorruptEntries(t *testing.T) {
-	dir := t.TempDir()
-	cache := &Cache{dir: dir}
+	cache := &Cache{dir: t.TempDir()}
 	_, ok := cache.Latest()
 	assert.False(t, ok)
 
+	// Each corrupt entry is newer than 2.0.0, so it wins unless its own skip
+	// condition holds. Each case has one condition only.
+	const newer = `"FetchedAt":"2026-11-26T12:00:00Z"`
+	for _, c := range []struct{ name, folder, body string }{
+		{"does not unmarshal", "3.0.0", `{"Version":"3.0.0",` + newer + `,"Skills":"not a list"}`},
+		{"truncated", "4.0.0", `{"Version":"4.0.0",` + newer},
+		{"version is not a name", "5.0.0", `{"Version":"../5.0.0",` + newer + `}`},
+		{"version differs from folder", "6.0.0", `{"Version":"7.0.0",` + newer + `}`},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			cache := &Cache{dir: t.TempDir()}
+			require.NoError(t, cache.putCatalog(fetchedAt(release("1.0.0"), t0)))
+			require.NoError(t, cache.putCatalog(fetchedAt(release("2.0.0"), t0.Add(time.Hour))))
+			require.NoError(t, os.MkdirAll(filepath.Join(cache.dir, c.folder), 0o700))
+			require.NoError(t, os.WriteFile(filepath.Join(cache.dir, c.folder, catalogFile), []byte(c.body), 0o600))
+
+			latest, ok := cache.Latest()
+			require.True(t, ok)
+			assert.Equal(t, "2.0.0", latest.Version)
+		})
+	}
+}
+
+func TestCacheLatestBreaksTiesByVersion(t *testing.T) {
+	cache := &Cache{dir: t.TempDir()}
 	require.NoError(t, cache.putCatalog(fetchedAt(release("1.0.0"), t0)))
-	require.NoError(t, cache.putCatalog(fetchedAt(release("2.0.0"), t0.Add(time.Hour))))
-	// A truncated entry, as a crash in a non-atomic writer would leave.
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "3.0.0"), 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "3.0.0", catalogFile), []byte(`{"Version":"3`), 0o600))
+	require.NoError(t, cache.putCatalog(fetchedAt(release("2.0.0"), t0)))
 
 	latest, ok := cache.Latest()
 	require.True(t, ok)
@@ -111,8 +133,16 @@ func TestNilCacheStoresNothing(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestNewCacheHonoursCacheEnabled(t *testing.T) {
+// newCacheTestCtx points the cache at a temporary folder and clears the pinned
+// source variables, so a developer's shell cannot turn the cache off.
+func newCacheTestCtx(t *testing.T) context.Context {
 	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_REF", "")
+	return env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "")
+}
+
+func TestNewCacheHonoursCacheEnabled(t *testing.T) {
+	ctx := newCacheTestCtx(t)
 
 	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")), "a disabled cache stores nothing")
 
@@ -122,7 +152,7 @@ func TestNewCacheHonoursCacheEnabled(t *testing.T) {
 }
 
 func TestNewCacheOffForPinnedSource(t *testing.T) {
-	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx := newCacheTestCtx(t)
 	assert.NotNil(t, NewCache(ctx))
 
 	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_REF", "v1.0.0")), "a pinned ref stores nothing")

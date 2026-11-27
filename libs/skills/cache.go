@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/atomicfile"
@@ -100,19 +102,23 @@ func (c *Cache) putCatalog(cat *Catalog) error {
 }
 
 // catalogs returns the readable cached catalogs, newest first. An entry that
-// does not parse is skipped, so a corrupt entry is never served.
+// does not parse, or whose release version is not the name of its folder, is
+// skipped, so a corrupt entry is never served. Catalogs fetched at the same
+// time are ordered by version, so the order does not depend on the folder scan.
 func (c *Cache) catalogs() []*Catalog {
 	entries, _ := os.ReadDir(c.dir)
 	var cats []*Catalog
 	for _, e := range entries {
 		data, err := os.ReadFile(filepath.Join(c.dir, e.Name(), catalogFile))
 		var cat Catalog
-		if err != nil || json.Unmarshal(data, &cat) != nil || !isName(cat.Version) {
+		if err != nil || json.Unmarshal(data, &cat) != nil || !isName(cat.Version) || cat.Version != e.Name() {
 			continue
 		}
 		cats = append(cats, &cat)
 	}
-	slices.SortFunc(cats, func(a, b *Catalog) int { return b.FetchedAt.Compare(a.FetchedAt) })
+	slices.SortFunc(cats, func(a, b *Catalog) int {
+		return cmp.Or(b.FetchedAt.Compare(a.FetchedAt), strings.Compare(b.Version, a.Version))
+	})
 	return cats
 }
 
