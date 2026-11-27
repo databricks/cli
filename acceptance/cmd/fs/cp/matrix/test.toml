@@ -1,0 +1,13 @@
+Cloud = true
+
+# Every pair of source and target kinds, as separate variants so they run in parallel.
+# The script replaces the paths with [SRC] and [DST], so all variants share one output.
+EnvMatrix.SRC = ["local", "dbfs", "volume"]
+EnvMatrix.DST = ["local", "dbfs", "volume"]
+EnvRepl.SRC = false
+EnvRepl.DST = false
+
+# Error messages name remote paths without the dbfs: scheme.
+[[Repls]]
+Old = 'source path /(?:tmp|Volumes)/\S+/empty is'
+New = 'source path [SRC]/empty is'

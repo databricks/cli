@@ -1,3 +1,6 @@
-Badness = "A pipeline cluster with neither num_workers nor autoscale (single node) is created without num_workers in the request. Direct force-sends num_workers: 0 for clusters and job clusters, but not for pipeline clusters; it should send num_workers: 0 here as well."
+# Expected: a single-node pipeline cluster (neither num_workers nor autoscale) is created without num_workers
+# in the request. Unlike clusters and job clusters, direct does not force-send num_workers: 0 here; the
+# Pipelines API runs the cluster with 0 workers when num_workers is omitted (checked manually against an AWS
+# workspace on 2026-11-26; this test is local-only and records just the create request, see #3951).
 Cloud = false
 RecordRequests = true

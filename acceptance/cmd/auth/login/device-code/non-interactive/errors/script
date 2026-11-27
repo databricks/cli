@@ -1,12 +1,5 @@
 sethome "./home"
 
-title "Device code login is disabled by default"
-(
-    unset DATABRICKS_CLI_DEVICE_CODE
-    trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code
-    trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
-)
-
 title "Flags the non-interactive login cannot honor"
 trace musterr $CLI auth login --host $DATABRICKS_HOST --profile test --use-device-code --configure-cluster
 

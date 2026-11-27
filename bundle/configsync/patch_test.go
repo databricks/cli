@@ -472,6 +472,50 @@ func TestApplyChangeScalarParents(t *testing.T) {
 	}
 }
 
+func TestApplyChangeAddToExistingKey(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"scalar", "tasks:\n  - task_key: main\n    job_cluster_key: old\n", "tasks[0].job_cluster_key", "tasks: [{task_key: main, job_cluster_key: value}]"},
+		{"null", "parameters:\n  - name: p\n    value:\n", "parameters[0].value", "parameters: [{name: p, value: value}]"},
+		{"sequence index inserts", "parent:\n  - a\n", "parent[0]", "parent: [value, a]"},
+		{"merge key adds", "defaults: &d\n  job_cluster_key: old\ntasks:\n  - <<: *d\n    task_key: main\n", "tasks[0].job_cluster_key", "defaults: {job_cluster_key: old}\ntasks: [{task_key: main, job_cluster_key: value}]"},
+		{"through an alias", "defaults: &d\n  k: old\njob: *d\n", "job.k", "defaults: {k: value}\njob: {k: value}"},
+		{"under an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n", "parameters[0].value", "parameters: [{name: p, value: value}, {name: q, value: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+		})
+	}
+}
+
+func TestApplyChangeKeepsAnchoredKey(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+	}{
+		{"anchored null", "parameters:\n  - name: p\n    value: &v\n  - name: q\n    value: *v\n"},
+		{"anchored scalar", "parameters:\n  - name: p\n    value: &v old\n  - name: q\n    value: *v\n"},
+		{"anchor inside the value", "parameters:\n  - name: p\n    value: {k: &v old}\n  - name: q\n    value: *v\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: "parameters[0].value",
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			assert.ErrorContains(t, err, "already exists")
+		})
+	}
+}
+
 func TestApplyChangeNullParentComments(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
