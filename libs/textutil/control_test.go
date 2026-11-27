@@ -30,7 +30,7 @@ func TestEscapeControl(t *testing.T) {
 		{name: "SGR with subparameters", input: "\x1b[38;2;1;2;3m\x1b[4:3mx\x1b[m", expected: `\u001b[38;2;1;2;3m\u001b[4:3mx\u001b[m`, keepColors: "\x1b[38;2;1;2;3m\x1b[4:3mx\x1b[m"},
 		{name: "style left on", input: "a\x1b[0m\x1b[8mhidden\n", expected: `a\u001b[0m\u001b[8mhidden` + "\n", keepColors: "a\x1b[0m\x1b[8mhidden\x1b[0m\n"},
 		{name: "style left on in a cell", input: "\x1b[8ma\tb\x1b[31m\nc", expected: `\u001b[8ma` + "\tb" + `\u001b[31m` + "\nc", keepColors: "\x1b[8ma\x1b[0m\tb\x1b[31m\x1b[0m\nc"},
-		{name: "style closed before the line ends", input: "\x1b[32mok\x1b[0m\n\x1b[32mok\n\x1b[0m", expected: `\u001b[32mok\u001b[0m` + "\n" + `\u001b[32mok` + "\n" + `\u001b[0m`, keepColors: "\x1b[32mok\x1b[0m\n\x1b[0m"},
+		{name: "style closed before the line ends", input: "\x1b[32mok\x1b[0m\n\x1b[32mok\n\x1b[0m", expected: `\u001b[32mok\u001b[0m` + "\n" + `\u001b[32mok` + "\n" + `\u001b[0m`, keepColors: "\x1b[32mok\x1b[0m\n" + "\x1b[32mok\x1b[0m\n" + "\x1b[0m"},
 		{name: "SGR next to other sequences", input: "\x1b[1mb\x1b[2J\x1b]8;;http://x\x07", expected: `\u001b[1mb\u001b[2J\u001b]8;;http://x\u0007`, keepColors: "\x1b[1mb" + `\u001b[2J\u001b]8;;http://x\u0007` + "\x1b[0m"},
 		{name: "unterminated SGR", input: "\x1b[31", expected: `\u001b[31`},
 		{name: "SGR cut by a newline", input: "\x1b[31\nm", expected: `\u001b[31` + "\nm"},
