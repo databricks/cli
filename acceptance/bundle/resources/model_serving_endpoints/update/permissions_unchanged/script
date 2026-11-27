@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Update only tags: permissions stay unchanged"
+trace update_file.py databricks.yml "value: my-team-one" "value: my-team-two"
+
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+trace print_requests.py //serving-endpoints //permissions | jq '{method, path}'

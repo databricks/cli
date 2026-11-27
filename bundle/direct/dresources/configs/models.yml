@@ -16,3 +16,6 @@ ignore_remote_changes:
 ignore_local_changes:
   - field: tags
     reason: terraform_compat
+stable_output_fields:
+  # model_id (the permissions object ID) is assigned at creation and kept on update.
+  - field: model_id

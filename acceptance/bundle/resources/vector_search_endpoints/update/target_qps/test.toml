@@ -1,5 +1,4 @@
 Cloud = false
-Badness = "Changing only target_qps also plans and applies an update to the endpoint's unchanged permissions ('update vector_search_endpoints.my_endpoint.permissions', with a PUT of the same ACL): their object_id references the endpoint's endpoint_uuid, which is unresolved while the endpoint has a pending update. Only the endpoint should be updated."
 
 # DMS=true half of the split; see the vector_search_* test.toml.
 EnvMatrix.DMS = ["true"]

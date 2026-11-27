@@ -52,3 +52,6 @@ backend_defaults:
   # does not specify one. Suppress only that default: if the user sets traffic_config
   # and the remote diverges, normal drift detection still applies.
   - field: config.traffic_config
+stable_output_fields:
+  # endpoint_id (the permissions object ID) is assigned at creation and kept on update.
+  - field: endpoint_id
