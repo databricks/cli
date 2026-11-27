@@ -1,0 +1,31 @@
+bundle:
+  name: dotted_key
+
+resources:
+  jobs:
+    # "_" and "-" are allowed.
+    job_a:
+      name: job-a
+      tasks:
+        - task_key: x
+          notebook_task:
+            notebook_path: ./nb.py
+    job-b:
+      name: job-b
+    a.b:
+      name: dotted
+      tasks:
+        - task_key: x
+          notebook_task:
+            notebook_path: ./nb.py
+    c[0]:
+      name: bracket
+
+  pipelines:
+    p.q:
+      name: dotted-pipeline
+
+  schemas:
+    s.x:
+      catalog_name: main
+      name: dotted_schema
