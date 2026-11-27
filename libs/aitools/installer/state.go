@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/skills"
 )
 
 // clearFileRecords removes all file-provenance entries belonging to a skill
@@ -27,7 +28,8 @@ func clearFileRecords(files map[string]FileRecord, skillName string) {
 	}
 }
 
-const stateFileName = ".state.json"
+// stateFileName is the install state file; libs/skills reserves the same name.
+const stateFileName = skills.StateFileName
 
 // CurrentSchemaVersion is the on-disk state schema version this CLI writes. v2
 // added the Plugins and Files maps; v3 adds the optional MCP section. Older state

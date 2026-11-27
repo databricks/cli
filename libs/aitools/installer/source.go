@@ -5,17 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"maps"
 	"net/http"
 	"path"
 	"regexp"
-	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/skills"
 )
 
 // ManifestSource abstracts how the skills manifest is fetched.
@@ -69,7 +68,7 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to parse manifest: %w", err)}
 	}
 
-	normalizeManifest(&manifest)
+	skills.NormalizeManifest(&manifest)
 	return &manifest, nil
 }
 
@@ -85,49 +84,6 @@ const maxSkillNameLength = 64
 var skillNamePattern = sync.OnceValue(func() *regexp.Regexp {
 	return regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 })
-
-// checkManifestPaths fails a manifest that names a skill or file outside its
-// directory, or a skill named like the state file. The manifest comes from the
-// network, so it must not be able to name ../../.bashrc, and only a broken or
-// tampered manifest lists such an entry. The rule is the same on every OS.
-// Entries that stay inside their directory but are not portable are left to
-// unportableSkill, which skips only that skill.
-func checkManifestPaths(m *Manifest) error {
-	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
-		if name == "" || name == "." || name == ".." || name == stateFileName || strings.ContainsAny(name, `/\`) {
-			return fmt.Errorf("%w: skill name %q", ErrUnsafeManifestPath, name)
-		}
-		for _, file := range m.Skills[name].Files {
-			if escapesDir(file) {
-				return fmt.Errorf("%w: skill %q lists file %q", ErrUnsafeManifestPath, name, file)
-			}
-		}
-	}
-	return nil
-}
-
-// escapesDir reports whether file, joined onto a directory, names a path
-// outside it on some OS: an absolute path, a Windows drive, or more ".."
-// elements than the elements before them, with either slash as the separator.
-func escapesDir(file string) bool {
-	if strings.HasPrefix(file, "/") || strings.HasPrefix(file, `\`) || (len(file) >= 2 && file[1] == ':') {
-		return true
-	}
-	depth := 0
-	for _, elem := range strings.FieldsFunc(file, func(r rune) bool { return r == '/' || r == '\\' }) {
-		switch elem {
-		case ".":
-		case "..":
-			depth--
-			if depth < 0 {
-				return true
-			}
-		default:
-			depth++
-		}
-	}
-	return false
-}
 
 // unportableSkill returns why a skill that stays inside its directory still
 // cannot be installed the same way on every OS, or "" if it can. Install skips
@@ -206,18 +162,4 @@ func isWindowsDeviceName(s string) bool {
 		return true
 	}
 	return false
-}
-
-// normalizeManifest stamps SourceName and defaults RepoDir for older manifests.
-func normalizeManifest(m *Manifest) {
-	if m.Skills == nil {
-		m.Skills = map[string]SkillMeta{}
-	}
-	for name, meta := range m.Skills {
-		if meta.RepoDir == "" {
-			meta.RepoDir = stableSkillsRepoPath
-		}
-		meta.SourceName = name
-		m.Skills[name] = meta
-	}
 }
