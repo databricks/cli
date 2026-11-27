@@ -10,12 +10,6 @@ unset CI DATABRICKS_AITOOLS_AUTO_INSTALL GITHUB_ACTIONS GITLAB_CI JENKINS_URL TF
 # Telemetry is printed by print_telemetry.
 unset DATABRICKS_CLI_DISABLE_TELEMETRY DATABRICKS_CLI_TELEMETRY_TIMEOUT
 
-# Without a terminal, only a coding agent's call installs: any other run cannot
-# ask first, so it skips (see no-terminal). The cases have no terminal, so they
-# run as a coding agent's call. AGENT is the generic marker; this name gets no
-# agent hint.
-export AGENT=test-agent
-
 # Test binaries are development builds, which never auto-install. Each case
 # names the released version it simulates.
 export DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.30.0
@@ -28,7 +22,7 @@ ls_bin=$(command -v ls)
 # use_home HOME [ID] isolates HOME with Cursor's config dir present, and stores
 # the machine id ID (default: treatment-machine, whose holdout bucket is in the
 # treatment arm; holdout-machine is in the holdout), so the arm does not
-# depend on a random id.
+# depend on a random id. The user has not agreed to auto-install yet.
 #
 # Auto-install acts only on agents whose config directory exists, and installs
 # plugins through agent CLIs found on PATH. Keep both inside the test: point

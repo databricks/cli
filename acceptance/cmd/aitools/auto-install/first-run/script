@@ -3,6 +3,7 @@ use_home home
 # install), so it gets skill files, as `aitools install` gives it.
 "$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
 gate true
+trace $CLI aitools auto-install enable
 
 title "first run of a new version: installs for the detected agents, one stderr line"
 trace $CLI jobs list

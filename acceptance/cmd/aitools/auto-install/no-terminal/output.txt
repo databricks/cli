@@ -1,20 +1,11 @@
 
-=== no terminal and no coding agent: cannot ask, so nothing is installed or reported, and the version is not settled
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+
+=== no terminal and no coding agent: installs without asking
 
 >>> [CLI] jobs list
-
->>> print_telemetry
-
->>> cursor_skills
-(no skills)
-
->>> auto_install_state
-{"id": "treatment-machine"}
-
-=== the version is still due: a coding agent's call installs without asking
-
->>> AGENT=test-agent [CLI] jobs list
-Installed Databricks AI tools for Cursor. Disable: databricks aitools auto-install disable
+Installed Databricks AI tools for Cursor. Turn off: databricks aitools auto-install disable. Remove: databricks aitools uninstall
 
 >>> print_telemetry
 {"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","trigger":"AUTO_FIRST_RUN"}}
@@ -26,6 +17,20 @@ databricks-test
 >>> auto_install_state
 {
   "last_version": "1.30.0",
-  "installed_without_consent": true,
+  "consented": true,
+  "id": "treatment-machine"
+}
+
+=== a coding agent's call on the next version: the update runs without asking
+
+>>> AGENT=test-agent DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.31.0 [CLI] jobs list
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"UP_TO_DATE","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> auto_install_state
+{
+  "last_version": "1.31.0",
+  "consented": true,
   "id": "treatment-machine"
 }

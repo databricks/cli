@@ -44,25 +44,18 @@ type State struct {
 
 	// OptedOut turns auto-install off for every later version. It is set by
 	// `databricks aitools auto-install disable`, by a global-scope
-	// `databricks aitools uninstall`, by declining the install prompt and by a
-	// "no" to the skills prompt of `databricks apps init`.
+	// `databricks aitools uninstall` and by a "no" to the skills prompt of
+	// `databricks apps init`.
 	OptedOut bool `json:"opted_out,omitempty"`
 
 	// Consented records that the user agreed to installing the tools and
 	// keeping them up to date. It is set by `databricks aitools auto-install
 	// enable`, by a global-scope `databricks aitools install` that set an agent
-	// up, by a "yes" to the install prompt, by a "yes" to the skills prompt of
-	// `databricks apps init`, and by a run that finds a global installation
-	// made by the CLI other than one auto-install made without consent (see
-	// InstalledWithoutConsent and Installing). It is never set
+	// up, by a "yes" to the skills prompt of `databricks apps init`, and by a
+	// run that finds a global installation made by the CLI. It is never set
 	// together with OptedOut (see Consent), so a CLI that knows only OptedOut
 	// still reads an opt-out as one.
 	Consented bool `json:"consented,omitempty"`
-
-	// AcceptedVersion is the CLI version whose install prompt the user
-	// answered "yes". Retries of that version install without asking again;
-	// any other version asks.
-	AcceptedVersion string `json:"accepted_version,omitempty"`
 
 	// Installing is set while auto-install makes a first install, and stays
 	// set when the install did not finish, including one that was refused
@@ -79,12 +72,6 @@ type State struct {
 	// Install state that anything else wrote is updated. It is cleared with
 	// Installing.
 	InstallStateDigest string `json:"install_state_digest,omitempty"`
-
-	// InstalledWithoutConsent records that auto-install started a first
-	// install while the user had not answered (a coding agent's run, which
-	// does not ask). The install state it leaves is not the user's consent, so
-	// a run does not read it as one. It is cleared once the user answers.
-	InstalledWithoutConsent bool `json:"installed_without_consent,omitempty"`
 
 	// ID is a random per-machine identifier, created on the first run that
 	// decides anything. Only its Bucket is used, and it never leaves the
@@ -179,7 +166,6 @@ func (s State) Consent() Consent {
 func setConsent(s *State, c Consent) {
 	s.OptedOut = c == ConsentOptedOut
 	s.Consented = c == ConsentGiven
-	s.InstalledWithoutConsent = false
 }
 
 // SetConsent stores the user's answer c, keeping the rest of the state, and
