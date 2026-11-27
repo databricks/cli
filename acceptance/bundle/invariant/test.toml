@@ -17,8 +17,6 @@ Env.DATABRICKS_BUNDLE_ENGINE = "direct"
 EnvMatrix.INPUT_CONFIG = [
     "alert.yml.tmpl",
     "app.yml.tmpl",
-    "app_thumbnail.yml.tmpl",
-    "app_thumbnail_content.yml.tmpl",
     "catalog.yml.tmpl",
     "catalog_optional_fields.yml.tmpl",
     "cluster.yml.tmpl",
