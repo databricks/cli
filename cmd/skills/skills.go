@@ -4,7 +4,6 @@ package skills
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
@@ -24,10 +23,4 @@ func buildCommand(_ context.Context, cmd *cobra.Command) {
 	cmd.AddCommand(newListFilesCmd())
 	cmd.AddCommand(newReadFileCmd())
 	cmd.AddCommand(newSearchCmd())
-}
-
-// notImplemented is the run function of every subcommand until its own change
-// lands.
-func notImplemented(cmd *cobra.Command, _ []string) error {
-	return fmt.Errorf("%s is not implemented yet", cmd.CommandPath())
 }
