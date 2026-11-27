@@ -125,3 +125,57 @@ type DeleteWebhookTrigger struct {
 	GitProvider   GitProvider              `json:"git_provider"`
 	TriggerConfig *DeploymentTriggerConfig `json:"trigger_config"`
 }
+
+// AutoDeployAttempt is one auto-deploy run of a trigger for one commit.
+type AutoDeployAttempt struct {
+	// Name has the format webhook-triggers/{trigger_id}/attempts/{attempt_id}.
+	Name      string `json:"name,omitempty"`
+	TriggerID string `json:"trigger_id,omitempty"`
+	AttemptID string `json:"attempt_id,omitempty"`
+
+	// AttemptStatus is one of ATTEMPT_STATUS_QUEUED, _RUNNING, _SUCCEEDED, _FAILED and _UNKNOWN.
+	AttemptStatus string `json:"attempt_status,omitempty"`
+
+	// ErrorMessage is set only for a failed attempt.
+	ErrorMessage      string `json:"error_message,omitempty"`
+	ResolvedCommitSha string `json:"resolved_commit_sha,omitempty"`
+
+	// CreateTime and CompleteTime are RFC 3339 timestamps.
+	CreateTime   string `json:"create_time,omitempty"`
+	CompleteTime string `json:"complete_time,omitempty"`
+
+	DeployAs      *DeployAsIdentity        `json:"deploy_as,omitempty"`
+	RepoURL       string                   `json:"repo_url,omitempty"`
+	GitProvider   GitProvider              `json:"git_provider,omitempty"`
+	TriggerConfig *DeploymentTriggerConfig `json:"trigger_config,omitempty"`
+	DabsResult    *DabsAttemptResult       `json:"dabs_result,omitempty"`
+}
+
+type DabsAttemptResult struct {
+	// Stage is the last stage the attempt reached, such as STAGE_RUN_BUNDLE_DEPLOY. For a failed
+	// attempt, it is the stage that failed.
+	Stage string `json:"stage,omitempty"`
+
+	// DeploymentVersion has the format deployments/{deployment_id}/versions/{version_id}.
+	DeploymentVersion string `json:"deployment_version,omitempty"`
+
+	// RunID and JobID are the runner job run and the runner job that the attempt ran in.
+	RunID int64 `json:"run_id,omitempty"`
+	JobID int64 `json:"job_id,omitempty"`
+}
+
+type ListAutoDeployAttemptsRequest struct {
+	// Parent has the format webhook-triggers/{trigger_id}.
+	Parent    string `json:"-" url:"-"`
+	PageToken string `json:"-" url:"page_token,omitempty"`
+}
+
+type ListAutoDeployAttemptsResponse struct {
+	AutoDeployAttempts []AutoDeployAttempt `json:"auto_deploy_attempts,omitempty"`
+	NextPageToken      string              `json:"next_page_token,omitempty"`
+}
+
+type GetAutoDeployAttemptRequest struct {
+	// Name has the format webhook-triggers/{trigger_id}/attempts/{attempt_id}.
+	Name string `json:"-" url:"-"`
+}

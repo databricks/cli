@@ -26,5 +26,6 @@ Example:
 	cmd.AddCommand(newGetCommand())
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newDeleteCommand())
+	cmd.AddCommand(newAttemptsCommand())
 	return cmd
 }

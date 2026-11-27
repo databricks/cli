@@ -1,0 +1,44 @@
+
+=== A target without a trigger
+
+>>> musterr [CLI] bundle auto-deploy attempts
+Error: target dev has no auto-deploy trigger that you can view. To create one, run: databricks bundle auto-deploy create -t dev
+
+=== Creating the trigger queues its first attempt
+
+>>> [CLI] bundle auto-deploy attempts
+Attempt ID                            Status  Commit  Created
+[UUID][0]  QUEUED          [TIMESTAMP]
+
+>>> [CLI] bundle auto-deploy attempts [UUID][0]
+Attempt ID: [UUID][0]
+Status:     QUEUED
+Created:    [TIMESTAMP]
+{
+  "method": "GET",
+  "path": "/api/2.0/git-webhooks/webhook-triggers/[UUID][1]/attempts"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/git-webhooks/webhook-triggers/[UUID][1]/attempts/[UUID][0]"
+}
+
+=== A failed attempt
+
+>>> [CLI] bundle auto-deploy attempts [UUID][2]
+Attempt ID: [UUID][2]
+Status:     FAILED
+Commit:     0123456789abcdef0123456789abcdef01234567
+Created:    [TIMESTAMP]
+Completed:  [TIMESTAMP]
+Stage:      RUN_BUNDLE_DEPLOY
+Run ID:     7012345678901234
+Error:      cannot create job: invalid cluster spec
+
+=== An attempt that does not exist
+
+>>> musterr [CLI] bundle auto-deploy attempts [UUID][3]
+Error: Auto-deploy attempt 'webhook-triggers/[UUID][1]/attempts/[UUID][3]' does not exist
+
+>>> musterr [CLI] bundle auto-deploy attempts webhook-triggers/x/attempts/y
+Error: "webhook-triggers/x/attempts/y" is not an attempt ID. Pass the attempt_id of an attempt, not its name

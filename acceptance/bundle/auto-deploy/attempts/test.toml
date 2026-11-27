@@ -1,0 +1,21 @@
+# The fake has no runner, so no attempt of it ever fails. This stub covers how a failed attempt
+# renders. It answers for any trigger, as it only checks the output.
+[[Server]]
+Pattern = "GET /api/2.0/git-webhooks/webhook-triggers/{trigger_id}/attempts/11111111-1111-4111-8111-111111111111"
+Response.Body = '''
+{
+  "name": "webhook-triggers/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/attempts/11111111-1111-4111-8111-111111111111",
+  "trigger_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "attempt_id": "11111111-1111-4111-8111-111111111111",
+  "attempt_status": "ATTEMPT_STATUS_FAILED",
+  "error_message": "cannot create job: invalid cluster spec",
+  "resolved_commit_sha": "0123456789abcdef0123456789abcdef01234567",
+  "create_time": "2026-11-24T10:00:00Z",
+  "complete_time": "2026-11-24T10:02:00Z",
+  "dabs_result": {
+    "stage": "STAGE_RUN_BUNDLE_DEPLOY",
+    "run_id": 7012345678901234,
+    "job_id": 7012345678900000
+  }
+}
+'''
