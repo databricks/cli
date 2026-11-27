@@ -130,8 +130,7 @@ func TestRunSearchStaleCatalogPrintsProvenanceOnStderr(t *testing.T) {
 
 	cmd, stdout, stderr := searchTestCmd(t)
 	require.NoError(t, runSearch(cmd, listFakeSource{catalog}, []string{"jobs"}, false))
-	assert.Equal(t, "Skills come from cached (release 1.2.3, fetched 2026-11-01T00:00:00Z). "+
-		"The source could not be refreshed, so the list may be out of date.\n", stderr.String())
+	assert.Equal(t, provenanceLine(catalog)+"\n", stderr.String())
 	assert.Equal(t, searchStdout, stdout.String())
 }
 
