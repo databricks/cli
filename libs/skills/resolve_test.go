@@ -43,3 +43,15 @@ func TestLocalCatalogFromAcceptanceFixture(t *testing.T) {
 	assert.Equal(t, "future-skill", catalog.Skills[1].Name)
 	assert.Equal(t, "guide-skill", catalog.Skills[2].Name)
 }
+
+// The folder is built with the host's separator, so on Windows the label comes
+// from a backslash path through Resolve. On other hosts it checks the same label.
+func TestResolveLabelUsesForwardSlashes(t *testing.T) {
+	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", filepath.Join("testdata", "release"))
+	src, err := Resolve(ctx)
+	require.NoError(t, err)
+
+	catalog, err := src.Catalog(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "testdata/release", catalog.Label)
+}
