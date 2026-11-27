@@ -633,8 +633,7 @@ func restoreBlankLines(content []byte) []byte {
 			markers++
 			continue
 		}
-		// The encoder writes whitespace-only lines only as block scalar content, such as a tab-only
-		// line of a multi-line string, so only empty lines count as blank.
+		// The encoder writes whitespace-only lines only as block scalar content, never as blank lines.
 		if line == "" && i < len(lines)-1 {
 			blanks++
 			continue
