@@ -18,6 +18,7 @@ Usage:
   databricks bundle [command]
 
 Available Commands:
+  auto-deploy        Deploy a bundle target on every push to a Git branch
   deploy             Deploy bundle
   deployment         Deployment related commands
   destroy            Destroy deployed bundle resources

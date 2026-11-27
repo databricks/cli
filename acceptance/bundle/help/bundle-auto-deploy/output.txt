@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle auto-deploy --help
+Set up and inspect auto-deploy for a bundle target.
+
+Auto-deploy deploys a bundle target whenever commits are pushed to a branch of
+the bundle's Git repository. Run these commands from the bundle directory. The
+trigger is identified by the bundle's origin URL, its path in the repository
+and the target (-t).
+
+Example:
+  databricks bundle auto-deploy create -t prod --branch main
+
+Usage:
+  databricks bundle auto-deploy [command]
+
+Available Commands:
+  attempts    List the auto-deploy attempts of this bundle target, or show one
+  create      Deploy this bundle target on every push to a branch
+  delete      Stop auto-deploying this bundle target
+  get         Show the auto-deploy trigger of this bundle target
+  list        List the auto-deploy triggers of this bundle's targets
+
+Flags:
+  -h, --help[=true|false]   help for auto-deploy
+
+Global Flags:
+      --debug[=true|false]   enable debug logging
+  -o, --output type          output type: text or json (default text)
+  -p, --profile string       ~/.databrickscfg profile
+  -t, --target string        bundle target to use (if applicable)
+      --var strings          set values for variables defined in bundle config. Example: --var="foo=bar"
+
+Use "databricks bundle auto-deploy [command] --help" for more information about a command.
