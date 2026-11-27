@@ -22,7 +22,7 @@
 Failure reason: Task train failed with message: Unable to access the notebook "/Shared/train\u001b]0;pwned\u0007\u001b[2J\r-nb". Either it does not exist, or the identity used to run this job lacks the required permissions.
 
 Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
-MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
+MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1\u001b]0;pwned\u0007
 
 === get (json): strings are passed through as the server sent them
 
@@ -30,6 +30,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 {
   "experiment_name": "my\u001b]0;pwned\u0007-exp",
   "mlflow_run_name": "\u001b]0;pwned\u0007my\u001b[2J-run\r",
+  "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1\u001b]0;pwned\u0007/logs",
   "user": "user\u001b[31m@example.com",
   "base_environment": "workspace-base-environments/databricks_ai\u001b]0;pwned\u0007_v6",
   "termination_reason": "Task train failed with message: Unable to access the notebook \"/Shared/train\u001b]0;pwned\u0007\u001b[2J\r-nb\". Either it does not exist, or the identity used to run this job lacks the required permissions."
