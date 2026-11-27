@@ -35,6 +35,10 @@ const (
 	// and rewritten.
 	stateLockFileName = "auto-install.json.lock"
 
+	// mcpLockFileName is the lock of `aitools mcp add` and `aitools mcp
+	// remove`, held while one of them runs.
+	mcpLockFileName = "mcp.lock"
+
 	// lockRetryInterval is how often a held lock is tried again.
 	lockRetryInterval = 10 * time.Millisecond
 )
@@ -180,9 +184,25 @@ func TryLock(ctx context.Context) (unlock func(), ok bool) {
 // all (a filesystem without locks), no run can take it either, so Lock
 // returns an unlock that does nothing.
 func Lock(ctx context.Context) (unlock func(), err error) {
-	unlock, err = lock(ctx, lockFileName, 0)
+	return lockNow(ctx, lockFileName)
+}
+
+// LockMCP takes the machine-wide lock of `aitools mcp add` and `aitools mcp
+// remove`, without waiting, so that one of them never plans or writes agent
+// configs and install records while another does. It fails when another one
+// holds it. As for Lock, where the lock cannot be taken at all it returns an
+// unlock that does nothing.
+func LockMCP(ctx context.Context) (unlock func(), err error) {
+	return lockNow(ctx, mcpLockFileName)
+}
+
+// lockNow takes the lock file name without waiting. It fails only when
+// another process holds the lock; any other failure is logged, and the caller
+// goes ahead without the lock.
+func lockNow(ctx context.Context, name string) (unlock func(), err error) {
+	unlock, err = lock(ctx, name, 0)
 	if err != nil && !errors.Is(err, errLockHeld) {
-		log.Debugf(ctx, "Going ahead without the auto-install lock: %v", err)
+		log.Debugf(ctx, "Going ahead without the %s lock: %v", name, err)
 		return func() {}, nil
 	}
 	return unlock, err

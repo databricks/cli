@@ -1,0 +1,35 @@
+
+=== add is refused while another add or remove runs, and writes nothing
+
+>>> musterr python3 with_lock.py home/.databricks/aitools/mcp.lock [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents cursor
+Error: another databricks aitools mcp add or remove is running; run this command again when it finishes: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.lock: held by another CLI process
+
+>>> ls home/.cursor
+
+=== remove is refused the same way, and the server stays
+
+>>> [CLI] aitools mcp add --profile logfood --names system.ai.genie_one_mcp --agents cursor
+Profile logfood ([DATABRICKS_URL])
+Agents (named with --agents): cursor
+
+genie_one_mcp-logfood  system.ai.genie_one_mcp
+  cursor       installed  [TEST_TMP_DIR]/home/.cursor/mcp.json
+
+Cursor may ask you to approve genie_one_mcp-logfood. Run: cursor-agent mcp enable genie_one_mcp-logfood (`agent` in the Cursor docs), or approve it in Cursor's MCP settings.
+
+>>> musterr python3 with_lock.py home/.databricks/aitools/mcp.lock [CLI] aitools mcp remove --all
+Error: another databricks aitools mcp add or remove is running; run this command again when it finishes: [TEST_TMP_DIR]/home/.databricks/aitools/mcp.lock: held by another CLI process
+
+>>> jq -c .mcpServers | keys home/.cursor/mcp.json
+["genie_one_mcp-logfood"]
+
+=== list only reads, so it does not take the lock
+
+>>> python3 with_lock.py home/.databricks/aitools/mcp.lock [CLI] aitools mcp list
+Profile logfood  ([DATABRICKS_URL], config file [TEST_TMP_DIR]/.databrickscfg)
+  genie_one_mcp-logfood    system.ai.genie_one_mcp        Cursor
+
+=== the lock is free again when its holder exits
+
+>>> [CLI] aitools mcp remove --all
+Removed genie_one_mcp-logfood  system.ai.genie_one_mcp  profile logfood  (Cursor)
