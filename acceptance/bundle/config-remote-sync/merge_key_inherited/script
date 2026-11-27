@@ -1,0 +1,61 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < pipeline.yml.tmpl > pipeline.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+pipeline_id="$(read_id.py my_pipeline)"
+rename_job_id="$(read_id.py rename_job)"
+
+title "Edit fields inherited through YAML merge keys"
+edit_resource.py jobs $job_id <<EOF2
+r["timeout_seconds"] = 1200
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] not in ("prep", "setup")]
+for task in r["tasks"]:
+    if task["task_key"] == "b_task":
+        task["min_retry_interval_millis"] = 5000
+        del task["max_retries"]
+        task["depends_on"] = [d for d in task["depends_on"] if d["task_key"] != "prep"] + [{"task_key": "a_task", "outcome": "true"}]
+        task["notebook_task"]["base_parameters"]["input_file_name"] = "other"
+    if task["task_key"] == "c_task":
+        task["depends_on"] = [d for d in task["depends_on"] if d["task_key"] != "setup"] + [{"task_key": "a_task"}]
+for cluster in r["job_clusters"]:
+    if cluster["job_cluster_key"] == "derived":
+        del cluster["new_cluster"]["num_workers"]
+        cluster["new_cluster"]["autoscale"] = {"min_workers": 1, "max_workers": 2}
+EOF2
+edit_resource.py jobs $rename_job_id <<EOF2
+r["tasks"][0]["task_key"] = "main2"
+EOF2
+edit_resource.py pipelines $pipeline_id <<EOF2
+del r["clusters"]
+EOF2
+
+title "Detect and save changes"
+cp databricks.yml databricks.yml.backup
+cp pipeline.yml pipeline.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+trace diff.py databricks.yml.backup databricks.yml
+trace diff.py pipeline.yml.backup pipeline.yml
+rm databricks.yml.backup pipeline.yml.backup
+
+title "Effective configuration after the sync"
+$CLI bundle validate -o json | jq '.resources.jobs.my_job | {timeout_seconds, b_task: (.tasks[] | select(.task_key == "b_task") | {max_retries, min_retry_interval_millis, depends_on, input_file_name: .notebook_task.base_parameters.input_file_name})}'
+
+title "Edit inherited fields with and without a target override supplying them"
+edit_resource.py jobs $rename_job_id <<EOF2
+r["timeout_seconds"] = 900
+r["tasks"][0]["task_key"] = "main"
+r["tasks"][0]["max_retries"] = 5
+EOF2
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --select-ids "jobs:$rename_job_id" --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+$CLI bundle validate -o json | gron.py | grep -E 'rename_job\.(timeout_seconds|tasks\[0\]\.max_retries) '
