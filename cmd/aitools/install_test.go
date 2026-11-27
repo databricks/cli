@@ -18,13 +18,14 @@ import (
 	"slices"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/telemetry"
@@ -2439,18 +2440,18 @@ func TestAgentPickerEscCancelsLikeCtrlC(t *testing.T) {
 	p := newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
 	p.Init()
 	p.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	assert.Contains(t, p.View(), agentPickerHelp)
+	assert.Contains(t, p.View().Content, agentPickerHelp)
 
-	_, cmd := p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	_, cmd := p.Update(teainput.Press("esc"))
 	assert.True(t, p.cancelled)
 	assert.Equal(t, tea.QuitMsg{}, cmd())
-	assert.Empty(t, p.View(), "a cancelled picker leaves nothing on screen")
+	assert.Empty(t, p.View().Content, "a cancelled picker leaves nothing on screen")
 	assert.ErrorIs(t, pickerError(p.cancelled, nil), huh.ErrUserAborted)
 
 	field = agentPickerField(installer.ScopeGlobal, options, &selected)
 	p = newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
 	p.Init()
-	_, cmd = p.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	_, cmd = p.Update(teainput.Press("ctrl+c"))
 	assert.Equal(t, tea.InterruptMsg{}, cmd())
 	assert.ErrorIs(t, pickerError(false, tea.ErrInterrupted), huh.ErrUserAborted)
 }
@@ -2464,14 +2465,14 @@ func TestAgentPickerEscLeavesSearchBeforeCancelling(t *testing.T) {
 	p := newPicker(huh.NewForm(huh.NewGroup(field)).WithShowHelp(false), field.GetFiltering)
 	p.Init()
 	p.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	p.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
+	p.Update(teainput.Press("/"))
 	require.True(t, field.GetFiltering())
 
-	p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	p.Update(teainput.Press("esc"))
 	assert.False(t, p.cancelled, "the first Esc leaves the search")
 	assert.False(t, field.GetFiltering())
 
-	p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	p.Update(teainput.Press("esc"))
 	assert.True(t, p.cancelled, "Esc outside the search cancels the picker")
 }
 

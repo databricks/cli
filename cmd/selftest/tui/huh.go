@@ -2,9 +2,11 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -59,7 +61,7 @@ so this checks the theme, not the production prompt flows.`,
 			// Run the field the way the prompts in libs/apps/prompt do, so the
 			// form around it (no help footer, the theme on the field only) is
 			// the one production draws.
-			if err := group.WithTheme(theme).Run(); err != nil {
+			if err := cmdio.RunHuhField(ctx, group.WithTheme(theme)); err != nil {
 				return err
 			}
 
@@ -76,12 +78,15 @@ so this checks the theme, not the production prompt flows.`,
 			}
 			cmdio.LogString(ctx, "answer: "+answer)
 
-			cmdio.LogString(ctx, fmt.Sprintf("dark_background=%t", cmdio.HasDarkBackground()))
-
-			// The appkit theme picks its colours for the background detected when
-			// it is built, so the blurred button is the colour for that background.
-			fg := theme.Focused.BlurredButton.GetForeground()
-			cmdio.LogString(ctx, fmt.Sprintf("blurred_button=%v (resolved, dark_background=%t)", fg, cmdio.HasDarkBackground()))
+			// The appkit theme is a huh.ThemeFunc, so its colours depend on the
+			// background, queried once here for the probe on stderr, where the
+			// form draws. The blurred button is the colour the theme picks for
+			// that background.
+			dark := lipgloss.HasDarkBackground(os.Stdin, os.Stderr)
+			cmdio.LogString(ctx, fmt.Sprintf("dark_background=%t", dark))
+			fg := theme.Theme(dark).Focused.BlurredButton.GetForeground()
+			r, g, b, _ := fg.RGBA()
+			cmdio.LogString(ctx, fmt.Sprintf("blurred_button=#%02x%02x%02x (resolved, dark_background=%t)", r>>8, g>>8, b>>8, dark))
 			return nil
 		},
 	}

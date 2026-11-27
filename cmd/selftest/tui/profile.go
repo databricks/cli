@@ -3,7 +3,9 @@ package tui
 import (
 	"fmt"
 	"io"
+	"os"
 
+	"charm.land/lipgloss/v2"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
@@ -33,16 +35,19 @@ func newProfileCmd() *cobra.Command {
 			// NO_COLOR only removes color; TERM=dumb also rules out prompts and
 			// spinners. The env block below has the raw values, this line the decision.
 			fmt.Fprintf(w, "interactive=%s prompt=%t\n", cmdio.GetInteractiveMode(ctx), cmdio.IsPromptSupported(ctx))
+			// The background is queried on each stream's own terminal: one of
+			// them can be redirected while the other is a terminal.
 			for _, s := range []struct {
 				name string
 				out  io.Writer
+				file *os.File
 			}{
-				{"stdout", cmd.OutOrStdout()},
-				{"stderr", cmd.ErrOrStderr()},
+				{"stdout", cmd.OutOrStdout(), os.Stdout},
+				{"stderr", cmd.ErrOrStderr(), os.Stderr},
 			} {
 				r, color := cmdio.NewRenderer(ctx, s.out)
 				fmt.Fprintf(w, "%s: supports_color=%t profile=%s dark_background=%t\n",
-					s.name, color, r.Profile(), cmdio.HasDarkBackground())
+					s.name, color, r.Profile(), lipgloss.HasDarkBackground(os.Stdin, s.file))
 			}
 			fmt.Fprintln(w, "env:")
 			for _, name := range profileEnvVars {

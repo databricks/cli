@@ -3,10 +3,12 @@ package teainput_test
 import (
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/stretchr/testify/assert"
 )
+
+func key(k tea.Key) tea.Msg { return tea.KeyPressMsg(k) }
 
 func TestDecode(t *testing.T) {
 	cases := []struct {
@@ -14,37 +16,33 @@ func TestDecode(t *testing.T) {
 		msg  tea.Msg
 		want teainput.Event
 	}{
-		{"rune", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")}, teainput.Event{Key: "a", Text: "a"}},
-		{"alt rune", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("f"), Alt: true}, teainput.Event{Key: "alt+f"}},
-		{"alt runes", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("fb"), Alt: true}, teainput.Event{}},
-		{"space", tea.KeyMsg{Type: tea.KeySpace, Runes: []rune(" ")}, teainput.Event{Key: "space", Text: " "}},
-		{"space as rune", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")}, teainput.Event{Key: "space", Text: " "}},
-		{"alt space", tea.KeyMsg{Type: tea.KeySpace, Runes: []rune(" "), Alt: true}, teainput.Event{Key: "alt+space"}},
-		{"enter", tea.KeyMsg{Type: tea.KeyEnter}, teainput.Event{Key: "enter"}},
-		{"ctrl+j", tea.KeyMsg{Type: tea.KeyCtrlJ}, teainput.Event{Key: "ctrl+j"}},
-		{"ctrl+c", tea.KeyMsg{Type: tea.KeyCtrlC}, teainput.Event{Key: "ctrl+c"}},
-		{"ctrl+h", tea.KeyMsg{Type: tea.KeyCtrlH}, teainput.Event{Key: "ctrl+h"}},
-		{"backspace", tea.KeyMsg{Type: tea.KeyBackspace}, teainput.Event{Key: "backspace"}},
-		{"alt backspace", tea.KeyMsg{Type: tea.KeyBackspace, Alt: true}, teainput.Event{Key: "alt+backspace"}},
-		{"alt ctrl+h", tea.KeyMsg{Type: tea.KeyCtrlH, Alt: true}, teainput.Event{Key: "alt+ctrl+h"}},
-		{"esc", tea.KeyMsg{Type: tea.KeyEsc}, teainput.Event{Key: "esc"}},
-		{"tab", tea.KeyMsg{Type: tea.KeyTab}, teainput.Event{Key: "tab"}},
-		{"alt tab", tea.KeyMsg{Type: tea.KeyTab, Alt: true}, teainput.Event{Key: "alt+tab"}},
-		{"shift+tab", tea.KeyMsg{Type: tea.KeyShiftTab}, teainput.Event{Key: "shift+tab"}},
-		{"delete", tea.KeyMsg{Type: tea.KeyDelete}, teainput.Event{Key: "delete"}},
-		{"up", tea.KeyMsg{Type: tea.KeyUp}, teainput.Event{Key: "up"}},
-		{"alt enter", tea.KeyMsg{Type: tea.KeyEnter, Alt: true}, teainput.Event{Key: "alt+enter"}},
-		{"alt ctrl+c", tea.KeyMsg{Type: tea.KeyCtrlC, Alt: true}, teainput.Event{Key: "alt+ctrl+c"}},
-		{"alt left", tea.KeyMsg{Type: tea.KeyLeft, Alt: true}, teainput.Event{Key: "alt+left"}},
+		{"rune", key(tea.Key{Code: 'a', Text: "a"}), teainput.Event{Key: "a", Text: "a"}},
+		{"shifted rune", key(tea.Key{Code: 'q', ShiftedCode: 'Q', Mod: tea.ModShift, Text: "Q"}), teainput.Event{Key: "Q", Text: "Q"}},
+		{"alt rune", key(tea.Key{Code: 'f', Mod: tea.ModAlt}), teainput.Event{Key: "alt+f"}},
+		{"space", key(tea.Key{Code: tea.KeySpace, Text: " "}), teainput.Event{Key: "space", Text: " "}},
+		{"alt space", key(tea.Key{Code: tea.KeySpace, Mod: tea.ModAlt}), teainput.Event{Key: "alt+space"}},
+		{"enter", key(tea.Key{Code: tea.KeyEnter}), teainput.Event{Key: "enter"}},
+		{"shift+enter", key(tea.Key{Code: tea.KeyEnter, Mod: tea.ModShift}), teainput.Event{Key: "enter"}},
+		{"alt enter", key(tea.Key{Code: tea.KeyEnter, Mod: tea.ModAlt}), teainput.Event{Key: "alt+enter"}},
+		{"ctrl+enter", key(tea.Key{Code: tea.KeyEnter, Mod: tea.ModCtrl}), teainput.Event{Key: "ctrl+enter"}},
+		{"ctrl+j", key(tea.Key{Code: 'j', Mod: tea.ModCtrl}), teainput.Event{Key: "ctrl+j"}},
+		{"ctrl+c", key(tea.Key{Code: 'c', Mod: tea.ModCtrl}), teainput.Event{Key: "ctrl+c"}},
+		{"backspace", key(tea.Key{Code: tea.KeyBackspace}), teainput.Event{Key: "backspace"}},
+		{"alt backspace", key(tea.Key{Code: tea.KeyBackspace, Mod: tea.ModAlt}), teainput.Event{Key: "alt+backspace"}},
+		{"esc", key(tea.Key{Code: tea.KeyEscape}), teainput.Event{Key: "esc"}},
+		{"tab", key(tea.Key{Code: tea.KeyTab}), teainput.Event{Key: "tab"}},
+		{"shift+tab", key(tea.Key{Code: tea.KeyTab, Mod: tea.ModShift}), teainput.Event{Key: "shift+tab"}},
+		{"delete", key(tea.Key{Code: tea.KeyDelete}), teainput.Event{Key: "delete"}},
+		{"up", key(tea.Key{Code: tea.KeyUp}), teainput.Event{Key: "up"}},
 		// Several runes in one read are text. They carry no key name, so a burst
 		// that spells a key name is typed, not pressed.
-		{"burst", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("jk")}, teainput.Event{Text: "jk"}},
-		{"burst enter", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("enter")}, teainput.Event{Text: "enter"}},
-		{"burst down", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("down")}, teainput.Event{Text: "down"}},
-		{"burst ctrl+c", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("ctrl+c")}, teainput.Event{Text: "ctrl+c"}},
-		{"paste", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a b"), Paste: true}, teainput.Event{Text: "a b", Paste: true}},
-		{"paste enter", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("enter"), Paste: true}, teainput.Event{Text: "enter", Paste: true}},
-		{"empty paste", tea.KeyMsg{Type: tea.KeyRunes, Paste: true}, teainput.Event{Paste: true}},
+		{"burst", key(tea.Key{Code: tea.KeyExtended, Text: "jk"}), teainput.Event{Text: "jk"}},
+		{"burst enter", key(tea.Key{Code: tea.KeyExtended, Text: "enter"}), teainput.Event{Text: "enter"}},
+		{"burst down", key(tea.Key{Code: tea.KeyExtended, Text: "down"}), teainput.Event{Text: "down"}},
+		{"burst ctrl+c", key(tea.Key{Code: tea.KeyExtended, Text: "ctrl+c"}), teainput.Event{Text: "ctrl+c"}},
+		{"paste", tea.PasteMsg{Content: "a b"}, teainput.Event{Text: "a b", Paste: true}},
+		{"paste enter", tea.PasteMsg{Content: "enter"}, teainput.Event{Text: "enter", Paste: true}},
+		{"empty paste", tea.PasteMsg{}, teainput.Event{Paste: true}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

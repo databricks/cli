@@ -6,7 +6,7 @@ import (
 	"context"
 	"io"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/databricks/cli/libs/flags"
 )
 
@@ -113,6 +113,9 @@ func SetupTest(ctx context.Context, opts TestOptions) (context.Context, *Test) {
 		in:  rin,
 		out: wout,
 		err: werr,
+		// As in NewTestIO: bubbletea can't detect the size of a pipe, and v2
+		// draws nothing at width 0.
+		teaWindowSize: &tea.WindowSizeMsg{Width: TestTerminalWidth, Height: TestTerminalHeight},
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

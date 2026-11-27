@@ -9,7 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/databricks/cli/libs/flags"
 )
 
@@ -20,19 +21,22 @@ var ErrCtrlC = errors.New("^C")
 // runTUI runs a tea.Program through cmdIO's tea program slot so spinners and
 // pagers can't fight a prompt for the terminal. Blocks until the model quits.
 func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
-	p := tea.NewProgram(m,
+	opts := []tea.ProgramOption{
 		tea.WithInput(c.in),
 		tea.WithOutput(c.err),
+		tea.WithColorProfile(teaColorProfile(c.capabilities.SupportsStderrColor(), c.err)),
 		// Ctrl+C is delivered as a key event so the model can return ErrCtrlC.
 		tea.WithoutSignalHandler(),
-	)
+	}
+	// NewTestIO sets a synthetic window size because bubbletea's auto-detect
+	// doesn't fire on pipe-backed streams. Nil in production. It must be set
+	// up front: Run renders the first frame before any sent message arrives.
+	if c.teaWindowSize != nil {
+		opts = append(opts, tea.WithWindowSize(c.teaWindowSize.Width, c.teaWindowSize.Height))
+	}
+	p := NewTeaProgram(m, c.in, opts...)
 	c.acquireTeaProgram(p)
 	defer c.releaseTeaProgram()
-	// NewTestIO sets a synthetic window size because bubbletea's auto-detect
-	// doesn't fire on pipe-backed streams. Nil in production.
-	if c.teaWindowSize != nil {
-		go p.Send(*c.teaWindowSize)
-	}
 	return p.Run()
 }
 
@@ -80,7 +84,13 @@ func (c *cmdIO) stderrWriter(ctx context.Context) io.Writer {
 	c.errWriterMu.Lock()
 	defer c.errWriterMu.Unlock()
 	if c.errWriter == nil {
-		r, _ := NewRenderer(ctx, c.err)
+		r, color := NewRenderer(ctx, c.err)
+		if color {
+			// The color helpers emit basic ANSI whenever color is on, even
+			// where termenv's profile is Ascii (CI, CLICOLOR=0), and v1 passed
+			// them through. Downsampling to Ascii would strip them.
+			r.profile = max(r.profile, colorprofile.ANSI)
+		}
 		c.errWriter = r.Writer(c.err)
 	}
 	return c.errWriter

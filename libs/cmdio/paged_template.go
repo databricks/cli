@@ -9,7 +9,7 @@ import (
 	"text/template"
 	"unicode/utf8"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/databricks/databricks-sdk-go/listing"
 )
 
@@ -104,14 +104,20 @@ func renderIteratorPagedTemplateCore[T any](
 		headerStr: headerTemplate,
 	}
 	m := newPagerModel(ctx, out, iter, pager, pageSize, limitFromContext(ctx))
-	p := tea.NewProgram(
-		m,
+	teaOpts := []tea.ProgramOption{
 		tea.WithInput(in),
 		tea.WithOutput(out),
+		tea.WithColorProfile(teaColorProfile(SupportsColor(ctx, out), out)),
 		// Match spinner: let SIGINT reach the process rather than the TUI
 		// so Ctrl+C also interrupts a stalled iterator fetch.
 		tea.WithoutSignalHandler(),
-	)
+	}
+	// NewTestIO's synthetic window size, at the height that keeps v1's fallback
+	// page size of 50 rows; nil in production.
+	if c := fromContext(ctx); c.teaWindowSize != nil {
+		teaOpts = append(teaOpts, tea.WithWindowSize(c.teaWindowSize.Width, pagerFallbackPageSize+pagerViewOverhead))
+	}
+	p := NewTeaProgram(m, in, teaOpts...)
 	// Unlike cmdio.NewSpinner, the pager doesn't need to acquire/release
 	// through cmdIO: p.Run is blocking and tea restores the terminal on
 	// its own before returning, so there's no other tea.Program that could

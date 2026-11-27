@@ -9,7 +9,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/telemetry/protos"

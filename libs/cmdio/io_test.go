@@ -91,3 +91,21 @@ func TestIsLinePromptSupported(t *testing.T) {
 	MarkStdinReadInBackground()
 	assert.False(t, IsLinePromptSupported(terminal), "another goroutine reads stdin")
 }
+
+// CI and CLICOLOR=0 make termenv's profile Ascii on a terminal, but cmdio's
+// color helpers still color LogString output there, as they did on v1.
+func TestLogStringKeepsHelperColorsWhenProfileIsAscii(t *testing.T) {
+	for _, kv := range [][2]string{{"CI", "1"}, {"CLICOLOR", "0"}} {
+		t.Run(kv[0], func(t *testing.T) {
+			t.Setenv(kv[0], kv[1])
+			var stderr bytes.Buffer
+			c := NewTestIO(nil, io.Discard, FakeTTY(&stderr))
+			ctx := InContext(t.Context(), c)
+
+			LogString(ctx, "\x1b[33mwarning\x1b[0m")
+
+			// The writer re-encodes SGR, so the reset comes out in its short form.
+			assert.Equal(t, "\x1b[33mwarning\x1b[m\n", stderr.String())
+		})
+	}
+}

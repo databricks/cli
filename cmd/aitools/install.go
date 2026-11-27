@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
@@ -565,7 +565,7 @@ func agentStateLabel(s agents.DisplayState) string {
 	}
 }
 
-func defaultPromptAgentSelection(_ context.Context, scope string, choices []agentChoice) ([]*agents.Agent, error) {
+func defaultPromptAgentSelection(ctx context.Context, scope string, choices []agentChoice) ([]*agents.Agent, error) {
 	options := make([]huh.Option[string], 0, len(choices))
 	byName := make(map[string]*agents.Agent, len(choices))
 	for _, c := range choices {
@@ -619,7 +619,7 @@ type pickerModel struct {
 func (p *pickerModel) Init() tea.Cmd { return p.form.Init() }
 
 func (p *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if key, ok := msg.(tea.KeyMsg); ok && key.Type == tea.KeyEsc && (p.searching == nil || !p.searching()) {
+	if key, ok := msg.(tea.KeyPressMsg); ok && key.Code == tea.KeyEscape && (p.searching == nil || !p.searching()) {
 		p.cancelled = true
 		return p, tea.Quit
 	}
@@ -637,12 +637,14 @@ func (p *pickerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View draws nothing once Esc cancelled the picker, so Esc leaves no picker on screen. Ctrl+C interrupts the program,
-// which keeps the last frame, as huh's Run does.
-func (p *pickerModel) View() string {
+// which keeps the last frame, as huh's Run does. It reports focus, as huh's Run does.
+func (p *pickerModel) View() tea.View {
 	if p.cancelled {
-		return ""
+		return tea.NewView("")
 	}
-	return p.form.View()
+	v := tea.NewView(p.form.View())
+	v.ReportFocus = true
+	return v
 }
 
 // newPicker returns the program of form, whose search searching reports (nil for
@@ -655,11 +657,10 @@ func newPicker(form *huh.Form, searching func() bool) *pickerModel {
 }
 
 // runPicker runs the picker p and returns huh.ErrUserAborted when the user
-// cancels it, with Esc or Ctrl+C. It takes the program options huh's Run sets:
-// the picker draws on stderr, so a redirected stdout gets none of it, and
-// reports focus.
+// cancels it, with Esc or Ctrl+C. The picker draws on stderr, so a redirected
+// stdout gets none of it.
 func runPicker(p *pickerModel) error {
-	_, err := tea.NewProgram(p, tea.WithOutput(os.Stderr), tea.WithReportFocus()).Run()
+	_, err := tea.NewProgram(p, tea.WithOutput(os.Stderr)).Run()
 	return pickerError(p.cancelled, err)
 }
 

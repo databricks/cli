@@ -213,6 +213,11 @@ type Options struct {
 	// Windows.
 	MapNewline bool
 
+	// StdinTTY makes stdin look like a terminal to cmdio, so the paths that
+	// need one run, such as NewTeaProgram's wait for the terminal's replies
+	// before quitting. Input still comes from the pipe.
+	StdinTTY bool
+
 	// ScreenRows, when positive, replaces the emulator's height of
 	// [cmdio.TestTerminalHeight] rows. LF on the last row scrolls the top
 	// line off the screen, so programs that print more lines than that (the
@@ -349,7 +354,11 @@ func RunWith[T any](t *testing.T, opts Options, fn func(ctx context.Context) (T,
 	} else {
 		stdout = io.Discard
 	}
-	cio := cmdio.NewTestIOWithOptions(ctx, inR, stdout, screen, cmdio.TestIOOptions{
+	var in io.Reader = inR
+	if opts.StdinTTY {
+		in = cmdio.FakeTTYReader(inR)
+	}
+	cio := cmdio.NewTestIOWithOptions(ctx, in, stdout, screen, cmdio.TestIOOptions{
 		HeaderTemplate: opts.HeaderTemplate,
 		Template:       opts.Template,
 		ColorFromEnv:   opts.ColorFromEnv,
@@ -538,15 +547,17 @@ func (tt *Term[T]) WaitForOrExit(substr string) bool {
 	}
 }
 
-// WaitFor blocks until substr appears in the raw output stream, or the
-// default timeout elapses. Returns the captured output for use in failure
-// messages.
+// WaitFor blocks until substr appears in the raw output stream or on the
+// screen, or the default timeout elapses. bubbletea v2 redraws only the cells
+// that change, so text shown on screen need not appear whole in the stream:
+// typed "ab" can arrive as "a", then "b" inserted before the cursor. Returns
+// the captured raw output.
 func (tt *Term[T]) WaitFor(substr string) string {
 	tt.t.Helper()
 	deadline := time.Now().Add(defaultTimeout)
 	for {
 		got := tt.Raw()
-		if strings.Contains(got, substr) {
+		if strings.Contains(got, substr) || strings.Contains(tt.Snapshot(), substr) {
 			return got
 		}
 		if time.Now().After(deadline) {

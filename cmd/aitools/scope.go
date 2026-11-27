@@ -7,9 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
@@ -85,14 +86,13 @@ func defaultPromptScopeSelection(ctx context.Context) (string, error) {
 	projectLabel := "Project (" + projectPath + "/)\n    Checked into the repo, shared with everyone on the project."
 
 	var scope string
-	err = huh.NewSelect[string]().
+	err = cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 		Title("Where should skills be installed?").
 		Options(
 			huh.NewOption(globalLabel, installer.ScopeGlobal),
 			huh.NewOption(projectLabel, installer.ScopeProject),
 		).
-		Value(&scope).
-		Run()
+		Value(&scope))
 	if err != nil {
 		return "", promptError(err)
 	}
@@ -364,15 +364,14 @@ func defaultPromptUpdateScopeSelection(ctx context.Context) ([]string, error) {
 	bothLabel := "Both global and project"
 
 	var scope string
-	err = huh.NewSelect[string]().
+	err = cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 		Title("Which installation should be updated?").
 		Options(
 			huh.NewOption(globalLabel, installer.ScopeGlobal),
 			huh.NewOption(projectLabel, installer.ScopeProject),
 			huh.NewOption(bothLabel, scopeBoth),
 		).
-		Value(&scope).
-		Run()
+		Value(&scope))
 	if err != nil {
 		return nil, promptError(err)
 	}
@@ -400,14 +399,13 @@ func defaultPromptUninstallScopeSelection(ctx context.Context) (string, error) {
 	projectLabel := "Project (" + projectPath + "/)"
 
 	var scope string
-	err = huh.NewSelect[string]().
+	err = cmdio.RunHuhField(ctx, huh.NewSelect[string]().
 		Title("Which installation should be uninstalled?").
 		Options(
 			huh.NewOption(globalLabel, installer.ScopeGlobal),
 			huh.NewOption(projectLabel, installer.ScopeProject),
 		).
-		Value(&scope).
-		Run()
+		Value(&scope))
 	if err != nil {
 		return "", promptError(err)
 	}

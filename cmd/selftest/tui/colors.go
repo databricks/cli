@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
@@ -67,8 +67,11 @@ are visible.`,
 				index := 16 + i*7
 				ansi256 = append(ansi256, r.NewStyle().Background(lipgloss.Color(strconv.Itoa(index))).Render("  "))
 			}
-			writeLine(ctx, stream, w, "truecolor: "+strings.Join(truecolor, ""))
-			writeLine(ctx, stream, w, "256-color: "+strings.Join(ansi256, ""))
+			// lipgloss v2 styles always render full color; the renderer's
+			// writer downsamples them to the stream's profile.
+			sw := r.Writer(w)
+			writeLine(ctx, stream, sw, "truecolor: "+strings.Join(truecolor, ""))
+			writeLine(ctx, stream, sw, "256-color: "+strings.Join(ansi256, ""))
 			return nil
 		},
 	}

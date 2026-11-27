@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/viewport"
+	"charm.land/bubbles/v2/viewport"
 	"github.com/databricks/cli/libs/cmdio/teainput"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,7 +82,7 @@ func readyModel(columns []string, rows [][]string, viewportHeight int) model {
 		header: all[:headerLines],
 		lines:  all[headerLines:],
 	}
-	m.viewport = viewport.New(80, viewportHeight)
+	m.viewport = viewport.New(viewport.WithWidth(80), viewport.WithHeight(viewportHeight))
 	m.viewport.SetContent(m.renderContent())
 	m.ready = true
 	return m
@@ -98,7 +98,7 @@ func TestViewKeepsHeaderAboveScrollableContent(t *testing.T) {
 	// the column header off-screen and never bring it back.
 	m.viewport.SetYOffset(1)
 
-	out := m.View()
+	out := m.render()
 	headerIdx := strings.Index(out, "id")
 	carolIdx := strings.Index(out, "carol")
 	require.NotEqual(t, -1, headerIdx, "View output must contain the column header")
