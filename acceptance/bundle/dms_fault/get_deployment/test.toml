@@ -1,2 +1,0 @@
-# Killing the CLI mid-write leaves I/O errors on the workspace file system.
-RunsOnDbr = false

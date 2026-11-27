@@ -1,2 +1,0 @@
-# Builds wheels and venvs on the workspace file system, which times out or fails there.
-RunsOnDbr = false

@@ -1,6 +1,3 @@
-# Needs Python versions besides 3.10 and 3.12, which the DBR test archive does not ship.
-RunsOnDbr = false
-
 # The fake uv is a bash script, so this test cannot run on Windows runners
 # (mirrors acceptance/cmd/psql).
 GOOS.windows = false

@@ -1,6 +1,3 @@
-# Builds wheels and venvs on the workspace file system, which times out or fails there.
-RunsOnDbr = false
-
 # The cluster declares `requests` and `urllib3`; the wheel job's task targets the same cluster via
 # existing_cluster_id and installs the wheel and pypi `six` on it. So the cluster reads back
 # libraries it never declared and treats them as drift: removing `urllib3` uninstalls it and the

@@ -1,5 +1,4 @@
 Cloud = false
-RunsOnDbr = false
 EnvMatrix.DMS = [""]
 EnvMatrix.INCLUDE_JOB = ["yes", "no"]
 EnvMatrix.INCLUDE_PIPELINE = ["yes", "no"]

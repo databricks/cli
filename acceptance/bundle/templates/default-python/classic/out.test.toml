@@ -1,5 +1,4 @@
 Cloud = false
-RunsOnDbr = false
 Phase = 1
 EnvMatrix.DMS = [""]
 EnvMatrix.READPLAN = ["", "1"]

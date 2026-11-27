@@ -1,4 +1,1 @@
-# yamlfmt is not available on DBR.
-RunsOnDbr = false
-
 Env.SERVERLESS = "yes"
