@@ -53,11 +53,14 @@ type Catalog struct {
 	Label string
 
 	// FetchedAt is when the source produced the catalog. A source that serves
-	// a cached copy sets it to the time the copy was fetched.
+	// a cached copy sets it to the time the copy was fetched. Zero means the
+	// time is unknown, as for the bundled copy.
 	FetchedAt time.Time
 
-	// Stale reports that the source served a cached copy it could not refresh.
-	// Sources that always read the release themselves leave it false.
+	// Stale reports that the catalog is not the current release. The source
+	// served a cached copy it could not refresh, or it is the bundled copy,
+	// which is only served when the release cannot be reached. Sources that
+	// always read the release themselves leave it false.
 	Stale bool
 
 	// Rules is text shown above the catalog, empty when the release has none.
