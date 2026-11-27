@@ -208,9 +208,7 @@ Stack Trace:
 	ctx = context.WithValue(ctx, caughtSignalKey{}, &caught)
 	var deferredHint func()
 	ctx = context.WithValue(ctx, deferredHintKey{}, &deferredHint)
-	// Skill hints resolve once for this run, so a deferred hint, its text and
-	// its throttle agree even when auto-install refreshes the manifest cache
-	// before the hint prints.
+	// One skills hints value per run; see skills.WithHintsMemo.
 	ctx = skills.WithHintsMemo(ctx)
 	// slog.SetDefault also redirects the standard log package, so both are restored.
 	prevLogger := slog.Default()

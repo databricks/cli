@@ -2,6 +2,7 @@ package skills
 
 import (
 	"context"
+	"sync"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/clicompat"
@@ -24,6 +25,7 @@ type hintsMemoKey struct{}
 
 // hintsMemo holds the hints value resolved for one command run.
 type hintsMemo struct {
+	mu       sync.Mutex
 	resolved bool
 	on       bool
 }
@@ -40,7 +42,7 @@ func Enabled(ctx context.Context) bool {
 // it, gives the answer of the first call. A cache refresh later in the run,
 // such as the auto-install before the deferred hint prints, cannot then change
 // that hint's text, its throttle or the skills command exemption. The memo is
-// not locked, so HintsEnabled must run on the command goroutine.
+// safe for concurrent use.
 func WithHintsMemo(ctx context.Context) context.Context {
 	return context.WithValue(ctx, hintsMemoKey{}, &hintsMemo{})
 }
@@ -58,6 +60,8 @@ func HintsEnabled(ctx context.Context) bool {
 	if !ok {
 		return resolveHints(ctx)
 	}
+	memo.mu.Lock()
+	defer memo.mu.Unlock()
 	if !memo.resolved {
 		memo.on = resolveHints(ctx)
 		memo.resolved = true
