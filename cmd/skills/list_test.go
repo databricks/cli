@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	libskills "github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
@@ -27,16 +28,18 @@ func (f listFakeSource) ReadFile(context.Context, string, string) ([]byte, error
 	return nil, libskills.ErrUnknownFile
 }
 
+// listTestCmd returns a command with the root's output flag, whose context
+// captures stderr, and the buffer that captures stdout.
 func listTestCmd(t *testing.T, output flags.Output) (*cobra.Command, *bytes.Buffer, *bytes.Buffer) {
 	t.Helper()
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	cmd := &cobra.Command{}
-	cmd.SetContext(t.Context())
+	cmd.SetContext(ctx)
 	out := output
 	cmd.Flags().Var(&out, "output", "")
-	var stdout, stderr bytes.Buffer
+	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
-	cmd.SetErr(&stderr)
-	return cmd, &stdout, &stderr
+	return cmd, &stdout, stderr
 }
 
 // longSkills returns n skills whose descriptions are far longer than the budget
@@ -74,6 +77,11 @@ func TestRenderTextKeepsFullDescriptionsWhenTheyFit(t *testing.T) {
 	assert.Equal(t, "alpha: Alpha does one thing well.\nbeta: Beta does another.\n"+readHint+"\n", out)
 }
 
+func TestRenderTextKeepsOneLinePerSkill(t *testing.T) {
+	list := []libskills.Skill{{Name: "alpha", Description: "Line one.\nLine two.\tTabbed  text."}}
+	assert.Equal(t, "alpha: Line one. Line two. Tabbed text.\n"+readHint+"\n", renderText("", list))
+}
+
 func TestRenderTextNamesOnlyWhenNamesExceedBudget(t *testing.T) {
 	var list []libskills.Skill
 	for i := range 400 {
@@ -109,6 +117,18 @@ func TestRenderTextNeverCutsDescriptionToNothing(t *testing.T) {
 	assert.Contains(t, out, "databricks skills search <words>")
 }
 
+func TestRenderTextOneUnbreakableDescriptionDropsOnlyItself(t *testing.T) {
+	list := visibleSkills(longSkills(40), false)
+	list = append(list, libskills.Skill{Name: "blob", Description: strings.Repeat("x", 300)})
+
+	out := renderText("", list)
+
+	assert.LessOrEqual(t, len(out), textBudget)
+	assert.Contains(t, out, "\nblob\n")
+	assert.Contains(t, out, "skill-39: word39 ")
+	assert.Contains(t, out, "databricks skills search <words>")
+}
+
 func TestRenderTextNoSearchHintWithoutDescriptions(t *testing.T) {
 	list := []libskills.Skill{{Name: "alpha"}, {Name: "beta"}}
 	assert.Equal(t, "alpha\nbeta\n"+readHint+"\n", renderText("", list))
@@ -129,8 +149,8 @@ func TestCutWords(t *testing.T) {
 		{"Hello world again", 11, "Hello..."},
 		{"Hello world again", 9, "Hello..."},
 		{"Hello world again", 8, "Hello..."},
-		{"Hello world again", 7, "..."},
-		{"Unbreakable", 6, "..."},
+		{"Hello world again", 7, ""},
+		{"Unbreakable", 6, ""},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.want, cutWords(tt.desc, tt.width), "cutWords(%q, %d)", tt.desc, tt.width)
@@ -151,6 +171,14 @@ func TestVisibleSkillsHidesExperimentalKeepsOrder(t *testing.T) {
 	assert.Equal(t, []string{"alpha", "preview", "zeta"}, names(withExperimental))
 }
 
+func TestRunListHintsAtExperimentalWhenAllHidden(t *testing.T) {
+	catalog := &libskills.Catalog{Skills: []libskills.Skill{{Name: "preview", Experimental: true}}}
+
+	cmd, stdout, _ := listTestCmd(t, flags.OutputText)
+	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
+	assert.Equal(t, "No skills found.\n"+experimentalHint+"\n", stdout.String())
+}
+
 func TestRunListStaleCatalogPrintsProvenanceOnStderr(t *testing.T) {
 	catalog := &libskills.Catalog{
 		Label:     "cached",
@@ -164,6 +192,12 @@ func TestRunListStaleCatalogPrintsProvenanceOnStderr(t *testing.T) {
 	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
 	assert.Contains(t, stderr.String(), "Skills come from cached (release 1.2.3, fetched 2026-11-01T00:00:00Z)")
 	assert.NotContains(t, stdout.String(), "Skills come from")
+}
+
+func TestProvenanceLineOmitsUnknownFetchTime(t *testing.T) {
+	catalog := &libskills.Catalog{Label: "bundled", Version: "1.2.3", Stale: true}
+	assert.Equal(t, "Skills come from bundled (release 1.2.3). The source could not be refreshed, so the list may be out of date.",
+		provenanceLine(catalog))
 }
 
 func names(list []libskills.Skill) []string {

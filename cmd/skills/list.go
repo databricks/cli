@@ -3,7 +3,7 @@ package skills
 import (
 	"fmt"
 	"io"
-	"slices"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,13 +14,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// textBudget is the most characters the text output of `skills list` may have.
+// textBudget is the most bytes the text output of `skills list` may have.
 // Descriptions are cut to fit it, so an agent sees the whole catalog at once.
 const textBudget = 4000
 
 const (
-	readHint   = "To read a skill, run: databricks skills read <name>"
-	searchHint = "Descriptions are left out to fit the output. To find a skill, run: databricks skills search <words>"
+	readHint         = "To read a skill, run: databricks skills read <name>"
+	searchHint       = "Descriptions are left out to fit the output. To find a skill, run: databricks skills search <words>"
+	experimentalHint = "Experimental skills are hidden. To list them, run: databricks skills list --experimental"
 )
 
 func newListCmd() *cobra.Command {
@@ -47,14 +48,19 @@ func runList(cmd *cobra.Command, src libskills.Source, experimental bool) error 
 		return err
 	}
 	if catalog.Stale {
-		fmt.Fprintln(cmd.ErrOrStderr(), provenanceLine(catalog))
+		cmdio.LogString(cmd.Context(), provenanceLine(catalog))
 	}
 
 	list := visibleSkills(catalog.Skills, experimental)
 	if root.OutputType(cmd) == flags.OutputJSON {
 		return cmdio.Render(cmd.Context(), newListJSON(catalog, list))
 	}
-	_, err = io.WriteString(cmd.OutOrStdout(), renderText(catalog.Rules, list))
+	text := renderText(catalog.Rules, list)
+	if len(list) == 0 && len(catalog.Skills) > 0 {
+		// Every skill is experimental, so an agent would otherwise read "No skills found."
+		text += experimentalHint + "\n"
+	}
+	_, err = io.WriteString(cmd.OutOrStdout(), text)
 	return err
 }
 
@@ -71,9 +77,16 @@ func visibleSkills(all []libskills.Skill, experimental bool) []libskills.Skill {
 	return list
 }
 
+// provenanceLine says where a stale catalog came from. A bundled copy has no
+// fetch time, so the line leaves it out rather than print the zero time.
 func provenanceLine(catalog *libskills.Catalog) string {
+	label := filepath.ToSlash(catalog.Label)
+	if catalog.FetchedAt.IsZero() {
+		return fmt.Sprintf("Skills come from %s (release %s). The source could not be refreshed, so the list may be out of date.",
+			label, catalog.Version)
+	}
 	return fmt.Sprintf("Skills come from %s (release %s, fetched %s). The source could not be refreshed, so the list may be out of date.",
-		catalog.Label, catalog.Version, catalog.FetchedAt.Format(time.RFC3339))
+		label, catalog.Version, catalog.FetchedAt.Format(time.RFC3339))
 }
 
 // renderText returns the text output of `skills list`: the catalog rules, then
@@ -86,18 +99,14 @@ func renderText(rules string, list []libskills.Skill) string {
 	}
 	maxLen := 0
 	for _, s := range list {
-		maxLen = max(maxLen, len(s.Description))
+		maxLen = max(maxLen, len(oneLine(s.Description)))
 	}
 	if full := layoutText(rules, list, maxLen); len(full) <= textBudget {
 		return full
 	}
-	// Below the floor some description would be cut to "..." alone, so the
-	// search for the widest fitting width starts at the floor.
-	floor := narrowestKeepingWords(list, maxLen)
-	if len(layoutText(rules, list, floor)) > textBudget {
-		return layoutText(rules, list, 0)
-	}
-	lo, hi := floor, maxLen
+	// Width 0 leaves every description out, so it is the answer when the names
+	// alone do not fit.
+	lo, hi := 0, maxLen
 	for lo < hi {
 		mid := (lo + hi + 1) / 2
 		if len(layoutText(rules, list, mid)) <= textBudget {
@@ -109,48 +118,38 @@ func renderText(rules string, list []libskills.Skill) string {
 	return layoutText(rules, list, lo)
 }
 
-// narrowestKeepingWords returns the narrowest width, at most maxLen, at which
-// cutting every description keeps at least its first word.
-func narrowestKeepingWords(list []libskills.Skill, maxLen int) int {
-	lo, hi := 1, max(maxLen, 1)
-	for lo < hi {
-		mid := (lo + hi) / 2
-		if keepsFirstWords(list, mid) {
-			hi = mid
-		} else {
-			lo = mid + 1
-		}
-	}
-	return lo
-}
-
-// keepsFirstWords reports whether no description is cut to "..." alone at width.
-func keepsFirstWords(list []libskills.Skill, width int) bool {
-	for _, s := range list {
-		if len(s.Description) > width && cutWords(s.Description, width) == "..." {
-			return false
-		}
-	}
-	return true
-}
-
 // layoutText lays out the text output with descriptions cut to width. A width
-// of 0 leaves the descriptions out.
+// of 0 leaves every description out. A skill is listed by its name alone when
+// its description is left out or has no word boundary within width, so one
+// long description does not drop the others.
 func layoutText(rules string, list []libskills.Skill, width int) string {
 	var b strings.Builder
 	b.WriteString(withRules(rules))
+	dropped := false
 	for _, s := range list {
-		if width == 0 || s.Description == "" {
+		desc := oneLine(s.Description)
+		cut := ""
+		if width > 0 {
+			cut = cutWords(desc, width)
+		}
+		if cut == "" {
 			b.WriteString(s.Name + "\n")
+			dropped = dropped || desc != ""
 		} else {
-			fmt.Fprintf(&b, "%s: %s\n", s.Name, cutWords(s.Description, width))
+			fmt.Fprintf(&b, "%s: %s\n", s.Name, cut)
 		}
 	}
-	if width == 0 && slices.ContainsFunc(list, func(s libskills.Skill) bool { return s.Description != "" }) {
+	if dropped {
 		b.WriteString(searchHint + "\n")
 	}
 	b.WriteString(readHint + "\n")
 	return b.String()
+}
+
+// oneLine joins the words of s with single spaces, so a description takes
+// exactly one line of output.
+func oneLine(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 func withRules(rules string) string {
@@ -162,7 +161,8 @@ func withRules(rules string) string {
 }
 
 // cutWords returns desc unchanged when it fits in width. Otherwise it cuts desc
-// at the last word boundary that leaves room for "..." within width.
+// at the last word boundary that leaves room for "..." within width. It returns
+// "" when there is no such boundary.
 func cutWords(desc string, width int) string {
 	if len(desc) <= width {
 		return desc
@@ -172,7 +172,7 @@ func cutWords(desc string, width int) string {
 			return desc[:i] + "..."
 		}
 	}
-	return "..."
+	return ""
 }
 
 type listJSON struct {
@@ -199,7 +199,7 @@ func nonNilList(list []string) []string {
 
 func newListJSON(catalog *libskills.Catalog, list []libskills.Skill) listJSON {
 	out := listJSON{
-		Source:         catalog.Label,
+		Source:         filepath.ToSlash(catalog.Label),
 		ReleaseVersion: catalog.Version,
 		Skills:         make([]listJSONSkill, 0, len(list)),
 	}
