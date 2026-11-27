@@ -379,7 +379,7 @@ func TestFilterClusterPolicyValuesSkipsResourceWhenPolicyIsMissing(t *testing.T)
 	b := policyTestBundle(t, "resources.clusters.test", map[string]any{
 		"policy_id": "policy", "cluster_name": "before",
 	})
-	b.Config.Resources.Clusters["other"] = &resources.Cluster{ClusterSpec: compute.ClusterSpec{ClusterName: "other-before"}}
+	b.Config.Resources.Clusters["other"] = &resources.Cluster{ClusterName: "other-before"}
 	client := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(client.WorkspaceClient)
 	// Looked up once for the resource even though two additions depend on it.
