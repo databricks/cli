@@ -183,12 +183,13 @@ func TestMissingCatalogRulesIsReported(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
-// The label is the folder the release came from. A Windows path must read with
-// forward slashes whatever host runs the test.
-func TestLabelUsesForwardSlashes(t *testing.T) {
-	src := NewFSSource(fstest.MapFS{"manifest.json": {Data: []byte(`{"skills": {}}`)}}, `C:\Users\me\skills`)
+// The label is kept as given. A backslash is a legal folder name character on
+// Linux and macOS, so NewFSSource must not rewrite it; Resolve converts host
+// paths with filepath.ToSlash before they get here.
+func TestLabelIsKeptAsGiven(t *testing.T) {
+	src := NewFSSource(fstest.MapFS{"manifest.json": {Data: []byte(`{"skills": {}}`)}}, `my\skills`)
 
 	catalog, err := src.Catalog(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "C:/Users/me/skills", catalog.Label)
+	assert.Equal(t, `my\skills`, catalog.Label)
 }
