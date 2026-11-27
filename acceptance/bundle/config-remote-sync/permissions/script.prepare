@@ -1,0 +1,19 @@
+# The current identity is a user locally and a service principal in some cloud environments.
+if [[ "$CURRENT_USER_NAME" == *@* ]]; then
+    export CURRENT_USER_FIELD=user_name
+else
+    export CURRENT_USER_FIELD=service_principal_name
+fi
+
+# print_acl <object type> <id> prints the direct grants of an object, one "<level> <principal>" per line.
+print_acl() {
+    $CLI permissions get "$1" "$2" | jq -r '[.access_control_list[] | (.user_name // .service_principal_name // .group_name) as $who | .all_permissions[] | select(.inherited | not) | "\(.permission_level) \($who)"] | sort | .[]'
+}
+
+# sync_and_show_diff [flags] saves the changes config-remote-sync detects and prints what it wrote.
+sync_and_show_diff() {
+    cp databricks.yml databricks.yml.backup
+    trace $CLI bundle config-remote-sync --save "$@"
+    trace diff.py databricks.yml.backup databricks.yml
+    rm databricks.yml.backup
+}

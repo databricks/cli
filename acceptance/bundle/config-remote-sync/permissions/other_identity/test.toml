@@ -1,0 +1,3 @@
+# The Azure test env does not provide TEST_SP_TOKEN.
+CloudEnvs.azure = false
+RunsOnDbr = false # Requires TEST_SP_TOKEN, which is not available on DBR

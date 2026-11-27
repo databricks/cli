@@ -1,0 +1,1 @@
+Badness = "After the job's ownership is transferred to another identity, a config-remote-sync run by that identity leaves its own IS_OWNER out of the permissions it imports, so the deployer's next deploy makes the deployer the owner again and the new owner is left without access. The job declared no permissions, so before the sync that deploy left the ACL alone."

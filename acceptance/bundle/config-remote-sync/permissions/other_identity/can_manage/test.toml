@@ -1,0 +1,1 @@
+Badness = "Run by an identity other than the deployer, config-remote-sync leaves that identity's own CAN_MANAGE out of the permissions it imports (it assumes the syncing identity is the one that deploys), so the deployer's next deploy revokes it. The job declared no permissions, so before the sync that deploy left the ACL alone."

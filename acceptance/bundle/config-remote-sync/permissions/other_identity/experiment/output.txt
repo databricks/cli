@@ -1,0 +1,57 @@
+
+=== The service principal deploys an experiment that declares no permissions
+
+>>> as-test-sp [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/files...
+Created experiments.my_experiment
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The current identity is granted CAN_MANAGE on the experiment, outside the bundle
+
+CAN_MANAGE [TEST_SP_APPLICATION_ID]
+CAN_MANAGE [USERNAME]
+CAN_READ users
+
+=== The current identity runs config-remote-sync
+
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 1 resource(s):
+
+Resource: resources.experiments.my_experiment
+  permissions: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -9,2 +9,7 @@
+     my_experiment:
+       name: /Users/[TEST_SP_APPLICATION_ID]/test-experiment-[UNIQUE_NAME]
++      permissions:
++        - level: CAN_MANAGE
++          service_principal_name: [TEST_SP_APPLICATION_ID]
++        - group_name: users
++          level: CAN_READ
+
+=== The service principal deploys the synced config
+
+>>> as-test-sp [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/files...
+Created experiments.my_experiment.permissions
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+=== The experiment's ACL after the deploy
+
+CAN_MANAGE [TEST_SP_APPLICATION_ID]
+CAN_READ users
+
+>>> as-test-sp [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.experiments.my_experiment
+
+All files and directories at the following location will be deleted: /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]
+
+Destroy: 1 deleted

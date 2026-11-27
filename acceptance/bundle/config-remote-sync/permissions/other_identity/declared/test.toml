@@ -1,0 +1,1 @@
+Badness = "Run by an identity other than the deployer, config-remote-sync adds the deployer's IS_OWNER to the declared permissions although nobody changed the ACL. It also reports no change for a grant made to the syncing identity itself, so the deployer's next deploy revokes that grant (the revoke predates the permissions sync, which was meant to prevent it)."

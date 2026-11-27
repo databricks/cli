@@ -1,0 +1,57 @@
+
+=== The current identity deploys a job that declares no permissions
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/files...
+Created jobs.my_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== The service principal and a group are granted access to the job, outside the bundle
+
+CAN_MANAGE [TEST_SP_APPLICATION_ID]
+CAN_VIEW users
+IS_OWNER [USERNAME]
+
+=== The current identity runs config-remote-sync
+
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  permissions: add
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -9,2 +9,7 @@
+     my_job:
+       name: test-job-[UNIQUE_NAME]
++      permissions:
++        - level: CAN_MANAGE
++          service_principal_name: [TEST_SP_APPLICATION_ID]
++        - group_name: users
++          level: CAN_VIEW
+
+=== The service principal takes over the deployment and deploys the synced config
+
+>>> errcode as-test-sp [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/files...
+Created jobs.my_job.permissions
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+=== The job's ACL after the deploy
+
+CAN_VIEW users
+IS_OWNER [TEST_SP_APPLICATION_ID]
+
+>>> as-test-sp [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]
+
+Destroy: 1 deleted

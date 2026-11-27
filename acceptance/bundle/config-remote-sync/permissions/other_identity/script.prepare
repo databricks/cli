@@ -1,0 +1,7 @@
+# In these tests the test service principal deploys the bundle, as a CI pipeline would, and the
+# current identity is someone else working with the same deployment.
+if [ -z "${TEST_SP_APPLICATION_ID:-}" ]; then
+    # The userName the testserver reports for the as-test-sp guest.
+    export TEST_SP_APPLICATION_ID="aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee"
+fi
+add_repl "$TEST_SP_APPLICATION_ID" TEST_SP_APPLICATION_ID
