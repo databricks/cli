@@ -1,5 +1,4 @@
 Cloud = true
-Badness = "After deploy, bundle summary prints the synced table's name unresolved, as '${resources.database_catalogs.my_catalog.name}.${resources.database_catalogs.my_catalog.database_name}.my_synced_table', and builds its URL from that string. It should print the resolved name (my_catalog_<name>.my_database.my_synced_table) and a working URL."
 
 RecordRequests = false
 

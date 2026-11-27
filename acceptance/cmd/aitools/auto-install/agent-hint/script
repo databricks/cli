@@ -1,10 +1,12 @@
-# Claude Code calls the CLI: its config dir exists and its CLI is not on PATH,
-# so auto-install gives it skill files. The install hint must not tell it to
-# install what the same run installs.
-unset AGENT CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION
+# Claude Code calls the CLI on a machine whose user agreed to auto-install:
+# its config dir exists and its CLI is not on PATH, so auto-install gives it
+# skill files. The install hint must not tell it to install what the same run
+# installs. Without the consent, see no-consent.
+unset CLAUDE_CODE_SESSION_ID CLAUDE_CODE_CHILD_SESSION
 use_home home
 "$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
 gate true
+trace $CLI aitools auto-install enable
 
 title "a failing command: no install, the hint once the command ends"
 errcode trace CLAUDECODE=1 $CLI jobs get abc
@@ -22,6 +24,7 @@ title "gate off: no install, the hint once the command ends, and on the next"
 use_home no-agents-home
 "$mkdir_bin" -p "${USERPROFILE:-$HOME}/.claude"
 gate false
+trace $CLI aitools auto-install enable
 trace CLAUDECODE=1 $CLI jobs list
 trace print_telemetry
 trace CLAUDECODE=1 $CLI jobs list
@@ -30,5 +33,6 @@ trace print_telemetry
 title "an agent the install skips is still hinted: Claude Code has no config dir"
 use_home holdout-home
 gate true
+trace $CLI aitools auto-install enable
 trace CLAUDECODE=1 $CLI jobs list
 trace print_telemetry
