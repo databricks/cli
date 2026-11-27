@@ -424,7 +424,7 @@ func (p *Plan) FilterToSelected(_ context.Context, selected []string) error {
 			for _, dependent := range dependents[key] {
 				if p.Plan[dependent].Action == Delete {
 					p.enqueueReachable(reachable, &queue, dependent)
-				} else if _, ok := p.Plan[dependent]; ok {
+				} else {
 					keptForReport[dependent] = struct{}{}
 				}
 			}
