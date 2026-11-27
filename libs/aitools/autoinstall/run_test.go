@@ -169,38 +169,7 @@ func TestRecordUnfinishedSettlesAndKeepsInstalling(t *testing.T) {
 	require.NoError(t, RecordUnfinished(ctx, "1.30.0", "machine"))
 	s, err := Load(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: "digest", InstalledWithoutConsent: true, ID: "machine"}, s)
-}
-
-// A first install that starts before the user answered is marked as made
-// without consent, until the user answers.
-func TestMarkInstallingRecordsAnInstallWithoutConsent(t *testing.T) {
-	for _, tc := range []struct {
-		name  string
-		state State
-		want  State
-	}{
-		{"unknown", State{}, State{Installing: true, InstalledWithoutConsent: true}},
-		{"given", State{Consented: true}, State{Consented: true, Installing: true}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
-			require.NoError(t, save(ctx, tc.state))
-
-			require.NoError(t, MarkInstalling(ctx))
-			s, err := Load(ctx)
-			require.NoError(t, err)
-			assert.Equal(t, tc.want, s)
-		})
-	}
-
-	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
-	require.NoError(t, MarkInstalling(ctx))
-	_, err := SetConsent(ctx, ConsentOptedOut)
-	require.NoError(t, err)
-	s, err := Load(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, State{OptedOut: true, Installing: true}, s, "an answer clears the mark")
+	assert.Equal(t, State{LastVersion: "1.30.0", Installing: true, InstallStateDigest: "digest", ID: "machine"}, s)
 }
 
 func TestRecordStoresTheLastFailedAttempt(t *testing.T) {

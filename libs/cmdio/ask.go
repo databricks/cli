@@ -69,8 +69,7 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 // done and returns ctx.Err(). Reading the input cannot be interrupted, so the
 // read keeps running in the background and its result is discarded. The
 // caller must not read the input again after a cancelled call, because the
-// abandoned read would consume the next line; a cancelled call turns off line
-// prompts for the rest of the process (see MarkStdinReadInBackground).
+// abandoned read would consume the next line.
 func AskCancellable(ctx context.Context, question, defaultVal string) (string, error) {
 	type answer struct {
 		ans string
@@ -84,9 +83,6 @@ func AskCancellable(ctx context.Context, question, defaultVal string) (string, e
 
 	select {
 	case <-ctx.Done():
-		// The abandoned read takes the next line, so later prompts in this
-		// process must not ask.
-		MarkStdinReadInBackground()
 		return "", ctx.Err()
 	case a := <-answers:
 		return a.ans, a.err
