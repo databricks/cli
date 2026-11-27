@@ -43,8 +43,12 @@ func (w *WorkspaceFilesExtensionsClient) stat(ctx context.Context, name string) 
 // This function returns the stat for the provided notebook. The stat object itself contains the path
 // with the extension since it is meant to be used in the context of a fs.FileInfo.
 func (w *WorkspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
-	ext := path.Ext(name)
-	nameWithoutExt := strings.TrimSuffix(name, ext)
+	nameExt := path.Ext(name)
+	nameWithoutExt := strings.TrimSuffix(name, nameExt)
+
+	// Match the extension case-insensitively, as local notebook detection does,
+	// so that a path like "etl.R" resolves on DBR just as it does locally.
+	ext := strings.ToLower(nameExt)
 
 	// File name does not have an extension associated with Databricks notebooks, return early.
 	if !slices.Contains([]string{
@@ -97,7 +101,7 @@ func (w *WorkspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.FileInfo object in the stat method.
-	stat.Path = stat.Path + ext
+	stat.Path = stat.Path + nameExt
 	return &workspaceFileStatus{
 		wsfsFileInfo:        stat,
 		nameForWorkspaceAPI: nameWithoutExt,
