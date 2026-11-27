@@ -40,13 +40,13 @@ func (s *fsSource) Catalog(_ context.Context) (*Catalog, error) {
 	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
 		meta := m.Skills[name]
 		catalog.Skills = append(catalog.Skills, Skill{
-			Name:          name,
-			Description:   meta.Description,
-			Version:       meta.Version,
-			Files:         meta.Files,
-			Commands:      meta.Commands,
-			MinCLIVersion: meta.MinCLIVer,
-			Experimental:  meta.IsExperimental(),
+			Name:         name,
+			Description:  meta.Description,
+			Version:      meta.Version,
+			MinCLIVer:    meta.MinCLIVer,
+			Files:        meta.Files,
+			Commands:     meta.Commands,
+			Experimental: meta.IsExperimental(),
 		})
 	}
 	return catalog, nil
@@ -85,11 +85,6 @@ func (s *fsSource) manifest() (*Manifest, error) {
 	NormalizeManifest(&m)
 	if err := CheckManifest(&m); err != nil {
 		return nil, err
-	}
-	if m.CatalogRules != "" {
-		// Clean the path the way skill files are cleaned by path.Join, so that
-		// "./RULES.md" and "docs/../RULES.md" are read like "RULES.md".
-		m.CatalogRules = path.Clean(m.CatalogRules)
 	}
 	return &m, nil
 }

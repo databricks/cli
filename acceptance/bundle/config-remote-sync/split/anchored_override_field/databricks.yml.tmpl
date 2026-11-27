@@ -1,0 +1,33 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# max_concurrent_runs is declared in both blocks and the target's value wins, but it
+# is anchored and aliased there, so replacing it would leave the alias dangling. The
+# target's job mapping is anchored too, which does not stop an edit of description,
+# whose alias of a top-level anchor is replaced in the target. An edit through the
+# schedule alias is written into its anchor.
+
+definitions:
+  nightly: &nightly
+    quartz_cron_expression: "0 0 1 * * ?"
+    timezone_id: UTC
+
+resources:
+  jobs:
+    my_job:
+      description: &description base
+      max_concurrent_runs: 1
+      schedule: *nightly
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    resources:
+      jobs:
+        my_job: &dev_job
+          description: *description
+          max_concurrent_runs: &runs 2
+          timeout_seconds: *runs

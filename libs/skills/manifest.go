@@ -88,7 +88,7 @@ func CheckManifestPaths(m *Manifest) error {
 			return fmt.Errorf("%w: skill name %q", ErrUnsafeManifestPath, name)
 		}
 		for _, file := range m.Skills[name].Files {
-			if EscapesDir(file) {
+			if escapesDir(file) {
 				return fmt.Errorf("%w: skill %q lists file %q", ErrUnsafeManifestPath, name, file)
 			}
 		}
@@ -97,30 +97,36 @@ func CheckManifestPaths(m *Manifest) error {
 }
 
 // CheckManifest fails a manifest that names a path outside the release: a skill
-// or file as CheckManifestPaths reports, a repo_dir, or catalog_rules. It expects
-// NormalizeManifest to have run. Every source checks a manifest this way before
-// it reads the release.
+// or file as CheckManifestPaths reports, or a repo_dir or catalog_rules that
+// escapes it. Every source checks a manifest this way before it reads the
+// release, and the release build checks it before it downloads any file. It
+// expects NormalizeManifest to have run, and it cleans catalog_rules the way
+// the source reads it.
 func CheckManifest(m *Manifest) error {
 	if err := CheckManifestPaths(m); err != nil {
 		return err
 	}
 	for _, name := range slices.Sorted(maps.Keys(m.Skills)) {
-		if repoDir := m.Skills[name].RepoDir; EscapesDir(repoDir) {
+		if repoDir := m.Skills[name].RepoDir; escapesDir(repoDir) {
 			return fmt.Errorf("%w: skill %q has repo_dir %q", ErrUnsafeManifestPath, name, repoDir)
 		}
 	}
-	// Clean catalog_rules the way the source reads it, so that "./RULES.md" and
-	// "docs/../RULES.md" are checked like "RULES.md".
-	if rules := path.Clean(m.CatalogRules); EscapesDir(rules) {
-		return fmt.Errorf("%w: catalog_rules %q", ErrUnsafeManifestPath, rules)
+	if m.CatalogRules != "" {
+		// Clean the path the way skill files are cleaned by path.Join, so that
+		// "./RULES.md" and "docs/../RULES.md" are read like "RULES.md".
+		m.CatalogRules = path.Clean(m.CatalogRules)
+	}
+	// "docs/.." cleans to ".", a directory that cannot be read as rules.
+	if m.CatalogRules == "." || escapesDir(m.CatalogRules) {
+		return fmt.Errorf("%w: catalog_rules %q", ErrUnsafeManifestPath, m.CatalogRules)
 	}
 	return nil
 }
 
-// EscapesDir reports whether file, joined onto a directory, names a path
+// escapesDir reports whether file, joined onto a directory, names a path
 // outside it on some OS: an absolute path, a Windows drive, or more ".."
 // elements than the elements before them, with either slash as the separator.
-func EscapesDir(file string) bool {
+func escapesDir(file string) bool {
 	if strings.HasPrefix(file, "/") || strings.HasPrefix(file, `\`) || (len(file) >= 2 && file[1] == ':') {
 		return true
 	}

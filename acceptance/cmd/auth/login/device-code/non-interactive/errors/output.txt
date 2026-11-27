@@ -1,12 +1,4 @@
 
-=== Device code login is disabled by default
-
->>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code
-Error: --use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it
-
->>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --user-code WDJB-0001 --confirmation-code FTFA-QQKY
-Error: --use-device-code is experimental. Set DATABRICKS_CLI_DEVICE_CODE=true to enable it
-
 === Flags the non-interactive login cannot honor
 
 >>> musterr [CLI] auth login --host [DATABRICKS_URL] --profile test --use-device-code --configure-cluster

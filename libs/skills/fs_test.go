@@ -39,6 +39,7 @@ func TestCatalogFromFixture(t *testing.T) {
 		Name:        "alpha",
 		Description: "A stable skill with a nested file.",
 		Version:     "1.0.0",
+		MinCLIVer:   "0.300.0",
 		Files:       []string{"SKILL.md", "references/guide.md"},
 		Commands:    []string{"jobs", "pipelines"},
 	}, catalog.Skills[0])
@@ -97,6 +98,7 @@ func TestManifestPathsOutsideReleaseAreRejected(t *testing.T) {
 		"file outside the skill directory":  `{"skills": {"alpha": {"files": ["../../secret"]}}}`,
 		"repo_dir outside the release":      `{"skills": {"alpha": {"files": ["SKILL.md"], "repo_dir": "../other"}}}`,
 		"catalog_rules outside the release": `{"catalog_rules": "../RULES.md", "skills": {}}`,
+		"catalog_rules naming a directory":  `{"catalog_rules": "docs/..", "skills": {}}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			src := mapSource(manifest)
@@ -147,9 +149,7 @@ func TestCatalogRulesPathIsCleaned(t *testing.T) {
 	}
 }
 
-func TestManifestMinCLIVersionIsListed(t *testing.T) {
-	catalog, err := mapSource(`{"skills": {"alpha": {"files": ["SKILL.md"], "min_cli_version": "99.0.0"}}}`).Catalog(t.Context())
-	require.NoError(t, err)
-	require.Len(t, catalog.Skills, 1)
-	assert.Equal(t, "99.0.0", catalog.Skills[0].MinCLIVersion)
+func TestMissingCatalogRulesIsReported(t *testing.T) {
+	_, err := mapSource(`{"catalog_rules": "RULES.md", "skills": {}}`).Catalog(t.Context())
+	assert.ErrorIs(t, err, os.ErrNotExist)
 }

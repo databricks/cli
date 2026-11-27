@@ -84,7 +84,7 @@ func workspaceImport(w *FakeWorkspace, form ImportForm) Response {
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, workspace.Language(form.Language), form.Overwrite)
 	case string(workspace.ImportFormatJupyter):
 		// The real endpoint reads the language from the notebook metadata.
-		_, language, _ := notebook.DetectBytes(form.Path+notebook.ExtensionJupyter, form.Content)
+		language, _ := detectJupyterNotebook(form.Path+notebook.ExtensionJupyter, form.Content)
 		resp = w.WorkspaceImportNotebook(form.Path, form.Content, language, form.Overwrite)
 	case string(workspace.ImportFormatAuto):
 		if strings.HasSuffix(strings.ToLower(form.Path), ".zip") {
@@ -449,7 +449,7 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
-		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
+		return req.Workspace.FilesUpload(path, req.Body, overwrite)
 	})
 
 	server.Handle("DELETE", "/api/2.0/fs/files/{path...}", func(req Request) any {
@@ -559,6 +559,9 @@ func AddDefaultHandlers(server *Server) {
 	})
 	server.Handle("PATCH", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations/{resource_key}", func(req Request) any {
 		return req.Workspace.UpdateOperation(req, req.Vars["deployment_id"], req.Vars["version_id"], req.Vars["resource_key"])
+	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations:batchUpdate", func(req Request) any {
+		return req.Workspace.BatchUpdateOperations(req, req.Vars["deployment_id"], req.Vars["version_id"])
 	})
 	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/resources", func(req Request) any {
 		return req.Workspace.ListResources(req.Vars["deployment_id"])

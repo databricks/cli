@@ -25,8 +25,11 @@ const terminalHelperEnv = "PROCESS_TEST_TERMINAL_HELPER_PIDFILE"
 // runTerminalHelper is the helper process side of
 // TestBackgroundInGroupInterruptChildReadsTerminal.
 func runTerminalHelper(t *testing.T, pidFile string) {
-	// On SIGTERM the child reads the terminal before it exits.
-	script := `trap 'read -r line </dev/tty; exit 1' TERM; sleep 300 & echo $! > "$1"; wait`
+	// On SIGTERM the child reads the terminal before it exits. The grandchild
+	// records its own PID: $! is known right after fork, while the forked shell
+	// still has the TERM trap, and a SIGTERM landing then can be lost, leaving
+	// the sleep to hold the output pipe until the grace period ends.
+	script := `trap 'read -r line </dev/tty; exit 1' TERM; sh -c 'echo $$ > "$1"; exec sleep 300' sh "$1" & wait`
 	_, _ = BackgroundInGroup(t.Context(), []string{"sh", "-c", script, "sh", pidFile})
 	// The raised signal ends the process asynchronously.
 	time.Sleep(5 * time.Second)

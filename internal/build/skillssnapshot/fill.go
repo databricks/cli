@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/skills"
 	"golang.org/x/sync/errgroup"
 )
@@ -32,12 +31,12 @@ var httpClient = &http.Client{Timeout: 60 * time.Second}
 func fillSnapshot(ctx context.Context, dir, ref string) (string, error) {
 	if ref == "" {
 		var err error
-		ref, err = installer.LatestSkillsReleaseRef(ctx)
+		ref, err = skills.FetchLatestSkillsReleaseRef(ctx)
 		if err != nil {
 			return "", err
 		}
 	}
-	base := installer.GetSkillsBaseURL(ctx) + "/" + ref
+	base := skills.GetSkillsBaseURL(ctx) + "/" + ref
 
 	raw, err := get(ctx, base+"/manifest.json")
 	if err != nil {
