@@ -1,4 +1,1 @@
-# On DBR, dev-mode bundles under /Workspace deploy source-linked, so the upload output differs.
-RunsOnDbr = false
-
 RecordRequests = true
