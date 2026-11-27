@@ -1,10 +1,13 @@
 package termtest
 
 import (
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // testCols and testRows match a classic VT100 default. The emulator's
@@ -21,8 +24,13 @@ var blankLine = strings.Repeat(" ", testCols)
 
 // run constructs a fresh 80x25 emulator, feeds it the byte stream, and
 // returns it. Tests then assert on e.String(), e.row, e.col, etc.
+//
+// mapNewline is pinned on so LF expectations don't depend on the OS the
+// tests run on; TestEmulator_LineFeedWithoutMapNewline covers the Windows
+// setting.
 func feed(input string) *emulator {
 	e := newEmulator(testCols, testRows)
+	e.mapNewline = true
 	_, _ = e.Write([]byte(input))
 	return e
 }
@@ -103,18 +111,31 @@ func TestEmulator_TabAdvancesToNextEighthColumn(t *testing.T) {
 
 func TestEmulator_LineFeed(t *testing.T) {
 	e := feed("ab\ncd")
-	// LF moves down one line; it does not return to col 0.
+	// LF moves down one line and, like a cooked tty's ONLCR translation,
+	// returns to col 0.
+	assert.Equal(t, "ab", line(e, 0))
+	assert.Equal(t, "cd", line(e, 1))
+	pos(t, e, 1, 2)
+}
+
+func TestEmulator_LineFeedWithoutMapNewline(t *testing.T) {
+	// bubbletea v2 on Windows doesn't map LF to CR LF, so the column stays.
+	e := newEmulator(testCols, testRows)
+	e.mapNewline = false
+	_, _ = e.Write([]byte("ab\ncd"))
 	assert.Equal(t, "ab", line(e, 0))
 	assert.Equal(t, "  cd", line(e, 1))
 	pos(t, e, 1, 4)
 }
 
-func TestEmulator_LineFeedDoesNotScroll(t *testing.T) {
-	// Park at the bottom row and try to LF off the end.
-	e := newEmulator(testCols, testRows)
-	e.row = testRows - 1
+func TestEmulator_LineFeedScrollsAtBottom(t *testing.T) {
+	// Park at the bottom row and LF off the end: the screen scrolls up.
+	e := feed("top\x1b[25;1Hbottom")
 	_, _ = e.Write([]byte{0x0a})
-	pos(t, e, testRows-1, 0) // stays at last row
+	pos(t, e, testRows-1, 0)
+	assert.Empty(t, line(e, 0))
+	assert.Equal(t, "bottom", line(e, testRows-2))
+	assert.Empty(t, line(e, testRows-1))
 }
 
 func TestEmulator_CarriageReturn(t *testing.T) {
@@ -327,6 +348,9 @@ func TestEmulator_ResetClearsGridAndCursor(t *testing.T) {
 		assert.Equal(t, blankLine, strings.Split(e.String(), "\n")[i], "row %d", i)
 	}
 	pos(t, e, 0, 0)
+	// REP after a reset must not repeat the rune printed before it.
+	_, _ = e.Write([]byte("\x1b[2b"))
+	assert.Empty(t, line(e, 0))
 }
 
 func TestEmulator_WriteIsAdditive(t *testing.T) {
@@ -337,4 +361,155 @@ func TestEmulator_WriteIsAdditive(t *testing.T) {
 	_, _ = e.Write([]byte("10Hhello"))
 	pos(t, e, 4, 14) // (4,9) + "hello"
 	assert.Equal(t, "         hello", line(e, 4))
+}
+
+func TestEmulator_RepeatPreviousCharacter(t *testing.T) {
+	e := feed("a-\x1b[3b!")
+	assert.Equal(t, "a----!", line(e, 0))
+	pos(t, e, 0, 6)
+}
+
+func TestEmulator_RepeatBeforeAnyPrintIsNoop(t *testing.T) {
+	e := feed("\x1b[3b")
+	assert.Empty(t, line(e, 0))
+	assert.NotContains(t, e.String(), "\x00")
+	pos(t, e, 0, 0)
+}
+
+func TestEmulator_EraseCharacter(t *testing.T) {
+	e := feed("abcdef\x1b[3G\x1b[2X")
+	assert.Equal(t, "ab  ef", line(e, 0))
+	pos(t, e, 0, 2)
+}
+
+func TestEmulator_InsertCharacter(t *testing.T) {
+	e := feed("abcd\x1b[2G\x1b[2@")
+	assert.Equal(t, "a  bcd", line(e, 0))
+	pos(t, e, 0, 1)
+}
+
+func TestEmulator_InsertCharacterDropsPastMargin(t *testing.T) {
+	e := feed(strings.Repeat("x", testCols-1) + "Y\x1b[1G\x1b[@")
+	assert.Equal(t, " "+strings.Repeat("x", testCols-1), line(e, 0))
+}
+
+func TestEmulator_DeleteCharacter(t *testing.T) {
+	e := feed("abcdef\x1b[2G\x1b[2P")
+	assert.Equal(t, "adef", line(e, 0))
+	pos(t, e, 0, 1)
+}
+
+func TestEmulator_InsertMode(t *testing.T) {
+	e := feed("abc\x1b[2G\x1b[4hXY\x1b[4lZ")
+	// IRM shifts "bc" right for X and Y; after RM 4, Z overwrites.
+	assert.Equal(t, "aXYZc", line(e, 0))
+}
+
+func TestEmulator_InsertLine(t *testing.T) {
+	e := feed("one\r\ntwo\r\nthree\x1b[2;3H\x1b[L")
+	assert.Equal(t, "one", line(e, 0))
+	assert.Empty(t, line(e, 1))
+	assert.Equal(t, "two", line(e, 2))
+	assert.Equal(t, "three", line(e, 3))
+	pos(t, e, 1, 0)
+}
+
+func TestEmulator_DeleteLine(t *testing.T) {
+	e := feed("one\r\ntwo\r\nthree\x1b[1;1H\x1b[M")
+	assert.Equal(t, "two", line(e, 0))
+	assert.Equal(t, "three", line(e, 1))
+	assert.Empty(t, line(e, 2))
+}
+
+func TestEmulator_ScrollUpAndDown(t *testing.T) {
+	e := feed("one\r\ntwo\x1b[S")
+	assert.Equal(t, "two", line(e, 0))
+	assert.Empty(t, line(e, 1))
+	_, _ = e.Write([]byte("\x1b[2T"))
+	assert.Empty(t, line(e, 0))
+	assert.Empty(t, line(e, 1))
+	assert.Equal(t, "two", line(e, 2))
+}
+
+func TestEmulator_ScrollRegion(t *testing.T) {
+	e := feed("a\r\nb\r\nc\r\nd")
+	// Region rows 2-3; DECSTBM homes the cursor.
+	_, _ = e.Write([]byte("\x1b[2;3r"))
+	pos(t, e, 0, 0)
+	// LF at the region's bottom margin scrolls only the region.
+	_, _ = e.Write([]byte("\x1b[3;1H\n"))
+	assert.Equal(t, "a", line(e, 0))
+	assert.Equal(t, "c", line(e, 1))
+	assert.Empty(t, line(e, 2))
+	assert.Equal(t, "d", line(e, 3))
+	pos(t, e, 2, 0)
+}
+
+func TestEmulator_ReverseIndex(t *testing.T) {
+	e := feed("a\r\nb\x1bM")
+	pos(t, e, 0, 1)
+	// At the top margin RI scrolls the screen down instead.
+	_, _ = e.Write([]byte("\x1bM"))
+	pos(t, e, 0, 1)
+	assert.Empty(t, line(e, 0))
+	assert.Equal(t, "a", line(e, 1))
+	assert.Equal(t, "b", line(e, 2))
+}
+
+func TestEmulator_TabStopForwardAndBack(t *testing.T) {
+	e := feed("\x1b[2I")
+	pos(t, e, 0, 16)
+	_, _ = e.Write([]byte("x\x1b[Z"))
+	pos(t, e, 0, 16)
+	_, _ = e.Write([]byte("\x1b[2Z"))
+	pos(t, e, 0, 0)
+}
+
+func TestEmulator_PrefixedCSIsAreIgnored(t *testing.T) {
+	// Kitty keyboard push/pop/query, modifyOtherKeys, and DECRQM must not
+	// be mistaken for SCO restore-cursor ('u') or SGR.
+	e := feed("ab\x1b[s\x1b[1;5Hcd" +
+		"\x1b[>1u\x1b[<u\x1b[<1u\x1b[?u\x1b[=1;1u" +
+		"\x1b[>4;2m\x1b[?2026$p\x1b[?2027$p")
+	assert.Equal(t, "ab  cd", line(e, 0))
+	pos(t, e, 0, 6)
+}
+
+// v2SelectPageDownStream is the byte stream charm.land/bubbletea/v2 v2.1.1
+// wrote for TestSelectBaseline_VimNavOutsideSearch up to its
+// 04-after-l-pagedown step, captured on Linux under TERM=xterm-256color with
+// tm.Raw(). It relies on the LF column reset (mapNewline) and starts with the
+// prefixed CSIs v2 sends at startup. To refresh it after a bubbletea bump,
+// run that test's steps on the upgraded tree and paste
+// fmt.Sprintf("%q", tm.Raw()) here.
+const v2SelectPageDownStream = "\x1b[?2026$p\x1b[?2027$p\x1b[?25l\x1b[?2004h\x1b[>4;2m\x1b[>1u\x1b[?u\r\x1b[J" +
+	"Use the arrow keys to navigate: ↓ ↑ → ←  and / toggles search\n" +
+	"? Pick one:\n" +
+	"  > item-01 (id01)\n" +
+	"\x1b[4Citem-02 (id02)\n" +
+	"\x1b[4Citem-03 (id03)\n" +
+	"\x1b[4Citem-04 (id04)\n" +
+	"↓   item-05 (id05)\r\x1b[4A↑ > item-06 (id06\n" +
+	"\x1b[10C7 (id07\n" +
+	"\x1b[10C8 (id08\n" +
+	"\x1b[10C9 (id09\n" +
+	"\x1b[9C10 (id10"
+
+// TestEmulator_RendersCapturedV2Stream checks the emulator against output
+// bubbletea v2 really produced: the screen must match the golden that v1
+// already produces for the same step.
+func TestEmulator_RendersCapturedV2Stream(t *testing.T) {
+	golden, err := os.ReadFile("../testdata/TestSelectBaseline_VimNavOutsideSearch/04-after-l-pagedown.golden")
+	require.NoError(t, err)
+
+	e := newEmulator(cmdio.TestTerminalWidth, cmdio.TestTerminalHeight)
+	e.mapNewline = true
+	_, _ = e.Write([]byte(v2SelectPageDownStream))
+
+	lines := strings.Split(e.String(), "\n")
+	for i, l := range lines {
+		lines[i] = strings.TrimRight(l, " ")
+	}
+	got := strings.TrimRight(strings.Join(lines, "\n"), "\n")
+	assert.Equal(t, strings.TrimRight(string(golden), "\n"), got)
 }
