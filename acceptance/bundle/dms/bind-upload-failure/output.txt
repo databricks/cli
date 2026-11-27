@@ -13,7 +13,7 @@ API message: Fault injected by test.
 
 
 >>> print_requests.py --dms //complete --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/5/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/4/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
 
 === Remote state still contains only the successful bindings
 
@@ -34,7 +34,7 @@ Successfully bound job with an id '[JOB_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> print_requests.py --dms //complete --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/6/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID]/versions/5/complete", "body": {"completion_reason": "VERSION_COMPLETE_FAILURE"}}
 
 === Remote state contains the binding whose history upload failed
 

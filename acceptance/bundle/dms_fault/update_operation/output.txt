@@ -85,7 +85,7 @@
 
 >>> bundle deploy --auto-approve
   Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-fault-update_operation-commands-[UNIQUE_NAME]/files...
-  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=10
+  Current Deployment Version: [DATABRICKS_URL]/deployments/[DEPLOYMENT_ID]?version=9
   Updated pipelines.bar
   Warn: Failed to record deployment history: recording operation for [RESOURCE_KEY]: Fault injected by test.
   Files: 6 uploaded, 0 deleted

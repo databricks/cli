@@ -252,8 +252,9 @@ func createBindingVersion(ctx context.Context, b *bundle.Bundle, serial int, sta
 			}
 		}
 	}
-	// Binding has committed file state already; both counters still bound the next version.
-	versionID := max(next, serial+1)
+	// The bind already bumped the serial, so that is this version's number unless the service is
+	// further ahead; it never falls behind either counter.
+	versionID := max(next, serial)
 	versionInfo := bundledeployments.Version{
 		CliVersion:        build.GetInfo().Version,
 		VersionType:       dms.VersionTypeDeploy,
