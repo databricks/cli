@@ -151,11 +151,18 @@ func layoutText(rules string, list []libskills.Skill, width int) string {
 	return b.String()
 }
 
+// needsNewerCLI reports whether the running CLI is older than the skill's
+// min_cli_version. `skills list` marks such a skill and `skills read` warns
+// about it, so both commands use this one check.
+func needsNewerCLI(s libskills.Skill) bool {
+	return s.MinCLIVer != "" && semver.Compare("v"+build.GetInfo().Version, "v"+s.MinCLIVer) < 0
+}
+
 // newerCLINote returns the note that marks a skill which needs a newer CLI than
 // the running one, or "" when this CLI is new enough. The skill stays listed,
 // as `skills read` still serves it with a warning.
 func newerCLINote(s libskills.Skill) string {
-	if s.MinCLIVer == "" || semver.Compare("v"+build.GetInfo().Version, "v"+s.MinCLIVer) >= 0 {
+	if !needsNewerCLI(s) {
 		return ""
 	}
 	return fmt.Sprintf(" (needs CLI %s or newer)", s.MinCLIVer)

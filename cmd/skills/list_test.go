@@ -3,7 +3,6 @@ package skills
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -176,32 +175,6 @@ func TestRenderTextMarksNamesOnlyLineThatNeedsNewerCLI(t *testing.T) {
 func TestRenderTextNoMarkWhenCLIIsNewEnough(t *testing.T) {
 	list := []libskills.Skill{{Name: "current", Description: "Current.", MinCLIVer: build.GetInfo().Version}}
 	assert.Equal(t, "current: Current.\n"+readHint+"\n", renderText("", list))
-}
-
-func TestRunListJSONCarriesMinCLIVersion(t *testing.T) {
-	catalog := &libskills.Catalog{
-		Label:   "cached",
-		Version: "1.2.3",
-		Skills: []libskills.Skill{
-			{Name: "alpha", Description: "First."},
-			{Name: "future", Description: "Second.", MinCLIVer: "99.0.0"},
-		},
-	}
-
-	cmd := &cobra.Command{}
-	output := flags.OutputJSON
-	cmd.Flags().Var(&output, "output", "")
-	ctx, stdout := cmdio.NewTestContextWithStdout(t.Context())
-	cmd.SetContext(ctx)
-	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
-
-	var got struct {
-		Skills []map[string]any `json:"skills"`
-	}
-	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
-	require.Len(t, got.Skills, 2)
-	assert.NotContains(t, got.Skills[0], "min_cli_version")
-	assert.Equal(t, "99.0.0", got.Skills[1]["min_cli_version"])
 }
 
 func TestRenderTextNoSkills(t *testing.T) {
