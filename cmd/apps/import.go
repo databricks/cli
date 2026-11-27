@@ -2,6 +2,7 @@ package apps
 
 import (
 	"bufio"
+	"bytes"
 	"cmp"
 	"context"
 	"errors"
@@ -11,8 +12,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-
-	"go.yaml.in/yaml/v3"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/generate"
@@ -27,7 +26,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
@@ -439,6 +438,12 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 		return "", fmt.Errorf("failed to convert app to value: %w", err)
 	}
 
+	// Download the app source files before inlining, since app.yml is part of them
+	err = downloader.FlushToDisk(ctx, false)
+	if err != nil {
+		return "", fmt.Errorf("failed to download app source: %w", err)
+	}
+
 	// Check for app.yml or app.yaml and inline its contents
 	appConfigFile, err := inlineAppConfigFile(&v)
 	if err != nil {
@@ -471,12 +476,6 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 				appKey: v,
 			}),
 		}, []diag.Location{{Line: 20}}),
-	}
-
-	// Download the app source files
-	err = downloader.FlushToDisk(ctx, false)
-	if err != nil {
-		return "", fmt.Errorf("failed to download app source: %w", err)
 	}
 
 	// Save databricks.yml
@@ -567,9 +566,9 @@ func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
 		return "", nil
 	}
 
-	// Parse the app config
-	var appConfig map[string]any
-	err = yaml.Unmarshal(appConfigData, &appConfig)
+	// Load into a dyn.Value rather than map[string]any: the saver orders mapping keys by
+	// source line, so env entries keep the key order they have in the file.
+	appConfig, err := yamlloader.LoadYAML(appConfigFile, bytes.NewReader(appConfigData))
 	if err != nil {
 		return "", fmt.Errorf("failed to parse %s: %w", appConfigFile, err)
 	}
@@ -587,43 +586,31 @@ func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
 	newPairs = append(newPairs, appMap.Pairs()...)
 
 	// Create config section
-	configMap := make(map[string]dyn.Value)
+	// Ordered pairs (not a Go map) so the generated YAML is deterministic.
+	var configPairs []dyn.Pair
 
-	// Add command if present
-	if cmd, ok := appConfig["command"]; ok {
-		cmdValue, err := convert.FromTyped(cmd, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert command: %w", err)
-		}
-		configMap["command"] = cmdValue
+	// The top-level values drop their app.yml locations so that the saver keeps them in
+	// insertion order; their contents keep the locations that order nested keys.
+	if cmd := appConfig.Get("command"); cmd.IsValid() {
+		configPairs = append(configPairs, dyn.Pair{Key: dyn.V("command"), Value: cmd.WithLocations(nil)})
 	}
-
-	// Add env if present
-	if env, ok := appConfig["env"]; ok {
-		envValue, err := convert.FromTyped(env, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert env: %w", err)
-		}
-		configMap["env"] = envValue
+	if env := appConfig.Get("env"); env.IsValid() {
+		configPairs = append(configPairs, dyn.Pair{Key: dyn.V("env"), Value: env.WithLocations(nil)})
 	}
 
 	// Add the config section if we have any items
-	if len(configMap) > 0 {
+	if len(configPairs) > 0 {
 		newPairs = append(newPairs, dyn.Pair{
 			Key:   dyn.V("config"),
-			Value: dyn.V(configMap),
+			Value: dyn.V(dyn.NewMappingFromPairs(configPairs)),
 		})
 	}
 
 	// Add resources at top level if present
-	if resources, ok := appConfig["resources"]; ok {
-		resourcesValue, err := convert.FromTyped(resources, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert resources: %w", err)
-		}
+	if resources := appConfig.Get("resources"); resources.IsValid() {
 		newPairs = append(newPairs, dyn.Pair{
 			Key:   dyn.V("resources"),
-			Value: resourcesValue,
+			Value: resources.WithLocations(nil),
 		})
 	}
 

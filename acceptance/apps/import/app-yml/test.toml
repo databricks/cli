@@ -1,4 +1,4 @@
-Badness = "app.yml is meant to be inlined into databricks.yml as the app's config and removed (inlineAppConfigFile in cmd/apps/import.go), but the check runs before the source files are downloaded, so it never finds app.yml: databricks.yml gets no config and app.yml stays."
+Badness = "Inlining loses data: app.yml's valueFrom is copied verbatim but bundle config expects value_from, so WAREHOUSE_ID is deployed with no value (only a warning) while app.yml is deleted; the unquoted 3.10 is re-typed as a number and deployed as 3.1."
 
 # Fix path with reverse slashes in the output for Windows.
 [[Repls]]
