@@ -1,8 +1,9 @@
 # The api command builds its own SDK client, so DATABRICKS_NOT_AN_AGENT must drop the agent token from its User-Agent.
 title "With the variable set, the request has no agent token"
-trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI api get /api/2.0/clusters/list > /dev/null
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the leading slash of the API path.
+MSYS_NO_PATHCONV=1 trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI api get /api/2.0/clusters/list > /dev/null
 print_requests.py --get //api/2.0/clusters/list | contains.py '!agent/claude-code'
 
 title "With the variable unset, the request carries the agent token"
-trace CLAUDECODE=1 $CLI api get /api/2.0/clusters/list > /dev/null
+MSYS_NO_PATHCONV=1 trace CLAUDECODE=1 $CLI api get /api/2.0/clusters/list > /dev/null
 print_requests.py --get //api/2.0/clusters/list | contains.py 'agent/claude-code'
