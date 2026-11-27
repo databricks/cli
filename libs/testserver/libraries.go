@@ -57,7 +57,7 @@ func (s *FakeWorkspace) LibrariesClusterStatus(req Request, clusterId string) an
 	defer s.LockUnlock()()
 
 	if _, ok := s.Clusters[clusterId]; !ok {
-		return Response{StatusCode: http.StatusNotFound}
+		return clusterDoesNotExist(clusterId)
 	}
 
 	installed := s.ClusterLibraries[clusterId]

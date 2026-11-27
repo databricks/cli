@@ -1,0 +1,33 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.my_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Change the field remotely
+
+=== Sync replaces the target's value
+
+>>> [CLI] bundle config-remote-sync -t dev --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  max_concurrent_runs: replace
+
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -19,3 +19,3 @@
+       jobs:
+         my_job:
+-          max_concurrent_runs: 2
++          max_concurrent_runs: 10
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 1 deleted
