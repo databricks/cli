@@ -31,8 +31,9 @@ type catalogJSONSkill struct {
 }
 
 // newCatalogJSON returns the JSON output for the skills in list, which are the
-// skills a command shows from catalog. Rules are the same text the text output
-// prints above the list.
+// skills a command shows from catalog. Rules are the catalog rules, trimmed as
+// skills list prints them. skills search carries them too, so both commands
+// share one envelope.
 func newCatalogJSON(catalog *libskills.Catalog, list []libskills.Skill) catalogJSON {
 	out := catalogJSON{
 		Source:         filepath.ToSlash(catalog.Label),

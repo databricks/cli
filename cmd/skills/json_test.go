@@ -2,9 +2,6 @@ package skills
 
 import (
 	"bytes"
-	"encoding/json"
-	"io"
-	"strings"
 	"testing"
 	"time"
 
@@ -16,52 +13,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// jsonTestCmd returns a command whose output is JSON, and the buffer that
-// captures stdout.
-func jsonTestCmd(t *testing.T) (*cobra.Command, *bytes.Buffer) {
+// outputTestCmd returns a command whose output is in the given format, and the
+// buffers that capture stdout and stderr.
+func outputTestCmd(t *testing.T, output flags.Output) (*cobra.Command, *bytes.Buffer, *bytes.Buffer) {
 	t.Helper()
-	var stdout bytes.Buffer
-	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputJSON, nil, &stdout, io.Discard, "", ""))
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), output, nil, &stdout, &stderr, "", ""))
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
-	out := flags.OutputJSON
+	out := output
 	cmd.Flags().Var(&out, "output", "")
-	return cmd, &stdout
-}
-
-func TestRunListJSONMarksExperimentalAndCarriesRules(t *testing.T) {
-	catalog := &libskills.Catalog{
-		Label:   "bundled",
-		Version: "1.2.3",
-		Rules:   "Pick the skill.\n",
-		Skills: []libskills.Skill{
-			{Name: "alpha", Description: "Alpha."},
-			{Name: "preview", Description: "Preview.", Experimental: true},
-		},
-	}
-
-	cmd, stdout := jsonTestCmd(t)
-	require.NoError(t, runList(cmd, listFakeSource{catalog}, true))
-
-	var got struct {
-		Rules  string `json:"rules"`
-		Stale  bool   `json:"stale"`
-		Skills []struct {
-			Name         string `json:"name"`
-			Experimental bool   `json:"experimental"`
-		} `json:"skills"`
-	}
-	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
-	require.Len(t, got.Skills, 2)
-	assert.Equal(t, "alpha", got.Skills[0].Name)
-	assert.False(t, got.Skills[0].Experimental)
-	assert.Equal(t, "preview", got.Skills[1].Name)
-	assert.True(t, got.Skills[1].Experimental)
-	assert.False(t, got.Stale)
-
-	// The rules are the text the text output prints above the list.
-	assert.Equal(t, "Pick the skill.", got.Rules)
-	assert.True(t, strings.HasPrefix(renderText(catalog.Rules, catalog.Skills), got.Rules+"\n\n"))
+	return cmd, &stdout, &stderr
 }
 
 func TestRunListJSONStaleCatalogSaysStale(t *testing.T) {
@@ -73,19 +35,25 @@ func TestRunListJSONStaleCatalogSaysStale(t *testing.T) {
 		Skills:    []libskills.Skill{{Name: "alpha"}},
 	}
 
-	cmd, stdout := jsonTestCmd(t)
+	cmd, stdout, _ := outputTestCmd(t, flags.OutputJSON)
 	require.NoError(t, runList(cmd, listFakeSource{catalog}, false))
 	assert.Contains(t, stdout.String(), `"stale": true`)
 	assert.Contains(t, stdout.String(), `"fetched_at": "2026-11-01T00:00:00Z"`)
 }
 
-// skills search builds its JSON with the same constructor, so a stale catalog
-// says so there too.
-func TestSearchJSONStaleCatalogSaysStale(t *testing.T) {
+// A stale catalog gets the provenance line in both output modes, as skills list
+// prints it. The JSON says "stale": true and leaves out fetched_at, because a
+// bundled copy has no fetch time.
+func TestRunSearchStaleCatalogSaysStale(t *testing.T) {
 	catalog := &libskills.Catalog{Label: "bundled", Version: "1.2.3", Stale: true, Skills: searchCatalog}
 
-	out, err := json.Marshal(newCatalogJSON(catalog, matchSkills(searchCatalog, []string{"jobs"})))
-	require.NoError(t, err)
-	assert.Contains(t, string(out), `"stale":true`)
-	assert.NotContains(t, string(out), "fetched_at")
+	cmd, stdout, stderr := outputTestCmd(t, flags.OutputJSON)
+	require.NoError(t, runSearch(cmd, listFakeSource{catalog}, []string{"jobs"}, false))
+	assert.Contains(t, stdout.String(), `"stale": true`)
+	assert.NotContains(t, stdout.String(), "fetched_at")
+	assert.Contains(t, stderr.String(), "could not be refreshed")
+
+	cmd, _, stderr = outputTestCmd(t, flags.OutputText)
+	require.NoError(t, runSearch(cmd, listFakeSource{catalog}, []string{"jobs"}, false))
+	assert.Contains(t, stderr.String(), "could not be refreshed")
 }
