@@ -160,12 +160,12 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 	deployer := deployingUserName(b)
 
 	isShared := libraries.IsWorkspaceSharedPath(statePath)
-	owner, underUserHome := userHomeOwner(statePath)
+	owner, underUserHome := UserHomeOwner(statePath)
 
 	b.Telemetry.StatePathIsShared = new(isShared)
 	b.Telemetry.PermissionsSectionSet = new(len(b.Config.Permissions) > 0)
 
-	// userHomeOwner yields a non-empty owner whenever underUserHome is true, so the two
+	// UserHomeOwner yields a non-empty owner whenever underUserHome is true, so the two
 	// home flags are exact complements: an unresolved deployer ("") never equals the
 	// owner and falls into the other-user bucket. StatePathOther covers any /Workspace
 	// folder that is neither shared nor a user home.
@@ -243,14 +243,14 @@ func undeclaredWriterTypes(undeclared []resources.Permission, deployer string) (
 	return self, otherUser, servicePrincipal, group
 }
 
-// userHomeOwner returns the owner of the user home folder containing path, i.e. <owner>
+// UserHomeOwner returns the owner of the user home folder containing path, i.e. <owner>
 // for a path under /Workspace/Users/<owner>. ok is false when path is not under a user
 // home folder.
 //
 // Paths are always /Workspace-prefixed here: PrependWorkspacePrefix runs in the
-// initialize phase (before this deploy-phase mutator) and rewrites a bare /Users/...
+// initialize phase (before the callers of this function) and rewrites a bare /Users/...
 // to /Workspace/Users/..., so the /Workspace/Users/ check below is sufficient.
-func userHomeOwner(path string) (owner string, ok bool) {
+func UserHomeOwner(path string) (owner string, ok bool) {
 	const prefix = "/Workspace/Users/"
 	if !strings.HasPrefix(path, prefix) {
 		return "", false

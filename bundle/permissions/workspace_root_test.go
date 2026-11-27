@@ -232,7 +232,7 @@ func TestUserHomeOwner(t *testing.T) {
 		{"/Workspace/Users/", "", false},
 	}
 	for _, tc := range cases {
-		owner, ok := userHomeOwner(tc.path)
+		owner, ok := UserHomeOwner(tc.path)
 		require.Equal(t, tc.ok, ok, tc.path)
 		require.Equal(t, tc.owner, owner, tc.path)
 	}

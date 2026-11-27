@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/retry"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -36,11 +37,16 @@ func addPermissionsChanges(changes Changes, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	currentUser := currentUserName(b)
+	ownDeployment := isOwnDeployment(b)
 	for resourceKey, permissions := range remote {
 		if entry := plan.Plan[resourceKey+".permissions"]; entry != nil && entry.Action == deployplan.Create {
 			if err := addUndeployedPermissionsChanges(changes, b, resourceKey, permissions); err != nil {
 				return err
 			}
+			continue
+		}
+		// Read for the job's owner only, see unreadPermissionsAdapters.
+		if !ownDeployment {
 			continue
 		}
 
@@ -206,17 +212,34 @@ func permissionsReadSkip(resourceKey string, err error) SkippedChange {
 	return SkippedChange{ResourceKey: resourceKey, Reason: reason, Error: err.Error()}
 }
 
+// isOwnDeployment reports whether the deployment state is in the current user's home folder.
+// Only then is the identity that syncs known to be the one that deploys, which the import of an
+// ACL relies on: it leaves out the grants deploy adds for the deploying identity. Imported from
+// any other identity's point of view, the next deploy would revoke that identity's own grants.
+func isOwnDeployment(b *bundle.Bundle) bool {
+	owner, ok := permissions.UserHomeOwner(b.Config.Workspace.StatePath)
+	return ok && owner == currentUserName(b)
+}
+
 // unreadPermissionsAdapters returns the permissions adapter of every deployed resource whose
 // config declares no permissions, or declares permissions that were never deployed. A state-only
 // permissions entry is deleted on the next deploy without changing the ACL, so it does not count.
+// Outside the current user's own deployment, where an ACL is not imported, the resources without
+// permissions are limited to the jobs whose owner the run_as sync needs.
 func unreadPermissionsAdapters(b *bundle.Bundle, plan *deployplan.Plan) map[string]*dresources.Adapter {
 	result := make(map[string]*dresources.Adapter)
+	ownDeployment := isOwnDeployment(b)
 	for resourceKey, entry := range plan.Plan {
 		if isPermissionsOrGrantsSubResource(resourceKey) || !entry.Action.KeepsID() {
 			continue
 		}
 		permissionsKey := resourceKey + ".permissions"
-		if permissions := plan.Plan[permissionsKey]; permissions != nil && permissions.Action != deployplan.Delete && permissions.Action != deployplan.Create {
+		permissionsEntry := plan.Plan[permissionsKey]
+		if permissionsEntry != nil && permissionsEntry.Action != deployplan.Delete && permissionsEntry.Action != deployplan.Create {
+			continue
+		}
+		undeployed := permissionsEntry != nil && permissionsEntry.Action == deployplan.Create
+		if !undeployed && !ownDeployment && !needsJobOwner(entry) {
 			continue
 		}
 		adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]

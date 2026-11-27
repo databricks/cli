@@ -15,37 +15,17 @@ IS_OWNER [USERNAME]
 === The current identity runs config-remote-sync
 
 >>> [CLI] bundle config-remote-sync --save
-Detected changes in 1 resource(s):
-
-Resource: resources.jobs.my_job
-  permissions: add
-
+No changes detected.
 
 
 >>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -9,2 +9,5 @@
-     my_job:
-       name: test-job-[UNIQUE_NAME]
-+      permissions:
-+        - level: CAN_MANAGE
-+          service_principal_name: [TEST_SP_APPLICATION_ID]
 
 === The service principal deploys the synced config
 
 >>> errcode as-test-sp [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[TEST_SP_APPLICATION_ID]/.bundle/test-bundle-[UNIQUE_NAME]/files...
-Error: cannot create resources.jobs.my_job.permissions: [TEST_SP_APPLICATION_ID] does not have Manage permissions on Jobs: only workspace admins can change the owner of a job. Please contact the owner or an administrator for access. (403 PERMISSION_DENIED)
-
-Endpoint: PUT [DATABRICKS_URL]/api/2.0/permissions/jobs/[MY_JOB_ID]
-HTTP Status: 403 Forbidden
-API error_code: PERMISSION_DENIED
-API message: [TEST_SP_APPLICATION_ID] does not have Manage permissions on Jobs: only workspace admins can change the owner of a job. Please contact the owner or an administrator for access.
-
-Files: 1 uploaded, 0 deleted
-
-Exit code: 1
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === The job's ACL after the deploy
 
