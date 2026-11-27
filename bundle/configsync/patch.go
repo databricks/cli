@@ -567,14 +567,14 @@ func preserveBlankLines(content []byte) []byte {
 
 	inBlockScalar := false
 	blockScalarIndent := 0
-	pendingBlanks := 0
+	var pendingBlanks []string
 
 	for i, line := range lines {
 		trimmed := strings.TrimRight(line, " \t")
 
 		// Buffer blank lines (except the trailing empty element from Split).
 		if trimmed == "" && i < len(lines)-1 {
-			pendingBlanks++
+			pendingBlanks = append(pendingBlanks, line)
 			continue
 		}
 
@@ -587,14 +587,14 @@ func preserveBlankLines(content []byte) []byte {
 
 		// Flush buffered blank lines: keep literal inside block scalars,
 		// replace with markers otherwise.
-		for range pendingBlanks {
+		for _, blank := range pendingBlanks {
 			if inBlockScalar {
-				result = append(result, "")
+				result = append(result, blank)
 			} else {
 				result = append(result, blankLineMarker)
 			}
 		}
-		pendingBlanks = 0
+		pendingBlanks = nil
 
 		if !inBlockScalar && blockScalarRe.MatchString(trimmed) {
 			inBlockScalar = true

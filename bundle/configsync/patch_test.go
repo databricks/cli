@@ -546,22 +546,27 @@ func TestApplyChangeNullParentComments(t *testing.T) {
 }
 
 func TestApplyChangeKeepsWhitespaceOnlyLines(t *testing.T) {
-	// The encoder can write these values as block scalars.
 	for _, tc := range []struct {
 		name    string
 		content string
 		value   string
 		want    string
 	}{
+		// The encoder can write these values as block scalars.
 		{"spaces under null parent", "tags: null\n", "one\n    \nthree", `tags: {key: "one\n    \nthree"}`},
 		{"tab under null parent", "tags: null\n", "one\n\t\nthree", `tags: {key: "one\n\t\nthree"}`},
 		{"tab under existing parent", "tags:\n  other: x\n", "one\n\t\nthree", `tags: {other: x, key: "one\n\t\nthree"}`},
+		{"untouched block scalar", "script: |-\n  one\n      \n  \t\n  three\ntags: null\n", "value", `{script: "one\n    \n\t\nthree", tags: {key: value}}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+			change := FieldChange{
 				WritePath: "tags.key",
 				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: tc.value},
-			})
+			}
+			// The steps ApplyChangesToYAML runs on a file.
+			result, err := applyChange(t.Context(), preserveBlankLines([]byte(tc.content)), change)
+			require.NoError(t, err)
+			result, err = clearAddedFlowStyle(result, []FieldChange{change})
 			require.NoError(t, err)
 			assert.YAMLEq(t, tc.want, string(restoreBlankLines(result)))
 		})
