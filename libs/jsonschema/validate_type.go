@@ -31,7 +31,8 @@ func validateBoolean(v any) error {
 }
 
 func validateNumber(v any) error {
-	if !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64},
+	// reflect.TypeOf(nil) is nil, so check null JSON values before asking for their kind.
+	if v == nil || !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64},
 		reflect.TypeOf(v).Kind()) {
 		return fmt.Errorf("expected type float, but value is %#v", v)
 	}
@@ -39,7 +40,7 @@ func validateNumber(v any) error {
 }
 
 func validateInteger(v any) error {
-	if !slices.Contains([]reflect.Kind{
+	if v == nil || !slices.Contains([]reflect.Kind{
 		reflect.Int, reflect.Int8, reflect.Int16,
 		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
 		reflect.Uint32, reflect.Uint64,
