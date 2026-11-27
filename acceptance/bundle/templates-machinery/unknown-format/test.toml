@@ -1,1 +1,1 @@
-Ignore = ["from-config", "defaults"]
+Ignore = ["from-config", "defaults", "no-default-out"]
