@@ -13,22 +13,26 @@ import (
 
 // searchTemplate prints the matches in the line format of skills list, then the
 // line that says how to read a skill. With no match it points at skills list.
-const searchTemplate = `{{if .}}{{range .}}{{.Name}}{{with .Description}}: {{.}}{{end}}
+const searchTemplate = `{{if .Skills}}{{range .Skills}}{{.Name}}{{with .Description}}: {{.}}{{end}}
 {{end}}To read a skill, run: databricks skills read <name>
 {{else}}No skill matches. Run databricks skills list to see every skill.
 {{end}}`
 
-// searchResult is one matching skill. Its JSON fields are the fields of skills
-// list, plus experimental, which tells apart the skills that --experimental adds.
-type searchResult struct {
-	Name           string   `json:"name"`
-	Description    string   `json:"description"`
-	Version        string   `json:"version"`
-	Files          []string `json:"files"`
-	Commands       []string `json:"commands"`
-	Source         string   `json:"source"`
-	ReleaseVersion string   `json:"release_version"`
-	Experimental   bool     `json:"experimental"`
+// searchJSON is the JSON output of skills search. It has the envelope and the
+// per-skill fields of skills list, so one parser reads both. skills list defines
+// the same shape in its own file; the two should share one type once both land.
+type searchJSON struct {
+	Source         string            `json:"source"`
+	ReleaseVersion string            `json:"release_version"`
+	Skills         []searchJSONSkill `json:"skills"`
+}
+
+type searchJSONSkill struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Version     string   `json:"version"`
+	Files       []string `json:"files"`
+	Commands    []string `json:"commands"`
 }
 
 func newSearchCmd() *cobra.Command {
@@ -59,20 +63,21 @@ func runSearch(cmd *cobra.Command, words []string, experimental bool) error {
 		return err
 	}
 	matches := matchSkills(searchableSkills(catalog.Skills, experimental), words)
-	results := make([]searchResult, 0, len(matches))
+	out := searchJSON{
+		Source:         filepath.ToSlash(catalog.Label),
+		ReleaseVersion: catalog.Version,
+		Skills:         make([]searchJSONSkill, 0, len(matches)),
+	}
 	for _, s := range matches {
-		results = append(results, searchResult{
-			Name:           s.Name,
-			Description:    s.Description,
-			Version:        s.Version,
-			Files:          copyList(s.Files),
-			Commands:       copyList(s.Commands),
-			Source:         filepath.ToSlash(catalog.Label),
-			ReleaseVersion: catalog.Version,
-			Experimental:   s.Experimental,
+		out.Skills = append(out.Skills, searchJSONSkill{
+			Name:        s.Name,
+			Description: s.Description,
+			Version:     s.Version,
+			Files:       copyList(s.Files),
+			Commands:    copyList(s.Commands),
 		})
 	}
-	return cmdio.RenderWithTemplate(ctx, results, "", searchTemplate)
+	return cmdio.RenderWithTemplate(ctx, out, "", searchTemplate)
 }
 
 // checkWords rejects a blank word, which would otherwise match every skill.
