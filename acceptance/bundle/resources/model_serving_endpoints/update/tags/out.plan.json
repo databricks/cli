@@ -1,7 +1,7 @@
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "lineage": "[UUID][0]",
+  "lineage": "[UUID]",
   "serial": 1,
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
@@ -31,86 +31,6 @@
             }
           ]
         }
-      },
-      "remote_state": {
-        "config": {
-          "served_entities": [
-            {
-              "external_model": {
-                "name": "gpt-4o-mini",
-                "openai_config": {
-                  "openai_api_key": "{{secrets/test-scope/openai-key}}"
-                },
-                "provider": "openai",
-                "task": "llm/v1/chat"
-              },
-              "name": "prod"
-            }
-          ],
-          "traffic_config": {
-            "routes": [
-              {
-                "served_entity_name": "prod",
-                "served_model_name": "prod",
-                "traffic_percentage": 100
-              }
-            ]
-          }
-        },
-        "description": "",
-        "endpoint_details": {
-          "config": {
-            "served_entities": [
-              {
-                "external_model": {
-                  "name": "gpt-4o-mini",
-                  "openai_config": {
-                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
-                  },
-                  "provider": "openai",
-                  "task": "llm/v1/chat"
-                },
-                "name": "prod"
-              }
-            ],
-            "traffic_config": {
-              "routes": [
-                {
-                  "served_entity_name": "prod",
-                  "served_model_name": "prod",
-                  "traffic_percentage": 100
-                }
-              ]
-            }
-          },
-          "creation_timestamp": [UNIX_TIME_MILLIS],
-          "creator": "[USERNAME]",
-          "description": "",
-          "id": "[UUID][1]",
-          "last_updated_timestamp": [UNIX_TIME_MILLIS],
-          "name": "[ENDPOINT_ID]",
-          "permission_level": "CAN_MANAGE",
-          "route_optimized": false,
-          "state": {
-            "config_update": "NOT_UPDATING",
-            "ready": "NOT_READY"
-          },
-          "tags": [
-            {
-              "key": "team",
-              "value": "my-team-one"
-            }
-          ]
-        },
-        "endpoint_id": "[UUID][1]",
-        "name": "[ENDPOINT_ID]",
-        "route_optimized": false,
-        "tags": [
-          {
-            "key": "team",
-            "value": "my-team-one"
-          }
-        ]
       },
       "changes": {
         "config.traffic_config": {
@@ -151,20 +71,7 @@
           "label": "${resources.model_serving_endpoints.test_endpoint.endpoint_id}"
         }
       ],
-      "action": "skip",
-      "remote_state": {
-        "object_id": "/serving-endpoints/[UUID][1]",
-        "__embed__": [
-          {
-            "level": "CAN_QUERY",
-            "group_name": "users"
-          },
-          {
-            "level": "CAN_MANAGE",
-            "user_name": "[USERNAME]"
-          }
-        ]
-      }
+      "action": "skip"
     }
   }
 }
