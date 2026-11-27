@@ -1,4 +1,3 @@
-Badness = "Destroy does not look for the bundle's volume after a rename out of band: it drops the state entry and leaves the renamed volume behind. It should find it by its volume_id."
 Cloud = true
 
 Ignore = [

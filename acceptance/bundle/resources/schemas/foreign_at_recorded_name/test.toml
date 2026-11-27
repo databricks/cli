@@ -1,4 +1,3 @@
-Badness = "Destroy does not look for the bundle's schema after a rename out of band: it drops the state entry and leaves the renamed schema behind. It should find it by its schema_id."
 Cloud = true
 
 Ignore = [

@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+OLD_SCHEMA="main.myschema"
+NEW_SCHEMA="main.moved_schema"
+
+title "Deploy a schema with a volume in it and rename the schema out of band; the recorded names are not readable"
+trace $CLI bundle deploy
+$CLI schemas update "$OLD_SCHEMA" --new-name moved_schema &> LOG.rename
+print_requests.py //unity-catalog &> LOG.deploy_requests
+
+fault.py "GET /api/2.1/unity-catalog/schemas/main.myschema" 403 0 100 PERMISSION_DENIED
+fault.py "GET /api/2.1/unity-catalog/volumes/main.myschema.myvolume" 403 0 100 PERMISSION_DENIED
+
+title "Destroy finds the renamed schema by its schema_id, and the volume in it by its volume_id, and deletes both there"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //unity-catalog
+trace musterr $CLI schemas get "$NEW_SCHEMA"

@@ -26,10 +26,10 @@ print_requests.py //unity-catalog &> LOG.oob_requests
 title "The other volume has another volume_id, so the plan does not take it for the bundle's: it plans a create"
 trace $CLI bundle plan
 
-title "Destroy does not delete the other volume: it only drops the bundle's from the state"
+title "Destroy finds the bundle's volume by its volume_id and deletes it, not the other one"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //unity-catalog
-trace $CLI volumes read "$SCHEMA.myvolume-moved" | volume_fields
+trace musterr $CLI volumes read "$SCHEMA.myvolume-moved"
 
 title "The other volume is left alone"
 trace $CLI volumes read "$SCHEMA.myvolume" | volume_fields
