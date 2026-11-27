@@ -11,6 +11,7 @@ title "first run of 1.30.0 installs skills release 0.3.0"
 trace $CLI jobs list
 trace print_telemetry
 trace cursor_skills
+trace auto_install_state
 
 # The user edits a skill that the next release drops, and one that it updates.
 echo "my notes" >> "$skills_dir/databricks-dropped/SKILL.md"
@@ -25,6 +26,9 @@ trace cursor_skills
 trace skill_file databricks-kept
 trace skill_file databricks-dropped
 trace skill_file databricks-edited
+# Auto-install made the installation without asking, so it is not the user's
+# consent.
+trace auto_install_state
 
 title "upgrade to 1.32.0 while the latest release is 0.2.0: no downgrade, nothing printed, not retried"
 trace DATABRICKS_AITOOLS_AUTO_INSTALL_CLI_VERSION=1.32.0 DATABRICKS_CLI_GITHUB_API_URL=$DATABRICKS_HOST/older $CLI jobs list

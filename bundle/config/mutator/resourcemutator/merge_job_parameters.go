@@ -31,15 +31,15 @@ func (m *mergeJobParameters) parameterNameString(v dyn.Value) string {
 }
 
 func (m *mergeJobParameters) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		if v.Kind() == dyn.KindNil {
-			return v, nil
-		}
+	return diag.FromErr(b.Config.Mutate(m.merge))
+}
 
-		return dyn.Map(v, "resources.jobs", dyn.Foreach(func(_ dyn.Path, job dyn.Value) (dyn.Value, error) {
-			return dyn.Map(job, "parameters", merge.ElementsByKey("name", m.parameterNameString))
-		}))
-	})
+func (m *mergeJobParameters) merge(v dyn.Value) (dyn.Value, error) {
+	if v.Kind() == dyn.KindNil {
+		return v, nil
+	}
 
-	return diag.FromErr(err)
+	return dyn.Map(v, "resources.jobs", dyn.Foreach(func(_ dyn.Path, job dyn.Value) (dyn.Value, error) {
+		return dyn.Map(job, "parameters", merge.ElementsByKey("name", m.parameterNameString))
+	}))
 }
