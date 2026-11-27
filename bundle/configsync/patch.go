@@ -109,8 +109,14 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 				Value: fieldChange.Change.Value,
 			}})
 		case OperationAdd:
+			opType := yamlpatch.OperationAdd
+			// A key the file writes as null is absent from the merged config, so the change
+			// arrives as an add; it replaces the existing key, as in RFC 6902.
+			if yamlKeyReplaceable(content, fieldPathCandidate) {
+				opType = yamlpatch.OperationReplace
+			}
 			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-				Type:  yamlpatch.OperationAdd,
+				Type:  opType,
 				Path:  path,
 				Value: fieldChange.Change.Value,
 			}})
@@ -402,6 +408,49 @@ func yamlChild(current *yaml.Node, part *structpath.PathNode) (child, keyNode *y
 		return nil, nil
 	}
 	return nil, nil
+}
+
+// yamlKeyReplaceable reports whether fieldPath ends at a mapping key the YAML writes
+// itself, with no anchor on or inside its value. Replacing a value that is or holds an
+// anchor would leave its aliases dangling; a key under an anchored mapping is replaced
+// like any other.
+func yamlKeyReplaceable(content []byte, fieldPath string) bool {
+	value := yamlKeyValue(content, fieldPath)
+	return value != nil && !hasAnchor(value)
+}
+
+// yamlKeyValue returns the value of the mapping key fieldPath ends at, or nil when the
+// YAML does not write that key itself. An add at a sequence index inserts rather than
+// replaces, and a key inherited through a merge key has no node of its own, so only
+// written keys count.
+func yamlKeyValue(content []byte, fieldPath string) *yaml.Node {
+	pattern, err := structpath.ParsePattern(fieldPath)
+	if err != nil {
+		return nil
+	}
+	if _, ok := pattern.StringKey(); !ok {
+		return nil
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil || len(doc.Content) != 1 {
+		return nil
+	}
+	current := doc.Content[0]
+	for _, part := range pattern.AsSlice() {
+		// A patch writes through an alias into its anchor's content.
+		if current.Kind == yaml.AliasNode {
+			current = current.Alias
+		}
+		current, _ = yamlChild(current, (*structpath.PathNode)(part))
+		if current == nil {
+			return nil
+		}
+	}
+	return current
+}
+
+func hasAnchor(node *yaml.Node) bool {
+	return node.Anchor != "" || slices.ContainsFunc(node.Content, hasAnchor)
 }
 
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,

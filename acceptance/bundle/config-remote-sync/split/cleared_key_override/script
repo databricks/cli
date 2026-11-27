@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev
+job_id="$(read_id.py my_job)"
+
+title "Move the task to another job cluster remotely"
+edit_resource.py jobs $job_id <<PYEDIT
+for task in r["tasks"]:
+    task.pop("existing_cluster_id", None)
+    task["job_cluster_key"] = "other"
+PYEDIT
+
+title "Sync replaces the target's job_cluster_key"
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync -t dev --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

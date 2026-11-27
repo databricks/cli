@@ -1,0 +1,24 @@
+# An absolute Windows path is a local path, not a "C:" scheme, and a trailing separator
+# (backslash or forward slash) marks the target as a directory.
+DBFS="dbfs:/tmp/fs-cp-windows-${UNIQUE_NAME}"
+
+cleanup() {
+  $CLI fs rm -r $DBFS >>LOG.cleanup 2>&1 || true
+  rm -rf existingdir
+}
+trap cleanup EXIT
+
+title "Copy a file at an absolute Windows path into a DBFS directory"
+$CLI fs mkdir $DBFS
+trace $CLI fs cp "$TEST_TMP_DIR\\foo.txt" $DBFS
+trace $CLI fs cat $DBFS/foo.txt
+
+title "Copy a file into an existing local directory named with a trailing backslash"
+mkdir existingdir
+trace $CLI fs cp "$TEST_TMP_DIR\\foo.txt" "$TEST_TMP_DIR\\existingdir\\"
+trace cat existingdir/foo.txt
+
+title "A trailing backslash or slash on a missing directory fails"
+trace musterr $CLI fs cp "$TEST_TMP_DIR\\foo.txt" "$TEST_TMP_DIR\\nonexistent\\mydir\\"
+# pwd -W gives the same directory as C:/... with forward slashes.
+trace musterr $CLI fs cp "$(pwd -W)/foo.txt" "$(pwd -W)/nonexistent2/mydir2/"
