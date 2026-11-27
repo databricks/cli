@@ -6,11 +6,12 @@ Created jobs.b
 Created jobs.literal
 Created jobs.ref_id
 Created jobs.ref_secret
+Created jobs.ref_secret_chain
 Created secrets.s
 Files: 1 uploaded, 0 deleted
 Output from job_runs.run: id=[RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[A_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
 Output from job_runs.run: id=[RUN_ID]: SUCCESS
-Resources: 7 created, 0 changed, 0 deleted, 0 unchanged
+Resources: 8 created, 0 changed, 0 deleted, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/summary-resolution/default/files...
 
 === After deploy, references show the deployed values
@@ -42,13 +43,16 @@ Resources:
     ref_secret:
       Name: secret ${resources.secrets.s.value}
       URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_ID]?w=[WORKSPACE_ID]
+    ref_secret_chain:
+      Name: chain ${resources.jobs.ref_secret.name}
+      URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_CHAIN_ID]?w=[WORKSPACE_ID]
   Secrets:
     s:
       Name: [S_ID]
       URL:  [DATABRICKS_URL]/explore/data/main/default/test_secret?w=[WORKSPACE_ID]
 
 >>> [CLI] bundle summary --var secret_value=s3cr3t-value -o json
-[{"key":"a","name":"job-a"},{"key":"b","name":"job-b"},{"key":"literal","name":"literal"},{"key":"ref_id","name":"ref [A_ID]"},{"key":"ref_secret","name":"secret ${resources.secrets.s.value}"}]
+[{"key":"a","name":"job-a"},{"key":"b","name":"job-b"},{"key":"literal","name":"literal"},{"key":"ref_id","name":"ref [A_ID]"},{"key":"ref_secret","name":"secret ${resources.secrets.s.value}"},{"key":"ref_secret_chain","name":"chain ${resources.jobs.ref_secret.name}"}]
 
 === Add resources that are not deployed: a job referencing the literal, and two resources whose resolved values do not fit their types
 
@@ -87,6 +91,9 @@ Resources:
     ref_secret:
       Name: secret ${resources.secrets.s.value}
       URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_ID]?w=[WORKSPACE_ID]
+    ref_secret_chain:
+      Name: chain ${resources.jobs.ref_secret.name}
+      URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_CHAIN_ID]?w=[WORKSPACE_ID]
   Postgres projects:
     bad_duration:
       Name: 

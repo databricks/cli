@@ -85,7 +85,9 @@ func (b *DeploymentBundle) lookupStateField(path dyn.Path) (dyn.Value, bool) {
 // not safe to show:
 //   - a resource that was never deployed: unlike ResolveConfigAgainstState there is no
 //     fallback to implied empty fields, which would turn an id into "" (see #6690);
-//   - a sensitive field (state stores it zeroed, config holds the secret);
+//   - a sensitive field (state stores it zeroed, config holds the secret), or a field
+//     whose config references one, directly or through other references (its deployed
+//     value in state holds the secret);
 //   - a state field stored as a content hash, or a state string that holds a literal
 //     ${...} (it would be interpolated again).
 //
@@ -97,8 +99,7 @@ func (b *DeploymentBundle) ResolveAllResourcesAgainstState(cfg *config.Root) {
 			if len(path) < 4 || !path.HasPrefix(resourcesPrefix) {
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
 			}
-			field, err := structpath.ParsePath(path[3:].String())
-			if err != nil || dresources.IsSensitiveField(path[1].Key(), field) {
+			if dependsOnSensitiveField(root, path, map[string]bool{}) {
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
 			}
 			if v, ok := b.cachedStateField(stateCache, path); ok {
@@ -137,6 +138,42 @@ func (b *DeploymentBundle) ResolveAllResourcesAgainstState(cfg *config.Root) {
 		}
 		return resolved, nil
 	})
+}
+
+// dependsOnSensitiveField reports whether path, resources.<group>.<name>.<field...>, is a
+// sensitive field or its config value references one through ${resources.*} references.
+func dependsOnSensitiveField(root dyn.Value, path dyn.Path, visited map[string]bool) bool {
+	key := path.String()
+	if visited[key] {
+		return false
+	}
+	visited[key] = true
+
+	field, err := structpath.ParsePath(path[3:].String())
+	if err != nil || dresources.IsSensitiveField(path[1].Key(), field) {
+		return true
+	}
+
+	value, err := dyn.GetByPath(root, path)
+	if err != nil || !value.IsValid() {
+		return false
+	}
+	found := false
+	_ = dyn.WalkReadOnly(value, func(_ dyn.Path, leaf dyn.Value) error {
+		ref, ok := dynvar.NewRef(leaf)
+		if found || !ok {
+			return nil
+		}
+		for _, s := range ref.References() {
+			refPath, err := dyn.NewPathFromString(s)
+			if err == nil && len(refPath) >= 4 && refPath.HasPrefix(resourcesPrefix) && dependsOnSensitiveField(root, refPath, visited) {
+				found = true
+				return nil
+			}
+		}
+		return nil
+	})
+	return found
 }
 
 // normalizeResource normalizes v, a resource of the given group, to the resource's Go type
