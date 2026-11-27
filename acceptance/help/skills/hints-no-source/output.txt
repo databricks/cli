@@ -1,9 +1,9 @@
 
->>> env -u DATABRICKS_SKILLS_DIR [CLI] fs --help
+>>> env -u DATABRICKS_SKILLS_DIR DATABRICKS_SKILLS_BASE_URL=http://127.0.0.1:1 [CLI] fs --help
 
->>> env -u DATABRICKS_SKILLS_DIR [CLI] --help
+>>> env -u DATABRICKS_SKILLS_DIR DATABRICKS_SKILLS_BASE_URL=http://127.0.0.1:1 [CLI] --help
 
 Coding agents: run `databricks skills list` to find skills for the commands you use.
 
->>> env -u DATABRICKS_SKILLS_DIR [CLI] air --help
+>>> env -u DATABRICKS_SKILLS_DIR DATABRICKS_SKILLS_BASE_URL=http://127.0.0.1:1 [CLI] air --help
   Coding agent skill       databricks aitools install --skills-only --skills databricks-ai-runtime
