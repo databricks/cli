@@ -29,10 +29,10 @@ func Resolve(ctx context.Context) (Source, error) {
 // that is the folder in DATABRICKS_SKILLS_DIR. It returns nil when no folder is
 // set.
 func LocalCatalog(ctx context.Context) (*Catalog, error) {
-	if env.Get(ctx, dirEnv) == "" {
+	src, err := Resolve(ctx)
+	if errors.Is(err, ErrNoSource) {
 		return nil, nil
 	}
-	src, err := Resolve(ctx)
 	if err != nil {
 		return nil, err
 	}
