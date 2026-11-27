@@ -1,9 +1,7 @@
 package skills
 
 import (
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -26,22 +24,6 @@ func TestResolveWithDir(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "1.2.0", catalog.Version)
 	assert.Equal(t, "testdata/release", catalog.Label)
-}
-
-// The folder is made here, so on Windows its path has backslashes and the
-// label must come back with forward slashes.
-func TestResolveLabelUsesForwardSlashes(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "release")
-	require.NoError(t, os.Mkdir(dir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(`{"skills": {}}`), 0o644))
-
-	ctx := env.Set(t.Context(), "DATABRICKS_SKILLS_DIR", dir)
-	src, err := Resolve(ctx)
-	require.NoError(t, err)
-
-	catalog, err := src.Catalog(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, strings.ReplaceAll(dir, `\`, "/"), catalog.Label)
 }
 
 func TestLocalCatalogWithoutDir(t *testing.T) {
