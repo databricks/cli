@@ -1,6 +1,7 @@
 package cmdio
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -69,4 +70,48 @@ func TestSelectModelEscapesControlCharacters(t *testing.T) {
 			assert.Contains(t, v, "second "+escaped)
 		}
 	}
+}
+
+func TestSelectModelEscapesControlCharactersInTemplateErrors(t *testing.T) {
+	// The error quotes the action that failed as it is written in the template,
+	// here with a color code and a clear-screen sequence in a string.
+	const failing = "{{index \"a\x1b[31m\x1b[2J\" 99}}"
+	const escaped = `<index "a\u001b[31m\u001b[2J" 99>`
+	opts := SelectOptions{
+		Label:         "Pick",
+		Items:         []Tuple{{"first", "1"}, {"second", "2"}},
+		LabelTemplate: failing,
+		Active:        failing,
+		Inactive:      failing,
+		Selected:      failing,
+	}
+	m, err := newSelectModel(opts, true)
+	require.NoError(t, err)
+
+	v := m.View()
+	assert.NotContains(t, v, "\x1b[31m")
+	assert.NotContains(t, v, "\x1b[2J")
+	assert.Contains(t, v, "[label template error: ")
+	// The label, the active item and the inactive item.
+	assert.Equal(t, 3, strings.Count(v, escaped))
+
+	m.submitted = true
+	v = m.View()
+	assert.NotContains(t, v, "\x1b[31m")
+	assert.Contains(t, v, "[selected template error: ")
+	assert.Equal(t, 1, strings.Count(v, escaped))
+}
+
+func TestPromptFunctionsStyleEachLine(t *testing.T) {
+	// A style left on at the end of a line is reset there when the prompt is
+	// written, so each line of a multi-line value gets the style by itself.
+	bold := promptFuncMap(false)["bold"].(func(any) string)
+	assert.Equal(t, ansiBold+"one"+ansiReset, bold("one"))
+	assert.Equal(t, ansiBold+"one"+ansiReset+"\n"+ansiBold+"two"+ansiReset, bold("one\ntwo"))
+
+	opts := SelectOptions{Label: "Pick", Items: []Tuple{{"one\ntwo", "1"}}}
+	m, err := newSelectModel(opts, false)
+	require.NoError(t, err)
+	// The active item is underlined; it is shown as the tuple it is.
+	assert.Contains(t, m.View(), ansiUnderline+"{one"+ansiReset+"\n"+ansiUnderline+"two 1}"+ansiReset)
 }

@@ -15,8 +15,10 @@ import (
 
 // ansiCSIPattern matches ANSI SGR escape sequences so colored cells
 // aren't counted toward column widths. The color helpers in this package
-// emit CSI ... m, which is all our templates produce.
-var ansiCSIPattern = regexp.MustCompile("\x1b\\[[0-9;]*m")
+// emit CSI ... m, which is all our templates produce. It matches what
+// textutil.EscapeControlKeepColors keeps in a row, so that a sequence in a
+// value is not counted either.
+var ansiCSIPattern = regexp.MustCompile("\x1b\\[[0-9;:]*m")
 
 // renderIteratorPagedTemplate pages an iterator through the template
 // renderer, prompting between batches. SPACE advances one page, ENTER

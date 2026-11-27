@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -240,6 +241,8 @@ func TestVisualWidth(t *testing.T) {
 		{"empty", "", 0},
 		{"green SGR wraps text", "\x1b[32mhello\x1b[0m", 5},
 		{"multiple SGR escapes", "\x1b[1;31mfoo\x1b[0m bar", 7},
+		{"SGR with colon subparameters", "\x1b[4:3mfoo\x1b[m bar", 7},
+		{"SGR kept in a value and its reset", textutil.EscapeControlKeepColors("\x1b[38:2::1:2:3mfoo\tbar"), 7},
 		{"multibyte runes count as one each", "héllo", 5},
 	}
 	for _, tt := range tests {

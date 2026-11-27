@@ -66,7 +66,7 @@ func promptANSI(prefix string) func(any) string {
 		return func(v any) string { return fmt.Sprint(v) }
 	}
 	return func(v any) string {
-		return prefix + fmt.Sprint(v) + ansiReset
+		return styleLines(prefix, fmt.Sprint(v))
 	}
 }
 

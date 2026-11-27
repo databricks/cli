@@ -10,7 +10,7 @@ Response.Body = ''
 
 # Experiment, creator and base environment names with embedded escapes, for
 # `air get` and `air list`. The run failed, and its state message quotes a path
-# from the task spec, as the Jobs API does.
+# the user chose, as the Jobs API does for a notebook it cannot read.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
@@ -20,7 +20,7 @@ Response.Body = '''
   "creator_user_name": "user\u001b[31m@example.com",
   "start_time": 1700000000000,
   "end_time": 1700000012000,
-  "state": {"life_cycle_state": "INTERNAL_ERROR", "result_state": "FAILED", "state_message": "Task train failed with message: Unable to access the notebook \"/Shared/train\u001b]0;pwned\u0007\u001b[2J\r-nb\". Either it does not exist, or the identity used to run this job lacks the required permissions."},
+  "state": {"life_cycle_state": "INTERNAL_ERROR", "result_state": "FAILED", "state_message": "Task train failed with message: Unable to access the notebook \"/Shared/train\u001b]0;pwned\u0007\u001b[2J\u001b[31m\r-nb\". Either it does not exist, or the identity used to run this job lacks the required permissions."},
   "environments": [
     {"environment_key": "default", "spec": {"base_environment": "workspace-base-environments/databricks_ai\u001b]0;pwned\u0007_v6"}}
   ],
@@ -46,7 +46,7 @@ Response.Body = '''
     "creator_user_name": "user\u001b[31m@example.com",
     "start_time": 1700000000000,
     "end_time": 1700000012000,
-    "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+    "state": {"life_cycle_state": "INTERNAL_ERROR", "result_state": "FAILED"},
     "tasks": [{
       "task_key": "train",
       "run_id": 456,
@@ -63,7 +63,7 @@ Response.Body = '''
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get-output"
 Response.Body = '''
-{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1\u001b]0;pwned\u0007"}}
+{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1\u001b]0;pwned\u0007\u001b[31m"}}
 '''
 
 # The MLflow run name carries all three kinds of control character.

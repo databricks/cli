@@ -19,28 +19,48 @@
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 
-Failure reason: Task train failed with message: Unable to access the notebook "/Shared/train\u001b]0;pwned\u0007\u001b[2J\r-nb". Either it does not exist, or the identity used to run this job lacks the required permissions.
+Failure reason: Task train failed with message: Unable to access the notebook "/Shared/train\u001b]0;pwned\u0007\u001b[2J\u001b[31m\r-nb". Either it does not exist, or the identity used to run this job lacks the required permissions.
 
 Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]
-MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1\u001b]0;pwned\u0007
+MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1\u001b]0;pwned\u0007\u001b[31m
 
 === get (json): strings are passed through as the server sent them
 
 >>> [CLI] air get 123 -o json
 {
-  "experiment_name": "my\u001b]0;pwned\u0007-exp",
-  "mlflow_run_name": "\u001b]0;pwned\u0007my\u001b[2J-run\r",
-  "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1\u001b]0;pwned\u0007/logs",
-  "user": "user\u001b[31m@example.com",
-  "base_environment": "workspace-base-environments/databricks_ai\u001b]0;pwned\u0007_v6",
-  "termination_reason": "Task train failed with message: Unable to access the notebook \"/Shared/train\u001b]0;pwned\u0007\u001b[2J\r-nb\". Either it does not exist, or the identity used to run this job lacks the required permissions."
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "task_key": "train",
+    "status": "FAILED",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 12,
+    "attempt_number": 0,
+    "experiment_name": "my\u001b]0;pwned\u0007-exp",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[WORKSPACE_ID]",
+    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1\u001b]0;pwned\u0007\u001b[31m/logs",
+    "mlflow_experiment_id": "exp1",
+    "mlflow_run_id": "run1\u001b]0;pwned\u0007\u001b[31m",
+    "termination_reason": "Task train failed with message: Unable to access the notebook \"/Shared/train\u001b]0;pwned\u0007\u001b[2J\u001b[31m\r-nb\". Either it does not exist, or the identity used to run this job lacks the required permissions.",
+    "est_remaining_seconds": null,
+    "est_percent_complete": null,
+    "user": "user\u001b[31m@example.com",
+    "accelerator_type": "GPU_1xA10",
+    "num_accelerators": 1,
+    "environment_version": null,
+    "base_environment": "workspace-base-environments/databricks_ai\u001b]0;pwned\u0007_v6",
+    "max_retries": null,
+    "mlflow_run_name": "\u001b]0;pwned\u0007my\u001b[2J-run\r",
+    "sweep": null
+  }
 }
 
 === list (text): control characters are escaped in the table
 
 >>> [CLI] air list --all-users
-   Run ID  Experiment                  Status     Started              Duration  Progress  MLflow                  User                        Accelerators
-   123     my\u001b]0;pwned\u0007-exp  ● SUCCESS  [TIMESTAMP]       12s         -  …0007my\u001b[2J-run\r  user\u001b[31m@example.com  1x A10
+   Run ID  Experiment                  Status    Started              Duration  Progress  MLflow                  User                        Accelerators
+   123     my\u001b]0;pwned\u0007-exp  ● FAILED  [TIMESTAMP]       12s         -  …0007my\u001b[2J-run\r  user\u001b[31m@example.com  1x A10
 
 === list (json): strings are passed through as the server sent them
 
@@ -55,7 +75,7 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1\u001b]0;pwned\u0007
         "task_key": "train",
         "run_name": "qwen\u001b[2J-train",
         "user": "user\u001b[31m@example.com",
-        "status": "SUCCESS",
+        "status": "FAILED",
         "started_at": "[TIMESTAMP]",
         "is_sweep": false,
         "experiment_name": "my\u001b]0;pwned\u0007-exp",

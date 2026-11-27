@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSpinnerModelInit(t *testing.T) {
@@ -151,9 +152,36 @@ func TestSpinnerStructConcurrentClose(t *testing.T) {
 }
 
 func TestSpinnerModelEscapesControlCharactersInSuffix(t *testing.T) {
-	m := newSpinnerModel(MockDiscard(t.Context()), io.Discard)
+	const suffix = "\x1b[32mWaiting\x1b[0m: a\x1b]0;t\x07\x1b[2J\rb \x1b[8mhidden"
+	const escaped = `: a\u001b]0;t\u0007\u001b[2J\rb `
 
-	updatedModel, _ := m.Update(suffixMsg("Waiting: a\x1b]0;t\x07\x1b[2J\rb"))
+	cases := []struct {
+		name         string
+		capabilities Capabilities
+		expected     string
+	}{
+		{
+			name:         "colors on",
+			capabilities: Capabilities{stderrIsTTY: true},
+			// The CLI's own colors are kept; a style left on is ended.
+			expected: "\x1b[32mWaiting\x1b[0m" + escaped + "\x1b[8mhidden\x1b[0m",
+		},
+		{
+			// The spinner runs with NO_COLOR too. The CLI adds no colors then.
+			name:         "colors off",
+			capabilities: Capabilities{stderrIsTTY: true, noColor: true},
+			expected:     `\u001b[32mWaiting\u001b[0m` + escaped + `\u001b[8mhidden`,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			require.True(t, c.capabilities.SupportsInteractive())
+			ctx := InContext(t.Context(), &cmdIO{capabilities: c.capabilities, out: io.Discard, err: io.Discard})
+			m := newSpinnerModel(ctx, io.Discard)
 
-	assert.Equal(t, `Waiting: a\u001b]0;t\u0007\u001b[2J\rb`, updatedModel.(spinnerModel).suffix)
+			updatedModel, _ := m.Update(suffixMsg(suffix))
+
+			assert.Equal(t, c.expected, updatedModel.(spinnerModel).suffix)
+		})
+	}
 }

@@ -169,12 +169,10 @@ func (s *handleState) appendAttr(a slog.Attr) {
 		str := a.Value.String()
 		format := "%s"
 
-		// Quote values with spaces, to make them easy to parse.
-		// %q escapes control characters itself.
-		if strings.ContainsAny(str, " \t\n") {
+		// Quote values with spaces, to make them easy to parse, and values
+		// with control characters, which %q escapes.
+		if strings.ContainsAny(str, " \t\n") || textutil.EscapeControl(str) != str {
 			format = "%q"
-		} else {
-			str = textutil.EscapeControl(str)
 		}
 
 		s.append(

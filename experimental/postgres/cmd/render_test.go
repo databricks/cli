@@ -100,9 +100,10 @@ func TestTextSink_EscapesTabAndNewlineInCells(t *testing.T) {
 func TestTextSink_EscapesControlCharactersInCells(t *testing.T) {
 	var buf bytes.Buffer
 	s := newTextSink(&buf)
-	require.NoError(t, s.Begin(fields("note")))
-	require.NoError(t, s.Row([]any{"a\x1b]0;t\x07\x1b[2Jb"}))
+	require.NoError(t, s.Begin(fields("no\x1b[31mte\n")))
+	require.NoError(t, s.Row([]any{"a\x1b]0;t\x07\x1b[2J\x1b[31mb"}))
 	require.NoError(t, s.End(t.Context(), "SELECT 1"))
-	assert.Contains(t, buf.String(), `a\u001b]0;t\u0007\u001b[2Jb`)
+	assert.Contains(t, buf.String(), `no\u001b[31mte\n`)
+	assert.Contains(t, buf.String(), `a\u001b]0;t\u0007\u001b[2J\u001b[31mb`)
 	assert.NotContains(t, buf.String(), "\x1b")
 }

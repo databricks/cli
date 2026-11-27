@@ -236,6 +236,7 @@ func TestFetchMLflowRunName(t *testing.T) {
 		name := fetchMLflowRunName(ctx, newTestWorkspaceClient(t, srv.URL), "run1")
 		assert.Equal(t, "\x1b]0;pwned\x07sunny\x1b[2J-cat\r-42", name)
 		assert.Equal(t, `\u001b]0;pwned\u0007sunny\u001b[2J-cat\r-42`, mlflowRunLabel(name, "run1", 0))
+		assert.Equal(t, `a\u001b[31mb`, mlflowRunLabel("a\x1b[31mb", "run1", 0))
 		// Shortened to the width of the escaped text.
 		assert.Equal(t, `…b[2J-cat\r-42`, mlflowRunLabel(name, "run1", 14))
 	})

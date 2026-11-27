@@ -10,7 +10,6 @@ import (
 	bubblespinner "github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/databricks/cli/libs/textutil"
 )
 
 // spinnerModel is the Bubble Tea model for the spinner.
@@ -19,6 +18,9 @@ type spinnerModel struct {
 	suffix    string
 	quitting  bool
 	startTime time.Time // non-zero when elapsed time display is enabled
+
+	// keepColors says whether colors in the suffix are kept; see escapeComposed.
+	keepColors bool
 }
 
 // Message types for spinner updates.
@@ -50,7 +52,8 @@ func newSpinnerModel(ctx context.Context, w io.Writer, opts ...SpinnerOption) sp
 	s.Style = r.NewStyle().Foreground(lipgloss.Color("10")) // Green
 
 	m := spinnerModel{
-		spinner: s,
+		spinner:    s,
+		keepColors: fromContext(ctx).colorsInLogs(),
 	}
 	for _, opt := range opts {
 		opt(&m)
@@ -67,7 +70,7 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case suffixMsg:
 		// The message can quote an API response (a status or state message), so
 		// terminal control characters in it are escaped; see LogString.
-		m.suffix = textutil.EscapeControlKeepColors(string(msg))
+		m.suffix = escapeComposed(string(msg), m.keepColors)
 		return m, nil
 
 	case quitMsg:

@@ -2,7 +2,7 @@
 === API error message: the server quotes the scope name
 
 >>> musterr [CLI] secrets put-secret --json @secret.json
-Error: Scope scope\u001b]0;title\u0007\u001b[2J\rname does not exist
+Error: Scope scope\u001b]0;title\u0007\u001b[2J\u001b[31m\rname does not exist
 
 === list as a table
 
@@ -12,7 +12,7 @@ Error: Scope scope\u001b]0;title\u0007\u001b[2J\rname does not exist
 === list as JSON: unchanged, the JSON encoder escapes the name itself
 
 >>> [CLI] jobs list -o json
-"nightly\u001b]0;title\u0007\u001b[2J\rETL \u001b[31mred\u001b[0m"
+json[0].settings.name = "nightly\u001b]0;title\u0007\u001b[2J\rETL \u001b[31mred\u001b[0m";
 
 === an exported file is written as is, tabs included
 
@@ -22,11 +22,9 @@ line 1<0x0d>line 2<0x1b>[2J
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Users/raw.txt --file exported.txt
 
->>> diff.py raw.txt exported.txt
+>>> cmp raw.txt exported.txt
 
 === export as JSON: the response, with the content in base64
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace export /Users/raw.txt -o json
-{
-  "content": "bGluZSAxDWxpbmUgMhtbMkoKCWluZGVudGVkCg=="
-}
+json.content = "bGluZSAxDWxpbmUgMhtbMkoKCWluZGVudGVkCg==";

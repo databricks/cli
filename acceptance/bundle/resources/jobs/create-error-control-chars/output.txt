@@ -1,11 +1,11 @@
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: cannot create resources.jobs.foo: Invalid job name foo\u001b]0;title\u0007\u001b[2J\rbar. (400 INVALID_PARAMETER_VALUE)
+Error: cannot create resources.jobs.foo: Invalid python file reference: src/main\u001b]0;title\u0007\u001b[2J\u001b[31m\rtask.py. Please visit the Databricks user guide for supported python references (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
-API message: Invalid job name foo\u001b]0;title\u0007\u001b[2J\rbar.
+API message: Invalid python file reference: src/main\u001b]0;title\u0007\u001b[2J\u001b[31m\rtask.py. Please visit the Databricks user guide for supported python references
 
 Files: 1 uploaded, 0 deleted

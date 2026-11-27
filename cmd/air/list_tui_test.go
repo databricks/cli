@@ -817,7 +817,7 @@ func TestListModelEnterOpensMLflowLogsWhenColumnHidden(t *testing.T) {
 func TestListModelDetailErrorEscapesControlCharacters(t *testing.T) {
 	m := detailLoadingModel(t)
 
-	next, _ := m.Update(detailMsg{title: "Run Details", err: errors.New("no such run: a\x1b]0;t\x07\x1b[2J\rb")})
+	next, _ := m.Update(detailMsg{title: "Run Details", err: errors.New("no such run: a\x1b]0;t\x07\x1b[2J\x1b[31m\rb")})
 
-	assert.Equal(t, `Error: no such run: a\u001b]0;t\u0007\u001b[2J\rb`, next.(listModel).detailContent)
+	assert.Equal(t, `Error: no such run: a\u001b]0;t\u0007\u001b[2J\u001b[31m\rb`, next.(listModel).detailContent)
 }

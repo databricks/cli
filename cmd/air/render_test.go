@@ -286,26 +286,26 @@ func TestRenderFieldsEscapesControlCharacters(t *testing.T) {
 	p := asciiPalette(t)
 	out := renderFields(p, false, runView{
 		runID:        "1",
-		task:         "tr\x1b[2Jain",
-		status:       "Waiting\x1b[2J for capacity\n...",
+		task:         "tr\x1b[2J\x1b[31main",
+		status:       "Waiting\x1b[2J\x1b[31m for capacity\n...",
 		submitted:    "2026-06-03 04:17 UTC",
 		maxRetries:   "3",
 		duration:     "1m 13s",
-		experiment:   "\x1b]0;pwned\x07exp\x1b[2Jeriment",
-		mlflowLabel:  "run\rname",
+		experiment:   "\x1b]0;pwned\x07exp\x1b[2J\x1b[31meriment",
+		mlflowLabel:  "run\r\x1b[31mname",
 		mlflowURL:    "https://h.test/ml/experiments/E1/runs/R1",
 		user:         "user\x1b[31m@example.com",
-		accelerators: "1x A10\x07",
-		environment:  "\x1b]8;;https://attacker.test/\x07databricks_ai_v6\x1b]8;;\x07",
+		accelerators: "1x A10\x07\x1b[31m",
+		environment:  "\x1b]8;;https://attacker.test/\x07databricks_ai\x1b[31m_v6\x1b]8;;\x07",
 	})
 
-	assert.Contains(t, out, `Task          tr\u001b[2Jain`)
-	assert.Contains(t, out, `Status        ● Waiting\u001b[2J for capacity\n...`)
-	assert.Contains(t, out, `Experiment    \u001b]0;pwned\u0007exp\u001b[2Jeriment`)
-	assert.Contains(t, out, `MLflow Run    run\rname`)
+	assert.Contains(t, out, `Task          tr\u001b[2J\u001b[31main`)
+	assert.Contains(t, out, `Status        ● Waiting\u001b[2J\u001b[31m for capacity\n...`)
+	assert.Contains(t, out, `Experiment    \u001b]0;pwned\u0007exp\u001b[2J\u001b[31meriment`)
+	assert.Contains(t, out, `MLflow Run    run\r\u001b[31mname`)
 	assert.Contains(t, out, `User          user\u001b[31m@example.com`)
-	assert.Contains(t, out, `Accelerators  1x A10\u0007`)
-	assert.Contains(t, out, `Environment   \u001b]8;;https://attacker.test/\u0007databricks_ai_v6\u001b]8;;\u0007`)
+	assert.Contains(t, out, `Accelerators  1x A10\u0007\u001b[31m`)
+	assert.Contains(t, out, `Environment   \u001b]8;;https://attacker.test/\u0007databricks_ai\u001b[31m_v6\u001b]8;;\u0007`)
 	assert.NotContains(t, out, "\x1b")
 	assert.NotContains(t, out, "\r")
 }

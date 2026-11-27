@@ -11,14 +11,15 @@ add_repl "$($CLI jobs create --json @job.json | jq -r .job_id)" JOB_ID
 trace $CLI jobs list | show_control.py
 
 title "list as JSON: unchanged, the JSON encoder escapes the name itself"
-trace $CLI jobs list -o json | show_control.py | jq '.[].settings.name'
+trace $CLI jobs list -o json | show_control.py | gron.py | grep settings.name
 
 title "an exported file is written as is, tabs included"
 printf 'line 1\rline 2\033[2J\n\tindented\n' > raw.txt
 MSYS_NO_PATHCONV=1 $CLI workspace import /Users/raw.txt --format AUTO --file raw.txt
 trace MSYS_NO_PATHCONV=1 $CLI workspace export /Users/raw.txt | show_control.py
 trace MSYS_NO_PATHCONV=1 $CLI workspace export /Users/raw.txt --file exported.txt
-trace diff.py raw.txt exported.txt
+# cmp compares the bytes; diff.py reads a carriage return as a line break.
+trace cmp raw.txt exported.txt
 
 title "export as JSON: the response, with the content in base64"
-trace MSYS_NO_PATHCONV=1 $CLI workspace export /Users/raw.txt -o json | show_control.py | jq '{content}'
+trace MSYS_NO_PATHCONV=1 $CLI workspace export /Users/raw.txt -o json | show_control.py | gron.py | grep content

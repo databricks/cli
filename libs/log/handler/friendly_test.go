@@ -112,12 +112,13 @@ func TestFriendlyHandlerEscapesControlCharacters(t *testing.T) {
 	var out bytes.Buffer
 	logger := slog.New(NewFriendlyHandler(&out, &Options{Level: log.LevelDebug}))
 
-	// Colors a caller put in the message are kept; attribute values get none.
-	logger.Warn("could not read \x1b[31mconfig\x1b[0m a\x1b]0;title\x07\x1b[2J\rb", "path", "p\x1b[31m\x1b[2J", "error", "not found: x\x1b[2J y")
+	// Colors a caller put in the message are kept; attribute values get none,
+	// and one with a control character is quoted, like one with a space.
+	logger.Warn("could not read \x1b[31mconfig\x1b[0m a\x1b]0;title\x07\x1b[2J\rb", "path", "p\x1b[31m\x1b[2J", "error", "not found: x\x1b[2J y", "name", "plain")
 
 	// Drop the time that debug level adds.
 	_, got, _ := strings.Cut(out.String(), " ")
-	want := "Warn: could not read \x1b[31mconfig\x1b[0m " + `a\u001b]0;title\u0007\u001b[2J\rb path=p\u001b[31m\u001b[2J error="not found: x\x1b[2J y"` + "\n"
+	want := "Warn: could not read \x1b[31mconfig\x1b[0m " + `a\u001b]0;title\u0007\u001b[2J\rb path="p\x1b[31m\x1b[2J" error="not found: x\x1b[2J y" name=plain` + "\n"
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}

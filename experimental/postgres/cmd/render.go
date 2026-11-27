@@ -49,7 +49,8 @@ func newInteractiveTextSink(out io.Writer) *textSink {
 func (s *textSink) Begin(fields []pgconn.FieldDescription) error {
 	s.columns = make([]string, len(fields))
 	for i, f := range fields {
-		s.columns[i] = f.Name
+		// A column name is chosen by the query or the table's owner.
+		s.columns[i] = textutil.EscapeControlOneLine(f.Name)
 	}
 	return nil
 }

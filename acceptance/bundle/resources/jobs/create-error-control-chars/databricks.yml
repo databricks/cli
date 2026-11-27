@@ -1,7 +1,23 @@
 bundle:
   name: test-bundle
 
+# The job has a git_source, so python_file is sent as written. The task says
+# source: WORKSPACE, and for that source the backend rejects a relative path
+# with an error that quotes it.
 resources:
   jobs:
     foo:
       name: foo
+      git_source:
+        git_url: https://github.com/databricks/cli.git
+        git_provider: gitHub
+        git_branch: main
+      tasks:
+        - task_key: main
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 1
+          spark_python_task:
+            python_file: "src/main\e]0;title\a\e[2J\e[31m\rtask.py"
+            source: WORKSPACE

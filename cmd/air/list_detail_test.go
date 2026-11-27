@@ -49,7 +49,7 @@ func TestRunLogsSnapshotEscapesControlCharactersInTheMLflowURL(t *testing.T) {
 			_, _ = w.Write([]byte(`{"run_id": 123, "state": {"life_cycle_state": "TERMINATED", "result_state": "FAILED"},
 				"tasks": [{"run_id": 456, "attempt_number": 0}]}`))
 		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
-			_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "E1", "mlflow_run_id": "R1\u001b]0;t\u0007\u001b[2J\r"}}`))
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output": {"mlflow_experiment_id": "E1", "mlflow_run_id": "R1\u001b]0;t\u0007\u001b[2J\u001b[31m\r"}}`))
 		default:
 			_, _ = w.Write([]byte(`{}`))
 		}
@@ -58,7 +58,7 @@ func TestRunLogsSnapshotEscapesControlCharactersInTheMLflowURL(t *testing.T) {
 
 	got, err := runLogsSnapshot(t.Context(), newTestWorkspaceClient(t, srv.URL), 123, "")
 	require.NoError(t, err)
-	assert.Contains(t, got, "\nMLflow URL: "+srv.URL+`/ml/experiments/E1/runs/R1\u001b]0;t\u0007\u001b[2J\r/logs`+"\n")
+	assert.Contains(t, got, "\nMLflow URL: "+srv.URL+`/ml/experiments/E1/runs/R1\u001b]0;t\u0007\u001b[2J\u001b[31m\r/logs`+"\n")
 }
 
 func TestListRowAndPanesLinkTheSameOlderRetry(t *testing.T) {

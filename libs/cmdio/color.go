@@ -46,6 +46,11 @@ func render(ctx context.Context, code, msg string) string {
 	if !colorEnabled(ctx) {
 		return msg
 	}
+	return styleLines(code, msg)
+}
+
+// styleLines wraps each line of msg in the SGR code and a reset.
+func styleLines(code, msg string) string {
 	if !strings.Contains(msg, "\n") {
 		return code + msg + ansiReset
 	}
