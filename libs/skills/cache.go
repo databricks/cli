@@ -3,6 +3,8 @@ package skills
 import (
 	"cmp"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -32,20 +34,36 @@ type Cache struct {
 	dir string
 }
 
+// pinnedCacheEnv turns the cache on for a pinned source. The acceptance tests
+// pin the source to a fake server and set it, so they have a cache to cover.
+// Unset, a pinned source stores nothing.
+const pinnedCacheEnv = "DATABRICKS_SKILLS_TEST_PINNED_CACHE"
+
+// pinnedDir is the folder, beside the release folder, that holds the catalogs of
+// pinned sources. Each source has its own folder in it.
+const pinnedDir = "skills-pinned"
+
 // NewCache returns the skills cache under the CLI's cache folder, beside the
-// other caches of this CLI version (see libs/cache). DATABRICKS_CACHE_ENABLED=false
-// turns it off, as it does for the other caches, and so does a cache folder that
-// cannot be found. A pinned source, DATABRICKS_SKILLS_REF or
-// DATABRICKS_SKILLS_BASE_URL, also turns it off: the cache is keyed by release
-// version only, so a catalog from another source must not be stored under it.
+// other caches of this CLI version (see libs/cache). It is off unless
+// DATABRICKS_SKILLS_PREVIEW is set. DATABRICKS_CACHE_ENABLED=false turns it off,
+// as it does for the other caches, and so does a cache folder that cannot be found.
+// A pinned source, DATABRICKS_SKILLS_REF or DATABRICKS_SKILLS_BASE_URL, stores
+// nothing unless pinnedCacheEnv is set. Then it stores in a folder keyed by the
+// source, never in the release folder, which is keyed by release version only.
 // The returned nil Cache stores nothing.
 //
 //deadcode:allow the skills commands call it once they are wired to the chain
 func NewCache(ctx context.Context) *Cache {
+	if !Enabled(ctx) {
+		return nil
+	}
 	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok && !enabled {
 		return nil
 	}
-	if env.Get(ctx, "DATABRICKS_SKILLS_REF") != "" || env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL") != "" {
+	ref := env.Get(ctx, "DATABRICKS_SKILLS_REF")
+	baseURL := env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL")
+	pinned := ref != "" || baseURL != ""
+	if pinned && !envTrue(ctx, pinnedCacheEnv) {
 		return nil
 	}
 	base, err := cache.BaseDir(ctx)
@@ -53,7 +71,18 @@ func NewCache(ctx context.Context) *Cache {
 		log.Debugf(ctx, "[skills] cache disabled: %v", err)
 		return nil
 	}
-	return &Cache{dir: filepath.Join(base, build.GetInfo().GetSanitizedVersion(), "skills")}
+	version := build.GetInfo().GetSanitizedVersion()
+	if pinned {
+		return &Cache{dir: filepath.Join(base, version, pinnedDir, sourceKey(ref, baseURL))}
+	}
+	return &Cache{dir: filepath.Join(base, version, "skills")}
+}
+
+// sourceKey names the folder of a pinned source: a hash of its ref and base URL,
+// so two pinned sources never share a folder.
+func sourceKey(ref, baseURL string) string {
+	sum := sha256.Sum256([]byte("ref=" + ref + "\nbase_url=" + baseURL))
+	return hex.EncodeToString(sum[:8])
 }
 
 // Latest returns the cached catalog fetched most recently. It reads the disk only.
