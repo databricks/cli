@@ -67,11 +67,11 @@ Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 >>> set_members
 [
   {
-    "feature_name": "${resources.features.featb.full_name}",
+    "feature_name": "main.matset_[UNIQUE_NAME].featb_[UNIQUE_NAME]",
     "is_online": null
   },
   {
-    "feature_name": "${resources.features.featb.full_name}",
+    "feature_name": "main.matset_[UNIQUE_NAME].featb_[UNIQUE_NAME]",
     "is_online": null
   }
 ]

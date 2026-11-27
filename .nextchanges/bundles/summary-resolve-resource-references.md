@@ -1,0 +1,1 @@
+* `bundle summary` and `bundle open` now show the deployed values of `${resources.*}` references in resource names and URLs, instead of the unresolved reference (for example, a synced table named after its catalog). ([#8111](https://github.com/databricks/cli/pull/8111))

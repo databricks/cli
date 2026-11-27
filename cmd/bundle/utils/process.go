@@ -458,16 +458,20 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
-			mutators := []bundle.Mutator{
-				statemgmt.Load(b.DeploymentBundle.ExportState(ctx), modes...),
-			}
-			// InitializeURLs makes an extra API call; only run it when URLs are needed.
-			if opts.InitIDs {
-				mutators = append(mutators, mutator.InitializeURLs())
-			}
-			bundle.ApplySeqContext(ctx, b, mutators...)
+			bundle.ApplyContext(ctx, b, statemgmt.Load(b.DeploymentBundle.ExportState(ctx), modes...))
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			if opts.InitIDs {
+				// Show deployed values instead of ${resources.*} references in names and URLs.
+				bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
+					b.DeploymentBundle.ResolveAllResourcesAgainstState(&b.Config)
+				})
+				// InitializeURLs makes an extra API call; only run it when URLs are needed.
+				bundle.ApplyContext(ctx, b, mutator.InitializeURLs())
+				if logdiag.HasError(ctx) {
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 			}
 		}
 

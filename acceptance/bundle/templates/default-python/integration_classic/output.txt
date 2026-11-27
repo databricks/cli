@@ -65,6 +65,13 @@ Resources:
 +        "id": "[SAMPLE_JOB_ID]",
          "job_clusters": [
            {
+@@ -127,5 +128,5 @@
+             ],
+             "pipeline_task": {
+-              "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
++              "pipeline_id": "[PROJECT_NAME_UNIQUE_NAME_ETL_ID]"
+             },
+             "task_key": "refresh_pipeline"
 @@ -138,5 +139,6 @@
              "unit": "DAYS"
            }
@@ -422,6 +429,13 @@ Resources:
 +                "prod"
                ]
              },
+@@ -128,5 +121,5 @@
+             ],
+             "pipeline_task": {
+-              "pipeline_id": "[PROJECT_NAME_UNIQUE_NAME_ETL_ID]"
++              "pipeline_id": "[PROJECT_NAME_UNIQUE_NAME_ETL_ID_2]"
+             },
+             "task_key": "refresh_pipeline"
 @@ -134,5 +127,5 @@
          ],
          "trigger": {

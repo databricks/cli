@@ -1,6 +1,8 @@
 package direct
 
 import (
+	"errors"
+
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -68,4 +70,47 @@ func (b *DeploymentBundle) lookupStateField(path dyn.Path) (dyn.Value, bool) {
 		return dyn.InvalidValue, false
 	}
 	return fieldVal, true
+}
+
+// ResolveAllResourcesAgainstState resolves ${resources.*} references in every resource
+// for read-only commands that display resources (summary, open), so names and URLs show
+// the deployed values instead of the references. Values come from the referenced
+// resource's state, falling back to explicitly set config fields (including the ids that
+// statemgmt.Load copies from state).
+//
+// Unlike ResolveConfigAgainstState, it does not fall back to implied empty fields: a
+// reference to a resource that was never deployed stays a reference rather than turning
+// into "" (which an int field such as job_id would reject, see #6690). If the resolved
+// config does not type-check anyway, the config is left unchanged: display is best effort.
+func (b *DeploymentBundle) ResolveAllResourcesAgainstState(cfg *config.Root) {
+	if !b.StateDB.IsOpen() {
+		return
+	}
+	_ = cfg.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey())
+		resolved, err := dyn.MapByPattern(root, pattern, func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
+			return dynvar.Resolve(resource, func(path dyn.Path) (dyn.Value, error) {
+				if !path.HasPrefix(resourcesPrefix) {
+					return dyn.InvalidValue, dynvar.ErrSkipResolution
+				}
+				if v, ok := b.lookupStateField(path); ok {
+					return v, nil
+				}
+				v, err := dyn.GetByPath(root, path)
+				if err != nil || !v.IsValid() {
+					return dyn.InvalidValue, dynvar.ErrSkipResolution
+				}
+				return v, nil
+			})
+		})
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		// A resolved id is a string; normalize so it gets the field's type (e.g. int job_id).
+		normalized, diags := convert.Normalize(cfg, resolved)
+		if len(diags) > 0 {
+			return dyn.InvalidValue, errors.New("resolved resources do not match their types")
+		}
+		return normalized, nil
+	})
 }

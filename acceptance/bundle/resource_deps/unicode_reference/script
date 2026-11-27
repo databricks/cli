@@ -1,5 +1,9 @@
 title "A unicode resource key passes validate, plan and deploy"
 trace $CLI bundle validate
+
+title "Before deploy, a reference to a job that was not deployed yet stays a reference"
+trace $CLI bundle summary
+
 trace $CLI bundle plan
 trace $CLI bundle deploy
 replace_ids.py
