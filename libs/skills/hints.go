@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 )
@@ -49,6 +50,15 @@ func WriteGroupHint(ctx context.Context, w io.Writer, group string) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Coding agents: read the skills for this command group before you use it.")
 	for _, name := range names {
-		fmt.Fprintf(w, "  databricks skills read %s\n", name)
+		fmt.Fprintf(w, "  %s\n", hintReadCommand(name))
 	}
+}
+
+// hintReadCommand returns the command that reads the skill named name. A name
+// that starts with "-" gets "--" first, so Cobra does not read it as a flag.
+func hintReadCommand(name string) string {
+	if strings.HasPrefix(name, "-") {
+		return "databricks skills read -- " + name
+	}
+	return "databricks skills read " + name
 }

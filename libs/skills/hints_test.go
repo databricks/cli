@@ -36,3 +36,8 @@ func TestWriteGroupHint(t *testing.T) {
 		})
 	}
 }
+
+func TestHintReadCommand(t *testing.T) {
+	assert.Equal(t, "databricks skills read alpha", hintReadCommand("alpha"))
+	assert.Equal(t, "databricks skills read -- -alpha", hintReadCommand("-alpha"))
+}
