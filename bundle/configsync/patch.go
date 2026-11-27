@@ -443,7 +443,7 @@ const blankLineMarker = "# __YAMLPATCH_BLANK_LINE__"
 // (?:#.*)? — optional comment
 var blockScalarRe = regexp.MustCompile(`[-:]\s+[|>][-+0-9]*\s*(?:#.*)?$`)
 
-// preserveBlankLines replaces blank lines with marker comments that survive yaml.v3 round-trips
+// preserveBlankLines replaces blank lines with marker comments that survive YAML round-trips
 func preserveBlankLines(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	result := make([]string, 0, len(lines))
@@ -491,7 +491,7 @@ func preserveBlankLines(content []byte) []byte {
 }
 
 // flushBlanks appends blank lines to result. When markers are present,
-// it emits exactly that many blanks (dropping yaml.v3-added duplicates);
+// it emits exactly that many blanks (dropping encoder-added duplicates);
 // otherwise it keeps all blanks as-is.
 func flushBlanks(result []string, blanks, markers int) []string {
 	n := blanks

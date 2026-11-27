@@ -334,7 +334,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added blank next to marker is deduplicated",
+			name: "encoder-added blank next to marker is deduplicated",
 			input: nl(`
 key1: value1
 # __YAMLPATCH_BLANK_LINE__
@@ -348,7 +348,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added standalone blank is kept",
+			name: "encoder-added standalone blank is kept",
 			input: nl(`
 key1: value1
 
@@ -361,7 +361,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added blank near block scalar",
+			name: "encoder-added blank near block scalar",
 			input: nl(`
 key: |
   line1
