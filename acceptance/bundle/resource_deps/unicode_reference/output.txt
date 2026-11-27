@@ -10,6 +10,23 @@ Workspace:
 
 Validation OK!
 
+=== Before deploy, a reference to a job that was not deployed yet stays a reference
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Jobs:
+    foo:
+      Name: ${resources.jobs.变量.id}
+      URL:  (not deployed)
+    变量:
+      Name: hello
+      URL:  (not deployed)
+
 >>> [CLI] bundle plan
 create jobs.foo
 create jobs.变量
@@ -32,7 +49,7 @@ Workspace:
 Resources:
   Jobs:
     foo:
-      Name: ${resources.jobs.变量.id}
+      Name: [变量_ID]
       URL:  [DATABRICKS_URL]/jobs/[FOO_ID]?w=[WORKSPACE_ID]
     变量:
       Name: hello
