@@ -1,0 +1,36 @@
+
+=== the user never answered: nothing installed, written or reported, the gate is not looked up, and the agent gets the install hint
+
+>>> CLAUDECODE=1 [CLI] jobs list --log-file LOG.no-consent --log-level debug
+Databricks skills are not installed. To work with Databricks reliably, first run: databricks aitools install
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_hint_event":{"hint_kind":"INSTALL_TEXT"}}
+
+>>> cursor_skills
+(no skills)
+
+>>> auto_install_state
+{"id": "treatment-machine"}
+
+=== the user agrees: the next command of the same version installs
+
+>>> [CLI] aitools auto-install enable
+Automatic installation of Databricks AI tools is enabled.
+
+>>> CLAUDECODE=1 [CLI] jobs list --log-file LOG.consent --log-level debug
+Installed Databricks AI tools for Claude Code, Cursor. Turn off: databricks aitools auto-install disable. Remove: databricks aitools uninstall
+
+>>> print_telemetry
+{"command":"jobs_list","exit_code":0,"aitools_install_event":{"agents":["CLAUDE_CODE","CURSOR"],"scope":"GLOBAL","error_category":"TYPE_UNSPECIFIED","agent_results":[{"agent":"CLAUDE_CODE","error_category":"CLI_NOT_ON_PATH"}],"trigger":"AUTO_FIRST_RUN"}}
+{"command":"jobs_list","exit_code":0,"aitools_auto_install_event":{"outcome":"INSTALLED","holdout_arm":"TREATMENT","interactive":false}}
+
+>>> cursor_skills
+databricks-test
+
+>>> auto_install_state
+{
+  "last_version": "1.30.0",
+  "consented": true,
+  "id": "treatment-machine"
+}

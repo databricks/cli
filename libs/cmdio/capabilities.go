@@ -57,16 +57,6 @@ func (c Capabilities) SupportsPrompt() bool {
 	return c.SupportsInteractive() && c.stdinIsTTY && !c.stdinIsMSYSPipe
 }
 
-// SupportsLinePrompt returns true if the terminal supports a plain-text line
-// prompt (see [Ask]): it writes the question to stderr and reads the answer
-// from stdin. stdout must be a terminal too: when it is piped to a pager, the
-// pager reads the same terminal, so its keystrokes could answer the prompt.
-// Unlike SupportsPrompt it does not depend on TERM=dumb or an MSYS2 pty pipe
-// (see conpty.go), which only matter for the TUI prompts.
-func (c Capabilities) SupportsLinePrompt() bool {
-	return c.stdinIsTTY && c.stdoutIsTTY && c.stderrIsTTY
-}
-
 // SupportsColor returns true if the given writer supports colored output.
 // This checks both TTY status and environment variables (NO_COLOR, TERM=dumb).
 func (c Capabilities) SupportsColor(w io.Writer) bool {
