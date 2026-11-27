@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -237,68 +238,145 @@ func TestEnsureSSHServerIsRunningReplacesServerWithTornClientKeys(t *testing.T) 
 	assertLocalKeys(t, authorizedKeyPath, privateKey, publicKey)
 }
 
-func TestEnsureSSHServerIsRunningChecksTheServerAuthorizedTheScopeKeys(t *testing.T) {
-	privateA, publicA, err := keys.GenerateSSHKeyPair()
-	require.NoError(t, err)
-	privateB, publicB, err := keys.GenerateSSHKeyPair()
-	require.NoError(t, err)
-	_, hostKeyA, err := keys.GenerateSSHKeyPair()
-	require.NoError(t, err)
-	hostFingerprintA, err := keys.PublicKeyFingerprint(hostKeyA)
-	require.NoError(t, err)
-	clientFingerprintA, err := keys.PublicKeyFingerprint(publicA)
-	require.NoError(t, err)
+const (
+	testVersion = "test-version"
+	testSession = "session1"
+	// The port and cluster the test server runs SSH servers on.
+	testServerPort    = 7772
+	testServerCluster = "1234-567890-serverless"
+)
 
-	// startServerA sets up server A, healthy and named by metadata.json, which authorized
-	// client key A, with the scope holding the given client key pair.
-	startServerA := func(t *testing.T, privateKey, publicKey []byte) (*databricks.WorkspaceClient, ClientOptions, string) {
-		client, _ := newKeysScopeClient(t, map[string]string{
-			"server-public-key":  string(hostKeyA),
-			"client-private-key": string(privateKey),
-			"client-public-key":  string(publicKey),
-		})
-		ctx := cmdio.MockDiscard(t.Context())
-		wsHome, err := sshWorkspace.GetWorkspaceHomeDir(ctx, client)
-		require.NoError(t, err)
-		require.NoError(t, sshWorkspace.SaveWorkspaceMetadata(ctx, client, wsHome, "test-version", "session1", &sshWorkspace.WorkspaceMetadata{
-			Port:                 7772,
-			ClusterID:            "1234-567890-serverless",
-			HostKeyFingerprint:   hostFingerprintA,
-			ClientKeyFingerprint: clientFingerprintA,
-		}))
-		opts := testKeyOpts
-		opts.ConnectionName = "session1"
-		opts.ServerPublicKeyName = "server-public-key"
-		opts.SSHKeysDir = t.TempDir()
-		return client, opts, filepath.Join(opts.SSHKeysDir, "session1")
+// testServer is the key material of one SSH server of testSession: its host key, and the
+// client key pair it authorized.
+type testServer struct {
+	hostKey           []byte
+	hostFingerprint   string
+	clientPrivate     []byte
+	clientPublic      []byte
+	clientFingerprint string
+}
+
+func newTestServer(t *testing.T) testServer {
+	_, hostKey, err := keys.GenerateSSHKeyPair()
+	require.NoError(t, err)
+	hostFingerprint, err := keys.PublicKeyFingerprint(hostKey)
+	require.NoError(t, err)
+	clientPrivate, clientPublic, err := keys.GenerateSSHKeyPair()
+	require.NoError(t, err)
+	clientFingerprint, err := keys.PublicKeyFingerprint(clientPublic)
+	require.NoError(t, err)
+	return testServer{hostKey, hostFingerprint, clientPrivate, clientPublic, clientFingerprint}
+}
+
+// newSessionClient returns a client for a fake workspace with an empty testKeysScope, a
+// function listing the secret requests made after setup, options for testSession, and the
+// session's key file.
+func newSessionClient(t *testing.T) (*databricks.WorkspaceClient, func() []string, ClientOptions, string) {
+	client, requests := newKeysScopeClient(t, nil)
+	opts := testKeyOpts
+	opts.ConnectionName = testSession
+	opts.ServerPublicKeyName = "server-public-key"
+	opts.SSHKeysDir = t.TempDir()
+	opts.KnownHostsDir = t.TempDir()
+	return client, requests, opts, filepath.Join(opts.SSHKeysDir, testSession)
+}
+
+// startTestServer makes server the running SSH server of testSession on testServerPort: it
+// publishes the server's host key and names the server in metadata.json, as the server does
+// when it starts. The scope's client key pair is set to scopePrivate and scopePublic, which
+// is the pair the server authorized unless a connect started another server at the same time.
+func startTestServer(t *testing.T, client *databricks.WorkspaceClient, server testServer, scopePrivate, scopePublic []byte) {
+	ctx := t.Context()
+	for key, value := range map[string][]byte{
+		"server-public-key":  server.hostKey,
+		"client-private-key": scopePrivate,
+		"client-public-key":  scopePublic,
+	} {
+		require.NoError(t, client.Secrets.PutSecret(ctx, workspace.PutSecret{Scope: testKeysScope, Key: key, StringValue: string(value)}))
 	}
+	wsHome, err := sshWorkspace.GetWorkspaceHomeDir(ctx, client)
+	require.NoError(t, err)
+	require.NoError(t, sshWorkspace.SaveWorkspaceMetadata(ctx, client, wsHome, testVersion, testSession, &sshWorkspace.WorkspaceMetadata{
+		Port:                 testServerPort,
+		ClusterID:            testServerCluster,
+		HostKeyFingerprint:   server.hostFingerprint,
+		ClientKeyFingerprint: server.clientFingerprint,
+	}))
+}
+
+// connectSession selects the running server of testSession the way a connect that spawns ssh
+// or launches an IDE does. It returns the ProxyCommand metadata it writes, and the key file
+// and known_hosts file it points ssh at.
+func connectSession(t *testing.T, client *databricks.WorkspaceClient, opts ClientOptions, sessionKeyPath string) (string, string, string) {
+	ctx := cmdio.MockDiscard(t.Context())
+	meta, keyPath, err := ensureSSHServerIsRunning(ctx, client, testVersion, testKeysScope, sessionKeyPath, opts)
+	require.NoError(t, err)
+	knownHostsPath, err := pinServerHostKey(ctx, testSession, meta.HostKeyFingerprint, meta.HostKey, opts)
+	require.NoError(t, err)
+	return FormatMetadata(meta.UserName, meta.Port, meta.ClusterID, meta.HostKeyFingerprint, meta.ClientKeyFingerprint), keyPath, knownHostsPath
+}
+
+// proxyCommandKeys does what Run, as the ProxyCommand with --metadata, does with the keys
+// before the tunnel carries a byte. It returns the key file and the known_hosts file it set up
+// for ssh, and whether it reused the server --metadata names rather than finding or starting
+// one.
+func proxyCommandKeys(t *testing.T, client *databricks.WorkspaceClient, opts ClientOptions, sessionKeyPath, metadata string) (string, string, bool) {
+	ctx := cmdio.MockDiscard(t.Context())
+	opts.ProxyMode = true
+	_, port, clusterID, hostFingerprint, clientFingerprint, err := parseServerMetadata(metadata, "")
+	require.NoError(t, err)
+	keyPath, hostKey, err := namedServerKeys(ctx, client, testVersion, testKeysScope, sessionKeyPath, port, clusterID, hostFingerprint, clientFingerprint, opts)
+	reused := true
+	if errors.Is(err, errNamedServerReplaced) || errors.Is(err, errClientKeysNotAuthorized) {
+		reused = false
+		var meta serverMetadata
+		meta, keyPath, err = ensureSSHServerIsRunning(ctx, client, testVersion, testKeysScope, keyPath, opts)
+		hostKey = meta.HostKey
+	}
+	require.NoError(t, err)
+	knownHostsPath, err := pinServerHostKey(ctx, testSession, hostFingerprint, hostKey, opts)
+	require.NoError(t, err)
+	return keyPath, knownHostsPath, reused
+}
+
+func assertPinned(t *testing.T, knownHostsPath string, hostKey []byte) {
+	pinned, err := os.ReadFile(knownHostsPath)
+	require.NoError(t, err)
+	assert.Equal(t, testSession+" "+string(hostKey), string(pinned))
+}
+
+func TestEnsureSSHServerIsRunningChecksTheServerAuthorizedTheScopeKeys(t *testing.T) {
+	serverA := newTestServer(t)
+	serverB := newTestServer(t)
 
 	t.Run("scope holds the pair the server authorized", func(t *testing.T) {
-		client, opts, keyPath := startServerA(t, privateA, publicA)
-		meta, authorizedKeyPath, err := ensureSSHServerIsRunning(cmdio.MockDiscard(t.Context()), client, "test-version", testKeysScope, keyPath, opts)
+		client, _, opts, keyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
+		meta, authorizedKeyPath, err := ensureSSHServerIsRunning(cmdio.MockDiscard(t.Context()), client, testVersion, testKeysScope, keyPath, opts)
 		require.NoError(t, err)
 
 		// Server A is reused with the pair it authorized, saved in A's own file.
-		assert.Equal(t, hostKeyA, meta.HostKey)
-		wantKeyPath, err := keys.GetLocalServerSSHKeyPath(t.Context(), "session1", clientFingerprintA, opts.SSHKeysDir)
+		assert.Equal(t, serverA.hostKey, meta.HostKey)
+		wantKeyPath, err := keys.GetLocalServerSSHKeyPath(t.Context(), testSession, serverA.clientFingerprint, opts.SSHKeysDir)
 		require.NoError(t, err)
 		assert.Equal(t, wantKeyPath, authorizedKeyPath)
-		assertLocalKeys(t, authorizedKeyPath, privateA, publicA)
+		assertLocalKeys(t, authorizedKeyPath, serverA.clientPrivate, serverA.clientPublic)
 	})
 
 	t.Run("scope holds another complete pair", func(t *testing.T) {
 		// Server B, started at the same time, wrote both halves of pair B after server A read
 		// public key A, and A's host key and metadata.json landed after B's.
-		client, opts, keyPath := startServerA(t, privateB, publicB)
-		meta, authorizedKeyPath, err := ensureSSHServerIsRunning(cmdio.MockDiscard(t.Context()), client, "test-version", testKeysScope, keyPath, opts)
+		client, _, opts, keyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverB.clientPrivate, serverB.clientPublic)
+		meta, authorizedKeyPath, err := ensureSSHServerIsRunning(cmdio.MockDiscard(t.Context()), client, testVersion, testKeysScope, keyPath, opts)
 		require.NoError(t, err)
 
 		// Server A would reject pair B, so it is replaced rather than reused with pair B. The
 		// test server stands in for the new server and publishes its own host key.
-		assert.NotEqual(t, hostKeyA, meta.HostKey)
+		assert.NotEqual(t, serverA.hostKey, meta.HostKey)
 		privateKey, publicKey := scopeClientKeys(t, client)
-		assert.NotEqual(t, publicA, publicKey)
-		assert.NotEqual(t, publicB, publicKey)
+		assert.NotEqual(t, serverA.clientPublic, publicKey)
+		assert.NotEqual(t, serverB.clientPublic, publicKey)
 		assertLocalKeys(t, authorizedKeyPath, privateKey, publicKey)
 		fingerprint, err := keys.PublicKeyFingerprint(publicKey)
 		require.NoError(t, err)
@@ -342,219 +420,188 @@ func TestSaveAuthorizedClientKeys(t *testing.T) {
 }
 
 func TestProxyCommandPinsOnlyTheNamedServerHostKey(t *testing.T) {
-	_, hostKeyA, err := keys.GenerateSSHKeyPair()
-	require.NoError(t, err)
-	_, hostKeyB, err := keys.GenerateSSHKeyPair()
-	require.NoError(t, err)
-	fingerprintA, err := keys.PublicKeyFingerprint(hostKeyA)
-	require.NoError(t, err)
-	fingerprintB, err := keys.PublicKeyFingerprint(hostKeyB)
-	require.NoError(t, err)
-
-	// connect returns the ProxyCommand metadata for server A, and the known_hosts file it
-	// pinned A's key in and points ssh at.
-	outerConnect := func(t *testing.T, client *databricks.WorkspaceClient, opts ClientOptions) (string, string) {
-		hostKey, err := serverHostKeyNamedBy(t.Context(), client, testKeysScope, &sshWorkspace.WorkspaceMetadata{Port: 7772, HostKeyFingerprint: fingerprintA}, opts)
-		require.NoError(t, err)
-		knownHostsPath, err := pinServerHostKey(t.Context(), "session1", fingerprintA, hostKey, opts)
-		require.NoError(t, err)
-		return FormatMetadata("root", 7772, "cluster-1", fingerprintA, "SHA256:client"), knownHostsPath
-	}
-	// proxyCommand does what the ProxyCommand that connect spawns does before the tunnel
-	// carries a byte: pin the host key of the server its --metadata names. It returns the
-	// file it pinned the key in.
-	proxyCommand := func(t *testing.T, client *databricks.WorkspaceClient, opts ClientOptions, metadata string) string {
-		_, port, _, fingerprint, _, err := parseServerMetadata(metadata, "")
-		require.NoError(t, err)
-		hostKey, err := namedServerHostKey(t.Context(), client, testKeysScope, port, fingerprint, opts)
-		require.NoError(t, err)
-		knownHostsPath, err := pinServerHostKey(t.Context(), "session1", fingerprint, hostKey, opts)
-		require.NoError(t, err)
-		return knownHostsPath
-	}
-	assertPinned := func(t *testing.T, knownHostsPath string, hostKey []byte) {
-		pinned, err := os.ReadFile(knownHostsPath)
-		require.NoError(t, err)
-		assert.Equal(t, "session1 "+string(hostKey), string(pinned))
-	}
-	newOpts := func(t *testing.T) ClientOptions {
-		return ClientOptions{ServerPublicKeyName: "server-public-key", KnownHostsDir: t.TempDir()}
-	}
+	serverA := newTestServer(t)
+	serverB := newTestServer(t)
 
 	t.Run("scope holds the named server's key", func(t *testing.T) {
-		opts := newOpts(t)
-		client, _ := newKeysScopeClient(t, map[string]string{"server-public-key": string(hostKeyA)})
-		metadata, knownHostsPath := outerConnect(t, client, opts)
-		require.NoError(t, os.WriteFile(knownHostsPath, []byte("session1 "+string(hostKeyB)), 0o600))
+		client, _, opts, sessionKeyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
+		metadata, _, knownHostsPath := connectSession(t, client, opts, sessionKeyPath)
+		require.NoError(t, os.WriteFile(knownHostsPath, []byte(testSession+" "+string(serverB.hostKey)), 0o600))
 
-		assert.Equal(t, knownHostsPath, proxyCommand(t, client, opts, metadata))
-		assertPinned(t, knownHostsPath, hostKeyA)
+		_, got, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, metadata)
+		assert.True(t, reused)
+		assert.Equal(t, knownHostsPath, got)
+		assertPinned(t, knownHostsPath, serverA.hostKey)
 	})
 
-	t.Run("another server replaced the key after connect", func(t *testing.T) {
-		opts := newOpts(t)
-		client, _ := newKeysScopeClient(t, map[string]string{"server-public-key": string(hostKeyA)})
-		metadata, knownHostsPath := outerConnect(t, client, opts)
+	t.Run("another server is starting", func(t *testing.T) {
+		client, _, opts, sessionKeyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
+		metadata, _, knownHostsPath := connectSession(t, client, opts, sessionKeyPath)
 		// Server B, started for the session at the same time, publishes its key after
-		// connect verified server A and before the ProxyCommand it spawned runs.
-		require.NoError(t, client.Secrets.PutSecret(t.Context(), workspace.PutSecret{Scope: testKeysScope, Key: "server-public-key", StringValue: string(hostKeyB)}))
+		// connect verified server A and before the ProxyCommand it spawned runs. B has not
+		// written metadata.json yet, which still names server A.
+		require.NoError(t, client.Secrets.PutSecret(t.Context(), workspace.PutSecret{Scope: testKeysScope, Key: "server-public-key", StringValue: string(serverB.hostKey)}))
 
-		assert.Equal(t, knownHostsPath, proxyCommand(t, client, opts, metadata))
+		_, got, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, metadata)
+		assert.True(t, reused)
+		assert.Equal(t, knownHostsPath, got)
 		// B's key is not pinned for server A, so ssh still accepts A.
-		assertPinned(t, knownHostsPath, hostKeyA)
+		assertPinned(t, knownHostsPath, serverA.hostKey)
 	})
 
 	t.Run("another connect pinned the other server's key", func(t *testing.T) {
-		opts := newOpts(t)
-		client, _ := newKeysScopeClient(t, map[string]string{"server-public-key": string(hostKeyA)})
-		metadata, knownHostsPath := outerConnect(t, client, opts)
+		client, _, opts, sessionKeyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
+		metadata, _, knownHostsPath := connectSession(t, client, opts, sessionKeyPath)
 		// Before A's ProxyCommand runs, server B publishes its key, and connects to B pin it:
 		// one that spawns ssh in B's own file, and one run by the ssh configuration
 		// `databricks ssh setup` writes in the session's file.
-		require.NoError(t, client.Secrets.PutSecret(t.Context(), workspace.PutSecret{Scope: testKeysScope, Key: "server-public-key", StringValue: string(hostKeyB)}))
-		knownHostsPathB, err := pinServerHostKey(t.Context(), "session1", fingerprintB, hostKeyB, opts)
+		require.NoError(t, client.Secrets.PutSecret(t.Context(), workspace.PutSecret{Scope: testKeysScope, Key: "server-public-key", StringValue: string(serverB.hostKey)}))
+		knownHostsPathB, err := pinServerHostKey(t.Context(), testSession, serverB.hostFingerprint, serverB.hostKey, opts)
 		require.NoError(t, err)
-		sessionKnownHostsPath, err := pinServerHostKey(t.Context(), "session1", "", hostKeyB, opts)
+		sessionKnownHostsPath, err := pinServerHostKey(t.Context(), testSession, "", serverB.hostKey, opts)
 		require.NoError(t, err)
 		assert.NotEqual(t, knownHostsPath, knownHostsPathB)
 		assert.NotEqual(t, knownHostsPath, sessionKnownHostsPath)
 
-		assert.Equal(t, knownHostsPath, proxyCommand(t, client, opts, metadata))
+		_, got, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, metadata)
+		assert.True(t, reused)
+		assert.Equal(t, knownHostsPath, got)
 		// The file ssh reads for server A still holds only A's key.
-		assertPinned(t, knownHostsPath, hostKeyA)
-		assertPinned(t, knownHostsPathB, hostKeyB)
-		assertPinned(t, sessionKnownHostsPath, hostKeyB)
+		assertPinned(t, knownHostsPath, serverA.hostKey)
+		assertPinned(t, knownHostsPathB, serverB.hostKey)
+		assertPinned(t, sessionKnownHostsPath, serverB.hostKey)
 	})
 
 	t.Run("metadata from an earlier CLI version", func(t *testing.T) {
-		opts := newOpts(t)
-		client, requests := newKeysScopeClient(t, map[string]string{"server-public-key": string(hostKeyB)})
+		client, _, opts, sessionKeyPath := newSessionClient(t)
+		startTestServer(t, client, serverB, serverB.clientPrivate, serverB.clientPublic)
 		// Its ssh configuration points ssh at the session's file.
-		knownHostsPath := filepath.Join(opts.KnownHostsDir, "session1")
-		require.NoError(t, os.WriteFile(knownHostsPath, []byte("session1 "+string(hostKeyA)), 0o600))
+		knownHostsPath := filepath.Join(opts.KnownHostsDir, testSession)
+		require.NoError(t, os.WriteFile(knownHostsPath, []byte(testSession+" "+string(serverA.hostKey)), 0o600))
 
-		// It names no host key, so the scope's key, which may be another server's, is not read.
-		assert.Equal(t, knownHostsPath, proxyCommand(t, client, opts, "root,7772,cluster-1"))
-		assert.Empty(t, requests())
-		assertPinned(t, knownHostsPath, hostKeyA)
+		// It names no host key, so the scope's key is pinned unchecked, as that version did.
+		_, got, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, "root,7772,"+testServerCluster)
+		assert.True(t, reused)
+		assert.Equal(t, knownHostsPath, got)
+		assertPinned(t, knownHostsPath, serverB.hostKey)
 	})
 }
 
 func TestProxyCommandUsesOnlyTheNamedServerClientKey(t *testing.T) {
-	privateA, publicA, err := keys.GenerateSSHKeyPair()
-	require.NoError(t, err)
-	_, hostKeyA, err := keys.GenerateSSHKeyPair()
-	require.NoError(t, err)
-	hostFingerprintA, err := keys.PublicKeyFingerprint(hostKeyA)
-	require.NoError(t, err)
-	clientFingerprintA, err := keys.PublicKeyFingerprint(publicA)
-	require.NoError(t, err)
-
-	// startServerA sets up server A, healthy and named by metadata.json, which authorized
-	// client key A, the pair the scope holds.
-	startServerA := func(t *testing.T) (*databricks.WorkspaceClient, func() []string, ClientOptions, string) {
-		client, requests := newKeysScopeClient(t, map[string]string{
-			"server-public-key":  string(hostKeyA),
-			"client-private-key": string(privateA),
-			"client-public-key":  string(publicA),
-		})
-		ctx := cmdio.MockDiscard(t.Context())
-		wsHome, err := sshWorkspace.GetWorkspaceHomeDir(ctx, client)
-		require.NoError(t, err)
-		require.NoError(t, sshWorkspace.SaveWorkspaceMetadata(ctx, client, wsHome, "test-version", "session1", &sshWorkspace.WorkspaceMetadata{
-			Port:                 7772,
-			ClusterID:            "1234-567890-serverless",
-			HostKeyFingerprint:   hostFingerprintA,
-			ClientKeyFingerprint: clientFingerprintA,
-		}))
-		opts := testKeyOpts
-		opts.ConnectionName = "session1"
-		opts.ServerPublicKeyName = "server-public-key"
-		opts.SSHKeysDir = t.TempDir()
-		return client, requests, opts, filepath.Join(opts.SSHKeysDir, "session1")
-	}
-	// outerConnect selects server A the way a connect that spawns ssh or launches an IDE does.
-	// It returns the ProxyCommand metadata it writes and the key file it points ssh at.
-	outerConnect := func(t *testing.T, client *databricks.WorkspaceClient, opts ClientOptions, sessionKeyPath string) (string, string) {
-		meta, keyPath, err := ensureSSHServerIsRunning(cmdio.MockDiscard(t.Context()), client, "test-version", testKeysScope, sessionKeyPath, opts)
-		require.NoError(t, err)
-		require.Equal(t, clientFingerprintA, meta.ClientKeyFingerprint)
-		assertLocalKeys(t, keyPath, privateA, publicA)
-		return FormatMetadata(meta.UserName, meta.Port, meta.ClusterID, meta.HostKeyFingerprint, meta.ClientKeyFingerprint), keyPath
-	}
-	// startServerB does what a connect that starts server B for the session at the same time
-	// does: it overwrites the scope's pair and the session's key file with pair B, and saves
-	// pair B in the file of B's own.
-	startServerB := func(t *testing.T, client *databricks.WorkspaceClient, opts ClientOptions, sessionKeyPath string) string {
-		require.NoError(t, storeClientKeysForNewServer(t.Context(), client, testKeysScope, sessionKeyPath, opts))
-		_, publicB := scopeClientKeys(t, client)
-		fingerprintB, err := keys.PublicKeyFingerprint(publicB)
-		require.NoError(t, err)
-		keyPathB, err := authorizedClientKeyPath(t.Context(), sessionKeyPath, serverMetadata{ClientKeyFingerprint: fingerprintB}, opts)
-		require.NoError(t, err)
-		require.NoError(t, saveAuthorizedClientKeys(t.Context(), client, testKeysScope, keyPathB, serverMetadata{ClientKeyFingerprint: fingerprintB}, opts))
-		return keyPathB
-	}
-	// proxyCommand does what the ProxyCommand that ssh or the IDE runs for server A does
-	// with the client key before the tunnel carries a byte.
-	proxyCommand := func(t *testing.T, client *databricks.WorkspaceClient, opts ClientOptions, sessionKeyPath, metadata string) (string, error) {
-		_, port, _, _, clientFingerprint, err := parseServerMetadata(metadata, "")
-		require.NoError(t, err)
-		opts.ProxyMode = true
-		return namedServerClientKeys(t.Context(), client, testKeysScope, sessionKeyPath, port, clientFingerprint, opts)
-	}
+	serverA := newTestServer(t)
 
 	t.Run("another server overwrote the pair after connect", func(t *testing.T) {
-		client, requests, opts, sessionKeyPath := startServerA(t)
-		metadata, keyPath := outerConnect(t, client, opts, sessionKeyPath)
-		keyPathB := startServerB(t, client, opts, sessionKeyPath)
-		assert.NotEqual(t, keyPath, keyPathB)
+		client, requests, opts, sessionKeyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
+		metadata, keyPath, _ := connectSession(t, client, opts, sessionKeyPath)
+		// A connect that starts server B for the session at the same time overwrites the
+		// scope's pair and the session's key file with pair B. B has not written its host key
+		// or metadata.json yet.
+		require.NoError(t, storeClientKeysForNewServer(t.Context(), client, testKeysScope, sessionKeyPath, opts))
 		before := len(requests())
 
 		// The ProxyCommand of a spawned ssh, or of a later IDE reconnect, uses A's file, which
-		// still holds the pair server A authorized; the scope is not read.
-		got, err := proxyCommand(t, client, opts, sessionKeyPath, metadata)
-		require.NoError(t, err)
+		// still holds the pair server A authorized; the scope's pair is not read.
+		got, _, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, metadata)
+		assert.True(t, reused)
 		assert.Equal(t, keyPath, got)
-		assertLocalKeys(t, keyPath, privateA, publicA)
-		assert.Len(t, requests(), before)
+		assertLocalKeys(t, keyPath, serverA.clientPrivate, serverA.clientPublic)
+		// Only the host key is read.
+		assert.Equal(t, []string{"GET /api/2.0/secrets/get"}, requests()[before:])
 	})
 
 	t.Run("key file missing, scope holds the pair", func(t *testing.T) {
-		client, _, opts, sessionKeyPath := startServerA(t)
-		metadata, keyPath := outerConnect(t, client, opts, sessionKeyPath)
+		client, _, opts, sessionKeyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
+		metadata, keyPath, _ := connectSession(t, client, opts, sessionKeyPath)
 		require.NoError(t, os.Remove(keyPath))
 
-		got, err := proxyCommand(t, client, opts, sessionKeyPath, metadata)
-		require.NoError(t, err)
+		got, _, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, metadata)
+		assert.True(t, reused)
 		assert.Equal(t, keyPath, got)
-		assertLocalKeys(t, keyPath, privateA, publicA)
+		assertLocalKeys(t, keyPath, serverA.clientPrivate, serverA.clientPublic)
 	})
 
 	t.Run("key file missing, another server overwrote the pair", func(t *testing.T) {
-		client, _, opts, sessionKeyPath := startServerA(t)
-		metadata, keyPath := outerConnect(t, client, opts, sessionKeyPath)
-		startServerB(t, client, opts, sessionKeyPath)
+		client, _, opts, sessionKeyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
+		metadata, keyPath, _ := connectSession(t, client, opts, sessionKeyPath)
+		require.NoError(t, storeClientKeysForNewServer(t.Context(), client, testKeysScope, sessionKeyPath, opts))
+		_, publicB := scopeClientKeys(t, client)
 		require.NoError(t, os.Remove(keyPath))
 		require.NoError(t, os.Remove(keyPath+".pub"))
 
-		// Pair B is not saved for server A, which would reject it. The caller finds or
-		// replaces the server instead.
-		got, err := proxyCommand(t, client, opts, sessionKeyPath, metadata)
-		assert.ErrorIs(t, err, errClientKeysNotAuthorized)
+		// Pair B is not used for server A, which would reject it. The server is replaced
+		// instead, and the pair it authorized is saved in the file ssh reads.
+		got, _, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, metadata)
+		assert.False(t, reused)
 		assert.Equal(t, keyPath, got)
-		assert.NoFileExists(t, keyPath)
+		privateKey, publicKey := scopeClientKeys(t, client)
+		assert.NotEqual(t, serverA.clientPublic, publicKey)
+		assert.NotEqual(t, publicB, publicKey)
+		assertLocalKeys(t, keyPath, privateKey, publicKey)
 	})
 
 	t.Run("metadata from an earlier CLI version", func(t *testing.T) {
-		client, _, opts, sessionKeyPath := startServerA(t)
+		client, _, opts, sessionKeyPath := newSessionClient(t)
+		startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
 
 		// It names no client key, and its ssh configuration points ssh at the session's file.
-		got, err := proxyCommand(t, client, opts, sessionKeyPath, "root,7772,cluster-1,"+hostFingerprintA)
-		require.NoError(t, err)
+		got, _, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, "root,7772,"+testServerCluster+","+serverA.hostFingerprint)
+		assert.True(t, reused)
 		assert.Equal(t, sessionKeyPath, got)
-		assertLocalKeys(t, sessionKeyPath, privateA, publicA)
+		assertLocalKeys(t, sessionKeyPath, serverA.clientPrivate, serverA.clientPublic)
 	})
+}
+
+func TestProxyCommandAfterTheNamedServerWasReplaced(t *testing.T) {
+	serverA := newTestServer(t)
+	serverB := newTestServer(t)
+
+	for _, tc := range []struct {
+		name string
+		// metadata returns the --metadata value of the ProxyCommand, given the one the
+		// current CLI version writes for server A.
+		metadata func(current string) string
+		// legacy is set for a ProxyCommand written by an earlier CLI version, which points
+		// ssh at the session's files.
+		legacy bool
+	}{
+		{name: "current metadata", metadata: func(current string) string { return current }},
+		{name: "metadata from an earlier CLI version", metadata: func(string) string { return "root,7772," + testServerCluster }, legacy: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _, opts, sessionKeyPath := newSessionClient(t)
+			startTestServer(t, client, serverA, serverA.clientPrivate, serverA.clientPublic)
+			current, keyPath, knownHostsPath := connectSession(t, client, opts, sessionKeyPath)
+			metadata := tc.metadata(current)
+			if tc.legacy {
+				keyPath = sessionKeyPath
+				knownHostsPath = filepath.Join(opts.KnownHostsDir, testSession)
+			}
+			// Another connect replaces server A with server B on the same port.
+			startTestServer(t, client, serverB, serverB.clientPrivate, serverB.clientPublic)
+
+			// The files ssh reads for the ProxyCommand get server B's keys, so the
+			// connection succeeds.
+			gotKeyPath, gotKnownHostsPath, _ := proxyCommandKeys(t, client, opts, sessionKeyPath, metadata)
+			assert.Equal(t, keyPath, gotKeyPath)
+			assert.Equal(t, knownHostsPath, gotKnownHostsPath)
+			assertLocalKeys(t, keyPath, serverB.clientPrivate, serverB.clientPublic)
+			assertPinned(t, knownHostsPath, serverB.hostKey)
+
+			// A later reconnect with the same ProxyCommand reuses server B with those files.
+			gotKeyPath, gotKnownHostsPath, reused := proxyCommandKeys(t, client, opts, sessionKeyPath, metadata)
+			assert.True(t, reused)
+			assert.Equal(t, keyPath, gotKeyPath)
+			assert.Equal(t, knownHostsPath, gotKnownHostsPath)
+			assertLocalKeys(t, keyPath, serverB.clientPrivate, serverB.clientPublic)
+			assertPinned(t, knownHostsPath, serverB.hostKey)
+		})
+	}
 }
 
 func TestParseServerMetadata(t *testing.T) {

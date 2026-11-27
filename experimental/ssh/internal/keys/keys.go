@@ -46,8 +46,15 @@ func GetLocalServerSSHKeyPath(ctx context.Context, sessionID, clientKeyFingerpri
 	if err != nil {
 		return "", err
 	}
-	digest := sha256.Sum256([]byte(clientKeyFingerprint))
-	return sessionPath + "." + hex.EncodeToString(digest[:8]), nil
+	return sessionPath + FingerprintFileSuffix(clientKeyFingerprint), nil
+}
+
+// FingerprintFileSuffix returns the suffix that names the file of one server of a session
+// after a key fingerprint: a dot and a digest of the fingerprint. Both the client key files
+// (see GetLocalServerSSHKeyPath) and the known_hosts files of a server use it.
+func FingerprintFileSuffix(fingerprint string) string {
+	digest := sha256.Sum256([]byte(fingerprint))
+	return "." + hex.EncodeToString(digest[:8])
 }
 
 // GenerateSSHKeyPair generates a new key pair, returned as a PEM private key and an
@@ -86,10 +93,15 @@ func SaveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) erro
 	return nil
 }
 
+// ErrInvalidPrivateKey is returned by LoadSSHKeyPair when the file holds no private key it can
+// parse, for example one cut short while it was written.
+var ErrInvalidPrivateKey = errors.New("invalid SSH private key")
+
 // LoadSSHKeyPair reads the private key SaveSSHKeyPair wrote at keyPath and returns it with
 // its public key. The public key is derived from the private one rather than read from the
 // .pub file, so it carries no authorized_keys options and always matches the private key.
-// The error wraps fs.ErrNotExist when there is no key at keyPath.
+// The error wraps fs.ErrNotExist when there is no key at keyPath, and ErrInvalidPrivateKey
+// when the file does not parse.
 func LoadSSHKeyPair(keyPath string) ([]byte, []byte, error) {
 	privateKeyBytes, err := os.ReadFile(keyPath)
 	if err != nil {
@@ -97,7 +109,7 @@ func LoadSSHKeyPair(keyPath string) ([]byte, []byte, error) {
 	}
 	signer, err := ssh.ParsePrivateKey(privateKeyBytes)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse private key %s: %w", keyPath, err)
+		return nil, nil, fmt.Errorf("%w: failed to parse private key %s: %w", ErrInvalidPrivateKey, keyPath, err)
 	}
 	return privateKeyBytes, ssh.MarshalAuthorizedKey(signer.PublicKey()), nil
 }

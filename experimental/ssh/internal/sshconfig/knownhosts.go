@@ -2,12 +2,11 @@ package sshconfig
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"golang.org/x/crypto/ssh"
@@ -51,8 +50,7 @@ func GetServerKnownHostsPath(ctx context.Context, sessionID, hostKeyFingerprint,
 	if err != nil {
 		return "", err
 	}
-	digest := sha256.Sum256([]byte(hostKeyFingerprint))
-	return sessionPath + "." + hex.EncodeToString(digest[:8]), nil
+	return sessionPath + keys.FingerprintFileSuffix(hostKeyFingerprint), nil
 }
 
 // PinHostKey makes publicKey the entry for hostName in the known_hosts file at path,
