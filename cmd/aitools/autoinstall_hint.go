@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/autoinstall"
+	"github.com/databricks/cli/libs/skills"
 	"github.com/spf13/cobra"
 )
 
@@ -16,9 +17,14 @@ import (
 // it in the holdout never installs. A first install gives tools to the agents
 // its plan names; an update gives skills to every agent with a config
 // directory when a skill changed, which is only known after the manifest is
-// fetched, so it counts as installing for each of them.
+// fetched, so it counts as installing for each of them. With
+// DATABRICKS_AGENT_FEATURES_DISABLED set, nothing is installed, so it reports
+// false, as autoInstall does.
 func AutoInstallsFor(cmd *cobra.Command, agentName string) bool {
 	ctx := cmd.Context()
+	if skills.AgentFeaturesDisabled(ctx) {
+		return false
+	}
 	in := autoInstallInputs(ctx, skipsAutoInstall(cmd))
 	if slices.Contains(stateFreeSkips, autoinstall.Decide(in)) {
 		return false

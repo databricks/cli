@@ -298,6 +298,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	// so a host value would add skill/ pairs to recorded user agents.
 	os.Unsetenv("DATABRICKS_SKILLS_INVOKED") //nolint:usetesting // t.Setenv cannot unset
 
+	// DATABRICKS_AGENT_FEATURES_DISABLED turns off the skills and aitools
+	// hints, so a host value would hide the output the goldens expect.
+	os.Unsetenv("DATABRICKS_AGENT_FEATURES_DISABLED") //nolint:usetesting // t.Setenv cannot unset
+
 	if !requirePrerequisites(t) {
 		// Don't run the suite against a stale toolchain; the failed subtest
 		// has already marked the parent test as failed.

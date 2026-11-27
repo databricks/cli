@@ -50,7 +50,7 @@ func TestAgentFeaturesDisabled(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := env.Set(t.Context(), "DATABRICKS_AGENT_FEATURES_DISABLED", c.value)
+			ctx := env.Set(t.Context(), AgentFeaturesDisabledEnv, c.value)
 			assert.Equal(t, c.want, AgentFeaturesDisabled(ctx))
 		})
 	}
@@ -72,7 +72,7 @@ func TestAgentFeaturesDisabledOverridesSkillsSwitches(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := env.Set(t.Context(), "DATABRICKS_AGENT_FEATURES_DISABLED", c.disabled)
+			ctx := env.Set(t.Context(), AgentFeaturesDisabledEnv, c.disabled)
 			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
 			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
 			assert.Equal(t, c.want, Enabled(ctx))

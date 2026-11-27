@@ -298,12 +298,9 @@ func TestMaybeVersionCheckTip(t *testing.T) {
 	}
 }
 
-// withAgentFeaturesDisabled sets DATABRICKS_AGENT_FEATURES_DISABLED on ctx when
-// value is not empty; empty leaves it unset.
+// withAgentFeaturesDisabled sets DATABRICKS_AGENT_FEATURES_DISABLED on ctx to
+// value. Empty is set to false, so the host environment cannot turn it on.
 func withAgentFeaturesDisabled(ctx context.Context, value string) context.Context {
-	if value == "" {
-		return ctx
-	}
 	return env.Set(ctx, skills.AgentFeaturesDisabledEnv, value)
 }
 

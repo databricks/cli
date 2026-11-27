@@ -16,6 +16,7 @@ func TestPrintAutoInstallSettingAgentFeaturesDisabled(t *testing.T) {
 	const warning = "DATABRICKS_AGENT_FEATURES_DISABLED still disables it in this environment; unset it to let it run."
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = env.Set(ctx, skills.AgentFeaturesDisabledEnv, "")
 	printAutoInstallSetting(ctx, true)
 	assert.NotContains(t, stderr.String(), skills.AgentFeaturesDisabledEnv)
 
