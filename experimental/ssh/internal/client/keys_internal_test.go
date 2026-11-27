@@ -130,6 +130,21 @@ func TestStoreClientKeysForNewServerInProxyModeGeneratesMissingLocalKey(t *testi
 	assertLocalKeys(t, keyPath, privateKey, publicKey)
 }
 
+func TestStoreClientKeysForNewServerInProxyModeReplacesUnparsableLocalKey(t *testing.T) {
+	client, _ := newKeysScopeClient(t, existingClientKeys)
+	keyPath := filepath.Join(t.TempDir(), "session1")
+	// A write of the key file that was cut short leaves ssh no key to load.
+	require.NoError(t, os.WriteFile(keyPath, []byte("-----BEGIN RSA PRIVATE KEY-----\nMIIJ"), 0o600))
+
+	opts := testKeyOpts
+	opts.ProxyMode = true
+	require.NoError(t, storeClientKeysForNewServer(t.Context(), client, testKeysScope, keyPath, opts))
+
+	privateKey, publicKey := scopeClientKeys(t, client)
+	assert.NotEqual(t, existingClientKeys["client-public-key"], string(publicKey))
+	assertLocalKeys(t, keyPath, privateKey, publicKey)
+}
+
 func TestSaveRunningServerClientKeysUsesScopeKeys(t *testing.T) {
 	privateKey, publicKey, err := keys.GenerateSSHKeyPair()
 	require.NoError(t, err)
