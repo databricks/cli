@@ -1,0 +1,35 @@
+bundle:
+  name: summary-resolution
+
+variables:
+  secret_value:
+    description: secret
+
+resources:
+  secrets:
+    s:
+      catalog_name: main
+      schema_name: default
+      name: test_secret
+      value: ${var.secret_value}
+
+  jobs:
+    a:
+      name: job-a
+    b:
+      name: job-b
+    ref_id:
+      name: ref ${resources.jobs.a.id}
+    # The secret is not shown: the reference stays as it is.
+    ref_secret:
+      name: secret ${resources.secrets.s.value}
+    # The deployed description is the literal ${resources.jobs.a.id}. The script adds a job
+    # that references it after deploy: that reference stays unresolved rather than being
+    # interpolated a second time.
+    literal:
+      name: literal
+      description: $${resources.jobs.a.id}
+
+  job_runs:
+    run:
+      job_id: ${resources.jobs.a.id}

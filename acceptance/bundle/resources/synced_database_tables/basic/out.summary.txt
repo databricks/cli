@@ -15,4 +15,4 @@ Resources:
   Synced database tables:
     my_synced_table:
       Name: my_catalog_[UNIQUE_NAME].my_database.my_synced_table
-      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME].my_database.my_synced_table
+      URL:  [DATABRICKS_URL]/explore/data/my_catalog_[UNIQUE_NAME]/my_database/my_synced_table

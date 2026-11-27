@@ -1,0 +1,100 @@
+
+>>> [CLI] bundle deploy --var secret_value=s3cr3t-value
+Created job_runs.run
+Created jobs.a
+Created jobs.b
+Created jobs.literal
+Created jobs.ref_id
+Created jobs.ref_secret
+Created secrets.s
+Files: 1 uploaded, 0 deleted
+Output from job_runs.run: id=[RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[A_ID]/runs/[RUN_ID]?o=[WORKSPACE_ID]
+Output from job_runs.run: id=[RUN_ID]: SUCCESS
+Resources: 7 created, 0 changed, 0 deleted, 0 unchanged
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/summary-resolution/default/files...
+
+=== After deploy, references show the deployed values
+
+>>> [CLI] bundle summary --var secret_value=s3cr3t-value
+Name: summary-resolution
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/summary-resolution/default
+Resources:
+  Job Runs:
+    run:
+      Name: 
+      URL:  [DATABRICKS_URL]/jobs/[A_ID]/runs/[RUN_ID]?w=[WORKSPACE_ID]
+  Jobs:
+    a:
+      Name: job-a
+      URL:  [DATABRICKS_URL]/jobs/[A_ID]?w=[WORKSPACE_ID]
+    b:
+      Name: job-b
+      URL:  [DATABRICKS_URL]/jobs/[B_ID]?w=[WORKSPACE_ID]
+    literal:
+      Name: literal
+      URL:  [DATABRICKS_URL]/jobs/[LITERAL_ID]?w=[WORKSPACE_ID]
+    ref_id:
+      Name: ref [A_ID]
+      URL:  [DATABRICKS_URL]/jobs/[REF_ID_ID]?w=[WORKSPACE_ID]
+    ref_secret:
+      Name: secret ${resources.secrets.s.value}
+      URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_ID]?w=[WORKSPACE_ID]
+  Secrets:
+    s:
+      Name: [S_ID]
+      URL:  [DATABRICKS_URL]/explore/data/main/default/test_secret?w=[WORKSPACE_ID]
+
+>>> [CLI] bundle summary --var secret_value=s3cr3t-value -o json
+[{"key":"a","name":"job-a"},{"key":"b","name":"job-b"},{"key":"literal","name":"literal"},{"key":"ref_id","name":"ref [A_ID]"},{"key":"ref_secret","name":"secret ${resources.secrets.s.value}"}]
+
+=== Add resources that are not deployed: a job referencing the literal, and two resources whose resolved values do not fit their types
+
+=== A run edited locally to point at another job keeps the URL of the job it was launched for
+
+>>> [CLI] bundle summary --var secret_value=s3cr3t-value
+Name: summary-resolution
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/summary-resolution/default
+Resources:
+  Job Runs:
+    run:
+      Name: 
+      URL:  [DATABRICKS_URL]/jobs/[A_ID]/runs/[RUN_ID]?w=[WORKSPACE_ID]
+  Jobs:
+    a:
+      Name: job-a
+      URL:  [DATABRICKS_URL]/jobs/[A_ID]?w=[WORKSPACE_ID]
+    b:
+      Name: job-b
+      URL:  [DATABRICKS_URL]/jobs/[B_ID]?w=[WORKSPACE_ID]
+    bad_type:
+      Name: bad-type
+      URL:  (not deployed)
+    literal:
+      Name: literal
+      URL:  [DATABRICKS_URL]/jobs/[LITERAL_ID]?w=[WORKSPACE_ID]
+    ref_id:
+      Name: ref [A_ID]
+      URL:  [DATABRICKS_URL]/jobs/[REF_ID_ID]?w=[WORKSPACE_ID]
+    ref_literal:
+      Name: copy ${resources.jobs.literal.description}
+      URL:  (not deployed)
+    ref_secret:
+      Name: secret ${resources.secrets.s.value}
+      URL:  [DATABRICKS_URL]/jobs/[REF_SECRET_ID]?w=[WORKSPACE_ID]
+  Postgres projects:
+    bad_duration:
+      Name: 
+  Secrets:
+    s:
+      Name: [S_ID]
+      URL:  [DATABRICKS_URL]/explore/data/main/default/test_secret?w=[WORKSPACE_ID]
+
+>>> [CLI] bundle summary --var secret_value=s3cr3t-value -o json
+"${resources.jobs.a.name}"
+"[DATABRICKS_URL]/jobs/[A_ID]/runs/[RUN_ID]?w=[WORKSPACE_ID]"

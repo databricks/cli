@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -71,4 +72,20 @@ func getSensitiveFields() map[string][]FieldRule {
 		fields[resourceType] = rc.SensitiveFields
 	}
 	return fields
+}
+
+// IsSensitiveField reports whether field, a path inside a resource of resourceType, is a
+// sensitive field, lies inside one, or contains one.
+func IsSensitiveField(resourceType string, field *structpath.PathNode) bool {
+	fieldStr := field.String()
+	for _, rule := range MustLoadConfig().Resources[resourceType].SensitiveFields {
+		if field.HasPatternPrefix(rule.Field) {
+			return true
+		}
+		ruleStr := rule.Field.String()
+		if strings.HasPrefix(ruleStr, fieldStr+".") || strings.HasPrefix(ruleStr, fieldStr+"[") {
+			return true
+		}
+	}
+	return false
 }

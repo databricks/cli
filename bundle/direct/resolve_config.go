@@ -1,13 +1,16 @@
 package direct
 
 import (
-	"errors"
+	"reflect"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/dyn/jsonloader"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 var resourcesPrefix = dyn.MustPathFromString("resources")
@@ -78,39 +81,108 @@ func (b *DeploymentBundle) lookupStateField(path dyn.Path) (dyn.Value, bool) {
 // resource's state, falling back to explicitly set config fields (including the ids that
 // statemgmt.Load copies from state).
 //
-// Unlike ResolveConfigAgainstState, it does not fall back to implied empty fields: a
-// reference to a resource that was never deployed stays a reference rather than turning
-// into "" (which an int field such as job_id would reject, see #6690). If the resolved
-// config does not type-check anyway, the config is left unchanged: display is best effort.
+// Display is best effort, so a reference stays as it is when its value is not known or
+// not safe to show:
+//   - a resource that was never deployed: unlike ResolveConfigAgainstState there is no
+//     fallback to implied empty fields, which would turn an id into "" (see #6690);
+//   - a sensitive field (state stores it zeroed, config holds the secret);
+//   - a state field stored as a content hash, or a state string that holds a literal
+//     ${...} (it would be interpolated again).
+//
+// A resource whose resolved values don't fit its Go type keeps its references.
 func (b *DeploymentBundle) ResolveAllResourcesAgainstState(cfg *config.Root) {
-	if !b.StateDB.IsOpen() {
-		return
-	}
+	stateCache := map[string]dyn.Value{}
 	_ = cfg.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey())
-		resolved, err := dyn.MapByPattern(root, pattern, func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
-			return dynvar.Resolve(resource, func(path dyn.Path) (dyn.Value, error) {
-				if !path.HasPrefix(resourcesPrefix) {
-					return dyn.InvalidValue, dynvar.ErrSkipResolution
-				}
-				if v, ok := b.lookupStateField(path); ok {
-					return v, nil
-				}
-				v, err := dyn.GetByPath(root, path)
-				if err != nil || !v.IsValid() {
+		lookup := func(path dyn.Path) (dyn.Value, error) {
+			if len(path) < 4 || !path.HasPrefix(resourcesPrefix) {
+				return dyn.InvalidValue, dynvar.ErrSkipResolution
+			}
+			field, err := structpath.ParsePath(path[3:].String())
+			if err != nil || dresources.IsSensitiveField(path[1].Key(), field) {
+				return dyn.InvalidValue, dynvar.ErrSkipResolution
+			}
+			if v, ok := b.cachedStateField(stateCache, path); ok {
+				if str, isStr := v.AsString(); isStr && (dresources.IsStateHashPlaceholder(str) || dynvar.ContainsVariableReference(str)) {
 					return dyn.InvalidValue, dynvar.ErrSkipResolution
 				}
 				return v, nil
-			})
+			}
+			v, err := dyn.GetByPath(root, path)
+			if err != nil || !v.IsValid() {
+				return dyn.InvalidValue, dynvar.ErrSkipResolution
+			}
+			return v, nil
+		}
+
+		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey())
+		resolved, err := dyn.MapByPattern(root, pattern, func(p dyn.Path, resource dyn.Value) (dyn.Value, error) {
+			// A resolved id is a string; normalize so it gets the field's type (e.g. int
+			// job_id). A resource that fails to resolve or doesn't fit its type keeps its
+			// references.
+			if v, err := dynvar.Resolve(resource, lookup); err == nil {
+				if normalized, ok := normalizeResource(p[1].Key(), v); ok {
+					return normalized, nil
+				}
+			}
+			return resource, nil
 		})
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
-		// A resolved id is a string; normalize so it gets the field's type (e.g. int job_id).
-		normalized, diags := convert.Normalize(cfg, resolved)
-		if len(diags) > 0 {
-			return dyn.InvalidValue, errors.New("resolved resources do not match their types")
+
+		// Mutate leaves the typed config half-written if conversion fails, so check first.
+		var check config.Root
+		if err := convert.ToTyped(&check, resolved); err != nil {
+			return dyn.InvalidValue, err
 		}
-		return normalized, nil
+		return resolved, nil
 	})
+}
+
+// normalizeResource normalizes v, a resource of the given group, to the resource's Go type
+// and reports whether it converts to that type without errors.
+func normalizeResource(group string, v dyn.Value) (dyn.Value, bool) {
+	resourcesType := reflect.TypeFor[config.Resources]()
+	for field := range resourcesType.Fields() {
+		if strings.Split(field.Tag.Get("json"), ",")[0] != group || field.Type.Kind() != reflect.Map {
+			continue
+		}
+		elemType := field.Type.Elem()
+		if elemType.Kind() == reflect.Pointer {
+			elemType = elemType.Elem()
+		}
+		typed := reflect.New(elemType).Interface()
+		normalized, diags := convert.Normalize(typed, v)
+		if len(diags) > 0 {
+			return dyn.InvalidValue, false
+		}
+		if err := convert.ToTyped(typed, normalized); err != nil {
+			return dyn.InvalidValue, false
+		}
+		return normalized, true
+	}
+	return dyn.InvalidValue, false
+}
+
+// cachedStateField is lookupStateField with each resource's parsed state cached in cache.
+func (b *DeploymentBundle) cachedStateField(cache map[string]dyn.Value, path dyn.Path) (dyn.Value, bool) {
+	resourceKey := "resources." + path[1].Key() + "." + path[2].Key()
+	stateVal, ok := cache[resourceKey]
+	if !ok {
+		entry, found := b.StateDB.GetResourceEntry(resourceKey)
+		if found && len(entry.State) > 0 {
+			if v, err := jsonloader.LoadJSON(entry.State, resourceKey); err == nil {
+				stateVal = v
+			}
+		}
+		cache[resourceKey] = stateVal
+	}
+	if !stateVal.IsValid() {
+		return dyn.InvalidValue, false
+	}
+	fieldVal, err := dyn.GetByPath(stateVal, path[3:])
+	if err != nil || !fieldVal.IsValid() {
+		return dyn.InvalidValue, false
+	}
+	return fieldVal, true
 }

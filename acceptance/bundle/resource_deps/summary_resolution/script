@@ -1,0 +1,27 @@
+# Resources are created concurrently, so sort the deploy output.
+trace $CLI bundle deploy --var secret_value=s3cr3t-value 2>&1 | sort
+replace_ids.py
+
+title "After deploy, references show the deployed values"
+trace $CLI bundle summary --var secret_value=s3cr3t-value
+trace $CLI bundle summary --var secret_value=s3cr3t-value -o json | jq -c '[.resources.jobs | to_entries[] | {key, name: .value.name}]'
+
+title "Add resources that are not deployed: a job referencing the literal, and two resources whose resolved values do not fit their types"
+update_file.py databricks.yml '  job_runs:' '    ref_literal:
+      name: copy ${resources.jobs.literal.description}
+    bad_type:
+      name: bad-type
+      max_concurrent_runs: ${resources.jobs.a.name}
+
+  postgres_projects:
+    bad_duration:
+      project_id: bad-duration
+      history_retention_duration: ${resources.jobs.a.name}
+
+  job_runs:'
+title "A run edited locally to point at another job keeps the URL of the job it was launched for"
+update_file.py databricks.yml 'job_id: ${resources.jobs.a.id}' 'job_id: ${resources.jobs.b.id}'
+trace $CLI bundle summary --var secret_value=s3cr3t-value
+trace $CLI bundle summary --var secret_value=s3cr3t-value -o json | jq -c '.resources.jobs.bad_type.max_concurrent_runs, .resources.job_runs.run.url'
+
+trace $CLI bundle destroy --auto-approve --var secret_value=s3cr3t-value > /dev/null 2>&1
