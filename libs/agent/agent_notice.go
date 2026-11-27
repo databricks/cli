@@ -8,15 +8,15 @@ import (
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
-// notAnAgentEnv makes the CLI act as if no agent calls it, for example when an eval runs a baseline arm. Agent
+// NotAnAgentEnv makes the CLI act as if no agent calls it, for example when an eval runs a baseline arm. Agent
 // detection reports no agent, so every agent-facing output is the human one, and agent tips and notes are
 // suppressed too.
-const notAnAgentEnv = "DATABRICKS_NOT_AN_AGENT"
+const NotAnAgentEnv = "DATABRICKS_NOT_AN_AGENT"
 
 // NotAnAgent reports whether DATABRICKS_NOT_AN_AGENT is set to a true value in the context or the environment. An
 // invalid value counts as false.
 func NotAnAgent(ctx context.Context) bool {
-	on, _ := env.GetBool(ctx, notAnAgentEnv)
+	on, _ := env.GetBool(ctx, NotAnAgentEnv)
 	return on
 }
 
