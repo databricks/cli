@@ -17,8 +17,14 @@ import (
 )
 
 // createTimeSkew is how much earlier than our first create request a found resource's create time
-// may be, to allow for clock skew, and still count as created by that request.
+// may be and still count as created by that request, with the time of the request taken from this
+// machine's clock. It allows for that clock running ahead of the server's.
 const createTimeSkew = time.Minute
+
+// serverCreateTimeSkew is the same allowance with the time of the request taken from the server's
+// clock: the Date header is truncated to the second, and the clocks of the gateway that sets it
+// and of the service that sets the create time can differ slightly.
+const serverCreateTimeSkew = 5 * time.Second
 
 // createRecovery describes a create request that failed, for a resource whose name the bundle
 // chooses and the API keeps unique. T is the SDK type the lookup returns and R the result of
@@ -82,6 +88,7 @@ func recoverCreate[T, R any](ctx context.Context, rc createRecovery[T, R], creat
 		return zero, createErr
 	}
 
+	earliest := earliestCreateTime(rc.start, time.Since(rc.start), createErr)
 	lastErr := createErr
 	for attempt := 1; ; attempt++ {
 		found, err := retry.With(ctx, isUncertainRead, func() (*T, error) {
@@ -97,7 +104,7 @@ func recoverCreate[T, R any](ctx context.Context, rc createRecovery[T, R], creat
 			if !ok {
 				return zero, &recoveryError{msg: rc.name + " exists but has no create time, so it is not known to be created by this deployment", err: createErr}
 			}
-			if created.Before(rc.start.Add(-createTimeSkew)) {
+			if created.Before(earliest) {
 				return zero, &recoveryError{msg: rc.name + " exists but was not created by this deployment", err: createErr}
 			}
 			if rc.createdByCaller != nil {
@@ -137,6 +144,28 @@ func recoverCreate[T, R any](ctx context.Context, rc createRecovery[T, R], creat
 		}
 		lastErr = err
 	}
+}
+
+// earliestCreateTime returns the earliest create time that a resource created by our first create
+// request can have. That request was sent at start, elapsed ago, and failed with createErr.
+//
+// The server sets the create time by its own clock, so a bound from this machine's clock alone
+// depends on that clock: one that runs behind lets through a resource created that much before the
+// request. When the failed response says what time it was on the server (its Date header), the
+// request was sent no earlier than that time less elapsed, by the server's clock. A found resource
+// has to pass both bounds, so a wrong Date, e.g. from a proxy that answered in the server's place,
+// can only make the check stricter.
+func earliestCreateTime(start time.Time, elapsed time.Duration, createErr error) time.Time {
+	earliest := start.Add(-createTimeSkew)
+	if apiErr, ok := errors.AsType[*apierr.APIError](createErr); ok && apiErr.ResponseWrapper != nil && apiErr.ResponseWrapper.Response != nil {
+		serverNow, err := http.ParseTime(apiErr.ResponseWrapper.Response.Header.Get("Date"))
+		if err == nil {
+			if byServerClock := serverNow.Add(-elapsed - serverCreateTimeSkew); byServerClock.After(earliest) {
+				earliest = byServerClock
+			}
+		}
+	}
+	return earliest
 }
 
 // isUncertainCreateError reports whether a create request failed in a way that leaves it unknown

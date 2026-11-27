@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/common"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
@@ -134,10 +136,64 @@ func TestCreateRecoveryRejectsResourceThatPredatesRequest(t *testing.T) {
 	requireStatus(t, err, 504)
 }
 
-func TestCreateRecoveryAllowsClockSkew(t *testing.T) {
+// featureTimeoutAt is featureTimeout from a server whose clock shows serverNow.
+func featureTimeoutAt(serverNow time.Time) testserver.Response {
+	resp := featureTimeout
+	resp.Headers = http.Header{"Date": []string{serverNow.UTC().Format(http.TimeFormat)}}
+	return resp
+}
+
+func TestCreateRecoveryRejectsResourceCreatedShortlyBeforeRequest(t *testing.T) {
 	s := &featureCreateScript{t: t, creates: []any{featureTimeout}, gets: []any{testFeature(time.Now().Add(-30 * time.Second))}}
 	_, _, err := createTestFeature(t, s, t.Context())
+	require.EqualError(t, err, "feature main.default.feat exists but was not created by this deployment")
+}
+
+// The create time is compared with the server's clock, so a clock on this machine that runs behind
+// does not let through a resource created that much before the request: here the server is 10
+// minutes ahead, and the feature was created 5 minutes before the request.
+func TestCreateRecoveryRejectsOlderResourceWhenClockRunsBehind(t *testing.T) {
+	serverNow := time.Now().Add(10 * time.Minute)
+	s := &featureCreateScript{t: t, creates: []any{featureTimeoutAt(serverNow)}, gets: []any{testFeature(serverNow.Add(-5 * time.Minute))}}
+	_, _, err := createTestFeature(t, s, t.Context())
+	require.EqualError(t, err, "feature main.default.feat exists but was not created by this deployment")
+}
+
+// A found resource has to pass the bound by this machine's clock too, so a Date header that is far
+// in the past, e.g. from a proxy with a wrong clock, does not let through an older resource.
+func TestCreateRecoveryRejectsOlderResourceWhenServerTimeIsInThePast(t *testing.T) {
+	s := &featureCreateScript{t: t, creates: []any{featureTimeoutAt(time.Unix(0, 0))}, gets: []any{testFeature(time.Now().Add(-time.Hour))}}
+	_, _, err := createTestFeature(t, s, t.Context())
+	require.EqualError(t, err, "feature main.default.feat exists but was not created by this deployment")
+}
+
+// Without a usable Date header only the bound by this machine's clock applies.
+func TestCreateRecoveryAllowsClockSkewWithoutServerTime(t *testing.T) {
+	timeout := featureTimeout
+	timeout.Headers = http.Header{"Date": []string{"unknown"}}
+	s := &featureCreateScript{t: t, creates: []any{timeout}, gets: []any{testFeature(time.Now().Add(-30 * time.Second))}}
+	_, _, err := createTestFeature(t, s, t.Context())
 	require.NoError(t, err)
+}
+
+func TestEarliestCreateTime(t *testing.T) {
+	now := time.Date(2026, 11, 27, 12, 0, 0, 0, time.UTC)
+	failedAt := func(serverNow time.Time) error {
+		header := http.Header{"Date": []string{serverNow.Format(http.TimeFormat)}}
+		return &apierr.APIError{StatusCode: 504, ResponseWrapper: &common.ResponseWrapper{Response: &http.Response{Header: header}}}
+	}
+	const elapsed = 75 * time.Second
+	start := now.Add(-elapsed)
+
+	// The clocks agree: the request was sent elapsed before the response.
+	assert.Equal(t, start.Add(-serverCreateTimeSkew), earliestCreateTime(start, elapsed, failedAt(now)))
+	// The response was stamped when the request arrived and delivered elapsed later: the bound by
+	// the server's clock is earlier than the one by this machine's clock, which then applies.
+	assert.Equal(t, start.Add(-createTimeSkew), earliestCreateTime(start, elapsed, failedAt(start)))
+	// This machine's clock is 10 minutes behind the server's.
+	assert.Equal(t, start.Add(10*time.Minute-serverCreateTimeSkew), earliestCreateTime(start, elapsed, failedAt(now.Add(10*time.Minute))))
+	// No response.
+	assert.Equal(t, start.Add(-createTimeSkew), earliestCreateTime(start, elapsed, errors.New("connection reset")))
 }
 
 func TestCreateRecoveryKeepsCreateErrorMessage(t *testing.T) {

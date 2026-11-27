@@ -13,7 +13,7 @@ trap cleanup EXIT
 # The testserver creates the endpoint when the bundle's create request arrives, with a create time
 # 30 seconds before. So the endpoint is 30 seconds older than the request, whatever the speed of
 # the machine.
-title "The bundle's create request fails with a 504 that the backend did not apply. An endpoint with the name the bundle uses was created outside the bundle 30 seconds before the request: deploy takes it"
+title "The bundle's create request fails with a 504 that the backend did not apply. An endpoint with the name the bundle uses was created outside the bundle 30 seconds before the request: deploy does not take it"
 fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
 hook.py --clock-offset-ms -30000 "POST /api/2.0/vector-search/endpoints" 0 1 "POST /api/2.0/vector-search/endpoints" "{\"name\": \"$ENDPOINT\", \"endpoint_type\": \"STANDARD\"}"
 errcode trace $CLI bundle deploy
