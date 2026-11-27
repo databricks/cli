@@ -84,9 +84,7 @@ func remoteRunAs(remote any) (jobs.JobRunAs, bool) {
 func jobOwners(ctx context.Context, plan *deployplan.Plan, remote map[string][]dresources.StatePermission) map[string]string {
 	owners := make(map[string]string)
 	for resourceKey, entry := range plan.Plan {
-		job, ok := entry.RemoteState.(*dresources.JobRemote)
-		cd := entry.Changes[runAsField]
-		if !ok || job == nil || cd == nil || cd.New != nil || cd.Remote == nil {
+		if !needsJobOwner(entry) {
 			continue
 		}
 		acl, err := jobACL(plan, resourceKey, remote)
@@ -94,9 +92,16 @@ func jobOwners(ctx context.Context, plan *deployplan.Plan, remote map[string][]d
 			log.Debugf(ctx, "config-remote-sync: not syncing the run_as of %s, its owner is unknown: %v", resourceKey, err)
 			continue
 		}
-		owners[resourceKey] = jobOwner(acl, job.CreatorUserName)
+		owners[resourceKey] = jobOwner(acl, entry.RemoteState.(*dresources.JobRemote).CreatorUserName)
 	}
 	return owners
+}
+
+// needsJobOwner reports whether entry is a job with a remote run_as the config does not set.
+func needsJobOwner(entry *deployplan.PlanEntry) bool {
+	job, ok := entry.RemoteState.(*dresources.JobRemote)
+	cd := entry.Changes[runAsField]
+	return ok && job != nil && cd != nil && cd.New == nil && cd.Remote != nil
 }
 
 // jobACL returns a job's remote ACL: the plan's remote state of its permissions

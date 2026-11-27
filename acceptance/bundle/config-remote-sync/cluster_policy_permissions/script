@@ -21,14 +21,23 @@ $CLI permissions get cluster-policies "$policy_id" | jq '{access_control_list: (
 $CLI permissions set cluster-policies "$policy_id" --json @acl.json > /dev/null
 rm acl.json
 
-trace $CLI bundle config-remote-sync --save
+title "A grant on a policy that declares no permissions is not imported"
+trace $CLI bundle config-remote-sync
+
+title "Declare the group's grant by hand"
+update_file.py databricks.yml "          value: from-policy
+" "          value: from-policy
+      permissions:
+        - level: CAN_USE
+          group_name: users
+"
 # The deployer is a user locally and a service principal on cloud, so print principals only.
 trace $CLI bundle validate -o json | jq -c '[.resources.cluster_policies.policy.permissions[] | {principal: (.user_name // .service_principal_name // .group_name), level}] | sort_by(.principal)'
 
-title "Sync again before deploy"
+title "Sync before deploy: the creator's CAN_USE is not added to the block"
 trace $CLI bundle config-remote-sync
 
-title "Deploy applies the synced ACL"
+title "Deploy applies the declared ACL"
 trace $CLI bundle deploy
 trace $CLI permissions get cluster-policies "$policy_id" | jq -c '[.access_control_list[] | select(.all_permissions[0].inherited | not) | {principal: (.user_name // .service_principal_name // .group_name), level: .all_permissions[0].permission_level}] | sort_by(.principal)'
 trace $CLI bundle plan

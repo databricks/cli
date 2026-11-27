@@ -26,8 +26,9 @@ import (
 const permissionsReadLimit = 10
 
 // addPermissionsChanges adds remote permission changes to the permissions field of their
-// resource: per principal where the config declares permissions, and as a whole for deployed
-// resources that declare none. remote holds the ACLs read by readRemotePermissions.
+// resource, per principal. The ACL of a resource that declares no permissions is left alone: it
+// is not managed by the bundle, and a block written for it would replace the ACL on every later
+// deploy, by any identity and to any target. remote holds the ACLs read by readRemotePermissions.
 func addPermissionsChanges(changes Changes, b *bundle.Bundle, plan *deployplan.Plan, remote map[string][]dresources.StatePermission) error {
 	for resourceKey, entry := range plan.Plan {
 		if err := addDeclaredPermissionsChanges(changes, b, resourceKey, entry); err != nil {
@@ -35,27 +36,13 @@ func addPermissionsChanges(changes Changes, b *bundle.Bundle, plan *deployplan.P
 		}
 	}
 
-	currentUser := currentUserName(b)
 	for resourceKey, permissions := range remote {
+		// Otherwise read for the job's owner only, see unreadPermissionsAdapters.
 		if entry := plan.Plan[resourceKey+".permissions"]; entry != nil && entry.Action == deployplan.Create {
 			if err := addUndeployedPermissionsChanges(changes, b, resourceKey, permissions); err != nil {
 				return err
 			}
-			continue
 		}
-
-		permissions = withoutCurrentUserDefaults(slices.Clone(permissions), currentUser, config.GetResourceTypeFromKey(resourceKey))
-		if len(permissions) == 0 {
-			continue
-		}
-		value, err := normalizeValue(permissions)
-		if err != nil {
-			return fmt.Errorf("failed to compute config change for %s: %w", resourceKey, err)
-		}
-		changes.set(resourceKey, "permissions", &ConfigChangeDesc{
-			Operation: OperationAdd,
-			Value:     value,
-		})
 	}
 	return nil
 }
@@ -106,7 +93,7 @@ func addDeclaredPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKe
 }
 
 // addUndeployedPermissionsChanges compares the remote ACL of a deployed resource with the
-// permissions its config declares but that were never deployed, e.g. after an import was saved.
+// permissions its config declares but that were never deployed.
 // The plan creates those without reading the ACL, and creating them replaces it, so a grant made
 // since would be dropped by the next deploy.
 func addUndeployedPermissionsChanges(changes Changes, b *bundle.Bundle, resourceKey string, remote []dresources.StatePermission) error {
@@ -116,7 +103,7 @@ func addUndeployedPermissionsChanges(changes Changes, b *bundle.Bundle, resource
 		return fmt.Errorf("no config state for %s", permissionsKey)
 	}
 	local := sv.Value.(*dresources.PermissionsState)
-	// Without an entry for the current user, their default grants would be imported as new principals.
+	// Without an entry for the current user, their default grants would be added as new principals.
 	currentUser := currentUserName(b)
 	if !slices.ContainsFunc(local.EmbeddedSlice, func(p dresources.StatePermission) bool { return isCurrentUserPermission(p, currentUser) }) {
 		remote = withoutCurrentUserDefaults(slices.Clone(remote), currentUser, config.GetResourceTypeFromKey(resourceKey))
@@ -165,11 +152,9 @@ func (c Changes) set(resourceKey, fieldPath string, change *ConfigChangeDesc) {
 	c[resourceKey][fieldPath] = change
 }
 
-// readRemotePermissions reads the remote permissions of deployed resources whose ACL the plan
-// does not read, keyed by resource. Those that declare no permissions are imported as a whole:
-// the current ACL cannot tell grants made before the deployment from the ones made since. A
-// resource whose ACL cannot be read is returned as skipped, so the rest of the sync still goes
-// through.
+// readRemotePermissions reads the remote permissions the sync needs and the plan does not read,
+// keyed by resource. A resource whose ACL cannot be read is returned as skipped, so the rest of
+// the sync still goes through.
 func readRemotePermissions(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (map[string][]dresources.StatePermission, []SkippedChange) {
 	var mu sync.Mutex
 	var g errgroup.Group
@@ -207,8 +192,8 @@ func permissionsReadSkip(resourceKey string, err error) SkippedChange {
 }
 
 // unreadPermissionsAdapters returns the permissions adapter of every deployed resource whose
-// config declares no permissions, or declares permissions that were never deployed. A state-only
-// permissions entry is deleted on the next deploy without changing the ACL, so it does not count.
+// config declares permissions that were never deployed, and of every job without deployed
+// permissions whose owner the run_as sync needs.
 func unreadPermissionsAdapters(b *bundle.Bundle, plan *deployplan.Plan) map[string]*dresources.Adapter {
 	result := make(map[string]*dresources.Adapter)
 	for resourceKey, entry := range plan.Plan {
@@ -216,7 +201,12 @@ func unreadPermissionsAdapters(b *bundle.Bundle, plan *deployplan.Plan) map[stri
 			continue
 		}
 		permissionsKey := resourceKey + ".permissions"
-		if permissions := plan.Plan[permissionsKey]; permissions != nil && permissions.Action != deployplan.Delete && permissions.Action != deployplan.Create {
+		permissionsEntry := plan.Plan[permissionsKey]
+		if permissionsEntry != nil && permissionsEntry.Action != deployplan.Delete && permissionsEntry.Action != deployplan.Create {
+			continue
+		}
+		undeployed := permissionsEntry != nil && permissionsEntry.Action == deployplan.Create
+		if !undeployed && !needsJobOwner(entry) {
 			continue
 		}
 		adapter := b.DeploymentBundle.Adapters[config.GetResourceTypeFromKey(permissionsKey)]

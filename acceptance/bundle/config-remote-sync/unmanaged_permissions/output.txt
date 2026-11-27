@@ -6,6 +6,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add permissions remotely to resources that declare none
 
+=== The ACL of a resource that declares no permissions is not imported
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
+=== Declare the remote ACLs by hand
+
 === An ACL that cannot be read is reported as skipped
 
 >>> [CLI] bundle config-remote-sync --select-ids jobs:[MY_JOB_ID] -o json
@@ -17,9 +25,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle config-remote-sync -o json
 {
   "status": "partial",
-  "changes": [
-    "resources.jobs.my_job"
-  ],
+  "changes": [],
   "skippedChanges": [
     {
       "resourceKey": "resources.pipelines.my_pipeline",
@@ -29,48 +35,11 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   ]
 }
 
-=== Detect and save changes
-Detected changes in 2 resource(s):
-
-Resource: resources.jobs.my_job
-  permissions: add
-
-Resource: resources.pipelines.my_pipeline
-  permissions: add
-
-
-
-=== Configuration changes
-
->>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -14,4 +14,9 @@
-             num_workers: 1
-
-+      permissions:
-+        - level: CAN_MANAGE
-+          user_name: viewer@example.com
-+        - level: CAN_MANAGE_RUN
-+          user_name: admin@example.com
-   pipelines:
-     my_pipeline:
-@@ -20,4 +25,9 @@
-         - notebook:
-             path: /Users/{{workspace_user_name}}/notebook
-+      permissions:
-+        - level: IS_OWNER
-+          user_name: owner@example.com
-+        - group_name: users
-+          level: CAN_VIEW
-
- targets:
-
-=== Sync again: the permissions are now in the config
+=== Sync again: the declared permissions match the remote ACLs
 No changes detected.
 
 
-=== Grant access remotely before the saved permissions are deployed
+=== Grant access remotely before the declared permissions are deployed
 
 === Detect and save changes
 Detected changes in 1 resource(s):
@@ -86,8 +55,8 @@ Resource: resources.pipelines.my_pipeline
 --- databricks.yml.backup
 +++ databricks.yml
 @@ -30,4 +30,6 @@
-         - group_name: users
-           level: CAN_VIEW
+         - level: CAN_VIEW
+           group_name: users
 +        - level: CAN_RUN
 +          user_name: late@example.com
 
@@ -120,14 +89,15 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -15,8 +15,8 @@
-
+@@ -14,9 +14,8 @@
+             num_workers: 1
        permissions:
 -        - level: CAN_MANAGE
 +        - level: CAN_VIEW
            user_name: viewer@example.com
 -        - level: CAN_MANAGE_RUN
 -          user_name: admin@example.com
+-
 +        - group_name: data-team
 +          level: CAN_MANAGE_RUN
    pipelines:
