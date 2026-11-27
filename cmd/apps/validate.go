@@ -55,7 +55,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().String("path", "", "Path to the project directory (defaults to the directory selected by DATABRICKS_BUNDLE_ROOT or the current directory)")
+	cmd.Flags().String("path", "", "Path to the project directory (defaults to current directory)")
 	cmd.Flags().Bool("skip-tests", false, "Skip running tests for faster validation")
 
 	return cmd
