@@ -54,13 +54,15 @@ type State struct {
 	AcceptedVersion string `json:"accepted_version,omitempty"`
 
 	// Installing is set while auto-install makes a first install, and stays
-	// set when the install did not finish. The skills such an install left
+	// set when the install did not finish, including one that was refused
+	// the skills (see RecordUnfinished). The skills such an install left
 	// have no install state, like the ones the user put there, so a later run
 	// uses it to finish the install instead of leaving the skills alone.
 	Installing bool `json:"installing,omitempty"`
 
 	// InstallStateDigest is the digest of the install state that an
-	// unfinished first install saved (one that failed only for some agents).
+	// unfinished first install saved (one that failed only for some agents,
+	// or that installed the plugins and was refused the skills).
 	// While the install state still has it, nothing else wrote it, so a later
 	// run finishes the install as a first install instead of updating it.
 	// Install state that anything else wrote is updated. It is cleared with

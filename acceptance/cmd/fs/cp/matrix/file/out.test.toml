@@ -1,0 +1,3 @@
+Cloud = true
+EnvMatrix.DST = ["local", "dbfs", "volume"]
+EnvMatrix.SRC = ["local", "dbfs", "volume"]

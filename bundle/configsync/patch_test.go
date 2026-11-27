@@ -334,7 +334,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added blank next to marker is deduplicated",
+			name: "encoder-added blank next to marker is deduplicated",
 			input: nl(`
 key1: value1
 # __YAMLPATCH_BLANK_LINE__
@@ -348,7 +348,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added standalone blank is kept",
+			name: "encoder-added standalone blank is kept",
 			input: nl(`
 key1: value1
 
@@ -361,7 +361,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added blank near block scalar",
+			name: "encoder-added blank near block scalar",
 			input: nl(`
 key: |
   line1
@@ -472,6 +472,50 @@ func TestApplyChangeScalarParents(t *testing.T) {
 	}
 }
 
+func TestApplyChangeAddToExistingKey(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+		path    string
+		want    string
+	}{
+		{"scalar", "tasks:\n  - task_key: main\n    job_cluster_key: old\n", "tasks[0].job_cluster_key", "tasks: [{task_key: main, job_cluster_key: value}]"},
+		{"null", "parameters:\n  - name: p\n    value:\n", "parameters[0].value", "parameters: [{name: p, value: value}]"},
+		{"sequence index inserts", "parent:\n  - a\n", "parent[0]", "parent: [value, a]"},
+		{"merge key adds", "defaults: &d\n  job_cluster_key: old\ntasks:\n  - <<: *d\n    task_key: main\n", "tasks[0].job_cluster_key", "defaults: {job_cluster_key: old}\ntasks: [{task_key: main, job_cluster_key: value}]"},
+		{"through an alias", "defaults: &d\n  k: old\njob: *d\n", "job.k", "defaults: {k: value}\njob: {k: value}"},
+		{"under an anchor", "parameters:\n  - &p\n    name: p\n    value: old\n  - <<: *p\n    name: q\n", "parameters[0].value", "parameters: [{name: p, value: value}, {name: q, value: value}]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: tc.path,
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			require.NoError(t, err)
+			assert.YAMLEq(t, tc.want, string(result))
+		})
+	}
+}
+
+func TestApplyChangeKeepsAnchoredKey(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+	}{
+		{"anchored null", "parameters:\n  - name: p\n    value: &v\n  - name: q\n    value: *v\n"},
+		{"anchored scalar", "parameters:\n  - name: p\n    value: &v old\n  - name: q\n    value: *v\n"},
+		{"anchor inside the value", "parameters:\n  - name: p\n    value: {k: &v old}\n  - name: q\n    value: *v\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := applyChange(t.Context(), []byte(tc.content), FieldChange{
+				WritePath: "parameters[0].value",
+				Change:    &ConfigChangeDesc{Operation: OperationAdd, Value: "value"},
+			})
+			assert.ErrorContains(t, err, "already exists")
+		})
+	}
+}
+
 func TestApplyChangeNullParentComments(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -537,4 +581,53 @@ func TestApplyChangeMaterializesPrimaryNullParent(t *testing.T) {
 `+target, string(result))
 		})
 	}
+}
+
+func TestSourceDocsWritten(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "databricks.yml")
+	require.NoError(t, os.WriteFile(file, []byte(`base: &base
+  a: 1
+  nested:
+    x: 1
+alias: *base
+merged:
+  <<: *base
+  b: 2
+anchored: &anchored
+  <<: *base
+targets:
+  dev:
+    merged:
+      <<: *base
+`), 0o644))
+
+	for _, tc := range []struct {
+		name, path, altPath string
+		shadowed            bool
+		key                 bool
+		addPath             string
+	}{
+		{"written", "merged.b", "", false, true, "merged.b"},
+		{"inherited", "merged.a", "", false, false, "merged.a"},
+		{"inherited parent", "merged.nested.x", "", false, false, ""},
+		{"through alias", "alias.a", "", false, true, ""},
+		{"under anchor", "anchored.a", "", false, false, ""},
+		{"written in anchor", "base.a", "", false, true, ""},
+		{"missing parent", "missing.a", "", false, false, ""},
+		{"alternative only", "missing.a", "targets.dev.merged.a", false, false, "targets.dev.merged.a"},
+		{"both scopes", "merged.a", "targets.dev.merged.a", false, false, "merged.a"},
+		{"both scopes, shadowed", "merged.a", "targets.dev.merged.a", true, false, "targets.dev.merged.a"},
+		{"shadowed", "merged.a", "", true, false, ""},
+		{"written, shadowed", "merged.b", "targets.dev.merged.b", true, false, "targets.dev.merged.b"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			key, addPath := sourceDocs{}.written(file, tc.path, tc.altPath, tc.shadowed)
+			assert.Equal(t, tc.key, key)
+			assert.Equal(t, tc.addPath, addPath)
+		})
+	}
+
+	key, addPath := sourceDocs{}.written(filepath.Join(t.TempDir(), "missing.yml"), "a.b", "", false)
+	assert.True(t, key)
+	assert.Empty(t, addPath)
 }

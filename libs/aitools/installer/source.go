@@ -47,7 +47,7 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("skills manifest at %s@%s: %w", skillsRepoName, ref, clicompat.ErrNotFound)}
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, newHTTPFetchError(FetchStageManifest, resp, fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode))
+		return nil, skills.NewHTTPFetchError(FetchStageManifest, resp, fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode))
 	}
 
 	// Read the whole body before parsing it: a connection dropped mid-body is a
@@ -56,11 +56,11 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 	// The cap is far above the manifest's size, so a large non-manifest body (a
 	// captive portal, a wrong mirror) is not read whole. One byte past the cap
 	// tells an oversized body apart from one that fits exactly.
-	data, err := io.ReadAll(io.LimitReader(resp.Body, maxFetchBodySize+1))
+	data, err := io.ReadAll(io.LimitReader(resp.Body, skills.MaxFetchBodySize+1))
 	if err != nil {
 		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: fmt.Errorf("failed to read manifest: %w", err)}
 	}
-	if len(data) > maxFetchBodySize {
+	if len(data) > skills.MaxFetchBodySize {
 		return nil, &FetchError{Stage: FetchStageManifest, StatusCode: resp.StatusCode, Err: ErrManifestTooLarge}
 	}
 	var manifest Manifest

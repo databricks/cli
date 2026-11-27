@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# max_concurrent_runs is outside any sequence and declared in both blocks of one
+# file; the target's value wins the merge, so that is the one to replace.
+
+resources:
+  jobs:
+    my_job:
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    resources:
+      jobs:
+        my_job:
+          max_concurrent_runs: 2

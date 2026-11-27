@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -237,6 +238,176 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Empty(t, state.LastModifiedTimes)
 	assert.Equal(t, map[string]string{}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{}, state.RemoteToLocalNames)
+}
+
+func TestBrokenJupyterNotebookDiff(t *testing.T) {
+	ctx := t.Context()
+
+	projectDir := t.TempDir()
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
+	require.NoError(t, err)
+	state := Snapshot{
+		SnapshotState: &SnapshotState{
+			LastModifiedTimes:  make(map[string]time.Time),
+			LocalToRemoteNames: make(map[string]string),
+			RemoteToLocalNames: make(map[string]string),
+		},
+	}
+
+	const validNotebook = `{"cells":[],"metadata":{"language_info":{"name":"python"}},"nbformat":4,"nbformat_minor":2}`
+	const brokenNotebook = `{"cells": [`
+
+	foo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.ipynb"))
+	defer foo.Close(t)
+
+	// The valid notebook foo.ipynb is uploaded as foo.
+	foo.Overwrite(t, validNotebook)
+	files, err := fileSet.Files()
+	require.NoError(t, err)
+	change, err := state.diff(ctx, files)
+	require.NoError(t, err)
+	assert.Empty(t, change.delete)
+	assert.Equal(t, []string{"foo.ipynb"}, change.put)
+	assert.Equal(t, map[string]string{"foo.ipynb": "foo"}, state.LocalToRemoteNames)
+
+	// Breaking its JSON neither uploads it nor deletes the remote notebook.
+	foo.Overwrite(t, brokenNotebook)
+	files, err = fileSet.Files()
+	require.NoError(t, err)
+	change, err = state.diff(ctx, files)
+	require.NoError(t, err)
+	assert.Empty(t, change.delete)
+	assert.Empty(t, change.put)
+	assert.Equal(t, map[string]string{"foo.ipynb": "foo"}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"foo": "foo.ipynb"}, state.RemoteToLocalNames)
+
+	// Once fixed, it is uploaded again.
+	foo.Overwrite(t, validNotebook)
+	files, err = fileSet.Files()
+	require.NoError(t, err)
+	change, err = state.diff(ctx, files)
+	require.NoError(t, err)
+	assert.Empty(t, change.delete)
+	assert.Equal(t, []string{"foo.ipynb"}, change.put)
+
+	// A broken notebook that was never synced stays untracked.
+	bar := testfile.CreateFile(t, filepath.Join(projectDir, "bar.ipynb"))
+	defer bar.Close(t)
+	bar.Overwrite(t, brokenNotebook)
+	files, err = fileSet.Files()
+	require.NoError(t, err)
+	change, err = state.diff(ctx, files)
+	require.NoError(t, err)
+	assert.Empty(t, change.delete)
+	assert.Empty(t, change.put)
+	assertKeysOfMap(t, state.LastModifiedTimes, []string{"foo.ipynb"})
+
+	// A tracked file removed after it was listed is deleted remotely.
+	files, err = fileSet.Files()
+	require.NoError(t, err)
+	foo.Remove(t)
+	change, err = state.diff(ctx, files)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"foo"}, change.delete)
+	assert.Empty(t, change.put)
+	assert.Empty(t, state.LastModifiedTimes)
+}
+
+func TestBrokenNotebookRepairedWithOlderMtime(t *testing.T) {
+	ctx := t.Context()
+
+	projectDir := t.TempDir()
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
+	require.NoError(t, err)
+	state := Snapshot{
+		SnapshotState: &SnapshotState{
+			LastModifiedTimes:  make(map[string]time.Time),
+			LocalToRemoteNames: make(map[string]string),
+			RemoteToLocalNames: make(map[string]string),
+		},
+	}
+
+	uploaded := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	write := func(name, content string, mtime time.Time) {
+		path := filepath.Join(projectDir, name)
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+		require.NoError(t, os.Chtimes(path, mtime, mtime))
+	}
+	syncDiff := func() diff {
+		files, err := fileSet.Files()
+		require.NoError(t, err)
+		change, err := state.diff(ctx, files)
+		require.NoError(t, err)
+		return change
+	}
+
+	const validNotebook = `{"cells":[],"metadata":{"language_info":{"name":"python"}},"nbformat":4,"nbformat_minor":2}`
+	write("foo.ipynb", validNotebook, uploaded)
+	assert.Equal(t, []string{"foo.ipynb"}, syncDiff().put)
+
+	// While broken, nothing is synced, but the snapshot must be saved so the
+	// reset mtime survives into the next run.
+	write("foo.ipynb", `{"cells": [`, uploaded.Add(time.Hour))
+	change := syncDiff()
+	assert.True(t, change.IsEmpty())
+	assert.True(t, change.resetMtimes)
+	assert.False(t, syncDiff().resetMtimes)
+
+	// Restored with an mtime older than the last upload: still uploaded.
+	write("foo.ipynb", validNotebook, uploaded.Add(-time.Hour))
+	change = syncDiff()
+	assert.Empty(t, change.delete)
+	assert.Equal(t, []string{"foo.ipynb"}, change.put)
+}
+
+func TestUnreadableNotebookRepairedAsScript(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs a file the current user cannot read")
+	}
+	ctx := t.Context()
+
+	projectDir := t.TempDir()
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
+	require.NoError(t, err)
+	state := Snapshot{
+		SnapshotState: &SnapshotState{
+			LastModifiedTimes:  make(map[string]time.Time),
+			LocalToRemoteNames: make(map[string]string),
+			RemoteToLocalNames: make(map[string]string),
+		},
+	}
+
+	path := filepath.Join(projectDir, "foo.py")
+	uploaded := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	require.NoError(t, os.WriteFile(path, []byte("# Databricks notebook source\nprint(1)"), 0o644))
+	require.NoError(t, os.Chtimes(path, uploaded, uploaded))
+	files, err := fileSet.Files()
+	require.NoError(t, err)
+	change, err := state.diff(ctx, files)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"foo.py"}, change.put)
+	assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
+
+	// An unreadable file keeps its remote notebook.
+	require.NoError(t, os.Chmod(path, 0))
+	files, err = fileSet.Files()
+	require.NoError(t, err)
+	change, err = state.diff(ctx, files)
+	require.NoError(t, err)
+	assert.True(t, change.IsEmpty())
+	assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
+
+	// Readable again as a plain script with its old mtime: the notebook is
+	// replaced by the file, not just deleted.
+	require.NoError(t, os.Chmod(path, 0o644))
+	require.NoError(t, os.WriteFile(path, []byte("print(1)"), 0o644))
+	require.NoError(t, os.Chtimes(path, uploaded, uploaded))
+	files, err = fileSet.Files()
+	require.NoError(t, err)
+	change, err = state.diff(ctx, files)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"foo"}, change.delete)
+	assert.Equal(t, []string{"foo.py"}, change.put)
 }
 
 func TestErrorWhenIdenticalRemoteName(t *testing.T) {

@@ -50,12 +50,10 @@ sequenceDiagram
     end
 ```
 
-# Device code login (experimental)
+# Device code login
 
 `databricks auth login --use-device-code` logs in from a machine without a browser.
-It is experimental: the flag is hidden and requires
-`DATABRICKS_CLI_DEVICE_CODE=true`. See
-[docs/device-code-login.md](../../docs/device-code-login.md) for the user guide.
+See [docs/device-code-login.md](../../docs/device-code-login.md) for the user guide.
 
 Databricks implements a variant of [RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628):
 instead of polling the token endpoint until the user approves the login, the

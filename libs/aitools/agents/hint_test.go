@@ -376,24 +376,32 @@ func TestMaybeHint_SkillsTextNotHiddenByInstallMarker(t *testing.T) {
 func TestMaybeHint_SkillsTextNotHiddenByInstallMarkerDurableAgent(t *testing.T) {
 	setAgentEnv(t, "CODEX_CI")
 	home, cacheDir := t.TempDir(), t.TempDir()
-	run := func(thread string, hints bool) string {
-		ctx, stderr := agentCtx(t, home, cacheDir)
-		ctx = env.Set(ctx, "CODEX_THREAD_ID", thread)
-		if hints {
-			ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
-			ctx = env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
-		}
-		MaybeHint(ctx, regularCmd(), noPluginRecorded)
-		return stderr.String()
-	}
 
-	assert.Contains(t, run("thread-1", false), "--agents codex")
-	assert.Equal(t, skillsHintText+"\n", run("thread-1", true))
+	assert.Contains(t, runSkillsHintThread(t, home, cacheDir, "thread-1", false), "--agents codex")
+	assert.Equal(t, skillsHintText+"\n", runSkillsHintThread(t, home, cacheDir, "thread-1", true))
 	// Same thread with hints still on: the skills text is throttled.
-	assert.Empty(t, run("thread-1", true))
+	assert.Empty(t, runSkillsHintThread(t, home, cacheDir, "thread-1", true))
 
-	assert.Equal(t, skillsHintText+"\n", run("thread-2", true))
-	assert.Contains(t, run("thread-2", false), "--agents codex")
+	assert.Equal(t, skillsHintText+"\n", runSkillsHintThread(t, home, cacheDir, "thread-2", true))
+	assert.Contains(t, runSkillsHintThread(t, home, cacheDir, "thread-2", false), "--agents codex")
+}
+
+// runSkillsHintThread runs one regular command as the given Codex thread and
+// returns its stderr. hints turns on both skill hint variables.
+func runSkillsHintThread(t *testing.T, home, cacheDir, thread string, hints bool) string {
+	ctx, stderr := agentCtx(t, home, cacheDir)
+	ctx = env.Set(ctx, "CODEX_THREAD_ID", thread)
+	if hints {
+		ctx = withSkillHintEnv(ctx)
+	}
+	MaybeHint(ctx, regularCmd(), noPluginRecorded)
+	return stderr.String()
+}
+
+// withSkillHintEnv turns on both skill hint variables.
+func withSkillHintEnv(ctx context.Context) context.Context {
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
+	return env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
 }
 
 // A deferred hint (the auto-install may give the agent its tools) prints the
@@ -403,20 +411,16 @@ func TestMaybeHint_WithheldSkillsHintPrintsWhenTheRunDidNotInstall(t *testing.T)
 	setClaudeAgent(t)
 	home, cacheDir := t.TempDir(), t.TempDir()
 	setInstallsFor(t, true)
-	withSkillHints := func(ctx context.Context) context.Context {
-		ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "1")
-		return env.Set(ctx, "DATABRICKS_SKILLS_HINTS", "1")
-	}
 
 	ctx1, stderr1 := sessionCtx(t, home, cacheDir, true)
-	deferred := MaybeHint(withSkillHints(ctx1), regularCmd(), noPluginRecorded)
+	deferred := MaybeHint(withSkillHintEnv(ctx1), regularCmd(), noPluginRecorded)
 	require.NotNil(t, deferred)
 	assert.Empty(t, stderr1.String())
 	deferred()
 	assert.Equal(t, wantNativeHint+"\n"+skillsHintText+"\n", stderr1.String())
 
 	ctx2, stderr2 := sessionCtx(t, home, cacheDir, true)
-	assert.Nil(t, MaybeHint(withSkillHints(ctx2), regularCmd(), noPluginRecorded))
+	assert.Nil(t, MaybeHint(withSkillHintEnv(ctx2), regularCmd(), noPluginRecorded))
 	assert.Empty(t, stderr2.String())
 }
 
