@@ -21,6 +21,9 @@ func recordRuns(group *cobra.Command) {
 		command := commandType(c.Name())
 		run := c.RunE
 		c.RunE = func(cmd *cobra.Command, args []string) error {
+			if telemetry.Disabled(cmd.Context()) {
+				return run(cmd, args)
+			}
 			ctx, rec := libskills.WithRecord(cmd.Context())
 			cmd.SetContext(ctx)
 			err := run(cmd, args)

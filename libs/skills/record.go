@@ -72,11 +72,14 @@ func (r *recordingSource) Catalog(ctx context.Context) (*Catalog, error) {
 
 func (r *recordingSource) ReadFile(ctx context.Context, skill, file string) ([]byte, error) {
 	data, err := r.Source.ReadFile(ctx, skill, file)
-	listed := r.lists(ctx, skill)
-	if err == nil && listed && r.namesArePublished(ctx) {
+	if err != nil {
+		return data, err
+	}
+	// The catalog gives the version, and says whether it lists the skill. A failed read asks for neither.
+	if catalog, cerr := r.catalogOnce(ctx); cerr == nil && r.namesArePublished(ctx) && listsSkill(catalog, skill) {
 		r.rec.SkillName = skill
 	}
-	return data, err
+	return data, nil
 }
 
 // namesArePublished reports whether this source's skill names are published ones. A folder's names, and those of a ref
@@ -85,14 +88,17 @@ func (r *recordingSource) namesArePublished(ctx context.Context) bool {
 	return r.rec.Origin != OriginFolder && env.Get(ctx, "DATABRICKS_SKILLS_REF") == "" && env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL") == ""
 }
 
-// lists reports whether the catalog lists the skill. A read-file does not read the catalog, so it is read here.
-func (r *recordingSource) lists(ctx context.Context, skill string) bool {
-	if r.catalog == nil {
-		if _, err := r.Catalog(ctx); err != nil {
-			return false
-		}
+// catalogOnce returns the catalog read through this source, reading it first if no call has made one. A read-file
+// does not read the catalog itself, so this is where it is read.
+func (r *recordingSource) catalogOnce(ctx context.Context) (*Catalog, error) {
+	if r.catalog != nil {
+		return r.catalog, nil
 	}
-	return slices.ContainsFunc(r.catalog.Skills, func(s Skill) bool { return s.Name == skill })
+	return r.Catalog(ctx)
+}
+
+func listsSkill(catalog *Catalog, skill string) bool {
+	return slices.ContainsFunc(catalog.Skills, func(s Skill) bool { return s.Name == skill })
 }
 
 // recordingSizer is a recordingSource over a source that sizes its files, so that list-files still finds a FileSizer.

@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -56,4 +57,36 @@ func TestRecordKeepsFileSizer(t *testing.T) {
 	_, plain := record(ctx, catalogOnly{NewFSSource(os.DirFS(recordFixture), "fixture")}, OriginFolder).(FileSizer)
 	assert.True(t, sized)
 	assert.False(t, plain)
+}
+
+// countingSource counts the catalog reads made through it.
+type countingSource struct {
+	Source
+	catalogs int
+}
+
+func (c *countingSource) Catalog(ctx context.Context) (*Catalog, error) {
+	c.catalogs++
+	return c.Source.Catalog(ctx)
+}
+
+// A successful read reads the catalog once, for the version and the listing. A failed read reads neither.
+func TestRecordReadFileCatalogCalls(t *testing.T) {
+	tests := []struct {
+		name, file string
+		origin     Origin
+		want       int
+	}{
+		{name: "listed skill", file: "SKILL.md", origin: OriginLive, want: 1},
+		{name: "failed read", file: "nope.md", origin: OriginLive, want: 0},
+		{name: "folder", file: "SKILL.md", origin: OriginFolder, want: 1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, _ := WithRecord(t.Context())
+			src := &countingSource{Source: NewFSSource(os.DirFS(recordFixture), "fixture")}
+			_, _ = record(ctx, src, tc.origin).ReadFile(ctx, "alpha", tc.file)
+			assert.Equal(t, tc.want, src.catalogs)
+		})
+	}
 }
