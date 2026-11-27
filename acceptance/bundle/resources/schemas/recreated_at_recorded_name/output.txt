@@ -14,7 +14,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === The new schema has another schema_id: the bundle does not take it for its own, and deploy fails on its name
 
 >>> [CLI] bundle plan
-Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[NEW_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle leaves it in place. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
+Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[NEW_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle does not take it for its own. If the bundle's was renamed outside the bundle, set its name in the config to the new one. If this object is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and then 'bundle deployment bind' to manage it again.
 
 create schemas.schema1
 
@@ -22,7 +22,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[NEW_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle leaves it in place. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
+Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[NEW_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle does not take it for its own. If the bundle's was renamed outside the bundle, set its name in the config to the new one. If this object is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and then 'bundle deployment bind' to manage it again.
 
 Error: cannot create resources.schemas.schema1: Schema 'test-schema-[UNIQUE_NAME]' already exists (400 SCHEMA_ALREADY_EXISTS)
 
@@ -32,6 +32,17 @@ API error_code: SCHEMA_ALREADY_EXISTS
 API message: Schema 'test-schema-[UNIQUE_NAME]' already exists
 
 Files: 2 uploaded, 0 deleted
+
+>>> print_requests.py //unity-catalog
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "c1",
+    "name": "test-schema-[UNIQUE_NAME]"
+  }
+}
 
 === Binding it again makes it the bundle's
 
@@ -44,7 +55,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated schemas.schema1
-Files: 1 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan

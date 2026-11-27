@@ -262,16 +262,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				// Treat it as gone: apply cleans up state without re-issuing the delete.
 				entry.Gone = true
 			} else {
-				// Someone else's resource under the name ours had is never deleted: it is left in
-				// place, and only the state entry is dropped.
+				// Someone else's resource under the name ours had is never deleted: no delete is
+				// sent for it, and only the state entry is dropped.
 				message, err := b.otherObjectAtRecordedID(resourceKey, adapter, id, remoteState)
 				if err != nil {
 					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 					return false
 				}
 				if message != "" {
-					logdiag.LogDiag(ctx, diag.Warningf("%s: %s, and drops %s from the deployment state. %s",
-						resourceKey, message, resourceKey, otherObjectAdvice)[0])
+					logdiag.LogDiag(ctx, diag.Warningf("%s: %s, so no delete is sent for it, and %s is dropped from the deployment state. %s",
+						resourceKey, message, resourceKey, otherObjectDeleteAdvice)[0])
 					entry.Gone = true
 					remoteState = nil
 				}
@@ -382,8 +382,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 		if otherID != "" && remoteState == nil {
-			logdiag.LogDiag(ctx, diag.Warningf("%s: %s. %s",
-				resourceKey, otherObjectMessage(adapter, dbentry.ID, savedState, otherID), otherObjectAdvice)[0])
+			logdiag.LogDiag(ctx, diag.Warningf("%s: %s, so this bundle does not take it for its own. %s",
+				resourceKey, otherObjectMessage(adapter, dbentry.ID, savedState, otherID), otherObjectDeployAdvice)[0])
 		}
 
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
@@ -921,18 +921,23 @@ func otherInternalID(adapter *dresources.Adapter, savedState, remote any) (strin
 	return found, nil
 }
 
-// otherObjectMessage says that what is at the recorded ID id is not the bundle's: the plan leaves it
-// alone. It is told when the bundle's own is not found elsewhere either; a resource deleted and
-// created again out of band looks the same, hence otherObjectAdvice.
+// otherObjectMessage says that what is at the recorded ID id is not the bundle's. It is told when
+// the bundle's own is not found elsewhere either; a resource deleted and created again out of band
+// looks the same, hence the advice the callers add.
 func otherObjectMessage(adapter *dresources.Adapter, id string, savedState any, otherID string) string {
 	saved, _ := adapter.InternalID(savedState)
-	return fmt.Sprintf("id=%q holds another object: its %s is %q, not %q as recorded, so this bundle leaves it in place",
+	return fmt.Sprintf("id=%q holds another object: its %s is %q, not %q as recorded",
 		id, adapter.ResourceConfig().InternalIDField, otherID, saved)
 }
 
-// otherObjectAdvice follows otherObjectMessage, for a resource still in the config (deploy) as well as
-// one removed from it (a Delete): bind needs the resource in the config, and a free state entry.
-const otherObjectAdvice = "If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it)."
+// otherObjectDeployAdvice follows otherObjectMessage for a resource in the config. The bundle's own
+// may still exist under another name (renamed out of band), which findMoved takes once the config
+// names it. Bind needs a free state entry, hence unbind first.
+const otherObjectDeployAdvice = "If the bundle's was renamed outside the bundle, set its name in the config to the new one. If this object is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and then 'bundle deployment bind' to manage it again."
+
+// otherObjectDeleteAdvice follows otherObjectMessage for a resource being deleted: its state entry
+// is dropped, and it may no longer be in the config, so binding it is not an option.
+const otherObjectDeleteAdvice = "If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle."
 
 // otherObjectAtRecordedID returns, for a resource to be deleted, what otherObjectMessage says when
 // remote, read at its recorded ID id, is another object than the one the state records; "" when it

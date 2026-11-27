@@ -24,7 +24,7 @@ print_requests.py //unity-catalog &> LOG.oob_requests
 title "The new schema has another schema_id: the bundle does not take it for its own, and deploy fails on its name"
 trace $CLI bundle plan
 trace musterr $CLI bundle deploy
-print_requests.py //unity-catalog &> LOG.failed_deploy_requests
+trace print_requests.py //unity-catalog
 
 title "Binding it again makes it the bundle's"
 trace $CLI bundle deployment unbind schema1

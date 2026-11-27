@@ -18,7 +18,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === The other volume has another volume_id, so the plan does not take it for the bundle's: it plans a create
 
 >>> [CLI] bundle plan
-Warning: resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so this bundle leaves it in place. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
+Warning: resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so this bundle does not take it for its own. If the bundle's was renamed outside the bundle, set its name in the config to the new one. If this object is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and then 'bundle deployment bind' to manage it again.
 
 create volumes.volume1
 
@@ -27,7 +27,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 === Destroy does not delete the other volume: it only drops the bundle's from the state
 
 >>> [CLI] bundle destroy --auto-approve
-Warning: resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so this bundle leaves it in place, and drops resources.volumes.volume1 from the deployment state. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
+Warning: resources.volumes.volume1: id="main.test-schema-[UNIQUE_NAME].myvolume" holds another object: its volume_id is "[FOREIGN_VOLUME_ID]", not "[VOLUME_ID]" as recorded, so no delete is sent for it, and resources.volumes.volume1 is dropped from the deployment state. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle.
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 

@@ -131,8 +131,9 @@ type PlanEntry struct {
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`
 	// Gone is set on Delete entries when the resource no longer exists remotely: planning
-	// confirmed it with a read, or the state entry has an empty ID (left by a recreate in
-	// an older CLI whose create step failed after the delete). Applying such an entry only
+	// confirmed it with a read, or found another object at its ID (an internal ID that is
+	// not the recorded one), or the state entry has an empty ID (left by a recreate in an
+	// older CLI whose create step failed after the delete). Applying such an entry only
 	// removes it from the state, without calling the delete API, and approval prompts do
 	// not list it as a deletion.
 	Gone bool `json:"gone,omitempty"`

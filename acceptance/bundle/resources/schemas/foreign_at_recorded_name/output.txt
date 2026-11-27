@@ -18,23 +18,29 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === The other schema has another schema_id, so the plan does not take it for the bundle's: it plans a create
 
 >>> [CLI] bundle plan --output json
-Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle leaves it in place. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
+Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle does not take it for its own. If the bundle's was renamed outside the bundle, set its name in the config to the new one. If this object is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and then 'bundle deployment bind' to manage it again.
 
 {
-  "resources.schemas.schema1": {
-    "action": "create",
-    "new_state": {
-      "value": {
-        "catalog_name": "main",
-        "comment": "c1",
-        "name": "test-schema-[UNIQUE_NAME]"
-      }
-    },
-    "changes": {
-      "schema_id": {
-        "action": "skip",
-        "reason": "internal_id",
-        "old": "[SCHEMA_ID]"
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.schemas.schema1": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "comment": "c1",
+          "name": "test-schema-[UNIQUE_NAME]"
+        }
+      },
+      "changes": {
+        "schema_id": {
+          "action": "skip",
+          "reason": "internal_id",
+          "old": "[SCHEMA_ID]"
+        }
       }
     }
   }
@@ -44,7 +50,7 @@ Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds an
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle leaves it in place. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
+Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle does not take it for its own. If the bundle's was renamed outside the bundle, set its name in the config to the new one. If this object is the bundle's (deleted and created again outside the bundle), run 'bundle deployment unbind' and then 'bundle deployment bind' to manage it again.
 
 Error: cannot create resources.schemas.schema1: Schema 'test-schema-[UNIQUE_NAME]' already exists (400 SCHEMA_ALREADY_EXISTS)
 
@@ -55,10 +61,21 @@ API message: Schema 'test-schema-[UNIQUE_NAME]' already exists
 
 Files: 2 uploaded, 0 deleted
 
+>>> print_requests.py //unity-catalog
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "comment": "c1",
+    "name": "test-schema-[UNIQUE_NAME]"
+  }
+}
+
 === Destroy does not delete the other schema: it only drops the bundle's from the state
 
 >>> [CLI] bundle destroy --auto-approve
-Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so this bundle leaves it in place, and drops resources.schemas.schema1 from the deployment state. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle, or manage it again with 'bundle deployment bind' while it is in the config ('bundle deployment unbind' first if the state still has it).
+Warning: resources.schemas.schema1: id="main.test-schema-[UNIQUE_NAME]" holds another object: its schema_id is "[FOREIGN_SCHEMA_ID]", not "[SCHEMA_ID]" as recorded, so no delete is sent for it, and resources.schemas.schema1 is dropped from the deployment state. If it is the bundle's (deleted and created again outside the bundle), delete it outside the bundle.
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 

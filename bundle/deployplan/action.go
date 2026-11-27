@@ -10,7 +10,8 @@ type Action struct {
 	ResourceKey string
 	ActionType  ActionType
 	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
-	// resource no longer exists remotely (confirmed by a read, or an empty-ID state entry).
+	// resource no longer exists remotely (confirmed by a read, another object at its ID,
+	// or an empty-ID state entry).
 	Gone bool
 	// StateOnly mirrors PlanEntry.StateOnly: applying the action only changes the state
 	// (a delete of a resource without DoDelete, or a re-key).

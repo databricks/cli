@@ -13,10 +13,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Drop the remote_state fields that differ between clouds or from the test server.
-plan() {
-    trace $CLI bundle plan --output json | jq .plan | normalize_uc_payload.py created_at updated_at updated_by metastore_id effective_predictive_optimization_flag storage_location
-}
 
 title "Deploy a schema"
 trace $CLI bundle deploy
@@ -29,11 +25,11 @@ add_repl "$($CLI schemas create "test-schema-${UNIQUE_NAME}" main | jq -r .schem
 print_requests.py //unity-catalog &> LOG.oob_requests
 
 title "The other schema has another schema_id, so the plan does not take it for the bundle's: it plans a create"
-plan
+trace $CLI bundle plan --output json | plan_filter.py
 
 title "Deploy leaves the other schema alone: the create fails on its name"
 trace musterr $CLI bundle deploy
-print_requests.py //unity-catalog &> LOG.failed_deploy_requests
+trace print_requests.py //unity-catalog
 
 title "Destroy does not delete the other schema: it only drops the bundle's from the state"
 trace $CLI bundle destroy --auto-approve
