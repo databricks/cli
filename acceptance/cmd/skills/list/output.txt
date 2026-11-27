@@ -4,6 +4,8 @@ Pick the skill whose description matches the task.
 Read the skill before you act on it.
 
 demo-skill: A skill for tests.
+future-skill: A skill that needs a newer CLI.
+guide-skill: A skill with a supporting file.
 To read a skill, run: databricks skills read <name>
 
 >>> [CLI] skills list --experimental
@@ -11,6 +13,8 @@ Pick the skill whose description matches the task.
 Read the skill before you act on it.
 
 demo-skill: A skill for tests.
+future-skill: A skill that needs a newer CLI.
+guide-skill: A skill with a supporting file.
 preview-skill: An experimental skill for tests.
 To read a skill, run: databricks skills read <name>
 
@@ -29,6 +33,25 @@ To read a skill, run: databricks skills read <name>
       "commands": [
         "jobs"
       ]
+    },
+    {
+      "name": "future-skill",
+      "description": "A skill that needs a newer CLI.",
+      "version": "0.0.1",
+      "files": [
+        "SKILL.md"
+      ],
+      "commands": []
+    },
+    {
+      "name": "guide-skill",
+      "description": "A skill with a supporting file.",
+      "version": "0.0.1",
+      "files": [
+        "SKILL.md",
+        "references/guide.md"
+      ],
+      "commands": []
     }
   ]
 }
@@ -48,6 +71,25 @@ To read a skill, run: databricks skills read <name>
       "commands": [
         "jobs"
       ]
+    },
+    {
+      "name": "future-skill",
+      "description": "A skill that needs a newer CLI.",
+      "version": "0.0.1",
+      "files": [
+        "SKILL.md"
+      ],
+      "commands": []
+    },
+    {
+      "name": "guide-skill",
+      "description": "A skill with a supporting file.",
+      "version": "0.0.1",
+      "files": [
+        "SKILL.md",
+        "references/guide.md"
+      ],
+      "commands": []
     },
     {
       "name": "preview-skill",

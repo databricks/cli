@@ -334,7 +334,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added blank next to marker is deduplicated",
+			name: "encoder-added blank next to marker is deduplicated",
 			input: nl(`
 key1: value1
 # __YAMLPATCH_BLANK_LINE__
@@ -348,7 +348,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added standalone blank is kept",
+			name: "encoder-added standalone blank is kept",
 			input: nl(`
 key1: value1
 
@@ -361,7 +361,7 @@ key2: value2
 `),
 		},
 		{
-			name: "yaml.v3-added blank near block scalar",
+			name: "encoder-added blank near block scalar",
 			input: nl(`
 key: |
   line1
@@ -581,4 +581,53 @@ func TestApplyChangeMaterializesPrimaryNullParent(t *testing.T) {
 `+target, string(result))
 		})
 	}
+}
+
+func TestSourceDocsWritten(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "databricks.yml")
+	require.NoError(t, os.WriteFile(file, []byte(`base: &base
+  a: 1
+  nested:
+    x: 1
+alias: *base
+merged:
+  <<: *base
+  b: 2
+anchored: &anchored
+  <<: *base
+targets:
+  dev:
+    merged:
+      <<: *base
+`), 0o644))
+
+	for _, tc := range []struct {
+		name, path, altPath string
+		shadowed            bool
+		key                 bool
+		addPath             string
+	}{
+		{"written", "merged.b", "", false, true, "merged.b"},
+		{"inherited", "merged.a", "", false, false, "merged.a"},
+		{"inherited parent", "merged.nested.x", "", false, false, ""},
+		{"through alias", "alias.a", "", false, true, ""},
+		{"under anchor", "anchored.a", "", false, false, ""},
+		{"written in anchor", "base.a", "", false, true, ""},
+		{"missing parent", "missing.a", "", false, false, ""},
+		{"alternative only", "missing.a", "targets.dev.merged.a", false, false, "targets.dev.merged.a"},
+		{"both scopes", "merged.a", "targets.dev.merged.a", false, false, "merged.a"},
+		{"both scopes, shadowed", "merged.a", "targets.dev.merged.a", true, false, "targets.dev.merged.a"},
+		{"shadowed", "merged.a", "", true, false, ""},
+		{"written, shadowed", "merged.b", "targets.dev.merged.b", true, false, "targets.dev.merged.b"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			key, addPath := sourceDocs{}.written(file, tc.path, tc.altPath, tc.shadowed)
+			assert.Equal(t, tc.key, key)
+			assert.Equal(t, tc.addPath, addPath)
+		})
+	}
+
+	key, addPath := sourceDocs{}.written(filepath.Join(t.TempDir(), "missing.yml"), "a.b", "", false)
+	assert.True(t, key)
+	assert.Empty(t, addPath)
 }
