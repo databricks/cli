@@ -192,14 +192,21 @@ func TestNilCacheStoresNothing(t *testing.T) {
 	assert.False(t, ok)
 }
 
-// newCacheTestCtx points the cache at a temporary folder and clears the pinned
-// source variables, so a developer's shell cannot turn the cache off.
+// newCacheTestCtx points the cache at a temporary folder, turns the feature on,
+// and clears the pinned source variables, so a developer's shell cannot turn the cache off.
 func newCacheTestCtx(t *testing.T) context.Context {
 	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_PREVIEW", "true")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	ctx = env.Set(ctx, pinnedCacheEnv, "")
+	ctx = env.Set(ctx, "DATABRICKS_SKILLS_DIR", "")
 	ctx = env.Set(ctx, "DATABRICKS_SKILLS_REF", "")
-	ctx = env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "")
-	return env.Set(ctx, "DATABRICKS_SKILLS_DIR", "")
+	return env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "")
+}
+
+func TestNewCacheOffWithoutPreview(t *testing.T) {
+	ctx := env.Set(newCacheTestCtx(t), "DATABRICKS_SKILLS_PREVIEW", "")
+	assert.Nil(t, NewCache(ctx), "the feature is off, so nothing is cached")
 }
 
 func TestNewCacheHonoursCacheEnabled(t *testing.T) {
@@ -212,13 +219,35 @@ func TestNewCacheHonoursCacheEnabled(t *testing.T) {
 	assert.Equal(t, filepath.Join(env.Get(ctx, "DATABRICKS_CACHE_DIR"), build.GetInfo().GetSanitizedVersion(), "skills"), enabled.dir)
 }
 
-func TestNewCacheOffForPinnedSource(t *testing.T) {
+func TestNewCacheOffForPinnedSourceByDefault(t *testing.T) {
 	ctx := newCacheTestCtx(t)
 	assert.NotNil(t, NewCache(ctx))
 
 	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_REF", "v1.0.0")), "a pinned ref stores nothing")
 	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "http://localhost:8080")), "a custom base URL stores nothing")
 	assert.Nil(t, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_DIR", "testdata/release")), "a local folder stores nothing")
+}
+
+func TestNewCachePinnedSourceUsesItsOwnFolder(t *testing.T) {
+	ctx := env.Set(newCacheTestCtx(t), pinnedCacheEnv, "true")
+	defaultDir := NewCache(ctx).dir
+
+	ref := NewCache(env.Set(ctx, "DATABRICKS_SKILLS_REF", "v1.0.0"))
+	require.NotNil(t, ref)
+	mirror := NewCache(env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "http://localhost:8080"))
+	require.NotNil(t, mirror)
+	assert.Equal(t, mirror.dir, NewCache(env.Set(ctx, "DATABRICKS_SKILLS_BASE_URL", "http://localhost:8080")).dir, "the same source keeps its folder")
+
+	assert.NotEqual(t, defaultDir, ref.dir, "a pinned ref never shares the release folder")
+	assert.NotEqual(t, defaultDir, mirror.dir, "a mirror never shares the release folder")
+	assert.NotEqual(t, ref.dir, mirror.dir, "each source has its own folder")
+
+	require.NoError(t, mirror.putCatalog(fetchedAt(release("1.0.0"), t0)))
+	_, err := os.Stat(defaultDir)
+	assert.ErrorIs(t, err, os.ErrNotExist, "a catalog from a pinned source leaves the release folder alone")
+	latest, ok := mirror.Latest()
+	require.True(t, ok)
+	assert.Equal(t, "1.0.0", latest.Version)
 }
 
 func TestNewCacheWithoutCacheFolderStoresNothing(t *testing.T) {

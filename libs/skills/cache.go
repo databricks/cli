@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/snapshot"
 	"golang.org/x/mod/semver"
 )
 
@@ -37,21 +38,44 @@ type Cache struct {
 	dir string
 }
 
+// pinnedCacheEnv turns the cache on for a pinned source, so a test that pins the
+// source to a fake server has a cache to cover. Only tests set it.
+// Unset, a pinned source stores nothing.
+const pinnedCacheEnv = "DATABRICKS_SKILLS_TEST_PINNED_CACHE"
+
+// pinnedDir is the folder, beside the release folder, that holds the catalogs of
+// pinned sources. Each source has its own folder in it.
+const pinnedDir = "skills-pinned"
+
 // NewCache returns the skills cache under the CLI's cache folder, beside the
-// other caches of this CLI version (see libs/cache). DATABRICKS_CACHE_ENABLED=false
-// turns it off, as it does for the other caches, and so does a cache folder that
-// cannot be found. A non-default source also turns it off: a pinned ref
-// (DATABRICKS_SKILLS_REF), a custom base URL (DATABRICKS_SKILLS_BASE_URL) or a
-// local folder (DATABRICKS_SKILLS_DIR). The cache is keyed by release version
-// only, so a catalog from another source must not be stored under it. The
-// returned nil Cache stores nothing.
+// other caches of this CLI version (see libs/cache). It is off unless
+// DATABRICKS_SKILLS_PREVIEW is set. DATABRICKS_CACHE_ENABLED=false turns it off,
+// as it does for the other caches, and so does a cache folder that cannot be found.
+// A local folder, DATABRICKS_SKILLS_DIR, always turns it off, since its files are
+// not a release. A pinned source, DATABRICKS_SKILLS_REF or DATABRICKS_SKILLS_BASE_URL,
+// stores nothing unless pinnedCacheEnv is set. Then it stores in a folder keyed by
+// the source, never in the release folder, which is keyed by release version only.
+// A pinned branch ref or a mirror can change its files without changing its
+// version. ReadFile serves a cached file before it asks the source, and cacheFile
+// checks only the version, so such a source can keep stale files until its
+// version changes. The release folder is not affected, since a release is fixed.
+// The returned nil Cache stores nothing.
 //
 //deadcode:allow the skills commands call it once they are wired to the chain
 func NewCache(ctx context.Context) *Cache {
+	if !Enabled(ctx) {
+		return nil
+	}
 	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok && !enabled {
 		return nil
 	}
-	if env.Get(ctx, "DATABRICKS_SKILLS_REF") != "" || env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL") != "" || env.Get(ctx, dirEnv) != "" {
+	if env.Get(ctx, dirEnv) != "" {
+		return nil
+	}
+	ref := env.Get(ctx, "DATABRICKS_SKILLS_REF")
+	baseURL := env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL")
+	pinned := ref != "" || baseURL != ""
+	if pinned && !envTrue(ctx, pinnedCacheEnv) {
 		return nil
 	}
 	base, err := cache.BaseDir(ctx)
@@ -59,7 +83,17 @@ func NewCache(ctx context.Context) *Cache {
 		log.Debugf(ctx, "[skills] cache disabled: %v", err)
 		return nil
 	}
-	return &Cache{dir: filepath.Join(base, build.GetInfo().GetSanitizedVersion(), "skills")}
+	version := build.GetInfo().GetSanitizedVersion()
+	if pinned {
+		return &Cache{dir: filepath.Join(base, version, pinnedDir, sourceKey(ref, baseURL))}
+	}
+	return &Cache{dir: filepath.Join(base, version, "skills")}
+}
+
+// sourceKey names the folder of a pinned source: a hash of its ref and base URL,
+// so two pinned sources never share a folder.
+func sourceKey(ref, baseURL string) string {
+	return snapshot.HashFromContent([]byte("ref=" + ref + "\nbase_url=" + baseURL))
 }
 
 // Latest returns the cached catalog fetched most recently. It reads the disk only.
