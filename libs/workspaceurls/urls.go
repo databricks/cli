@@ -68,6 +68,7 @@ var dotSeparatedResources = map[string]bool{
 	"registered_models":       true,
 	"schemas":                 true,
 	"secrets":                 true,
+	"synced_database_tables":  true,
 	"vector_search_indexes":   true,
 	"volumes":                 true,
 }

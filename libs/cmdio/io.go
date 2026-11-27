@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/databricks/cli/libs/flags"
@@ -83,44 +81,6 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 func IsPromptSupported(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.SupportsPrompt()
-}
-
-// IsLinePromptSupported reports whether a plain-text line prompt ([Ask]) can
-// be shown and answered: stdin, stdout and stderr are terminals, this process
-// is in the terminal's foreground process group (a background job that reads
-// it is stopped), and no goroutine reads stdin in the background (see
-// [MarkStdinReadInBackground]). Unlike IsPromptSupported, it does not depend
-// on TERM=dumb or an MSYS2 pty pipe, which only matter for the TUI prompts.
-func IsLinePromptSupported(ctx context.Context) bool {
-	c := fromContext(ctx)
-	if !c.capabilities.SupportsLinePrompt() || stdinReadInBackground.Load() {
-		return false
-	}
-	f, ok := c.in.(*os.File)
-	return !ok || inForeground(f)
-}
-
-// stdinReadInBackground is set once a goroutine reads stdin for the rest of
-// the process.
-var stdinReadInBackground atomic.Bool
-
-// MarkStdinReadInBackground records that a goroutine reads os.Stdin and may
-// outlive the command, so later line prompts in this process are not asked:
-// that goroutine could take their answer.
-func MarkStdinReadInBackground() {
-	stdinReadInBackground.Store(true)
-}
-
-// DiscardInput discards what was typed at the stdin terminal but not read
-// yet, so that a prompt asked after a long-running command reads only what is
-// typed after the question.
-func DiscardInput(ctx context.Context) error {
-	c := fromContext(ctx)
-	f, ok := c.in.(*os.File)
-	if !ok || !c.capabilities.stdinIsTTY {
-		return nil
-	}
-	return discardInput(f)
 }
 
 // IsInputTTY reports whether stdin is a terminal, so that a user can type
