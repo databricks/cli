@@ -18,7 +18,6 @@ License - https://github.com/go-ini/ini/blob/main/LICENSE
 
 go-yaml/yaml - https://github.com/yaml/go-yaml
 Copyright (c) 2011-2019 Canonical Ltd
-Copyright (c) 2006-2011 Kirill Simonov
 Copyright (c) 2025 The go-yaml Project Contributors
 License - https://github.com/yaml/go-yaml/blob/main/LICENSE
 
@@ -159,6 +158,10 @@ License - https://github.com/stretchr/testify/blob/master/LICENSE
 BurntSushi/toml - https://github.com/BurntSushi/toml
 Copyright (c) 2013 TOML authors
 License - https://github.com/BurntSushi/toml/blob/master/COPYING
+
+go-yaml/yaml - https://github.com/yaml/go-yaml
+Copyright (c) 2006-2010 Kirill Simonov
+License - https://github.com/yaml/go-yaml/blob/main/NOTICE
 
 zalando/go-keyring - https://github.com/zalando/go-keyring
 Copyright (c) 2016 Zalando SE
