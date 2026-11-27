@@ -1,1 +1,2 @@
+Badness = "config-remote-sync --save rewrites the merge keys it writes or keeps from '<<:' to '!!merge <<:' (e.g. '- <<: *outside' becomes '- !!merge <<: *outside'). It should keep '<<:' as written."
 Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]
