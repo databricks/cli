@@ -16,11 +16,15 @@ var Spec = root.CommandSpec{
 }
 
 func buildCommand(ctx context.Context, cmd *cobra.Command) {
+	cmd.RunE = root.ReportUnknownSubcommand
 	cmd.Long = `Manage Databricks Sandbox environments.
 
 Sandbox provides SSH-accessible development environments backed by
 microVM isolation. Each sandbox is a personal sandbox with pre-installed
 tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
+
+SSH uses workspace authentication; no separate SSH key registration is required.
+For editor Remote-SSH or native SSH tools, use databricks sandbox ssh-setup.
 
 Getting started:
   databricks auth login --host https://...   # authenticate to a Databricks workspace
@@ -37,8 +41,6 @@ Common workflows:
   databricks sandbox forward -L 8080:10080  # open sandbox port 10080 at localhost:8080
 `
 
-	cmd.AddCommand(newRegisterCommand())
-	cmd.AddCommand(newSSHKeyCommand())
 	cmd.AddCommand(newSetDefaultCommand())
 	cmd.AddCommand(newForwardCommand())
 	cmd.AddCommand(newListCommand())

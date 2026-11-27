@@ -11,11 +11,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='by_complex_variable'].existing_cluster_id: remove
-  tasks[task_key='by_complex_variable'].new_cluster: skip
-  tasks[task_key='by_variable'].existing_cluster_id: remove
+  tasks[task_key='by_complex_variable'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='by_complex_variable'].new_cluster: skip (the field is a variable reference)
+  tasks[task_key='by_variable'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
   tasks[task_key='by_variable'].job_cluster_key: replace
-  tasks[task_key='main'].existing_cluster_id: remove
+  tasks[task_key='main'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
   tasks[task_key='main'].job_cluster_key: replace
 
 
@@ -37,11 +37,11 @@ Resource: resources.jobs.my_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='by_complex_variable'].existing_cluster_id: remove
-  tasks[task_key='by_complex_variable'].new_cluster: skip
-  tasks[task_key='by_variable'].existing_cluster_id: remove
+  tasks[task_key='by_complex_variable'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
+  tasks[task_key='by_complex_variable'].new_cluster: skip (the field is a variable reference)
+  tasks[task_key='by_variable'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
   tasks[task_key='by_variable'].job_cluster_key: replace
-  tasks[task_key='main'].existing_cluster_id: remove
+  tasks[task_key='main'].existing_cluster_id: skip (change cannot be attributed to a single source block: no source location for the value being changed)
   tasks[task_key='main'].job_cluster_key: replace
 
 

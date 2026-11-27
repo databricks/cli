@@ -13,24 +13,24 @@ Detected changes in 3 resource(s):
 
 Resource: resources.jobs.my_job
   job_clusters[job_cluster_key='derived'].new_cluster.autoscale: add
-  job_clusters[job_cluster_key='derived'].new_cluster.num_workers: skip
-  tasks[task_key='b_task'].depends_on[task_key='a_task']: skip
-  tasks[task_key='b_task'].depends_on[task_key='prep']: skip
-  tasks[task_key='b_task'].max_retries: skip
+  job_clusters[job_cluster_key='derived'].new_cluster.num_workers: skip (the file does not write it where it is defined)
+  tasks[task_key='b_task'].depends_on[task_key='a_task']: skip (the file does not write it where it is defined)
+  tasks[task_key='b_task'].depends_on[task_key='prep']: skip (the file does not write it where it is defined)
+  tasks[task_key='b_task'].max_retries: skip (the file does not write it where it is defined)
   tasks[task_key='b_task'].min_retry_interval_millis: add
   tasks[task_key='b_task'].notebook_task.base_parameters['input_file_name']: add
-  tasks[task_key='c_task'].depends_on[task_key='a_task']: skip
-  tasks[task_key='c_task'].depends_on[task_key='setup']: skip
-  tasks[task_key='prep']: skip
+  tasks[task_key='c_task'].depends_on[task_key='a_task']: skip (the file does not write it where it is defined)
+  tasks[task_key='c_task'].depends_on[task_key='setup']: skip (the file does not write it where it is defined)
+  tasks[task_key='prep']: skip (the file does not write it where it is defined)
   tasks[task_key='setup']: remove
   timeout_seconds: add
 
 Resource: resources.jobs.rename_job
-  tasks[task_key='main']: skip
-  tasks[task_key='main2']: skip
+  tasks[task_key='main']: skip (the file does not write it where it is defined)
+  tasks[task_key='main2']: skip (the file does not write it where it is defined)
 
 Resource: resources.pipelines.my_pipeline
-  clusters: skip
+  clusters: skip (the file does not write it where it is defined)
 
 
 
@@ -120,7 +120,7 @@ Resource: resources.pipelines.my_pipeline
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.rename_job
-  tasks[task_key='main'].max_retries: skip
+  tasks[task_key='main'].max_retries: skip (the file does not write it where it is defined)
   timeout_seconds: add
 
 

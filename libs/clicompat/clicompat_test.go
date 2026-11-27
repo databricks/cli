@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,10 +50,13 @@ func redirectToServer(t *testing.T, srv *httptest.Server) {
 }
 
 // testContext returns a context with an isolated cache directory so tests don't
-// share cached manifests.
+// share cached manifests. The cache switches are pinned to their defaults, so a
+// developer's shell cannot change what the tests read.
 func testContext(t *testing.T) context.Context {
 	t.Helper()
-	return env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx := env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	return env.Set(ctx, "DATABRICKS_FORCE_EMBEDDED_COMPAT", "false")
 }
 
 // --- Resolve tests ---
@@ -146,15 +150,8 @@ func TestFetchManifest_RemoteFailFallsBackToEmbedded(t *testing.T) {
 func TestFetchManifest_RemoteFailFallsBackToStaleCache(t *testing.T) {
 	ctx := testContext(t)
 
-	// Pre-populate the local cache with a stale manifest.
-	staleManifest := Manifest{
-		"0.296.0": {AppKit: "0.88.0", AgentSkills: "0.8.8"},
-	}
-	localPath := manifestLocalPath(ctx)
-	writeLocalManifest(ctx, localPath, staleManifest)
-	// Make it stale by setting mod time to 2 hours ago.
-	past := time.Now().Add(-2 * time.Hour)
-	require.NoError(t, os.Chtimes(localPath, past, past))
+	// Pre-populate the local cache with a manifest that is 2 hours old, so stale.
+	writeCachedManifestFile(t, ctx, `{"0.296.0": {"appkit": "0.88.0", "skills": "0.8.8"}}`, time.Now().Add(-2*time.Hour))
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -457,7 +454,7 @@ func TestManifestLocalPath(t *testing.T) {
 func TestReadWriteLocalManifest(t *testing.T) {
 	ctx := testContext(t)
 	m := Manifest{
-		"0.300.0": {AppKit: "0.50.0", AgentSkills: "0.5.0"},
+		"0.300.0": {AppKit: "0.50.0", AgentSkills: "0.5.0", SkillsHints: true},
 	}
 
 	path := manifestLocalPath(ctx)
@@ -466,6 +463,7 @@ func TestReadWriteLocalManifest(t *testing.T) {
 	cached, err := readLocalManifest(path)
 	require.NoError(t, err)
 	assert.Equal(t, "0.50.0", cached.manifest["0.300.0"].AppKit)
+	assert.True(t, cached.manifest["0.300.0"].SkillsHints)
 	assert.True(t, cached.isFresh(cacheTTL), "just-written file should be fresh")
 }
 
@@ -607,4 +605,107 @@ func TestFetchManifest_ForceEmbedded(t *testing.T) {
 
 	embedded, _ := parseManifest(build.CLICompatManifestJSON)
 	assert.Equal(t, embedded["0.300.0"].AppKit, result["0.300.0"].AppKit)
+}
+
+// writeCachedManifestFile writes manifest to the local cache of ctx and sets its
+// mod time, so tests control whether the cache counts as fresh.
+func writeCachedManifestFile(t *testing.T, ctx context.Context, manifest string, modTime time.Time) {
+	t.Helper()
+	path := manifestLocalPath(ctx)
+	testutil.WriteFile(t, path, manifest)
+	require.NoError(t, os.Chtimes(path, modTime, modTime))
+}
+
+func TestResolveSkillsHints(t *testing.T) {
+	manifest := `{
+		"1.20.0": {"appkit": "0.84.0", "skills": "0.2.30"},
+		"1.30.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}
+	}`
+	tests := []struct {
+		cliVersion string
+		want       bool
+	}{
+		{cliVersion: "1.25.0", want: false},
+		{cliVersion: "1.30.0", want: true},
+		{cliVersion: "1.31.2", want: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.cliVersion, func(t *testing.T) {
+			ctx := testContext(t)
+			writeCachedManifestFile(t, ctx, manifest, time.Now())
+
+			got, err := ResolveSkillsHints(ctx, tc.cliVersion)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestResolveSkillsHintsNeverFetches checks that hints resolve from a fresh
+// local cache without calling the remote fetcher, even when the remote would
+// turn them on or fails. Without a fresh cache they fail, and the embedded
+// manifest is not consulted.
+func TestResolveSkillsHintsNeverFetches(t *testing.T) {
+	manifest := `{"1.0.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`
+	tests := []struct {
+		name    string
+		cached  bool
+		age     time.Duration
+		status  int
+		want    bool
+		wantErr bool
+	}{
+		{name: "no cache, remote on", status: http.StatusOK, wantErr: true},
+		{name: "no cache, remote fails", status: http.StatusInternalServerError, wantErr: true},
+		{name: "fresh cache", cached: true, status: http.StatusOK, want: true},
+		{name: "stale cache, remote fails", cached: true, age: 2 * cacheTTL, status: http.StatusInternalServerError, wantErr: true},
+		{name: "stale cache, remote on", cached: true, age: 2 * cacheTTL, status: http.StatusOK, wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := testContext(t)
+			var calls atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls.Add(1)
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(manifest))
+			}))
+			defer srv.Close()
+			redirectToServer(t, srv)
+			if tc.cached {
+				writeCachedManifestFile(t, ctx, manifest, time.Now().Add(-tc.age))
+			}
+
+			got, err := ResolveSkillsHints(ctx, "1.0.0")
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tc.want, got)
+			assert.Zero(t, calls.Load(), "ResolveSkillsHints fetched the manifest")
+		})
+	}
+}
+
+// TestResolveSkillsHintsForceEmbedded checks that DATABRICKS_FORCE_EMBEDDED_COMPAT
+// keeps hints off even with a fresh cache that turns them on.
+func TestResolveSkillsHintsForceEmbedded(t *testing.T) {
+	ctx := env.Set(testContext(t), "DATABRICKS_FORCE_EMBEDDED_COMPAT", "true")
+	writeCachedManifestFile(t, ctx, `{"1.0.0": {"appkit": "0.84.0", "skills": "0.2.30", "skills_hints": true}}`, time.Now())
+
+	got, err := ResolveSkillsHints(ctx, "1.0.0")
+	require.Error(t, err)
+	assert.False(t, got)
+}
+
+// TestManifestLeavesSkillsHintsOff checks that no entry of the embedded
+// manifest turns skills_hints on. The remote manifest is this same file on
+// main, so turning it on is a launch decision: change this test in that PR.
+func TestManifestLeavesSkillsHintsOff(t *testing.T) {
+	m, err := parseManifest(build.CLICompatManifestJSON)
+	require.NoError(t, err)
+	for version, entry := range m {
+		assert.False(t, entry.SkillsHints, "skills_hints is on for %s", version)
+	}
 }

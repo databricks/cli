@@ -1,0 +1,35 @@
+
+=== Published version: the plan resolves and fetches, and nothing is written
+
+>>> [CLI] environments setup-local --serverless-version 5 --dry-run --output json
+{
+  "ok": true,
+  "dryRun": true,
+  "command": "environments setup-local",
+  "compute": {
+    "source": "serverless",
+    "envKey": "serverless/serverless-v5"
+  },
+  "artifactSource": "network",
+  "hasPythonVersion": true,
+  "phases": [
+    "preflight: ok",
+    "resolve: ok",
+    "fetch: ok",
+    "merge: ok",
+    "provision: ok",
+    "validate: ok"
+  ]
+}
+files in project: 0
+
+=== Unpublished version: fetch fails with E_ENV_UNSUPPORTED, and nothing is written
+
+>>> [CLI] environments setup-local --serverless-version 9999 --dry-run --output json
+{
+  "ok": false,
+  "dryRun": true,
+  "code": "E_ENV_UNSUPPORTED",
+  "failurePhase": "fetch"
+}
+files in project: 0

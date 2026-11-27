@@ -1934,6 +1934,40 @@ func TestFetchErrorsCarryStage(t *testing.T) {
 	assert.Equal(t, FetchStageFile, ferr.Stage)
 }
 
+func TestFetchSkillFileEscapesFileName(t *testing.T) {
+	var gotPath, gotEscapedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotEscapedPath = r.URL.EscapedPath()
+		_, _ = w.Write([]byte("skill content"))
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
+
+	data, err := fetchSkillFile(t.Context(), "v1.0.0", "", "databricks-sql", "references/a#b%20c.md")
+	require.NoError(t, err)
+	assert.Equal(t, "skill content", string(data))
+	assert.Equal(t, "/v1.0.0/"+stableSkillsRepoPath+"/databricks-sql/references/a#b%20c.md", gotPath)
+	assert.Equal(t, "/v1.0.0/"+stableSkillsRepoPath+"/databricks-sql/references/a%23b%2520c.md", gotEscapedPath)
+}
+
+func TestFetchSkillFileEscapesSkillName(t *testing.T) {
+	var gotPath, gotEscapedPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotEscapedPath = r.URL.EscapedPath()
+		_, _ = w.Write([]byte("skill content"))
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("DATABRICKS_SKILLS_BASE_URL", server.URL)
+
+	data, err := fetchSkillFile(t.Context(), "v1.0.0", "", "c#-tools", "SKILL.md")
+	require.NoError(t, err)
+	assert.Equal(t, "skill content", string(data))
+	assert.Equal(t, "/v1.0.0/"+stableSkillsRepoPath+"/c#-tools/SKILL.md", gotPath)
+	assert.Equal(t, "/v1.0.0/"+stableSkillsRepoPath+"/c%23-tools/SKILL.md", gotEscapedPath)
+}
+
 // A release whose every skill is filtered out installs nothing and says so, so
 // the command can fail instead of reporting a successful install.
 func TestInstallSkillsForAgentsWithNoSkillToInstall(t *testing.T) {
