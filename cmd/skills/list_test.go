@@ -130,8 +130,8 @@ func TestRenderTextOneUnbreakableDescriptionDropsOnlyItself(t *testing.T) {
 }
 
 // The search hint goes away once the last dropped description gets its first
-// word, so a narrower width can be the one that fits. Widths 35 to 37 are over
-// the budget here, and 38 fits with every description shown.
+// word. Widths 35 to 37 are over the budget here, 39 is the widest that fits, and
+// a binary search settles on 34, which fits only with the hint.
 func TestRenderTextKeepsWidestFittingWidth(t *testing.T) {
 	var list []libskills.Skill
 	for i := range 84 {
@@ -142,7 +142,7 @@ func TestRenderTextKeepsWidestFittingWidth(t *testing.T) {
 	}
 	list = append(list, libskills.Skill{
 		Name:        "odd",
-		Description: strings.Repeat("x", 35) + " then more words follow here for the odd skill to show.",
+		Description: strings.Repeat("x", 35) + " more.",
 	})
 
 	out := renderText("", list)

@@ -97,23 +97,26 @@ func renderText(rules string, list []libskills.Skill) string {
 	if len(list) == 0 {
 		return withRules(rules) + "No skills found.\n"
 	}
+	// A description only makes its line longer, and the search hint is the one
+	// line a wider width can leave out. So when the names do not fit even with
+	// the hint, no width does, and the names-only text is the answer.
+	names := layoutText(rules, list, 0)
+	if len(names)-len(searchHint)-1 > textBudget {
+		return names
+	}
 	maxLen := 0
 	for _, s := range list {
 		maxLen = max(maxLen, len(oneLine(s.Description)))
 	}
 	// The length is not monotonic in width: a wider width can drop the search
-	// hint once the last dropped description gets its first word, so a binary
-	// search could settle on a narrower width than a wider one that fits. Try
-	// each width from the widest down and keep the first that fits. No width
-	// above textBudget can fit differently from textBudget itself.
+	// hint, so a binary search could settle on a narrower width than one that
+	// fits. Try each width from the widest down and keep the first that fits.
 	for w := min(maxLen, textBudget); w > 0; w-- {
 		if out := layoutText(rules, list, w); len(out) <= textBudget {
 			return out
 		}
 	}
-	// Width 0 leaves every description out, so it is the answer when the names
-	// alone do not fit.
-	return layoutText(rules, list, 0)
+	return names
 }
 
 // layoutText lays out the text output with descriptions cut to width. A width
