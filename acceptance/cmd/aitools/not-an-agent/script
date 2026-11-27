@@ -11,7 +11,8 @@ export CLAUDE_CODE_SESSION_ID=session-1
 title "Claude Code is hinted, and its help and quickstart are the agent ones"
 trace CLAUDECODE=1 $CLI jobs list
 trace CLAUDECODE=1 $CLI fs --help | tail -n 3
-trace CLAUDECODE=1 $CLI quickstart | contains.py 'databricks skills list' > /dev/null
+trace CLAUDECODE=1 $CLI --help | tail -n 2
+trace CLAUDECODE=1 $CLI quickstart | contains.py 'databricks skills list' > LOG.quickstart-agent
 
 # The positive control above recorded session-1's hint throttle. The variable steps
 # get a fresh session, so a build that ignored the variable would print the hint here.
@@ -26,7 +27,10 @@ trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI --help | tail -n 2
 
 title "With the variable set, quickstart prints the human guide"
 trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI quickstart | head -n 1
-trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI quickstart | contains.py '!databricks skills list' > /dev/null
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI quickstart | contains.py '!databricks skills list' > LOG.quickstart-human
+
+title "With the variable set, auto-install enable says it is still stopped here"
+trace DATABRICKS_NOT_AN_AGENT=1 CLAUDECODE=1 $CLI aitools auto-install enable
 
 title "A false value leaves agent detection on"
 trace DATABRICKS_NOT_AN_AGENT=0 CODEX_CI=1 CODEX_THREAD_ID=thread-1 $CLI jobs list
