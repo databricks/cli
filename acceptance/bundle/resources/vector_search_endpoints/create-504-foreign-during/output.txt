@@ -1,5 +1,5 @@
 
-=== The bundle's create request fails with a 504 that the backend did not apply; deploy waits 8 seconds before it repeats the request
+=== The bundle's create request fails with a 504 that the backend did not apply; deploy waits 10 seconds before it repeats the request
 
 === Meanwhile, outside the bundle, an endpoint with the name the bundle uses is created
 

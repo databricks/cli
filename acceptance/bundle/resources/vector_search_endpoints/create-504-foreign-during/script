@@ -10,16 +10,23 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "The bundle's create request fails with a 504 that the backend did not apply; deploy waits 8 seconds before it repeats the request"
+title "The bundle's create request fails with a 504 that the backend did not apply; deploy waits 10 seconds before it repeats the request"
 fault.py "POST /api/2.0/vector-search/endpoints" 504 0 1 TEMPORARILY_UNAVAILABLE
-DATABRICKS_BUNDLE_RETRY_INTERVAL_MS=8000 $CLI bundle deploy > LOG.deploy 2>&1 &
-sleep 4
+DATABRICKS_BUNDLE_RETRY_INTERVAL_MS=10000 $CLI bundle deploy > LOG.deploy 2>&1 &
+deploy_pid=$!
+# Wait until deploy has looked for the endpoint and started the pause before it repeats the request.
+for _ in $(seq 150); do
+    if grep -q "retrying after" LOG.deploy; then
+        break
+    fi
+    sleep 0.2
+done
 
 title "Meanwhile, outside the bundle, an endpoint with the name the bundle uses is created"
 trace $CLI vector-search-endpoints create-endpoint "$ENDPOINT" STANDARD --no-wait | jq '{name, endpoint_type}'
 
 title "Deploy repeats its request, is told the endpoint exists, and takes it"
-wait
+errcode wait "$deploy_pid"
 grep -v '^Warn: ' LOG.deploy
 trace print_requests.py //vector-search/endpoints | jq -r '.method + " " + .path'
 trace $CLI bundle plan
