@@ -257,7 +257,9 @@ func (m *pagerModel[T]) startDrain() tea.Cmd {
 	return m.fetch(m.pageSize, m.limit, m.total)
 }
 
-func (m *pagerModel[T]) View() string {
+func (m *pagerModel[T]) View() string { return m.render() }
+
+func (m *pagerModel[T]) render() string {
 	switch {
 	case m.iterDone || m.err != nil:
 		return ""

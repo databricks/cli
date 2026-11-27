@@ -557,6 +557,6 @@ func TestListSystemAIModelServicesWithoutAccess(t *testing.T) {
 }
 
 func TestAppkitThemeDimmedButtonFollowsBackground(t *testing.T) {
-	assert.Equal(t, colorDimmedDark, appkitTheme(true).Focused.BlurredButton.GetForeground())
-	assert.Equal(t, colorDimmedLight, appkitTheme(false).Focused.BlurredButton.GetForeground())
+	assert.Equal(t, colorDimmedDark, appkitStyles(true).Focused.BlurredButton.GetForeground())
+	assert.Equal(t, colorDimmedLight, appkitStyles(false).Focused.BlurredButton.GetForeground())
 }

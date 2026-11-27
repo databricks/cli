@@ -354,7 +354,9 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *selectModel) View() string {
+func (m *selectModel) View() string { return m.render() }
+
+func (m *selectModel) render() string {
 	var b strings.Builder
 
 	// After submission render only the Selected template; the post-quit
